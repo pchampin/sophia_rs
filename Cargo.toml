@@ -1,0 +1,11 @@
+[package]
+name = "myrdf2"
+version = "0.1.0"
+authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
+
+[dependencies]
+language-tag = "0.9.0"
+lazy_static = "1.0.1"
+regex = "1.0.0"
+url = "1.7.0"
+weak-table = "0.2.3"
