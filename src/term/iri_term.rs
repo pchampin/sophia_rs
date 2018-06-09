@@ -34,7 +34,7 @@ impl<T> IriTerm<T> where
     T: Borrow<str>,
 {
 
-    fn new (ns: T, suffix: Option<T>) -> Result<IriTerm<T>, Err> {
+    pub fn new (ns: T, suffix: Option<T>) -> Result<IriTerm<T>, Err> {
         let ret = IriTerm{ns, suffix};
         if let Err(err) = Url::parse(&ret.value()) {
             return Err(Err::InvalidIri(err));
@@ -42,28 +42,8 @@ impl<T> IriTerm<T> where
         Ok(ret)
     }
 
-    pub fn from1<U> (iri: U) -> Result<IriTerm<T>, Err> where
-        T: From<U>
-    {
-        IriTerm::new(T::from(iri), None)
-    }
-
-    pub fn from2<U, V> (ns: U, suffix: V) -> Result<IriTerm<T>, Err> where
-        T: From<U> + From<V>
-    {
-        IriTerm::new(T::from(ns), Some(T::from(suffix)))
-    }
-
-    pub unsafe fn trusted1<U> (iri: U) -> IriTerm<T> where
-        T: From<U>
-    {
-        IriTerm{ns: T::from(iri), suffix: None}
-    }
-
-    pub unsafe fn trusted2<U, V> (ns: U, suffix: V) -> IriTerm<T> where
-        T: From<U> + From<V>
-    {
-        IriTerm{ns: T::from(ns), suffix: Some(T::from(suffix))}
+    pub unsafe fn new_trusted (ns: T, suffix: Option<T>) -> IriTerm<T> {
+        IriTerm{ns, suffix}
     }
 
     pub fn copy_with<'a, U, F> (other: &'a IriTerm<U>, factory: &mut F) -> IriTerm<T> where
@@ -76,13 +56,6 @@ impl<T> IriTerm<T> where
             None => None,
         };
         IriTerm{ns, suffix}
-    }
-
-    pub fn copy<'a, U> (other: &'a IriTerm<U>) -> IriTerm<T> where
-        T: From<&'a str>,
-        U: Borrow<str>,
-    {
-        Self::copy_with(other, &mut T::from)
     }
 }
 

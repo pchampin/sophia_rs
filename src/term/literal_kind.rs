@@ -1,8 +1,9 @@
 // this module is transparently re-exported by its parent `term`
+use std::hash::{Hash, Hasher};
 
 use super::*;
 
-#[derive(Clone,Debug,Eq,Hash)]
+#[derive(Clone,Debug,Eq)]
 pub enum LiteralKind<T: Borrow<str>> {
     Lang(T),
     Datatype(IriTerm<T>),
@@ -21,12 +22,16 @@ impl<T> LiteralKind<T> where
             Datatype(iri) => Datatype(IriTerm::copy_with(iri, factory)),
         }
     }
+}
 
-    pub fn copy<'a, U> (other: &'a LiteralKind<U>) -> LiteralKind<T> where
-        T: From<&'a str>,
-        U: Borrow<str>,
-    {
-        Self::copy_with(other, &mut T::from)
+impl<T> Hash for LiteralKind<T> where
+    T: Borrow<str>,
+{
+    fn hash<H:Hasher> (&self, state: &mut H) {
+        match self {
+            Lang(tag) => tag.borrow().hash(state),
+            Datatype(iri) => iri.hash(state),
+        }
     }
 }
 

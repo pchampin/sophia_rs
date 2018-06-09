@@ -10,12 +10,13 @@ use url::{ParseError,Url};
 
 pub mod factory;
 mod iri_term;  pub use self::iri_term::*;
+mod bnode_id;  pub use self::bnode_id::*;
 mod literal_kind; pub use self::literal_kind::*;
 
 #[derive(Clone,Debug,Eq,Hash)]
 pub enum Term<T: Borrow<str>> {
     Iri(IriTerm<T>),
-    BNode(T, bool),
+    BNode(BNodeId<T>),
     Literal(T, LiteralKind<T>),
     Variable(T),
 }
@@ -33,7 +34,7 @@ impl<T> Term<T> where
     pub fn value(&self) -> String {
         match self {
             Iri(iri) => iri.value(),
-            BNode(id, _) => String::from(id.borrow()),
+            BNode(id) => String::from(id.borrow()),
             Literal(value, _) => String::from(value.borrow()),
             Variable(name) => String::from(name.borrow()),
         }
@@ -46,21 +47,19 @@ impl<T> Term<T> where
     pub fn new_iri<U> (iri: U) -> Result<Term<T>, Err> where
         T: From<U>
     {
-        Ok(Iri(IriTerm::from1(iri)?))
+        Ok(Iri(IriTerm::new(T::from(iri), None)?))
     }
 
     pub fn new_iri2<U, V> (ns: U, suffix: V) -> Result<Term<T>, Err> where
         T: From<U> + From<V>
     {
-        Ok(Iri(IriTerm::from2(ns, suffix)?))
+        Ok(Iri(IriTerm::new(T::from(ns), Some(T::from(suffix)))?))
     }
 
     pub fn new_bnode<U> (id: U) -> Result<Term<T>, Err> where
         T: From<U>
     {
-        let id = T::from(id);
-        let n3 = N3_BNODE_ID.is_match(id.borrow());
-        Ok(BNode(id, n3))
+        Ok(BNode(BNodeId::new(T::from(id))))
     }
     
     pub fn new_literal_lang<U, V> (txt: U, lang: V) -> Result<Term<T>, Err> where
@@ -101,8 +100,8 @@ impl<T> Term<T> where
         match other {
             Iri(iri)
                 => Iri(IriTerm::copy_with(&iri, factory)),
-            BNode(id, n3)
-                => BNode(factory(id.borrow()), *n3),
+            BNode(id)
+                => BNode(BNodeId::copy_with(&id, factory)),
             Literal(value, kind)
                 => Literal(factory(value.borrow()),
                            LiteralKind::copy_with(kind, factory)),
@@ -121,19 +120,19 @@ impl<T> Term<T> where
     pub unsafe fn trusted_iri<U> (iri: U) -> Term<T> where
         T: From<U>
     {
-        Iri(IriTerm::trusted1(iri))
+        Iri(IriTerm::new_trusted(T::from(iri), None))
     }
 
     pub unsafe fn trusted_iri2<U, V> (ns: U, suffix: V) -> Term<T> where
         T: From<U> + From<V>
     {
-        Iri(IriTerm::trusted2(ns, suffix))
+        Iri(IriTerm::new_trusted(T::from(ns), Some(T::from(suffix))))
     }
 
-    pub unsafe fn trusted_bnode<U> (id: U, n3: bool) -> Term<T> where
+    pub unsafe fn trusted_bnode<U> (id: U) -> Term<T> where
         T: From<U>
     {
-        BNode(T::from(id), n3)
+        BNode(BNodeId::new(T::from(id)))
     }
 
     pub unsafe fn trusted_literal_lang<U, V> (txt: U, lang: V) -> Term<T> where
@@ -161,8 +160,8 @@ impl<T, U> PartialEq<Term<U>> for Term<T> where
         match (self, other) {
             (Iri(iri1), Iri(iri2))
                 => iri1 == iri2,
-            (BNode(id1, _), BNode(id2, _))
-                => id1.borrow() == id2.borrow(),
+            (BNode(id1), BNode(id2))
+                => id1 == id2,
             (Literal(value1, kind1), Literal(value2, kind2))
                 => value1.borrow() == value2.borrow() && kind1 == kind2,
             (Variable(name1), Variable(name2))
@@ -175,17 +174,6 @@ impl<T, U> PartialEq<Term<U>> for Term<T> where
 
 
 lazy_static! {
-    pub static ref N3_BNODE_ID: Regex = Regex::new(r"(?x)
-      ^
-      [A-Za-z\u{c0}-\u{d6}\u{d8}-\u{f6}\u{f8}-\u{2ff}\u{370}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}_0-9]
-      (
-          [A-Za-z\u{c0}-\u{d6}\u{d8}-\u{f6}\u{f8}-\u{2ff}\u{370}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}_\u{2d}0-9\u{00B7}\u{0300}-\u{036F}\u{203F}-\u{2040}]
-          |
-          \u{2e} [A-Za-z\u{c0}-\u{d6}\u{d8}-\u{f6}\u{f8}-\u{2ff}\u{370}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}_\u{2d}0-9\u{00B7}\u{0300}-\u{036F}\u{203F}-\u{2040}]
-      )*
-      $
-    ").unwrap();
-
     pub static ref N3_VARIABLE_NAME: Regex = Regex::new(r"(?x)
       ^
       [A-Za-z\u{c0}-\u{d6}\u{d8}-\u{f6}\u{f8}-\u{2ff}\u{370}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}_0-9]
