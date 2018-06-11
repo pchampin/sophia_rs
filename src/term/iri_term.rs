@@ -3,11 +3,13 @@
 use std::hash::{Hash, Hasher};
 
 use super::*;
+use super::iri::*;
 
 #[derive(Clone,Debug,Eq)]
 pub struct IriTerm<T: Borrow<str>> {
     ns: T,
     suffix: Option<T>,
+    absolute: bool,
 }
 
 impl<T> IriTerm<T> where
@@ -35,15 +37,21 @@ impl<T> IriTerm<T> where
 {
 
     pub fn new (ns: T, suffix: Option<T>) -> Result<IriTerm<T>, Err> {
-        let ret = IriTerm{ns, suffix};
-        if let Err(err) = Url::parse(&ret.value()) {
-            return Err(Err::InvalidIri(err));
+        let mut ret = IriTerm{ns, suffix, absolute: false};
+        match ParsedIri::new(&ret.value()) {
+            Err(err) => Err(Err::InvalidIri(format!("{:?}", err))),
+            Ok(pi) => {
+                ret.absolute = pi.is_absolute();
+                Ok(ret)
+            }
         }
-        Ok(ret)
     }
 
-    pub unsafe fn new_trusted (ns: T, suffix: Option<T>) -> IriTerm<T> {
-        IriTerm{ns, suffix}
+    pub unsafe fn new_trusted (ns: T, suffix: Option<T>, absolute: Option<bool>) -> IriTerm<T> {
+        match absolute {
+            Some(absolute) => IriTerm{ns, suffix, absolute},
+            None           => IriTerm::new(ns, suffix).unwrap(),
+        }
     }
 
     pub fn copy_with<'a, U, F> (other: &'a IriTerm<U>, factory: &mut F) -> IriTerm<T> where
@@ -55,7 +63,7 @@ impl<T> IriTerm<T> where
             Some(ref suffix) => Some(factory(suffix.borrow())),
             None => None,
         };
-        IriTerm{ns, suffix}
+        IriTerm{ns, suffix, absolute: other.absolute}
     }
 }
 

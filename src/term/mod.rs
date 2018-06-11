@@ -6,9 +6,9 @@ use std::sync::Arc;
 
 use language_tag::LangTag;
 use regex::Regex;
-use url::{ParseError,Url};
 
 pub mod factory;
+mod iri;
 mod iri_term;  pub use self::iri_term::*;
 mod bnode_id;  pub use self::bnode_id::*;
 mod literal_kind; pub use self::literal_kind::*;
@@ -117,16 +117,16 @@ impl<T> Term<T> where
         Self::copy_with(other, &mut T::from)
     }
 
-    pub unsafe fn trusted_iri<U> (iri: U) -> Term<T> where
+    pub unsafe fn trusted_iri<U> (iri: U, abs: Option<bool>) -> Term<T> where
         T: From<U>
     {
-        Iri(IriTerm::new_trusted(T::from(iri), None))
+        Iri(IriTerm::new_trusted(T::from(iri), None, abs))
     }
 
-    pub unsafe fn trusted_iri2<U, V> (ns: U, suffix: V) -> Term<T> where
+    pub unsafe fn trusted_iri2<U, V> (ns: U, suffix: V, abs: Option<bool>) -> Term<T> where
         T: From<U> + From<V>
     {
-        Iri(IriTerm::new_trusted(T::from(ns), Some(T::from(suffix))))
+        Iri(IriTerm::new_trusted(T::from(ns), Some(T::from(suffix)), abs))
     }
 
     pub unsafe fn trusted_bnode<U> (id: U) -> Term<T> where
@@ -187,7 +187,7 @@ lazy_static! {
 #[derive(Debug)]
 pub enum Err {
     InvalidDatatype(String),
-    InvalidIri(ParseError),
+    InvalidIri(String),
     InvalidLanguageTag(String),
     InvalidVariableName(String),
     InvalidPrefix(String), // useful for parsers dealing with PNames
