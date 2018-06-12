@@ -1,16 +1,7 @@
+//! Implementation of IRIs as per [RFC 3987].
+//! [RFC 3987]: https://tools.ietf.org/html/rfc3987
+
 use pest::{Error, Parser, {iterators::Pair}};
-
-/*
-use std::io::{BufRead};
-
-use pest::{Error, Parser, iterators::Pair};
-
-use super::common::unescape_str;
-use super::super::graph::MutableGraph;
-use super::super::ns::xsd;
-use super::super::strstash::DumbStash;
-use super::super::term::{Term, stash::TermStash};
-*/
 
 #[cfg(debug_assertions)]
 const _GRAMMAR: &'static str = include_str!("iri.pest");
@@ -19,7 +10,7 @@ const _GRAMMAR: &'static str = include_str!("iri.pest");
 #[grammar = "term/iri.pest"]
 pub struct IriParser;
 
-#[derive(Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct ParsedIri<'a> {
     scheme: Option<&'a str>,
     authority: Option<&'a str>,
@@ -29,8 +20,8 @@ pub struct ParsedIri<'a> {
 }
 
 // NB: path complies with the following rules:
-// - does not contain the seperators ('/'), but
-// - its first element may be '/' if the path has a root,
+// - does not contain the seperators ('/')
+// - its first element is '' if the path starts with '/'
 // - its last element is "" if the path ends with a '/'
 
 impl<'a> ParsedIri<'a> {
@@ -42,7 +33,7 @@ impl<'a> ParsedIri<'a> {
 
     fn fill_with(&mut self, pair: Pair<'a, Rule>) {
         for subpair in pair.into_inner() {
-            #[cfg(test)] println!("=== {:?} {:?}", subpair.as_rule(), subpair.as_str());
+            //#[cfg(test)] println!("=== {:?} {:?}", subpair.as_rule(), subpair.as_str());
             match subpair.as_rule() {
                 Rule::iri => {
                     self.fill_with(subpair);
@@ -72,12 +63,12 @@ impl<'a> ParsedIri<'a> {
                 }
                 Rule::ipath_abempty => {
                     if subpair.as_str().len() > 0 {
-                        self.path.push("/");
+                        self.path.push("");
                         self.fill_with(subpair);
                     }
                 }
                 Rule::ipath_absolute => {
-                    self.path.push("/");
+                    self.path.push("");
                     self.fill_with(subpair);
                 }
                 Rule::ipath_noscheme |
@@ -100,12 +91,181 @@ impl<'a> ParsedIri<'a> {
         self.scheme.is_some()
     }
 
-    pub fn serialize(&self) -> String {
-        unimplemented!()
+    pub fn to_string(&self) -> String {
+        let mut ret = String::new();
+        if let Some(scheme) = self.scheme {
+            ret.push_str(scheme);
+            ret.push_str(":");
+        }
+        if let Some(authority) = self.authority {
+            ret.push_str("//");
+            ret.push_str(authority);
+        }
+        ret.push_str(&self.path.join("/"));
+        if let Some(query) = self.query {
+            ret.push_str("?");
+            ret.push_str(query)
+        }
+        if let Some(fragment) = self.fragment {
+            ret.push_str("#");
+            ret.push_str(fragment)
+        }
+        ret
     }
 
-    pub fn join(&self, iri_ref: &str) -> ParsedIri {
-        unimplemented!()
+    pub fn join(&self, iri_ref: &ParsedIri<'a>) -> ParsedIri<'a> {
+        let (scheme, authority, query, fragment);
+        let mut path;
+        if iri_ref.scheme.is_some() {
+            scheme = iri_ref.scheme;
+            authority = iri_ref.authority;
+            path = iri_ref.path.clone();
+            remove_dot_segments(&mut path);
+            query = iri_ref.query;
+        } else {
+            scheme = self.scheme;
+            if iri_ref.authority.is_some() {
+                authority = iri_ref.authority;
+                path = iri_ref.path.clone();
+                remove_dot_segments(&mut path);
+                query = iri_ref.query;
+            } else {
+                authority = self.authority;
+                if iri_ref.path.len() == 0 {
+                    path = self.path.clone();
+                    query = iri_ref.query.or(self.query);
+                } else {
+                    if iri_ref.path[0] == "" {
+                        path = iri_ref.path.clone();
+                        remove_dot_segments(&mut path);
+                    } else {
+                        path = merge(&self, &iri_ref.path);
+                        remove_dot_segments(&mut path);
+                    }
+                    query = iri_ref.query;
+                }
+            }
+        }
+        fragment = iri_ref.fragment;
+        ParsedIri{scheme, authority, path, query, fragment}
+    }
+}
+
+fn merge<'a> (base: &ParsedIri<'a>, path: &Vec<&'a str>) -> Vec<&'a str> {
+    let mut v = Vec::new();
+    if base.authority.is_some() && base.path.len() == 0 {
+        v.push("");  // resulting path must have a leading '/'
+    }
+    v.extend(base.path.iter().take(base.path.len()-1).map(|txt| *txt));
+    v.extend(path.iter().map(|txt| *txt));
+    v
+}
+
+fn remove_dot_segments(path: &mut Vec<&str>) {
+    if path.len() == 0 {
+        return;
+    }
+    let mut i = 0;
+    let last = path[path.len()-1];
+    if last == "." || last == ".." {
+        path.push("");
+    }
+    while i < path.len() {
+        if path[i] == "." {
+            path.remove(i);
+        } else if path[i] == ".." {
+            if i != 0 && (i != 1 || path[0] != "") {
+                path.remove(i-1);
+                i -= 1;
+            }
+            path.remove(i);
+        } else {
+            i += 1;
+        }
+    }
+}
+
+
+#[derive(Debug)]
+pub struct BaseIri {
+    string: String,
+    s_len: Option<usize>,
+    a_len: Option<usize>,
+    p_lens: Vec<usize>,
+    q_len: Option<usize>,
+    f_len: Option<usize>,
+}
+
+impl BaseIri {
+    pub fn from_parsed(pi: &ParsedIri) -> BaseIri {
+        let my_len = |opt: Option<&str>| opt.map(|txt| txt.len());
+        BaseIri {
+            string: pi.to_string(),
+            s_len:  my_len(pi.scheme),
+            a_len:  my_len(pi.authority),
+            p_lens: pi.path.iter().map(|txt| txt.len()).collect(),
+            q_len:  my_len(pi.query),
+            f_len:  my_len(pi.fragment),
+        }
+    }
+
+    pub fn as_parsed(&self) -> ParsedIri {
+        let mut offset = 0;
+
+        //println!("=== len {}", self.string.len());
+        let scheme;
+        match self.s_len {
+            None => { scheme = None; }
+            Some(s_len) => {
+                scheme = Some(&self.string[offset..offset+s_len]);
+                offset += s_len + 1;  // offset 'scheme' + ':'
+            }
+        }
+
+        //println!("=== q-a {}", offset);
+        let authority;
+        match self.a_len {
+            None => { authority = None; }
+            Some(a_len) => {
+                offset += 2;  // offset '//'
+                authority = Some(&self.string[offset..offset+a_len]);
+                offset += a_len;
+            }
+        }
+
+        //println!("=== a-p {}", offset);
+        let mut path = vec![];
+        for i in self.p_lens.iter() {
+            path.push(&self.string[offset..offset+i]);
+            offset += i+1;  // offset path segment + '/'
+        }
+        if path.len() > 0 {
+            offset -= 1;  // no '/' after last path segment
+        }
+
+        //println!("=== p-q {}", offset);
+        let query;
+        match self.q_len {
+            None => { query = None; }
+            Some(q_len) => {
+                offset += 1;  // offset '?'
+                query = Some(&self.string[offset..offset+q_len]);
+                offset += q_len;
+            }
+        }
+
+        //println!("=== q-f {}", offset);
+        let fragment;
+        match self.f_len {
+            None => { fragment = None; }
+            Some(f_len) => {
+                offset += 1;  // offset '?'
+                fragment = Some(&self.string[offset..offset+f_len]);
+                //offset += f_len;
+            }
+        }
+
+        ParsedIri {scheme, authority, path, query, fragment}
     }
 }
 
@@ -125,6 +285,36 @@ mod test {
             assert_eq!(&pi.path[..], parsed.3);
             assert_eq!(pi.query, parsed.4);
             assert_eq!(pi.fragment, parsed.5);
+            assert_eq!(&pi.to_string(), txt);
+        }
+    }
+
+    #[test]
+    fn negative() {
+        for txt in NEGATIVE_IRIS.iter() {
+            let rpi = ParsedIri::new(txt);
+            assert!(rpi.is_err(), format!("<{}> → {:?}", txt, rpi));
+        }
+    }
+
+    #[test]
+    fn relative() {
+        let base = ParsedIri::new("http://a/b/c/d;p?q").unwrap();
+        for (rel, abs) in RELATIVE_IRIS.iter() {
+            let rel = ParsedIri::new(rel).unwrap();
+            let gpt = base.join(&   rel);
+            assert_eq!(&gpt.to_string(), abs);
+        }
+    }
+
+    #[test]
+    fn from_parsed_as_parsed_roundtrip() {
+        for (txt, _) in POSITIVE_IRIS.iter() {
+            println!("", );
+            let pi1 = ParsedIri::new(txt).unwrap();
+            let base = BaseIri::from_parsed(&pi1);
+            let pi2 = base.as_parsed();
+            assert_eq!(&pi1, &pi2)
         }
     }
 
@@ -140,29 +330,29 @@ mod test {
         ("http://%0D",
             (true, Some("http"), Some("%0D"), &[], None, None)),
         ("http://example.org/",
-            (true, Some("http"), Some("example.org"), &["/", ""], None, None)),
+            (true, Some("http"), Some("example.org"), &["", ""], None, None)),
         ("http://éxample.org/",
-            (true, Some("http"), Some("éxample.org"), &["/", ""], None, None)),
+            (true, Some("http"), Some("éxample.org"), &["", ""], None, None)),
         ("http://user:pw@example.org:1234/",
-            (true, Some("http"), Some("user:pw@example.org:1234"), &["/", ""], None, None)),
+            (true, Some("http"), Some("user:pw@example.org:1234"), &["", ""], None, None)),
         ("http://example.org/foo/bar/baz",
-            (true, Some("http"), Some("example.org"), &["/", "foo", "bar", "baz"], None, None)),
+            (true, Some("http"), Some("example.org"), &["", "foo", "bar", "baz"], None, None)),
         ("http://example.org/foo/bar/",
-            (true, Some("http"), Some("example.org"), &["/", "foo", "bar", ""], None, None)),
+            (true, Some("http"), Some("example.org"), &["", "foo", "bar", ""], None, None)),
         ("http://example.org/foo/bar/bàz",
-            (true, Some("http"), Some("example.org"), &["/", "foo", "bar", "bàz"], None, None)),
+            (true, Some("http"), Some("example.org"), &["", "foo", "bar", "bàz"], None, None)),
         ("http://example.org/foo/.././/bar",
-            (true, Some("http"), Some("example.org"), &["/", "foo", "..", ".", "", "bar"], None, None)),
+            (true, Some("http"), Some("example.org"), &["", "foo", "..", ".", "", "bar"], None, None)),
         ("http://example.org/!$&'()*+,=:@/foo%0D",
-            (true, Some("http"), Some("example.org"), &["/", "!$&'()*+,=:@", "foo%0D"], None, None)),
+            (true, Some("http"), Some("example.org"), &["", "!$&'()*+,=:@", "foo%0D"], None, None)),
         ("http://example.org/?abc",
-            (true, Some("http"), Some("example.org"), &["/", ""], Some("abc"), None)),
+            (true, Some("http"), Some("example.org"), &["", ""], Some("abc"), None)),
         ("http://example.org/?!$&'()*+,=:@/?\u{E000}",
-            (true, Some("http"), Some("example.org"), &["/", ""], Some("!$&'()*+,=:@/?\u{E000}"), None)),
+            (true, Some("http"), Some("example.org"), &["", ""], Some("!$&'()*+,=:@/?\u{E000}"), None)),
         ("http://example.org/#def",
-            (true, Some("http"), Some("example.org"), &["/", ""], None, Some("def"))),
+            (true, Some("http"), Some("example.org"), &["", ""], None, Some("def"))),
         ("http://example.org/?abc#def",
-            (true, Some("http"), Some("example.org"), &["/", ""], Some("abc"), Some("def"))),
+            (true, Some("http"), Some("example.org"), &["", ""], Some("abc"), Some("def"))),
         ("tag:abc/def",
             (true, Some("tag"), None, &["abc", "def"], None, None)),
         ("tag:",
@@ -182,14 +372,6 @@ mod test {
             (false, None, None, &[], Some(""), Some(""))),
     ];
 
-    #[test]
-    fn negative() {
-        for txt in NEGATIVE_IRIS.iter() {
-            let rpi = ParsedIri::new(txt);
-            assert!(rpi.is_err(), format!("<{}> → {:?}", txt, rpi));
-        }
-    }
-
     const NEGATIVE_IRIS: &[&str] = &[
         "http://[/",
         "http://a/[",
@@ -202,6 +384,53 @@ mod test {
         "|",
         " ",
         "\u{E000}",
+    ];
+
+    const RELATIVE_IRIS: &[(&str, &str)] = &[
+        // all relative iris are resolved agains http://a/b/c/d;p?q
+        // normal examples from https://tools.ietf.org/html/rfc3986#section-5.4.1
+        ("g:h"           , "g:h"),
+        ("g"             , "http://a/b/c/g"),
+        ("./g"           , "http://a/b/c/g"),
+        ("g/"            , "http://a/b/c/g/"),
+        ("/g"            , "http://a/g"),
+        ("//g"           , "http://g"),
+        ("?y"            , "http://a/b/c/d;p?y"),
+        ("g?y"           , "http://a/b/c/g?y"),
+        ("#s"            , "http://a/b/c/d;p?q#s"),
+        ("g#s"           , "http://a/b/c/g#s"),
+        ("g?y#s"         , "http://a/b/c/g?y#s"),
+        (";x"            , "http://a/b/c/;x"),
+        ("g;x"           , "http://a/b/c/g;x"),
+        ("g;x?y#s"       , "http://a/b/c/g;x?y#s"),
+        (""              , "http://a/b/c/d;p?q"),
+        ("."             , "http://a/b/c/"),
+        ("./"            , "http://a/b/c/"),
+        (".."            , "http://a/b/"),
+        ("../"           , "http://a/b/"),
+        ("../g"          , "http://a/b/g"),
+        ("../.."         , "http://a/"),
+        ("../../"        , "http://a/"),
+        ("../../g"       , "http://a/g"),
+        // abnormal example from https://tools.ietf.org/html/rfc3986#section-5.4.2
+        ("../../../g"    , "http://a/g"),
+        ("../../../../g" , "http://a/g"),
+        ("/./g"          , "http://a/g"),
+        ("/../g"         , "http://a/g"),
+        ("g."            , "http://a/b/c/g."),
+        (".g"            , "http://a/b/c/.g"),
+        ("g.."           , "http://a/b/c/g.."),
+        ("..g"           , "http://a/b/c/..g"),
+        ("./../g"        , "http://a/b/g"),
+        ("./g/."         , "http://a/b/c/g/"),
+        ("g/./h"         , "http://a/b/c/g/h"),
+        ("g/../h"        , "http://a/b/c/h"),
+        ("g;x=1/./y"     , "http://a/b/c/g;x=1/y"),
+        ("g;x=1/../y"    , "http://a/b/c/y"),
+        ("g?y/./x"       , "http://a/b/c/g?y/./x"),
+        ("g?y/../x"      , "http://a/b/c/g?y/../x"),
+        ("g#s/./x"       , "http://a/b/c/g#s/./x"),
+        ("g#s/../x"      , "http://a/b/c/g#s/../x"),
     ];
 
 }

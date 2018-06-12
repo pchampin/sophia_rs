@@ -8,7 +8,7 @@ use language_tag::LangTag;
 use regex::Regex;
 
 pub mod factory;
-mod iri;
+pub mod iri;
 mod iri_term;  pub use self::iri_term::*;
 mod bnode_id;  pub use self::bnode_id::*;
 mod literal_kind; pub use self::literal_kind::*;
@@ -33,7 +33,7 @@ impl<T> Term<T> where
 {
     pub fn value(&self) -> String {
         match self {
-            Iri(iri) => iri.value(),
+            Iri(iri) => iri.to_string(),
             BNode(id) => String::from(id.borrow()),
             Literal(value, _) => String::from(value.borrow()),
             Variable(name) => String::from(name.borrow()),
@@ -61,7 +61,7 @@ impl<T> Term<T> where
     {
         Ok(BNode(BNodeId::new(T::from(id))))
     }
-    
+
     pub fn new_literal_lang<U, V> (txt: U, lang: V) -> Result<Term<T>, Err> where
         T: From<U> + From<V>
     {
@@ -90,7 +90,6 @@ impl<T> Term<T> where
         } else {
             Err(Err::InvalidVariableName(String::from(name.borrow())))
         }
-        
     }
 
     pub fn copy_with<'a, U, F> (other: &'a Term<U>, factory: &mut F) -> Term<T> where
@@ -150,6 +149,59 @@ impl<T> Term<T> where
             panic!(format!("trusted_literal_dt expects Term::Iri as dt, got {:?}", dt))
         }
     }
+
+    /// Replace a term by its absolute version (w.r.t. the given base IRI).
+    pub fn absolutize(self, base: &iri::BaseIri) -> Term<T> where
+        T: Borrow<str> + Clone + From<String>,
+    {
+        match &self {
+            Iri(iri) if !iri.is_absolute()
+                => return Iri(base.join_iriterm(iri)),
+            Literal(txt, Datatype(iri)) if !iri.is_absolute()
+                => return Literal(txt.clone(), Datatype(base.join_iriterm(iri))),
+            _
+                => (),
+        };
+        self
+    }
+
+
+    pub fn is_absolute(&self) -> bool {
+        match self {
+            Iri(iri) | Literal(_, Datatype(iri)) => iri.is_absolute(),
+            _ => true,
+        }
+    }
+
+    /// Make a BaseIri (TODO link) that can be used to resolve relative IRIs.
+    /// (see BaseIri.join_term_with (TODO link) and Term.absolurize (TODO link))
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use std::rc::Rc;
+    /// use myrdf2::term::*;
+    ///
+    /// let i1 = BoxTerm::new_iri("http://example.org/foo/bar").unwrap();
+    /// let i2 = BoxTerm::new_iri("baz").unwrap();
+    /// let i3 = BoxTerm::new_iri(".#baz").unwrap();
+    ///
+    /// let b1 = i1.as_base();
+    /// let i4: RcTerm = b1.join_term_with(&i2, &mut |txt| Rc::from(txt));
+    /// assert_eq!(&i4.value(), "http://example.org/foo/baz");
+    /// assert_eq!(&i3.absolutize(&b1).value(), "http://example.org/foo/#baz");
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if this Ter m is not an IRI or is not absolute (see is_absolute (TODO link)).
+    ///
+    pub fn as_base(&self) -> iri::BaseIri {
+        match self {
+            Iri(iri) => iri.as_base(),
+            _        => panic!("Can only convert IRI to base, not {:?}"),
+        }
+    }
+
 }
 
 impl<T, U> PartialEq<Term<U>> for Term<T> where
@@ -167,6 +219,25 @@ impl<T, U> PartialEq<Term<U>> for Term<T> where
             (Variable(name1), Variable(name2))
                 => name1.borrow() == name2.borrow(),
             _ => false,
+        }
+    }
+}
+
+
+
+impl iri::BaseIri {
+    pub fn join_term_with<F, T, U> (&self, t: &Term<T>, factory: &mut F) -> Term<U> where
+        T: Borrow<str>,
+        U: Borrow<str>,
+        F: FnMut(&str) -> U,
+    {
+        match t {
+            Iri(iri) if !iri.is_absolute()
+                => Iri(self.join_iriterm_with(iri, factory)),
+            Literal(txt, Datatype(iri)) if !iri.is_absolute()
+                => Literal(factory(txt.borrow()), Datatype(self.join_iriterm_with(iri, factory))),
+            _
+                => Term::<U>::copy_with(t, factory),
         }
     }
 }

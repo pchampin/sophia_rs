@@ -15,30 +15,10 @@ pub struct IriTerm<T: Borrow<str>> {
 impl<T> IriTerm<T> where
     T: Borrow<str>,
 {
-    fn suffix_borrow(&self) -> &str {
-        match self.suffix {
-            Some(ref suffix) => suffix.borrow(),
-            None         => "",
-        }
-    }
-
-    pub fn value(&self) -> String {
-        let ns = self.ns.borrow();
-        let suffix = self.suffix_borrow();
-        let mut ret = String::with_capacity(ns.len()+suffix.len());
-        ret.push_str(ns);
-        ret.push_str(suffix);
-        ret
-    }
-}
-
-impl<T> IriTerm<T> where
-    T: Borrow<str>,
-{
 
     pub fn new (ns: T, suffix: Option<T>) -> Result<IriTerm<T>, Err> {
         let mut ret = IriTerm{ns, suffix, absolute: false};
-        match ParsedIri::new(&ret.value()) {
+        match ParsedIri::new(&ret.to_string()) {
             Err(err) => Err(Err::InvalidIri(format!("{:?}", err))),
             Ok(pi) => {
                 ret.absolute = pi.is_absolute();
@@ -64,6 +44,36 @@ impl<T> IriTerm<T> where
             None => None,
         };
         IriTerm{ns, suffix, absolute: other.absolute}
+    }
+
+    fn suffix_borrow(&self) -> &str {
+        match self.suffix {
+            Some(ref suffix) => suffix.borrow(),
+            None         => "",
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        let ns = self.ns.borrow();
+        let suffix = self.suffix_borrow();
+        let mut ret = String::with_capacity(ns.len()+suffix.len());
+        ret.push_str(ns);
+        ret.push_str(suffix);
+        ret
+    }
+
+    pub fn is_absolute(&self) -> bool {
+        self.absolute
+    }
+
+    /// Make a BaseIri (TODO link) that can be used to resolve relative IRIs.
+    /// (see BaseIri.join_term_with (TODO link) and Term.absolurize (TODO link))
+    ///
+    /// # Panics
+    /// Panics if this IriTerm is not absolute (see is_absolute (TODO link)).
+    pub fn as_base(&self) -> BaseIri {
+        assert!(self.is_absolute());
+        BaseIri::from_parsed(&ParsedIri::new(&self.to_string()).unwrap())
     }
 }
 
@@ -117,6 +127,36 @@ impl<T> Hash for IriTerm<T> where
         state.write(self.ns.borrow().as_bytes());
         state.write(self.suffix_borrow().as_bytes());
         state.write_u8(0xff);
+    }
+}
+
+
+
+impl BaseIri {
+    pub fn join_iriterm_with<F, T, U> (&self, iri_term: &IriTerm<T>, factory: &mut F) -> IriTerm<U> where
+        T: Borrow<str>,
+        U: Borrow<str>,
+        F: FnMut(&str) -> U,
+    {
+        let parsed_ns = ParsedIri::new(iri_term.ns.borrow()).unwrap();
+        let abs_ns = factory(&self.as_parsed().join(&parsed_ns).to_string());
+        IriTerm {
+            ns: abs_ns,
+            suffix: iri_term.suffix.as_ref().map(|suffix| factory(suffix.borrow())),
+            absolute: true,
+        }
+    }
+
+    pub fn join_iriterm<T> (&self, iri_term: &IriTerm<T>) -> IriTerm<T> where
+        T: Borrow<str> + Clone + From<String>,
+    {
+        let parsed_ns = ParsedIri::new(iri_term.ns.borrow()).unwrap();
+        let abs_ns = T::from(self.as_parsed().join(&parsed_ns).to_string());
+        IriTerm {
+            ns: abs_ns,
+            suffix: iri_term.suffix.clone(),
+            absolute: true,
+        }
     }
 }
 
