@@ -1,5 +1,4 @@
-//! Implementation of IRIs as per [RFC 3987].
-//! [RFC 3987]: https://tools.ietf.org/html/rfc3987
+//! Implementation of IRIs as per [\[RFC 3987\]](https://tools.ietf.org/html/rfc3987).
 
 use pest::{Error, Parser, {iterators::Pair}};
 

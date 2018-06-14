@@ -55,7 +55,7 @@ impl<T> Hash for BNodeId<T> where
 
 
 lazy_static! {
-    pub static ref N3_BNODE_ID: Regex = Regex::new(r"(?x)
+    static ref N3_BNODE_ID: Regex = Regex::new(r"(?x)
       ^
       [A-Za-z\u{c0}-\u{d6}\u{d8}-\u{f6}\u{f8}-\u{2ff}\u{370}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}_0-9]
       (

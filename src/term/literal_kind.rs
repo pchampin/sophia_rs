@@ -1,4 +1,5 @@
 // this module is transparently re-exported by its parent `term`
+
 use std::hash::{Hash, Hasher};
 
 use super::*;

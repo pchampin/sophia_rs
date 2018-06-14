@@ -1,3 +1,35 @@
+//! Terms are the basic elements of an RDF graph.
+//! There are four types of terms: IRIs, blank nodes (BNode for short),
+//! literals and variables.
+//! 
+//! This module defines a generic type [`Term`](enum.Term.html)
+//! which can be derived differently depending on your needs.
+//! 
+//! * [`RefTerm<'a>`](type.RefTerm.html) (alias of `Term<&'a str>`)
+//!   should be used for very short-lived terms,
+//!   *i.e.* terms that live less than `'a`,
+//!   which is the lifetime of their underlying text.
+//! 
+//! * [`BoxTerm`](type.BoxTerm.html) (alias of `Term<Box<str>>`)
+//!    should be used when the term may outlive the text used to create it.
+//!   
+//! * [`RcTerm`](type.RcTerm.html) (alias of `Term<Rc<str>>`)
+//!    should also be used for long-lived terms,
+//!    especially if they need to be cloned multiple times.
+//!    The use of `Rc` prevents the duplication of the underlying text,
+//!    while ensuring that it is cleaned when appropriate.
+//! 
+//! * [`ArcTerm`](type.ArcTerm.html) (alias of `Term<Arc<str>>`)
+//!    should be used when, additionally,
+//!    terms need to be sent to other threads.
+//! 
+//! * [`StaticTerm`](type.StaticTerm.html) (alias of `Term<&'static str>)
+//!   is a special case of `RefTerm`
+//!   where the underlying text is a static string.
+//!   Those terms can live as long as the program runs,
+//!   and be cloned and sent without any restriction.
+//! 
+
 use std::borrow::Borrow;
 use std::fmt::Debug;
 use std::rc::Rc;
@@ -20,13 +52,35 @@ pub enum Term<T: Borrow<str>> {
     Literal(T, LiteralKind<T>),
     Variable(T),
 }
-use self::Term::*;
+pub use self::Term::*;
 
+
+/// Convenient alias for a specialization of `Term<T>`.
+///
+/// See [module documentation](index.html)
+/// for more detail on when to use it.
 pub type BoxTerm = Term<Box<str>>;
+/// Convenient alias for a specialization of `Term<T>`.
+///
+/// See [module documentation](index.html)
+/// for more detail on when to use it.
 pub type RcTerm = Term<Rc<str>>;
+/// Convenient alias for a specialization of `Term<T>`.
+///
+/// See [module documentation](index.html)
+/// for more detail on when to use it.
 pub type ArcTerm = Term<Arc<str>>;
+/// Convenient alias for a specialization of `Term<T>`.
+///
+/// See [module documentation](index.html)
+/// for more detail on when to use it.
 pub type RefTerm<'a> = Term<&'a str>;
+/// Convenient alias for a specialization of `Term<T>`.
+///
+/// See [module documentation](index.html)
+/// for more detail on when to use it.
 pub type StaticTerm = RefTerm<'static>;
+
 
 impl<T> Term<T> where
     T: Borrow<str>,
@@ -158,11 +212,11 @@ impl<T> Term<T> where
     /// ```
     ///
     /// # Panics
-    /// Panics if this Term is not an IRI or is not absolute (see is_absolute (TODO link)).
+    /// Panics if this Term is not an IRI or is not absolute (see [`is_absolute`](#method.is_absolute)).
     /// 
     /// # Performance
     /// If you need to join multiple terms to the same base,
-    /// you should use `batch_join` (TODO link) instead,
+    /// you should use [`batch_join`](#method.batch_join) instead,
     /// as it factorizes the pre-processing required for joining IRIs.
     ///
     pub fn join<U> (&self, t: &Term<U>) -> Term<U> where
@@ -177,7 +231,7 @@ impl<T> Term<T> where
     }
 
     /// Takes a closure with a `join` parameter,
-    /// where `join` is a function comparable to the `join` method (TODO link).
+    /// where `join` is a function comparable to the [`join`](#method.join) method.
     /// Useful for joining multiple terms with this IRI.
     /// 
     /// # Example
@@ -198,7 +252,7 @@ impl<T> Term<T> where
     /// ```
     ///
     /// # Panics
-    /// Panics if this Term is not an IRI or is not absolute (see is_absolute (TODO link)).
+    /// Panics if this Term is not an IRI or is not absolute (see [`is_absolute`](#method.is_absolute)).
     ///
     pub fn batch_join<'a, F, U> (&self, task: F) where
         F: FnOnce(&Fn(&Term<U>) -> Term<U>) -> (),
@@ -265,7 +319,7 @@ impl<'a, T, U> From<&'a Term<U>> for Term<T> where
 
 
 lazy_static! {
-    pub static ref N3_VARIABLE_NAME: Regex = Regex::new(r"(?x)
+    static ref N3_VARIABLE_NAME: Regex = Regex::new(r"(?x)
       ^
       [A-Za-z\u{c0}-\u{d6}\u{d8}-\u{f6}\u{f8}-\u{2ff}\u{370}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}_0-9]
       [A-Za-z\u{c0}-\u{d6}\u{d8}-\u{f6}\u{f8}-\u{2ff}\u{370}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}_0-9\u{00B7}\u{0300}-\u{036F}\u{203F}-\u{2040}]*

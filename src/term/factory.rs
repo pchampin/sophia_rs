@@ -1,3 +1,8 @@
+//! A `TermFactory` can be used to create terms while preventing the proliferation of duplicate string.
+//! 
+//! This is especially useful for  [`RcTerm`s](../index.html) and [`ArcTerm`s](../index.html),
+//! for which two implementations of `TermFactory` are provided.
+
 use std::rc;
 use std::sync;
 
@@ -5,7 +10,7 @@ use weak_table::{WeakHashSet};
 
 use super::*;
 
-trait TermFactory {
+pub trait TermFactory {
     type Holder: Borrow<str>;
 
     fn get_holder(&mut self, txt: &str) -> Self::Holder;
