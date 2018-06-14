@@ -7,9 +7,9 @@ use super::iri::*;
 
 #[derive(Clone,Debug,Eq)]
 pub struct IriTerm<T: Borrow<str>> {
-    ns: T,
-    suffix: Option<T>,
-    absolute: bool,
+    pub(crate) ns: T,
+    pub(crate) suffix: Option<T>,
+    pub(crate) absolute: bool,
 }
 
 impl<T> IriTerm<T> where

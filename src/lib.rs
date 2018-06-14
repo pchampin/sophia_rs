@@ -12,4 +12,5 @@ extern crate regex;
 extern crate url;
 extern crate weak_table;
 
+pub mod ns;
 pub mod term;
