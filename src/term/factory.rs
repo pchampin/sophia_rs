@@ -54,7 +54,7 @@ trait TermFactory {
         T: Borrow<str>,
     {
         
-        Term::copy_with(other, &mut |txt| self.get_holder(txt))
+        Term::from_with(other, |txt| self.get_holder(txt))
     }
 }
 

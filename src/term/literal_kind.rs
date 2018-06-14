@@ -13,13 +13,13 @@ pub use self::LiteralKind::*;
 impl<T> LiteralKind<T> where
     T: Borrow<str>
 {
-    pub fn copy_with<'a, U, F> (other: &'a LiteralKind<U>, factory: &mut F) -> LiteralKind<T> where
+    pub fn from_with<'a, U, F> (other: &'a LiteralKind<U>, mut factory: F) -> LiteralKind<T> where
         U: Borrow<str>,
         F: FnMut(&'a str) -> T,
     {
         match other {
             Lang(tag) => Lang(factory(tag.borrow())),
-            Datatype(iri) => Datatype(IriTerm::copy_with(iri, factory)),
+            Datatype(iri) => Datatype(IriTerm::from_with(iri, factory)),
         }
     }
 }

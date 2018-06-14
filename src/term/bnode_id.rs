@@ -17,7 +17,7 @@ impl<T> BNodeId<T> where
         BNodeId{value, n3}
     }
 
-    pub fn copy_with<'a, U, F> (other: &'a BNodeId<U>, factory: &mut F) -> BNodeId<T> where
+    pub fn from_with<'a, U, F> (other: &'a BNodeId<U>, mut factory: F) -> BNodeId<T> where
         U: Borrow<str>,
         F: FnMut(&'a str) -> T,
     {

@@ -27,14 +27,14 @@ impl<T> IriTerm<T> where
         }
     }
 
-    pub unsafe fn new_trusted (ns: T, suffix: Option<T>, absolute: Option<bool>) -> IriTerm<T> {
+    pub unsafe fn new_unchecked (ns: T, suffix: Option<T>, absolute: Option<bool>) -> IriTerm<T> {
         match absolute {
             Some(absolute) => IriTerm{ns, suffix, absolute},
             None           => IriTerm::new(ns, suffix).unwrap(),
         }
     }
 
-    pub fn copy_with<'a, U, F> (other: &'a IriTerm<U>, factory: &mut F) -> IriTerm<T> where
+    pub fn from_with<'a, U, F> (other: &'a IriTerm<U>, mut factory: F) -> IriTerm<T> where
         U: Borrow<str>,
         F: FnMut(&'a str) -> T,
     {

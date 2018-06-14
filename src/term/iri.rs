@@ -193,7 +193,7 @@ mod test {
 
     #[test]
     fn positive() {
-        for (txt, parsed) in POSITIVE_IRIS.iter() {
+        for (txt, parsed) in POSITIVE_IRIS {
             let rpi = ParsedIri::new(txt);
             assert!(rpi.is_ok(), format!("<{}> → {:?}", txt, rpi));
             let pi = rpi.unwrap();
@@ -209,7 +209,7 @@ mod test {
 
     #[test]
     fn negative() {
-        for txt in NEGATIVE_IRIS.iter() {
+        for txt in NEGATIVE_IRIS {
             let rpi = ParsedIri::new(txt);
             assert!(rpi.is_err(), format!("<{}> → {:?}", txt, rpi));
         }
@@ -218,7 +218,7 @@ mod test {
     #[test]
     fn relative() {
         let base = ParsedIri::new("http://a/b/c/d;p?q").unwrap();
-        for (rel, abs) in RELATIVE_IRIS.iter() {
+        for (rel, abs) in RELATIVE_IRIS {
             let rel = ParsedIri::new(rel).unwrap();
             let gpt = base.join(&   rel);
             assert_eq!(&gpt.to_string(), abs);

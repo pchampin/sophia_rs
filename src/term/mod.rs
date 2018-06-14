@@ -92,61 +92,54 @@ impl<T> Term<T> where
         }
     }
 
-    pub fn copy_with<'a, U, F> (other: &'a Term<U>, factory: &mut F) -> Term<T> where
+    pub fn from_with<'a, U, F> (other: &'a Term<U>, mut factory: F) -> Term<T> where
         U: Borrow<str>,
         F: FnMut(&'a str) -> T,
     {
         match other {
             Iri(iri)
-                => Iri(IriTerm::copy_with(&iri, factory)),
+                => Iri(IriTerm::from_with(&iri, factory)),
             BNode(id)
-                => BNode(BNodeId::copy_with(&id, factory)),
+                => BNode(BNodeId::from_with(&id, factory)),
             Literal(value, kind)
                 => Literal(factory(value.borrow()),
-                           LiteralKind::copy_with(kind, factory)),
+                           LiteralKind::from_with(kind, factory)),
             Variable(name)
                 => Variable(factory(name.borrow())),
         }
     }
 
-    pub fn copy<'a, U> (other: &'a Term<U>) -> Term<T> where
-        T: From<&'a str>,
-        U: Borrow<str>,
-    {
-        Self::copy_with(other, &mut T::from)
-    }
-
-    pub unsafe fn trusted_iri<U> (iri: U, abs: Option<bool>) -> Term<T> where
+    pub unsafe fn new_iri_unchecked<U> (iri: U, abs: Option<bool>) -> Term<T> where
         T: From<U>
     {
-        Iri(IriTerm::new_trusted(T::from(iri), None, abs))
+        Iri(IriTerm::new_unchecked(T::from(iri), None, abs))
     }
 
-    pub unsafe fn trusted_iri2<U, V> (ns: U, suffix: V, abs: Option<bool>) -> Term<T> where
+    pub unsafe fn new_iri2_unchecked<U, V> (ns: U, suffix: V, abs: Option<bool>) -> Term<T> where
         T: From<U> + From<V>
     {
-        Iri(IriTerm::new_trusted(T::from(ns), Some(T::from(suffix)), abs))
+        Iri(IriTerm::new_unchecked(T::from(ns), Some(T::from(suffix)), abs))
     }
 
-    pub unsafe fn trusted_bnode<U> (id: U) -> Term<T> where
+    pub unsafe fn new_bnode_unchecked<U> (id: U) -> Term<T> where
         T: From<U>
     {
         BNode(BNodeId::new(T::from(id)))
     }
 
-    pub unsafe fn trusted_literal_lang<U, V> (txt: U, lang: V) -> Term<T> where
+    pub unsafe fn new_literal_lang_unchecked<U, V> (txt: U, lang: V) -> Term<T> where
         T: From<U> + From<V>
     {
         Literal(T::from(txt), Lang(T::from(lang)))
     }
 
-    pub unsafe fn trusted_literal_dt<U> (txt: U, dt: Term<T>) -> Term<T> where
+    pub unsafe fn new_literal_dt_unchecked<U> (txt: U, dt: Term<T>) -> Term<T> where
         T: From<U> + Debug
     {
         if let Iri(dt) = dt {
             Literal(T::from(txt), Datatype(dt))
         } else {
-            panic!(format!("trusted_literal_dt expects Term::Iri as dt, got {:?}", dt))
+            panic!(format!("new_literal_dt_unchecked expects Term::Iri as dt, got {:?}", dt))
         }
     }
 
@@ -258,6 +251,16 @@ impl<T, U> PartialEq<Term<U>> for Term<T> where
         }
     }
 }
+
+impl<'a, T, U> From<&'a Term<U>> for Term<T> where
+        T: Borrow<str> + From<&'a str>,
+        U: Borrow<str>,
+{
+    fn from(other: &'a Term<U>) -> Term<T> {
+        Self::from_with(other, T::from)
+    }
+}
+
 
 
 
