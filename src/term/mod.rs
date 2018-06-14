@@ -41,6 +41,7 @@ use regex::Regex;
 
 pub mod factory;
 pub mod iri;
+pub mod matcher;
 
 mod bnode_id;  pub use self::bnode_id::*;
 mod convert;  pub use self::convert::*;
