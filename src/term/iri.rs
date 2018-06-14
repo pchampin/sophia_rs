@@ -186,88 +186,6 @@ fn remove_dot_segments(path: &mut Vec<&str>) {
 }
 
 
-#[derive(Debug)]
-pub struct BaseIri {
-    string: String,
-    s_len: Option<usize>,
-    a_len: Option<usize>,
-    p_lens: Vec<usize>,
-    q_len: Option<usize>,
-    f_len: Option<usize>,
-}
-
-impl BaseIri {
-    pub fn from_parsed(pi: &ParsedIri) -> BaseIri {
-        let my_len = |opt: Option<&str>| opt.map(|txt| txt.len());
-        BaseIri {
-            string: pi.to_string(),
-            s_len:  my_len(pi.scheme),
-            a_len:  my_len(pi.authority),
-            p_lens: pi.path.iter().map(|txt| txt.len()).collect(),
-            q_len:  my_len(pi.query),
-            f_len:  my_len(pi.fragment),
-        }
-    }
-
-    pub fn as_parsed(&self) -> ParsedIri {
-        let mut offset = 0;
-
-        //println!("=== len {}", self.string.len());
-        let scheme;
-        match self.s_len {
-            None => { scheme = None; }
-            Some(s_len) => {
-                scheme = Some(&self.string[offset..offset+s_len]);
-                offset += s_len + 1;  // offset 'scheme' + ':'
-            }
-        }
-
-        //println!("=== q-a {}", offset);
-        let authority;
-        match self.a_len {
-            None => { authority = None; }
-            Some(a_len) => {
-                offset += 2;  // offset '//'
-                authority = Some(&self.string[offset..offset+a_len]);
-                offset += a_len;
-            }
-        }
-
-        //println!("=== a-p {}", offset);
-        let mut path = vec![];
-        for i in self.p_lens.iter() {
-            path.push(&self.string[offset..offset+i]);
-            offset += i+1;  // offset path segment + '/'
-        }
-        if path.len() > 0 {
-            offset -= 1;  // no '/' after last path segment
-        }
-
-        //println!("=== p-q {}", offset);
-        let query;
-        match self.q_len {
-            None => { query = None; }
-            Some(q_len) => {
-                offset += 1;  // offset '?'
-                query = Some(&self.string[offset..offset+q_len]);
-                offset += q_len;
-            }
-        }
-
-        //println!("=== q-f {}", offset);
-        let fragment;
-        match self.f_len {
-            None => { fragment = None; }
-            Some(f_len) => {
-                offset += 1;  // offset '?'
-                fragment = Some(&self.string[offset..offset+f_len]);
-                //offset += f_len;
-            }
-        }
-
-        ParsedIri {scheme, authority, path, query, fragment}
-    }
-}
 
 #[cfg(test)]
 mod test {
@@ -304,17 +222,6 @@ mod test {
             let rel = ParsedIri::new(rel).unwrap();
             let gpt = base.join(&   rel);
             assert_eq!(&gpt.to_string(), abs);
-        }
-    }
-
-    #[test]
-    fn from_parsed_as_parsed_roundtrip() {
-        for (txt, _) in POSITIVE_IRIS.iter() {
-            println!("", );
-            let pi1 = ParsedIri::new(txt).unwrap();
-            let base = BaseIri::from_parsed(&pi1);
-            let pi2 = base.as_parsed();
-            assert_eq!(&pi1, &pi2)
         }
     }
 

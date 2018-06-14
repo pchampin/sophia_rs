@@ -150,19 +150,85 @@ impl<T> Term<T> where
         }
     }
 
-    /// Replace a term by its absolute version (w.r.t. the given base IRI).
-    pub fn absolutize(self, base: &iri::BaseIri) -> Term<T> where
-        T: Borrow<str> + Clone + From<String>,
+    /// If `t` is a relative IRI, replace it with an absolute one,
+    /// using this term as the base.
+    /// Otherwise, returns `t` unchanged.
+    /// 
+    /// # Example
+    /// ```
+    /// use myrdf2::term::*;
+    ///
+    /// let i1 = BoxTerm::new_iri("http://example.org/foo/bar").unwrap();
+    /// let i2 = BoxTerm::new_iri("../baz").unwrap();
+    /// let i3 = i1.join(&i2);
+    /// assert_eq!(&i3.value(), "http://example.org/baz");
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if this Term is not an IRI or is not absolute (see is_absolute (TODO link)).
+    /// 
+    /// # Performance
+    /// If you need to join multiple terms to the same base,
+    /// you should use `batch_join` (TODO link) instead,
+    /// as it factorizes the pre-processing required for joining IRIs.
+    ///
+    pub fn join<U> (&self, t: &Term<U>) -> Term<U> where
+        U: Borrow<str> + Clone + From<String>,
     {
-        match &self {
-            Iri(iri) if !iri.is_absolute()
-                => return Iri(base.join_iriterm(iri)),
-            Literal(txt, Datatype(iri)) if !iri.is_absolute()
-                => return Literal(txt.clone(), Datatype(base.join_iriterm(iri))),
-            _
-                => (),
-        };
-        self
+        let mut ret = None;
+        self.batch_join(|join| {
+            //let t = warp.take().unwrap();
+            ret = Some(join(t));
+        });
+        ret.unwrap()
+    }
+
+    /// Takes a closure with a `join` parameter,
+    /// where `join` is a function comparable to the `join` method (TODO link).
+    /// Useful for joining multiple terms with this IRI.
+    /// 
+    /// # Example
+    /// ```
+    /// use myrdf2::term::*;
+    ///
+    /// let i1 = BoxTerm::new_iri("http://example.org/foo/bar").unwrap();
+    /// let mut terms = vec![
+    ///     BoxTerm::new_iri("../baz").unwrap(),
+    ///     BoxTerm::new_iri("#baz").unwrap(),
+    ///     BoxTerm::new_iri("http://another.example.org").unwrap(),
+    /// ];
+    /// i1.batch_join(|join| {
+    ///     for t in &mut terms {
+    ///         *t = join(t);
+    ///     }
+    /// });
+    /// ```
+    ///
+    /// # Panics
+    /// Panics if this Term is not an IRI or is not absolute (see is_absolute (TODO link)).
+    ///
+    pub fn batch_join<'a, F, U> (&self, task: F) where
+        F: FnOnce(&Fn(&Term<U>) -> Term<U>) -> (),
+        U: Borrow<str> + Clone + From<String>,
+    {
+        match self {
+            Iri(iri) if iri.is_absolute() => {
+                let iri_txt = iri.to_string();
+                let base = iri::ParsedIri::new(&iri_txt).unwrap();
+                task(&|t| {
+                    match t {
+                        Iri(ref iri)
+                            => Iri(base.join_iriterm(iri)),
+                        Literal(ref txt, Datatype(ref iri))
+                            => Literal(txt.clone(), Datatype(base.join_iriterm(iri))),
+                        _ 
+                            => t.clone(),
+                    }
+                });
+            }
+            _ => panic!("Can only join with absolute Iri"),
+        }
+        
     }
 
 
@@ -172,36 +238,6 @@ impl<T> Term<T> where
             _ => true,
         }
     }
-
-    /// Make a BaseIri (TODO link) that can be used to resolve relative IRIs.
-    /// (see BaseIri.join_term_with (TODO link) and Term.absolurize (TODO link))
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use std::rc::Rc;
-    /// use myrdf2::term::*;
-    ///
-    /// let i1 = BoxTerm::new_iri("http://example.org/foo/bar").unwrap();
-    /// let i2 = BoxTerm::new_iri("baz").unwrap();
-    /// let i3 = BoxTerm::new_iri(".#baz").unwrap();
-    ///
-    /// let b1 = i1.as_base();
-    /// let i4: RcTerm = b1.join_term_with(&i2, &mut |txt| Rc::from(txt));
-    /// assert_eq!(&i4.value(), "http://example.org/foo/baz");
-    /// assert_eq!(&i3.absolutize(&b1).value(), "http://example.org/foo/#baz");
-    /// ```
-    ///
-    /// # Panics
-    /// Panics if this Ter m is not an IRI or is not absolute (see is_absolute (TODO link)).
-    ///
-    pub fn as_base(&self) -> iri::BaseIri {
-        match self {
-            Iri(iri) => iri.as_base(),
-            _        => panic!("Can only convert IRI to base, not {:?}"),
-        }
-    }
-
 }
 
 impl<T, U> PartialEq<Term<U>> for Term<T> where
@@ -219,25 +255,6 @@ impl<T, U> PartialEq<Term<U>> for Term<T> where
             (Variable(name1), Variable(name2))
                 => name1.borrow() == name2.borrow(),
             _ => false,
-        }
-    }
-}
-
-
-
-impl iri::BaseIri {
-    pub fn join_term_with<F, T, U> (&self, t: &Term<T>, factory: &mut F) -> Term<U> where
-        T: Borrow<str>,
-        U: Borrow<str>,
-        F: FnMut(&str) -> U,
-    {
-        match t {
-            Iri(iri) if !iri.is_absolute()
-                => Iri(self.join_iriterm_with(iri, factory)),
-            Literal(txt, Datatype(iri)) if !iri.is_absolute()
-                => Literal(factory(txt.borrow()), Datatype(self.join_iriterm_with(iri, factory))),
-            _
-                => Term::<U>::copy_with(t, factory),
         }
     }
 }

@@ -65,16 +65,6 @@ impl<T> IriTerm<T> where
     pub fn is_absolute(&self) -> bool {
         self.absolute
     }
-
-    /// Make a BaseIri (TODO link) that can be used to resolve relative IRIs.
-    /// (see BaseIri.join_term_with (TODO link) and Term.absolurize (TODO link))
-    ///
-    /// # Panics
-    /// Panics if this IriTerm is not absolute (see is_absolute (TODO link)).
-    pub fn as_base(&self) -> BaseIri {
-        assert!(self.is_absolute());
-        BaseIri::from_parsed(&ParsedIri::new(&self.to_string()).unwrap())
-    }
 }
 
 impl<T, U> PartialEq<IriTerm<U>> for IriTerm<T> where
@@ -132,26 +122,12 @@ impl<T> Hash for IriTerm<T> where
 
 
 
-impl BaseIri {
-    pub fn join_iriterm_with<F, T, U> (&self, iri_term: &IriTerm<T>, factory: &mut F) -> IriTerm<U> where
-        T: Borrow<str>,
-        U: Borrow<str>,
-        F: FnMut(&str) -> U,
-    {
-        let parsed_ns = ParsedIri::new(iri_term.ns.borrow()).unwrap();
-        let abs_ns = factory(&self.as_parsed().join(&parsed_ns).to_string());
-        IriTerm {
-            ns: abs_ns,
-            suffix: iri_term.suffix.as_ref().map(|suffix| factory(suffix.borrow())),
-            absolute: true,
-        }
-    }
-
+impl<'a> ParsedIri<'a> {
     pub fn join_iriterm<T> (&self, iri_term: &IriTerm<T>) -> IriTerm<T> where
         T: Borrow<str> + Clone + From<String>,
     {
         let parsed_ns = ParsedIri::new(iri_term.ns.borrow()).unwrap();
-        let abs_ns = T::from(self.as_parsed().join(&parsed_ns).to_string());
+        let abs_ns = T::from(self.join(&parsed_ns).to_string());
         IriTerm {
             ns: abs_ns,
             suffix: iri_term.suffix.clone(),
