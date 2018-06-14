@@ -41,8 +41,10 @@ use regex::Regex;
 
 pub mod factory;
 pub mod iri;
-mod iri_term;  pub use self::iri_term::*;
+
 mod bnode_id;  pub use self::bnode_id::*;
+mod convert;  pub use self::convert::*;
+mod iri_term;  pub use self::iri_term::*;
 mod literal_kind; pub use self::literal_kind::*;
 
 #[derive(Clone,Debug,Eq,Hash)]
