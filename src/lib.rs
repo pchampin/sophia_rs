@@ -4,6 +4,8 @@
 //!
 // TODO: flesh out one or several example(s) of code
 
+#![feature(map_get_key_value)]
+
 extern crate language_tag;
 #[macro_use] extern crate lazy_static;
 extern crate pest;
@@ -12,5 +14,6 @@ extern crate regex;
 extern crate url;
 extern crate weak_table;
 
+pub mod graph;
 pub mod ns;
 pub mod term;
