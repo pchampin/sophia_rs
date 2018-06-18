@@ -28,7 +28,7 @@ macro_rules! ns_term {
 
 #[allow(non_upper_case_globals)]
 pub mod rdf {
-    use super::super::term;
+    use ::term;
 
     namespace!("http://www.w3.org/1999/02/22-rdf-syntax-ns#",
         // classes
@@ -45,7 +45,7 @@ pub mod rdf {
 
 #[allow(non_upper_case_globals)]
 pub mod xsd {
-    use super::super::term;
+    use ::term;
 
     namespace!("http://www.w3.org/2001/XMLSchema#",
     anyType,
@@ -100,11 +100,11 @@ pub mod xsd {
 
 #[allow(non_upper_case_globals)]
 pub mod rdfs {
-    use super::super::term;
+    use ::term;
 
-    namespace!("http://www.w3.org/2001/XMLSchema#",
+    namespace!("http://www.w3.org/2000/01/rdf-schema#",
         Class, Container, ContainerMembershipProperty, Datatype, Literal, Resource,
-        domain, range, subClContainerMembershipPropertyassOf, subPropertyOf,
+        domain, range, subClassOf, subPropertyOf,
         comment, isDefinedBy, label, member, seeAlso
     );
 }
