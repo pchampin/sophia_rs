@@ -221,7 +221,7 @@ impl<T> Term<T> where
     /// 
     /// # Example
     /// ```
-    /// use myrdf2::term::*;
+    /// use sophia::term::*;
     ///
     /// let i1 = BoxTerm::new_iri("http://example.org/foo/bar").unwrap();
     /// let i2 = BoxTerm::new_iri("../baz").unwrap();
@@ -254,7 +254,7 @@ impl<T> Term<T> where
     /// 
     /// # Example
     /// ```
-    /// use myrdf2::term::*;
+    /// use sophia::term::*;
     ///
     /// let i1 = BoxTerm::new_iri("http://example.org/foo/bar").unwrap();
     /// let mut terms = vec![

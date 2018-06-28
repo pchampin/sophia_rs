@@ -1,4 +1,4 @@
-extern crate myrdf2;
+extern crate sophia;
 extern crate url;
 
 fn main() {

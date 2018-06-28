@@ -1,5 +1,4 @@
 use super::*;
-use super::iri_term::*;
 
 #[test]
 fn iri() {
