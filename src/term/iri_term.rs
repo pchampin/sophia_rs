@@ -46,6 +46,80 @@ impl<T> IriTerm<T> where
         IriTerm{ns, suffix, absolute: other.absolute}
     }
 
+    pub fn normalized_with<'a, U, F> (other: &'a IriTerm<U>, factory: F, norm: Normalization) -> IriTerm<T> where
+        U: Borrow<str>,
+        F: FnMut(&str) -> T,
+    {
+        match norm {
+            Normalization::NoSuffix
+                => Self::no_suffix_with(other, factory),
+            Normalization::LastHashOrSlash
+                => Self::last_hash_or_slash_with(other, factory),
+        }
+    }
+
+    fn no_suffix_with<'a, U, F> (other: &'a IriTerm<U>, mut factory: F) -> IriTerm<T> where
+        U: Borrow<str>,
+        F: FnMut(&str) -> T,
+    {
+        let ns = match other.suffix {
+            Some(_) => factory(&other.to_string()),
+            None => factory(other.ns.borrow()),
+        };
+        IriTerm{ns, suffix: None, absolute: other.absolute}
+    }
+
+    fn last_hash_or_slash_with<'a, U, F> (other: &'a IriTerm<U>, mut factory: F) -> IriTerm<T> where
+        U: Borrow<str>,
+        F: FnMut(&str) -> T,
+    {
+        let sep = ['#', '/'];
+        let ns = other.ns.borrow();
+        let absolute = other.absolute;
+        if let Some(ref suffix) = other.suffix {
+            let suffix = suffix.borrow();
+            if let Some(spos) = suffix.rfind(&sep[..]) {
+                let mut new_ns = String::with_capacity(ns.len() + spos+1);
+                new_ns.push_str(ns);
+                new_ns.push_str(&suffix[..spos+1]);
+                IriTerm {
+                    ns: factory(&new_ns),
+                    suffix: Some(factory(&suffix[spos+1..])),
+                    absolute,
+                }
+            } else if let Some(npos) = ns.rfind(&sep[..]) {
+                let mut new_suffix = String::with_capacity(ns.len()-npos-1 + suffix.len());
+                new_suffix.push_str(&ns[npos+1..]);
+                new_suffix.push_str(suffix);
+                IriTerm {
+                    ns: factory(&ns[..npos+1]),
+                    suffix: Some(factory(&new_suffix)),
+                    absolute,
+                }
+            } else {
+                IriTerm {
+                    ns: factory(&other.to_string()),
+                    suffix: None,
+                    absolute,
+                }
+            }
+        } else {
+            if let Some(npos) = ns.rfind(&sep[..]) {
+                IriTerm {
+                    ns: factory(&ns[..npos+1]),
+                    suffix: Some(factory(&ns[npos+1..])),
+                    absolute,
+                }
+            } else {
+                IriTerm {
+                    ns: factory(ns),
+                    suffix: None,
+                    absolute,
+                }
+            }
+        }
+    }
+
     fn suffix_borrow(&self) -> &str {
         match self.suffix {
             Some(ref suffix) => suffix.borrow(),
@@ -118,6 +192,15 @@ impl<T> Hash for IriTerm<T> where
         state.write(self.suffix_borrow().as_bytes());
         state.write_u8(0xff);
     }
+}
+
+
+
+// TODO document
+#[derive(Clone,Copy)]
+pub enum Normalization {
+    NoSuffix,
+    LastHashOrSlash,
 }
 
 

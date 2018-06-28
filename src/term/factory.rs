@@ -58,8 +58,13 @@ pub trait TermFactory {
     fn copy<T> (&mut self, other: &Term<T>) -> Term<Self::Holder> where
         T: Borrow<str>,
     {
-        
         Term::from_with(other, |txt| self.get_holder(txt))
+    }
+
+    fn copy_normalized<T> (&mut self, other: &Term<T>, norm: Normalization) -> Term<Self::Holder> where
+        T: Borrow<str>,
+    {
+        Term::normalized_with(other, |txt| self.get_holder(txt), norm)
     }
 }
 

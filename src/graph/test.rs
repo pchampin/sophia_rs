@@ -46,13 +46,13 @@ fn populate<G: MutableGraph> (g: &mut G) {
 fn test_simple_mutations() {
     let mut g = SimpleGraph::new();
     assert_eq!(g.len(), 0);
-    g.insert(&C1, &rdf::type_, &rdfs::Class);
+    assert!   (g.insert(&C1, &rdf::type_, &rdfs::Class));
     assert_eq!(g.len(), 1);
-    g.insert(&C1, &rdfs::subClassOf, &C2);
+    assert!   (g.insert(&C1, &rdfs::subClassOf, &C2));
     assert_eq!(g.len(), 2);
-    g.remove(&C1, &rdf::type_, &rdfs::Class);
+    assert!   (g.remove(&C1, &rdf::type_, &rdfs::Class));
     assert_eq!(g.len(), 1);
-    g.remove(&C1, &rdfs::subClassOf, &C2);
+    assert!   (g.remove(&C1, &rdfs::subClassOf, &C2));
     assert_eq!(g.len(), 0);
 }
 
@@ -60,34 +60,13 @@ fn test_simple_mutations() {
 fn test_no_duplicate() {
     let mut g = SimpleGraph::new();
     assert_eq!(g.len(), 0);
-    g.insert(&C1, &rdf::type_, &rdfs::Class);
+    assert!   (g.insert(&C1, &rdf::type_, &rdfs::Class));
     assert_eq!(g.len(), 1);
-    g.insert(&C1, &rdf::type_, &rdfs::Class);
+    assert!  (!g.insert(&C1, &rdf::type_, &rdfs::Class));
     assert_eq!(g.len(), 1);
-    g.remove(&C1, &rdf::type_, &rdfs::Class);
+    assert!   (g.remove(&C1, &rdf::type_, &rdfs::Class));
     assert_eq!(g.len(), 0);
-}
-
-fn as_ref_t<'a, T> (triple: (&'a Term<T>, &'a Term<T>, &'a Term<T>)) -> (RefTerm<'a>, RefTerm<'a>, RefTerm<'a>) where
-    T: Borrow<str> + 'a,
-{
-    (RefTerm::from(triple.0), RefTerm::from(triple.1), RefTerm::from(triple.2))
-}
-
-#[allow(dead_code)]
-fn dump_graph<G: Graph> (g: &G) where
-    G::Holder: Debug,
-{
-    println!("<<<<");
-    for t in g.iter() {
-        println!("{:?}\n{:?}\n{:?}\n\n", t.0, t.1, t.2);
-    }
-    println!(">>>>");
-}
-
-fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
-    assert!(hint.0 <= val);
-    assert!(val <= hint.1.or(Some(val)).unwrap())
+    assert!  (!g.remove(&C1, &rdf::type_, &rdfs::Class));
 }
 
 #[test]
@@ -192,3 +171,26 @@ fn test_contains() {
     assert!(g.contains(&C2, &rdfs::subClassOf, &C1));
     assert!(!g.contains(&C1, &rdfs::subClassOf, &C2));
 }
+
+fn as_ref_t<'a, T> (triple: (&'a Term<T>, &'a Term<T>, &'a Term<T>)) -> (RefTerm<'a>, RefTerm<'a>, RefTerm<'a>) where
+    T: Borrow<str> + 'a,
+{
+    (RefTerm::from(triple.0), RefTerm::from(triple.1), RefTerm::from(triple.2))
+}
+
+#[allow(dead_code)]
+fn dump_graph<G: Graph> (g: &G) where
+    G::SHolder: Debug,
+{
+    println!("<<<<");
+    for t in g.iter() {
+        println!("{:?}\n{:?}\n{:?}\n\n", t.0, t.1, t.2);
+    }
+    println!(">>>>");
+}
+
+fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
+    assert!(hint.0 <= val);
+    assert!(val <= hint.1.or(Some(val)).unwrap())
+}
+

@@ -23,6 +23,16 @@ impl<T> LiteralKind<T> where
             Datatype(iri) => Datatype(IriTerm::from_with(iri, factory)),
         }
     }
+
+    pub fn normalized_with<'a, U, F> (other: &'a LiteralKind<U>, mut factory: F, norm: Normalization) -> LiteralKind<T> where
+        U: Borrow<str>,
+        F: FnMut(&str) -> T,
+    {
+        match other {
+            Lang(tag) => Lang(factory(tag.borrow())),
+            Datatype(iri) => Datatype(IriTerm::normalized_with(iri, factory, norm)),
+        }
+    }
 }
 
 impl<T> Hash for LiteralKind<T> where

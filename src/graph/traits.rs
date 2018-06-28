@@ -4,47 +4,41 @@ use std::borrow::Borrow;
 
 use ::term::*;
 use ::term::matcher::TermMatcher;
+use ::triple::*;
 
-pub type TermIterator<'a, T> = Box<Iterator<Item=&'a Term<T>>+'a>;
-pub type PairIterator<'a, T, U=T> = Box<Iterator<Item=(&'a Term<T>, &'a Term<U>)>+'a>;
 pub type TripleIterator<'a, T, U=T, V=U> = Box<Iterator<Item=(&'a Term<T>, &'a Term<U>, &'a Term<V>)>+'a>;
-
-pub trait Triple<T: Borrow<str>> {
-    fn s(&self) -> &Term<T>;
-    fn p(&self) -> &Term<T>;
-    fn o(&self) -> &Term<T>;
-}
 
 // NB: the semantics of this trait allows a graph to contain duplicate triples;
 // see also SetGraph
 pub trait Graph
 {
-    type Holder: Borrow<str>;
+    /// String Holder (used internally by terms returned by the methods)
+    type SHolder: Borrow<str>;
 
-    fn iter(&self) -> TripleIterator<Self::Holder>;
+    fn iter(&self) -> TripleIterator<Self::SHolder>;
 
-    fn iter_for_s<'a, T> (&'a self, s: &'a Term<T>) -> TripleIterator<'a, Self::Holder> where
+    fn iter_for_s<'a, T> (&'a self, s: &'a Term<T>) -> TripleIterator<'a, Self::SHolder> where
         T: Borrow<str>,
     {
         Box::new(
             self.iter().filter(move |t| t.s()==s)
         )
     }
-    fn iter_for_p<'a, T> (&'a self, p: &'a Term<T>) -> TripleIterator<'a, Self::Holder> where
+    fn iter_for_p<'a, T> (&'a self, p: &'a Term<T>) -> TripleIterator<'a, Self::SHolder> where
         T: Borrow<str>,
     {
         Box::new(
             self.iter().filter(move |t| t.p()==p)
         )
     }
-    fn iter_for_o<'a, T> (&'a self, o: &'a Term<T>) -> TripleIterator<'a, Self::Holder> where
+    fn iter_for_o<'a, T> (&'a self, o: &'a Term<T>) -> TripleIterator<'a, Self::SHolder> where
         T: Borrow<str>,
     {
         Box::new(
             self.iter().filter(move |t| t.o()==o)
         )
     }
-    fn iter_for_sp<'a, T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> TripleIterator<'a, Self::Holder> where
+    fn iter_for_sp<'a, T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> TripleIterator<'a, Self::SHolder> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
@@ -52,7 +46,7 @@ pub trait Graph
             self.iter_for_s(s).filter(move |t| t.p()==p)
         )
     }
-    fn iter_for_so<'a, T, U> (&'a self, s: &'a Term<T>, o: &'a Term<U>) -> TripleIterator<'a, Self::Holder> where
+    fn iter_for_so<'a, T, U> (&'a self, s: &'a Term<T>, o: &'a Term<U>) -> TripleIterator<'a, Self::SHolder> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
@@ -60,7 +54,7 @@ pub trait Graph
             self.iter_for_s(s).filter(move |t| t.o()==o)
         )
     }
-    fn iter_for_po<'a, T, U> (&'a self, p: &'a Term<T>, o: &'a Term<U>) -> TripleIterator<'a, Self::Holder> where
+    fn iter_for_po<'a, T, U> (&'a self, p: &'a Term<T>, o: &'a Term<U>) -> TripleIterator<'a, Self::SHolder> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
@@ -68,7 +62,7 @@ pub trait Graph
             self.iter_for_p(p).filter(move |t| t.o()==o)
         )
     }
-    fn iter_for_spo<'a, T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> TripleIterator<'a, Self::Holder> where
+    fn iter_for_spo<'a, T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> TripleIterator<'a, Self::SHolder> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
@@ -78,11 +72,7 @@ pub trait Graph
         )
     }
 
-    fn contains<T, U, V> (&self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> bool where
-        T: Borrow<str>,
-        U: Borrow<str>,
-        V: Borrow<str>,
-    {
+    fn contains(&self, s: &RefTerm, p: &RefTerm, o: &RefTerm) -> bool {
         self.iter_for_spo(s, p, o).next().is_some()
     }
 
@@ -90,10 +80,10 @@ pub trait Graph
         self.iter().count()
     }
 
-    fn iter_matching<'a, S, P, O> (&'a self, ms: &'a S, mp: &'a P, mo: &'a O) -> TripleIterator<'a, Self::Holder, Self::Holder, Self::Holder> where
-        S: TermMatcher<Self::Holder>,
-        P: TermMatcher<Self::Holder>,
-        O: TermMatcher<Self::Holder>,
+    fn iter_matching<'a, S, P, O> (&'a self, ms: &'a S, mp: &'a P, mo: &'a O) -> TripleIterator<'a, Self::SHolder, Self::SHolder, Self::SHolder> where
+        S: TermMatcher<Self::SHolder>,
+        P: TermMatcher<Self::SHolder>,
+        O: TermMatcher<Self::SHolder>,
     {
         match (&ms.constant(), &mp.constant(), &mo.constant()) {
             (None,    None,    None   )    => Box::from(
@@ -105,13 +95,13 @@ pub trait Graph
             (None,    None,    Some(o))    => Box::from(
                 self.iter_for_o(o).filter(move |t| mp.try(t.s()) && mp.try(t.p()))),
             (Some(s), Some(p), None   )    => Box::from(
-                self.iter_for_sp(s,p).filter(move |t| mo.try(t.o()))),
+                self.iter_for_sp(s, p).filter(move |t| mo.try(t.o()))),
             (Some(s), None,    Some(o))    => Box::from(
-                self.iter_for_so(s,o).filter(move |t| mp.try(t.p()))),
+                self.iter_for_so(s, o).filter(move |t| mp.try(t.p()))),
             (None,    Some(p), Some(o))    => Box::from(
-                self.iter_for_po(p,o).filter(move |t| ms.try(t.s()))),
+                self.iter_for_po(p, o).filter(move |t| ms.try(t.s()))),
             (Some(s), Some(p), Some(o))    => Box::from(
-                self.iter_for_spo(s,p,o))
+                self.iter_for_spo(s, p, o))
         }
     }
 
@@ -161,9 +151,25 @@ pub trait Graph
 }
 
 pub trait MutableGraph : Graph {
-    fn copy<T: Borrow<str>> (&mut self, t: &Term<T>) -> Term<Self::Holder>;
-    fn insert_as_is(&mut self, s: Term<Self::Holder>, p: Term<Self::Holder>, o: Term<Self::Holder>) -> bool;
-    fn remove_as_is(&mut self, s: &Term<Self::Holder>, p: &Term<Self::Holder>, o: &Term<Self::Holder>) -> bool;
+
+    /// Term Holder (used internally by the graph to store triples)
+    type THolder: Borrow<Term<Self::SHolder>> + Clone + From<Term<Self::SHolder>>;
+
+    /// Copy any term into a term holder usable by [`insert_as_is`](#method.insert_as_is).
+    /// This method will rarely be used directly,
+    /// but is used by default implementation of other methods.
+    fn copy<T: Borrow<str>> (&mut self, t: &Term<T>) -> Self::THolder;
+
+    /// Insert the given terms *as is* in the Graph.
+    /// This method is unsafe because
+    /// the implementation may impose conditions on the terms to be inserted,
+    /// beyond those that the compiler can check.
+    ///
+    /// However, implementations must guarantee that terms
+    /// - produced by the copy (TODO link) method, or
+    /// - produced with Self::Term::From from the results of the iter* methods,
+    /// can safely be passed to this method.
+    unsafe fn insert_as_is(&mut self, s: Self::THolder, p: Self::THolder, o: Self::THolder) -> bool;
 
     fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> bool where
         T: Borrow<str>,
@@ -173,32 +179,21 @@ pub trait MutableGraph : Graph {
         let s = self.copy(s);
         let p = self.copy(p);
         let o = self.copy(o);
-        self.insert_as_is(s, p, o)
+        unsafe { self.insert_as_is(s, p, o) }
     }
 
-    // TODO NB: this is impl is not very efficient;
-    // consider reimplementing it,
-    // possibly using a function from the helper module (TODO link)
-    // if your implementation matches its assumptions
     fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> bool where
         T: Borrow<str>,
         U: Borrow<str>,
-        V: Borrow<str>,
-    {
-        let s = self.copy(s);
-        let p = self.copy(p);
-        let o = self.copy(o);
-        self.insert_as_is(s, p, o)
-    }
+        V:Borrow<str>;
 
-    // TODO NB: this is impl is not very efficient;
-    // consider reimplementing it,
-    // possibly using a function from the helper module (TODO link)
-    // if your implementation matches its assumptions
+    // Remove all triples matching the given matchers.
+    // Note that the default implementation is rather naive,
+    // and could be improved in specific implementations of the trait.
     fn remove_matching<S, P, O> (&mut self, ms: &S, mp: &P, mo: &O) -> usize where
-        S: TermMatcher<Self::Holder>,
-        P: TermMatcher<Self::Holder>,
-        O: TermMatcher<Self::Holder>,
+        S: TermMatcher<Self::SHolder>,
+        P: TermMatcher<Self::SHolder>,
+        O: TermMatcher<Self::SHolder>,
     {
         let mut to_remove = vec![];
         for (s, p, o) in self.iter_matching(ms, mp, mo) {
@@ -212,14 +207,13 @@ pub trait MutableGraph : Graph {
         ret
     }
 
-    // TODO NB: this is impl is not very efficient;
-    // consider reimplementing it,
-    // possibly using a function from the helper module (TODO link)
-    // if your implementation matches its assumptions
+    // Remove all triples that do not the given matchers.
+    // Note that the default implementation is rather naive,
+    // and could be improved in specific implementations of the trait.
     fn retain<S, P, O> (&mut self, ms: S, mp: P, mo: O) where
-        S: TermMatcher<Self::Holder>,
-        P: TermMatcher<Self::Holder>,
-        O: TermMatcher<Self::Holder>,
+        S: TermMatcher<Self::SHolder>,
+        P: TermMatcher<Self::SHolder>,
+        O: TermMatcher<Self::SHolder>,
     {
         self.remove_matching(
             &|t: &Term<_>| !ms.try(t),
@@ -229,39 +223,7 @@ pub trait MutableGraph : Graph {
     }
 }
 
-impl<'a, T: Borrow<str>> Triple<T> for (&'a Term<T>, &'a Term<T>, &'a Term<T>) {
-    #[inline] fn s(&self) -> &Term<T> { self.0 }
-    #[inline] fn p(&self) -> &Term<T> { self.1 }
-    #[inline] fn o(&self) -> &Term<T> { self.2 }
-}
-
-impl<T: Borrow<str>> Triple<T> for (Term<T>, Term<T>, Term<T>) {
-    #[inline] fn s(&self) -> &Term<T> { &self.0 }
-    #[inline] fn p(&self) -> &Term<T> { &self.1 }
-    #[inline] fn o(&self) -> &Term<T> { &self.2 }
-}
-
-/// This module provides helper functions for implementing the `Graph` and `MutableGraph` traits.
-pub mod helper {
-    use super::*;
-
-    pub fn remove_with_from<'a, G, T, U, V> (g: &mut G, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> bool where
-        G: MutableGraph,
-        G::Holder: From<&'a str>,
-        T: Borrow<str>,
-        U: Borrow<str>,
-        V: Borrow<str>,
-    {
-        let s = Term::from(s);
-        let p = Term::from(p);
-        let o = Term::from(o);
-        g.remove_as_is(&s, &p, &o)
-    }
-}
-
-
-
-// todo explain that this trait adds the set-semantics to Graph / MutableGraph
-// triples will never be yielded twice by iterators, or added twice
+/// This trait constrains the semantics of the [`Graph`](#trait.Graph),
+/// by guaranteeing that triples will never be returned / stored multiple times.
 pub trait SetGraph: Graph {
 }

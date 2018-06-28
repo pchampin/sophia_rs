@@ -1,29 +1,24 @@
 // TODO properly document
 
 use std::borrow::Borrow;
-use std::collections::{HashMap, HashSet, hash_map};
-use std::hash::Hash;
+use std::collections::{HashMap, hash_map};
 
-use super::super::term::*;
+use ::term::*;
 
-pub type TermIndex<T> = HashSet<Term<T>>;
+pub type TermIndex<'a, V> = HashMap<RefTerm<'a>, V>;
 
-pub struct PairIndex<T> where
-    T: Borrow<str> + Eq + Hash,
-{
-    map: HashMap<Term<T>, TermIndex<T>>,
+pub struct PairIndex<'a, V> {
+    map: HashMap<RefTerm<'a>, TermIndex<'a, V>>,
     len: usize,
 }
 
-impl<'a, T> PairIndex<T> where
-    T: Borrow<str> + Eq + Hash,
-{
+impl<'a, V> PairIndex<'a, V> {
     pub fn new() -> Self {
         Self::default()
     }
 
     #[inline]
-    pub fn map(&self) -> &HashMap<Term<T>, TermIndex<T>> {
+    pub fn map(&self) -> &HashMap<RefTerm<'a>, TermIndex<'a, V>> {
         &self.map
     }
 
@@ -33,40 +28,51 @@ impl<'a, T> PairIndex<T> where
     }
 
     #[inline]
-    pub fn iter(&self) -> hash_map::Iter<Term<T>, TermIndex<T>> {
+    pub fn iter(&self) -> hash_map::Iter<RefTerm<'a>, TermIndex<'a, V>> {
         self.map.iter()
     }
 
     #[inline]
-    pub fn get(&self, t: &Term<T>) -> Option<&TermIndex<T>> {
-        self.map.get(t)
+    pub fn values(&self) -> hash_map::Values<RefTerm<'a>, TermIndex<'a, V>> {
+        self.map.values()
     }
 
-    pub fn insert(&mut self, t1: Term<T>, t2: Term<T>) -> bool {
+    #[inline]
+    pub fn values_flat(&self) -> impl Iterator<Item=&V> {
+        self.map.values().flat_map(|subindex| subindex.values())
+    }
+
+    #[inline]
+    pub fn get<'b, T> (&'b self, t: &'b Term<T>) -> Option<&'b TermIndex<'a, V>> where
+        T: Borrow<str>,
+    {
+        let t = RefTerm::from(t);
+        self.map.get(&t)
+    }
+
+    pub fn insert(&mut self, t1: RefTerm<'a>, t2: RefTerm<'a>, val: V) -> Option<V> {
         let modified =
             self.map.entry(t1)
                     .or_insert_with(TermIndex::new)
-                    .insert(t2);
-        if modified { self.len += 1 }
+                    .insert(t2, val);
+        if modified.is_none() { self.len += 1 }
         modified
     }
 
-    pub fn remove(&mut self, t1: &Term<T>, t2: &Term<T>) -> bool {
+    pub fn remove(&mut self, t1: &RefTerm<'a>, t2: &RefTerm<'a>) -> Option<V> {
         if let Some(subindex) = self.map.get_mut(t1) {
             let modified = subindex.remove(t2);
-            if modified {
+            if modified.is_some() {
                 self.len -= 1;
             }
             modified
         } else {
-            false
+            None
         }
     }
 }
 
-impl<T> Default for PairIndex<T> where
-    T: Borrow<str> + Eq + Hash,
-{
+impl<'a, V> Default for PairIndex<'a, V> {
     fn default() -> Self {
         PairIndex {
             map: HashMap::default(),
@@ -77,22 +83,18 @@ impl<T> Default for PairIndex<T> where
 
 
 
-pub struct TripleIndex<T> where
-    T: Borrow<str> + Eq + Hash,
-{
-    map: HashMap<Term<T>, PairIndex<T>>,
+pub struct TripleIndex<'a, V> {
+    map: HashMap<RefTerm<'a>, PairIndex<'a, V>>,
     len: usize,
 }
 
-impl<'a, T> TripleIndex<T> where
-    T: Borrow<str> + Eq + Hash,
-{
+impl<'a, V> TripleIndex<'a, V> where {
     pub fn new() -> Self {
         Self::default()
     }
 
     #[inline]
-    pub fn map(&self) -> &HashMap<Term<T>, PairIndex<T>> {
+    pub fn map(&self) -> &HashMap<RefTerm<'a>, PairIndex<'a, V>> {
         &self.map
     }
 
@@ -102,40 +104,51 @@ impl<'a, T> TripleIndex<T> where
     }
 
     #[inline]
-    pub fn get(&self, t: &Term<T>) -> Option<&PairIndex<T>> {
-        self.map.get(t)
+    pub fn get<'b, T> (&'b self, t: &'b Term<T>) -> Option<&'b PairIndex<'a, V>> where
+        T: Borrow<str>,
+    {
+        let t = RefTerm::from(t);
+        self.map.get(&t)
     }
 
     #[inline]
-    pub fn iter(&self) -> hash_map::Iter<Term<T>, PairIndex<T>> {
+    pub fn iter(&self) -> hash_map::Iter<RefTerm<'a>, PairIndex<'a, V>> {
         self.map.iter()
     }
 
-    pub fn insert(&mut self, t1: Term<T>, t2: Term<T>, t3: Term<T>) -> bool {
+    #[inline]
+    pub fn values(&self) -> hash_map::Values<RefTerm<'a>, PairIndex<'a, V>> {
+        self.map.values()
+    }
+
+    #[inline]
+    pub fn values_flat(&self) -> impl Iterator<Item=&V> {
+        self.map.values().flat_map(|subindex| subindex.values_flat())
+    }
+
+    pub fn insert(&mut self, t1: RefTerm<'a>, t2: RefTerm<'a>, t3: RefTerm<'a>, val: V) -> Option<V> {
         let modified =
             self.map.entry(t1)
                     .or_insert_with(PairIndex::new)
-                    .insert(t2, t3);
-        if modified { self.len += 1 }
+                    .insert(t2, t3, val);
+        if modified.is_none() { self.len += 1 }
         modified
     }
 
-    pub fn remove(&mut self, t1: &Term<T>, t2: &Term<T>, t3: &Term<T>) -> bool {
+    pub fn remove(&mut self, t1: &RefTerm<'a>, t2: &RefTerm<'a>, t3: &RefTerm<'a>) -> Option<V> {
         if let Some(subindex) = self.map.get_mut(t1) {
             let modified = subindex.remove(t2, t3);
-            if modified {
+            if modified.is_some() {
                 self.len -= 1;
             }
             modified
         } else {
-            false
+            None
         }
     }
 }
 
-impl<T> Default for TripleIndex<T> where
-    T: Borrow<str> + Eq + Hash,
-{
+impl<'a, V> Default for TripleIndex<'a, V> {
     fn default() -> Self {
         TripleIndex {
             map: HashMap::default(),

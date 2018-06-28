@@ -166,6 +166,21 @@ impl<T> Term<T> where
         }
     }
 
+    pub fn normalized_with<'a, U, F> (other: &'a Term<U>, mut factory: F, norm: Normalization) -> Term<T> where
+        U: Borrow<str>,
+        F: FnMut(&str) -> T,
+    {
+        match other {
+            Iri(iri)
+                => Iri(IriTerm::normalized_with(&iri, factory, norm)),
+            Literal(value, kind)
+                => Literal(factory(value.borrow()),
+                           LiteralKind::normalized_with(kind, factory, norm)),
+            _
+                => Self::from_with(other, factory)
+        }
+    }
+
     pub unsafe fn new_iri_unchecked<U> (iri: U, abs: Option<bool>) -> Term<T> where
         T: From<U>
     {

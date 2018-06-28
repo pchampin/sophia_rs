@@ -6,15 +6,17 @@ use std::collections::HashSet;
 use std::hash::Hash;
 
 use super::*;
-use super::super::term::*;
+use ::term::*;
+use ::triple::*;
+
 
 impl<T> Graph for [(Term<T>, Term<T>, Term<T>)] where
     T: Borrow<str>,
 {
-    type Holder = T;
+    type SHolder = T;
 
     #[inline]
-    fn iter(&self) -> TripleIterator<Self::Holder> {
+    fn iter(&self) -> TripleIterator<Self::SHolder> {
         Box::from(self.iter().map(|t| (t.s(), t.p(), t.o())))
     }
 
@@ -32,10 +34,10 @@ impl<T> Graph for [(Term<T>, Term<T>, Term<T>)] where
 impl<T> Graph for Vec<(Term<T>, Term<T>, Term<T>)> where
     T: Borrow<str>,
 {
-    type Holder = T;
+    type SHolder = T;
 
     #[inline]
-    fn iter(&self) -> TripleIterator<Self::Holder> {
+    fn iter(&self) -> TripleIterator<Self::SHolder> {
         Box::from(self[..].iter().map(|t| (t.s(), t.p(), t.o())))
     }
 
@@ -53,10 +55,10 @@ impl<T> Graph for Vec<(Term<T>, Term<T>, Term<T>)> where
 impl<T> Graph for HashSet<(Term<T>, Term<T>, Term<T>)> where
     T: Borrow<str> + Eq + Hash,
 {
-    type Holder = T;
+    type SHolder = T;
 
     #[inline]
-    fn iter(&self) -> TripleIterator<Self::Holder> {
+    fn iter(&self) -> TripleIterator<Self::SHolder> {
         Box::from(self.iter().map(|t| (t.s(), t.p(), t.o())))
     }
 
@@ -74,4 +76,3 @@ impl<T> Graph for HashSet<(Term<T>, Term<T>, Term<T>)> where
 impl<T> SetGraph for HashSet<(Term<T>, Term<T>, Term<T>)> where
     T: Borrow<str> + Eq + Hash,
 {}
-

@@ -1,4 +1,5 @@
 use super::*;
+use super::iri_term::*;
 
 #[test]
 fn iri() {
@@ -36,4 +37,36 @@ fn iri_eq_different_holders() {
     assert_eq!(i1, i4);
     assert_eq!(i2, i3);
     assert_eq!(i2, i4);
+}
+
+#[test]
+fn iriterm_normalized_no_suffix() {
+    let norm = Normalization::NoSuffix;
+    let i1 = IriTerm::new("http://champin.net/#", Some("pa")).unwrap();
+    let i2 = IriTerm::normalized_with(&i1, |txt| String::from(txt), norm);
+    assert_eq!(i1, i2);
+    assert!(i2.suffix.is_none());
+}
+
+#[test]
+fn iriterm_normalized_last_hash_or_slash() {
+    let norm = Normalization::LastHashOrSlash;
+    for (ns1, sf1, ns2, sf2) in &[
+        ("http://champin.net/#pa", "",       "http://champin.net/#", "pa"),
+        ("http://champin.net/#", "pa",       "http://champin.net/#", "pa"),
+        ("http://champin.net/", "#pa",       "http://champin.net/#", "pa"),
+        ("http://champin.net/", "foo/bar",   "http://champin.net/foo/", "bar"),
+        ("tag:foo", "",                      "tag:foo", ""),
+        ("tag:", "foo",                      "tag:foo", ""),
+    ] {
+        println!("{} {} -> {} {}", ns1, sf1, ns2, sf2);
+        let sf1 = if sf1.len() == 0 { None } else { Some(*sf1) };
+        let sf2 = if sf2.len() == 0 { None } else { Some(String::from(*sf2)) };
+
+        let i1 = IriTerm::new(*ns1, sf1).unwrap();
+        let i2 = IriTerm::normalized_with(&i1, |txt| String::from(txt), norm);
+        assert_eq!(i1, i2);
+        assert_eq!(&i2.ns[..], *ns2);
+        assert_eq!(i2.suffix, sf2);
+    }
 }
