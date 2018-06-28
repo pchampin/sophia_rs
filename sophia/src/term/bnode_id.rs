@@ -1,8 +1,33 @@
 // this module is transparently re-exported by its parent `term`
 use std::hash::{Hash,Hasher};
+use std::ops::Deref;
 
 use super::*;
 
+/// Internal representation of a blank node identifier.
+/// 
+/// May be encountered when pattern-matching on [`Term`](enum.Term.html)s
+/// of the [`BNode`](enum.Term.html#variant.BNode) variant.
+/// For that purpose, note that `BNodeId`
+///  - derefs implicitly to its internal type `T`;
+///  - can be directly compared to a `&str` with the `==` operator.
+/// 
+/// Example :
+/// ```
+/// use sophia::term::*;
+/// 
+/// fn is_foobar(t: BoxTerm) -> bool {
+///     match t {
+///         BNode(id) =>
+///             id.starts_with("foo") || id == "bar",
+///         _ =>
+///             false,
+///     }
+/// }
+/// ```
+/// 
+/// See [module documentation](index.html)
+/// for more detail.
 #[derive(Clone,Debug,Eq)]
 pub struct BNodeId<T: Borrow<str>> {
     value: T,
@@ -12,12 +37,17 @@ pub struct BNodeId<T: Borrow<str>> {
 impl<T> BNodeId<T> where
     T: Borrow<str>
 {
-    pub fn new(value: T) -> BNodeId<T> {
+    /// You would usually not use this constructor directly,
+    /// but instead use [`Term::new_bnode`](enum.Term.html#method.new_bnode)
+    /// or [`Term::new_bnode_unchecked`](enum.Term.html#method.new_bnode_unchecked).
+    pub(crate) fn new(value: T) -> BNodeId<T> {
         let n3 = N3_BNODE_ID.is_match(value.borrow());
         BNodeId{value, n3}
     }
 
-    pub fn from_with<'a, U, F> (other: &'a BNodeId<U>, mut factory: F) -> BNodeId<T> where
+    /// You would usually not use this constructor directly,
+    /// but instead use [`Term::from_with`](enum.Term.html#method.from_with).
+    pub(crate) fn from_with<'a, U, F> (other: &'a BNodeId<U>, mut factory: F) -> BNodeId<T> where
         U: Borrow<str>,
         F: FnMut(&'a str) -> T,
     {
@@ -36,12 +66,29 @@ impl<T> Borrow<str> for BNodeId<T> where
     }
 }
 
+impl<T> Deref for BNodeId<T> where
+    T:Borrow<str>
+{
+    type Target = T;
+    fn deref(&self) -> &T {
+        &self.value
+    }
+}
+
 impl<T, U> PartialEq<BNodeId<U>> for BNodeId<T> where
     T: Borrow<str>,
     U: Borrow<str>,
 {
     fn eq(&self, other: &BNodeId<U>) -> bool {
         self.value.borrow() == other.value.borrow()
+    }
+}
+
+impl<'a, T> PartialEq<&'a str> for BNodeId<T> where
+    T: Borrow<str>,
+{
+    fn eq(&self, other: &&'a str) -> bool {
+        self.value.borrow() == *other
     }
 }
 

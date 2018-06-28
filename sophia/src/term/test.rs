@@ -69,3 +69,24 @@ fn iriterm_normalized_last_hash_or_slash() {
         assert_eq!(i2.suffix, sf2);
     }
 }
+
+#[test]
+fn bnode_id_deref() {
+    let b1 = BoxTerm::new_bnode("foo").unwrap();
+    if let BNode(id1) = b1 {
+        assert!(id1.starts_with("fo"));
+    } else {
+        panic!("b1 should be a BNode");
+    }
+}
+
+#[test]
+fn bnode_id_eq_str() {
+    let b1 = BoxTerm::new_bnode("foo").unwrap();
+    if let BNode(id1) = b1 {
+        assert_eq!(id1, "foo");
+        assert!(id1 == "foo");
+    } else {
+        panic!("b1 should be a BNode");
+    }
+}
