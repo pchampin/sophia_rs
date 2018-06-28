@@ -2,9 +2,15 @@ use super::*;
 
 #[test]
 fn iri() {
+    let exp = "http://champin.net/";
     let i = RefTerm::new_iri("http://champin.net/");
     if let Ok(Iri(iri)) = i {
-        assert_eq!(iri, "http://champin.net/");
+        assert_eq!(iri, exp);
+        assert_eq!(iri.len(), exp.len());
+        let s1 = iri.to_string();
+        let s2: String = iri.chars().collect();
+        assert_eq!(s1, exp);
+        assert_eq!(s2, exp);
     } else {
         assert!(false, "Should have returned Ok(Iri(_))");
     }
@@ -14,9 +20,15 @@ fn iri() {
 
 #[test]
 fn iri2() {
+    let exp = "http://champin.net/#pa";
     let i = RefTerm::new_iri2("http://champin.net/#", "pa");
     if let Ok(Iri(iri)) = i {
-        assert_eq!(iri, "http://champin.net/#pa");
+        assert_eq!(iri, exp);
+        assert_eq!(iri.len(), exp.len());
+        let s1 = iri.to_string();
+        let s2: String = iri.chars().collect();
+        assert_eq!(s1, exp);
+        assert_eq!(s2, exp);
     } else {
         assert!(false, "Should have returned Ok(Iri(_))");
     }
@@ -39,16 +51,16 @@ fn iri_eq_different_holders() {
 }
 
 #[test]
-fn iriterm_normalized_no_suffix() {
+fn iri_normalized_no_suffix() {
     let norm = Normalization::NoSuffix;
-    let i1 = IriTerm::new("http://champin.net/#", Some("pa")).unwrap();
-    let i2 = IriTerm::normalized_with(&i1, |txt| String::from(txt), norm);
+    let i1 = IriData::new("http://champin.net/#", Some("pa")).unwrap();
+    let i2 = IriData::normalized_with(&i1, |txt| String::from(txt), norm);
     assert_eq!(i1, i2);
     assert!(i2.suffix.is_none());
 }
 
 #[test]
-fn iriterm_normalized_last_hash_or_slash() {
+fn iri_normalized_last_hash_or_slash() {
     let norm = Normalization::LastHashOrSlash;
     for (ns1, sf1, ns2, sf2) in &[
         ("http://champin.net/#pa", "",       "http://champin.net/#", "pa"),
@@ -62,8 +74,8 @@ fn iriterm_normalized_last_hash_or_slash() {
         let sf1 = if sf1.len() == 0 { None } else { Some(*sf1) };
         let sf2 = if sf2.len() == 0 { None } else { Some(String::from(*sf2)) };
 
-        let i1 = IriTerm::new(*ns1, sf1).unwrap();
-        let i2 = IriTerm::normalized_with(&i1, |txt| String::from(txt), norm);
+        let i1 = IriData::new(*ns1, sf1).unwrap();
+        let i2 = IriData::normalized_with(&i1, |txt| String::from(txt), norm);
         assert_eq!(i1, i2);
         assert_eq!(&i2.ns[..], *ns2);
         assert_eq!(i2.suffix, sf2);

@@ -7,7 +7,7 @@ use super::*;
 #[derive(Clone,Debug,Eq)]
 pub enum LiteralKind<T: Borrow<str>> {
     Lang(T),
-    Datatype(IriTerm<T>),
+    Datatype(IriData<T>),
 }
 pub use self::LiteralKind::*;
 
@@ -20,7 +20,7 @@ impl<T> LiteralKind<T> where
     {
         match other {
             Lang(tag) => Lang(factory(tag.borrow())),
-            Datatype(iri) => Datatype(IriTerm::from_with(iri, factory)),
+            Datatype(iri) => Datatype(IriData::from_with(iri, factory)),
         }
     }
 
@@ -30,7 +30,7 @@ impl<T> LiteralKind<T> where
     {
         match other {
             Lang(tag) => Lang(factory(tag.borrow())),
-            Datatype(iri) => Datatype(IriTerm::normalized_with(iri, factory, norm)),
+            Datatype(iri) => Datatype(IriData::normalized_with(iri, factory, norm)),
         }
     }
 }

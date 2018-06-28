@@ -22,7 +22,7 @@ pub type FastGraph = OpWrapper<PosWrapper<GenericGraph<Rc<RcTerm>, Rc<str>, RcTe
 // (inside the value associated to that key)...
 // NB: this is true only because GenericGraph.copy
 //  * always reuses the same &str's for a given term, and
-//  * uses a noramlized form for `IriTerm`s.
+//  * uses a noramlized form for `IriData`s.
 // Otherwise, several triples with e.g. the same subject could hold different versions of its IRI,
 // and when the version used for the index-key is dropped, the index-key becomes dangling.
 

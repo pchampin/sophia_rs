@@ -16,7 +16,7 @@ macro_rules! ns_term {
         #[allow(non_upper_case_globals)]
         pub static $ident:term::StaticTerm =
             term::Term::Iri(
-                term::IriTerm{
+                term::IriData{
                     ns: $prefix,
                     suffix: Some($suffix),
                     absolute: true,
@@ -24,7 +24,7 @@ macro_rules! ns_term {
     }
 }
 
-//pub static $ident:term::Term<'static> = term::Term::Iri(term::IriTerm{ns:$prefix, suffix:$suffix});
+//pub static $ident:term::Term<'static> = term::Term::Iri(term::IriData{ns:$prefix, suffix:$suffix});
 
 #[allow(non_upper_case_globals)]
 pub mod rdf {

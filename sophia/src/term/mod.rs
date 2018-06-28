@@ -40,17 +40,17 @@ use language_tag::LangTag;
 use regex::Regex;
 
 pub mod factory;
-pub mod iri;
+pub mod iri_rfc3987; use self::iri_rfc3987::ParsedIri;
 pub mod matcher;
 
 mod bnode_id;  pub use self::bnode_id::*;
 mod convert;  pub use self::convert::*;
-mod iri_term;  pub use self::iri_term::*;
+mod iri_data;  pub use self::iri_data::*;
 mod literal_kind; pub use self::literal_kind::*;
 
 #[derive(Clone,Debug,Eq,Hash)]
 pub enum Term<T: Borrow<str>> {
-    Iri(IriTerm<T>),
+    Iri(IriData<T>),
     BNode(BNodeId<T>),
     Literal(T, LiteralKind<T>),
     Variable(T),
@@ -104,13 +104,13 @@ impl<T> Term<T> where
     pub fn new_iri<U> (iri: U) -> Result<Term<T>, Err> where
         T: From<U>
     {
-        Ok(Iri(IriTerm::new(T::from(iri), None)?))
+        Ok(Iri(IriData::new(T::from(iri), None)?))
     }
 
     pub fn new_iri2<U, V> (ns: U, suffix: V) -> Result<Term<T>, Err> where
         T: From<U> + From<V>
     {
-        Ok(Iri(IriTerm::new(T::from(ns), Some(T::from(suffix)))?))
+        Ok(Iri(IriData::new(T::from(ns), Some(T::from(suffix)))?))
     }
 
     pub fn new_bnode<U> (id: U) -> Result<Term<T>, Err> where
@@ -155,7 +155,7 @@ impl<T> Term<T> where
     {
         match other {
             Iri(iri)
-                => Iri(IriTerm::from_with(&iri, factory)),
+                => Iri(IriData::from_with(&iri, factory)),
             BNode(id)
                 => BNode(BNodeId::from_with(&id, factory)),
             Literal(value, kind)
@@ -172,7 +172,7 @@ impl<T> Term<T> where
     {
         match other {
             Iri(iri)
-                => Iri(IriTerm::normalized_with(&iri, factory, norm)),
+                => Iri(IriData::normalized_with(&iri, factory, norm)),
             Literal(value, kind)
                 => Literal(factory(value.borrow()),
                            LiteralKind::normalized_with(kind, factory, norm)),
@@ -184,13 +184,13 @@ impl<T> Term<T> where
     pub unsafe fn new_iri_unchecked<U> (iri: U, abs: Option<bool>) -> Term<T> where
         T: From<U>
     {
-        Iri(IriTerm::new_unchecked(T::from(iri), None, abs))
+        Iri(IriData::new_unchecked(T::from(iri), None, abs))
     }
 
     pub unsafe fn new_iri2_unchecked<U, V> (ns: U, suffix: V, abs: Option<bool>) -> Term<T> where
         T: From<U> + From<V>
     {
-        Iri(IriTerm::new_unchecked(T::from(ns), Some(T::from(suffix)), abs))
+        Iri(IriData::new_unchecked(T::from(ns), Some(T::from(suffix)), abs))
     }
 
     pub unsafe fn new_bnode_unchecked<U> (id: U) -> Term<T> where
@@ -279,13 +279,13 @@ impl<T> Term<T> where
         match self {
             Iri(iri) if iri.is_absolute() => {
                 let iri_txt = iri.to_string();
-                let base = iri::ParsedIri::new(&iri_txt).unwrap();
+                let base = ParsedIri::new(&iri_txt).unwrap();
                 task(&|t| {
                     match t {
                         Iri(ref iri)
-                            => Iri(base.join_iriterm(iri)),
+                            => Iri(base.join_iri(iri)),
                         Literal(ref txt, Datatype(ref iri))
-                            => Literal(txt.clone(), Datatype(base.join_iriterm(iri))),
+                            => Literal(txt.clone(), Datatype(base.join_iri(iri))),
                         _ 
                             => t.clone(),
                     }

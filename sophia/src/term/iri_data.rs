@@ -3,21 +3,65 @@
 use std::hash::{Hash, Hasher};
 
 use super::*;
-use super::iri::*;
 
+/// Internal representation of an IRI.
+/// 
+/// May be encountered when pattern-matching on [`Term`](enum.Term.html)s
+/// of the [`Iri`](enum.Term.html#variant.Iri) variant.
+/// For that purpose, note that `IriData`
+///  - provides some identical methods to what `&str` provides (see below);
+///  - can be directly compared to a `&str` with the `==` operator;
+///  - can otherwise be converted to a `String` with [`to_string`](#method.to_string);
+/// 
+/// See [module documentation](index.html)
+/// for more detail.
 #[derive(Clone,Debug,Eq)]
-pub struct IriTerm<T: Borrow<str>> {
+pub struct IriData<T: Borrow<str>> {
     pub(crate) ns: T,
     pub(crate) suffix: Option<T>,
     pub(crate) absolute: bool,
 }
 
-impl<T> IriTerm<T> where
+impl<T> IriData<T> where
     T: Borrow<str>,
 {
+    /// The length of this IRI.
+    pub fn len(&self) -> usize {
+        self.ns.borrow().len() +
+            self.suffix_borrow().len()
+    }
 
-    pub fn new (ns: T, suffix: Option<T>) -> Result<IriTerm<T>, Err> {
-        let mut ret = IriTerm{ns, suffix, absolute: false};
+    /// Iterate over the bytes representing this IRI.
+    pub fn bytes<'a>(&'a self) -> impl Iterator<Item=u8>+'a {
+        self.ns.borrow().bytes().chain(
+            self.suffix_borrow().bytes()
+        )
+    }
+
+    /// Iterate over the characters representing this IRI.
+    pub fn chars<'a>(&'a self) -> impl Iterator<Item=char>+'a {
+        self.ns.borrow().chars().chain(
+            self.suffix_borrow().chars()
+        )
+    }
+
+    /// Construct a copy of this IRI as a `String`.
+    pub fn to_string(&self) -> String {
+        let ns = self.ns.borrow();
+        let suffix = self.suffix_borrow();
+        let mut ret = String::with_capacity(ns.len() + suffix.len());
+        ret.push_str(ns);
+        ret.push_str(suffix);
+        ret
+    }
+
+    /// Whether this IRI is absolute or relative.
+    pub fn is_absolute(&self) -> bool {
+        self.absolute
+    }
+
+    pub(crate) fn new (ns: T, suffix: Option<T>) -> Result<IriData<T>, Err> {
+        let mut ret = IriData{ns, suffix, absolute: false};
         match ParsedIri::new(&ret.to_string()) {
             Err(err) => Err(Err::InvalidIri(format!("{:?}", err))),
             Ok(pi) => {
@@ -27,14 +71,14 @@ impl<T> IriTerm<T> where
         }
     }
 
-    pub unsafe fn new_unchecked (ns: T, suffix: Option<T>, absolute: Option<bool>) -> IriTerm<T> {
+    pub(crate) unsafe fn new_unchecked (ns: T, suffix: Option<T>, absolute: Option<bool>) -> IriData<T> {
         match absolute {
-            Some(absolute) => IriTerm{ns, suffix, absolute},
-            None           => IriTerm::new(ns, suffix).unwrap(),
+            Some(absolute) => IriData{ns, suffix, absolute},
+            None           => IriData::new(ns, suffix).unwrap(),
         }
     }
 
-    pub fn from_with<'a, U, F> (other: &'a IriTerm<U>, mut factory: F) -> IriTerm<T> where
+    pub(crate) fn from_with<'a, U, F> (other: &'a IriData<U>, mut factory: F) -> IriData<T> where
         U: Borrow<str>,
         F: FnMut(&'a str) -> T,
     {
@@ -43,10 +87,10 @@ impl<T> IriTerm<T> where
             Some(ref suffix) => Some(factory(suffix.borrow())),
             None => None,
         };
-        IriTerm{ns, suffix, absolute: other.absolute}
+        IriData{ns, suffix, absolute: other.absolute}
     }
 
-    pub fn normalized_with<'a, U, F> (other: &'a IriTerm<U>, factory: F, norm: Normalization) -> IriTerm<T> where
+    pub(crate) fn normalized_with<'a, U, F> (other: &'a IriData<U>, factory: F, norm: Normalization) -> IriData<T> where
         U: Borrow<str>,
         F: FnMut(&str) -> T,
     {
@@ -58,7 +102,7 @@ impl<T> IriTerm<T> where
         }
     }
 
-    fn no_suffix_with<'a, U, F> (other: &'a IriTerm<U>, mut factory: F) -> IriTerm<T> where
+    fn no_suffix_with<'a, U, F> (other: &'a IriData<U>, mut factory: F) -> IriData<T> where
         U: Borrow<str>,
         F: FnMut(&str) -> T,
     {
@@ -66,10 +110,10 @@ impl<T> IriTerm<T> where
             Some(_) => factory(&other.to_string()),
             None => factory(other.ns.borrow()),
         };
-        IriTerm{ns, suffix: None, absolute: other.absolute}
+        IriData{ns, suffix: None, absolute: other.absolute}
     }
 
-    fn last_hash_or_slash_with<'a, U, F> (other: &'a IriTerm<U>, mut factory: F) -> IriTerm<T> where
+    fn last_hash_or_slash_with<'a, U, F> (other: &'a IriData<U>, mut factory: F) -> IriData<T> where
         U: Borrow<str>,
         F: FnMut(&str) -> T,
     {
@@ -82,7 +126,7 @@ impl<T> IriTerm<T> where
                 let mut new_ns = String::with_capacity(ns.len() + spos+1);
                 new_ns.push_str(ns);
                 new_ns.push_str(&suffix[..spos+1]);
-                IriTerm {
+                IriData {
                     ns: factory(&new_ns),
                     suffix: Some(factory(&suffix[spos+1..])),
                     absolute,
@@ -91,13 +135,13 @@ impl<T> IriTerm<T> where
                 let mut new_suffix = String::with_capacity(ns.len()-npos-1 + suffix.len());
                 new_suffix.push_str(&ns[npos+1..]);
                 new_suffix.push_str(suffix);
-                IriTerm {
+                IriData {
                     ns: factory(&ns[..npos+1]),
                     suffix: Some(factory(&new_suffix)),
                     absolute,
                 }
             } else {
-                IriTerm {
+                IriData {
                     ns: factory(&other.to_string()),
                     suffix: None,
                     absolute,
@@ -105,13 +149,13 @@ impl<T> IriTerm<T> where
             }
         } else {
             if let Some(npos) = ns.rfind(&sep[..]) {
-                IriTerm {
+                IriData {
                     ns: factory(&ns[..npos+1]),
                     suffix: Some(factory(&ns[npos+1..])),
                     absolute,
                 }
             } else {
-                IriTerm {
+                IriData {
                     ns: factory(ns),
                     suffix: None,
                     absolute,
@@ -126,26 +170,13 @@ impl<T> IriTerm<T> where
             None         => "",
         }
     }
-
-    pub fn to_string(&self) -> String {
-        let ns = self.ns.borrow();
-        let suffix = self.suffix_borrow();
-        let mut ret = String::with_capacity(ns.len()+suffix.len());
-        ret.push_str(ns);
-        ret.push_str(suffix);
-        ret
-    }
-
-    pub fn is_absolute(&self) -> bool {
-        self.absolute
-    }
 }
 
-impl<T, U> PartialEq<IriTerm<U>> for IriTerm<T> where
+impl<T, U> PartialEq<IriData<U>> for IriData<T> where
     T: Borrow<str>,
     U: Borrow<str>,
 {
-    fn eq(&self, other: &IriTerm<U>) -> bool {
+    fn eq(&self, other: &IriData<U>) -> bool {
         let s_ns = self.ns.borrow();
         let s_sf = self.suffix_borrow();
         let o_ns = other.ns.borrow();
@@ -164,7 +195,7 @@ impl<T, U> PartialEq<IriTerm<U>> for IriTerm<T> where
     }
 }
 
-impl<'a, T> PartialEq<&'a str> for IriTerm<T> where
+impl<'a, T> PartialEq<&'a str> for IriData<T> where
     T: Borrow<str>,
 {
     fn eq(&self, other: &&'a str) -> bool {
@@ -184,7 +215,7 @@ impl<'a, T> PartialEq<&'a str> for IriTerm<T> where
     }
 }
 
-impl<T> Hash for IriTerm<T> where
+impl<T> Hash for IriData<T> where
     T: Borrow<str>,
 {
     fn hash<H:Hasher> (&self, state: &mut H) {
@@ -206,12 +237,12 @@ pub enum Normalization {
 
 
 impl<'a> ParsedIri<'a> {
-    pub fn join_iriterm<T> (&self, iri_term: &IriTerm<T>) -> IriTerm<T> where
+    pub fn join_iri<T> (&self, iri_term: &IriData<T>) -> IriData<T> where
         T: Borrow<str> + Clone + From<String>,
     {
         let parsed_ns = ParsedIri::new(iri_term.ns.borrow()).unwrap();
         let abs_ns = T::from(self.join(&parsed_ns).to_string());
-        IriTerm {
+        IriData {
             ns: abs_ns,
             suffix: iri_term.suffix.clone(),
             absolute: true,

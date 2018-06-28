@@ -3,10 +3,10 @@
 use pest::{Error, Parser, {iterators::Pair}};
 
 #[cfg(debug_assertions)]
-const _GRAMMAR: &'static str = include_str!("iri.pest");
+const _GRAMMAR: &'static str = include_str!("iri_rfc3987.pest");
 
 #[derive(Parser)]
-#[grammar = "term/iri.pest"]
+#[grammar = "term/iri_rfc3987.pest"]
 pub struct IriParser;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
