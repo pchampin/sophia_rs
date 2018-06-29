@@ -28,7 +28,7 @@ use super::*;
 /// 
 /// See [module documentation](index.html)
 /// for more detail.
-#[derive(Clone,Debug,Eq)]
+#[derive(Clone,Copy,Debug,Eq)]
 pub struct BNodeId<T: Borrow<str>> {
     value: T,
     n3: bool,
@@ -55,6 +55,13 @@ impl<T> BNodeId<T> where
             value: factory(other.value.borrow()),
             n3: other.n3,
         }
+    }
+
+    /// Whether this blank node identifier is compatible with the N3 family
+    /// of syntaxes (NTriples, Turtle...).
+    /// This can be useful for serializers.
+    pub fn is_n3(&self) -> bool {
+        self.n3
     }
 }
 

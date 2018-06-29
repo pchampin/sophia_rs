@@ -48,7 +48,7 @@ mod convert;  pub use self::convert::*;
 mod iri_data;  pub use self::iri_data::*;
 mod literal_kind; pub use self::literal_kind::*;
 
-#[derive(Clone,Debug,Eq,Hash)]
+#[derive(Clone,Copy,Debug,Eq,Hash)]
 pub enum Term<T: Borrow<str>> {
     Iri(IriData<T>),
     BNode(BNodeId<T>),
@@ -332,6 +332,7 @@ impl<'a, T, U> From<&'a Term<U>> for Term<T> where
         Self::from_with(other, T::from)
     }
 }
+
 
 
 

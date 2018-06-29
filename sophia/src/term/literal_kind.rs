@@ -4,7 +4,7 @@ use std::hash::{Hash, Hasher};
 
 use super::*;
 
-#[derive(Clone,Debug,Eq)]
+#[derive(Clone,Copy,Debug,Eq)]
 pub enum LiteralKind<T: Borrow<str>> {
     Lang(T),
     Datatype(IriData<T>),

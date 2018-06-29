@@ -1,6 +1,7 @@
 // this module is transparently re-exported by its parent `term`
 
 use std::hash::{Hash, Hasher};
+use std::io::{Result as IoResult, Write};
 
 use super::*;
 
@@ -15,7 +16,7 @@ use super::*;
 /// 
 /// See [module documentation](index.html)
 /// for more detail.
-#[derive(Clone,Debug,Eq)]
+#[derive(Clone,Copy,Debug,Eq)]
 pub struct IriData<T: Borrow<str>> {
     pub(crate) ns: T,
     pub(crate) suffix: Option<T>,
@@ -58,6 +59,16 @@ impl<T> IriData<T> where
     /// Whether this IRI is absolute or relative.
     pub fn is_absolute(&self) -> bool {
         self.absolute
+    }
+
+    pub fn write_to<W> (&self, w: &mut W) -> IoResult<()> where
+        W: Write,
+    {
+        w.write_all(self.ns.borrow().as_bytes())?;
+        if let Some(ref suffix) = self.suffix {
+            w.write_all(suffix.borrow().as_bytes())?;
+        }
+        Ok(())
     }
 
     pub(crate) fn new (ns: T, suffix: Option<T>) -> Result<IriData<T>, Err> {
