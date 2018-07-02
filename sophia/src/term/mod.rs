@@ -355,8 +355,9 @@ pub enum Err {
     InvalidLanguageTag(String),
     InvalidVariableName(String),
     InvalidPrefix(String), // useful for parsers dealing with PNames
+    IriMustBeAbsolute(String),
     Other(String),
 }
 
 #[cfg(test)]
-mod test;
+pub(crate) mod test;

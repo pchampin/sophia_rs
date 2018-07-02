@@ -14,6 +14,7 @@ extern crate weak_table;
 
 pub mod graph;
 pub mod ns;
+pub mod parsers;
 pub mod serializers;
 pub mod term;
 pub mod triple;
