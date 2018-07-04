@@ -1,3 +1,6 @@
+//! This module defines parsers for standard RDF syntaxes,
+//! as well as utility methods for writing other parsers.
+
 use std::io;
 
 use pest;

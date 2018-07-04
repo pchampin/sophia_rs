@@ -32,7 +32,6 @@ impl<'a> ParsedIri<'a> {
 
     fn fill_with(&mut self, pair: Pair<'a, Rule>) {
         for subpair in pair.into_inner() {
-            //#[cfg(test)] println!("=== {:?} {:?}", subpair.as_rule(), subpair.as_str());
             match subpair.as_rule() {
                 Rule::iri => {
                     self.fill_with(subpair);

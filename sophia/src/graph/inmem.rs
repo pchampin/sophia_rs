@@ -159,13 +159,6 @@ impl<S, T, U> MutableGraph for GenericGraph<S, T, U> where
     fn copy<V> (&mut self, t: &Term<V>) -> Self::THolder where
         V: Borrow<str>,
     {
-        // TODO IMPORTANT : if t is an IRI, normalize it
-        // (i.e.)
-        // to ensure that the same IRI is always represented the same way
-        // (otherwise RefTerms in the index may become dangling)
-        //
-        // NB: maybe this should be done at the TermFactory level?
-        // for example copt_n(t) -- for "copy_normalized"?
         T::from(self.factory.copy_normalized(t, Normalization::LastHashOrSlash))
     }
 

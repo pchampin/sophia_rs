@@ -1,3 +1,3 @@
-// TODO proper documentation (using rust specific comments)
+//! This module defines serializers for standard RDF syntaxes.
 
 pub mod nt;

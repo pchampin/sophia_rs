@@ -70,7 +70,6 @@ fn iri_normalized_last_hash_or_slash() {
         ("tag:foo", "",                      "tag:foo", ""),
         ("tag:", "foo",                      "tag:foo", ""),
     ] {
-        println!("{} {} -> {} {}", ns1, sf1, ns2, sf2);
         let sf1 = if sf1.len() == 0 { None } else { Some(*sf1) };
         let sf2 = if sf2.len() == 0 { None } else { Some(String::from(*sf2)) };
 

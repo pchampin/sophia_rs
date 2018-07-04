@@ -1,4 +1,5 @@
-// TODO document this module properly
+//! An RDF graph, the central notion of the RDF data model,
+//! is a set of triples.
 
 pub mod index;
 pub mod inmem;

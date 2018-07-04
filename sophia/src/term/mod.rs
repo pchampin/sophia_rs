@@ -1,6 +1,8 @@
-//! Terms are the basic elements of an RDF graph.
+//! Terms are the building blocks of an RDF graph.
 //! There are four types of terms: IRIs, blank nodes (BNode for short),
 //! literals and variables.
+//! 
+//! NB: variable only exist in [generalized RDF](../index.html#generalized-vs-strict-rdf-model).
 //! 
 //! This module defines a generic type [`Term`](enum.Term.html)
 //! which can be derived differently depending on your needs.
@@ -286,14 +288,13 @@ impl<T> Term<T> where
                             => Iri(base.join_iri(iri)),
                         Literal(ref txt, Datatype(ref iri))
                             => Literal(txt.clone(), Datatype(base.join_iri(iri))),
-                        _ 
+                        _
                             => t.clone(),
                     }
                 });
             }
             _ => panic!("Can only join with absolute Iri"),
         }
-        
     }
 
 

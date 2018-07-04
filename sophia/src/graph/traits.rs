@@ -153,7 +153,7 @@ pub trait Graph
 pub trait MutableGraph : Graph {
 
     /// Term Holder (used internally by the graph to store triples)
-    type THolder: Borrow<Term<Self::SHolder>> + Clone + From<Term<Self::SHolder>>;
+    type THolder: Borrow<Term<Self::SHolder>>;
 
     /// Copy any term into a term holder usable by [`insert_as_is`](#method.insert_as_is).
     /// This method will rarely be used directly,

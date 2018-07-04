@@ -8,7 +8,7 @@
 // TODO by default, this serializer produces canonical (i.e. UTF-8) N-Triples.
 // There should be an `ascii<>` sub-modules providing an equivalent API,
 // but producing pure-ascii N-Triples.
-// This could by post-processing the canonical form,
+// This could be done by post-processing the canonical form,
 // taking care of *not* double-escaping `\n`, `\r`, `\\` and `"`.
 
 use std::borrow::Borrow;
