@@ -1,4 +1,5 @@
 use std::borrow::Borrow;
+use std::hash::Hash;
 use std::iter::{empty, once};
 use std::rc::Rc;
 use std::sync::Arc;
@@ -8,111 +9,138 @@ use ::term::factory::*;
 use super::traits::*;
 use super::index::*;
 
-pub type SimpleGraph = GenericGraph<Rc<str>, RcTerm, RcTermFactory>;
-pub type SyncSimpleGraph = GenericGraph<Arc<str>, ArcTerm, ArcTermFactory>;
+pub type SimpleGraph = GenericGraph<RcTermFactory, TermIndexU<u32, Rc<str>>>;
+pub type SyncSimpleGraph = GenericGraph<ArcTermFactory, TermIndexU<u32, Arc<str>>>;
 /* TODO once "strategy wrappers are implemented"
 pub type FastGraph = OpWrapper<PosWrapper<GenericGraph<Rc<RcTerm>, Rc<str>, RcTermFactory>>>;
 */
 
 
 // TODO we are fooling the borrow checker by pretending that
-// the keys in the TripleIndex are StaticTerm,
+// the keys in t2i are StaticTerm,
 // while in fact they have a shorter lifetime.
 // However, we ensure that keys do not exist longer than the data they borrow
-// (inside the value associated to that key)...
-// NB: this is true only because GenericGraph.copy
-//  * always reuses the same &str's for a given term, and
-//  * uses a noramlized form for `IriData`s.
-// Otherwise, several triples with e.g. the same subject could hold different versions of its IRI,
-// and when the version used for the index-key is dropped, the index-key becomes dangling.
+// (inside i2t)...
 
 #[derive(Default)]
-pub struct GenericGraph<S, T, U> where
-    S: Borrow<str>,
-    T: Borrow<Term<S>> + Clone + From<Term<S>>,
-    U: TermFactory<Holder=S>,
+pub struct GenericGraph<F, I> where
+    F: TermFactory + Default,
+    I: TermIndex<Holder=F::Holder>,
+    I::Index: Hash,
 {
-    factory: U,
-    spo: TripleIndex<'static, (T, T, T)>,
+    factory: F,
+    terms: I,
+    spo: TripleIndex<I::Index, ()>,
 }
 
-impl<S, T, U> GenericGraph<S, T, U> where
-    S: Borrow<str>,
-    T: Borrow<Term<S>> + Clone + From<Term<S>>,
-    U: TermFactory<Holder=S> + Default,
+impl<F, I> GenericGraph<F, I> where
+    F: TermFactory + Default,
+    I: TermIndex<Holder=F::Holder>,
+    I::Index: Hash,
 {
-    pub fn new() -> GenericGraph<S, T, U> {
+    pub fn new() -> GenericGraph<F, I> {
         GenericGraph {
-            factory: U::default(),
+            factory: F::default(),
+            terms: I::default(),
             spo: TripleIndex::new(),
         }
     }
 }
 
-
-impl<S, T, U> Graph for GenericGraph<S, T, U> where
-    S: Borrow<str>,
-    T: Borrow<Term<S>> + Clone + From<Term<S>>,
-    U: TermFactory<Holder=S>,
+impl<F, I> Graph for GenericGraph<F, I> where
+    F: TermFactory + Default,
+    I: TermIndex<Holder=F::Holder>,
+    I::Index: Hash,
 {
-    type SHolder = S;
+    type SHolder = F::Holder;
 
-    fn iter(&self) -> TripleIterator<Self::SHolder> {
+    fn iter<'a> (&'a self) -> TripleIterator<'a, Self::SHolder> {
         Box::from(
-            self.spo.values_flat().map(holder_triple_as_ref)
+            self.spo.triples(&self.terms)
+            .map(move |(s, p, o, _)| (s, p, o))
         )
     }
 
-    fn iter_for_s<'a, V> (&'a self, s: &'a Term<V>) -> TripleIterator<S> where
-        V: Borrow<str>,
+    fn iter_for_s<'a, T> (&'a self, s: &'a Term<T>) -> TripleIterator<'a, Self::SHolder> where
+        T: Borrow<str>,
     {
-        match self.spo.get(s) {
-            Some(subindex) => Box::from(subindex.values_flat().map(holder_triple_as_ref)),
-            None => Box::from(empty())
-        }
-    }
-
-    fn iter_for_p<'a, V> (&'a self, p: &'a Term<V>) -> TripleIterator<S> where
-        V: Borrow<str>,
-    {
-        Box::from(
-            self.spo.values()
-                .filter_map(move |subindex| subindex.get(p))
-                .flat_map(|subsubindex| subsubindex.values())
-                .map(holder_triple_as_ref)
-        )
-    }
-
-    fn iter_for_sp<'a, V, W> (&'a self, s: &'a Term<V>, p: &'a Term<W>) -> TripleIterator<S> where
-        V: Borrow<str>,
-        W: Borrow<str>,
-    {
-        if let Some(subindex) = self.spo.get(s) {
-            if let Some(subsubindex) = subindex.get(p) {
+        if let Some(si) = self.terms.get_index(&RefTerm::from(s)) {
+            let s = self.terms.get_term(si).unwrap();
+            if let Some(subindex) = self.spo.get(&si) {
                 return Box::from(
-                    subsubindex.values().map(holder_triple_as_ref)
+                    subindex.pairs(&self.terms)
+                    .map(move |(p, o, _)| (s, p, o))
                 );
             }
         }
-        Box::from(empty())
+        return Box::from(empty())
     }
 
-    fn iter_for_spo<'a, V, W, X> (&'a self, s: &'a Term<V>, p: &'a Term<W>, o: &'a Term<X>) -> TripleIterator<S> where
-        V: Borrow<str>,
-        W: Borrow<str>,
-        X: Borrow<str>,
+    fn iter_for_p<'a, T> (&'a self, p: &'a Term<T>) -> TripleIterator<'a, Self::SHolder> where
+        T: Borrow<str>,
     {
-        if let Some(subindex) = self.spo.get(s) {
-            if let Some(sub2index) = subindex.get(p) {
-                let o = RefTerm::from(o);
-                if let Some(triple) = sub2index.get(&o) {
-                    return Box::from(
-                        once(holder_triple_as_ref(&triple))
-                    );
+        if let Some(pi) = self.terms.get_index(&RefTerm::from(p)) {
+            let p = self.terms.get_term(pi).unwrap();
+            return Box::new(
+                self.spo.iter()
+                .filter_map(move |(si, subindex)| {
+                    let s = self.terms.get_term(*si).unwrap();
+                    subindex.get(&pi).map(|subsubindex| (s, subsubindex))
+                })
+                .flat_map(move |(s, subsubindex)|
+                    subsubindex.keys()
+                    .map(move |oi| (s, p, self.terms.get_term(*oi).unwrap()))
+                )
+            )
+        }
+        return Box::from(empty())
+    }
+
+    fn iter_for_sp<'a, T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> TripleIterator<'a, Self::SHolder> where
+        T: Borrow<str>,
+        U: Borrow<str>,
+    {
+        if let Some(si) = self.terms.get_index(&RefTerm::from(s)) {
+            if let Some(subindex) = self.spo.get(&si) {
+                if let Some(pi) = self.terms.get_index(&RefTerm::from(p)) {
+                    if let Some(subsubindex) = subindex.get(&pi) {
+                        let s = self.terms.get_term(si).unwrap();
+                        let p = self.terms.get_term(pi).unwrap();
+                        return Box::from(
+                            subsubindex.keys()
+                            .map(move |oi| (s, p, self.terms.get_term(*oi).unwrap()))
+                        );
+                    }
                 }
             }
         }
-        Box::from(empty())
+        return Box::from(empty())
+    }
+
+    fn iter_for_spo<'a, T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> TripleIterator<'a, Self::SHolder> where
+        T: Borrow<str>,
+        U: Borrow<str>,
+        V: Borrow<str>,
+    {
+        if let Some(si) = self.terms.get_index(&RefTerm::from(s)) {
+            if let Some(subindex) = self.spo.get(&si) {
+                if let Some(pi) = self.terms.get_index(&RefTerm::from(p)) {
+                    if let Some(subsubindex) = subindex.get(&pi) {
+                        if let Some(oi) = self.terms.get_index(&RefTerm::from(o)) {
+                            if let Some(_) = subsubindex.get(&oi) {
+                                let s = self.terms.get_term(si).unwrap();
+                                let p = self.terms.get_term(pi).unwrap();
+                                let o = self.terms.get_term(oi).unwrap();
+                                return Box::from(
+                                    once((s, p, o))
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return Box::from(empty())
     }
 
     fn len(&self) -> usize {
@@ -124,91 +152,85 @@ impl<S, T, U> Graph for GenericGraph<S, T, U> where
         (len, Some(len))
     }
 
-    fn hint_for_s<'a, V> (&'a self, s: &'a Term<V>) -> (usize, Option<usize>) where
-        V: Borrow<str>,
+    fn hint_for_s<'a, T> (&'a self, s: &'a Term<T>) -> (usize, Option<usize>) where
+        T: Borrow<str>,
     {
-        let len = match self.spo.get(s) {
-            Some(subindex) => subindex.len(),
-            None           => 0,
-        };
-        (len, Some(len))
-    }
-
-    fn hint_for_sp<'a, V, W> (&'a self, s: &'a Term<V>, p: &'a Term<W>) -> (usize, Option<usize>) where
-        V: Borrow<str>,
-        W: Borrow<str>,
-    {
-        let len = match self.spo.get(s) {
-            None           => 0,
-            Some(subindex) => match subindex.get(p) {
-                None              => 0,
-                Some(subsubindex) => subsubindex.len(),
+        if let Some(si) = self.terms.get_index(&RefTerm::from(s)) {
+            if let Some(subindex) = self.spo.get(&si) {
+                let len = subindex.len();
+                return (len, Some(len));
             }
-        };
-        (len, Some(len))
+        }
+        (0, Some(0))
+    }
+
+    fn hint_for_sp<'a, T, U> (&'a self, s: &'a Term<T>,p: &'a Term<U>) -> (usize, Option<usize>) where
+        T: Borrow<str>,
+        U: Borrow<str>,
+    {
+        if let Some(si) = self.terms.get_index(&RefTerm::from(s)) {
+            if let Some(subindex) = self.spo.get(&si) {
+                if let Some(pi) = self.terms.get_index(&RefTerm::from(p)) {
+                    if let Some(subsubindex) = subindex.get(&pi) {
+                        let len = subsubindex.len();
+                        return (len, Some(len));
+                    }
+                }
+            }
+        }
+        (0, Some(0))
     }
 }
 
-impl<S, T, U> MutableGraph for GenericGraph<S, T, U> where
-    S: Borrow<str>,
-    T: Borrow<Term<S>> + Clone + From<Term<S>>,
-    U: TermFactory<Holder=S>,
+impl<F, I> MutableGraph for GenericGraph<F, I> where
+    F: TermFactory + Default,
+    I: TermIndex<Holder=F::Holder>,
+    I::Index: Hash,
 {
-    type THolder = T;
-
-    fn copy<V> (&mut self, t: &Term<V>) -> Self::THolder where
+    fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> bool where
+        T: Borrow<str>,
+        U: Borrow<str>,
         V: Borrow<str>,
     {
-        T::from(self.factory.copy_normalized(t, Normalization::LastHashOrSlash))
+        let si = self.terms.make_index(self.factory.copy(s));
+        let pi = self.terms.make_index(self.factory.copy(p));
+        let oi = self.terms.make_index(self.factory.copy(o));
+        let modified = self.spo.insert(si, pi, oi, ()).is_none();
+        if !modified {
+            self.terms.dec_ref(si);
+            self.terms.dec_ref(pi);
+            self.terms.dec_ref(oi);
+        }
+        modified
     }
-
-    unsafe fn insert_as_is(&mut self, s: Self::THolder, p: Self::THolder, o: Self::THolder) -> bool {
-        let ks = fake_static(&s);
-        let kp = fake_static(&p);
-        let ko = fake_static(&o);
-        let t = (s, p, o);
-        self.spo.insert(ks, kp, ko, t).is_none()
-    }
-
-    fn remove<V, W, X> (&mut self, s: &Term<V>, p: &Term<W>, o: &Term<X>) -> bool where
+    fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> bool where
+        T: Borrow<str>,
+        U: Borrow<str>,
         V: Borrow<str>,
-        W: Borrow<str>,
-        X:Borrow<str>,
     {
-        let ks = unsafe { fake_static(&s) };
-        let kp = unsafe { fake_static(&p) };
-        let ko = unsafe { fake_static(&o) };
-        self.spo.remove(&ks, &kp, &ko).is_some()
+        let si = self.terms.get_index(&RefTerm::from(s));
+        let pi = self.terms.get_index(&RefTerm::from(p));
+        let oi = self.terms.get_index(&RefTerm::from(o));
+        if let (Some(si), Some(pi), Some(oi)) = (si, pi, oi) {
+            let modified = self.spo.remove(&si, &pi, &oi).is_some();
+            if modified {
+                self.terms.dec_ref(si);
+                self.terms.dec_ref(pi);
+                self.terms.dec_ref(oi);
+            }
+            modified
+        } else {
+            false
+        }
     }
 }
 
-impl<S, T, U> SetGraph for GenericGraph<S, T, U> where
-    S: Borrow<str>,
-    T: Borrow<Term<S>> + Clone + From<Term<S>>,
-    U: TermFactory<Holder=S>,
+impl<F, I> SetGraph for GenericGraph<F, I> where
+    F: TermFactory + Default,
+    I: TermIndex<Holder=F::Holder>,
+    I::Index: Hash,
 {}
 
-
-
-#[inline]
-fn holder_triple_as_ref<S, T> (t: &(T, T, T)) -> (&Term<S>, &Term<S>, &Term<S>) where
-    S: Borrow<str>,
-    T: Borrow<Term<S>>,
-{
-    (t.0.borrow(), t.1.borrow(), t.2.borrow())
-}
-
-/// Unsafely converts a term into a StaticTerm.
-/// This is to be used *only* when we can guarantee that the produced StaticTerm
-/// will not outlive the source term.
-/// We use this for index keys, when the source term is stored in the value of the index.
-#[inline]
-unsafe fn fake_static<S, T> (t: &T) -> StaticTerm where
-    S: Borrow<str>,
-    T: Borrow<Term<S>>,
-{
-    StaticTerm::from_with(t.borrow(), |txt| &*(txt as *const str))
-}
 
 
 /* TODO implement PosWrapper, OsWrappe : augments a GenericGraph with additional indexes

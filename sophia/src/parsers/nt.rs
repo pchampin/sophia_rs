@@ -145,13 +145,16 @@ fn pair_to_term<'a> (pair: Pair<'a, Rule>, strict: bool) -> Result<BooTerm<'a>, 
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashSet;
     use std::ffi::OsStr;
     use std::fs::{File, read_dir};
     use std::io;
     use std::path::Path;
     use pest::{Error, Parser, iterators::Pairs};
-    use ::graph::{Graph, inmem::SimpleGraph};
+    use ::term::BoxTerm;
     use super::*;
+
+    type HashSetGraph = HashSet<(BoxTerm, BoxTerm, BoxTerm)>;
 
     fn parse(rule: Rule, txt: &str) -> Result<Pairs<Rule>, Error<Rule>> {
         NtParser::parse(rule, txt)
@@ -324,7 +327,7 @@ mod test {
 
     #[test]
     fn strict_parse_str() {
-        let mut g = SimpleGraph::new();
+        let mut g = HashSetGraph::new();
         let res = strict::parse_str_into(DOC, &mut g);
         assert_eq!(res, Ok(5));
         assert_eq!(g.len(), 5);
@@ -345,7 +348,7 @@ mod test {
 
     #[test]
     fn parse_str() {
-        let mut g = SimpleGraph::new();
+        let mut g = HashSetGraph::new();
         let res = parse_str_into(GENERALIZED_DOC, &mut g);
         assert_eq!(res, Ok(7));
         assert_eq!(g.len(), 7);
@@ -353,7 +356,7 @@ mod test {
 
     #[test]
     fn strict_parse_str_refuses_generalized() {
-        let mut g = SimpleGraph::new();
+        let mut g = HashSetGraph::new();
         let res = strict::parse_str_into(GENERALIZED_DOC, &mut g);
         assert!(res.is_err());
         assert_eq!(g.len(), 0);
@@ -361,7 +364,7 @@ mod test {
 
     #[test]
     fn strict_parse_read() {
-        let mut g = SimpleGraph::new();
+        let mut g = HashSetGraph::new();
         let reader = io::Cursor::new(DOC);
         let res = strict::parse_read_into(reader, &mut g);
         assert_eq!(res, Ok(5));
@@ -370,7 +373,7 @@ mod test {
 
     #[test]
     fn parse_read() {
-        let mut g = SimpleGraph::new();
+        let mut g = HashSetGraph::new();
         let reader = io::Cursor::new(GENERALIZED_DOC);
         let res = parse_read_into(reader, &mut g);
         assert_eq!(res, Ok(7));
@@ -379,7 +382,7 @@ mod test {
 
     #[test]
     fn strict_parse_read_refuses_generalized() {
-        let mut g = SimpleGraph::new();
+        let mut g = HashSetGraph::new();
         let reader = io::Cursor::new(GENERALIZED_DOC);
         let res = strict::parse_read_into(reader, &mut g);
         use super::super::Error::Parsing;
@@ -394,7 +397,7 @@ mod test {
 
     #[test]
     fn spurious_tail() {
-        let mut g = SimpleGraph::new();
+        let mut g = HashSetGraph::new();
         let txt = r#"
           <tag:foo> <tag:bar> <tag:baz> . bla bla bla
         "#;
@@ -419,7 +422,7 @@ mod test {
 
                 let f = File::open(&path)?;
                 let f = io::BufReader::new(f);
-                let mut g = SimpleGraph::new();
+                let mut g = HashSetGraph::new();
                 let res = strict::parse_read_into(f, &mut g);
                 let path = path.to_str().unwrap();
                 if path.contains("-bad-") {
@@ -452,7 +455,7 @@ mod test {
 
                 let f = File::open(&path)?;
                 let f = io::BufReader::new(f);
-                let mut g = SimpleGraph::new();
+                let mut g = HashSetGraph::new();
                 let res = parse_read_into(f, &mut g);
                 assert!(res.is_ok(), format!("{} should parse without error", path.to_str().unwrap()));
             }

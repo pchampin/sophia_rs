@@ -73,6 +73,30 @@ impl<T> Graph for HashSet<(Term<T>, Term<T>, Term<T>)> where
     }
 }
 
+impl MutableGraph for HashSet<(BoxTerm, BoxTerm, BoxTerm)> where
+{
+    fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> bool where
+        T: Borrow<str>,
+        U: Borrow<str>,
+        V: Borrow<str>,
+    {
+        let s = BoxTerm::from(s);
+        let p = BoxTerm::from(p);
+        let o = BoxTerm::from(o);
+        HashSet::insert(self, (s, p, o))
+    }
+    fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> bool where
+        T: Borrow<str>,
+        U: Borrow<str>,
+        V: Borrow<str>,
+    {
+        let s = BoxTerm::from(s);
+        let p = BoxTerm::from(p);
+        let o = BoxTerm::from(o);
+        HashSet::remove(self, &(s, p, o))
+    }
+}
+
 impl<T> SetGraph for HashSet<(Term<T>, Term<T>, Term<T>)> where
     T: Borrow<str> + Eq + Hash,
 {}

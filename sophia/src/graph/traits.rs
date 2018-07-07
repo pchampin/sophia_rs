@@ -15,7 +15,7 @@ pub trait Graph
     /// String Holder (used internally by terms returned by the methods)
     type SHolder: Borrow<str>;
 
-    fn iter(&self) -> TripleIterator<Self::SHolder>;
+    fn iter<'a> (&'a self) -> TripleIterator<'a, Self::SHolder>;
 
     fn iter_for_s<'a, T> (&'a self, s: &'a Term<T>) -> TripleIterator<'a, Self::SHolder> where
         T: Borrow<str>,
@@ -152,41 +152,31 @@ pub trait Graph
 
 pub trait MutableGraph : Graph {
 
-    /// Term Holder (used internally by the graph to store triples)
-    type THolder: Borrow<Term<Self::SHolder>>;
-
-    /// Copy any term into a term holder usable by [`insert_as_is`](#method.insert_as_is).
-    /// This method will rarely be used directly,
-    /// but is used by default implementation of other methods.
-    fn copy<T: Borrow<str>> (&mut self, t: &Term<T>) -> Self::THolder;
-
-    /// Insert the given terms *as is* in the Graph.
-    /// This method is unsafe because
-    /// the implementation may impose conditions on the terms to be inserted,
-    /// beyond those that the compiler can check.
-    ///
-    /// However, implementations must guarantee that terms
-    /// - produced by the copy (TODO link) method, or
-    /// - produced with Self::Term::From from the results of the iter* methods,
-    /// can safely be passed to this method.
-    unsafe fn insert_as_is(&mut self, s: Self::THolder, p: Self::THolder, o: Self::THolder) -> bool;
-
+    /// Insert the given triple in this graph.
+    /// 
+    /// Return `true` iff the triple was actually inserted.
+    /// 
+    /// NB: unless this graph also implements [`SetGraph`](trait.SetGraph.html),
+    /// a return value of `true` does *not* mean that the triple was not already in the graph,
+    /// only that the graph now has one more occurence of it.
     fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> bool where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
-    {
-        let s = self.copy(s);
-        let p = self.copy(p);
-        let o = self.copy(o);
-        unsafe { self.insert_as_is(s, p, o) }
-    }
+    ;
 
+    /// Insert the given triple in this graph.
+    /// 
+    /// Return `true` iff the triple was actually removed.
+    /// 
+    /// NB: unless this graph also implements [`SetGraph`](trait.SetGraph.html),
+    /// a return value of `true` does *not* mean that the triple is not still contained in the graph,
+    /// only that the graph now has one less occurence of it.
     fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> bool where
         T: Borrow<str>,
         U: Borrow<str>,
-        V:Borrow<str>;
-
+        V:Borrow<str>,
+  ;
     // Remove all triples matching the given matchers.
     // Note that the default implementation is rather naive,
     // and could be improved in specific implementations of the trait.
