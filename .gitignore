@@ -2,3 +2,4 @@
 /target
 */target
 **/*.rs.bk
+rdf-tests
