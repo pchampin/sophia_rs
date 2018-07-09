@@ -4,6 +4,7 @@ use std::hash::{Hash, Hasher};
 use std::io::{Result as IoResult, Write};
 
 use super::*;
+use self::iri_rfc3987::{is_absolute_iri, is_relative_iri};
 
 /// Internal representation of an IRI.
 /// 
@@ -73,12 +74,12 @@ impl<T> IriData<T> where
 
     pub(crate) fn new (ns: T, suffix: Option<T>) -> Result<IriData<T>, Err> {
         let mut ret = IriData{ns, suffix, absolute: false};
-        match ParsedIri::new(&ret.to_string()) {
-            Err(err) => Err(Err::InvalidIri(format!("{:?}", err))),
-            Ok(pi) => {
-                ret.absolute = pi.is_absolute();
-                Ok(ret)
-            }
+        let val = ret.to_string();
+        ret.absolute = is_absolute_iri(&val);
+        if ret.absolute || is_relative_iri(&val) {
+            Ok(ret)
+        } else {
+            Err(Err::InvalidIri("IRI is invalid".to_string()))
         }
     }
 
