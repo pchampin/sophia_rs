@@ -66,6 +66,8 @@ pub trait TermFactory {
     {
         Term::normalized_with(other, |txt| self.get_holder(txt), norm)
     }
+
+    fn shrink_to_fit(&mut self);
 }
 
 
@@ -84,6 +86,10 @@ impl TermFactory for RcTermFactory {
             holder
         }
     }
+
+    fn shrink_to_fit(&mut self) {
+        WeakHashSet::shrink_to_fit(self);
+    }
 }
 
 pub type ArcTermFactory = WeakHashSet<sync::Weak<str>>;
@@ -99,5 +105,9 @@ impl TermFactory for ArcTermFactory {
             self.insert(holder.clone());
             holder
         }
+    }
+
+    fn shrink_to_fit(&mut self) {
+        WeakHashSet::shrink_to_fit(self);
     }
 }

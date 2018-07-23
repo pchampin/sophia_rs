@@ -13,16 +13,11 @@ use ::triple::*;
 impl<T> Graph for [(Term<T>, Term<T>, Term<T>)] where
     T: Borrow<str>,
 {
-    type SHolder = T;
+    type Holder = T;
 
     #[inline]
-    fn iter(&self) -> TripleIterator<Self::SHolder> {
+    fn iter(&self) -> TripleIterator<Self::Holder> {
         Box::from(self.iter().map(|t| (t.s(), t.p(), t.o())))
-    }
-
-    #[inline]
-    fn len(&self) -> usize {
-        <[_]>::len(self)
     }
 
     #[inline]
@@ -34,16 +29,11 @@ impl<T> Graph for [(Term<T>, Term<T>, Term<T>)] where
 impl<T> Graph for Vec<(Term<T>, Term<T>, Term<T>)> where
     T: Borrow<str>,
 {
-    type SHolder = T;
+    type Holder = T;
 
     #[inline]
-    fn iter(&self) -> TripleIterator<Self::SHolder> {
+    fn iter(&self) -> TripleIterator<Self::Holder> {
         Box::from(self[..].iter().map(|t| (t.s(), t.p(), t.o())))
-    }
-
-    #[inline]
-    fn len(&self) -> usize {
-        <Vec<_>>::len(self)
     }
 
     #[inline]
@@ -55,16 +45,11 @@ impl<T> Graph for Vec<(Term<T>, Term<T>, Term<T>)> where
 impl<T> Graph for HashSet<(Term<T>, Term<T>, Term<T>)> where
     T: Borrow<str> + Eq + Hash,
 {
-    type SHolder = T;
+    type Holder = T;
 
     #[inline]
-    fn iter(&self) -> TripleIterator<Self::SHolder> {
+    fn iter(&self) -> TripleIterator<Self::Holder> {
         Box::from(self.iter().map(|t| (t.s(), t.p(), t.o())))
-    }
-
-    #[inline]
-    fn len(&self) -> usize {
-        <HashSet<_>>::len(self)
     }
 
     #[inline]

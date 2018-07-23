@@ -1,57 +1,62 @@
 // TODO properly document
 
 use std::borrow::Borrow;
-use std::collections::{HashMap, hash_map};
+use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use std::hash::Hash;
 
 use ::term::*;
+use ::term::factory::TermFactory;
 
+use super::Graph;
 
 
 pub trait TermIndex: Default {
     type Index: Copy+Eq;
-    type Holder: Borrow<str>;
+    type Factory: TermFactory;
 
     fn get_index(&self, t: &RefTerm) -> Option<Self::Index>;
-    fn make_index(&mut self, t: Term<Self::Holder>) -> Self::Index;
-    fn get_term(&self, i: Self::Index) -> Option<&Term<Self::Holder>>;
+    fn make_index(&mut self, t: &RefTerm) -> Self::Index;
+    fn get_term(&self, i: Self::Index) -> Option<&Term<<Self::Factory as TermFactory>::Holder>>;
     fn inc_ref(&mut self, i: Self::Index);
     fn dec_ref(&mut self, i: Self::Index);
+    fn shrink_to_fit(&mut self);
 }
 
 
 
-pub struct TermIndexU<I, T> where
-    T: Borrow<str>,
+// TODO we are fooling the borrow checker by pretending that
+// the keys in t2i are StaticTerm,
+// while in fact they have a shorter lifetime.
+// However, we ensure that keys do not exist longer than the data they borrow
+// (inside i2t)...
+
+pub struct TermIndexU<I, F> where
+    F: TermFactory,
 {
+    factory: F,
     next_free: I,
-    i2t: Vec<Option<Term<T>>>,
+    i2t: Vec<Option<Term<F::Holder>>>,
     i2c: Vec<I>,
     t2i: HashMap<StaticTerm, I>,
 }
 
-impl<I, T> TermIndexU<I, T> where
+impl<I, F> TermIndexU<I, F> where
     I: Default,
-    T: Borrow<str>,
+    F: TermFactory+Default,
 {
-    pub fn new() -> TermIndexU<I, T> {
+    pub fn new() -> TermIndexU<I, F> {
         Self::default()
-    }
-
-    pub fn shrink_to_fit(&mut self) {
-        self.i2c.shrink_to_fit();
-        self.i2t.shrink_to_fit();
-        self.t2i.shrink_to_fit();
-        debug_assert_eq!(self.i2c.len(), self.i2t.len());
     }
 }
 
-impl<I, T> Default for TermIndexU<I, T> where
+impl<I, F> Default for TermIndexU<I, F> where
     I: Default,
-    T: Borrow<str>,
+    F: TermFactory+Default,
 {
-    fn default() -> TermIndexU<I, T> {
+    fn default() -> TermIndexU<I, F> {
         TermIndexU {
+            factory: F::default(),
             next_free: I::default(),
             i2c: Vec::default(),
             i2t: Vec::default(),
@@ -62,17 +67,18 @@ impl<I, T> Default for TermIndexU<I, T> where
 
 macro_rules! impl_term_index {
     ($uXX:ty) => {
-        impl<T> TermIndex for TermIndexU<$uXX, T> where
-            T: Borrow<str>,
+        impl<F> TermIndex for TermIndexU<$uXX, F> where
+            F: TermFactory+Default,
         {
             type Index = $uXX;
-            type Holder = T;
+            type Factory = F;
 
             fn get_index(&self, t: &RefTerm) -> Option<$uXX> {
                 self.t2i.get(t).map(|iref| *iref)
             }
 
-            fn make_index(&mut self, t: Term<T>) -> $uXX {
+            fn make_index(&mut self, t: &RefTerm) -> $uXX {
+                let t = self.factory.copy(&t);
                 let rt = unsafe { fake_static(&t) };
                 if let Some(i) = self.get_index(&rt) {
                     self.i2c[i as usize] += 1;
@@ -92,7 +98,7 @@ macro_rules! impl_term_index {
                 i as $uXX
             }
 
-            fn get_term(&self, i: $uXX) -> Option<&Term<T>> {
+            fn get_term(&self, i: $uXX) -> Option<&Term<F::Holder>> {
                 let i = i as usize;
                 if i < self.i2t.len() {
                     self.i2t[i].as_ref()
@@ -110,13 +116,20 @@ macro_rules! impl_term_index {
                 let i = i as usize;
                 self.i2c[i] -= 1;
                 if self.i2c[i] == 0 {
-                    let t: Term<T> = self.i2t[i].take().unwrap();
+                    let t: Term<F::Holder> = self.i2t[i].take().unwrap();
                     self.t2i.remove(unsafe { &fake_static(&t) });
                     self.i2c[i] = self.next_free;
                     self.next_free = i as $uXX;
                 }
             }
 
+            fn shrink_to_fit(&mut self) {
+                self.factory.shrink_to_fit();
+                self.i2c.shrink_to_fit();
+                self.i2t.shrink_to_fit();
+                self.t2i.shrink_to_fit();
+                debug_assert_eq!(self.i2c.len(), self.i2t.len());
+            }
         }
     }
 }
@@ -124,158 +137,83 @@ macro_rules! impl_term_index {
 impl_term_index!(u16);
 impl_term_index!(u32);
 
-
-
-pub struct PairIndex<K, V> where K: Eq+Hash {
-    map: HashMap<K, HashMap<K, V>>,
-    len: usize,
+macro_rules! impl_mutable_graph_for_indexed_mutable_graph {
+    ($indexed_mutable_graph: ty) => {
+        impl MutableGraph for $indexed_mutable_graph {
+            impl_mutable_graph_for_indexed_mutable_graph!();
+        }
+    };
+    () => {
+        fn insert<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> bool where
+            T_: Borrow<str>,
+            U_: Borrow<str>,
+            V_: Borrow<str>,
+        {
+            self.insert_indexed(s, p, o).is_some()
+        }
+        fn remove<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> bool where
+            T_: Borrow<str>,
+            U_: Borrow<str>,
+            V_: Borrow<str>,
+        {
+            self.remove_indexed(s, p, o).is_some()
+        }        
+    };
 }
 
-impl<K, V> PairIndex<K, V> where K: Eq+Hash {
-    pub fn new() -> Self {
-        Self::default()
-    }
+pub trait IndexedMutableGraph: Graph {
+    type Index: Copy + Eq + Hash;
 
-    #[inline]
-    pub fn map(&self) -> &HashMap<K, HashMap<K, V>> {
-        &self.map
-    }
+    fn get_index<T> (&self, t: &Term<T>) -> Option<Self::Index> where
+        T: Borrow<str>,
+    ;
 
-    #[inline]
-    pub fn len(&self) -> usize {
-        self.len
-    }
+    fn get_term(&self, i: Self::Index) -> Option<&Term<Self::Holder>>;
 
-    #[inline]
-    pub fn iter(&self) -> hash_map::Iter<K, HashMap<K, V>> {
-        self.map.iter()
-    }
+    fn insert_indexed<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Option<(Self::Index, Self::Index, Self::Index)> where
+        T: Borrow<str>,
+        U: Borrow<str>,
+        V: Borrow<str>,
+    ;
 
-    #[inline]
-    pub fn pairs<'a, I> (&'a self, ti: &'a I) -> impl Iterator<Item=(&Term<I::Holder>, &Term<I::Holder>, &V)>+'a where        
-        K: Copy,
-        I: TermIndex<Index=K>,
-    {
-        self.map.iter()
-          .flat_map(move |(i1, subindex)| {
-            let t1 = ti.get_term(*i1).unwrap();
-            subindex.iter()
-            .map(move |(i2, val)| (t1, ti.get_term(*i2).unwrap(), val))
-          })
-    }
+    fn remove_indexed<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Option<(Self::Index, Self::Index, Self::Index)> where
+        T: Borrow<str>,
+        U: Borrow<str>,
+        V: Borrow<str>,
+    ;
 
-    #[inline]
-    pub fn get<T> (&self, t: &T) -> Option<&HashMap<K, V>> where
-        K: Borrow<T>,
-        T: Eq+Hash,
-    {
-        self.map.get(t)
-    }
+    fn shrink_to_fit(&mut self);
+}
 
-    pub fn insert(&mut self, t1: K, t2: K, val: V) -> Option<V> {
-        let modified =
-            self.map.entry(t1)
-                    .or_insert_with(HashMap::new)
-                    .insert(t2, val);
-        if modified.is_none() { self.len += 1 }
-        modified
-    }
 
-    pub fn remove(&mut self, t1: &K, t2: &K) -> Option<V> {
-        if let Some(subindex) = self.map.get_mut(t1) {
-            let modified = subindex.remove(t2);
-            if modified.is_some() {
-                self.len -= 1;
+
+/// Remove *one* value in the Vec value of a HashMap,
+/// removing the entry completely if the Vec ends up empty.
+///
+/// # Panics
+/// 
+/// This function will panic if either
+/// * `k` is not a key of `hm`, or
+/// * `w` is not contained in the value associated to `k`.
+pub(crate) fn remove_one_val<K, W> (hm: &mut HashMap<K, Vec<W>>, k: K, w: W) where
+    K: Eq + Hash,
+    W: Copy + Eq,
+{
+    match hm.entry(k) {
+        Entry::Occupied(mut e) => {
+            {
+                let ws = e.get_mut();
+                if ws.len() > 1 {
+                    let wi = ws.iter().enumerate()
+                        .filter_map(|(i, w2)| if *w2 == w { Some(i) } else { None })
+                        .next().unwrap();
+                    ws.swap_remove(wi);
+                    return;
+                }
             }
-            modified
-        } else {
-            None
+            e.remove_entry();
         }
-    }
-}
-
-impl<K, V> Default for PairIndex<K, V> where K: Eq+Hash {
-    fn default() -> Self {
-        PairIndex {
-            map: HashMap::default(),
-            len: usize::default(),
-        }
-    }
-}
-
-
-
-pub struct TripleIndex<K, V> where K: Eq+Hash {
-    map: HashMap<K, PairIndex<K, V>>,
-    len: usize,
-}
-
-impl<K, V> TripleIndex<K, V> where K: Eq+Hash {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    #[inline]
-    pub fn map(&self) -> &HashMap<K, PairIndex<K, V>> {
-        &self.map
-    }
-
-    #[inline]
-    pub fn len(&self) -> usize {
-        self.len
-    }
-
-    #[inline]
-    pub fn get(&self, t: &K) -> Option<&PairIndex<K, V>> {
-        self.map.get(t)
-    }
-
-    #[inline]
-    pub fn iter(&self) -> hash_map::Iter<K, PairIndex<K, V>> {
-        self.map.iter()
-    }
-
-    #[inline]
-    pub fn triples<'a, I> (&'a self, ti: &'a I) -> impl Iterator<Item=(&Term<I::Holder>, &Term<I::Holder>, &Term<I::Holder>, &V)>+'a where        
-        K: Copy,
-        I: TermIndex<Index=K>,
-    {
-        self.map.iter()
-        .flat_map(move |(i1, subindex)| {
-            let t1 = ti.get_term(*i1).unwrap();
-            subindex.pairs(ti)
-            .map(move |(t2, t3, val)| (t1, t2, t3, val))
-        })
-    }
-
-    pub fn insert(&mut self, t1: K, t2: K, t3: K, val: V) -> Option<V> {
-        let modified =
-            self.map.entry(t1)
-                    .or_insert_with(PairIndex::new)
-                    .insert(t2, t3, val);
-        if modified.is_none() { self.len += 1 }
-        modified
-    }
-
-    pub fn remove(&mut self, t1: &K, t2: &K, t3: &K) -> Option<V> {
-        if let Some(subindex) = self.map.get_mut(t1) {
-            let modified = subindex.remove(t2, t3);
-            if modified.is_some() {
-                self.len -= 1;
-            }
-            modified
-        } else {
-            None
-        }
-    }
-}
-
-impl<K, V> Default for TripleIndex<K, V> where K: Eq+Hash {
-    fn default() -> Self {
-        TripleIndex {
-            map: HashMap::default(),
-            len: usize::default(),
-        }
+        Entry::Vacant(_) => unreachable!()
     }
 }
 
@@ -284,7 +222,7 @@ impl<K, V> Default for TripleIndex<K, V> where K: Eq+Hash {
 /// Unsafely converts a term into a StaticTerm.
 /// This is to be used *only* when we can guarantee that the produced StaticTerm
 /// will not outlive the source term.
-/// We use this for keys in TermIndexXX::t2i, when the owning term is in TermIndexXX::i2t.
+/// We use this for keys in TermIndexU::t2i, when the owning term is in TermIndexU::i2t.
 #[inline]
 unsafe fn fake_static<S, T> (t: &T) -> StaticTerm where
     S: Borrow<str>,
@@ -294,36 +232,38 @@ unsafe fn fake_static<S, T> (t: &T) -> StaticTerm where
 }
 
 
+
 #[test]
 fn test_term_index() {
-    let mut ti = TermIndexU::<u16, Box<str>>::default();
+    use ::term::factory::RcTermFactory;
+    let mut ti = TermIndexU::<u16, RcTermFactory>::default();
     assert_eq!(ti.next_free, 0);
     assert_eq!(ti.i2t.len(), 0);
 
     use ::ns::rdf;
 
     assert_eq!(ti.get_index(&rdf::subject), None);
-    assert_eq!(ti.make_index(BoxTerm::from(&rdf::subject)), 0);
+    assert_eq!(ti.make_index(&rdf::subject), 0);
     assert_eq!(ti.get_index(&rdf::subject), Some(0));
     assert_eq!(ti.i2c[0], 1);
     assert_eq!(ti.next_free, 1);
     assert_eq!(ti.i2t.len(), 1);
 
     assert_eq!(ti.get_index(&rdf::predicate), None);
-    assert_eq!(ti.make_index(BoxTerm::from(&rdf::predicate)), 1);
+    assert_eq!(ti.make_index(&rdf::predicate), 1);
     assert_eq!(ti.get_index(&rdf::predicate), Some(1));
     assert_eq!(ti.i2c[1], 1);
     assert_eq!(ti.next_free, 2);
     assert_eq!(ti.i2t.len(), 2);
 
     assert_eq!(ti.get_index(&rdf::object), None);
-    assert_eq!(ti.make_index(BoxTerm::from(&rdf::object)), 2);
+    assert_eq!(ti.make_index(&rdf::object), 2);
     assert_eq!(ti.get_index(&rdf::object), Some(2));
     assert_eq!(ti.i2c[2], 1);
     assert_eq!(ti.next_free, 3);
     assert_eq!(ti.i2t.len(), 3);
 
-    assert_eq!(ti.make_index(BoxTerm::from(&rdf::predicate)), 1);
+    assert_eq!(ti.make_index(&rdf::predicate), 1);
     assert_eq!(ti.i2c[1], 2);
 
     ti.inc_ref(1);
@@ -347,18 +287,18 @@ fn test_term_index() {
     assert_eq!(ti.next_free, 0);
     assert_eq!(ti.i2c[0], 1); // now the previous version of next_free
 
-    assert_eq!(ti.make_index(BoxTerm::from(&rdf::type_)), 0);
+    assert_eq!(ti.make_index(&rdf::type_), 0);
     assert_eq!(ti.i2c[0], 1);
     assert_eq!(ti.i2t.len(), 3);
     assert_eq!(ti.next_free, 1);
 
     // re-inserting rdf::subject, now ends up in a different place
-    assert_eq!(ti.make_index(BoxTerm::from(&rdf::subject)), 1);
+    assert_eq!(ti.make_index(&rdf::subject), 1);
     assert_eq!(ti.i2c[1], 1);
     assert_eq!(ti.i2t.len(), 3);
     assert_eq!(ti.next_free, 3);
 
-    assert_eq!(ti.make_index(BoxTerm::from(&rdf::Property)), 3);
+    assert_eq!(ti.make_index(&rdf::Property), 3);
     assert_eq!(ti.i2c[3], 1);
     assert_eq!(ti.i2t.len(), 4);
     assert_eq!(ti.next_free, 4);

@@ -13,32 +13,32 @@ pub type TripleIterator<'a, T, U=T, V=U> = Box<Iterator<Item=(&'a Term<T>, &'a T
 pub trait Graph
 {
     /// String Holder (used internally by terms returned by the methods)
-    type SHolder: Borrow<str>;
+    type Holder: Borrow<str>;
 
-    fn iter<'a> (&'a self) -> TripleIterator<'a, Self::SHolder>;
+    fn iter<'a> (&'a self) -> TripleIterator<'a, Self::Holder>;
 
-    fn iter_for_s<'a, T> (&'a self, s: &'a Term<T>) -> TripleIterator<'a, Self::SHolder> where
+    fn iter_for_s<'a, T> (&'a self, s: &'a Term<T>) -> TripleIterator<'a, Self::Holder> where
         T: Borrow<str>,
     {
         Box::new(
             self.iter().filter(move |t| t.s()==s)
         )
     }
-    fn iter_for_p<'a, T> (&'a self, p: &'a Term<T>) -> TripleIterator<'a, Self::SHolder> where
+    fn iter_for_p<'a, T> (&'a self, p: &'a Term<T>) -> TripleIterator<'a, Self::Holder> where
         T: Borrow<str>,
     {
         Box::new(
             self.iter().filter(move |t| t.p()==p)
         )
     }
-    fn iter_for_o<'a, T> (&'a self, o: &'a Term<T>) -> TripleIterator<'a, Self::SHolder> where
+    fn iter_for_o<'a, T> (&'a self, o: &'a Term<T>) -> TripleIterator<'a, Self::Holder> where
         T: Borrow<str>,
     {
         Box::new(
             self.iter().filter(move |t| t.o()==o)
         )
     }
-    fn iter_for_sp<'a, T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> TripleIterator<'a, Self::SHolder> where
+    fn iter_for_sp<'a, T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> TripleIterator<'a, Self::Holder> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
@@ -46,7 +46,7 @@ pub trait Graph
             self.iter_for_s(s).filter(move |t| t.p()==p)
         )
     }
-    fn iter_for_so<'a, T, U> (&'a self, s: &'a Term<T>, o: &'a Term<U>) -> TripleIterator<'a, Self::SHolder> where
+    fn iter_for_so<'a, T, U> (&'a self, s: &'a Term<T>, o: &'a Term<U>) -> TripleIterator<'a, Self::Holder> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
@@ -54,7 +54,7 @@ pub trait Graph
             self.iter_for_s(s).filter(move |t| t.o()==o)
         )
     }
-    fn iter_for_po<'a, T, U> (&'a self, p: &'a Term<T>, o: &'a Term<U>) -> TripleIterator<'a, Self::SHolder> where
+    fn iter_for_po<'a, T, U> (&'a self, p: &'a Term<T>, o: &'a Term<U>) -> TripleIterator<'a, Self::Holder> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
@@ -62,7 +62,7 @@ pub trait Graph
             self.iter_for_p(p).filter(move |t| t.o()==o)
         )
     }
-    fn iter_for_spo<'a, T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> TripleIterator<'a, Self::SHolder> where
+    fn iter_for_spo<'a, T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> TripleIterator<'a, Self::Holder> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
@@ -76,14 +76,10 @@ pub trait Graph
         self.iter_for_spo(s, p, o).next().is_some()
     }
 
-    fn len(&self) -> usize {
-        self.iter().count()
-    }
-
-    fn iter_matching<'a, S, P, O> (&'a self, ms: &'a S, mp: &'a P, mo: &'a O) -> TripleIterator<'a, Self::SHolder, Self::SHolder, Self::SHolder> where
-        S: TermMatcher<Self::SHolder>,
-        P: TermMatcher<Self::SHolder>,
-        O: TermMatcher<Self::SHolder>,
+    fn iter_matching<'a, S, P, O> (&'a self, ms: &'a S, mp: &'a P, mo: &'a O) -> TripleIterator<'a, Self::Holder, Self::Holder, Self::Holder> where
+        S: TermMatcher<Self::Holder>,
+        P: TermMatcher<Self::Holder>,
+        O: TermMatcher<Self::Holder>,
     {
         match (&ms.constant(), &mp.constant(), &mo.constant()) {
             (None,    None,    None   )    => Box::from(
@@ -181,9 +177,9 @@ pub trait MutableGraph : Graph {
     // Note that the default implementation is rather naive,
     // and could be improved in specific implementations of the trait.
     fn remove_matching<S, P, O> (&mut self, ms: &S, mp: &P, mo: &O) -> usize where
-        S: TermMatcher<Self::SHolder>,
-        P: TermMatcher<Self::SHolder>,
-        O: TermMatcher<Self::SHolder>,
+        S: TermMatcher<Self::Holder>,
+        P: TermMatcher<Self::Holder>,
+        O: TermMatcher<Self::Holder>,
     {
         let mut to_remove = vec![];
         for (s, p, o) in self.iter_matching(ms, mp, mo) {
@@ -201,9 +197,9 @@ pub trait MutableGraph : Graph {
     // Note that the default implementation is rather naive,
     // and could be improved in specific implementations of the trait.
     fn retain<S, P, O> (&mut self, ms: S, mp: P, mo: O) where
-        S: TermMatcher<Self::SHolder>,
-        P: TermMatcher<Self::SHolder>,
-        O: TermMatcher<Self::SHolder>,
+        S: TermMatcher<Self::Holder>,
+        P: TermMatcher<Self::Holder>,
+        O: TermMatcher<Self::Holder>,
     {
         self.remove_matching(
             &|t: &Term<_>| !ms.try(t),
