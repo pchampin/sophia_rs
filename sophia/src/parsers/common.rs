@@ -1,41 +1,12 @@
 use std;
+use std::borrow::Cow;
+use std::iter::once;
 
 use pest::{Error, RuleType, iterators::Pair};
 
 use ::term::Term;
 
-#[derive(Clone, Debug)]
-pub enum BooStr<'a> {
-    B(&'a str),
-    O(Box<str>),
-}
-
-impl<'a> std::borrow::Borrow<str> for BooStr<'a> {
-    fn borrow(&self) -> &str {
-        match self {
-            BooStr::B(borrowed) => borrowed,
-            BooStr::O(owned) => &owned[..],
-        }
-    }
-}
-
-impl<'a> Into<Box<str>> for BooStr<'a> {
-    fn into(self) -> Box<str> {
-        match self {
-            BooStr::B(borrowed) => Box::from(borrowed),
-            BooStr::O(owned) => owned,
-        }
-    }
-}
-
-impl<'a, 'b:'a> From<&'b str> for BooStr<'a> {
-    fn from(other: &'b str) -> BooStr<'a> {
-        BooStr::B(other)
-    }
-}
-
-pub(crate) type BooTerm<'a> = Term<BooStr<'a>>;
-
+pub(crate) type CowTerm<'a> = Term<Cow<'a, str>>;
 
 /// Return the unescaped version of `pair.to_str()`,
 /// assuming that `pair`'s inner pairs are only ECHAR or UCHAR
@@ -43,27 +14,29 @@ pub(crate) type BooTerm<'a> = Term<BooStr<'a>>;
 ///
 /// `delim` is the size of the delimiter,
 /// which will be trimmed off the start and end of the result.
-pub(crate) fn unescape_str<'a, R> (pair: Pair<'a,R>, delim: usize) -> Result<BooStr<'a>, Error<'a,R>> where
+pub(crate) fn unescape_str<'a, R> (pair: Pair<'a,R>, delim: usize) -> Result<Cow<'a, str>, Error<'a,R>> where
     R: RuleType,
 {
     let txt = pair.as_str();
-    let inner:Vec<_> = pair.clone().into_inner().collect();
-    if inner.len() == 0 {
-        return Ok(BooStr::B(&txt[delim..txt.len()-delim]));
+    let mut inner_pairs = pair.clone().into_inner();
+    let first_inner = inner_pairs.next();
+    if first_inner.is_none() {
+        return Ok(Cow::Borrowed(&txt[delim..txt.len()-delim]));
     }
     // else we have escape sequences to unescape
-    let mut dst = String::new();
+    let mut dst = String::with_capacity(txt.len()-2*delim);
     let span = pair.clone().into_span();
     let offset = -(span.start() as isize);
 
+    // rebuild src containing the original text on which inner pairs are indexed
     let slice = unsafe {
         std::slice::from_raw_parts(txt.as_ptr().offset(offset),
                                    txt.len()+span.start())
     };
     let src = std::str::from_utf8(slice).unwrap();
 
-    let mut i = span.start();
-    for pair in inner.into_iter() {
+    let mut i = span.start() + delim;
+    for pair in once(first_inner.unwrap()).chain(inner_pairs) {
         let escape_seq = pair.as_str();
         let span = pair.clone().into_span();
         dst.push_str(&src[i..span.start()]);
@@ -74,9 +47,8 @@ pub(crate) fn unescape_str<'a, R> (pair: Pair<'a,R>, delim: usize) -> Result<Boo
         );
         i = span.end();
     }
-    dst.push_str(&src[i..]);
-    let len = dst.len();
-    Ok(BooStr::O(dst[delim..(len - delim)].into()))
+    dst.push_str(&src[i..(src.len()-delim)]);
+    Ok(Cow::Owned(dst))
 }
 
 /// Transform the match of ECHAR or UCHAR into the corresponding character.
@@ -230,7 +202,7 @@ mod test {
         use pest::Parser;
         use super::super::nt::{NtParser,Rule};
 
-        fn test<'a> (txt: &'a str) -> Result<Box<str>, String> {
+        fn test<'a> (txt: &'a str) -> Result<String, String> {
             // parsing a triple just to test that unescape_str works with an offset > 0.
             let triple = format!("<> <> {}.", txt);
             let mut pairs = NtParser::parse(Rule::triple, &triple[..]).unwrap();
@@ -243,29 +215,29 @@ mod test {
                     object
                 };
             unescape_str(pair, 1)
-            .map(|ref_or_owned| ref_or_owned.into())
+            .map(|cow| cow.into_owned())
             .map_err(|err| format!("{:?}", err))
         }
 
-        assert_eq!(test(r#""hello world""#).unwrap().as_ref(),
-                          "hello world");
-        assert_eq!(test(r#""hello\nworld""#).unwrap().as_ref(),
-                          "hello\nworld");
-        assert_eq!(test(r#""hell\u006f\nworld""#).unwrap().as_ref(),
-                          "hello\nworld");
-        assert_eq!(test(r#""hell\u006f\nw\U0000006Frld""#).unwrap().as_ref(),
-                          "hello\nworld");
+        assert_eq!(test(&r#""hello world""#).unwrap(),
+                            "hello world");
+        assert_eq!(test(&r#""hello\nworld""#).unwrap(),
+                            "hello\nworld");
+        assert_eq!(test(&r#""hell\u006f\nworld""#).unwrap(),
+                            "hello\nworld");
+        assert_eq!(test(&r#""hell\u006f\nw\U0000006Frld""#).unwrap(),
+                            "hello\nworld");
 
         assert!(test(r#""hello\UFFFFFFFFworld""#).is_err());
 
-        assert_eq!(test(r"<hello>").unwrap().as_ref(),
-                         "hello");
-        assert_eq!(test(r"<hell\u006F>").unwrap().as_ref(),
-                         "hello");
-        assert_eq!(test(r"<he\U0000006cl\u006F>").unwrap().as_ref(),
-                         "hello");
-        assert_eq!(test(r"<hel\U0000006c\u006F>").unwrap().as_ref(),
-                         "hello");
+        assert_eq!(test(&r"<hello>").unwrap(),
+                           "hello");
+        assert_eq!(test(&r"<hell\u006F>").unwrap(),
+                           "hello");
+        assert_eq!(test(&r"<he\U0000006cl\u006F>").unwrap(),
+                           "hello");
+        assert_eq!(test(&r"<hel\U0000006c\u006F>").unwrap(),
+                           "hello");
 
         assert!(test(r"<hello\UFFFFFFFFworld>").is_err());
     }

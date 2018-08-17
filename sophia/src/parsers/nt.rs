@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::io::{BufRead};
 
 use pest::{Error, Parser, iterators::Pair};
@@ -85,44 +86,44 @@ pub fn parse_rule_from_read_into<R, G> (rule: Rule, reader: R, graph: &mut G) ->
     Ok(total)
 }
 
-fn pair_to_term<'a> (pair: Pair<'a, Rule>, strict: bool) -> Result<BooTerm<'a>, Error<'a,Rule>> {
+fn pair_to_term<'a> (pair: Pair<'a, Rule>, strict: bool) -> Result<CowTerm<'a>, Error<'a,Rule>> {
     let mut ref_pair = pair.clone();
     match pair.as_rule() {
         Rule::iriref => {
-            let boo = unescape_str(pair, 1)?;
-            Term::new_iri(boo)
+            let cow = unescape_str(pair, 1)?;
+            Term::new_iri(cow)
         }
         Rule::blank_node_label => {
             let txt = pair.as_str();
-            Term::new_bnode(BooStr::B(&txt[2..]))
+            Term::new_bnode(Cow::Borrowed(&txt[2..]))
         }
         Rule::literal => {
             let mut pairs = pair.into_inner();
             let value_pair = pairs.next().unwrap();
-            let value_boo = unescape_str(value_pair, 1)?;
+            let value_cow = unescape_str(value_pair, 1)?;
 
             match pairs.next() {
                 None => {
-                    Term::new_literal_dt(value_boo, BooTerm::from(&xsd::string))
+                    Term::new_literal_dt(value_cow, CowTerm::from(&xsd::string))
                 }
                 Some(ref subpair) if subpair.as_rule() == Rule::iriref => {
                     ref_pair = subpair.clone();
                     let dt_txt = unescape_str(subpair.clone(), 1)?;
                     Term::new_iri(dt_txt)
                     .and_then(|datatype| {
-                        Term::new_literal_dt(value_boo, datatype)
+                        Term::new_literal_dt(value_cow, datatype)
                     })
                 }
                 Some(ref subpair) if subpair.as_rule() == Rule::langtag => {
                     ref_pair = subpair.clone();
-                    Term::new_literal_lang(value_boo, &subpair.as_str()[1..])
+                    Term::new_literal_lang(value_cow, &subpair.as_str()[1..])
                 }
                 _ => unreachable!()
             }
         }
         Rule::variable => {
             let txt = pair.as_str();
-            Term::new_variable(BooStr::B(&txt[1..]))
+            Term::new_variable(Cow::Borrowed(&txt[1..]))
         }
         _ => panic!(format!("Unsupported rule {:?}", pair.as_rule())),
     }
