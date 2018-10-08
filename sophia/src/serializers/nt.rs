@@ -32,11 +32,10 @@ pub fn stringify_graph<G> (g: &G) -> String where
     stringify_triples(&mut g.iter())
 }
 
-pub fn write_triples<I, T, U, W> (w: &mut W, triples: &mut I) -> Result<()>  where
+pub fn write_triples<I, W> (w: &mut W, triples: &mut I) -> Result<()>  where
     W: Write,
-    I: Iterator<Item=T>,
-    T: Triple<U>,
-    U: Borrow<str>,
+    I: Iterator,
+    I::Item: Triple,
 {
     for triple in triples {
         write_triple(w, &triple)?;
@@ -44,19 +43,17 @@ pub fn write_triples<I, T, U, W> (w: &mut W, triples: &mut I) -> Result<()>  whe
     Ok(())
 }
 
-pub fn stringify_triples<I, T, U> (triples: &mut I) -> String where
-    I: Iterator<Item=T>,
-    T: Triple<U>,
-    U: Borrow<str>,
+pub fn stringify_triples<I> (triples: &mut I) -> String where
+    I: Iterator,
+    I::Item: Triple,
 {
     let mut v = Vec::new();
     write_triples(&mut v, triples).unwrap();
     unsafe { String::from_utf8_unchecked(v) }
 }
 
-pub fn write_triple<T, U> (w: &mut impl Write, t: &T) -> Result<()> where
-    T: Triple<U>,
-    U: Borrow<str>,
+pub fn write_triple<T> (w: &mut impl Write, t: &T) -> Result<()> where
+    T: Triple,
 {
     write_term(w, t.s())?;
     w.write_all(" ".as_bytes())?;
@@ -67,9 +64,8 @@ pub fn write_triple<T, U> (w: &mut impl Write, t: &T) -> Result<()> where
     Ok(())
 }
 
-pub fn stringify_triple<T, U> (t: &T) -> String where
-    T: Triple<U>,
-    U: Borrow<str>,
+pub fn stringify_triple<T> (t: &T) -> String where
+    T: Triple,
 {
     let mut v = Vec::new();
     write_triple(&mut v, t).unwrap();
