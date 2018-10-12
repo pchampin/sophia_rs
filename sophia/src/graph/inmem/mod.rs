@@ -149,15 +149,16 @@ impl<I> Graph for GenericGraph<I> where
     I::Index: Hash,
 {
     type Holder = <I::Factory as TermFactory>::Holder;
+    type Error = ();
 
-    fn iter<'a> (&'a self) -> TripleIterator<'a, Self::Holder> {
+    fn iter<'a> (&'a self) -> FallibleTripleIterator<'a, Self> {
         Box::from(
             self.triples.iter()
-            .map(move |(s, p, o)| (
-                self.terms.get_term(*s).unwrap(),
-                self.terms.get_term(*p).unwrap(),
-                self.terms.get_term(*o).unwrap(),
-            ))
+            .map(move |(si, pi, oi)| Ok((
+                self.terms.get_term(*si).unwrap(),
+                self.terms.get_term(*pi).unwrap(),
+                self.terms.get_term(*oi).unwrap(),
+            )))
         )
     }
 

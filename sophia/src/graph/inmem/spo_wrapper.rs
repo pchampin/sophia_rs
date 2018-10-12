@@ -37,7 +37,8 @@ impl<T> GraphWrapper for SpoWrapper<T> where
         &mut self.wrapped
     }
 
-    fn gw_iter_for_s<'a, U> (&'a self, s: &'a Term<U>) -> TripleIterator<'a, <Self::Wrapped as Graph>::Holder> where
+    fn gw_iter_for_s<'a, U> (&'a self, s: &'a Term<U>) -> FallibleTripleIterator<'a, Self::Wrapped>
+    where
         U: Borrow<str>,
     {
         if let Some(si) = self.wrapped.get_index(s) {
@@ -52,9 +53,9 @@ impl<T> GraphWrapper for SpoWrapper<T> where
                     ))
                     .flat_map(move |(s,p,ois)|
                         ois.iter()
-                        .map(move |oi| (
+                        .map(move |oi| Ok((
                             s, p, self.wrapped.get_term(*oi).unwrap(),
-                        ))
+                        )))
                     )
                 )
             }
@@ -62,7 +63,8 @@ impl<T> GraphWrapper for SpoWrapper<T> where
         Box::new(empty())
     }
 
-    fn gw_iter_for_sp<'a, U, V> (&'a self, s: &'a Term<U>, p: &'a Term<V>) -> TripleIterator<'a, <Self::Wrapped as Graph>::Holder> where
+    fn gw_iter_for_sp<'a, U, V> (&'a self, s: &'a Term<U>, p: &'a Term<V>) -> FallibleTripleIterator<'a, Self::Wrapped>
+    where
         U: Borrow<str>,
         V: Borrow<str>,
     {
@@ -73,9 +75,9 @@ impl<T> GraphWrapper for SpoWrapper<T> where
                     let p = self.wrapped.get_term(pi).unwrap();
                     return Box::new(
                         ois.iter()
-                        .map(move |oi| (
+                        .map(move |oi| Ok((
                             s, p, self.wrapped.get_term(*oi).unwrap(),
-                        ))
+                        )))
                     )
                 }
             }

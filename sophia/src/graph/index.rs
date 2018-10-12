@@ -144,19 +144,19 @@ macro_rules! impl_mutable_graph_for_indexed_mutable_graph {
         }
     };
     () => {
-        fn insert<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> bool where
+        fn insert<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> GResult<Self, bool> where
             T_: Borrow<str>,
             U_: Borrow<str>,
             V_: Borrow<str>,
         {
-            self.insert_indexed(s, p, o).is_some()
+            Ok(self.insert_indexed(s, p, o).is_some())
         }
-        fn remove<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> bool where
+        fn remove<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> GResult<Self, bool> where
             T_: Borrow<str>,
             U_: Borrow<str>,
             V_: Borrow<str>,
         {
-            self.remove_indexed(s, p, o).is_some()
+            Ok(self.remove_indexed(s, p, o).is_some())
         }        
     };
 }

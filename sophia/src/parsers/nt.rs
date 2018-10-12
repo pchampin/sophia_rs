@@ -60,7 +60,7 @@ pub fn parse_rule_from_str_into<'a, G> (rule: Rule, txt: &'a str, graph: &mut G)
         let s = pair_to_term(pairs.next().unwrap(), strict)?;
         let p = pair_to_term(pairs.next().unwrap(), strict)?;
         let o = pair_to_term(pairs.next().unwrap(), strict)?;
-        if graph.insert(&s, &p, &o) { added += 1; }
+        if graph.insert(&s, &p, &o).unwrap() { added += 1; }
     }
     Ok(added)
 }

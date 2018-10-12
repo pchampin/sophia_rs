@@ -14,10 +14,11 @@ impl<T> Graph for [(Term<T>, Term<T>, Term<T>)] where
     T: Borrow<str>,
 {
     type Holder = T;
+    type Error = ();
 
     #[inline]
-    fn iter(&self) -> TripleIterator<Self::Holder> {
-        Box::from(self.iter().map(|t| (t.s(), t.p(), t.o())))
+    fn iter(&self) -> FallibleTripleIterator<Self> {
+        Box::from(self.iter().map(|t| Ok((t.s(), t.p(), t.o()))))
     }
 
     #[inline]
@@ -30,10 +31,11 @@ impl<T> Graph for Vec<(Term<T>, Term<T>, Term<T>)> where
     T: Borrow<str>,
 {
     type Holder = T;
+    type Error = ();
 
     #[inline]
-    fn iter(&self) -> TripleIterator<Self::Holder> {
-        Box::from(self[..].iter().map(|t| (t.s(), t.p(), t.o())))
+    fn iter(&self) -> FallibleTripleIterator<Self> {
+        Box::from(self[..].iter().map(|t| Ok((t.s(), t.p(), t.o()))))
     }
 
     #[inline]
@@ -46,10 +48,11 @@ impl<T> Graph for HashSet<(Term<T>, Term<T>, Term<T>)> where
     T: Borrow<str> + Eq + Hash,
 {
     type Holder = T;
+    type Error = ();
 
     #[inline]
-    fn iter(&self) -> TripleIterator<Self::Holder> {
-        Box::from(self.iter().map(|t| (t.s(), t.p(), t.o())))
+    fn iter(&self) -> FallibleTripleIterator<Self> {
+        Box::from(self.iter().map(|t| Ok((t.s(), t.p(), t.o()))))
     }
 
     #[inline]
@@ -60,7 +63,7 @@ impl<T> Graph for HashSet<(Term<T>, Term<T>, Term<T>)> where
 
 impl MutableGraph for HashSet<(BoxTerm, BoxTerm, BoxTerm)> where
 {
-    fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> bool where
+    fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> GResult<Self, bool> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
@@ -68,9 +71,9 @@ impl MutableGraph for HashSet<(BoxTerm, BoxTerm, BoxTerm)> where
         let s = BoxTerm::from(s);
         let p = BoxTerm::from(p);
         let o = BoxTerm::from(o);
-        HashSet::insert(self, (s, p, o))
+        Ok(HashSet::insert(self, (s, p, o)))
     }
-    fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> bool where
+    fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> GResult<Self, bool> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
@@ -78,7 +81,7 @@ impl MutableGraph for HashSet<(BoxTerm, BoxTerm, BoxTerm)> where
         let s = BoxTerm::from(s);
         let p = BoxTerm::from(p);
         let o = BoxTerm::from(o);
-        HashSet::remove(self, &(s, p, o))
+        Ok(HashSet::remove(self, &(s, p, o)))
     }
 }
 

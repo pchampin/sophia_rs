@@ -17,51 +17,51 @@ pub trait GraphWrapper
     fn get_wrapped_mut(&mut self) -> &mut Self::Wrapped;
 
     #[inline]
-    fn gw_iter<'a> (&'a self) -> TripleIterator<'a, <Self::Wrapped as ::graph::Graph>::Holder> {
+    fn gw_iter<'a> (&'a self) -> FallibleTripleIterator<'a, Self::Wrapped> {
         self.get_wrapped().iter()
     }
 
     #[inline]
-    fn gw_iter_for_s<'a, T> (&'a self, s: &'a Term<T>) -> TripleIterator<'a, <Self::Wrapped as ::graph::Graph>::Holder> where
+    fn gw_iter_for_s<'a, T> (&'a self, s: &'a Term<T>) -> FallibleTripleIterator<'a, Self::Wrapped> where
         T: Borrow<str>,
     {
         self.get_wrapped().iter_for_s(s)
     }
     #[inline]
-    fn gw_iter_for_p<'a, T> (&'a self, p: &'a Term<T>) -> TripleIterator<'a, <Self::Wrapped as ::graph::Graph>::Holder> where
+    fn gw_iter_for_p<'a, T> (&'a self, p: &'a Term<T>) -> FallibleTripleIterator<'a, Self::Wrapped> where
         T: Borrow<str>,
     {
         self.get_wrapped().iter_for_p(p)
     }
     #[inline]
-    fn gw_iter_for_o<'a, T> (&'a self, o: &'a Term<T>) -> TripleIterator<'a, <Self::Wrapped as ::graph::Graph>::Holder> where
+    fn gw_iter_for_o<'a, T> (&'a self, o: &'a Term<T>) -> FallibleTripleIterator<'a, Self::Wrapped> where
         T: Borrow<str>,
     {
         self.get_wrapped().iter_for_o(o)
     }
     #[inline]
-    fn gw_iter_for_sp<'a, T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> TripleIterator<'a, <Self::Wrapped as ::graph::Graph>::Holder> where
+    fn gw_iter_for_sp<'a, T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> FallibleTripleIterator<'a, Self::Wrapped> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
         self.get_wrapped().iter_for_sp(s, p)
     }
     #[inline]
-    fn gw_iter_for_so<'a, T, U> (&'a self, s: &'a Term<T>, o: &'a Term<U>) -> TripleIterator<'a, <Self::Wrapped as ::graph::Graph>::Holder> where
+    fn gw_iter_for_so<'a, T, U> (&'a self, s: &'a Term<T>, o: &'a Term<U>) -> FallibleTripleIterator<'a, Self::Wrapped> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
         self.get_wrapped().iter_for_so(s, o)
     }
     #[inline]
-    fn gw_iter_for_po<'a, T, U> (&'a self, p: &'a Term<T>, o: &'a Term<U>) -> TripleIterator<'a, <Self::Wrapped as ::graph::Graph>::Holder> where
+    fn gw_iter_for_po<'a, T, U> (&'a self, p: &'a Term<T>, o: &'a Term<U>) -> FallibleTripleIterator<'a, Self::Wrapped> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
         self.get_wrapped().iter_for_po(p, o)
     }
     #[inline]
-    fn gw_iter_for_spo<'a, T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> TripleIterator<'a, <Self::Wrapped as ::graph::Graph>::Holder> where
+    fn gw_iter_for_spo<'a, T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> FallibleTripleIterator<'a, Self::Wrapped> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
@@ -70,7 +70,7 @@ pub trait GraphWrapper
     }
 
     #[inline]
-    fn gw_contains(&self, s: &RefTerm, p: &RefTerm, o: &RefTerm) -> bool {
+    fn gw_contains(&self, s: &RefTerm, p: &RefTerm, o: &RefTerm) -> GResult<Self::Wrapped, bool> {
         self.get_wrapped().contains(s, p, o)
     }
 
@@ -133,52 +133,53 @@ macro_rules! impl_graph_for_wrapper {
     };
     () => {
         type Holder = <<Self as GraphWrapper>::Wrapped as Graph>::Holder;
+        type Error = <<Self as GraphWrapper>::Wrapped as Graph>::Error;
 
         #[inline]
-        fn iter<'a> (&'a self) -> TripleIterator<'a, Self::Holder> {
+        fn iter<'a> (&'a self) -> FallibleTripleIterator<'a, Self> {
             GraphWrapper::gw_iter(self)
         }
         #[inline]
-        fn iter_for_s<'a, T_> (&'a self, s: &'a Term<T_>) -> TripleIterator<'a, Self::Holder> where
+        fn iter_for_s<'a, T_> (&'a self, s: &'a Term<T_>) -> FallibleTripleIterator<'a, Self> where
             T_: Borrow<str>,
         {
             GraphWrapper::gw_iter_for_s(self, s)
         }
         #[inline]
-        fn iter_for_p<'a, T_> (&'a self, p: &'a Term<T_>) -> TripleIterator<'a, Self::Holder> where
+        fn iter_for_p<'a, T_> (&'a self, p: &'a Term<T_>) -> FallibleTripleIterator<'a, Self> where
             T_: Borrow<str>,
         {
             GraphWrapper::gw_iter_for_p(self, p)
         }
         #[inline]
-        fn iter_for_o<'a, T_> (&'a self, o: &'a Term<T_>) -> TripleIterator<'a, Self::Holder> where
+        fn iter_for_o<'a, T_> (&'a self, o: &'a Term<T_>) -> FallibleTripleIterator<'a, Self> where
             T_: Borrow<str>,
         {
             GraphWrapper::gw_iter_for_o(self, o)
         }
         #[inline]
-        fn iter_for_sp<'a, T_, U_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>) -> TripleIterator<'a, Self::Holder> where
+        fn iter_for_sp<'a, T_, U_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>) -> FallibleTripleIterator<'a, Self> where
             T_: Borrow<str>,
             U_: Borrow<str>,
         {
             GraphWrapper::gw_iter_for_sp(self, s, p)
         }
         #[inline]
-        fn iter_for_so<'a, T_, U_> (&'a self, s: &'a Term<T_>, o: &'a Term<U_>) -> TripleIterator<'a, Self::Holder> where
+        fn iter_for_so<'a, T_, U_> (&'a self, s: &'a Term<T_>, o: &'a Term<U_>) -> FallibleTripleIterator<'a, Self> where
             T_: Borrow<str>,
             U_: Borrow<str>,
         {
             GraphWrapper::gw_iter_for_so(self, s, o)
         }
         #[inline]
-        fn iter_for_po<'a, T_, U_> (&'a self, p: &'a Term<T_>, o: &'a Term<U_>) -> TripleIterator<'a, Self::Holder> where
+        fn iter_for_po<'a, T_, U_> (&'a self, p: &'a Term<T_>, o: &'a Term<U_>) -> FallibleTripleIterator<'a, Self> where
             T_: Borrow<str>,
             U_: Borrow<str>,
         {
             GraphWrapper::gw_iter_for_po(self, p, o)
         }
         #[inline]
-        fn iter_for_spo<'a, T_, U_, V_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>, o: &'a Term<V_>) -> TripleIterator<'a, Self::Holder> where
+        fn iter_for_spo<'a, T_, U_, V_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>, o: &'a Term<V_>) -> FallibleTripleIterator<'a, Self> where
             T_: Borrow<str>,
             U_: Borrow<str>,
             V_: Borrow<str>,
@@ -187,7 +188,7 @@ macro_rules! impl_graph_for_wrapper {
         }
 
         #[inline]
-        fn contains(&self, s: &RefTerm, p: &RefTerm, o: &RefTerm) -> bool {
+        fn contains(&self, s: &RefTerm, p: &RefTerm, o: &RefTerm) -> GResult<Self, bool> {
             GraphWrapper::gw_contains(self, s, p, o)
         }
 

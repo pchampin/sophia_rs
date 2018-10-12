@@ -2,7 +2,7 @@
 
 // TODO document the fact that
 // all functions in this module accept any `Write`,
-// but are not trying to optimize the number of write operations,
+// but are not trying to optimize the number of io::Write operations,
 // so in most cases, they should be passed a `BufWriter`
 
 // TODO by default, this serializer produces canonical (i.e. UTF-8) N-Triples.
@@ -12,7 +12,8 @@
 // taking care of *not* double-escaping `\n`, `\r`, `\\` and `"`.
 
 use std::borrow::Borrow;
-use std::io::{Result, Write};
+use std::fmt::Debug;
+use std::io;
 
 use ::graph::Graph;
 use ::term::{LiteralKind,Term};
@@ -20,7 +21,7 @@ use ::triple::Triple;
 
 /*
 */
-pub fn write_graph<G> (w: &mut impl Write, g: &G) -> Result<()>  where
+pub fn write_graph<G> (w: &mut impl io::Write, g: &G) -> io::Result<()>  where
     G: Graph,
 {
     write_triples(w, &mut g.iter())
@@ -32,27 +33,30 @@ pub fn stringify_graph<G> (g: &G) -> String where
     stringify_triples(&mut g.iter())
 }
 
-pub fn write_triples<I, W> (w: &mut W, triples: &mut I) -> Result<()>  where
-    W: Write,
-    I: Iterator,
-    I::Item: Triple,
+pub fn write_triples<I, W, T, E> (w: &mut W, triples: &mut I) -> io::Result<()>  where
+    W: io::Write,
+    I: Iterator<Item=Result<T, E>>,
+    T: Triple,
+    E: Debug,
 {
-    for triple in triples {
-        write_triple(w, &triple)?;
+    for ftriple in triples {
+        let triple = ftriple.unwrap();
+        write_triple(w, &triple)?; // TODO handle error of triples
     }
     Ok(())
 }
 
-pub fn stringify_triples<I> (triples: &mut I) -> String where
-    I: Iterator,
-    I::Item: Triple,
+pub fn stringify_triples<I, T, E> (triples: &mut I) -> String where
+    I: Iterator<Item=Result<T, E>>,
+    T: Triple,
+    E: Debug,
 {
     let mut v = Vec::new();
     write_triples(&mut v, triples).unwrap();
     unsafe { String::from_utf8_unchecked(v) }
 }
 
-pub fn write_triple<T> (w: &mut impl Write, t: &T) -> Result<()> where
+pub fn write_triple<T> (w: &mut impl io::Write, t: &T) -> io::Result<()> where
     T: Triple,
 {
     write_term(w, t.s())?;
@@ -72,9 +76,9 @@ pub fn stringify_triple<T> (t: &T) -> String where
     unsafe { String::from_utf8_unchecked(v) }
 }
 
-pub fn write_term<T,W> (w: &mut W, t: &Term<T>) -> Result<()> where
+pub fn write_term<T,W> (w: &mut W, t: &Term<T>) -> io::Result<()> where
     T: Borrow<str>,
-    W: Write,
+    W: io::Write,
 {
     use self::Term::*;
     use self::LiteralKind::*;
@@ -125,7 +129,7 @@ pub fn stringify_term<T> (t: &Term<T>) -> String where
 }
 
 
-pub(crate) fn write_quoted_string(w: &mut impl Write, txt: &str) -> Result<()> {
+pub(crate) fn write_quoted_string(w: &mut impl io::Write, txt: &str) -> io::Result<()> {
     let mut cut = txt.len();
     let mut cutchar = '\0';
     for (pos, chr) in txt.char_indices() {
@@ -149,7 +153,7 @@ pub(crate) fn write_quoted_string(w: &mut impl Write, txt: &str) -> Result<()> {
     write_quoted_string(w, &txt[cut+1..])
 }
 
-pub(crate) fn write_non_n3_bnode_id(w: &mut impl Write, id: &str) -> Result<()> {
+pub(crate) fn write_non_n3_bnode_id(w: &mut impl io::Write, id: &str) -> io::Result<()> {
     fn halfbyte_to_hex(val: u8) -> u8 {
         if val < 10 { ('0' as u8) + val }
         else        { ('a' as u8) + val }
@@ -260,7 +264,7 @@ mod test {
               StaticTerm::new_literal_dt("Pierre-Antoine", xsd::string).unwrap()
             ),
         ];
-        let s = stringify_triples(&mut triples.into_iter());
+        let s = stringify_triples(&mut triples.iter());
         assert_eq!(s, r#"<http://champin.net/#pa> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person> .
 <http://champin.net/#pa> <http://schema.org/name> "Pierre-Antoine" .
 "#);
