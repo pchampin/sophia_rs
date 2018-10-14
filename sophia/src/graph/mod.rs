@@ -9,5 +9,6 @@ mod test;
 pub mod index;
 pub mod inmem;
 
-mod traits; pub use self::traits::*;
 mod ext_impl; pub use self::ext_impl::*;
+mod sinks; pub use self::sinks::*;
+mod traits; pub use self::traits::*;

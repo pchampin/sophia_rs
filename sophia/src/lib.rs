@@ -27,5 +27,6 @@ pub mod graph;
 pub mod ns;
 pub mod parsers;
 pub mod serializers;
+pub mod streams;
 pub mod term;
 pub mod triple;

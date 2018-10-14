@@ -5,6 +5,8 @@ use std::fmt::Debug;
 
 use resiter::filter_x::*;
 
+use ::graph::sinks::*;
+use ::streams::*;
 use ::term::*;
 use ::term::matcher::TermMatcher;
 use ::triple::*;
@@ -185,6 +187,32 @@ pub trait MutableGraph : Graph {
         V:Borrow<str>,
     ;
 
+    // A sink for inserting many triples
+    #[inline]
+    fn inserter(&mut self) -> Inserter<Self> {
+        Inserter::new(self)
+    }
+
+    // Insert all triples from a source
+    #[inline]
+    fn insert_all<TS: TripleSource>(&mut self, src: TS)
+    -> Result<usize, WhereFrom<TS::Error, Self::Error>> {
+        src.into_sink(&mut self.inserter())
+    }
+
+    // A sink for removing many triples
+    #[inline]
+    fn remover(&mut self) -> Remover<Self> {
+        Remover::new(self)
+    }
+
+    // Remove all triples from a source
+    #[inline]
+    fn remove_all<TS: TripleSource>(&mut self, src: TS)
+    -> Result<usize, WhereFrom<TS::Error, Self::Error>> {
+        src.into_sink(&mut self.remover())
+    }
+
     // Remove all triples matching the given matchers.
     // Note that the default implementation is rather naive,
     // and could be improved in specific implementations of the trait.
@@ -199,11 +227,8 @@ pub trait MutableGraph : Graph {
             to_remove.push((
                 BoxTerm::from(s), BoxTerm::from(p), BoxTerm::from(o)));
         }
-        let ret = to_remove.len();
-        for (s, p, o) in &to_remove {
-            self.remove(s, p, o)?;
-        }
-        Ok(ret)
+        let mut to_remove = to_remove.into_iter().wrap_as_oks();
+        self.remove_all(&mut to_remove).unwrap_upstream()
     }
 
     // Remove all triples that do not the given matchers.
