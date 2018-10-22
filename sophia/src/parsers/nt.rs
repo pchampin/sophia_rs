@@ -1,10 +1,10 @@
 use std::borrow::Cow;
-use std::io::{BufRead};
+use std::io::{BufRead, BufReader, Cursor, Read};
 
 use pest::{Error, Parser, iterators::Pair};
 
-use ::graph::MutableGraph;
 use ::ns::xsd;
+use ::streams::*;
 use ::term::{Err, Term};
 use super::common::*;
 
@@ -14,76 +14,78 @@ const _GRAMMAR: &'static str = include_str!("nt.pest");
 
 #[derive(Parser)]
 #[grammar = "parsers/nt.pest"]
-pub struct NtParser;
+pub struct PestNtParser;
 
-pub fn parse_str_into<'a, G> (txt: &'a str, graph: &mut G) -> Result<usize, Error<'a, Rule>> where
-    G: MutableGraph,
-{
-    parse_rule_from_str_into(Rule::generalized_ntriples_doc, txt, graph)
+
+
+#[derive(Clone, Debug, Default)]
+pub struct Config {
+    pub strict: bool,
 }
 
-pub fn parse_read_into<R, G> (reader: R, graph: &mut G) -> Result<usize, super::Error> where
-    R: BufRead,
-    G: MutableGraph,
-{
-    parse_rule_from_read_into(Rule::generalized_triple, reader, graph)
-}
-
-pub mod strict {
-    use pest::{Error};
-
-    use ::graph::MutableGraph;
-    use super::*;
-
-    pub fn parse_str_into<'a, G> (txt: &'a str, graph: &mut G) -> Result<usize, Error<'a, Rule>> where
-        G: MutableGraph,
-    {
-        parse_rule_from_str_into(Rule::ntriples_doc, txt, graph)
+impl Config {
+    #[inline]
+    pub fn parse_bufread<B: BufRead>(&self, bufread: B) -> NtParser<B> {
+        NtParser::new(bufread, self.clone())
     }
 
-    pub fn parse_read_into<R, G> (reader: R, graph: &mut G) -> Result<usize, super::super::Error> where
-        R: BufRead,
-        G: MutableGraph,
-    {
-        parse_rule_from_read_into(Rule::triple, reader, graph)
+    #[inline]
+    pub fn parse_read<R: Read>(&self, read: R) -> NtParser<BufReader<R>> {
+        self.parse_bufread(BufReader::new(read))
     }
 
-}
-
-pub fn parse_rule_from_str_into<'a, G> (rule: Rule, txt: &'a str, graph: &mut G) -> Result<usize, Error<'a, Rule>> where
-    G: MutableGraph,
-{
-    let mut added = 0;
-    let strict = rule == Rule::ntriples_doc || rule == Rule::triple;
-    for triple in NtParser::parse(rule, txt)? {
-        let mut pairs = triple.into_inner();
-        let s = pair_to_term(pairs.next().unwrap(), strict)?;
-        let p = pair_to_term(pairs.next().unwrap(), strict)?;
-        let o = pair_to_term(pairs.next().unwrap(), strict)?;
-        if graph.insert(&s, &p, &o).unwrap() { added += 1; }
+    #[inline]
+    pub fn parse_str<'a>(&self, txt: &'a str) -> NtParser<BufReader<Cursor<&'a str>>> {
+        self.parse_read(Cursor::new(txt))
     }
-    Ok(added)
 }
 
-pub fn parse_rule_from_read_into<R, G> (rule: Rule, reader: R, graph: &mut G) -> Result<usize, super::Error> where
-    R: BufRead,
-    G: MutableGraph,
-{
-    let mut total = 0;
-    for (lineidx, line) in reader.lines().enumerate() {
-        let line = line
-            .map_err(|err| super::Error::from_io(err, lineidx+1, total))?;
-        let line = line.trim_left();
-        if line.len() == 0
-        || line.as_bytes()[0] == '#' as u8 {
-            continue;
+def_default_api!(NtParser);
+
+
+pub struct NtParser<B: BufRead> {
+    bufread: B,
+    config: Config,
+}
+
+impl<B: BufRead> NtParser<B> {
+    pub fn new(bufread: B, config: Config) -> Self {
+        NtParser{ bufread, config }
+    }
+}
+
+impl<B: BufRead> TripleSource for NtParser<B> {
+    type Error = super::Error;
+
+    fn into_sink<TS: TripleSink>(self, sink: &mut TS) -> Result<TS::Outcome, WhereFrom<Self::Error, TS::Error>> {
+        let bufread = self.bufread;
+        let config = self.config;
+        let rule = if config.strict {Rule::ntriple_line} else {Rule::generalized_line};
+        for (lineidx, line) in bufread.lines().enumerate() {
+            let line = line
+                .map_err(|err| Upstream(super::Error::from_io(err, lineidx+1)))?;
+            let line = line.trim_left();
+            if line.len() == 0
+            || line.as_bytes()[0] == '#' as u8 {
+                continue;
+            }
+            let triple = parse_rule_from_line(&config, rule, &line)
+                .map_err(|err| Upstream(super::Error::from_pest(err, lineidx+1)))?;
+            sink.feed(&triple)
+                .map_err(|err| Downstream(err))?;
         }
-        let added = parse_rule_from_str_into(rule, &line, graph)
-            .map_err(|err| super::Error::from_pest(err, lineidx+1, total))?;
-        total += added;
-
+        sink.finish()
+            .map_err(|err| Downstream(err))
     }
-    Ok(total)
+}
+
+fn parse_rule_from_line<'a> (config: &Config, rule: Rule, txt: &'a str) -> Result<[CowTerm<'a>;3], Error<'a, Rule>> {
+    let triple = PestNtParser::parse(rule, txt)?.next().unwrap();
+    let mut pairs = triple.into_inner();
+    let s = pair_to_term(pairs.next().unwrap(), config.strict)?;
+    let p = pair_to_term(pairs.next().unwrap(), config.strict)?;
+    let o = pair_to_term(pairs.next().unwrap(), config.strict)?;
+    Ok([s, p, o])
 }
 
 fn pair_to_term<'a> (pair: Pair<'a, Rule>, strict: bool) -> Result<CowTerm<'a>, Error<'a,Rule>> {
@@ -157,8 +159,10 @@ mod test {
 
     type HashSetGraph = HashSet<(BoxTerm, BoxTerm, BoxTerm)>;
 
+    static STRICT: Config = Config{ strict: true };
+
     fn parse(rule: Rule, txt: &str) -> Result<Pairs<Rule>, Error<Rule>> {
-        NtParser::parse(rule, txt)
+        PestNtParser::parse(rule, txt)
     }
 
     /* does not work since the rule 'comment' has been made silent
@@ -329,7 +333,7 @@ mod test {
     #[test]
     fn strict_parse_str() {
         let mut g = HashSetGraph::new();
-        let res = strict::parse_str_into(DOC, &mut g);
+        let res = STRICT.parse_str(DOC).into_graph(&mut g);
         assert_eq!(res, Ok(5));
         assert_eq!(g.len(), 5);
     }
@@ -348,9 +352,9 @@ mod test {
     "#;
 
     #[test]
-    fn parse_str() {
+    fn default_parse_str() {
         let mut g = HashSetGraph::new();
-        let res = parse_str_into(GENERALIZED_DOC, &mut g);
+        let res = parse_str(GENERALIZED_DOC).into_graph(&mut g);
         assert_eq!(res, Ok(7));
         assert_eq!(g.len(), 7);
     }
@@ -358,25 +362,25 @@ mod test {
     #[test]
     fn strict_parse_str_refuses_generalized() {
         let mut g = HashSetGraph::new();
-        let res = strict::parse_str_into(GENERALIZED_DOC, &mut g);
+        let res = STRICT.parse_str(GENERALIZED_DOC).into_graph(&mut g);
         assert!(res.is_err());
-        assert_eq!(g.len(), 0);
+        assert!(g.len() < 7);
     }
 
     #[test]
     fn strict_parse_read() {
         let mut g = HashSetGraph::new();
         let reader = io::Cursor::new(DOC);
-        let res = strict::parse_read_into(reader, &mut g);
+        let res = STRICT.parse_read(reader).into_graph(&mut g);
         assert_eq!(res, Ok(5));
         assert_eq!(g.len(), 5);
     }
 
     #[test]
-    fn parse_read() {
+    fn default_parse_read() {
         let mut g = HashSetGraph::new();
         let reader = io::Cursor::new(GENERALIZED_DOC);
-        let res = parse_read_into(reader, &mut g);
+        let res = parse_read(reader).into_graph(&mut g);
         assert_eq!(res, Ok(7));
         assert_eq!(g.len(), 7);
     }
@@ -385,15 +389,14 @@ mod test {
     fn strict_parse_read_refuses_generalized() {
         let mut g = HashSetGraph::new();
         let reader = io::Cursor::new(GENERALIZED_DOC);
-        let res = strict::parse_read_into(reader, &mut g);
+        let res = STRICT.parse_read(reader).into_graph(&mut g);
         use super::super::Error::Parsing;
-        if let Err(Parsing{lineno, already_added, ..}) = res {
+        if let Err(Upstream(Parsing{lineno, ..})) = res {
             assert_eq!(lineno, 5);
-            assert_eq!(already_added, 1);
         } else {
             assert!(false, "res should be an error");
         }
-        assert_eq!(g.len(), 1);
+        assert  !(g.len() < 7);
     }
 
     #[test]
@@ -402,7 +405,7 @@ mod test {
         let txt = r#"
           <tag:foo> <tag:bar> <tag:baz> . bla bla bla
         "#;
-        let res = parse_str_into(txt, &mut g);
+        let res = parse_str(txt).into_graph(&mut g);
         assert!(res.is_err());
         assert_eq!(g.len(), 0);
     }
@@ -424,7 +427,7 @@ mod test {
                 let f = File::open(&path)?;
                 let f = io::BufReader::new(f);
                 let mut g = HashSetGraph::new();
-                let res = strict::parse_read_into(f, &mut g);
+                let res = STRICT.parse_read(f).into_graph(&mut g);
                 let path = path.to_str().unwrap();
                 if path.contains("-bad-") {
                     assert!(res.is_err(), format!("{} should NOT parse without error", path));
@@ -457,7 +460,7 @@ mod test {
                 let f = File::open(&path)?;
                 let f = io::BufReader::new(f);
                 let mut g = HashSetGraph::new();
-                let res = parse_read_into(f, &mut g);
+                let res = parse_read(f).into_graph(&mut g);
                 assert!(res.is_ok(), format!("{} should parse without error", path.to_str().unwrap()));
             }
             Ok(())

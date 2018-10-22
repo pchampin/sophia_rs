@@ -70,7 +70,7 @@ impl TripleSink for () {
 
 
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum WhereFrom<U, D> {
     Upstream(U),
     Downstream(D),

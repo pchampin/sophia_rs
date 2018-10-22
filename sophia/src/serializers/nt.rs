@@ -12,69 +12,74 @@
 // taking care of *not* double-escaping `\n`, `\r`, `\\` and `"`.
 
 use std::borrow::Borrow;
-use std::fmt::Debug;
 use std::io;
+use std::mem::swap;
 
-use ::graph::Graph;
+use ::streams::*;
 use ::term::{LiteralKind,Term};
 use ::triple::Triple;
 
-/*
-*/
-pub fn write_graph<G> (w: &mut impl io::Write, g: &G) -> io::Result<()>  where
-    G: Graph,
-{
-    write_triples(w, &mut g.iter())
+use super::*;
+
+
+/// NT serializer configuration
+#[derive(Clone, Debug, Default)]
+pub struct Config {
+    ascii: bool,
 }
 
-pub fn stringify_graph<G> (g: &G) -> String where
-    G: Graph,
-{
-    stringify_triples(&mut g.iter())
-}
-
-pub fn write_triples<I, W, T, E> (w: &mut W, triples: &mut I) -> io::Result<()>  where
-    W: io::Write,
-    I: Iterator<Item=Result<T, E>>,
-    T: Triple,
-    E: Debug,
-{
-    for ftriple in triples {
-        let triple = ftriple.unwrap();
-        write_triple(w, &triple)?; // TODO handle error of triples
+impl Config {
+    pub fn writer<W: io::Write>(&self, write: W) -> Writer<W> {
+        Writer::new(write, self.clone())
     }
-    Ok(())
+
+    pub fn stringifier(&self) -> Stringifier {
+        Stringifier::new(self.clone())
+    }
 }
 
-pub fn stringify_triples<I, T, E> (triples: &mut I) -> String where
-    I: Iterator<Item=Result<T, E>>,
-    T: Triple,
-    E: Debug,
-{
-    let mut v = Vec::new();
-    write_triples(&mut v, triples).unwrap();
-    unsafe { String::from_utf8_unchecked(v) }
+def_default_api!();
+
+
+
+pub struct Writer<W: io::Write> {
+    write: W,
 }
 
-pub fn write_triple<T> (w: &mut impl io::Write, t: &T) -> io::Result<()> where
-    T: Triple,
-{
-    write_term(w, t.s())?;
-    w.write_all(" ".as_bytes())?;
-    write_term(w, t.p())?;
-    w.write_all(" ".as_bytes())?;
-    write_term(w, t.o())?;
-    w.write_all(" .\n".as_bytes())?;
-    Ok(())
+impl<W: io::Write> WriteSerializer<W> for Writer<W> {
+    type Config = Config;
+
+    fn new(write: W, config: Self::Config) -> Self {
+        if config.ascii { unimplemented!() }
+        // TODO if ascii is true,
+        // wrap write in a dedicated type that will rewrite non-ascii characters
+        Writer{ write }
+    }
 }
 
-pub fn stringify_triple<T> (t: &T) -> String where
-    T: Triple,
-{
-    let mut v = Vec::new();
-    write_triple(&mut v, t).unwrap();
-    unsafe { String::from_utf8_unchecked(v) }
+impl<W: io::Write> TripleSink for Writer<W> {
+    type Error = io::Error;
+    type Outcome = ();
+
+    fn feed<T: Triple>(&mut self, t: &T) -> Result<(), io::Error> {
+        let w = &mut self.write;
+        write_term(w, t.s())?;
+        w.write_all(" ".as_bytes())?;
+        write_term(w, t.p())?;
+        w.write_all(" ".as_bytes())?;
+        write_term(w, t.o())?;
+        w.write_all(" .\n".as_bytes())?;
+        Ok(())
+    }
+
+    fn finish(&mut self) -> Result<(), io::Error> {
+        Ok(())
+    }
 }
+
+def_stringifier!();
+
+
 
 pub fn write_term<T,W> (w: &mut W, t: &Term<T>) -> io::Result<()> where
     T: Borrow<str>,
@@ -264,7 +269,8 @@ mod test {
               StaticTerm::new_literal_dt("Pierre-Antoine", xsd::string).unwrap()
             ),
         ];
-        let s = stringify_triples(&mut triples.iter());
+        let triples = triples.into_iter().wrap_as_oks();
+        let s = triples.into_sink(&mut stringifier()).unwrap();
         assert_eq!(s, r#"<http://champin.net/#pa> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person> .
 <http://champin.net/#pa> <http://schema.org/name> "Pierre-Antoine" .
 "#);

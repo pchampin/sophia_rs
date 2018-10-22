@@ -1,3 +1,5 @@
+//! Reusable types and function for implementing parsers.
+
 use std;
 use std::borrow::Cow;
 use std::iter::once;
@@ -5,6 +7,36 @@ use std::iter::once;
 use pest::{Error, RuleType, iterators::Pair};
 
 use ::term::Term;
+
+/// This macro provides a straightforward implementation of the default functions
+/// of a serializer module.
+macro_rules! def_default_api {
+    ($bufread_parser: ty, $read_parser: ty, $str_parser: ty) => {
+        /// Shortcut for `Config::default().parse_bufread(bufread)`
+        #[inline]
+        pub fn parse_bufread<B: ::std::io::BufRead>(bufread: B) -> $bufread_parser {
+            Config::default().parse_bufread(bufread)
+        }
+        /// Shortcut for `Config::default().parse_read(read)`
+        #[inline]
+        pub fn parse_read<R: ::std::io::Read>(read: R) -> $read_parser {
+            Config::default().parse_read(read)
+        }
+        /// Shortcut for `Config::default().parse_str(txt)`
+        #[inline]
+        pub fn parse_str<'a>(txt: &'a str) -> $str_parser {
+            Config::default().parse_str(txt)
+        }
+    };
+    ($generic_parser: ident) => {
+        def_default_api!(
+            $generic_parser<B>,
+            $generic_parser<BufReader<R>>,
+            $generic_parser<BufReader<Cursor<&'a str>>>
+        );
+    };
+}
+
 
 pub(crate) type CowTerm<'a> = Term<Cow<'a, str>>;
 
@@ -88,7 +120,7 @@ pub(crate) fn unescape_char(txt: &str) -> Result<char, String> {
 
 
 // ---------------------------------------------------------------------------------
-//                               test utility function
+//                               utility test function
 // ---------------------------------------------------------------------------------
 
 #[cfg(test)]
@@ -200,12 +232,12 @@ mod test {
     #[test]
     fn unescape_str_() {
         use pest::Parser;
-        use super::super::nt::{NtParser,Rule};
+        use super::super::nt::{PestNtParser,Rule};
 
         fn test<'a> (txt: &'a str) -> Result<String, String> {
             // parsing a triple just to test that unescape_str works with an offset > 0.
             let triple = format!("<> <> {}.", txt);
-            let mut pairs = NtParser::parse(Rule::triple, &triple[..]).unwrap();
+            let mut pairs = PestNtParser::parse(Rule::triple, &triple[..]).unwrap();
             let pairs = pairs.next().unwrap().into_inner(); // into 'triple'
             let object = pairs.skip(2).next().unwrap();
             let pair =

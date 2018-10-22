@@ -70,12 +70,12 @@ whitespace = _{ " " | "\t" }
 comment = _{ "#" ~ ( !("\n" | "\r") ~ any )* }
 
 
+ntriple_line = _{ triple ~ eoi }
 
 // generalized NTriples,
 // allowing any term (including variables and relative IRIs) in any position.
-generalized_ntriples_doc = _{
-    generalized_triple? ~ ( eol ~ generalized_triple )* ~ eol? ~ eoi
-}
+
+generalized_line = _{ generalized_triple ~ eoi }
 
 generalized_triple = { term ~ term ~ term ~ "." }
 
