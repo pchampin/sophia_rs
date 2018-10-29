@@ -65,6 +65,10 @@ impl<I, F> Default for TermIndexU<I, F> where
     }
 }
 
+/// This macro implements TermIndex for TermIndexU<uXX>,
+/// where uXX is one of u16, u32...
+/// I would prefer to define a generic implementation using traits,
+/// but I found this to be non trivial.
 macro_rules! impl_term_index {
     ($uXX:ty) => {
         impl<F> TermIndex for TermIndexU<$uXX, F> where
