@@ -100,6 +100,10 @@ impl<T> Term<T> where
             Variable(name) => String::from(name.borrow()),
         }
     }
+
+    pub fn n3(&self) -> String {
+        ::serializers::nt::stringify_term(self)
+    }
 }
 
 impl<T> Term<T> where
