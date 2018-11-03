@@ -10,8 +10,8 @@ error_chain! {
         InvalidIri(iri: String) {
             display("invalid IRI <{}>", iri)
         }
-        InvalidLanguageTag(tag: String) {
-            display("invalid language tag '{}'", tag)
+        InvalidLanguageTag(tag: String, message: String) {
+            display("invalid language tag '{}':\n{}", tag, message)
         }
         InvalidVariableName(name: String) {
             display("invalid variable name '{}'", name)

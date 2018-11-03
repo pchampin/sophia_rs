@@ -132,7 +132,9 @@ impl<T> Term<T> where
     {
         let tag = T::from(lang);
         match LangTag::from_str(tag.borrow()) {
-            Err(err) => Err(ErrorKind::InvalidLanguageTag(err).into()),
+            Err(msg) => Err(ErrorKind::InvalidLanguageTag(
+                tag.borrow().to_string(), msg,
+            ).into()),
             Ok(_) => Ok(Literal(T::from(txt), Lang(tag))),
         }
     }
@@ -142,9 +144,7 @@ impl<T> Term<T> where
     {
         match dt {
             Iri(iri) => Ok(Literal(T::from(txt), Datatype(iri))),
-            _ => Err(ErrorKind::InvalidDatatype(
-                format!("{:?}", dt)
-            ).into()),
+            _ => Err(ErrorKind::InvalidDatatype(dt.n3()).into()),
         }
     }
 
@@ -156,7 +156,7 @@ impl<T> Term<T> where
             Ok(Variable(name))
         } else {
             Err(ErrorKind::InvalidVariableName(
-                String::from(name.borrow())
+                name.borrow().to_string()
             ).into())
         }
     }
