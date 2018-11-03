@@ -1,7 +1,6 @@
 // this module is transparently re-exported by its parent `graph`
 
 use std::borrow::Borrow;
-use std::fmt::Debug;
 
 use resiter::filter_x::*;
 
@@ -22,7 +21,7 @@ pub trait Graph
 {
     /// String Holder (used internally by terms returned by the methods)
     type Holder: Borrow<str>;
-    type Error: Debug;
+    type Error: ::std::error::Error;
 
     fn iter<'a> (&'a self) -> FallibleTripleIterator<'a, Self>;
 

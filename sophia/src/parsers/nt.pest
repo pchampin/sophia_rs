@@ -1,5 +1,5 @@
 // [1] 	ntriplesDoc 	::= 	triple? (EOL triple)* EOL?
-ntriples_doc = _{ triple? ~ ( eol ~ triple )* ~ eol? ~ eoi }
+ntriples_doc = _{ triple? ~ ( eol ~ triple )* ~ eol? ~ EOI }
 
 // [2] 	triple 	::= 	subject predicate object '.'
 triple = { subject ~ predicate ~ object ~ "." }
@@ -30,14 +30,14 @@ eol = _{ ( "\n" | "\r" )* }
 // [8] 	IRIREF 	::= 	'<' ([^#x00-#x20<>"{}|^`\] | UCHAR)* '>'
 iriref = ${
   "<" ~
-  ( !( '\x00'..'\x20' | "<" | ">" | "\"" | "{" | "}" | "|" | "^" | "``" | "\\") ~ any | uchar )* ~
+  ( !( '\x00'..'\x20' | "<" | ">" | "\"" | "{" | "}" | "|" | "^" | "``" | "\\") ~ ANY | uchar )* ~
   ">"
 }
 
 // [9] 	string_literal_quote 	::= 	'"' ([^#x22#x5C#xA#xD] | echar | UCHAR)* '"'
 string_literal_quote = ${
   "\"" ~
-  ( !("\"" | "\\" | "\n" | "\r") ~ any | echar | uchar)* ~
+  ( !("\"" | "\\" | "\n" | "\r") ~ ANY | echar | uchar)* ~
   "\""
 }
 
@@ -65,17 +65,19 @@ pn_chars = @{ pn_chars_u | "-" | '0'..'9' | "\u{00B7}" | '\u{0300}'..'\u{036F}' 
 // [162s] 	HEX 	::= 	[0-9] | [A-F] | [a-f]
 hex = @{ '0'..'9' | 'A'..'F' | 'a'..'f' }
 
-whitespace = _{ " " | "\t" }
+WHITESPACE = _{ " " | "\t" }
 
-comment = _{ "#" ~ ( !("\n" | "\r") ~ any )* }
+COMMENT = _{ "#" ~ ( !("\n" | "\r") ~ ANY )* }
 
 
-ntriple_line = _{ triple ~ eoi }
+ntriple_line = _{ triple ~ EOI }
 
 // generalized NTriples,
 // allowing any term (including variables and relative IRIs) in any position.
 
-generalized_line = _{ generalized_triple ~ eoi }
+generalized_doc = _{ generalized_triple? ~ ( eol ~ generalized_triple )* ~ eol? ~ EOI }
+
+generalized_line = _{ generalized_triple ~ EOI }
 
 generalized_triple = { term ~ term ~ term ~ "." }
 

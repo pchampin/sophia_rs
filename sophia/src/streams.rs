@@ -1,14 +1,16 @@
 //! I define two traits, TripleSource and TripleSink,
 //! which are pervasive for streaming triples from one object to another.
 
-use std::fmt::Debug;
+use std::error::Error as StdError;
+use std::fmt;
 use std::iter::Map;
 
+use ::error::Never;
 use ::graph::*;
 use ::triple::*;
 
 pub trait TripleSource: Sized {
-    type Error: Debug;
+    type Error: StdError;
 
     fn into_sink<TS: TripleSink>(self, sink: &mut TS) -> Result<TS::Outcome, WhereFrom<Self::Error, TS::Error>>;
     fn into_graph<G: MutableGraph>(self, graph: &mut G) -> Result<usize, WhereFrom<Self::Error, G::Error>> {
@@ -20,7 +22,7 @@ impl<I, T, E> TripleSource for I
 where
     I: Iterator<Item=Result<T, E>>,
     T: Triple,
-    E: Debug,
+    E: StdError,
 {
     type Error = E;
 
@@ -39,13 +41,13 @@ where
 /// Useful for converting Triple iterators into a valid TripleSource.
 pub trait WrapAsOks<T>: Sized {
     /// Map all items of this iterator into an Ok result.
-    fn wrap_as_oks(self) -> Map<Self, fn(T) -> Result<T, ()>>;
+    fn wrap_as_oks(self) -> Map<Self, fn(T) -> Result<T, Never>>;
 }
 
 impl<T, I> WrapAsOks<T> for I
     where I: Iterator<Item=T> + Sized,
 {
-    fn wrap_as_oks(self) -> Map<Self, fn(T) -> Result<T, ()>> {
+    fn wrap_as_oks(self) -> Map<Self, fn(T) -> Result<T, Never>> {
         self.map(Result::Ok)
     }
 }
@@ -53,7 +55,7 @@ impl<T, I> WrapAsOks<T> for I
 
 
 pub trait TripleSink {
-    type Error: Debug;
+    type Error: StdError;
     type Outcome;
 
     fn feed<T: Triple>(&mut self, t: &T) -> Result<(), Self::Error>;
@@ -61,7 +63,7 @@ pub trait TripleSink {
 }
 
 impl TripleSink for () {
-    type Error = ();
+    type Error = Never;
     type Outcome = ();
 
     fn feed<T: Triple>(&mut self, _: &T) -> Result<(), Self::Error> { Ok(()) }
@@ -77,6 +79,22 @@ pub enum WhereFrom<U, D> {
 }
 pub use self::WhereFrom::*;
 
+impl<U, D> fmt::Display for WhereFrom<U, D>
+    where U: StdError, D: StdError,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match &self {
+            Upstream(err) => write!(f, "Upstream:\n{}", err),
+            Downstream(err) => write!(f, "Downstream:\n{}", err),
+        }
+    }
+}
+
+impl<U, D> StdError for WhereFrom<U, D>
+    where U: StdError, D: StdError,
+{}
+
+
 
 pub trait UnwrapWhereFrom<T, U, D> {
     fn unwrap_upstream(self) -> Result<T, D>;
@@ -84,7 +102,7 @@ pub trait UnwrapWhereFrom<T, U, D> {
 }
 
 impl<T, U, D> UnwrapWhereFrom<T, U, D> for Result<T, WhereFrom<U, D>>
-    where U: Debug, D: Debug,
+    where U: StdError, D: StdError,
 {
     fn unwrap_upstream(self) -> Result<T, D> {
         match self {

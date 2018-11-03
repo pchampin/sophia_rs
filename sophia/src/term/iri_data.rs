@@ -72,14 +72,14 @@ impl<T> IriData<T> where
         Ok(())
     }
 
-    pub(crate) fn new (ns: T, suffix: Option<T>) -> Result<IriData<T>, Err> {
+    pub(crate) fn new (ns: T, suffix: Option<T>) -> Result<IriData<T>> {
         let mut ret = IriData{ns, suffix, absolute: false};
         let val = ret.to_string();
         ret.absolute = is_absolute_iri(&val);
         if ret.absolute || is_relative_iri(&val) {
             Ok(ret)
         } else {
-            Err(Err::InvalidIri("IRI is invalid".to_string()))
+            Err(ErrorKind::InvalidIri("IRI is invalid".to_string()).into())
         }
     }
 

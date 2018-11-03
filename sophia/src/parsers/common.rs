@@ -4,8 +4,10 @@ use std;
 use std::borrow::Cow;
 use std::iter::once;
 
-use pest::{Error, RuleType, iterators::Pair};
+use pest::{RuleType, iterators::Pair};
+use pest::error::{Error as PestError, ErrorVariant};
 
+use ::error::{Error, ErrorKind};
 use ::term::Term;
 
 /// This macro provides a straightforward implementation of the default functions
@@ -28,6 +30,13 @@ macro_rules! def_default_api {
             Config::default().parse_str(txt)
         }
     };
+    ($io_parser: ident, $str_parser: ident) => {
+        def_default_api!(
+            $io_parser<B>,
+            $io_parser<BufReader<R>>,
+            $str_parser<'a>
+        );
+    };
     ($generic_parser: ident) => {
         def_default_api!(
             $generic_parser<B>,
@@ -46,7 +55,7 @@ pub(crate) type CowTerm<'a> = Term<Cow<'a, str>>;
 ///
 /// `delim` is the size of the delimiter,
 /// which will be trimmed off the start and end of the result.
-pub(crate) fn unescape_str<'a, R> (pair: Pair<'a,R>, delim: usize) -> Result<Cow<'a, str>, Error<'a,R>> where
+pub(crate) fn unescape_str<'a, R> (pair: Pair<'a,R>, delim: usize) -> Result<Cow<'a, str>, PestError<R>> where
     R: RuleType,
 {
     let txt = pair.as_str();
@@ -57,7 +66,7 @@ pub(crate) fn unescape_str<'a, R> (pair: Pair<'a,R>, delim: usize) -> Result<Cow
     }
     // else we have escape sequences to unescape
     let mut dst = String::with_capacity(txt.len()-2*delim);
-    let span = pair.clone().into_span();
+    let span = pair.as_span();
     let offset = -(span.start() as isize);
 
     // rebuild src containing the original text on which inner pairs are indexed
@@ -70,12 +79,13 @@ pub(crate) fn unescape_str<'a, R> (pair: Pair<'a,R>, delim: usize) -> Result<Cow
     let mut i = span.start() + delim;
     for pair in once(first_inner.unwrap()).chain(inner_pairs) {
         let escape_seq = pair.as_str();
-        let span = pair.clone().into_span();
+        let span = pair.as_span();
         dst.push_str(&src[i..span.start()]);
         dst.push(unescape_char(escape_seq)
-            .map_err(|message| Error::CustomErrorSpan{
-                message, span: pair.into_span(),
-            })?
+            .map_err(|message| PestError::new_from_span(
+                ErrorVariant::CustomError{message},
+                pair.as_span(),
+            ))?
         );
         i = span.end();
     }
@@ -117,6 +127,23 @@ pub(crate) fn unescape_char(txt: &str) -> Result<char, String> {
     }
 }
 
+pub fn convert_pest_err<R: pest::RuleType> (err: PestError<R>, lineoffset: usize) -> Error {
+    let message = match err.variant {
+        ErrorVariant::ParsingError{positives, negatives} => {
+            format!("expected: {:?}\nunexpected: {:?}", positives, negatives)
+        }
+        ErrorVariant::CustomError{message} => message
+    };
+    let location = err.location.clone();
+    use ::pest::error::LineColLocation::*;
+    let line_col = match err.line_col.clone() {
+        Pos((l, c)) =>
+            Pos((l+lineoffset, c)),
+        Span((l1, c1), (l2, c2)) =>
+            Span((l1+lineoffset, c1), (l2+lineoffset, c2)),
+    };
+    ErrorKind::Parsing(message, location, line_col).into()
+}
 
 
 // ---------------------------------------------------------------------------------
@@ -128,7 +155,7 @@ use pest::iterators::Pairs;
 
 #[cfg(test)]
 pub(crate) fn test_rule<P, R, T> (parse: &P, rule: R, values: &[T]) where
-    P: Fn(R, &str) -> Result<Pairs<R>, Error<R>>,
+    P: Fn(R, &str) -> Result<Pairs<R>, PestError<R>>,
     R: RuleType,
     T: std::borrow::Borrow<str>,
 {
@@ -138,7 +165,7 @@ pub(crate) fn test_rule<P, R, T> (parse: &P, rule: R, values: &[T]) where
             Ok(pairs) => {
                 let v: Vec<_> = pairs.collect();
                 assert_eq!(v.len(), 1, "expected exactly 1 match");
-                let span = v[0].clone().into_span();
+                let span = v[0].as_span();
                 assert_eq!(span.start(), 0, "expected match at start");
                 assert_eq!(span.end(), val.len(), "expected total match");
             }
@@ -151,7 +178,7 @@ pub(crate) fn test_rule<P, R, T> (parse: &P, rule: R, values: &[T]) where
 
 #[cfg(test)]
 pub(crate) fn test_rule_partial<P, R, T> (parse: &P, rule: R, values: &[(T, usize)]) where
-    P: Fn(R, &str) -> Result<Pairs<R>, Error<R>>,
+    P: Fn(R, &str) -> Result<Pairs<R>, PestError<R>>,
     R: RuleType,
     T: std::borrow::Borrow<str>,
 {
@@ -161,7 +188,7 @@ pub(crate) fn test_rule_partial<P, R, T> (parse: &P, rule: R, values: &[(T, usiz
             Ok(pairs) => {
                 let v: Vec<_> = pairs.collect();
                 assert_eq!(v.len(), 1, "expected exactly 1 match");
-                let span = v[0].clone().into_span();
+                let span = v[0].as_span();
                 assert_eq!(span.start(), 0, "expected match at start");
                 assert_eq!(span.end(), *match_length, "expected match of given length");
             }
@@ -174,7 +201,7 @@ pub(crate) fn test_rule_partial<P, R, T> (parse: &P, rule: R, values: &[(T, usiz
 
 #[cfg(test)]
 pub(crate) fn test_rule_negative<P, R, T> (parse: &P, rule: R, values: &[T]) where
-    P: Fn(R, &str) -> Result<Pairs<R>, Error<R>>,
+    P: Fn(R, &str) -> Result<Pairs<R>, PestError<R>>,
     R: RuleType,
     T: std::borrow::Borrow<str>,
 {
@@ -184,7 +211,7 @@ pub(crate) fn test_rule_negative<P, R, T> (parse: &P, rule: R, values: &[T]) whe
             Ok(pairs) => {
                 let v: Vec<_> = pairs.collect();
                 if v.len() != 1 { continue }
-                let span = v[0].clone().into_span();
+                let span = v[0].as_span();
                 if span.start() != 0 || span.end() != val.len() { continue }
                 assert!(false, format!("unexpected match {:?}", val))
             }

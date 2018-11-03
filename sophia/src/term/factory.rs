@@ -15,33 +15,33 @@ pub trait TermFactory {
 
     fn get_holder(&mut self, txt: &str) -> Self::Holder;
 
-    fn iri<T> (&mut self, iri: T) -> Result<Term<Self::Holder>, Err> where
+    fn iri<T> (&mut self, iri: T) -> Result<Term<Self::Holder>> where
         T: Borrow<str>,
     {
         Term::new_iri(self.get_holder(iri.borrow()))
     }
 
-    fn iri2<T, U> (&mut self, ns: T, suffix: U) -> Result<Term<Self::Holder>, Err> where
+    fn iri2<T, U> (&mut self, ns: T, suffix: U) -> Result<Term<Self::Holder>> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
         Term::new_iri2(self.get_holder(ns.borrow()), self.get_holder(suffix.borrow()))
     }
 
-    fn bnode<T> (&mut self, id: T) -> Result<Term<Self::Holder>, Err> where
+    fn bnode<T> (&mut self, id: T) -> Result<Term<Self::Holder>> where
         T: Borrow<str>,
     {
         Term::new_bnode(self.get_holder(id.borrow()))
     }
 
-    fn literal_lang<T, U> (&mut self, txt: T, lang: U) -> Result<Term<Self::Holder>, Err> where
+    fn literal_lang<T, U> (&mut self, txt: T, lang: U) -> Result<Term<Self::Holder>> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
         Term::new_literal_lang(self.get_holder(txt.borrow()), self.get_holder(lang.borrow()))
     }
 
-    fn literal_dt<T, U> (&mut self, txt: T, dt: Term<U>) -> Result<Term<Self::Holder>, Err> where
+    fn literal_dt<T, U> (&mut self, txt: T, dt: Term<U>) -> Result<Term<Self::Holder>> where
         T: Borrow<str>,
         U: Borrow<str>,
         Self::Holder: Debug,
@@ -49,7 +49,7 @@ pub trait TermFactory {
         Term::new_literal_dt(self.get_holder(txt.borrow()), self.copy(&dt))
     }
 
-    fn variable<T> (&mut self, name: T) -> Result<Term<Self::Holder>, Err> where
+    fn variable<T> (&mut self, name: T) -> Result<Term<Self::Holder>> where
         T: Borrow<str>,
     {
         Term::new_variable(self.get_holder(name.borrow()))

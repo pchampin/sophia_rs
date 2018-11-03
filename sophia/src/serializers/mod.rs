@@ -14,6 +14,7 @@
 
 use std::io;
 
+use ::error::Never;
 use ::graph::*;
 use ::streams::*;
 use ::triple::*;
@@ -48,7 +49,7 @@ pub trait WriteSerializer<W: io::Write>: TripleSink<Outcome=()> + Sized {
     }
 }
 
-pub trait StringSerializer: TripleSink<Outcome=String, Error=()> + Sized {
+pub trait StringSerializer: TripleSink<Outcome=String, Error=Never> + Sized {
     type Config;
 
     fn new(config: Self::Config) -> Self;

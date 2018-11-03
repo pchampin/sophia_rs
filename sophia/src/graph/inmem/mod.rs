@@ -149,7 +149,7 @@ impl<I> Graph for GenericGraph<I> where
     I::Index: Hash,
 {
     type Holder = <I::Factory as TermFactory>::Holder;
-    type Error = ();
+    type Error = ::error::Never;
 
     fn iter<'a> (&'a self) -> FallibleTripleIterator<'a, Self> {
         Box::from(

@@ -14,6 +14,7 @@
 //! 
 // TODO: flesh out one or several example(s) of code
 
+#[macro_use] extern crate error_chain;
 extern crate language_tag;
 #[macro_use] extern crate lazy_static;
 extern crate pest;
@@ -23,6 +24,7 @@ extern crate resiter;
 extern crate url;
 extern crate weak_table;
 
+pub mod error;
 pub mod graph;
 pub mod ns;
 pub mod parsers;

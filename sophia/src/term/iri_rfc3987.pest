@@ -1,4 +1,4 @@
-main = ${ (iri | irelative_ref) ~ eoi }
+main = ${ (iri | irelative_ref) ~ EOI }
 
 // NOT USED by this crate
 //iri_reference = ${ iri | irelative_ref }

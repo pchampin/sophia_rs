@@ -6,6 +6,7 @@ use std::collections::HashSet;
 use std::hash::Hash;
 
 use super::*;
+use ::error::Never;
 use ::term::*;
 use ::triple::*;
 
@@ -14,7 +15,7 @@ impl<T> Graph for [(Term<T>, Term<T>, Term<T>)] where
     T: Borrow<str>,
 {
     type Holder = T;
-    type Error = ();
+    type Error = Never;
 
     #[inline]
     fn iter(&self) -> FallibleTripleIterator<Self> {
@@ -31,7 +32,7 @@ impl<T> Graph for Vec<(Term<T>, Term<T>, Term<T>)> where
     T: Borrow<str>,
 {
     type Holder = T;
-    type Error = ();
+    type Error = Never;
 
     #[inline]
     fn iter(&self) -> FallibleTripleIterator<Self> {
@@ -48,7 +49,7 @@ impl<T> Graph for HashSet<(Term<T>, Term<T>, Term<T>)> where
     T: Borrow<str> + Eq + Hash,
 {
     type Holder = T;
-    type Error = ();
+    type Error = Never;
 
     #[inline]
     fn iter(&self) -> FallibleTripleIterator<Self> {

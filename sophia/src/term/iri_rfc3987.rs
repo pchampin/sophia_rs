@@ -1,6 +1,6 @@
 //! Implementation of IRIs as per [\[RFC 3987\]](https://tools.ietf.org/html/rfc3987).
 
-use pest::{Error, Parser, {iterators::Pair}};
+use pest::{Parser, error::Error, iterators::Pair};
 use regex::Regex;
 
 #[cfg(debug_assertions)]
@@ -51,7 +51,7 @@ pub struct ParsedIri<'a> {
 // - its last element is "" if the path ends with a '/'
 
 impl<'a> ParsedIri<'a> {
-    pub fn new(txt: &'a str) -> Result<ParsedIri<'a>, Error<'a, Rule>> {
+    pub fn new(txt: &'a str) -> Result<ParsedIri<'a>, Error<Rule>> {
         let mut pi = ParsedIri::default();
         pi.fill_with(IriParser::parse(Rule::main, txt)?.next().unwrap());
         Ok(pi)
@@ -107,6 +107,7 @@ impl<'a> ParsedIri<'a> {
                 Rule::isegment_nz_nc => {
                     self.path.push(subpair.as_str());
                 }
+                Rule::EOI => {}
                 _ => panic!(format!("Can't handle rule {:?}", subpair.as_rule()))
             }
         }
