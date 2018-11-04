@@ -58,7 +58,7 @@ impl<T> BNodeId<T> where
     }
 
     /// Whether this blank node identifier is compatible with the N3 family
-    /// of syntaxes (NTriples, Turtle...).
+    /// of syntaxes (N-Triples, Turtle...).
     /// This can be useful for serializers.
     pub fn is_n3(&self) -> bool {
         self.n3

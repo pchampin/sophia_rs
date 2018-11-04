@@ -1,17 +1,22 @@
 //! A term-matcher is something that can be used
 //! to discriminate members of a set of terms.
-//!
-// TODO point to Graph::iter_match, MutableGraph::remove_match
-// once they are defined
+//! 
+//! See [`Graph::iter_matching`](../../graph/trait.Graph.html#method.iter_matching),
+//! [`MutableGraph::remove_matching`](../../graph/trait.MutableGraph.html#method.remove_matching),
+//! [`MutableGraph::retain`](../../graph/trait.MutableGraph.html#method.retain).
 
 use super::*;
 
-// TODO document the fact that
-// - T is the kind of term on which this matcher will be used
-// - Holder is the kind of term this matcher will produce (with the `constant` method)
+/// Anything that matches a [term] or a set of [term]s.
+/// 
+/// [term]: ../enum.Term.html
+/// 
 pub trait TermMatcher<T: Borrow<str>> {
     type Holder: Borrow<str>;
+    /// If this matcher matches only one term, return this term, else `None`.
     fn constant(&self) -> Option<&Term<Self::Holder>>;
+
+    /// Check whether this matcher matches `t`.
     fn try(&self, t: &Term<T>) -> bool;
 }
 

@@ -52,6 +52,10 @@ mod convert;  pub use self::convert::*;
 mod iri_data;  pub use self::iri_data::*;
 mod literal_kind; pub use self::literal_kind::*;
 
+/// Generic type for RDF terms.
+///
+/// See [module documentation](index.html) for more detail.
+/// 
 #[derive(Clone,Copy,Debug,Eq,Hash)]
 pub enum Term<T: Borrow<str>> {
     Iri(IriData<T>),
@@ -92,6 +96,12 @@ pub type StaticTerm = RefTerm<'static>;
 impl<T> Term<T> where
     T: Borrow<str>,
 {
+    /// Return a copy of this term's underlying text.
+    /// 
+    /// NB: for literals, the value only conveys the literal value,
+    /// *not* the datatype or the language tag.error
+    /// 
+    /// See also [`n3`](#method.n3).
     pub fn value(&self) -> String {
         match self {
             Iri(iri) => iri.to_string(),
@@ -101,6 +111,10 @@ impl<T> Term<T> where
         }
     }
 
+    /// Return the [N3] serialization of this term.
+    /// 
+    /// [N3]: https://www.w3.org/DesignIssues/Notation3
+    /// 
     pub fn n3(&self) -> String {
         ::serializers::nt::stringify_term(self)
     }
@@ -109,24 +123,41 @@ impl<T> Term<T> where
 impl<T> Term<T> where
     T: Borrow<str>,
 {
+    /// Return a new IRI term from the given text.
+    /// 
+    /// May fail if `txt` is not a valid IRI.
+    /// 
     pub fn new_iri<U> (iri: U) -> Result<Term<T>> where
         T: From<U>
     {
         Ok(Iri(IriData::new(T::from(iri), None)?))
     }
 
+    /// Return a new IRI term from the two given parts (prefix and suffix).
+    /// 
+    /// May fail if the concatenation of `ns` and `suffix`
+    /// does not produce a valid IRI.
+    /// 
     pub fn new_iri2<U, V> (ns: U, suffix: V) -> Result<Term<T>> where
         T: From<U> + From<V>
     {
         Ok(Iri(IriData::new(T::from(ns), Some(T::from(suffix)))?))
     }
 
+    /// Return a new blank node term with the given bnode ID.
+    /// 
+    /// Currently, this may never fail;
+    /// however it returns a result for homogeneity with other constructor methods,
+    /// and because future versions may be more picky regarding bnode IDs.
     pub fn new_bnode<U> (id: U) -> Result<Term<T>> where
         T: From<U>
     {
         Ok(BNode(BNodeId::new(T::from(id))))
     }
 
+    /// Return a new literal term with the given value and language tag.
+    /// 
+    /// May fail if the language tag is not valid.
     pub fn new_literal_lang<U, V> (txt: U, lang: V) -> Result<Term<T>> where
         T: From<U> + From<V>
     {
@@ -139,6 +170,9 @@ impl<T> Term<T> where
         }
     }
 
+    /// Return a new literal term with the given value and datatype.
+    /// 
+    /// May fail if `dt` is not a valid datatype.
     pub fn new_literal_dt<U> (txt: U, dt: Term<T>) -> Result<Term<T>> where
         T: From<U> + Debug
     {
@@ -148,6 +182,9 @@ impl<T> Term<T> where
         }
     }
 
+    /// Return a new variable term with the given name.
+    /// 
+    /// May fail if `name` is not a valid variable name.
     pub fn new_variable<U> (name: U) -> Result<Term<T>> where
         T: From<U>
     {
@@ -161,6 +198,7 @@ impl<T> Term<T> where
         }
     }
 
+    /// Copy another term with the given factory.
     pub fn from_with<'a, U, F> (other: &'a Term<U>, mut factory: F) -> Term<T> where
         U: Borrow<str>,
         F: FnMut(&'a str) -> T,
@@ -178,6 +216,8 @@ impl<T> Term<T> where
         }
     }
 
+    /// Copy another term with the given factory,
+    /// applying the given normalization policy.
     pub fn normalized_with<'a, U, F> (other: &'a Term<U>, mut factory: F, norm: Normalization) -> Term<T> where
         U: Borrow<str>,
         F: FnMut(&str) -> T,
@@ -193,30 +233,44 @@ impl<T> Term<T> where
         }
     }
 
+    /// Return a new IRI term,
+    /// assuming that `iri` is a valid IRI,
+    /// and that `abs` correctly indicates whether it is absolute or relative.
     pub unsafe fn new_iri_unchecked<U> (iri: U, abs: Option<bool>) -> Term<T> where
         T: From<U>
     {
         Iri(IriData::new_unchecked(T::from(iri), None, abs))
     }
 
+    /// Return a new IRI term,
+    /// assuming that `ns` and `suffix` concatenate to a valid IRI,
+    /// and that `abs` correctly indicates whether it is absolute or relative.
     pub unsafe fn new_iri2_unchecked<U, V> (ns: U, suffix: V, abs: Option<bool>) -> Term<T> where
         T: From<U> + From<V>
     {
         Iri(IriData::new_unchecked(T::from(ns), Some(T::from(suffix)), abs))
     }
 
+    /// Return a new blank node term,
+    /// assuming that `id` is a valid bnode ID.
     pub unsafe fn new_bnode_unchecked<U> (id: U) -> Term<T> where
         T: From<U>
     {
         BNode(BNodeId::new(T::from(id)))
     }
 
+    /// Return a literal term,
+    /// assuming that `lang` is a valid language tag.
     pub unsafe fn new_literal_lang_unchecked<U, V> (txt: U, lang: V) -> Term<T> where
         T: From<U> + From<V>
     {
         Literal(T::from(txt), Lang(T::from(lang)))
     }
 
+    /// Return a typed literal term.
+    /// 
+    /// # Panics
+    /// Panics if `dt` is not an IRI.
     pub unsafe fn new_literal_dt_unchecked<U> (txt: U, dt: Term<T>) -> Term<T> where
         T: From<U> + Debug
     {
@@ -227,9 +281,11 @@ impl<T> Term<T> where
         }
     }
 
-    /// If `t` is a relative IRI, replace it with an absolute one,
+    /// If `t` is or contains a relative IRI, replace it with an absolute one,
     /// using this term as the base.
     /// Otherwise, returns `t` unchanged.
+    /// 
+    /// This affects IRI terms, but also Literal terms with a datatype.
     /// 
     /// # Example
     /// ```
@@ -307,7 +363,11 @@ impl<T> Term<T> where
         }
     }
 
-
+    /// Return whether this term is absolue.
+    /// 
+    /// * An IRI is absolute iff it is an absolute IRI.
+    /// * A typed literal is absolute iff its datatype is absolute.
+    /// * Any other term is always absolute.
     pub fn is_absolute(&self) -> bool {
         match self {
             Iri(iri) | Literal(_, Datatype(iri)) => iri.is_absolute(),

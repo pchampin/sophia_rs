@@ -1,5 +1,9 @@
 //! An RDF graph, the central notion of the RDF data model,
-//! is a set of triples.
+//! is a collection of triples.
+//!
+//! This module provides [reusable abstractions](#traits)
+//! for different kinds of graph,
+//! as well as a few implementations for them.
 
 #[cfg(test)]
 #[macro_use]

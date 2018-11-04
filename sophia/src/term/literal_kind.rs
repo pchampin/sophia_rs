@@ -4,6 +4,7 @@ use std::hash::{Hash, Hasher};
 
 use super::*;
 
+/// There are two kinds of literals: language-tagged, and typed.
 #[derive(Clone,Copy,Debug,Eq)]
 pub enum LiteralKind<T: Borrow<str>> {
     Lang(T),
@@ -14,6 +15,7 @@ pub use self::LiteralKind::*;
 impl<T> LiteralKind<T> where
     T: Borrow<str>
 {
+    /// Copy another literal kind with the given factory.
     pub fn from_with<'a, U, F> (other: &'a LiteralKind<U>, mut factory: F) -> LiteralKind<T> where
         U: Borrow<str>,
         F: FnMut(&'a str) -> T,
@@ -24,6 +26,8 @@ impl<T> LiteralKind<T> where
         }
     }
 
+    /// Copy another literal kind with the given factory,
+    /// applying the given normalization policy.
     pub fn normalized_with<'a, U, F> (other: &'a LiteralKind<U>, mut factory: F, norm: Normalization) -> LiteralKind<T> where
         U: Borrow<str>,
         F: FnMut(&str) -> T,

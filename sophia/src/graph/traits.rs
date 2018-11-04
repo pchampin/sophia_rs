@@ -10,43 +10,71 @@ use ::term::*;
 use ::term::matcher::TermMatcher;
 use ::triple::*;
 
+/// Type alias for results produced by a graph.
 pub type GResult<G, T> = Result<T, <G as Graph>::Error>;
 type GTriple<'a, G> = (&'a Term<<G as Graph>::Holder>, &'a Term<<G as Graph>::Holder>, &'a Term<<G as Graph>::Holder>);
-pub type FallibleTripleIterator<'a, G> =
+/// Type alias for fallible triple iterators produced by a graph.
+pub type GFallibleTripleIterator<'a, G> =
     Box<Iterator<Item=GResult<G, GTriple<'a, G>>>+'a>;
 
-// NB: the semantics of this trait allows a graph to contain duplicate triples;
-// see also SetGraph
+/// Generic trait for RDF graphs.
+/// 
+/// For convenience, this trait is implemented
+/// by [standard collections of triples](#foreign-impls).
+/// 
+/// NB: the semantics of this trait allows a graph to contain duplicate triples;
+/// see also [`SetGraph`](trait.SetGraph.html).
+/// 
 pub trait Graph
 {
     /// String Holder (used internally by terms returned by the methods)
     type Holder: Borrow<str>;
+    /// The error type that this graph may raise.
+    /// 
+    /// Must be [`Never`](../error/enum.Never.html) for infallible graphs.
     type Error: ::std::error::Error;
 
-    fn iter<'a> (&'a self) -> FallibleTripleIterator<'a, Self>;
+    /// An iterator visiting all triples of this graph in arbitrary order.
+    /// 
+    /// This iterator is fallible:
+    /// its items are [`GResults`](type.GResult.html)s,
+    /// an error may occur at any time during the iteration.
+    fn iter<'a> (&'a self) -> GFallibleTripleIterator<'a, Self>;
 
-    fn iter_for_s<'a, T> (&'a self, s: &'a Term<T>) -> FallibleTripleIterator<'a, Self> where
+    /// An iterator visiting all triples with the given subject.
+    /// 
+    /// See also [`iter`](#tymethod.iter).
+    fn iter_for_s<'a, T> (&'a self, s: &'a Term<T>) -> GFallibleTripleIterator<'a, Self> where
         T: Borrow<str>,
     {
         Box::new(
             self.iter().filter_ok(move |t| t.s()==s)
         )
     }
-    fn iter_for_p<'a, T> (&'a self, p: &'a Term<T>) -> FallibleTripleIterator<'a, Self> where
+    /// An iterator visiting all triples with the given predicate.
+    /// 
+    /// See also [`iter`](#tymethod.iter).
+    fn iter_for_p<'a, T> (&'a self, p: &'a Term<T>) -> GFallibleTripleIterator<'a, Self> where
         T: Borrow<str>,
     {
         Box::new(
             self.iter().filter_ok(move |t| t.p()==p)
         )
     }
-    fn iter_for_o<'a, T> (&'a self, o: &'a Term<T>) -> FallibleTripleIterator<'a, Self> where
+    /// An iterator visiting all triples with the given object.
+    /// 
+    /// See also [`iter`](#tymethod.iter).
+    fn iter_for_o<'a, T> (&'a self, o: &'a Term<T>) -> GFallibleTripleIterator<'a, Self> where
         T: Borrow<str>,
     {
         Box::new(
             self.iter().filter_ok(move |t| t.o()==o)
         )
     }
-    fn iter_for_sp<'a, T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> FallibleTripleIterator<'a, Self> where
+    /// An iterator visiting all triples with the given subject and predicate.
+    /// 
+    /// See also [`iter`](#tymethod.iter).
+    fn iter_for_sp<'a, T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> GFallibleTripleIterator<'a, Self> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
@@ -54,7 +82,10 @@ pub trait Graph
             self.iter_for_s(s).filter_ok(move |t| t.p()==p)
         )
     }
-    fn iter_for_so<'a, T, U> (&'a self, s: &'a Term<T>, o: &'a Term<U>) -> FallibleTripleIterator<'a, Self> where
+    /// An iterator visiting all triples with the given subject and object.
+    /// 
+    /// See also [`iter`](#tymethod.iter).
+    fn iter_for_so<'a, T, U> (&'a self, s: &'a Term<T>, o: &'a Term<U>) -> GFallibleTripleIterator<'a, Self> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
@@ -62,7 +93,10 @@ pub trait Graph
             self.iter_for_s(s).filter_ok(move |t| t.o()==o)
         )
     }
-    fn iter_for_po<'a, T, U> (&'a self, p: &'a Term<T>, o: &'a Term<U>) -> FallibleTripleIterator<'a, Self> where
+    /// An iterator visiting all triples with the given predicate and object.
+    /// 
+    /// See also [`iter`](#tymethod.iter).
+    fn iter_for_po<'a, T, U> (&'a self, p: &'a Term<T>, o: &'a Term<U>) -> GFallibleTripleIterator<'a, Self> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
@@ -70,7 +104,10 @@ pub trait Graph
             self.iter_for_p(p).filter_ok(move |t| t.o()==o)
         )
     }
-    fn iter_for_spo<'a, T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> FallibleTripleIterator<'a, Self> where
+    /// An iterator visiting all triples with the given subject, predicate and object.
+    /// 
+    /// See also [`iter`](#tymethod.iter).
+    fn iter_for_spo<'a, T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> GFallibleTripleIterator<'a, Self> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
@@ -80,6 +117,7 @@ pub trait Graph
         )
     }
 
+    /// Return `true` if this graph contains the given triple.
     fn contains(&self, s: &RefTerm, p: &RefTerm, o: &RefTerm) -> GResult<Self, bool> {
         match self.iter_for_spo(s, p, o).next() {
             None           => Ok(false),
@@ -88,7 +126,10 @@ pub trait Graph
         }
     }
 
-    fn iter_matching<'a, S, P, O> (&'a self, ms: &'a S, mp: &'a P, mo: &'a O) -> FallibleTripleIterator<'a, Self> where
+    /// An iterator visiting all triples matching the given subject, predicate and object.
+    /// 
+    /// See also [`iter`](#tymethod.iter).
+    fn iter_matching<'a, S, P, O> (&'a self, ms: &'a S, mp: &'a P, mo: &'a O) -> GFallibleTripleIterator<'a, Self> where
         S: TermMatcher<Self::Holder>,
         P: TermMatcher<Self::Holder>,
         O: TermMatcher<Self::Holder>,
@@ -113,28 +154,47 @@ pub trait Graph
         }
     }
 
+    /// Return the bounds on the number of triples of this graph.
+    /// 
+    /// Specifically, `hint` returns a tuple where
+    /// the first element is the lower bound,
+    /// and the second element is the upper bound
+    /// (`None` meaning that the upper bound is either unknown
+    ///  or larger than `usize`).
     fn hint(&self) -> (usize, Option <usize>) {
         (0, None)
     }
 
+    /// Return the bounds on the number of triples with the given subject.
+    /// 
+    /// See also [`hint`](#method.hint).
     fn hint_for_s<T> (&self, _s: &Term<T>) -> (usize, Option<usize>) where
         T: Borrow<str>,
     {
         (0, self.hint().1)
     }
 
+    /// Return the bounds on the number of triples with the given predicate.
+    /// 
+    /// See also [`hint`](#method.hint).
     fn hint_for_p<T> (&self, _p: &Term<T>) -> (usize, Option<usize>) where
         T: Borrow<str>,
     {
         (0, self.hint().1)
     }
 
+    /// Return the bounds on the number of triples with the given object.
+    /// 
+    /// See also [`hint`](#method.hint).
     fn hint_for_o<T> (&self, _o: &Term<T>) -> (usize, Option<usize>) where
         T: Borrow<str>,
     {
         (0, self.hint().1)
     }
 
+    /// Return the bounds on the number of triples with the given subject and predicate.
+    /// 
+    /// See also [`hint`](#method.hint).
     fn hint_for_sp<T, U> (&self, s: &Term<T>, _p: &Term<U>) -> (usize, Option<usize>) where
         T: Borrow<str>,
         U: Borrow<str>,
@@ -142,6 +202,9 @@ pub trait Graph
         (0, self.hint_for_s(s).1)
     }
 
+    /// Return the bounds on the number of triples with the given subject and object.
+    /// 
+    /// See also [`hint`](#method.hint).
     fn hint_for_so<T, U> (&self, s: &Term<T>, _o: &Term<U>) -> (usize, Option<usize>) where
         T: Borrow<str>,
         U: Borrow<str>,
@@ -149,6 +212,9 @@ pub trait Graph
         (0, self.hint_for_s(s).1)
     }
 
+    /// Return the bounds on the number of triples with the given predicate and object.
+    /// 
+    /// See also [`hint`](#method.hint).
     fn hint_for_po<T, U> (&self, p: &Term<T>, _o: &Term<U>) -> (usize, Option<usize>) where
         T: Borrow<str>,
         U: Borrow<str>,
@@ -158,6 +224,11 @@ pub trait Graph
 
 }
 
+/// Generic trait for mutable RDF graphs.
+/// 
+/// NB: the semantics of this trait allows a graph to contain duplicate triples;
+/// see also [`SetGraph`](trait.SetGraph.html).
+///
 pub trait MutableGraph : Graph {
 
     /// Insert the given triple in this graph.
@@ -167,6 +238,7 @@ pub trait MutableGraph : Graph {
     /// NB: unless this graph also implements [`SetGraph`](trait.SetGraph.html),
     /// a return value of `true` does *not* mean that the triple was not already in the graph,
     /// only that the graph now has one more occurence of it.
+    /// 
     fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> GResult<Self, bool> where
         T: Borrow<str>,
         U: Borrow<str>,
@@ -180,41 +252,46 @@ pub trait MutableGraph : Graph {
     /// NB: unless this graph also implements [`SetGraph`](trait.SetGraph.html),
     /// a return value of `true` does *not* mean that the triple is not still contained in the graph,
     /// only that the graph now has one less occurence of it.
+    /// 
     fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> GResult<Self, bool> where
         T: Borrow<str>,
         U: Borrow<str>,
         V:Borrow<str>,
     ;
 
-    // A sink for inserting many triples
+    /// Return a [`TripleSink`](../streams/trait.TripleSink.html)
+    /// that will insert into this graph all the triples it receives.
     #[inline]
     fn inserter(&mut self) -> Inserter<Self> {
         Inserter::new(self)
     }
 
-    // Insert all triples from a source
+    /// Insert into this graph all triples from the given source.
     #[inline]
     fn insert_all<TS: TripleSource>(&mut self, src: TS)
     -> Result<usize, WhereFrom<TS::Error, Self::Error>> {
         src.into_sink(&mut self.inserter())
     }
 
-    // A sink for removing many triples
+    /// Return a [`TripleSink`](../streams/trait.TripleSink.html)
+    /// that will remove from this graph all the triples it receives.
     #[inline]
     fn remover(&mut self) -> Remover<Self> {
         Remover::new(self)
     }
 
-    // Remove all triples from a source
+    /// Remove from this graph all triples from the given source.
     #[inline]
     fn remove_all<TS: TripleSource>(&mut self, src: TS)
     -> Result<usize, WhereFrom<TS::Error, Self::Error>> {
         src.into_sink(&mut self.remover())
     }
 
-    // Remove all triples matching the given matchers.
-    // Note that the default implementation is rather naive,
-    // and could be improved in specific implementations of the trait.
+    /// Remove all triples matching the given matchers.
+    ///
+    /// Note that the default implementation is rather naive,
+    /// and could be improved in specific implementations of the trait.
+    ///
     fn remove_matching<S, P, O> (&mut self, ms: &S, mp: &P, mo: &O) -> GResult<Self, usize> where
         S: TermMatcher<Self::Holder>,
         P: TermMatcher<Self::Holder>,
@@ -230,9 +307,11 @@ pub trait MutableGraph : Graph {
         self.remove_all(&mut to_remove).unwrap_upstream()
     }
 
-    // Remove all triples that do not the given matchers.
-    // Note that the default implementation is rather naive,
-    // and could be improved in specific implementations of the trait.
+    /// Keep only the triples matching the given matchers.
+    ///
+    /// Note that the default implementation is rather naive,
+    /// and could be improved in specific implementations of the trait.
+    ///
     fn retain<S, P, O> (&mut self, ms: S, mp: P, mo: O) -> GResult<Self, ()> where
         S: TermMatcher<Self::Holder>,
         P: TermMatcher<Self::Holder>,
@@ -247,7 +326,8 @@ pub trait MutableGraph : Graph {
     }
 }
 
-/// This trait constrains the semantics of the [`Graph`](#trait.Graph),
+/// This trait constrains the semantics of
+/// [`Graph`](trait.Graph.html) and [`MutableGraph`](trait.MutableGraph.html),
 /// by guaranteeing that triples will never be returned / stored multiple times.
 pub trait SetGraph: Graph {
 }

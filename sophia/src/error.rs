@@ -33,8 +33,12 @@ error_chain! {
 }
 
 /// An "error" type that can never happen.
-/// Once the 'never' types reaches 'stable',
+/// 
+/// NB: once the [`never`] types reaches *stable*,
 /// this type will be an alias for the standard type.
+/// 
+/// [`never`]: https://doc.rust-lang.org/std/primitive.never.html
+/// 
 #[derive(Clone, Debug)]
 pub enum Never {}
 

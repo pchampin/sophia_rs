@@ -1,15 +1,13 @@
-// TODO proper documentation (using rust specific comments)
-
-// TODO document the fact that
-// all functions in this module accept any `Write`,
-// but are not trying to optimize the number of io::Write operations,
-// so in most cases, they should be passed a `BufWriter`
-
-// TODO by default, this serializer produces canonical (i.e. UTF-8) N-Triples.
-// There should be an `ascii<>` sub-modules providing an equivalent API,
-// but producing pure-ascii N-Triples.
-// This could be done by post-processing the canonical form,
-// taking care of *not* double-escaping `\n`, `\r`, `\\` and `"`.
+//! Serializer for the [N-Triples] concrete syntax of RDF.
+//! 
+//! **Important**:
+//! the methods in this module accepting a [`Write`]
+//! make no effort to minimize the number of write operations.
+//! Hence, in most cased, they should be passed a [`BufWriter`].
+//! 
+//! [N-Triples]: https://www.w3.org/TR/n-triples/
+//! [`Write`]: https://doc.rust-lang.org/std/io/trait.Write.html
+//! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
 use std::borrow::Borrow;
 use std::io;
@@ -22,7 +20,13 @@ use ::triple::Triple;
 use super::*;
 
 
-/// NT serializer configuration
+/// NT serializer configuration.
+/// 
+/// For more information,
+/// see the [uniform interface] of serializers.
+/// 
+/// [uniform interface]: ../index.html#uniform-interface
+/// 
 #[derive(Clone, Debug, Default)]
 pub struct Config {
     ascii: bool,
@@ -38,10 +42,14 @@ impl Config {
     }
 }
 
-def_default_api!();
+def_default_serializer_api!();
 
 
 
+/// A [`TripleSink`] returned by [`Config::writer`].
+/// 
+/// [`TripleSink`]: ../../streams/trait.TripleSink.html
+/// [`Config::writer`]: struct.Config.html#method.writer
 pub struct Writer<W: io::Write> {
     write: W,
 }
@@ -80,7 +88,7 @@ impl<W: io::Write> TripleSink for Writer<W> {
 def_stringifier!();
 
 
-
+/// Write a single RDF term into `w` using the NT syntax.
 pub fn write_term<T,W> (w: &mut W, t: &Term<T>) -> io::Result<()> where
     T: Borrow<str>,
     W: io::Write,
@@ -125,6 +133,7 @@ pub fn write_term<T,W> (w: &mut W, t: &Term<T>) -> io::Result<()> where
     Ok(())
 }
 
+/// Stringifies a single RDF term using the NT syntax.
 pub fn stringify_term<T> (t: &Term<T>) -> String where
     T: Borrow<str>,
 {

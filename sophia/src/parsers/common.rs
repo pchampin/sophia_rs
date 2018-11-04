@@ -1,4 +1,4 @@
-//! Reusable types and function for implementing parsers.
+//! Reusable types, functions and macros for implementing parsers.
 
 use std;
 use std::borrow::Cow;
@@ -12,7 +12,8 @@ use ::term::Term;
 
 /// This macro provides a straightforward implementation of the default functions
 /// of a serializer module.
-macro_rules! def_default_api {
+#[macro_export]
+macro_rules! def_default_parser_api {
     ($bufread_parser: ty, $read_parser: ty, $str_parser: ty) => {
         /// Shortcut for `Config::default().parse_bufread(bufread)`
         #[inline]
@@ -31,14 +32,14 @@ macro_rules! def_default_api {
         }
     };
     ($io_parser: ident, $str_parser: ident) => {
-        def_default_api!(
+        def_default_parser_api!(
             $io_parser<B>,
             $io_parser<BufReader<R>>,
             $str_parser<'a>
         );
     };
     ($generic_parser: ident) => {
-        def_default_api!(
+        def_default_parser_api!(
             $generic_parser<B>,
             $generic_parser<BufReader<R>>,
             $generic_parser<BufReader<Cursor<&'a str>>>
@@ -127,6 +128,10 @@ pub(crate) fn unescape_char(txt: &str) -> Result<char, String> {
     }
 }
 
+/// Utility function for converting [Pest] errors into [Sophia errors](../../error/index.html).
+/// 
+/// [Pest]: https://docs.rs/crate/pest/
+/// 
 pub fn convert_pest_err<R: pest::RuleType> (err: PestError<R>, lineoffset: usize) -> Error {
     let message = match err.variant {
         ErrorVariant::ParsingError{positives, negatives} => {

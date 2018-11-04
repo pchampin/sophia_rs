@@ -1,7 +1,7 @@
 //! This crate aims to provide a comprehensive toolkit
 //! for working with [RDF](https://www.w3.org/TR/rdf-primer/)
 //! and [Linked Data](http://linkeddata.org/) in Rust.
-//!
+//! 
 //! # Generalized vs. Strict RDF model
 //! 
 //! The data model supported by this crate is in fact

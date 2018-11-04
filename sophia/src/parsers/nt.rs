@@ -1,3 +1,23 @@
+//! Parser for the [N-Triples] concrete syntax of RDF.
+//! 
+//! [N-Triples]: https://www.w3.org/TR/n-triples/
+//! 
+//! # Example
+//! ```
+//! use sophia::graph::inmem::FastGraph;
+//! use sophia::parsers::nt;
+//! use sophia::streams::*;
+//! 
+//! static NT_DOC: &str = r#"
+//!   <http://champin.net/#pa> <http://schema.org/name> "Pierre-Antoine Champin".
+//! "#;
+//! 
+//! let mut g = FastGraph::new();
+//! let inserted = nt::parse_str(NT_DOC).into_graph(&mut g);
+//! 
+//! assert_eq!(inserted.unwrap(), 1);
+//! ```
+
 use std::borrow::Cow;
 use std::io::{BufRead, BufReader, Read};
 
@@ -16,12 +36,21 @@ const _GRAMMAR: &'static str = include_str!("nt.pest");
 
 #[derive(Parser)]
 #[grammar = "parsers/nt.pest"]
-pub struct PestNtParser;
+pub(crate) struct PestNtParser;
 
 
-
+/// NT parser configuration.
+/// 
+/// For more information,
+/// see the [uniform interface] of parsers.
+/// 
+/// [uniform interface]: ../index.html#uniform-interface
+/// 
 #[derive(Clone, Debug, Default)]
 pub struct Config {
+    /// Should the [strict] RDF model be used ? (defaults to `false`)
+    /// 
+    /// [strict]: ../../index.html#generalized-vs-strict-rdf-model
     pub strict: bool,
 }
 
@@ -42,9 +71,14 @@ impl Config {
     }
 }
 
-def_default_api!(IoParser, StrParser);
+def_default_parser_api!(IoParser, StrParser);
 
-
+/// A [`TripleSource`] returned by [`Config::parse_bufread`]
+/// or [`Config::parse_read`].
+/// 
+/// [`TripleSource`]: ../../streams/trait.TripleSource.html
+/// [`Config::parse_bufread`]: struct.Config.html#method.parse_bufread
+/// [`Config::parse_read`]: struct.Config.html#method.parse_read
 pub struct IoParser<B: BufRead> {
     bufread: B,
     config: Config,
@@ -83,6 +117,10 @@ impl<B: BufRead> TripleSource for IoParser<B> {
 
 
 
+/// A [`TripleSource`] returned by [`Config::parse_str`].
+/// 
+/// [`TripleSource`]: ../../streams/trait.TripleSource.html
+/// [`Config::parse_str`]: struct.Config.html#method.parse_str
 pub struct StrParser<'a> {
     txt: &'a str,
     config: Config,

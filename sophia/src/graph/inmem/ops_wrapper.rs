@@ -6,6 +6,12 @@ use std::iter::empty;
 use super::*;
 use ::graph::index::remove_one_val;
 
+/// A [`GraphWrapper`](trait.GraphWrapper.html)
+/// indexing triples by object, then by predicate, then by subject.
+/// 
+/// Compared to its wrapped graph,
+/// it overrides the methods that can efficiently be implemented using this index.
+/// 
 #[derive(Default)]
 pub struct OpsWrapper<T> where
     T: IndexedMutableGraph,
@@ -37,7 +43,7 @@ impl<T> GraphWrapper for OpsWrapper<T> where
         &mut self.wrapped
     }
 
-    fn gw_iter_for_o<'a, U> (&'a self, o: &'a Term<U>) -> FallibleTripleIterator<'a, Self::Wrapped>
+    fn gw_iter_for_o<'a, U> (&'a self, o: &'a Term<U>) -> GFallibleTripleIterator<'a, Self::Wrapped>
     where
         U: Borrow<str>,
     {
@@ -63,7 +69,7 @@ impl<T> GraphWrapper for OpsWrapper<T> where
         Box::new(empty())
     }
 
-    fn gw_iter_for_po<'a, U, V> (&'a self, p: &'a Term<U>, o: &'a Term<V>) -> FallibleTripleIterator<'a, Self::Wrapped>
+    fn gw_iter_for_po<'a, U, V> (&'a self, p: &'a Term<U>, o: &'a Term<V>) -> GFallibleTripleIterator<'a, Self::Wrapped>
     where
         U: Borrow<str>,
         V: Borrow<str>,

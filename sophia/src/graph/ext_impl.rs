@@ -11,14 +11,14 @@ use ::term::*;
 use ::triple::*;
 
 
-impl<T> Graph for [(Term<T>, Term<T>, Term<T>)] where
-    T: Borrow<str>,
+impl<T> Graph for [T] where
+    T: Triple,
 {
-    type Holder = T;
+    type Holder = T::Holder;
     type Error = Never;
 
     #[inline]
-    fn iter(&self) -> FallibleTripleIterator<Self> {
+    fn iter(&self) -> GFallibleTripleIterator<Self> {
         Box::from(self.iter().map(|t| Ok((t.s(), t.p(), t.o()))))
     }
 
@@ -28,14 +28,14 @@ impl<T> Graph for [(Term<T>, Term<T>, Term<T>)] where
     }
 }
 
-impl<T> Graph for Vec<(Term<T>, Term<T>, Term<T>)> where
-    T: Borrow<str>,
+impl<T> Graph for Vec<T> where
+    T: Triple,
 {
-    type Holder = T;
+    type Holder = T::Holder;
     type Error = Never;
 
     #[inline]
-    fn iter(&self) -> FallibleTripleIterator<Self> {
+    fn iter(&self) -> GFallibleTripleIterator<Self> {
         Box::from(self[..].iter().map(|t| Ok((t.s(), t.p(), t.o()))))
     }
 
@@ -45,14 +45,14 @@ impl<T> Graph for Vec<(Term<T>, Term<T>, Term<T>)> where
     }
 }
 
-impl<T> Graph for HashSet<(Term<T>, Term<T>, Term<T>)> where
-    T: Borrow<str> + Eq + Hash,
+impl<T> Graph for HashSet<T> where
+    T: Eq + Hash + Triple,
 {
-    type Holder = T;
+    type Holder = T::Holder;
     type Error = Never;
 
     #[inline]
-    fn iter(&self) -> FallibleTripleIterator<Self> {
+    fn iter(&self) -> GFallibleTripleIterator<Self> {
         Box::from(self.iter().map(|t| Ok((t.s(), t.p(), t.o()))))
     }
 
@@ -61,6 +61,7 @@ impl<T> Graph for HashSet<(Term<T>, Term<T>, Term<T>)> where
         (self.len(), Some(self.len()))
     }
 }
+
 
 impl MutableGraph for HashSet<(BoxTerm, BoxTerm, BoxTerm)> where
 {

@@ -1,4 +1,21 @@
-//! This module defines a number of standard namespaces.
+//! Standard namespaces.
+//! 
+//! # Example
+//! ```
+//! use sophia::graph::*;
+//! use sophia::graph::inmem::FastGraph;
+//! use sophia::term::StaticTerm;
+//! 
+//! let mut g = FastGraph::new();
+//! let foo = StaticTerm::new_iri("http://example.org/foo").unwrap();
+//!
+//! use sophia::ns::{rdf, rdfs, xsd};
+//! 
+//! g.insert(&foo, &rdf::type_, &rdf::Property);
+//! g.insert(&foo, &rdfs::range, &xsd::string);
+//! ```
+
+#[macro_export]
 macro_rules! namespace {
     ($prefix:expr, $($suffix:ident),*) => {
         pub static PREFIX:&'static str = $prefix;
@@ -26,6 +43,11 @@ macro_rules! ns_term {
 
 //pub static $ident:term::Term<'static> = term::Term::Iri(term::IriData{ns:$prefix, suffix:$suffix});
 
+/// The standard `rdf:` namespace.
+/// 
+/// NB: since `type` is a reserved keyword in Rust,
+/// the term `rdf:type` spells `rdf::type_` (with a trailing underscore).
+/// 
 #[allow(non_upper_case_globals)]
 pub mod rdf {
     use ::term;
@@ -43,6 +65,7 @@ pub mod rdf {
     ns_term!("http://www.w3.org/1999/02/22-rdf-syntax-ns#", type_, "type");
 }
 
+/// The standard `xsd:` namespace.
 #[allow(non_upper_case_globals)]
 pub mod xsd {
     use ::term;
@@ -98,6 +121,7 @@ pub mod xsd {
     );
 }
 
+/// The standard `rdfs:` namespace.
 #[allow(non_upper_case_globals)]
 pub mod rdfs {
     use ::term;

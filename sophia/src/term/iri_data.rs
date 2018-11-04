@@ -62,6 +62,7 @@ impl<T> IriData<T> where
         self.absolute
     }
 
+    /// Write this IRI to `w`.
     pub fn write_to<W> (&self, w: &mut W) -> IoResult<()> where
         W: Write,
     {
@@ -239,10 +240,17 @@ impl<T> Hash for IriData<T> where
 
 
 
-// TODO document
+/// Noramlization policies are used to ensure that
+/// IRIs are represented in a given format.
+/// 
+/// They are applied by copying terms with
+/// [`Term::noramlized_with`](enum.Term.html#method.noramlized_with).
 #[derive(Clone,Copy)]
 pub enum Normalization {
+    /// IRIs are represented as a single string (`ns`) with an empty `suffix`.
     NoSuffix,
+    /// IRIs are represented with a prefix `ns` extending to the last hash (`#`) or slash (`/`),
+    /// and a `suffix` containing the remaining characters.
     LastHashOrSlash,
 }
 

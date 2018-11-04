@@ -1,8 +1,9 @@
-//! Reusable types, function and macros for implementing serializers.
+//! Reusable types, functions and macros for implementing serializers.
 
 /// This macro provides a straightforward implementation of the default functions
 /// of a serializer module.
-macro_rules! def_default_api {
+#[macro_export]
+macro_rules! def_default_serializer_api {
     ($writer: ident, $stringifier: ident) => {
         /// Shortcut for `Config::default().writer(write)`
         #[inline]
@@ -17,15 +18,17 @@ macro_rules! def_default_api {
         }
     };
     () => {
-        def_default_api!(Writer, Stringifier);
+        def_default_serializer_api!(Writer, Stringifier);
     };
 }
 
 
 /// This macro provides a straightforward implementation of the `Stringifier` type,
 /// based on the `Writer` type.
+#[macro_export]
 macro_rules! def_stringifier {
     ($writer: ident, $stringifier: ident) => {
+        /// A `TripleSink` returned by `Config::stringifier`
         pub struct $stringifier {
             writer: $writer<Vec<u8>>,
         }
