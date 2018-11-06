@@ -3,9 +3,32 @@
 //! 
 //! See [`TripleSource`]'s and [`TripleSink`]'s documentation for more detail.
 //! 
+//! # Why not simply use iterators of [`Triple`]s?
+//! 
+//! Iterators are well suited in the following cases:
+//! * the items are owned by a container,
+//!   and the iterator yields references to them;
+//! * each item is produced during an iteration,
+//!   and "given" by the iterator to the consuming code.
+//! 
+//! Some situations do not fit those categories.
+//! For example, a parser will get lines of text from an IO stream,
+//! and produce triples that borrow text from these lines.
+//! We do not want the parser to store all the lines
+//! (there could be too many of them),
+//! so it can not own the triples undefinitely.
+//! But it can not give them away either,
+//! as they borrow from the ephemeral lines.
+//! 
+//! 
+//! [`TripleSource`] provides an abstraction that can handle that situation.
+//! As it is more general than [`Iterator`],
+//! any iterator of (results wrapping) triples implements [`TripleSource`].
+//! 
 //! [`TripleSource`]: trait.TripleSource.html
 //! [`TripleSink`]: trait.TripleSink.html
 //! [`Triple`]: ../triple/trait.Triple.html
+//! [`Iterator`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html
 
 use std::error::Error as StdError;
 use std::fmt;
