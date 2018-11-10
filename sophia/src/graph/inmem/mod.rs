@@ -41,6 +41,7 @@ use super::traits::*;
 
 #[macro_use]
 mod wrapper; pub use self::wrapper::*;
+mod indexed_h_graph; pub use self::indexed_h_graph::*;
 mod spo_wrapper; pub use self::spo_wrapper::*;
 mod ops_wrapper; pub use self::ops_wrapper::*;
 mod term_index_u; pub use self::term_index_u::*;
