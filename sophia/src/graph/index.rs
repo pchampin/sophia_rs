@@ -23,7 +23,7 @@ pub trait TermIndex: Default {
 
     /// Return the index associated to the given term, if it exists.
     fn get_index(&self, t: &RefTerm) -> Option<Self::Index>;
-    /// Return the index associated to the given term, creating it if required.
+    /// Return the index associated to the given term, creating it if required, and increasing its ref count.
     fn make_index(&mut self, t: &RefTerm) -> Self::Index;
     /// Return the term associated to the given index, if it exists.
     fn get_term(&self, i: Self::Index) -> Option<&Term<<Self::Factory as TermFactory>::Holder>>;
