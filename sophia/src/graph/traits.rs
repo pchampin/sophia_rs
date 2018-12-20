@@ -3,6 +3,7 @@
 use std::borrow::Borrow;
 
 use resiter::filter_x::*;
+use resiter::map_x::*;
 
 use ::graph::sinks::*;
 use ::streams::*;
@@ -130,9 +131,9 @@ pub trait Graph
     /// 
     /// See also [`iter`](#tymethod.iter).
     fn iter_matching<'a, S, P, O> (&'a self, ms: &'a S, mp: &'a P, mo: &'a O) -> GFallibleTripleIterator<'a, Self> where
-        S: TermMatcher<Self::Holder>,
-        P: TermMatcher<Self::Holder>,
-        O: TermMatcher<Self::Holder>,
+        S: TermMatcher<Self::Holder> + ?Sized,
+        P: TermMatcher<Self::Holder> + ?Sized,
+        O: TermMatcher<Self::Holder> + ?Sized,
     {
         match (&ms.constant(), &mp.constant(), &mo.constant()) {
             (None,    None,    None   )    => Box::from(
@@ -142,7 +143,7 @@ pub trait Graph
             (None,    Some(p), None   )    => Box::from(
                 self.iter_for_p(p).filter_ok(move |t| ms.try(t.s()) && mo.try(t.o()))),
             (None,    None,    Some(o))    => Box::from(
-                self.iter_for_o(o).filter_ok(move |t| mp.try(t.s()) && mp.try(t.p()))),
+                self.iter_for_o(o).filter_ok(move |t| ms.try(t.s()) && mp.try(t.p()))),
             (Some(s), Some(p), None   )    => Box::from(
                 self.iter_for_sp(s, p).filter_ok(move |t| mo.try(t.o()))),
             (Some(s), None,    Some(o))    => Box::from(
@@ -293,16 +294,16 @@ pub trait MutableGraph : Graph {
     /// and could be improved in specific implementations of the trait.
     ///
     fn remove_matching<S, P, O> (&mut self, ms: &S, mp: &P, mo: &O) -> GResult<Self, usize> where
-        S: TermMatcher<Self::Holder>,
-        P: TermMatcher<Self::Holder>,
-        O: TermMatcher<Self::Holder>,
+        S: TermMatcher<Self::Holder> + ?Sized,
+        P: TermMatcher<Self::Holder> + ?Sized,
+        O: TermMatcher<Self::Holder> + ?Sized,
     {
-        let mut to_remove = vec![];
-        for tres in self.iter_matching(ms, mp, mo) {
-            let (s, p, o) = tres?;
-            to_remove.push((
-                BoxTerm::from(s), BoxTerm::from(p), BoxTerm::from(o)));
-        }
+        let to_remove =
+            self.iter_matching(ms, mp, mo)
+            .map_ok(|t| {
+                (BoxTerm::from(t.s()), BoxTerm::from(t.p()), BoxTerm::from(t.o()))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
         let mut to_remove = to_remove.into_iter().wrap_as_oks();
         self.remove_all(&mut to_remove).unwrap_upstream()
     }
@@ -312,16 +313,22 @@ pub trait MutableGraph : Graph {
     /// Note that the default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
     ///
-    fn retain<S, P, O> (&mut self, ms: S, mp: P, mo: O) -> GResult<Self, ()> where
-        S: TermMatcher<Self::Holder>,
-        P: TermMatcher<Self::Holder>,
-        O: TermMatcher<Self::Holder>,
+    fn retain<S, P, O> (&mut self, ms: &S, mp: &P, mo: &O) -> GResult<Self, ()> where
+        S: TermMatcher<Self::Holder> + ?Sized,
+        P: TermMatcher<Self::Holder> + ?Sized,
+        O: TermMatcher<Self::Holder> + ?Sized,
     {
-        self.remove_matching(
-            &|t: &Term<_>| !ms.try(t),
-            &|t: &Term<_>| !mp.try(t),
-            &|t: &Term<_>| !mo.try(t),
-        )?;
+        let to_remove =
+            self.iter()
+            .filter_ok(|t| {
+                !(ms.try(t.s()) && mp.try(t.p()) && mo.try(t.o()))
+            })
+            .map_ok(|t| {
+                (BoxTerm::from(t.s()), BoxTerm::from(t.p()), BoxTerm::from(t.o()))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let mut to_remove = to_remove.into_iter().wrap_as_oks();
+        self.remove_all(&mut to_remove).unwrap_upstream()?;
         Ok(())
     }
 }
