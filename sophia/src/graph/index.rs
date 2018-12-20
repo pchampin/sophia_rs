@@ -139,3 +139,84 @@ pub(crate) fn remove_one_val<K, W> (hm: &mut HashMap<K, Vec<W>>, k: K, w: W) whe
         Entry::Vacant(_) => unreachable!()
     }
 }
+
+
+
+#[cfg(test)]
+/// Takes an empty TermIndex, and checks that it behaves as expected.
+pub fn assert_term_index_works<T: TermIndex>(ti: &mut T) {
+    let t = RefTerm::new_iri("http://example.org/").unwrap();
+    assert!(ti.get_index(&t).is_none());
+
+    // insert term, then remove it
+
+    let it = ti.make_index(&t);
+    assert!(ti.get_index(&t).is_some());
+    assert!(ti.get_index(&t).unwrap() == it);
+    assert!(ti.get_term(it).is_some());
+    assert!(ti.get_term(it).unwrap() == &t);
+
+    ti.dec_ref(it);
+    assert!(ti.get_index(&t).is_none());
+    assert!(ti.get_term(it).is_none());
+
+
+    // insert term twice, then remove it
+
+    let it = ti.make_index(&t);
+    assert!(ti.get_index(&t).is_some());
+    assert!(ti.get_index(&t).unwrap() == it);
+    assert!(ti.get_term(it).is_some());
+    assert!(ti.get_term(it).unwrap() == &t);
+
+    let it2 = ti.make_index(&t);
+    assert!(it == it2);
+
+    ti.dec_ref(it);
+    assert!(ti.get_index(&t).is_some());
+    assert!(ti.get_index(&t).unwrap() == it);
+    assert!(ti.get_term(it).is_some());
+    assert!(ti.get_term(it).unwrap() == &t);
+
+    ti.dec_ref(it);
+    assert!(ti.get_index(&t).is_none());
+    assert!(ti.get_term(it).is_none());
+
+
+    // insert term, incref it, then remove it
+
+    let it = ti.make_index(&t);
+    assert!(ti.get_index(&t).is_some());
+    assert!(ti.get_index(&t).unwrap() == it);
+    assert!(ti.get_term(it).is_some());
+    assert!(ti.get_term(it).unwrap() == &t);
+
+    ti.inc_ref(it);
+
+    ti.dec_ref(it);
+    assert!(ti.get_index(&t).is_some());
+    assert!(ti.get_index(&t).unwrap() == it);
+    assert!(ti.get_term(it).is_some());
+    assert!(ti.get_term(it).unwrap() == &t);
+
+    ti.dec_ref(it);
+    assert!(ti.get_index(&t).is_none());
+    assert!(ti.get_term(it).is_none());
+
+
+    // insert two terms, then remove them
+
+    let t1 = t;
+    let t2 = RefTerm::new_iri("http://example.org/2").unwrap();
+    let it1 = ti.make_index(&t1);
+    let it2 = ti.make_index(&t2);
+    assert!(it1 != it2);
+
+    ti.dec_ref(it2);
+    assert!(ti.get_index(&t1).is_some());
+    assert!(ti.get_index(&t2).is_none());
+
+    ti.dec_ref(it1);
+    assert!(ti.get_index(&t1).is_none());
+    assert!(ti.get_index(&t2).is_none());
+}
