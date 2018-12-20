@@ -90,3 +90,52 @@ impl MutableGraph for HashSet<(BoxTerm, BoxTerm, BoxTerm)> where
 impl<T> SetGraph for HashSet<(Term<T>, Term<T>, Term<T>)> where
     T: Borrow<str> + Eq + Hash,
 {}
+
+
+
+#[cfg(test)]
+mod test {
+    use std::collections::HashSet;
+    use resiter::oks::*;
+
+    use ::graph::*;
+    use ::ns::*;
+    use ::term::BoxTerm;
+
+    #[test]
+    fn test_slice() {
+        let g = [
+            (rdf::type_, rdf::type_, rdf::Property),
+            (rdf::Property, rdf::type_, rdfs::Class),
+            (rdfs::Class, rdf::type_, rdfs::Class),
+        ];
+        let v: Vec<_> = <[_] as Graph>::iter(&g).oks().collect();
+        assert_eq!(v.len(), 3);
+    }
+
+    #[test]
+    fn test_vec() {
+        let g = vec![
+            (rdf::type_, rdf::type_, rdf::Property),
+            (rdf::Property, rdf::type_, rdfs::Class),
+            (rdfs::Class, rdf::type_, rdfs::Class),
+        ];
+        let v: Vec<_> = <Vec<_> as Graph>::iter(&g).oks().collect();
+        assert_eq!(v.len(), 3);
+    }
+
+    #[test]
+    fn test_hashset() {
+        let mut g1: HashSet<(BoxTerm, BoxTerm, BoxTerm)> = HashSet::new();
+
+        let g2 = [
+            (rdf::type_, rdf::type_, rdf::Property),
+            (rdf::Property, rdf::type_, rdfs::Class),
+            (rdfs::Class, rdf::type_, rdfs::Class),
+        ];
+        let inserted = g1.insert_all(<[_] as Graph>::iter(&g2)).unwrap();
+        assert_eq!(inserted, g2.len());
+        let v: Vec<_> = <HashSet<_> as Graph>::iter(&g1).oks().collect();
+        assert_eq!(v.len(), 3);
+    }
+}
