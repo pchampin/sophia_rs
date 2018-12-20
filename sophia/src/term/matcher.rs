@@ -85,3 +85,109 @@ impl<T, F> TermMatcher<T> for F where
 /// but the name "None" may be confusing
 /// when one wants to actually match *any* term.
 pub const ANY: Option<StaticTerm> = None;
+
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_term_as_matcher() {
+        let m = BoxTerm::new_iri("http://champin.net/#pa").unwrap();
+        // comparing to a term using a different holder, and differently cut,
+        // to make the test less obvious
+        let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
+        let t2 = RcTerm::new_iri("http://example.org/").unwrap();
+
+        let mc = TermMatcher::<Rc<str>>::constant(&m);
+        assert!(mc.is_some());
+        assert_eq!(mc.unwrap(), &t1);
+        assert!(m.try(&t1));
+        assert!(!m.try(&t2));
+    }
+
+    #[test]
+    fn test_some_as_matcher() {
+        let m = Some(BoxTerm::new_iri("http://champin.net/#pa").unwrap());
+        // comparing to a term using a different holder, and differently cut,
+        // to make the test less obvious
+        let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
+        let t2 = RcTerm::new_iri("http://example.org/").unwrap();
+
+        let mc = TermMatcher::<Rc<str>>::constant(&m);
+        assert!(mc.is_some());
+        assert_eq!(mc.unwrap(), &t1);
+        assert!(m.try(&t1));
+        assert!(!m.try(&t2));
+    }
+
+    #[test]
+    fn test_none_as_matcher() {
+        let m: Option<BoxTerm> = None;
+        // comparing to a term using a different holder, and differently cut,
+        // to make the test less obvious
+        let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
+
+        let mc = TermMatcher::<Rc<str>>::constant(&m);
+        assert!(mc.is_none());
+        assert!(m.try(&t1));
+    }
+
+    #[test]
+    fn test_vec1_as_matcher() {
+        let m = [BoxTerm::new_iri("http://champin.net/#pa").unwrap()];
+        // comparing to a term using a different holder, and differently cut,
+        // to make the test less obvious
+        let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
+        let t2 = RcTerm::new_iri("http://example.org/").unwrap();
+
+        let mc = TermMatcher::<Rc<str>>::constant(&m[..]);
+        assert!(mc.is_some());
+        assert_eq!(mc.unwrap(), &t1);
+        assert!(m.try(&t1));
+        assert!(!m.try(&t2));
+    }
+
+    #[test]
+    fn test_vec2_as_matcher() {
+        let m = [
+            BoxTerm::new_iri("http://champin.net/#pa").unwrap(),
+            BoxTerm::new_iri("http://example.org/").unwrap(),
+        ];
+        // comparing to a term using a different holder, and differently cut,
+        // to make the test less obvious
+        let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
+        let t2 = RcTerm::new_iri("http://example.org/").unwrap();
+        let t3 = RcTerm::new_iri("http://example.org/other").unwrap();
+
+        let mc = TermMatcher::<Rc<str>>::constant(&m[..]);
+        assert!(mc.is_none());
+        assert!(m.try(&t1));
+        assert!(m.try(&t2));
+        assert!(!m.try(&t3));
+    }
+
+    #[test]
+    fn test_vec0_as_matcher() {
+        let m: [BoxTerm;0] = [];
+        // comparing to a term using a different holder, and differently cut,
+        // to make the test less obvious
+        let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
+
+        let mc = TermMatcher::<Rc<str>>::constant(&m[..]);
+        assert!(mc.is_none());
+        assert!(!m.try(&t1));
+    }
+
+    #[test]
+    fn test_func_as_matcher() {
+        let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
+        let t2 = RcTerm::new_iri("http://example.org/").unwrap();
+
+        let m = |t: &RcTerm| t.value().starts_with("http://champin");
+        assert!(m.constant().is_none());
+        assert!(m.try(&t1));
+        assert!(!m.try(&t2));
+    }
+}
