@@ -395,6 +395,18 @@ impl<T, U> PartialEq<Term<U>> for Term<T> where
     }
 }
 
+impl<T, U> PartialEq<IriData<U>> for Term<T> where
+    T: Borrow<str>,
+    U: Borrow<str>,
+{
+    fn eq(&self, other: &IriData<U>) -> bool {
+        match self {
+            Iri(iri1) => iri1 == other,
+            _         => false,
+        }
+    }
+}
+
 impl<'a, T, U> From<&'a Term<U>> for Term<T> where
         T: Borrow<str> + From<&'a str>,
         U: Borrow<str>,
@@ -406,8 +418,6 @@ impl<'a, T, U> From<&'a Term<U>> for Term<T> where
 
 
 
-
-
 lazy_static! {
     static ref N3_VARIABLE_NAME: Regex = Regex::new(r"(?x)
       ^
@@ -416,6 +426,8 @@ lazy_static! {
       $
     ").unwrap();
 }
+
+
 
 #[cfg(test)]
 pub(crate) mod test;

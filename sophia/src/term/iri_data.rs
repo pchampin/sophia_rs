@@ -11,8 +11,9 @@ use self::iri_rfc3987::{is_absolute_iri, is_relative_iri};
 /// May be encountered when pattern-matching on [`Term`](enum.Term.html)s
 /// of the [`Iri`](enum.Term.html#variant.Iri) variant.
 /// For that purpose, note that `IriData`
-///  - provides some identical methods to what `&str` provides (see below);
 ///  - can be directly compared to a `&str` with the `==` operator;
+///  - can be directly compared to a [`Term`](enum.Term.html) with the `==` operator;
+///  - provides some identical methods to what `&str` provides (see below);
 ///  - can otherwise be converted to a `String` with [`to_string`](#method.to_string);
 /// 
 /// See [module documentation](index.html)
@@ -225,6 +226,16 @@ impl<'a, T> PartialEq<&'a str> for IriData<T> where
             }
             eq
         }
+    }
+}
+
+impl<T, U> PartialEq<Term<U>> for IriData<T> where
+    T: Borrow<str>,
+    U: Borrow<str>,
+{
+    #[inline]
+    fn eq(&self, other: &Term<U>) -> bool {
+        other == self
     }
 }
 
