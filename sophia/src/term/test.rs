@@ -1,10 +1,22 @@
 use super::*;
 
+use ::ns::xsd;
+
+fn h<H: std::hash::Hash>(x: &H) -> u64 {
+    use std::hash::Hasher;
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    x.hash(&mut hasher);
+    hasher.finish()
+}
+
 #[test]
 fn iri() {
     let exp = "http://champin.net/";
-    let i = RefTerm::new_iri("http://champin.net/");
-    if let Ok(Iri(iri)) = i {
+    let i = RefTerm::new_iri("http://champin.net/").unwrap();
+    assert_eq!(i.value(), exp.to_string());
+    assert_eq!(i.n3(), format!("<{}>", exp));
+
+    if let Iri(iri) = i {
         assert_eq!(iri, exp);
         assert_eq!(iri.len(), exp.len());
         let s1 = iri.to_string();
@@ -12,17 +24,20 @@ fn iri() {
         assert_eq!(s1, exp);
         assert_eq!(s2, exp);
     } else {
-        assert!(false, "Should have returned Ok(Iri(_))");
+        assert!(false, "Should have returned Iri(_)");
     }
-    let i = RefTerm::new_iri("1://champin.net/");
-    assert!(i.is_err());
+    let res = RefTerm::new_iri("1://champin.net/");
+    assert!(res.is_err());
 }
 
 #[test]
 fn iri2() {
     let exp = "http://champin.net/#pa";
-    let i = RefTerm::new_iri2("http://champin.net/#", "pa");
-    if let Ok(Iri(iri)) = i {
+    let i = RefTerm::new_iri2("http://champin.net/#", "pa").unwrap();
+    assert_eq!(i.value(), exp.to_string());
+    assert_eq!(i.n3(), format!("<{}>", exp));
+
+    if let Iri(iri) = i {
         assert_eq!(iri, exp);
         assert_eq!(iri.len(), exp.len());
         let s1 = iri.to_string();
@@ -30,11 +45,10 @@ fn iri2() {
         assert_eq!(s1, exp);
         assert_eq!(s2, exp);
     } else {
-        assert!(false, "Should have returned Ok(Iri(_))");
+        assert!(false, "Should have returned Iri(_)");
     }
-    let i = RefTerm::new_iri2("1://champin.net/", "pa");
-    assert!(i.is_err());
-
+    let res = RefTerm::new_iri2("1://champin.net/", "pa");
+    assert!(res.is_err());
 }
 
 #[test]
@@ -43,20 +57,44 @@ fn iri_eq_different_holders() {
     let i2 = RcTerm::new_iri("http://champin.net/").unwrap();
     let i3 = ArcTerm::new_iri("http://champin.net/").unwrap();
     let i4 = RefTerm::new_iri("http://champin.net/").unwrap();
-    assert_eq!(i1, i2);
-    assert_eq!(i1, i3);
-    assert_eq!(i1, i4);
-    assert_eq!(i2, i3);
-    assert_eq!(i2, i4);
+    assert_eq!(i1, i2); assert_eq!(h(&i1), h(&i2));
+    assert_eq!(i1, i3); assert_eq!(h(&i1), h(&i3));
+    assert_eq!(i1, i4); assert_eq!(h(&i1), h(&i4));
+    assert_eq!(i2, i3); assert_eq!(h(&i2), h(&i3));
+    assert_eq!(i2, i4); assert_eq!(h(&i2), h(&i4));
+    assert_eq!(i3, i4); assert_eq!(h(&i3), h(&i4));
+}
+
+#[test]
+fn iri_eq_different_cut() {
+    let i1 = BoxTerm::new_iri("http://champin.net/#pa").unwrap();
+    let i2 = BoxTerm::new_iri2("http://champin.net/#", "pa").unwrap();
+    let i3 = BoxTerm::new_iri2("http://champin.net/", "#pa").unwrap();
+    let i4 = BoxTerm::new_iri2("http://champin.", "net/#pa").unwrap();
+    assert_eq!(i1, i2); assert_eq!(h(&i1), h(&i2));
+    assert_eq!(i1, i3); assert_eq!(h(&i1), h(&i3));
+    assert_eq!(i1, i4); assert_eq!(h(&i1), h(&i4));
+    assert_eq!(i2, i3); assert_eq!(h(&i2), h(&i3));
+    assert_eq!(i2, i4); assert_eq!(h(&i2), h(&i4));
+    assert_eq!(i3, i4); assert_eq!(h(&i3), h(&i4));
+}
+
+#[test]
+fn iri_similar_but_not_eq() {
+    let i1 = BoxTerm::new_iri("http://champin.net/#pa").unwrap();
+    let i2 = BoxTerm::new_iri("http://champin.net/#p").unwrap();
+    assert_ne!(i1, i2); assert_ne!(h(&i1), h(&i2));
 }
 
 #[test]
 fn iri_normalized_no_suffix() {
     let norm = Normalization::NoSuffix;
-    let i1 = IriData::new("http://champin.net/#", Some("pa")).unwrap();
-    let i2 = IriData::normalized_with(&i1, |txt| String::from(txt), norm);
+    let i1 = BoxTerm::new_iri2("http://champin.net/#", "pa").unwrap();
+    let i2 = BoxTerm::normalized_with(&i1, |txt| Box::from(txt), norm);
     assert_eq!(i1, i2);
-    assert!(i2.suffix.is_none());
+    if let Iri(i2) = i2 {
+        assert!(i2.suffix.is_none());
+    }
 }
 
 #[test]
@@ -70,15 +108,53 @@ fn iri_normalized_last_hash_or_slash() {
         ("tag:foo", "",                      "tag:foo", ""),
         ("tag:", "foo",                      "tag:foo", ""),
     ] {
-        let sf1 = if sf1.len() == 0 { None } else { Some(*sf1) };
-        let sf2 = if sf2.len() == 0 { None } else { Some(String::from(*sf2)) };
-
-        let i1 = IriData::new(*ns1, sf1).unwrap();
-        let i2 = IriData::normalized_with(&i1, |txt| String::from(txt), norm);
+        let i1 = if sf1.len() == 0 {
+            BoxTerm::new_iri(*ns1).unwrap()
+        } else {
+            BoxTerm::new_iri2(*ns1, *sf1).unwrap()
+        };
+        let i2 = BoxTerm::normalized_with(&i1, |txt| Box::from(txt), norm);
         assert_eq!(i1, i2);
-        assert_eq!(&i2.ns[..], *ns2);
-        assert_eq!(i2.suffix, sf2);
+        if let Iri(i2) = i2 {
+            assert_eq!(&i2.ns[..], *ns2);
+            let sf2 = if sf2.len() == 0 { None } else { Some(Box::from(*sf2)) };
+            assert_eq!(i2.suffix, sf2);
+        }
     }
+}
+
+#[test]
+fn bnode() {
+    let b1 = BoxTerm::new_bnode("foo").unwrap();
+    assert_eq!(b1.value(), "foo".to_string());
+    assert_eq!(b1.n3(), "_:foo".to_string());
+
+    if let BNode(id1) = b1 {
+        assert_eq!(Borrow::<str>::borrow(&id1), "foo");
+    } else {
+        panic!("b1 should be a BNode");
+    }
+}
+
+#[test]
+fn bnode_eq_different_holders() {
+    let b1 = BoxTerm::new_bnode("xyz").unwrap();
+    let b2 = RcTerm::new_bnode("xyz").unwrap();
+    let b3 = ArcTerm::new_bnode("xyz").unwrap();
+    let b4 = RefTerm::new_bnode("xyz").unwrap();
+    assert_eq!(b1, b2); assert_eq!(h(&b1), h(&b2));
+    assert_eq!(b1, b3); assert_eq!(h(&b1), h(&b3));
+    assert_eq!(b1, b4); assert_eq!(h(&b1), h(&b4));
+    assert_eq!(b2, b3); assert_eq!(h(&b2), h(&b3));
+    assert_eq!(b2, b4); assert_eq!(h(&b2), h(&b4));
+    assert_eq!(b3, b4); assert_eq!(h(&b3), h(&b4));
+}
+
+#[test]
+fn bnode_similar_but_not_eq() {
+    let b1 = BoxTerm::new_bnode("xyz").unwrap();
+    let b2 = BoxTerm::new_bnode("xyZ").unwrap();
+    assert_ne!(b1, b2); assert_ne!(h(&b1), h(&b2));
 }
 
 #[test]
@@ -86,8 +162,6 @@ fn bnode_id_deref() {
     let b1 = BoxTerm::new_bnode("foo").unwrap();
     if let BNode(id1) = b1 {
         assert!(id1.starts_with("fo"));
-    } else {
-        panic!("b1 should be a BNode");
     }
 }
 
@@ -140,19 +214,156 @@ fn bnode_is_n3() {
 }
 
 #[test]
+fn literal_lang() {
+    let lit = RefTerm::new_literal_lang("hello", "en").unwrap();
+    assert_eq!(lit.value(), "hello".to_string());
+    assert_eq!(lit.n3(), "\"hello\"@en".to_string());
+
+    if let Literal(val, Lang(tag)) = lit {
+        assert_eq!(val.borrow(), "hello");
+        assert_eq!(tag.borrow(), "en");
+    } else {
+        assert!(false, "Should have returned Literal(_, Lang(_))");
+    }
+    let res = RefTerm::new_literal_lang("hello", "");
+    assert!(res.is_err());
+}
+
+#[test]
+fn literal_dt() {
+    let lit = RefTerm::new_literal_dt("hello", xsd::string.clone()).unwrap();
+    assert_eq!(lit.value(), "hello".to_string());
+    assert_eq!(lit.n3(), "\"hello\"".to_string());
+
+    if let Literal(val, Datatype(iri)) = lit {
+        assert_eq!(val.borrow(), "hello");
+        assert_eq!(iri, xsd::string);
+    } else {
+        assert!(false, "Should have returned Literal(_, Datatype(_))");
+    }
+
+    let lit = RefTerm::new_literal_dt("42", xsd::integer.clone()).unwrap();
+    assert_eq!(lit.value(), "42".to_string());
+    assert_eq!(lit.n3(), "\"42\"^^<http://www.w3.org/2001/XMLSchema#integer>".to_string());
+}
+
+#[test]
+fn literal_eq_different_holders() {
+    let l1 = BoxTerm::new_literal_lang("hello", "en").unwrap();
+    let l2 = RcTerm::new_literal_lang("hello", "en").unwrap();
+    let l3 = ArcTerm::new_literal_lang("hello", "en").unwrap();
+    let l4 = RefTerm::new_literal_lang("hello", "en").unwrap();
+    assert_eq!(l1, l2); assert_eq!(h(&l1), h(&l2));
+    assert_eq!(l1, l3); assert_eq!(h(&l1), h(&l3));
+    assert_eq!(l1, l4); assert_eq!(h(&l1), h(&l4));
+    assert_eq!(l2, l3); assert_eq!(h(&l2), h(&l3));
+    assert_eq!(l2, l4); assert_eq!(h(&l2), h(&l4));
+    assert_eq!(l3, l4); assert_eq!(h(&l3), h(&l4));
+}
+
+#[test]
+fn literal_similar_but_not_eq() {
+    let l1 = RefTerm::new_literal_lang("42", "en").unwrap();
+    let l2 = RefTerm::new_literal_lang("42", "fr").unwrap();
+    let l3 = RefTerm::new_literal_dt("42", xsd::string.clone()).unwrap();
+    let l4 = RefTerm::new_literal_dt("42", xsd::integer.clone()).unwrap();
+    assert_ne!(l1, l2); assert_ne!(h(&l1), h(&l2));
+    assert_ne!(l1, l3); assert_ne!(h(&l1), h(&l3));
+    assert_ne!(l1, l4); assert_ne!(h(&l1), h(&l4));
+    assert_ne!(l2, l3); assert_ne!(h(&l2), h(&l3));
+    assert_ne!(l2, l4); assert_ne!(h(&l2), h(&l4));
+    assert_ne!(l3, l4); assert_ne!(h(&l3), h(&l4));
+}
+
+#[test]
+fn literal_normalized_no_suffix() {
+    let norm = Normalization::NoSuffix;
+    let dt = BoxTerm::new_iri2("http://champin.net/#", "pa").unwrap();
+    let l1 = BoxTerm::new_literal_dt("hello", dt).unwrap();
+    let l2 = BoxTerm::normalized_with(&l1, |txt| Box::from(txt), norm);
+    assert_eq!(l1, l2);
+    if let Literal(_, Datatype(i2)) = l2 {
+        assert!(i2.suffix.is_none());
+    }
+}
+
+#[test]
+fn literal_normalized_last_hash_or_slash() {
+    let norm = Normalization::LastHashOrSlash;
+    for (ns1, sf1, ns2, sf2) in &[
+        ("http://champin.net/#pa", "",       "http://champin.net/#", "pa"),
+        ("http://champin.net/#", "pa",       "http://champin.net/#", "pa"),
+        ("http://champin.net/", "#pa",       "http://champin.net/#", "pa"),
+        ("http://champin.net/", "foo/bar",   "http://champin.net/foo/", "bar"),
+        ("tag:foo", "",                      "tag:foo", ""),
+        ("tag:", "foo",                      "tag:foo", ""),
+    ] {
+        let dt = if sf1.len() == 0 {
+            BoxTerm::new_iri(*ns1).unwrap()
+        } else {
+            BoxTerm::new_iri2(*ns1, *sf1).unwrap()
+        };
+        let l1 = BoxTerm::new_literal_dt("hello", dt).unwrap();
+        let l2 = BoxTerm::normalized_with(&l1, |txt| Box::from(txt), norm);
+        assert_eq!(l1, l2);
+        if let Literal(_, Datatype(i2)) = l2 {
+            assert_eq!(&i2.ns[..], *ns2);
+            let sf2 = if sf2.len() == 0 { None } else { Some(Box::from(*sf2)) };
+            assert_eq!(i2.suffix, sf2);
+        }
+    }
+}
+
+#[test]
 fn variable() {
     let pos = POSITIVE_1CHAR_IDS.iter().chain(POSITIVE_VARIABLES.iter());
     for id in pos {
-        let b = BoxTerm::new_variable(*id);
-        assert!(b.is_ok(), format!("{:?} should be accepted as a variable name", *id));
+        let res = BoxTerm::new_variable(*id);
+        assert!(res.is_ok(), format!("{:?} should be accepted as a variable name", *id));
+
+        let var = res.unwrap();
+        assert_eq!(var.value(), id.to_string());
+        assert_eq!(var.n3(), format!("?{}", id));
     }
 
     let neg = NEGATIVE_1CHAR_IDS.iter()
         .chain(NEGATIVE_VARIABLES.iter());
     for id in neg {
-        let b = BoxTerm::new_variable(*id);
-        assert!(b.is_err(), format!("{:?} should be refused as a variable name", *id));
+        let res = BoxTerm::new_variable(*id);
+        assert!(res.is_err(), format!("{:?} should be refused as a variable name", *id));
     }
+}
+
+#[test]
+fn variable_eq_different_holders() {
+    let v1 = BoxTerm::new_variable("xyz").unwrap();
+    let v2 = RcTerm::new_variable("xyz").unwrap();
+    let v3 = ArcTerm::new_variable("xyz").unwrap();
+    let v4 = RefTerm::new_variable("xyz").unwrap();
+    assert_eq!(v1, v2); assert_eq!(h(&v1), h(&v2));
+    assert_eq!(v1, v3); assert_eq!(h(&v1), h(&v3));
+    assert_eq!(v1, v4); assert_eq!(h(&v1), h(&v4));
+    assert_eq!(v2, v3); assert_eq!(h(&v2), h(&v3));
+    assert_eq!(v2, v4); assert_eq!(h(&v2), h(&v4));
+    assert_eq!(v3, v4); assert_eq!(h(&v3), h(&v4));
+}
+
+#[test]
+fn variable_similar_but_not_eq() {
+    let v1 = BoxTerm::new_bnode("xyz").unwrap();
+    let v2 = BoxTerm::new_bnode("xyZ").unwrap();
+    assert_ne!(v1, v2); assert_ne!(h(&v1), h(&v2));
+}
+
+#[test]
+fn term_similar_but_not_eq() {
+    let txt = "http://champin.net/#pa";
+    let t1 = StaticTerm::new_iri(txt).unwrap();
+    let t2 = StaticTerm::new_literal_dt(txt, xsd::anyURI).unwrap();
+    let t3 = StaticTerm::new_bnode(txt).unwrap();
+    assert_ne!(t1, t2); assert_ne!(h(&t1), h(&t2));
+    assert_ne!(t1, t3); assert_ne!(h(&t1), h(&t3));
+    assert_ne!(t2, t3); assert_ne!(h(&t2), h(&t3));
 }
 
 pub(crate) const POSITIVE_1CHAR_IDS:&[&str] = &[
