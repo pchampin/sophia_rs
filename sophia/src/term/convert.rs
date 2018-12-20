@@ -51,3 +51,48 @@ impl From<u32> for Term<String> {
     }
 }
 
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_string() {
+        let t1 = Term::from("hello".to_string());
+        let t2 = Term::new_literal_dt("hello", xsd::string.clone()).unwrap();
+        assert_eq!(t1, t2);
+    }
+
+    #[test]
+    fn test_str() {
+        let t1 = Term::from("hello");
+        let t2 = Term::new_literal_dt("hello", xsd::string.clone()).unwrap();
+        assert_eq!(t1, t2);
+    }
+
+    #[test]
+    fn test_bool() {
+        let t1 = Term::from(true);
+        let t2 = Term::new_literal_dt("true", xsd::boolean.clone()).unwrap();
+        assert_eq!(t1, t2);
+    }
+    #[test]
+    fn test_f64() {
+        let t1 = Term::from(3.14_f64);
+        let t2 = Term::new_literal_dt("3.14", xsd::double.clone()).unwrap();
+        assert_eq!(t1, t2);
+    }
+    #[test]
+    fn test_i32() {
+        let t1 = Term::from(-42_i32);
+        let t2 = Term::new_literal_dt("-42", xsd::integer.clone()).unwrap();
+        assert_eq!(t1, t2);
+    }
+    #[test]
+    fn test_u32() {
+        let t1 = Term::from(42_u32);
+        let t2 = Term::new_literal_dt("42", xsd::nonNegativeInteger.clone()).unwrap();
+        assert_eq!(t1, t2);
+    }
+}
