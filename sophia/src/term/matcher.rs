@@ -78,3 +78,10 @@ impl<T, F> TermMatcher<T> for F where
         self(t)
     }
 }
+
+/// A matcher matching any term.
+///
+/// It is actually the `None` variant from `Option<StaticTerm>`,
+/// but the name "None" may be confusing
+/// when one wants to actually match *any* term.
+pub const ANY: Option<StaticTerm> = None;
