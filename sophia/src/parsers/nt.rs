@@ -506,7 +506,7 @@ mod test {
 
             let suite = Path::new("..").join("rdf-tests").join("ntriples");
             if !suite.exists() || !suite.is_dir() {
-                panic!("rdf-tests not found, can not check W3C test-suite");
+                panic!("rdf-tests/ntriples not found, can not check W3C test-suite");
             }
 
             for entry in read_dir(&suite)? {
@@ -536,7 +536,7 @@ mod test {
 
             let suite = Path::new("..").join("rdf-tests").join("ntriples");
             if !suite.exists() || !suite.is_dir() {
-                panic!("rdf-tests not found, can not check W3C test-suite");
+                panic!("rdf-tests/ntriples not found, can not check W3C test-suite");
             }
 
             for entry in read_dir(&suite)? {
