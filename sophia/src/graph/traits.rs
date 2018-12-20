@@ -338,3 +338,11 @@ pub trait MutableGraph : Graph {
 /// by guaranteeing that triples will never be returned / stored multiple times.
 pub trait SetGraph: Graph {
 }
+
+
+
+#[cfg(test)]
+mod test {
+    // The code from this module is tested through its use in other modules
+    // (especially the macro test_graph_impl!).
+}

@@ -186,6 +186,7 @@ impl<T> SetGraph for SpoWrapper<T> where
 {}
 
 
+
 #[cfg(test)]
 type SpoGraph = SpoWrapper<LightGraph>;
 #[cfg(test)]

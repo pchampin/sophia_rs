@@ -96,3 +96,10 @@ pub trait StringSerializer: TripleSink<Outcome=String, Error=Never> + Sized {
         source.into_sink(self).unwrap()
     }
 }
+
+
+
+#[cfg(test)]
+mod test {
+    // Nothing really worth testing here
+}

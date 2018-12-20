@@ -69,3 +69,11 @@ impl<'a, G: MutableGraph + ?Sized + 'a> TripleSink for Remover<'a, G> {
         Ok(self.count)
     }
 }
+
+
+
+#[cfg(test)]
+mod test {
+    // The code from this module is tested through its use in other modules
+    // (especially the macro test_graph_impl!).
+}

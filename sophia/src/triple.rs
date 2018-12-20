@@ -55,3 +55,10 @@ impl<T: Borrow<str>> Triple for [Term<T>;3] {
     #[inline] fn p(&self) -> &Term<T> { &self[1] }
     #[inline] fn o(&self) -> &Term<T> { &self[2] }
 }
+
+
+
+#[cfg(test)]
+mod test {
+    // Nothing really worth testing here
+}

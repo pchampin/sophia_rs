@@ -269,3 +269,10 @@ macro_rules! impl_graph_for_wrapper {
     };
 }
 
+
+
+#[cfg(test)]
+mod test {
+    // The code from this module is tested through its use in other modules
+    // (especially in graph::inmem -- the mod.rs file).
+}

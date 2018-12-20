@@ -220,3 +220,8 @@ pub fn assert_term_index_works<T: TermIndex>(ti: &mut T) {
     assert!(ti.get_index(&t1).is_none());
     assert!(ti.get_index(&t2).is_none());
 }
+
+#[cfg(test)]
+mod test {
+    // Nothing really worth testing here
+}

@@ -62,3 +62,11 @@ impl<T,U> PartialEq<LiteralKind<U>> for LiteralKind<T> where
         }
     }
 }
+
+
+
+#[cfg(test)]
+mod test {
+    // The code from this module is tested through its use in other modules
+    // (especially the ::term::test module).
+}

@@ -111,3 +111,10 @@ impl TermFactory for ArcTermFactory {
         WeakHashSet::shrink_to_fit(self);
     }
 }
+
+
+
+#[cfg(test)]
+mod test {
+    // Nothing really worth testing here
+}

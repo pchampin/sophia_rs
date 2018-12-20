@@ -281,3 +281,10 @@ impl<'a> ParsedIri<'a> {
     }
 }
 
+
+
+#[cfg(test)]
+mod test {
+    // The code from this module is tested through its use in other modules
+    // (especially the ::term::test module).
+}

@@ -247,3 +247,10 @@ impl<T, E> AsDownstream<T, E> for Result<T, E> {
     }
 }
 
+
+
+#[cfg(test)]
+mod test {
+    // The code from this module is tested through its use in other modules
+    // (especially the parsers/serializers modules).
+}

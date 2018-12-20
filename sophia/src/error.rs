@@ -72,3 +72,10 @@ fn display_location(il: &InputLocation, lcl: &LineColLocation) -> String {
         }
     }
 }
+
+
+
+#[cfg(test)]
+mod test {
+    // Nothing really worth testing here
+}

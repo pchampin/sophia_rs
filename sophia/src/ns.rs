@@ -132,3 +132,10 @@ pub mod rdfs {
         comment, isDefinedBy, label, member, seeAlso
     );
 }
+
+
+
+#[cfg(test)]
+mod test {
+    // Nothing really worth testing here
+}
