@@ -21,11 +21,6 @@ impl<T> Graph for [T] where
     fn iter(&self) -> GFallibleTripleIterator<Self> {
         Box::from(self.iter().map(|t| Ok((t.s(), t.p(), t.o()))))
     }
-
-    #[inline]
-    fn hint(&self) -> (usize, Option<usize>) {
-        (self.len(), Some(self.len()))
-    }
 }
 
 impl<T> Graph for Vec<T> where
@@ -38,11 +33,6 @@ impl<T> Graph for Vec<T> where
     fn iter(&self) -> GFallibleTripleIterator<Self> {
         Box::from(self[..].iter().map(|t| Ok((t.s(), t.p(), t.o()))))
     }
-
-    #[inline]
-    fn hint(&self) -> (usize, Option<usize>) {
-        (self.len(), Some(self.len()))
-    }
 }
 
 impl<T> Graph for HashSet<T> where
@@ -54,11 +44,6 @@ impl<T> Graph for HashSet<T> where
     #[inline]
     fn iter(&self) -> GFallibleTripleIterator<Self> {
         Box::from(self.iter().map(|t| Ok((t.s(), t.p(), t.o()))))
-    }
-
-    #[inline]
-    fn hint(&self) -> (usize, Option<usize>) {
-        (self.len(), Some(self.len()))
     }
 }
 

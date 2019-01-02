@@ -101,7 +101,7 @@ macro_rules! test_graph_impl {
 
                 let o_matcher = [C1.clone(), C2.clone()];
                 g.remove_matching(&ANY, &rdf::type_, &o_matcher[..])?;
-                assert_consistent_hint(12, g.hint());
+                assert_consistent_hint(12, g.iter().size_hint());
                 Ok(())
             }
 
@@ -112,8 +112,8 @@ macro_rules! test_graph_impl {
 
                 let o_matcher = [C1.clone(), C2.clone()];
                 g.retain(&ANY, &rdf::type_, &o_matcher[..])?;
-                print!("{:?}", g.hint());
-                assert_consistent_hint(4, g.hint());
+                print!("{:?}", g.iter().size_hint());
+                assert_consistent_hint(4, g.iter().size_hint());
                 Ok(())
             }
 
@@ -126,13 +126,13 @@ macro_rules! test_graph_impl {
 
                 let v: Vec<_> = g.iter().oks().map(as_ref_t).collect();
                 assert_eq!(v.len(), g.iter().count());
-                assert_consistent_hint(v.len(), g.hint());
+                assert_consistent_hint(v.len(), g.iter().size_hint());
                 assert!(v.contains(&C1, &rdf::type_, &rdfs::Class)?);
                 assert!(!v.contains(&P1, &rdf::type_, &rdfs::Class)?);
 
                 let v: Vec<_> = g.iter_matching(&ANY, &ANY, &ANY).oks().map(as_ref_t).collect();
                 assert_eq!(v.len(), g.iter().count());
-                assert_consistent_hint(v.len(), g.hint());
+                assert_consistent_hint(v.len(), g.iter().size_hint());
                 assert!(v.contains(&C1, &rdf::type_, &rdfs::Class)?);
                 assert!(!v.contains(&P1, &rdf::type_, &rdfs::Class)?);
                 Ok(())
@@ -145,13 +145,13 @@ macro_rules! test_graph_impl {
 
                 let v: Vec<_> = g.iter_for_s(&C2).oks().map(as_ref_t).collect();
                 assert_eq!(v.len(), 2);
-                assert_consistent_hint(v.len(), g.hint_for_s(&C2));
+                assert_consistent_hint(v.len(), g.iter_for_s(&C2).size_hint());
                 assert!(v.contains(&C2, &rdf::type_, &rdfs::Class)?);
                 assert!(!v.contains(&C1, &rdf::type_, &rdfs::Class)?);
 
                 let v: Vec<_> = g.iter_matching(&*C2, &ANY, &ANY).oks().map(as_ref_t).collect();
                 assert_eq!(v.len(), 2);
-                assert_consistent_hint(v.len(), g.hint_for_s(&C2));
+                assert_consistent_hint(v.len(), g.iter_for_s(&C2).size_hint());
                 assert!(v.contains(&C2, &rdf::type_, &rdfs::Class)?);
                 assert!(!v.contains(&C1, &rdf::type_, &rdfs::Class)?);
                 Ok(())
@@ -164,13 +164,13 @@ macro_rules! test_graph_impl {
 
                 let v: Vec<_> = g.iter_for_p(&rdfs::subClassOf).oks().map(as_ref_t).collect();
                 assert_eq!(v.len(), 1);
-                assert_consistent_hint(v.len(), g.hint_for_p(&rdfs::subClassOf));
+                assert_consistent_hint(v.len(), g.iter_for_p(&rdfs::subClassOf).size_hint());
                 assert!(v.contains(&C2, &rdfs::subClassOf, &C1)?);
                 assert!(!v.contains(&C2, &rdf::type_, &rdfs::Class)?);
 
                 let v: Vec<_> = g.iter_matching(&ANY, &rdfs::subClassOf, &ANY).oks().map(as_ref_t).collect();
                 assert_eq!(v.len(), 1);
-                assert_consistent_hint(v.len(), g.hint_for_p(&rdfs::subClassOf));
+                assert_consistent_hint(v.len(), g.iter_for_p(&rdfs::subClassOf).size_hint());
                 assert!(v.contains(&C2, &rdfs::subClassOf, &C1)?);
                 assert!(!v.contains(&C2, &rdf::type_, &rdfs::Class)?);
                 Ok(())
@@ -183,13 +183,13 @@ macro_rules! test_graph_impl {
 
                 let v: Vec<_> = g.iter_for_o(&I2B).oks().map(as_ref_t).collect();
                 assert_eq!(v.len(), 2);
-                assert_consistent_hint(v.len(), g.hint_for_o(&I2B));
+                assert_consistent_hint(v.len(), g.iter_for_o(&I2B).size_hint());
                 assert!(v.contains(&I1B, &P1, &I2B)?);
                 assert!(!v.contains(&I2B, &rdf::type_, &C2)?);
 
                 let v: Vec<_> = g.iter_matching(&ANY, &ANY, &*I2B).oks().map(as_ref_t).collect();
                 assert_eq!(v.len(), 2);
-                assert_consistent_hint(v.len(), g.hint_for_o(&I2B));
+                assert_consistent_hint(v.len(), g.iter_for_o(&I2B).size_hint());
                 assert!(v.contains(&I1B, &P1, &I2B)?);
                 assert!(!v.contains(&I2B, &rdf::type_, &C2)?);
                 Ok(())
@@ -202,13 +202,13 @@ macro_rules! test_graph_impl {
 
                 let v: Vec<_> = g.iter_for_sp(&C2, &rdf::type_).oks().map(as_ref_t).collect();
                 assert_eq!(v.len(), 1);
-                assert_consistent_hint(v.len(), g.hint_for_sp(&C2, &rdf::type_));
+                assert_consistent_hint(v.len(), g.iter_for_sp(&C2, &rdf::type_).size_hint());
                 assert!(v.contains(&C2, &rdf::type_, &rdfs::Class)?);
                 assert!(!v.contains(&C2, &rdfs::subClassOf, &C1)?);
 
                 let v: Vec<_> = g.iter_matching(&*C2, &rdf::type_, &ANY).oks().map(as_ref_t).collect();
                 assert_eq!(v.len(), 1);
-                assert_consistent_hint(v.len(), g.hint_for_sp(&C2, &rdf::type_));
+                assert_consistent_hint(v.len(), g.iter_for_sp(&C2, &rdf::type_).size_hint());
                 assert!(v.contains(&C2, &rdf::type_, &rdfs::Class)?);
                 assert!(!v.contains(&C2, &rdfs::subClassOf, &C1)?);
                 Ok(())
@@ -221,13 +221,13 @@ macro_rules! test_graph_impl {
 
                 let v: Vec<_> = g.iter_for_so(&C2, &C1).oks().map(as_ref_t).collect();
                 assert_eq!(v.len(), 1);
-                assert_consistent_hint(v.len(), g.hint_for_so(&C2, &C1));
+                assert_consistent_hint(v.len(), g.iter_for_so(&C2, &C1).size_hint());
                 assert!(v.contains(&C2, &rdfs::subClassOf, &C1)?);
                 assert!(!v.contains(&C2, &rdf::type_, &rdfs::Class)?);
 
                 let v: Vec<_> = g.iter_matching(&*C2, &ANY, &*C1).oks().map(as_ref_t).collect();
                 assert_eq!(v.len(), 1);
-                assert_consistent_hint(v.len(), g.hint_for_so(&C2, &C1));
+                assert_consistent_hint(v.len(), g.iter_for_so(&C2, &C1).size_hint());
                 assert!(v.contains(&C2, &rdfs::subClassOf, &C1)?);
                 assert!(!v.contains(&C2, &rdf::type_, &rdfs::Class)?);
                 Ok(())
@@ -240,13 +240,13 @@ macro_rules! test_graph_impl {
 
                 let v: Vec<_> = g.iter_for_po(&rdf::type_, &rdfs::Class).oks().map(as_ref_t).collect();
                 assert_eq!(v.len(), 2);
-                assert_consistent_hint(v.len(), g.hint_for_po(&rdf::type_, &rdfs::Class));
+                assert_consistent_hint(v.len(), g.iter_for_po(&rdf::type_, &rdfs::Class).size_hint());
                 assert!(v.contains(&C2, &rdf::type_, &rdfs::Class)?);
                 assert!(!v.contains(&P2, &rdf::type_, &rdf::Property)?);
 
                 let v: Vec<_> = g.iter_matching(&ANY, &rdf::type_, &rdfs::Class).oks().map(as_ref_t).collect();
                 assert_eq!(v.len(), 2);
-                assert_consistent_hint(v.len(), g.hint_for_po(&rdf::type_, &rdfs::Class));
+                assert_consistent_hint(v.len(), g.iter_for_po(&rdf::type_, &rdfs::Class).size_hint());
                 assert!(v.contains(&C2, &rdf::type_, &rdfs::Class)?);
                 assert!(!v.contains(&P2, &rdf::type_, &rdf::Property)?);
                 Ok(())
@@ -319,7 +319,7 @@ macro_rules! test_graph_impl {
                 g.insert(&I1B, &P1, &I2B)?;
                 g.insert(&I2A, &P2, &I2B)?;
 
-                assert_consistent_hint(16, g.hint());
+                assert_consistent_hint(16, g.iter().size_hint());
                 Ok(())
             }
 

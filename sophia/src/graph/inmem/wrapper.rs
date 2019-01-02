@@ -91,63 +91,6 @@ pub trait GraphWrapper
     fn gw_contains(&self, s: &RefTerm, p: &RefTerm, o: &RefTerm) -> GResult<Self::Wrapped, bool> {
         self.get_wrapped().contains(s, p, o)
     }
-
-    #[inline]
-    /// Mimmic the [`hint`](../trait.Graph.html#method.hint) method.
-    fn gw_hint(&self) -> (usize, Option<usize>) {
-        self.get_wrapped().hint()
-    }
-
-    #[inline]
-    /// Mimmic the [`hint_for_s`](../trait.Graph.html#method.hint_for_s) method.
-    fn gw_hint_for_s<T> (&self, s: &Term<T>) -> (usize, Option<usize>) where
-        T: Borrow<str>,
-    {
-        self.get_wrapped().hint_for_s(s)
-    }
-
-    #[inline]
-    /// Mimmic the [`hint_for_p`](../trait.Graph.html#method.hint_for_p) method.
-    fn gw_hint_for_p<T> (&self, p: &Term<T>) -> (usize, Option<usize>) where
-        T: Borrow<str>,
-    {
-        self.get_wrapped().hint_for_p(p)
-    }
-
-    #[inline]
-    /// Mimmic the [`hint_for_o`](../trait.Graph.html#method.hint_for_o) method.
-    fn gw_hint_for_o<T> (&self, o: &Term<T>) -> (usize, Option<usize>) where
-        T: Borrow<str>,
-    {
-        self.get_wrapped().hint_for_o(o)
-    }
-
-    #[inline]
-    /// Mimmic the [`hint_for_sp`](../trait.Graph.html#method.hint_for_sp) method.
-    fn gw_hint_for_sp<T, U> (&self, s: &Term<T>, p: &Term<U>) -> (usize, Option<usize>) where
-        T: Borrow<str>,
-        U: Borrow<str>,
-    {
-        self.get_wrapped().hint_for_sp(s, p)
-    }
-
-    #[inline]
-    /// Mimmic the [`hint_for_so`](../trait.Graph.html#method.hint_for_so) method.
-    fn gw_hint_for_so<T, U> (&self, s: &Term<T>, o: &Term<U>) -> (usize, Option<usize>) where
-        T: Borrow<str>,
-        U: Borrow<str>,
-    {
-        self.get_wrapped().hint_for_so(s, o)
-    }
-
-    #[inline]
-    /// Mimmic the [`hint_for_po`](../trait.Graph.html#method.hint_for_po) method.
-    fn gw_hint_for_po<T, U> (&self, p: &Term<T>, o: &Term<U>) -> (usize, Option<usize>) where
-        T: Borrow<str>,
-        U: Borrow<str>,
-    {
-        self.get_wrapped().hint_for_po(p, o)
-    }
 }
 
 macro_rules! impl_graph_for_wrapper {
@@ -215,56 +158,6 @@ macro_rules! impl_graph_for_wrapper {
         #[inline]
         fn contains(&self, s: &RefTerm, p: &RefTerm, o: &RefTerm) -> GResult<Self, bool> {
             GraphWrapper::gw_contains(self, s, p, o)
-        }
-
-        #[inline]
-        fn hint(&self) -> (usize, Option<usize>) {
-            GraphWrapper::gw_hint(self)
-        }
-
-        #[inline]
-        fn hint_for_s<T_> (&self, s: &Term<T_>) -> (usize, Option<usize>) where
-            T_: Borrow<str>,
-        {
-            GraphWrapper::gw_hint_for_s(self, s)
-        }
-
-        #[inline]
-        fn hint_for_p<T_> (&self, p: &Term<T_>) -> (usize, Option<usize>) where
-            T_: Borrow<str>,
-        {
-            GraphWrapper::gw_hint_for_p(self, p)
-        }
-
-        #[inline]
-        fn hint_for_o<T_> (&self, o: &Term<T_>) -> (usize, Option<usize>) where
-            T_: Borrow<str>,
-        {
-            GraphWrapper::gw_hint_for_o(self, o)
-        }
-
-        #[inline]
-        fn hint_for_sp<T_, U_> (&self, s: &Term<T_>, p: &Term<U_>) -> (usize, Option<usize>) where
-            T_: Borrow<str>,
-            U_: Borrow<str>,
-        {
-            GraphWrapper::gw_hint_for_sp(self, s, p)
-        }
-
-        #[inline]
-        fn hint_for_so<T_, U_> (&self, s: &Term<T_>, o: &Term<U_>) -> (usize, Option<usize>) where
-            T_: Borrow<str>,
-            U_: Borrow<str>,
-        {
-            GraphWrapper::gw_hint_for_so(self, s, o)
-        }
-
-        #[inline]
-        fn hint_for_po<T_, U_> (&self, p: &Term<T_>, o: &Term<U_>) -> (usize, Option<usize>) where
-            T_: Borrow<str>,
-            U_: Borrow<str>,
-        {
-            GraphWrapper::gw_hint_for_po(self, p, o)
         }
     };
 }

@@ -90,32 +90,6 @@ impl<T> GraphWrapper for OpsWrapper<T> where
         }
         Box::new(empty())
     }
-
-    fn gw_hint_for_o<U> (&self, o: &Term<U>) -> (usize, Option<usize>) where
-        U: Borrow<str>,
-    {
-        match self.get_index(o) {
-            None => (0, Some(0)),
-            Some(oi) => {
-                let (_, max) = self.wrapped.hint();
-                let min = self.o2p.get(&oi).unwrap().len();
-                (min, max)
-            }
-        }
-    }
-
-    fn gw_hint_for_po<U, V> (&self, p: &Term<U>, o: &Term<V>) -> (usize, Option<usize>) where
-        U: Borrow<str>,
-        V: Borrow<str>,
-    {
-        if let Some(pi) = self.get_index(p) {
-            if let Some(oi) = self.get_index(o) {
-                let nb = self.po2s.get(&(pi, oi)).unwrap().len();
-                return (nb, Some(nb));
-            }
-        }
-        (0, Some(0))
-    }
 }
 
 impl<T> Graph for OpsWrapper<T> where

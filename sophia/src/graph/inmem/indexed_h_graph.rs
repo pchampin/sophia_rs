@@ -36,7 +36,7 @@ impl<I> IndexedHGraph<I> where
         }
     }
 
-    fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.triples.len()
     }
 }
@@ -120,10 +120,6 @@ impl<I> Graph for IndexedHGraph<I> where
                 self.terms.get_term(*oi).unwrap(),
             )))
         )
-    }
-
-    fn hint(&self) -> (usize, Option<usize>) {
-        (self.len(), Some(self.len()))
     }
 }
 

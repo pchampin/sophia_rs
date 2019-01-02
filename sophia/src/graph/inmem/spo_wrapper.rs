@@ -90,32 +90,6 @@ impl<T> GraphWrapper for SpoWrapper<T> where
         }
         Box::new(empty())
     }
-
-    fn gw_hint_for_s<U> (&self, s: &Term<U>) -> (usize, Option<usize>) where
-        U: Borrow<str>,
-    {
-        match self.get_index(s) {
-            None => (0, Some(0)),
-            Some(si) => {
-                let (_, max) = self.wrapped.hint();
-                let min = self.s2p.get(&si).unwrap().len();
-                (min, max)
-            }
-        }
-    }
-
-    fn gw_hint_for_sp<U, V> (&self, s: &Term<U>, p: &Term<V>) -> (usize, Option<usize>) where
-        U: Borrow<str>,
-        V: Borrow<str>,
-    {
-        if let Some(si) = self.get_index(s) {
-            if let Some(pi) = self.get_index(p) {
-                let nb = self.sp2o.get(&(si, pi)).unwrap().len();
-                return (nb, Some(nb));
-            }
-        }
-        (0, Some(0))
-    }
 }
 
 impl<T> Graph for SpoWrapper<T> where
