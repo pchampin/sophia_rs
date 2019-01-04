@@ -131,9 +131,9 @@ pub trait Graph
     /// 
     /// See also [`iter`](#tymethod.iter).
     fn iter_matching<'a, S, P, O> (&'a self, ms: &'a S, mp: &'a P, mo: &'a O) -> GFallibleTripleIterator<'a, Self> where
-        S: TermMatcher<Self::Holder> + ?Sized,
-        P: TermMatcher<Self::Holder> + ?Sized,
-        O: TermMatcher<Self::Holder> + ?Sized,
+        S: TermMatcher + ?Sized,
+        P: TermMatcher + ?Sized,
+        O: TermMatcher + ?Sized,
     {
         match (&ms.constant(), &mp.constant(), &mo.constant()) {
             (None,    None,    None   )    => Box::from(
@@ -225,9 +225,9 @@ pub trait MutableGraph : Graph {
     /// and could be improved in specific implementations of the trait.
     ///
     fn remove_matching<S, P, O> (&mut self, ms: &S, mp: &P, mo: &O) -> GResult<Self, usize> where
-        S: TermMatcher<Self::Holder> + ?Sized,
-        P: TermMatcher<Self::Holder> + ?Sized,
-        O: TermMatcher<Self::Holder> + ?Sized,
+        S: TermMatcher + ?Sized,
+        P: TermMatcher + ?Sized,
+        O: TermMatcher + ?Sized,
     {
         let to_remove =
             self.iter_matching(ms, mp, mo)
@@ -245,9 +245,9 @@ pub trait MutableGraph : Graph {
     /// and could be improved in specific implementations of the trait.
     ///
     fn retain<S, P, O> (&mut self, ms: &S, mp: &P, mo: &O) -> GResult<Self, ()> where
-        S: TermMatcher<Self::Holder> + ?Sized,
-        P: TermMatcher<Self::Holder> + ?Sized,
-        O: TermMatcher<Self::Holder> + ?Sized,
+        S: TermMatcher + ?Sized,
+        P: TermMatcher + ?Sized,
+        O: TermMatcher + ?Sized,
     {
         let to_remove =
             self.iter()

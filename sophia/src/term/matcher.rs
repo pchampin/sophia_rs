@@ -11,37 +11,31 @@ use super::*;
 /// 
 /// [term]: ../enum.Term.html
 /// 
-pub trait TermMatcher<T: Borrow<str>> {
+pub trait TermMatcher {
     type Holder: Borrow<str>;
     /// If this matcher matches only one term, return this term, else `None`.
     fn constant(&self) -> Option<&Term<Self::Holder>>;
 
     /// Check whether this matcher matches `t`.
-    fn try(&self, t: &Term<T>) -> bool;
+    fn try<T: Borrow<str>> (&self, t: &Term<T>) -> bool;
 }
 
-impl<T, U> TermMatcher<T> for Term<U> where
-    T: Borrow<str>,
-    U: Borrow<str>,
-{
+impl<U: Borrow<str>> TermMatcher for Term<U> where {
     type Holder = U;
     fn constant(&self) -> Option<&Term<Self::Holder>> {
         Some(self)
     }
-    fn try(&self, t: &Term<T>) -> bool {
+    fn try<T: Borrow<str>> (&self, t: &Term<T>) -> bool {
         t==self
     }
 }
 
-impl<T, U> TermMatcher<T> for Option<Term<U>> where
-    T: Borrow<str>,
-    U: Borrow<str>,
-{
+impl<U: Borrow<str>> TermMatcher for Option<Term<U>> {
     type Holder = U;
     fn constant(&self) -> Option<&Term<Self::Holder>> {
         self.as_ref()
     }
-    fn try(&self, t: &Term<T>) -> bool {
+    fn try<T: Borrow<str>> (&self, t: &Term<T>) -> bool {
         match self {
             Some(term) => t == term,
             None => true,
@@ -49,16 +43,13 @@ impl<T, U> TermMatcher<T> for Option<Term<U>> where
     }
 }
 
-impl<T, U> TermMatcher<T> for [Term<U>] where
-    T: Borrow<str>,
-    U: Borrow<str>,
-{
+impl<U: Borrow<str>> TermMatcher for [Term<U>] {
     type Holder = U;
     fn constant(&self) -> Option<&Term<Self::Holder>> {
         if self.len() == 1 { Some(&self[0]) }
         else { None }
     }
-    fn try(&self, t: &Term<T>) -> bool {
+    fn try<T: Borrow<str>> (&self, t: &Term<T>) -> bool {
         for term in self {
             if t == term { return true; }
         }
@@ -66,16 +57,13 @@ impl<T, U> TermMatcher<T> for [Term<U>] where
     }
 }
 
-impl<T, F> TermMatcher<T> for F where
-    T: Borrow<str>,
-    F: Fn(&Term<T>) -> bool,
-{
+impl<F: Fn(&RefTerm) -> bool> TermMatcher for F {
     type Holder = &'static str;
     fn constant(&self) -> Option<&Term<Self::Holder>> {
         None
     }
-    fn try(&self, t: &Term<T>) -> bool {
-        self(t)
+    fn try<T: Borrow<str>> (&self, t: &Term<T>) -> bool {
+        self(&RefTerm::from(t))
     }
 }
 
@@ -100,7 +88,7 @@ mod test {
         let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
         let t2 = RcTerm::new_iri("http://example.org/").unwrap();
 
-        let mc = TermMatcher::<Rc<str>>::constant(&m);
+        let mc = TermMatcher::constant(&m);
         assert!(mc.is_some());
         assert_eq!(mc.unwrap(), &t1);
         assert!(m.try(&t1));
@@ -115,7 +103,7 @@ mod test {
         let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
         let t2 = RcTerm::new_iri("http://example.org/").unwrap();
 
-        let mc = TermMatcher::<Rc<str>>::constant(&m);
+        let mc = TermMatcher::constant(&m);
         assert!(mc.is_some());
         assert_eq!(mc.unwrap(), &t1);
         assert!(m.try(&t1));
@@ -129,7 +117,7 @@ mod test {
         // to make the test less obvious
         let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
 
-        let mc = TermMatcher::<Rc<str>>::constant(&m);
+        let mc = TermMatcher::constant(&m);
         assert!(mc.is_none());
         assert!(m.try(&t1));
     }
@@ -142,7 +130,7 @@ mod test {
         let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
         let t2 = RcTerm::new_iri("http://example.org/").unwrap();
 
-        let mc = TermMatcher::<Rc<str>>::constant(&m[..]);
+        let mc = TermMatcher::constant(&m[..]);
         assert!(mc.is_some());
         assert_eq!(mc.unwrap(), &t1);
         assert!(m.try(&t1));
@@ -161,7 +149,7 @@ mod test {
         let t2 = RcTerm::new_iri("http://example.org/").unwrap();
         let t3 = RcTerm::new_iri("http://example.org/other").unwrap();
 
-        let mc = TermMatcher::<Rc<str>>::constant(&m[..]);
+        let mc = TermMatcher::constant(&m[..]);
         assert!(mc.is_none());
         assert!(m.try(&t1));
         assert!(m.try(&t2));
@@ -175,7 +163,7 @@ mod test {
         // to make the test less obvious
         let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
 
-        let mc = TermMatcher::<Rc<str>>::constant(&m[..]);
+        let mc = TermMatcher::constant(&m[..]);
         assert!(mc.is_none());
         assert!(!m.try(&t1));
     }
@@ -185,7 +173,7 @@ mod test {
         let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
         let t2 = RcTerm::new_iri("http://example.org/").unwrap();
 
-        let m = |t: &RcTerm| t.value().starts_with("http://champin");
+        let m = |t: &RefTerm| t.value().starts_with("http://champin");
         assert!(m.constant().is_none());
         assert!(m.try(&t1));
         assert!(!m.try(&t2));
