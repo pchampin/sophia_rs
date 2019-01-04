@@ -88,7 +88,7 @@ pub trait GraphWrapper<'a>
 
     #[inline]
     /// Mimmic the [`contains`](../trait.Graph.html#method.contains) method.
-    fn gw_contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> GResult<Self::Wrapped, bool> {
+    fn gw_contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> Result<bool, <Self::Wrapped as Graph<'a>>::Error> {
         self.get_wrapped().contains(s, p, o)
     }
 }
@@ -156,7 +156,7 @@ macro_rules! impl_graph_for_wrapper {
         }
 
         #[inline]
-        fn contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> GResult<'a, Self, bool> {
+        fn contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> Result<bool, Self::Error> {
             GraphWrapper::gw_contains(self, s, p, o)
         }
     };

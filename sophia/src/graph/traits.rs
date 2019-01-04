@@ -11,12 +11,10 @@ use ::term::*;
 use ::term::matcher::TermMatcher;
 use ::triple::*;
 
-/// Type alias for results produced by a graph.
-pub type GResult<'a, G, T> = Result<T, <G as Graph<'a>>::Error>;
 type GTriple<'a, G> = (&'a Term<<G as Graph<'a>>::Holder>, &'a Term<<G as Graph<'a>>::Holder>, &'a Term<<G as Graph<'a>>::Holder>);
 /// Type alias for fallible triple iterators produced by a graph.
 pub type GFallibleTripleIterator<'a, G> =
-    Box<Iterator<Item=GResult<'a, G, GTriple<'a, G>>>+'a>;
+    Box<Iterator<Item=Result<GTriple<'a, G>, <G as Graph<'a>>::Error>>+'a>;
 
 /// Generic trait for RDF graphs.
 /// 
@@ -38,7 +36,7 @@ pub trait Graph<'a>
     /// An iterator visiting all triples of this graph in arbitrary order.
     /// 
     /// This iterator is fallible:
-    /// its items are [`GResults`](type.GResult.html)s,
+    /// its items are `Result`s,
     /// an error may occur at any time during the iteration.
     fn iter(&'a self) -> GFallibleTripleIterator<'a, Self>;
 
@@ -119,7 +117,7 @@ pub trait Graph<'a>
     }
 
     /// Return `true` if this graph contains the given triple.
-    fn contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> GResult<Self, bool> {
+    fn contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> Result<bool, Self::Error> {
         match self.iter_for_spo(s, p, o).next() {
             None           => Ok(false),
             Some(Ok(_))    => Ok(true),
