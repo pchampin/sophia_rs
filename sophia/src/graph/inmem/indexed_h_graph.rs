@@ -20,6 +20,7 @@ use ::term::{RefTerm, Term, factory::TermFactory};
 pub struct IndexedHGraph<I> where
     I: TermIndex,
     I::Index: Hash,
+    <I::Factory as TermFactory>::Holder: 'static,
 {
     terms: I,
     triples: HashSet<(I::Index, I::Index, I::Index)>,
@@ -44,6 +45,7 @@ impl<I> IndexedHGraph<I> where
 impl<I> IndexedMutableGraph for IndexedHGraph<I> where
     I: TermIndex,
     I::Index: Hash,
+    <I::Factory as TermFactory>::Holder: 'static,
 {
     type Index = I::Index;
 
@@ -55,7 +57,7 @@ impl<I> IndexedMutableGraph for IndexedHGraph<I> where
     }
 
     #[inline]
-    fn get_term(&self, i: Self::Index) -> Option<&Term<Self::Holder>> {
+    fn get_term<'a>(&'a self, i: Self::Index) -> Option<&Term<<Self as Graph<'a>>::Holder>> {
         self.terms.get_term(i)
     }
 
@@ -104,14 +106,15 @@ impl<I> IndexedMutableGraph for IndexedHGraph<I> where
     }
 }
 
-impl<I> Graph for IndexedHGraph<I> where
+impl<'a, I> Graph<'a> for IndexedHGraph<I> where
     I: TermIndex,
     I::Index: Hash,
+    <I::Factory as TermFactory>::Holder: 'static,
 {
     type Holder = <I::Factory as TermFactory>::Holder;
     type Error = ::error::Never;
 
-    fn iter<'a> (&'a self) -> GFallibleTripleIterator<'a, Self> {
+    fn iter(&'a self) -> GFallibleTripleIterator<'a, Self> {
         Box::from(
             self.triples.iter()
             .map(move |(si, pi, oi)| Ok((
@@ -126,6 +129,7 @@ impl<I> Graph for IndexedHGraph<I> where
 impl<I> MutableGraph for IndexedHGraph<I> where
     I: TermIndex,
     I::Index: Hash,
+    <I::Factory as TermFactory>::Holder: 'static,
 {
     impl_mutable_graph_for_indexed_mutable_graph!();
 }

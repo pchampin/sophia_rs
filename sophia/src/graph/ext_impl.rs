@@ -11,38 +11,41 @@ use ::term::*;
 use ::triple::*;
 
 
-impl<T> Graph for [T] where
+impl<'a, T> Graph<'a> for [T] where
     T: Triple,
+    T::Holder: 'a,
 {
     type Holder = T::Holder;
     type Error = Never;
 
     #[inline]
-    fn iter(&self) -> GFallibleTripleIterator<Self> {
+    fn iter(&'a self) -> GFallibleTripleIterator<Self> {
         Box::from(self.iter().map(|t| Ok((t.s(), t.p(), t.o()))))
     }
 }
 
-impl<T> Graph for Vec<T> where
+impl<'a, T> Graph<'a> for Vec<T> where
     T: Triple,
+    T::Holder: 'a,
 {
     type Holder = T::Holder;
     type Error = Never;
 
     #[inline]
-    fn iter(&self) -> GFallibleTripleIterator<Self> {
+    fn iter(&'a self) -> GFallibleTripleIterator<Self> {
         Box::from(self[..].iter().map(|t| Ok((t.s(), t.p(), t.o()))))
     }
 }
 
-impl<T> Graph for HashSet<T> where
+impl<'a, T> Graph<'a> for HashSet<T> where
     T: Eq + Hash + Triple,
+    <T as Triple>::Holder: 'a,
 {
     type Holder = T::Holder;
     type Error = Never;
 
     #[inline]
-    fn iter(&self) -> GFallibleTripleIterator<Self> {
+    fn iter(&'a self) -> GFallibleTripleIterator<Self> {
         Box::from(self.iter().map(|t| Ok((t.s(), t.p(), t.o()))))
     }
 }
@@ -50,7 +53,9 @@ impl<T> Graph for HashSet<T> where
 
 impl MutableGraph for HashSet<(BoxTerm, BoxTerm, BoxTerm)> where
 {
-    fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> GResult<Self, bool> where
+    type MutationError = Never;
+
+    fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool, Never> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
@@ -60,7 +65,7 @@ impl MutableGraph for HashSet<(BoxTerm, BoxTerm, BoxTerm)> where
         let o = BoxTerm::from(o);
         Ok(HashSet::insert(self, (s, p, o)))
     }
-    fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> GResult<Self, bool> where
+    fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool, Never> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,

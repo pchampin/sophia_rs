@@ -66,7 +66,7 @@ pub trait TripleSource: Sized {
     /// Insert all triples from this source into the given [graph](../graph/trait.MutableGraph.html).
     /// 
     /// Stop on the first error (in the source or in the graph).
-    fn into_graph<G: MutableGraph>(self, graph: &mut G) -> Result<usize, WhereFrom<Self::Error, G::Error>> {
+    fn into_graph<G: MutableGraph>(self, graph: &mut G) -> Result<usize, WhereFrom<Self::Error, G::MutationError>> {
         self.into_sink(&mut graph.inserter())
     }
 }

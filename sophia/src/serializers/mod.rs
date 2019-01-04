@@ -48,8 +48,8 @@ pub trait WriteSerializer<W: io::Write>: TripleSink<Outcome=()> + Sized {
     }
 
     /// Serialize the given graph.
-    fn write_graph<G>(&mut self, graph: &mut G) -> Result<(), WhereFrom<G::Error, Self::Error>>
-        where G: Graph,
+    fn write_graph<'a, G>(&mut self, graph: &'a mut G) -> Result<(), WhereFrom<G::Error, Self::Error>>
+        where G: Graph<'a>,
     {
         graph.iter().into_sink(self)
     }
@@ -82,8 +82,8 @@ pub trait StringSerializer: TripleSink<Outcome=String, Error=Never> + Sized {
     }
 
     /// Stringify the given graph.
-    fn stringify_graph<G>(&mut self, graph: &mut G) -> Result<String, G::Error>
-        where G: Graph,
+    fn stringify_graph<'a, G>(&mut self, graph: &'a mut G) -> Result<String, G::Error>
+        where G: Graph<'a>,
     {
         graph.iter().into_sink(self).unwrap_downstream()
     }

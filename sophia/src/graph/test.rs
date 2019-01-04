@@ -7,7 +7,6 @@ macro_rules! test_graph_impl {
         #[cfg(test)]
         mod $module_name {
             use ::graph::*;
-            use ::graph::traits::GResult;
             use ::ns::*;
             use ::streams::*;
             use ::term::*;
@@ -22,7 +21,7 @@ macro_rules! test_graph_impl {
 
             const NS: &str = "http://example.org/";
 
-            type TestResult = GResult<$mutable_graph_impl, ()>;
+            type TestResult = Result<(), <$mutable_graph_impl as MutableGraph>::MutationError>;
 
             lazy_static!{
                 static ref C1: StaticTerm = StaticTerm::new_iri2(NS, "C1").unwrap();
@@ -297,7 +296,7 @@ macro_rules! test_graph_impl {
 
             // helper functions
 
-            fn populate<G: MutableGraph> (g: &mut G) -> GResult<G, ()> {
+            fn populate<G: MutableGraph> (g: &mut G) -> Result<(), G::MutationError> {
                 g.insert(&C1, &rdf::type_, &rdfs::Class)?;
 
                 g.insert(&C2, &rdf::type_, &rdfs::Class)?;
@@ -330,7 +329,7 @@ macro_rules! test_graph_impl {
             }
 
             #[allow(dead_code)]
-            fn dump_graph<G: Graph> (g: &G) where
+            fn dump_graph<'a, G: Graph<'a>> (g: &'a G) where
                 G::Holder: Debug,
             {
                 println!("<<<<");

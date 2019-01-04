@@ -47,7 +47,7 @@ pub trait TermIndex: Default {
 /// [`MutableGraph`]: ../trait.MutableGraph.html
 /// [`TermIndex`]: trait.TermIndex.html
 /// 
-pub trait IndexedMutableGraph: Graph {
+pub trait IndexedMutableGraph: for <'x> Graph<'x> {
     /// The type used to represent terms internally.
     type Index: Copy + Eq + Hash;
 
@@ -57,7 +57,7 @@ pub trait IndexedMutableGraph: Graph {
     ;
 
     /// Return the term for the given index, if it exists.
-    fn get_term(&self, i: Self::Index) -> Option<&Term<Self::Holder>>;
+    fn get_term<'a>(&'a self, i: Self::Index) -> Option<&Term<<Self as Graph<'a>>::Holder>>;
 
     /// Insert a triple in this Graph,
     /// and return the corresponding tuple of indices.
@@ -90,14 +90,16 @@ macro_rules! impl_mutable_graph_for_indexed_mutable_graph {
         }
     };
     () => {
-        fn insert<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> GResult<Self, bool> where
+        type MutationError = ::error::Never;
+
+        fn insert<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> Result<bool, Self::MutationError> where
             T_: Borrow<str>,
             U_: Borrow<str>,
             V_: Borrow<str>,
         {
             Ok(self.insert_indexed(s, p, o).is_some())
         }
-        fn remove<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> GResult<Self, bool> where
+        fn remove<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> Result<bool, Self::MutationError> where
             T_: Borrow<str>,
             U_: Borrow<str>,
             V_: Borrow<str>,

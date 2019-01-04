@@ -30,20 +30,20 @@ impl<T> OpsWrapper<T> where
     }
 }
 
-impl<T> GraphWrapper for OpsWrapper<T> where
+impl<'a, T> GraphWrapper<'a> for OpsWrapper<T> where
     T: IndexedMutableGraph,
 {
     type Wrapped = T;
 
-    fn get_wrapped(&self) -> &T {
+    fn get_wrapped(&'a self) -> &'a T {
         &self.wrapped
     }
 
-    fn get_wrapped_mut(&mut self) -> &mut T {
+    fn get_wrapped_mut(&'a mut self) -> &'a mut T {
         &mut self.wrapped
     }
 
-    fn gw_iter_for_o<'a, U> (&'a self, o: &'a Term<U>) -> GFallibleTripleIterator<'a, Self::Wrapped>
+    fn gw_iter_for_o<U> (&'a self, o: &'a Term<U>) -> GFallibleTripleIterator<'a, Self::Wrapped>
     where
         U: Borrow<str>,
     {
@@ -69,7 +69,7 @@ impl<T> GraphWrapper for OpsWrapper<T> where
         Box::new(empty())
     }
 
-    fn gw_iter_for_po<'a, U, V> (&'a self, p: &'a Term<U>, o: &'a Term<V>) -> GFallibleTripleIterator<'a, Self::Wrapped>
+    fn gw_iter_for_po<U, V> (&'a self, p: &'a Term<U>, o: &'a Term<V>) -> GFallibleTripleIterator<'a, Self::Wrapped>
     where
         U: Borrow<str>,
         V: Borrow<str>,
@@ -92,7 +92,7 @@ impl<T> GraphWrapper for OpsWrapper<T> where
     }
 }
 
-impl<T> Graph for OpsWrapper<T> where
+impl<'a, T> Graph<'a> for OpsWrapper<T> where
     T: IndexedMutableGraph,
 {
     impl_graph_for_wrapper!();
@@ -111,7 +111,7 @@ impl<T> IndexedMutableGraph for OpsWrapper<T> where
     }
 
     #[inline]
-    fn get_term(&self, i: Self::Index) -> Option<&Term<Self::Holder>>
+    fn get_term<'a>(&'a self, i: Self::Index) -> Option<&Term<<Self as Graph<'a>>::Holder>>
     {
         self.wrapped.get_term(i)
     }
