@@ -45,7 +45,7 @@ macro_rules! def_stringifier {
             type Error = ::error::Never;
             type Outcome = String;
 
-            fn feed<T: Triple>(&mut self, t: &T) -> Result<(), Self::Error> {
+            fn feed<'a, T: Triple<'a>>(&mut self, t: &T) -> Result<(), Self::Error> {
                 self.writer.feed(t).map_err(|_| unreachable!())
             }
 

@@ -69,7 +69,7 @@ impl<W: io::Write> TripleSink for Writer<W> {
     type Error = io::Error;
     type Outcome = ();
 
-    fn feed<T: Triple>(&mut self, t: &T) -> Result<(), io::Error> {
+    fn feed<'a, T: Triple<'a>>(&mut self, t: &T) -> Result<(), io::Error> {
         let w = &mut self.write;
         write_term(w, t.s())?;
         w.write_all(" ".as_bytes())?;

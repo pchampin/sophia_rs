@@ -12,8 +12,7 @@ use ::triple::*;
 
 
 impl<'a, T> Graph<'a> for [T] where
-    T: Triple,
-    T::Holder: 'a,
+    T: Triple<'a>,
 {
     type Holder = T::Holder;
     type Error = Never;
@@ -25,8 +24,7 @@ impl<'a, T> Graph<'a> for [T] where
 }
 
 impl<'a, T> Graph<'a> for Vec<T> where
-    T: Triple,
-    T::Holder: 'a,
+    T: Triple<'a>,
 {
     type Holder = T::Holder;
     type Error = Never;
@@ -38,8 +36,7 @@ impl<'a, T> Graph<'a> for Vec<T> where
 }
 
 impl<'a, T> Graph<'a> for HashSet<T> where
-    T: Eq + Hash + Triple,
-    <T as Triple>::Holder: 'a,
+    T: Eq + Hash + Triple<'a>,
 {
     type Holder = T::Holder;
     type Error = Never;

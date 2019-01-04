@@ -71,10 +71,10 @@ pub trait TripleSource: Sized {
     }
 }
 
-impl<I, T, E> TripleSource for I
+impl<'a, I, T, E> TripleSource for I
 where
     I: Iterator<Item=Result<T, E>>,
-    T: Triple,
+    T: Triple<'a>,
     E: StdError,
 {
     type Error = E;
@@ -136,7 +136,7 @@ pub trait TripleSink {
     type Outcome;
 
     /// Feed one triple in this sink.
-    fn feed<T: Triple>(&mut self, t: &T) -> Result<(), Self::Error>;
+    fn feed<'a, T: Triple<'a>>(&mut self, t: &T) -> Result<(), Self::Error>;
 
     /// Produce the result once all triples were fed.
     /// 
@@ -152,7 +152,7 @@ impl TripleSink for () {
     type Error = Never;
     type Outcome = ();
 
-    fn feed<T: Triple>(&mut self, _: &T) -> Result<(), Self::Error> { Ok(()) }
+    fn feed<'a, T: Triple<'a>>(&mut self, _: &T) -> Result<(), Self::Error> { Ok(()) }
     fn finish(&mut self) -> Result<Self::Outcome, Self::Error> { Ok(()) }
 }
 

@@ -18,8 +18,8 @@ use ::term::*;
 
 /// This trait represents an abstract RDF triple,
 /// and provide convenient methods for working with triples.
-pub trait Triple {
-    type Holder: Borrow<str>;
+pub trait Triple<'a> {
+    type Holder: Borrow<str>+'a;
     /// The subject of this triple.
     fn s(&self) -> &Term<Self::Holder>;
     /// The predicate of this triple.
@@ -28,28 +28,28 @@ pub trait Triple {
     fn o(&self) -> &Term<Self::Holder>;
 }
 
-impl<'a, T: Borrow<str>> Triple for (&'a Term<T>, &'a Term<T>, &'a Term<T>) {
+impl<'a, T: Borrow<str>+'a> Triple<'a> for (&'a Term<T>, &'a Term<T>, &'a Term<T>) {
     type Holder= T;
     #[inline] fn s(&self) -> &Term<T> { self.0 }
     #[inline] fn p(&self) -> &Term<T> { self.1 }
     #[inline] fn o(&self) -> &Term<T> { self.2 }
 }
 
-impl<T: Borrow<str>> Triple for (Term<T>, Term<T>, Term<T>) {
+impl<'a, T: Borrow<str>+'a> Triple<'a> for (Term<T>, Term<T>, Term<T>) {
     type Holder= T;
     #[inline] fn s(&self) -> &Term<T> { &self.0 }
     #[inline] fn p(&self) -> &Term<T> { &self.1 }
     #[inline] fn o(&self) -> &Term<T> { &self.2 }
 }
 
-impl<'a, T: Borrow<str>> Triple for [&'a Term<T>;3] {
+impl<'a, T: Borrow<str>+'a> Triple<'a> for [&'a Term<T>;3] {
     type Holder= T;
     #[inline] fn s(&self) -> &Term<T> { self[0] }
     #[inline] fn p(&self) -> &Term<T> { self[1] }
     #[inline] fn o(&self) -> &Term<T> { self[2] }
 }
 
-impl<T: Borrow<str>> Triple for [Term<T>;3] {
+impl<'a, T: Borrow<str>+'a> Triple<'a> for [Term<T>;3] {
     type Holder= T;
     #[inline] fn s(&self) -> &Term<T> { &self[0] }
     #[inline] fn p(&self) -> &Term<T> { &self[1] }
