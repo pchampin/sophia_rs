@@ -58,7 +58,7 @@ pub trait WriteSerializer<W: io::Write>: TripleSink<Outcome=()> + Sized {
     fn write_triple<'a, T>(&mut self, t: &T) -> Result<(), Self::Error>
         where T: Triple<'a>,
     {
-        let source = vec![(t.s(), t.p(), t.o())].into_iter().wrap_as_oks();
+        let source = vec![[t.s(), t.p(), t.o()]].into_iter().wrap_as_oks();
         source.into_sink(self).unwrap_upstream()
     }
 }
@@ -92,7 +92,7 @@ pub trait StringSerializer: TripleSink<Outcome=String, Error=Never> + Sized {
     fn stringify_triple<'a, T>(&mut self, t: &T) -> String
         where T: Triple<'a>,
     {
-        let source = vec![(t.s(), t.p(), t.o())].into_iter().wrap_as_oks();
+        let source = vec![[t.s(), t.p(), t.o()]].into_iter().wrap_as_oks();
         source.into_sink(self).unwrap()
     }
 }

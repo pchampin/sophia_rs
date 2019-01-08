@@ -5,7 +5,6 @@ use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::hash::Hash;
 
-use ::graph::*;
 use ::term::*;
 use ::term::factory::TermFactory;
 
@@ -37,19 +36,21 @@ pub trait TermIndex: Default {
 
 
 
-/// A utility trait for implementing [`MutableGraph`]
+/// A utility trait for implementing [`Graph`] and [`MutableGraph`]
 /// based on an internal [`TermIndex`] for efficient storage.
 /// 
 /// The `impl_mutable_graph_for_indexed_mutable_graph!` macro
 /// can be used to derive the `MutableGraph` implementation
 /// for any implementation of `IndexedMutableGraph`.
 /// 
+/// [`Graph`]: ../trait.Graph.html
 /// [`MutableGraph`]: ../trait.MutableGraph.html
 /// [`TermIndex`]: trait.TermIndex.html
 /// 
-pub trait IndexedMutableGraph: for <'x> Graph<'x> {
+pub trait IndexedMutableGraph {
     /// The type used to represent terms internally.
     type Index: Copy + Eq + Hash;
+    type Holder: Borrow<str> + 'static;
 
     /// Return the index for the given term, if it exists.
     fn get_index<T> (&self, t: &Term<T>) -> Option<Self::Index> where
@@ -57,7 +58,7 @@ pub trait IndexedMutableGraph: for <'x> Graph<'x> {
     ;
 
     /// Return the term for the given index, if it exists.
-    fn get_term<'a>(&'a self, i: Self::Index) -> Option<&Term<<Self as Graph<'a>>::Holder>>;
+    fn get_term(&self, i: Self::Index) -> Option<&Term<Self::Holder>>;
 
     /// Insert a triple in this Graph,
     /// and return the corresponding tuple of indices.
@@ -81,7 +82,7 @@ pub trait IndexedMutableGraph: for <'x> Graph<'x> {
 /// Defines the implementation of [`MutableGraph`] for [`IndexedMutableGraph`].
 /// 
 /// [`MutableGraph`]: ../trait.MutableGraph.html
-/// [`MutableGraph`]: trait.IndexedMutableGraph.html
+/// [`IndexedMutableGraph`]: trait.IndexedMutableGraph.html
 #[macro_export]
 macro_rules! impl_mutable_graph_for_indexed_mutable_graph {
     ($indexed_mutable_graph: ty) => {

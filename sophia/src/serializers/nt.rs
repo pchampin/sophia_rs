@@ -269,14 +269,14 @@ mod test {
     fn graph() {
         let me = StaticTerm::new_iri("http://champin.net/#pa").unwrap();
         let triples = vec![
-            ( me,
+            [ me,
               rdf::type_,
               StaticTerm::new_iri("http://schema.org/Person").unwrap()
-            ),
-            ( me,
+            ],
+            [ me,
               StaticTerm::new_iri("http://schema.org/name").unwrap(),
               StaticTerm::new_literal_dt("Pierre-Antoine", xsd::string).unwrap()
-            ),
+            ],
         ];
         let triples = triples.into_iter().wrap_as_oks();
         let s = triples.into_sink(&mut stringifier()).unwrap();

@@ -12,7 +12,6 @@ macro_rules! test_graph_impl {
             use ::term::*;
             use ::term::matcher::ANY;
             use ::triple::*;
-            use std::borrow::Borrow;
             use std::fmt::Debug;
             use resiter::oks::*;
 
@@ -123,13 +122,13 @@ macro_rules! test_graph_impl {
                 let mut g = $mutable_graph_impl::new();
                 populate(&mut g)?;
 
-                let v: Vec<_> = g.iter().oks().map(as_ref_t).collect();
+                let v: Vec<_> = g.iter().oks().map(as_box_t).collect();
                 assert_eq!(v.len(), g.iter().count());
                 assert_consistent_hint(v.len(), g.iter().size_hint());
                 assert!(v.contains(&C1, &rdf::type_, &rdfs::Class)?);
                 assert!(!v.contains(&P1, &rdf::type_, &rdfs::Class)?);
 
-                let v: Vec<_> = g.iter_matching(&ANY, &ANY, &ANY).oks().map(as_ref_t).collect();
+                let v: Vec<_> = g.iter_matching(&ANY, &ANY, &ANY).oks().map(as_box_t).collect();
                 assert_eq!(v.len(), g.iter().count());
                 assert_consistent_hint(v.len(), g.iter().size_hint());
                 assert!(v.contains(&C1, &rdf::type_, &rdfs::Class)?);
@@ -142,13 +141,13 @@ macro_rules! test_graph_impl {
                 let mut g = $mutable_graph_impl::new();
                 populate(&mut g)?;
 
-                let v: Vec<_> = g.iter_for_s(&C2).oks().map(as_ref_t).collect();
+                let v: Vec<_> = g.iter_for_s(&C2).oks().map(as_box_t).collect();
                 assert_eq!(v.len(), 2);
                 assert_consistent_hint(v.len(), g.iter_for_s(&C2).size_hint());
                 assert!(v.contains(&C2, &rdf::type_, &rdfs::Class)?);
                 assert!(!v.contains(&C1, &rdf::type_, &rdfs::Class)?);
 
-                let v: Vec<_> = g.iter_matching(&*C2, &ANY, &ANY).oks().map(as_ref_t).collect();
+                let v: Vec<_> = g.iter_matching(&*C2, &ANY, &ANY).oks().map(as_box_t).collect();
                 assert_eq!(v.len(), 2);
                 assert_consistent_hint(v.len(), g.iter_for_s(&C2).size_hint());
                 assert!(v.contains(&C2, &rdf::type_, &rdfs::Class)?);
@@ -161,13 +160,13 @@ macro_rules! test_graph_impl {
                 let mut g = $mutable_graph_impl::new();
                 populate(&mut g)?;
 
-                let v: Vec<_> = g.iter_for_p(&rdfs::subClassOf).oks().map(as_ref_t).collect();
+                let v: Vec<_> = g.iter_for_p(&rdfs::subClassOf).oks().map(as_box_t).collect();
                 assert_eq!(v.len(), 1);
                 assert_consistent_hint(v.len(), g.iter_for_p(&rdfs::subClassOf).size_hint());
                 assert!(v.contains(&C2, &rdfs::subClassOf, &C1)?);
                 assert!(!v.contains(&C2, &rdf::type_, &rdfs::Class)?);
 
-                let v: Vec<_> = g.iter_matching(&ANY, &rdfs::subClassOf, &ANY).oks().map(as_ref_t).collect();
+                let v: Vec<_> = g.iter_matching(&ANY, &rdfs::subClassOf, &ANY).oks().map(as_box_t).collect();
                 assert_eq!(v.len(), 1);
                 assert_consistent_hint(v.len(), g.iter_for_p(&rdfs::subClassOf).size_hint());
                 assert!(v.contains(&C2, &rdfs::subClassOf, &C1)?);
@@ -180,13 +179,13 @@ macro_rules! test_graph_impl {
                 let mut g = $mutable_graph_impl::new();
                 populate(&mut g)?;
 
-                let v: Vec<_> = g.iter_for_o(&I2B).oks().map(as_ref_t).collect();
+                let v: Vec<_> = g.iter_for_o(&I2B).oks().map(as_box_t).collect();
                 assert_eq!(v.len(), 2);
                 assert_consistent_hint(v.len(), g.iter_for_o(&I2B).size_hint());
                 assert!(v.contains(&I1B, &P1, &I2B)?);
                 assert!(!v.contains(&I2B, &rdf::type_, &C2)?);
 
-                let v: Vec<_> = g.iter_matching(&ANY, &ANY, &*I2B).oks().map(as_ref_t).collect();
+                let v: Vec<_> = g.iter_matching(&ANY, &ANY, &*I2B).oks().map(as_box_t).collect();
                 assert_eq!(v.len(), 2);
                 assert_consistent_hint(v.len(), g.iter_for_o(&I2B).size_hint());
                 assert!(v.contains(&I1B, &P1, &I2B)?);
@@ -199,13 +198,13 @@ macro_rules! test_graph_impl {
                 let mut g = $mutable_graph_impl::new();
                 populate(&mut g)?;
 
-                let v: Vec<_> = g.iter_for_sp(&C2, &rdf::type_).oks().map(as_ref_t).collect();
+                let v: Vec<_> = g.iter_for_sp(&C2, &rdf::type_).oks().map(as_box_t).collect();
                 assert_eq!(v.len(), 1);
                 assert_consistent_hint(v.len(), g.iter_for_sp(&C2, &rdf::type_).size_hint());
                 assert!(v.contains(&C2, &rdf::type_, &rdfs::Class)?);
                 assert!(!v.contains(&C2, &rdfs::subClassOf, &C1)?);
 
-                let v: Vec<_> = g.iter_matching(&*C2, &rdf::type_, &ANY).oks().map(as_ref_t).collect();
+                let v: Vec<_> = g.iter_matching(&*C2, &rdf::type_, &ANY).oks().map(as_box_t).collect();
                 assert_eq!(v.len(), 1);
                 assert_consistent_hint(v.len(), g.iter_for_sp(&C2, &rdf::type_).size_hint());
                 assert!(v.contains(&C2, &rdf::type_, &rdfs::Class)?);
@@ -218,13 +217,13 @@ macro_rules! test_graph_impl {
                 let mut g = $mutable_graph_impl::new();
                 populate(&mut g)?;
 
-                let v: Vec<_> = g.iter_for_so(&C2, &C1).oks().map(as_ref_t).collect();
+                let v: Vec<_> = g.iter_for_so(&C2, &C1).oks().map(as_box_t).collect();
                 assert_eq!(v.len(), 1);
                 assert_consistent_hint(v.len(), g.iter_for_so(&C2, &C1).size_hint());
                 assert!(v.contains(&C2, &rdfs::subClassOf, &C1)?);
                 assert!(!v.contains(&C2, &rdf::type_, &rdfs::Class)?);
 
-                let v: Vec<_> = g.iter_matching(&*C2, &ANY, &*C1).oks().map(as_ref_t).collect();
+                let v: Vec<_> = g.iter_matching(&*C2, &ANY, &*C1).oks().map(as_box_t).collect();
                 assert_eq!(v.len(), 1);
                 assert_consistent_hint(v.len(), g.iter_for_so(&C2, &C1).size_hint());
                 assert!(v.contains(&C2, &rdfs::subClassOf, &C1)?);
@@ -237,13 +236,13 @@ macro_rules! test_graph_impl {
                 let mut g = $mutable_graph_impl::new();
                 populate(&mut g)?;
 
-                let v: Vec<_> = g.iter_for_po(&rdf::type_, &rdfs::Class).oks().map(as_ref_t).collect();
+                let v: Vec<_> = g.iter_for_po(&rdf::type_, &rdfs::Class).oks().map(as_box_t).collect();
                 assert_eq!(v.len(), 2);
                 assert_consistent_hint(v.len(), g.iter_for_po(&rdf::type_, &rdfs::Class).size_hint());
                 assert!(v.contains(&C2, &rdf::type_, &rdfs::Class)?);
                 assert!(!v.contains(&P2, &rdf::type_, &rdf::Property)?);
 
-                let v: Vec<_> = g.iter_matching(&ANY, &rdf::type_, &rdfs::Class).oks().map(as_ref_t).collect();
+                let v: Vec<_> = g.iter_matching(&ANY, &rdf::type_, &rdfs::Class).oks().map(as_box_t).collect();
                 assert_eq!(v.len(), 2);
                 assert_consistent_hint(v.len(), g.iter_for_po(&rdf::type_, &rdfs::Class).size_hint());
                 assert!(v.contains(&C2, &rdf::type_, &rdfs::Class)?);
@@ -256,12 +255,12 @@ macro_rules! test_graph_impl {
                 let mut g = $mutable_graph_impl::new();
                 populate(&mut g)?;
 
-                let v: Vec<_> = g.iter_for_spo(&C2, &rdf::type_, &rdfs::Class).oks().map(as_ref_t).collect();
+                let v: Vec<_> = g.iter_for_spo(&C2, &rdf::type_, &rdfs::Class).oks().map(as_box_t).collect();
                 assert_eq!(v.len(), 1);
                 assert!(v.contains(&C2, &rdf::type_, &rdfs::Class)?);
                 assert!(!v.contains(&C1, &rdf::type_, &rdfs::Class)?);
 
-                let v: Vec<_> = g.iter_matching(&*C2, &rdf::type_, &rdfs::Class).oks().map(as_ref_t).collect();
+                let v: Vec<_> = g.iter_matching(&*C2, &rdf::type_, &rdfs::Class).oks().map(as_box_t).collect();
                 assert_eq!(v.len(), 1);
                 assert!(v.contains(&C2, &rdf::type_, &rdfs::Class)?);
                 assert!(!v.contains(&C1, &rdf::type_, &rdfs::Class)?);
@@ -284,7 +283,7 @@ macro_rules! test_graph_impl {
 
                 let p_matcher: [StaticTerm;2] = [rdf::type_.clone(), rdfs::domain.clone()];
                 let o_matcher: [StaticTerm;2] = [C2.clone(), rdfs::Class.clone()];
-                let v: Vec<_> = g.iter_matching(&ANY, &p_matcher[..], &o_matcher[..]).oks().map(as_ref_t).collect();
+                let v: Vec<_> = g.iter_matching(&ANY, &p_matcher[..], &o_matcher[..]).oks().map(as_box_t).collect();
                 assert_eq!(v.len(), 5);
                 assert!(v.contains(&C1, &rdf::type_, &rdfs::Class)?);
                 assert!(v.contains(&P2, &rdfs::domain, &C2)?);
@@ -322,15 +321,13 @@ macro_rules! test_graph_impl {
                 Ok(())
             }
 
-            fn as_ref_t<'a, T> (triple: (&'a Term<T>, &'a Term<T>, &'a Term<T>)) -> (RefTerm<'a>, RefTerm<'a>, RefTerm<'a>) where
-                T: Borrow<str> + 'a,
-            {
-                (RefTerm::from(triple.0), RefTerm::from(triple.1), RefTerm::from(triple.2))
+            fn as_box_t<'a, T: Triple<'a>+'a> (triple: T) -> [BoxTerm;3] {
+                [triple.s().into(), triple.p().into(), triple.o().into()]
             }
 
             #[allow(dead_code)]
             fn dump_graph<'a, G: Graph<'a>> (g: &'a G) where
-                G::Holder: Debug,
+                <G::Triple as Triple<'a>>::Holder: Debug,
             {
                 println!("<<<<");
                 for t in g.iter() {
@@ -347,8 +344,8 @@ macro_rules! test_graph_impl {
 
             fn make_triple_source() -> impl TripleSource {
                 vec![
-                    (&*C1, &rdf::type_, &rdfs::Class),
-                    (&*C1, &rdfs::subClassOf, &*C2),
+                    [&*C1, &rdf::type_, &rdfs::Class],
+                    [&*C1, &rdfs::subClassOf, &*C2],
                 ].into_iter()
                 .wrap_as_oks()
             }

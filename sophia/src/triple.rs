@@ -28,18 +28,11 @@ pub trait Triple<'a> {
     fn o(&self) -> &Term<Self::Holder>;
 }
 
-impl<'a, T: Borrow<str>+'a> Triple<'a> for (&'a Term<T>, &'a Term<T>, &'a Term<T>) {
+impl<'a, T: Borrow<str>+'a> Triple<'a> for [Term<T>;3] {
     type Holder= T;
-    #[inline] fn s(&self) -> &Term<T> { self.0 }
-    #[inline] fn p(&self) -> &Term<T> { self.1 }
-    #[inline] fn o(&self) -> &Term<T> { self.2 }
-}
-
-impl<'a, T: Borrow<str>+'a> Triple<'a> for (Term<T>, Term<T>, Term<T>) {
-    type Holder= T;
-    #[inline] fn s(&self) -> &Term<T> { &self.0 }
-    #[inline] fn p(&self) -> &Term<T> { &self.1 }
-    #[inline] fn o(&self) -> &Term<T> { &self.2 }
+    #[inline] fn s(&self) -> &Term<T> { &self[0] }
+    #[inline] fn p(&self) -> &Term<T> { &self[1] }
+    #[inline] fn o(&self) -> &Term<T> { &self[2] }
 }
 
 impl<'a, T: Borrow<str>+'a> Triple<'a> for [&'a Term<T>;3] {
@@ -49,11 +42,11 @@ impl<'a, T: Borrow<str>+'a> Triple<'a> for [&'a Term<T>;3] {
     #[inline] fn o(&self) -> &Term<T> { self[2] }
 }
 
-impl<'a, T: Borrow<str>+'a> Triple<'a> for [Term<T>;3] {
-    type Holder= T;
-    #[inline] fn s(&self) -> &Term<T> { &self[0] }
-    #[inline] fn p(&self) -> &Term<T> { &self[1] }
-    #[inline] fn o(&self) -> &Term<T> { &self[2] }
+impl<'a, T: Triple<'a>> Triple<'a> for &'a T {
+    type Holder = T::Holder;
+    #[inline] fn s(&self) -> &Term<T::Holder> { (*self).s() }
+    #[inline] fn p(&self) -> &Term<T::Holder> { (*self).p() }
+    #[inline] fn o(&self) -> &Term<T::Holder> { (*self).o() }
 }
 
 

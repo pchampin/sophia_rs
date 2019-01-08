@@ -11,10 +11,9 @@ use ::term::*;
 use ::term::matcher::TermMatcher;
 use ::triple::*;
 
-type GTriple<'a, G> = (&'a Term<<G as Graph<'a>>::Holder>, &'a Term<<G as Graph<'a>>::Holder>, &'a Term<<G as Graph<'a>>::Holder>);
 /// Type alias for fallible triple iterators produced by a graph.
 pub type GFallibleTripleIterator<'a, G> =
-    Box<Iterator<Item=Result<GTriple<'a, G>, <G as Graph<'a>>::Error>>+'a>;
+    Box<Iterator<Item=Result<<G as Graph<'a>>::Triple, <G as Graph<'a>>::Error>>+'a>;
 
 /// Generic trait for RDF graphs.
 /// 
@@ -26,8 +25,9 @@ pub type GFallibleTripleIterator<'a, G> =
 /// 
 pub trait Graph<'a>
 {
-    /// String Holder (used internally by terms returned by the methods)
-    type Holder: Borrow<str>+'a;
+    /// The type of [`Triple`](../triple/trait.Triple.html)s
+    /// that the methods of this graph will yield.
+    type Triple: Triple<'a>;
     /// The error type that this graph may raise.
     /// 
     /// Must be [`Never`](../error/enum.Never.html) for infallible graphs.
@@ -234,7 +234,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
         let to_remove =
             self.iter_matching(ms, mp, mo)
             .map_ok(|t| {
-                (BoxTerm::from(t.s()), BoxTerm::from(t.p()), BoxTerm::from(t.o()))
+                [BoxTerm::from(t.s()), BoxTerm::from(t.p()), BoxTerm::from(t.o())]
             })
             .collect::<Result<Vec<_>, _>>().unwrap();
             // TODO instead of unwrapping the result above,
@@ -259,7 +259,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
                 !(ms.try(t.s()) && mp.try(t.p()) && mo.try(t.o()))
             })
             .map_ok(|t| {
-                (BoxTerm::from(t.s()), BoxTerm::from(t.p()), BoxTerm::from(t.o()))
+                [BoxTerm::from(t.s()), BoxTerm::from(t.p()), BoxTerm::from(t.o())]
             })
             .collect::<Result<Vec<_>, _>>().unwrap();
             // TODO instead of unwrapping the result above,

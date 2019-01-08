@@ -48,6 +48,7 @@ impl<I> IndexedMutableGraph for IndexedHGraph<I> where
     <I::Factory as TermFactory>::Holder: 'static,
 {
     type Index = I::Index;
+    type Holder = <I::Factory as TermFactory>::Holder;
 
     #[inline]
     fn get_index<T> (&self, t: &Term<T>) -> Option<Self::Index> where
@@ -57,7 +58,7 @@ impl<I> IndexedMutableGraph for IndexedHGraph<I> where
     }
 
     #[inline]
-    fn get_term<'a>(&'a self, i: Self::Index) -> Option<&Term<<Self as Graph<'a>>::Holder>> {
+    fn get_term<'a>(&'a self, i: Self::Index) -> Option<&Term<Self::Holder>> {
         self.terms.get_term(i)
     }
 
@@ -111,17 +112,17 @@ impl<'a, I> Graph<'a> for IndexedHGraph<I> where
     I::Index: Hash,
     <I::Factory as TermFactory>::Holder: 'static,
 {
-    type Holder = <I::Factory as TermFactory>::Holder;
+    type Triple = [&'a Term<<Self as IndexedMutableGraph>::Holder>;3];
     type Error = ::error::Never;
 
     fn iter(&'a self) -> GFallibleTripleIterator<'a, Self> {
         Box::from(
             self.triples.iter()
-            .map(move |(si, pi, oi)| Ok((
+            .map(move |(si, pi, oi)| Ok([
                 self.terms.get_term(*si).unwrap(),
                 self.terms.get_term(*pi).unwrap(),
                 self.terms.get_term(*oi).unwrap(),
-            )))
+            ]))
         )
     }
 }

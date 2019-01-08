@@ -100,7 +100,7 @@ macro_rules! impl_graph_for_wrapper {
         }
     };
     () => {
-        type Holder = <<Self as GraphWrapper<'a>>::Wrapped as Graph<'a>>::Holder;
+        type Triple = <<Self as GraphWrapper<'a>>::Wrapped as Graph<'a>>::Triple;
         type Error = <<Self as GraphWrapper<'a>>::Wrapped as Graph<'a>>::Error;
 
         #[inline]

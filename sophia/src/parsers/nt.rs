@@ -236,7 +236,7 @@ mod test {
     use ::term::BoxTerm;
     use super::*;
 
-    type HashSetGraph = HashSet<(BoxTerm, BoxTerm, BoxTerm)>;
+    type HashSetGraph = HashSet<[BoxTerm;3]>;
 
     static STRICT: Config = Config{ strict: true };
 

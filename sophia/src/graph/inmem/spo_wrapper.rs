@@ -12,6 +12,9 @@ use ::graph::index::remove_one_val;
 /// Compared to its wrapped graph,
 /// it overrides the methods that can efficiently be implemented using this index.
 /// 
+/// Since it must be able to produce triples instead of the underlying graphs,
+/// it is limited to wrapping graphs whose triples are `[&Triple<H>]`.
+/// 
 #[derive(Default)]
 pub struct SpoWrapper<T> where
     T: IndexedMutableGraph,
@@ -31,7 +34,7 @@ impl<T> SpoWrapper<T> where
 }
 
 impl<'a, T> GraphWrapper<'a> for SpoWrapper<T> where
-    T: IndexedMutableGraph,
+    T: IndexedMutableGraph + Graph<'a, Triple=[&'a Term<<T as IndexedMutableGraph>::Holder>;3]>,
 {
     type Wrapped = T;
 
@@ -59,9 +62,9 @@ impl<'a, T> GraphWrapper<'a> for SpoWrapper<T> where
                     ))
                     .flat_map(move |(s,p,ois)|
                         ois.iter()
-                        .map(move |oi| Ok((
+                        .map(move |oi| Ok([
                             s, p, self.wrapped.get_term(*oi).unwrap(),
-                        )))
+                        ]))
                     )
                 )
             }
@@ -81,9 +84,9 @@ impl<'a, T> GraphWrapper<'a> for SpoWrapper<T> where
                     let p = self.wrapped.get_term(pi).unwrap();
                     return Box::new(
                         ois.iter()
-                        .map(move |oi| Ok((
+                        .map(move |oi| Ok([
                             s, p, self.wrapped.get_term(*oi).unwrap(),
-                        )))
+                        ]))
                     )
                 }
             }
@@ -93,7 +96,7 @@ impl<'a, T> GraphWrapper<'a> for SpoWrapper<T> where
 }
 
 impl<'a, T> Graph<'a> for SpoWrapper<T> where
-    T: IndexedMutableGraph,
+    T: IndexedMutableGraph + Graph<'a, Triple=[&'a Term<<T as IndexedMutableGraph>::Holder>;3]>,
 {
     impl_graph_for_wrapper!();
 }
@@ -102,6 +105,7 @@ impl<T> IndexedMutableGraph for SpoWrapper<T> where
     T: IndexedMutableGraph,
 {
     type Index = T::Index;
+    type Holder = T::Holder;
 
     #[inline]
     fn get_index<U> (&self, t: &Term<U>) -> Option<Self::Index> where
@@ -111,7 +115,7 @@ impl<T> IndexedMutableGraph for SpoWrapper<T> where
     }
 
     #[inline]
-    fn get_term<'a>(&'a self, i: Self::Index) -> Option<&Term<<Self as Graph<'a>>::Holder>>
+    fn get_term<'a>(&'a self, i: Self::Index) -> Option<&Term<Self::Holder>>
     {
         self.wrapped.get_term(i)
     }
@@ -150,7 +154,7 @@ impl<T> IndexedMutableGraph for SpoWrapper<T> where
 }
 
 impl<T> MutableGraph for SpoWrapper<T> where
-    T: IndexedMutableGraph,
+    T: IndexedMutableGraph + for <'a> Graph<'a, Triple=[&'a Term<<T as IndexedMutableGraph>::Holder>;3]>,
 {
     impl_mutable_graph_for_indexed_mutable_graph!();
 }
