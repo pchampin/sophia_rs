@@ -17,7 +17,7 @@ pub trait TermMatcher {
     fn constant(&self) -> Option<&Term<Self::Holder>>;
 
     /// Check whether this matcher matches `t`.
-    fn try<T: Borrow<str>> (&self, t: &Term<T>) -> bool;
+    fn matches<T: Borrow<str>> (&self, t: &Term<T>) -> bool;
 }
 
 impl<U: Borrow<str>> TermMatcher for Term<U> where {
@@ -25,7 +25,7 @@ impl<U: Borrow<str>> TermMatcher for Term<U> where {
     fn constant(&self) -> Option<&Term<Self::Holder>> {
         Some(self)
     }
-    fn try<T: Borrow<str>> (&self, t: &Term<T>) -> bool {
+    fn matches<T: Borrow<str>> (&self, t: &Term<T>) -> bool {
         t==self
     }
 }
@@ -35,7 +35,7 @@ impl<U: Borrow<str>> TermMatcher for Option<Term<U>> {
     fn constant(&self) -> Option<&Term<Self::Holder>> {
         self.as_ref()
     }
-    fn try<T: Borrow<str>> (&self, t: &Term<T>) -> bool {
+    fn matches<T: Borrow<str>> (&self, t: &Term<T>) -> bool {
         match self {
             Some(term) => t == term,
             None => true,
@@ -49,7 +49,7 @@ impl<U: Borrow<str>> TermMatcher for [Term<U>] {
         if self.len() == 1 { Some(&self[0]) }
         else { None }
     }
-    fn try<T: Borrow<str>> (&self, t: &Term<T>) -> bool {
+    fn matches<T: Borrow<str>> (&self, t: &Term<T>) -> bool {
         for term in self {
             if t == term { return true; }
         }
@@ -62,7 +62,7 @@ impl<F: Fn(&RefTerm) -> bool> TermMatcher for F {
     fn constant(&self) -> Option<&Term<Self::Holder>> {
         None
     }
-    fn try<T: Borrow<str>> (&self, t: &Term<T>) -> bool {
+    fn matches<T: Borrow<str>> (&self, t: &Term<T>) -> bool {
         self(&RefTerm::from(t))
     }
 }
@@ -91,8 +91,8 @@ mod test {
         let mc = TermMatcher::constant(&m);
         assert!(mc.is_some());
         assert_eq!(mc.unwrap(), &t1);
-        assert!(m.try(&t1));
-        assert!(!m.try(&t2));
+        assert!(m.matches(&t1));
+        assert!(!m.matches(&t2));
     }
 
     #[test]
@@ -106,8 +106,8 @@ mod test {
         let mc = TermMatcher::constant(&m);
         assert!(mc.is_some());
         assert_eq!(mc.unwrap(), &t1);
-        assert!(m.try(&t1));
-        assert!(!m.try(&t2));
+        assert!(m.matches(&t1));
+        assert!(!m.matches(&t2));
     }
 
     #[test]
@@ -119,7 +119,7 @@ mod test {
 
         let mc = TermMatcher::constant(&m);
         assert!(mc.is_none());
-        assert!(m.try(&t1));
+        assert!(m.matches(&t1));
     }
 
     #[test]
@@ -133,8 +133,8 @@ mod test {
         let mc = TermMatcher::constant(&m[..]);
         assert!(mc.is_some());
         assert_eq!(mc.unwrap(), &t1);
-        assert!(m.try(&t1));
-        assert!(!m.try(&t2));
+        assert!(m.matches(&t1));
+        assert!(!m.matches(&t2));
     }
 
     #[test]
@@ -151,9 +151,9 @@ mod test {
 
         let mc = TermMatcher::constant(&m[..]);
         assert!(mc.is_none());
-        assert!(m.try(&t1));
-        assert!(m.try(&t2));
-        assert!(!m.try(&t3));
+        assert!(m.matches(&t1));
+        assert!(m.matches(&t2));
+        assert!(!m.matches(&t3));
     }
 
     #[test]
@@ -165,7 +165,7 @@ mod test {
 
         let mc = TermMatcher::constant(&m[..]);
         assert!(mc.is_none());
-        assert!(!m.try(&t1));
+        assert!(!m.matches(&t1));
     }
 
     #[test]
@@ -175,7 +175,7 @@ mod test {
 
         let m = |t: &RefTerm| t.value().starts_with("http://champin");
         assert!(m.constant().is_none());
-        assert!(m.try(&t1));
-        assert!(!m.try(&t2));
+        assert!(m.matches(&t1));
+        assert!(!m.matches(&t2));
     }
 }

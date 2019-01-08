@@ -141,19 +141,19 @@ pub trait Graph<'a>: GraphBase {
     {
         match (&ms.constant(), &mp.constant(), &mo.constant()) {
             (None,    None,    None   )    => Box::from(
-                self.iter().filter_ok(move |t| ms.try(t.s()) && mp.try(t.p()) && mo.try(t.o()))),
+                self.iter().filter_ok(move |t| ms.matches(t.s()) && mp.matches(t.p()) && mo.matches(t.o()))),
             (Some(s), None,    None   )    => Box::from(
-                self.iter_for_s(s).filter_ok(move |t| mp.try(t.p()) && mo.try(t.o()))),
+                self.iter_for_s(s).filter_ok(move |t| mp.matches(t.p()) && mo.matches(t.o()))),
             (None,    Some(p), None   )    => Box::from(
-                self.iter_for_p(p).filter_ok(move |t| ms.try(t.s()) && mo.try(t.o()))),
+                self.iter_for_p(p).filter_ok(move |t| ms.matches(t.s()) && mo.matches(t.o()))),
             (None,    None,    Some(o))    => Box::from(
-                self.iter_for_o(o).filter_ok(move |t| ms.try(t.s()) && mp.try(t.p()))),
+                self.iter_for_o(o).filter_ok(move |t| ms.matches(t.s()) && mp.matches(t.p()))),
             (Some(s), Some(p), None   )    => Box::from(
-                self.iter_for_sp(s, p).filter_ok(move |t| mo.try(t.o()))),
+                self.iter_for_sp(s, p).filter_ok(move |t| mo.matches(t.o()))),
             (Some(s), None,    Some(o))    => Box::from(
-                self.iter_for_so(s, o).filter_ok(move |t| mp.try(t.p()))),
+                self.iter_for_so(s, o).filter_ok(move |t| mp.matches(t.p()))),
             (None,    Some(p), Some(o))    => Box::from(
-                self.iter_for_po(p, o).filter_ok(move |t| ms.try(t.s()))),
+                self.iter_for_po(p, o).filter_ok(move |t| ms.matches(t.s()))),
             (Some(s), Some(p), Some(o))    => Box::from(
                 self.iter_for_spo(s, p, o))
         }
@@ -255,7 +255,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
         let to_remove =
             self.iter()
             .filter_ok(|t| {
-                !(ms.try(t.s()) && mp.try(t.p()) && mo.try(t.o()))
+                !(ms.matches(t.s()) && mp.matches(t.p()) && mo.matches(t.o()))
             })
             .map_ok(|t| {
                 [BoxTerm::from(t.s()), BoxTerm::from(t.p()), BoxTerm::from(t.o())]
