@@ -23,7 +23,7 @@ pub struct IndexedHGraph<I> where
     <I::Factory as TermFactory>::Holder: 'static,
 {
     terms: I,
-    triples: HashSet<(I::Index, I::Index, I::Index)>,
+    triples: HashSet<[I::Index;3]>,
 }
 
 impl<I> IndexedHGraph<I> where
@@ -62,7 +62,7 @@ impl<I> IndexedMutableGraph for IndexedHGraph<I> where
         self.terms.get_term(i)
     }
 
-    fn insert_indexed<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Option<(I::Index, I::Index, I::Index)> where
+    fn insert_indexed<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Option<[I::Index;3]> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
@@ -70,9 +70,9 @@ impl<I> IndexedMutableGraph for IndexedHGraph<I> where
         let si = self.terms.make_index(&RefTerm::from(s));
         let pi = self.terms.make_index(&RefTerm::from(p));
         let oi = self.terms.make_index(&RefTerm::from(o));
-        let modified = self.triples.insert((si, pi, oi));
+        let modified = self.triples.insert([si, pi, oi]);
         if modified {
-            Some((si, pi, oi))
+            Some([si, pi, oi])
         } else {
             self.terms.dec_ref(si);
             self.terms.dec_ref(pi);
@@ -81,7 +81,7 @@ impl<I> IndexedMutableGraph for IndexedHGraph<I> where
         }
     }
 
-    fn remove_indexed<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Option<(I::Index, I::Index, I::Index)> where
+    fn remove_indexed<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Option<[I::Index;3]> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
@@ -90,12 +90,12 @@ impl<I> IndexedMutableGraph for IndexedHGraph<I> where
         let pi = self.terms.get_index(&RefTerm::from(p));
         let oi = self.terms.get_index(&RefTerm::from(o));
         if let (Some(si), Some(pi), Some(oi)) = (si, pi, oi) {
-            let modified = self.triples.remove(&(si, pi, oi));
+            let modified = self.triples.remove(&[si, pi, oi]);
             if modified {
                 self.terms.dec_ref(si);
                 self.terms.dec_ref(pi);
                 self.terms.dec_ref(oi);
-                return Some((si, pi, oi));
+                return Some([si, pi, oi]);
             }
         }
         None
@@ -125,7 +125,7 @@ impl<'a, I> Graph<'a> for IndexedHGraph<I> where
     fn iter(&'a self) -> GFallibleTripleIterator<'a, Self> {
         Box::from(
             self.triples.iter()
-            .map(move |(si, pi, oi)| Ok([
+            .map(move |[si, pi, oi]| Ok([
                 self.terms.get_term(*si).unwrap(),
                 self.terms.get_term(*pi).unwrap(),
                 self.terms.get_term(*oi).unwrap(),

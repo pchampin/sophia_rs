@@ -114,26 +114,26 @@ impl<T> IndexedMutableGraph for SpoWrapper<T> where
         self.wrapped.get_term(i)
     }
 
-    fn insert_indexed<U, V, W> (&mut self, s: &Term<U>, p: &Term<V>, o: &Term<W>) -> Option<(Self::Index, Self::Index, Self::Index)> where
+    fn insert_indexed<U, V, W> (&mut self, s: &Term<U>, p: &Term<V>, o: &Term<W>) -> Option<[Self::Index;3]> where
         U: Borrow<str>,
         V: Borrow<str>,
         W: Borrow<str>,
     {
         let modified = self.wrapped.insert_indexed(s, p, o);
-        if let Some((si, pi, oi)) = modified {
+        if let Some([si, pi, oi]) = modified {
             self.s2p.entry(si).or_insert_with(|| Vec::new()).push(pi);
             self.sp2o.entry((si, pi)).or_insert_with(|| Vec::new()).push(oi);
         }
         modified
     }
 
-    fn remove_indexed<U, V, W> (&mut self, s: &Term<U>, p: &Term<V>, o: &Term<W>) -> Option<(Self::Index, Self::Index, Self::Index)> where
+    fn remove_indexed<U, V, W> (&mut self, s: &Term<U>, p: &Term<V>, o: &Term<W>) -> Option<([Self::Index;3])> where
         U: Borrow<str>,
         V: Borrow<str>,
         W: Borrow<str>,
     {
         let modified = self.wrapped.remove_indexed(s, p, o);
-        if let Some((si, pi, oi)) = modified {    
+        if let Some([si, pi, oi]) = modified {
             remove_one_val(&mut self.s2p, si, pi);
             remove_one_val(&mut self.sp2o, (si, pi), oi);
         }

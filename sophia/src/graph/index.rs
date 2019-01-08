@@ -62,7 +62,7 @@ pub trait IndexedMutableGraph {
 
     /// Insert a triple in this Graph,
     /// and return the corresponding tuple of indices.
-    fn insert_indexed<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Option<(Self::Index, Self::Index, Self::Index)> where
+    fn insert_indexed<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Option<[Self::Index;3]> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
@@ -70,7 +70,7 @@ pub trait IndexedMutableGraph {
 
     /// Remove a triple from this Graph,
     /// and return the corresponding tuple of indices.
-    fn remove_indexed<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Option<(Self::Index, Self::Index, Self::Index)> where
+    fn remove_indexed<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Option<[Self::Index;3]> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
