@@ -107,13 +107,20 @@ impl<I> IndexedMutableGraph for IndexedHGraph<I> where
     }
 }
 
+impl<I> GraphBase for IndexedHGraph<I> where
+    I: TermIndex,
+    I::Index: Hash,
+    <I::Factory as TermFactory>::Holder: 'static,
+{
+    type Error = ::error::Never;
+}
+
 impl<'a, I> Graph<'a> for IndexedHGraph<I> where
     I: TermIndex,
     I::Index: Hash,
     <I::Factory as TermFactory>::Holder: 'static,
 {
     type Triple = [&'a Term<<Self as IndexedMutableGraph>::Holder>;3];
-    type Error = ::error::Never;
 
     fn iter(&'a self) -> GFallibleTripleIterator<'a, Self> {
         Box::from(

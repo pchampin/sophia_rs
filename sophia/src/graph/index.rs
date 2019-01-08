@@ -91,16 +91,14 @@ macro_rules! impl_mutable_graph_for_indexed_mutable_graph {
         }
     };
     () => {
-        type MutationError = ::error::Never;
-
-        fn insert<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> Result<bool, Self::MutationError> where
+        fn insert<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> Result<bool, Self::Error> where
             T_: Borrow<str>,
             U_: Borrow<str>,
             V_: Borrow<str>,
         {
             Ok(self.insert_indexed(s, p, o).is_some())
         }
-        fn remove<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> Result<bool, Self::MutationError> where
+        fn remove<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> Result<bool, Self::Error> where
             T_: Borrow<str>,
             U_: Borrow<str>,
             V_: Borrow<str>,

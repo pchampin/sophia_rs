@@ -95,12 +95,6 @@ impl<'a, T> GraphWrapper<'a> for OpsWrapper<T> where
     }
 }
 
-impl<'a, T> Graph<'a> for OpsWrapper<T> where
-    T: IndexedMutableGraph + Graph<'a, Triple=[&'a Term<<T as IndexedMutableGraph>::Holder>;3]>,
-{
-    impl_graph_for_wrapper!();
-}
-
 impl<T> IndexedMutableGraph for OpsWrapper<T> where
     T: IndexedMutableGraph,
 {
@@ -151,6 +145,18 @@ impl<T> IndexedMutableGraph for OpsWrapper<T> where
         self.o2p.shrink_to_fit();
         self.po2s.shrink_to_fit();
     }
+}
+
+impl<T> GraphBase for OpsWrapper<T> where
+    T: IndexedMutableGraph + GraphBase,
+{
+    type Error = T::Error;
+}
+
+impl<'a, T> Graph<'a> for OpsWrapper<T> where
+    T: IndexedMutableGraph + Graph<'a, Triple=[&'a Term<<T as IndexedMutableGraph>::Holder>;3]>,
+{
+    impl_graph_for_wrapper!();
 }
 
 impl<T> MutableGraph for OpsWrapper<T> where

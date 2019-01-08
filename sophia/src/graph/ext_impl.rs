@@ -12,11 +12,16 @@ use ::term::*;
 use ::triple::*;
 
 
+impl<'a, T> GraphBase for [T] where
+    T: Triple<'a>+'a,
+{
+    type Error = Never;
+}
+
 impl<'a, T> Graph<'a> for [T] where
     T: Triple<'a>+'a,
 {
     type Triple = &'a T;
-    type Error = Never;
 
     #[inline]
     fn iter(&'a self) -> GFallibleTripleIterator<Self> {
@@ -26,11 +31,18 @@ impl<'a, T> Graph<'a> for [T] where
     }
 }
 
+
+
+impl<'a, T> GraphBase for Vec<T> where
+    T: Triple<'a>+'a,
+{
+    type Error = Never;
+}
+
 impl<'a, T> Graph<'a> for Vec<T> where
     T: Triple<'a>+'a,
 {
     type Triple = &'a T;
-    type Error = Never;
 
     #[inline]
     fn iter(&'a self) -> GFallibleTripleIterator<Self> {
@@ -40,11 +52,18 @@ impl<'a, T> Graph<'a> for Vec<T> where
     }
 }
 
+
+
+impl<'a, T> GraphBase for HashSet<T> where
+    T: Eq + Hash + Triple<'a> + 'a,
+{
+    type Error = Never;
+}
+
 impl<'a, T> Graph<'a> for HashSet<T> where
     T: Eq + Hash + Triple<'a> + 'a,
 {
     type Triple = &'a T;
-    type Error = Never;
 
     #[inline]
     fn iter(&'a self) -> GFallibleTripleIterator<Self> {
@@ -52,11 +71,8 @@ impl<'a, T> Graph<'a> for HashSet<T> where
     }
 }
 
-
 impl MutableGraph for HashSet<[BoxTerm;3]> where
 {
-    type MutationError = Never;
-
     fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool, Never> where
         T: Borrow<str>,
         U: Borrow<str>,

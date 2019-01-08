@@ -95,12 +95,6 @@ impl<'a, T> GraphWrapper<'a> for SpoWrapper<T> where
     }
 }
 
-impl<'a, T> Graph<'a> for SpoWrapper<T> where
-    T: IndexedMutableGraph + Graph<'a, Triple=[&'a Term<<T as IndexedMutableGraph>::Holder>;3]>,
-{
-    impl_graph_for_wrapper!();
-}
-
 impl<T> IndexedMutableGraph for SpoWrapper<T> where
     T: IndexedMutableGraph,
 {
@@ -151,6 +145,18 @@ impl<T> IndexedMutableGraph for SpoWrapper<T> where
         self.s2p.shrink_to_fit();
         self.sp2o.shrink_to_fit();
     }
+}
+
+impl<T> GraphBase for SpoWrapper<T> where
+    T: IndexedMutableGraph + GraphBase,
+{
+    type Error = T::Error;
+}
+
+impl<'a, T> Graph<'a> for SpoWrapper<T> where
+    T: IndexedMutableGraph + Graph<'a, Triple=[&'a Term<<T as IndexedMutableGraph>::Holder>;3]>,
+{
+    impl_graph_for_wrapper!();
 }
 
 impl<T> MutableGraph for SpoWrapper<T> where

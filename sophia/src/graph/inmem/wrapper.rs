@@ -88,7 +88,7 @@ pub trait GraphWrapper<'a>
 
     #[inline]
     /// Mimmic the [`contains`](../trait.Graph.html#method.contains) method.
-    fn gw_contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> Result<bool, <Self::Wrapped as Graph<'a>>::Error> {
+    fn gw_contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> Result<bool, <Self::Wrapped as GraphBase>::Error> {
         self.get_wrapped().contains(s, p, o)
     }
 }
@@ -101,7 +101,6 @@ macro_rules! impl_graph_for_wrapper {
     };
     () => {
         type Triple = <<Self as GraphWrapper<'a>>::Wrapped as Graph<'a>>::Triple;
-        type Error = <<Self as GraphWrapper<'a>>::Wrapped as Graph<'a>>::Error;
 
         #[inline]
         fn iter(&'a self) -> GFallibleTripleIterator<'a, Self> {
