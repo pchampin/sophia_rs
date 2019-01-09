@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::iter::empty;
 
 use super::*;
+use ::error::*;
 use ::graph::index::remove_one_val;
 
 /// A [`GraphWrapper`](trait.GraphWrapper.html)
@@ -147,12 +148,6 @@ impl<T> IndexedGraph for SpoWrapper<T> where
     }
 }
 
-impl<T> GraphBase for SpoWrapper<T> where
-    T: IndexedGraph + GraphBase,
-{
-    type Error = T::Error;
-}
-
 impl<'a, T> Graph<'a> for SpoWrapper<T> where
     T: IndexedGraph + Graph<'a, Triple=[&'a Term<<T as IndexedGraph>::Holder>;3]>,
 {
@@ -169,6 +164,9 @@ impl<T> SetGraph for SpoWrapper<T> where
     T: IndexedGraph + SetGraph,
 {}
 
+impl<T> InfallibleGraph for SpoWrapper<T> where
+    T: IndexedGraph + InfallibleGraph,
+{}
 
 
 #[cfg(test)]

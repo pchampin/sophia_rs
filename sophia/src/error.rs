@@ -4,52 +4,48 @@ use pest::error::{InputLocation, LineColLocation};
 
 error_chain! {
     errors {
+        /// Raised by the methods of the [`Graph`](../traits/trait.Graph.html) trait.
+        GraphError(message: String) {
+            display("error while querying Graph: {}", message)
+        }
+        /// Raised by the methods of the [`MutableGraph`](../traits/trait.MutableGraph.html) trait.
+        GraphMutationError(msg: String) {
+            display("error while modifying Graph: {}", msg)
+        }
+        /// Raised whenever a literal is built with an invalid datatype.
         InvalidDatatype(datatype: String) {
             display("invalid datatype {}", datatype)
         }
+        /// Raised whenever an invalid IRI is used as a term.
         InvalidIri(iri: String) {
             display("invalid IRI <{}>", iri)
         }
+        /// Raised whenever a literal is built with an invalid language tag.
         InvalidLanguageTag(tag: String, message: String) {
             display("invalid language tag '{}':\n{}", tag, message)
         }
+        /// Raised whenever a variable is built with an invalid name.
         InvalidVariableName(name: String) {
             display("invalid variable name '{}'", name)
         }
-        InvalidPrefix(prefix: String) { // useful for parsers dealing with PNames
+        /// Raised whenever an invalid prefix is used in a PName.
+        InvalidPrefix(prefix: String) {
             display("invalid prefix <{}>", prefix)
         }
+        /// Raised whenever an IRI can not be rendered absolute in a strict RDF graph.
         IriMustBeAbsolute(iri: String) {
             display("IRI must be absolute <{}>", iri)
         }
-        Parsing(message: String, location: InputLocation, line_col: LineColLocation) {
-            display("parse error at {}:\n{}", display_location(location, line_col), message)
+        /// Raised by parsers when they encounter a problem.
+        ParserError(message: String, location: InputLocation, line_col: LineColLocation) {
+            display("parse error at {}: {}", display_location(location, line_col), message)
         }
-
-    }
-    foreign_links {
-        Io(::std::io::Error);
-    }
-}
-
-/// An "error" type that can never happen.
-/// 
-/// NB: once the [`never`] types reaches *stable*,
-/// this type will be an alias for the standard type.
-/// 
-/// [`never`]: https://doc.rust-lang.org/std/primitive.never.html
-/// 
-#[derive(Clone, Debug)]
-pub enum Never {}
-
-impl ::std::fmt::Display for Never {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        write!(f, "Never")
+        /// Raised by serializers when they encounter a problem.
+        SerializerError(message: String) {
+            display("error while serializing: {}", message)
+        }
     }
 }
-
-impl ::std::error::Error for Never {}
-
 
 fn display_location(il: &InputLocation, lcl: &LineColLocation) -> String {
     let line = *match lcl {
@@ -73,6 +69,12 @@ fn display_location(il: &InputLocation, lcl: &LineColLocation) -> String {
     }
 }
 
+/// Make a Parser Error with minimal information
+pub fn make_parser_error(message: String, line_offset: usize) -> ErrorKind {
+    let il = InputLocation::Pos(0);
+    let lcl = LineColLocation::Pos((line_offset, 0));
+    ErrorKind::ParserError(message, il, lcl).into()
+}
 
 
 #[cfg(test)]

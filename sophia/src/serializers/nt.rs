@@ -66,21 +66,25 @@ impl<W: io::Write> WriteSerializer<W> for Writer<W> {
 }
 
 impl<W: io::Write> TripleSink for Writer<W> {
-    type Error = io::Error;
     type Outcome = ();
 
-    fn feed<'a, T: Triple<'a>>(&mut self, t: &T) -> Result<(), io::Error> {
+    fn feed<'a, T: Triple<'a>>(&mut self, t: &T) -> Result<()> {
         let w = &mut self.write;
-        write_term(w, t.s())?;
-        w.write_all(" ".as_bytes())?;
-        write_term(w, t.p())?;
-        w.write_all(" ".as_bytes())?;
-        write_term(w, t.o())?;
-        w.write_all(" .\n".as_bytes())?;
-        Ok(())
+
+        (|| {
+            write_term(w, t.s())?;
+            w.write_all(" ".as_bytes())?;
+            write_term(w, t.p())?;
+            w.write_all(" ".as_bytes())?;
+            write_term(w, t.o())?;
+            w.write_all(" .\n".as_bytes())
+        })()
+        .chain_err(||
+            ErrorKind::SerializerError("NT serializer".into())
+        )
     }
 
-    fn finish(&mut self) -> Result<(), io::Error> {
+    fn finish(&mut self) -> Result<()> {
         Ok(())
     }
 }

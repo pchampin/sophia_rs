@@ -4,6 +4,7 @@ use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::hash::Hash;
 
+use ::error::*;
 use ::graph::*;
 use ::graph::index::{IndexedGraph, TermIndexMap};
 use ::term::{RefTerm, Term, factory::TermFactory};
@@ -107,14 +108,6 @@ impl<I> IndexedGraph for HashGraph<I> where
     }
 }
 
-impl<I> GraphBase for HashGraph<I> where
-    I: TermIndexMap,
-    I::Index: Hash,
-    <I::Factory as TermFactory>::Holder: 'static,
-{
-    type Error = ::error::Never;
-}
-
 impl<'a, I> Graph<'a> for HashGraph<I> where
     I: TermIndexMap,
     I::Index: Hash,
@@ -146,6 +139,13 @@ impl<I> SetGraph for HashGraph<I> where
     I: TermIndexMap,
     I::Index: Hash,
 {}
+
+impl<I> InfallibleGraph for HashGraph<I> where
+    I: TermIndexMap,
+    I::Index: Hash,
+    <I::Factory as TermFactory>::Holder: 'static,
+{}
+
 
 
 

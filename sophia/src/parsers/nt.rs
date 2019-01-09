@@ -20,11 +20,12 @@
 
 use std::borrow::Cow;
 use std::io::{BufRead, BufReader, Read};
+use std::result::Result as StdResult;
 
 use pest::{Parser, iterators::{Pair, Pairs}};
 use pest::error::{Error as PestError, ErrorVariant};
 
-use ::error::{Error, ErrorKind};
+use ::error::*;
 use ::ns::xsd;
 use ::term::Term;
 use ::triple::Triple;
@@ -57,14 +58,19 @@ pub struct Config {
 impl Config {
     #[inline]
     pub fn parse_bufread<'a, B: BufRead+'a>(&self, bufread: B)
-    -> impl Iterator<Item=Result<impl Triple<'a>, Error>>+'a {
+    -> impl Iterator<Item=Result<NtTriple>>+'a {
         let config = self.clone();
         let rule = if config.strict {Rule::ntriple_line} else {Rule::generalized_line};
         bufread.lines().enumerate()
         .filter_map(move |(lineidx, line)| {
             let line = match line {
                 Ok(line) => line,
-                Err(ioerr) => { return Some(Err(ioerr.into())); }
+                Err(ioerr) => {
+                    let msg = format!("{}", ioerr);
+                    return Some(Err(Error::with_chain(
+                        ioerr, make_parser_error(msg, lineidx),
+                    )));
+                }
             };
             {
                 let trimmed = line.trim_left();
@@ -82,13 +88,13 @@ impl Config {
 
     #[inline]
     pub fn parse_read<'a, R: Read+'a>(&self, read: R)
-    -> impl Iterator<Item=Result<impl Triple<'a>, Error>>+'a {
+    -> impl Iterator<Item=Result<NtTriple>>+'a {
         self.parse_bufread(BufReader::new(read))
     }
 
     #[inline]
     pub fn parse_str<'a>(&self, txt: &'a str)
-    -> Box<dyn Iterator<Item=Result<impl Triple<'a>, Error>>+'a> {
+    -> Box<dyn Iterator<Item=Result<[Term<Cow<'a, str>>;3]>>+'a> {
         let config = self.clone();
         let rule = if config.strict {Rule::ntriples_doc} else {Rule::generalized_doc};
         let triple_pairs = match PestNtParser::parse(rule, txt) {
@@ -135,19 +141,19 @@ impl<'a> Triple<'a> for NtTriple {
 
 
 
-fn parse_rule_from_line<'a> (config: &Config, rule: Rule, txt: &'a str) -> Result<[CowTerm<'a>;3], PestError<Rule>> {
+fn parse_rule_from_line<'a> (config: &Config, rule: Rule, txt: &'a str) -> StdResult<[CowTerm<'a>;3], PestError<Rule>> {
     let triple_pair = PestNtParser::parse(rule, txt)?.next().unwrap();
     pairs_to_triple(config, triple_pair.into_inner())
 }
 
-fn pairs_to_triple<'a> (config: &Config, mut pairs: Pairs<'a, Rule>) -> Result<[CowTerm<'a>;3], PestError<Rule>> {
+fn pairs_to_triple<'a> (config: &Config, mut pairs: Pairs<'a, Rule>) -> StdResult<[CowTerm<'a>;3], PestError<Rule>> {
     let s = pair_to_term(pairs.next().unwrap(), config.strict)?;
     let p = pair_to_term(pairs.next().unwrap(), config.strict)?;
     let o = pair_to_term(pairs.next().unwrap(), config.strict)?;
     Ok([s, p, o])
 }
 
-fn pair_to_term<'a> (pair: Pair<'a, Rule>, strict: bool) -> Result<CowTerm<'a>, PestError<Rule>> {
+fn pair_to_term<'a> (pair: Pair<'a, Rule>, strict: bool) -> StdResult<CowTerm<'a>, PestError<Rule>> {
     match pair.as_rule() {
         Rule::iriref => {
             let cow = unescape_str(pair.clone(), 1)?;
@@ -220,7 +226,7 @@ mod test {
 
     static STRICT: Config = Config{ strict: true };
 
-    fn parse(rule: Rule, txt: &str) -> Result<Pairs<Rule>, PestError<Rule>> {
+    fn parse(rule: Rule, txt: &str) -> StdResult<Pairs<Rule>, PestError<Rule>> {
         PestNtParser::parse(rule, txt)
     }
 
@@ -455,7 +461,7 @@ mod test {
         let mut g = HashSetGraph::new();
         let reader = io::Cursor::new(GENERALIZED_DOC);
         let res = STRICT.parse_read(reader).into_graph(&mut g);
-        if let Err(Upstream(Error(Parsing(_,_,line_pos), _))) = res {
+        if let Err(Error(ParserError(_,_,line_pos), _)) = res {
             use ::pest::error::LineColLocation::*;
             let lineno = match line_pos {
                 Pos((lineno, _)) => lineno,

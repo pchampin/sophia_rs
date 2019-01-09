@@ -5,25 +5,16 @@ use std::borrow::Borrow;
 use resiter::filter_x::*;
 use resiter::map_x::*;
 
+use ::error::*;
 use ::graph::sinks::*;
 use ::streams::*;
 use ::term::*;
 use ::term::matcher::TermMatcher;
 use ::triple::*;
 
-/// Common supertrait of [`Graph`](trait.Graph.html)
-/// and [`MutableGraph`](trait.MutableGraph.html),
-/// defining the associated type `Error`.
-pub trait GraphBase {
-    /// The error type that this graph may raise.
-    /// 
-    /// Must be [`Never`](../error/enum.Never.html) for infallible graphs.
-    type Error: ::std::error::Error;
-}
-
 /// Type alias for fallible triple iterators produced by a graph.
 pub type GFallibleTripleIterator<'a, G> =
-    Box<Iterator<Item=Result<<G as Graph<'a>>::Triple, <G as GraphBase>::Error>>+'a>;
+    Box<Iterator<Item=Result<<G as Graph<'a>>::Triple>>+'a>;
 
 
 /// Generic trait for RDF graphs.
@@ -34,7 +25,7 @@ pub type GFallibleTripleIterator<'a, G> =
 /// NB: the semantics of this trait allows a graph to contain duplicate triples;
 /// see also [`SetGraph`](trait.SetGraph.html).
 /// 
-pub trait Graph<'a>: GraphBase {
+pub trait Graph<'a> {
     /// The type of [`Triple`](../triple/trait.Triple.html)s
     /// that the methods of this graph will yield.
     type Triple: Triple<'a>;
@@ -123,7 +114,7 @@ pub trait Graph<'a>: GraphBase {
     }
 
     /// Return `true` if this graph contains the given triple.
-    fn contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> Result<bool, Self::Error> {
+    fn contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> Result<bool> {
         match self.iter_for_spo(s, p, o).next() {
             None           => Ok(false),
             Some(Ok(_))    => Ok(true),
@@ -175,7 +166,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
     /// a return value of `true` does *not* mean that the triple was not already in the graph,
     /// only that the graph now has one more occurence of it.
     /// 
-    fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool, Self::Error> where
+    fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
@@ -189,7 +180,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
     /// a return value of `true` does *not* mean that the triple is not still contained in the graph,
     /// only that the graph now has one less occurence of it.
     /// 
-    fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool, Self::Error> where
+    fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool> where
         T: Borrow<str>,
         U: Borrow<str>,
         V:Borrow<str>,
@@ -205,7 +196,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
     /// Insert into this graph all triples from the given source.
     #[inline]
     fn insert_all<TS: TripleSource>(&mut self, src: TS)
-    -> Result<usize, WhereFrom<TS::Error, Self::Error>> {
+    -> Result<usize> {
         src.into_sink(&mut self.inserter())
     }
 
@@ -219,7 +210,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
     /// Remove from this graph all triples from the given source.
     #[inline]
     fn remove_all<TS: TripleSource>(&mut self, src: TS)
-    -> Result<usize, WhereFrom<TS::Error, Self::Error>> {
+    -> Result<usize> {
         src.into_sink(&mut self.remover())
     }
 
@@ -227,7 +218,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
     ///
     /// Note that the default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
-    fn remove_matching<S, P, O> (&mut self, ms: &S, mp: &P, mo: &O) -> Result<usize, Self::Error> where
+    fn remove_matching<S, P, O> (&mut self, ms: &S, mp: &P, mo: &O) -> Result<usize> where
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
@@ -237,9 +228,9 @@ pub trait MutableGraph: for<'x> Graph<'x> {
             .map_ok(|t| {
                 [BoxTerm::from(t.s()), BoxTerm::from(t.p()), BoxTerm::from(t.o())]
             })
-            .collect::<Result<Vec<_>, _>>()?;
+            .collect::<Result<Vec<_>>>()?;
         let mut to_remove = to_remove.into_iter().wrap_as_oks();
-        self.remove_all(&mut to_remove).unwrap_upstream()
+        self.remove_all(&mut to_remove)
     }
 
     /// Keep only the triples matching the given matchers.
@@ -247,7 +238,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
     /// Note that the default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
     ///
-    fn retain<S, P, O> (&mut self, ms: &S, mp: &P, mo: &O) -> Result<(), Self::Error> where
+    fn retain<S, P, O> (&mut self, ms: &S, mp: &P, mo: &O) -> Result<()> where
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
@@ -260,9 +251,9 @@ pub trait MutableGraph: for<'x> Graph<'x> {
             .map_ok(|t| {
                 [BoxTerm::from(t.s()), BoxTerm::from(t.p()), BoxTerm::from(t.o())]
             })
-            .collect::<Result<Vec<_>, _>>()?;
+            .collect::<Result<Vec<_>>>()?;
         let mut to_remove = to_remove.into_iter().wrap_as_oks();
-        self.remove_all(&mut to_remove).unwrap_upstream()?;
+        self.remove_all(&mut to_remove)?;
         Ok(())
     }
 }
@@ -273,6 +264,11 @@ pub trait MutableGraph: for<'x> Graph<'x> {
 pub trait SetGraph {
 }
 
+/// Marker trait indicating that implementations of
+/// [`Graph`](trait.Graph.html) and [`MutableGraph`](trait.MutableGraph.html),
+/// are *infallible*, meaning that their method will never return errors.
+pub trait InfallibleGraph {
+}
 
 
 #[cfg(test)]

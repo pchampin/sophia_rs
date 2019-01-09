@@ -2,6 +2,8 @@
 
 use super::*;
 
+use ::error::*;
+
 /// A graph wrapper wraps a [`Graph`] and overrides some of its methods.
 ///
 /// This trait mimmics the interface of the [`Graph`] trait,
@@ -88,7 +90,7 @@ pub trait GraphWrapper<'a>
 
     #[inline]
     /// Mimmic the [`contains`](../trait.Graph.html#method.contains) method.
-    fn gw_contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> Result<bool, <Self::Wrapped as GraphBase>::Error> {
+    fn gw_contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> Result<bool> {
         self.get_wrapped().contains(s, p, o)
     }
 }
@@ -155,7 +157,7 @@ macro_rules! impl_graph_for_wrapper {
         }
 
         #[inline]
-        fn contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> Result<bool, Self::Error> {
+        fn contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> Result<bool> {
             GraphWrapper::gw_contains(self, s, p, o)
         }
     };

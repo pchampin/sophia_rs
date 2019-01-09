@@ -21,7 +21,7 @@
 
 use std::io;
 
-use ::error::Never;
+use ::error::*;
 use ::graph::*;
 use ::streams::*;
 use ::triple::*;
@@ -41,25 +41,25 @@ pub trait WriteSerializer<W: io::Write>: TripleSink<Outcome=()> + Sized {
     fn new(write: W, config: Self::Config) -> Self;
 
     /// Serialize the triples from the given source.
-    fn write<T>(&mut self, source: T) -> Result<(), WhereFrom<T::Error, Self::Error>>
+    fn write<T>(&mut self, source: T) -> Result<()>
         where T: TripleSource,
     {
         source.into_sink(self)
     }
 
     /// Serialize the given graph.
-    fn write_graph<'a, G>(&mut self, graph: &'a mut G) -> Result<(), WhereFrom<G::Error, Self::Error>>
+    fn write_graph<'a, G>(&mut self, graph: &'a mut G) -> Result<()>
         where G: Graph<'a>,
     {
         graph.iter().into_sink(self)
     }
 
     /// Serialize the given triple.
-    fn write_triple<'a, T>(&mut self, t: &T) -> Result<(), Self::Error>
+    fn write_triple<'a, T>(&mut self, t: &T) -> Result<()>
         where T: Triple<'a>,
     {
         let source = vec![[t.s(), t.p(), t.o()]].into_iter().wrap_as_oks();
-        source.into_sink(self).unwrap_upstream()
+        source.into_sink(self)
     }
 }
 
@@ -69,23 +69,23 @@ pub trait WriteSerializer<W: io::Write>: TripleSink<Outcome=()> + Sized {
 /// 
 /// [`TripleSink`]: ../../streams/trait.TripleSink.html
 /// 
-pub trait StringSerializer: TripleSink<Outcome=String, Error=Never> + Sized {
+pub trait StringSerializer: TripleSink<Outcome=String> + Sized {
     type Config;
 
     fn new(config: Self::Config) -> Self;
 
     /// Stringify the triples from the given source.
-    fn stringify<T>(&mut self, source: T) -> Result<String, T::Error>
+    fn stringify<T>(&mut self, source: T) -> Result<String>
         where T: TripleSource,
     {
-        source.into_sink(self).unwrap_downstream()
+        source.into_sink(self)
     }
 
     /// Stringify the given graph.
-    fn stringify_graph<'a, G>(&mut self, graph: &'a mut G) -> Result<String, G::Error>
+    fn stringify_graph<'a, G>(&mut self, graph: &'a mut G) -> Result<String>
         where G: Graph<'a>,
     {
-        graph.iter().into_sink(self).unwrap_downstream()
+        graph.iter().into_sink(self)
     }
 
     /// Stringify the given triple.

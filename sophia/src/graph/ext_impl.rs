@@ -6,17 +6,11 @@ use std::collections::HashSet;
 use std::hash::Hash;
 
 use super::*;
-use ::error::Never;
+use ::error::*;
 use ::streams::WrapAsOks;
 use ::term::*;
 use ::triple::*;
 
-
-impl<'a, T> GraphBase for [T] where
-    T: Triple<'a>+'a,
-{
-    type Error = Never;
-}
 
 impl<'a, T> Graph<'a> for [T] where
     T: Triple<'a>+'a,
@@ -31,13 +25,11 @@ impl<'a, T> Graph<'a> for [T] where
     }
 }
 
+impl<'a, T> InfallibleGraph for [T] where
+    T: Triple<'a>+'a
+{}
 
 
-impl<'a, T> GraphBase for Vec<T> where
-    T: Triple<'a>+'a,
-{
-    type Error = Never;
-}
 
 impl<'a, T> Graph<'a> for Vec<T> where
     T: Triple<'a>+'a,
@@ -52,13 +44,12 @@ impl<'a, T> Graph<'a> for Vec<T> where
     }
 }
 
+impl<'a, T> InfallibleGraph for Vec<T> where
+    T: Triple<'a>+'a
+{}
 
 
-impl<'a, T> GraphBase for HashSet<T> where
-    T: Eq + Hash + Triple<'a> + 'a,
-{
-    type Error = Never;
-}
+
 
 impl<'a, T> Graph<'a> for HashSet<T> where
     T: Eq + Hash + Triple<'a> + 'a,
@@ -73,7 +64,7 @@ impl<'a, T> Graph<'a> for HashSet<T> where
 
 impl MutableGraph for HashSet<[BoxTerm;3]> where
 {
-    fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool, Never> where
+    fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
@@ -83,7 +74,7 @@ impl MutableGraph for HashSet<[BoxTerm;3]> where
         let o = BoxTerm::from(o);
         Ok(HashSet::insert(self, [s, p, o]))
     }
-    fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool, Never> where
+    fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
@@ -98,6 +89,11 @@ impl MutableGraph for HashSet<[BoxTerm;3]> where
 impl<'a, T> SetGraph for HashSet<T> where
     T: Eq + Hash + Triple<'a> + 'a,
 {}
+
+impl<'a, T> InfallibleGraph for HashSet<T> where
+    T: Eq + Hash + Triple<'a> + 'a,
+{}
+
 
 
 

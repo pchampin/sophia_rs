@@ -14,6 +14,9 @@
 //! 
 // TODO: flesh out one or several example(s) of code
 
+// error_chain is recursing a lot
+#![recursion_limit = "256"]
+
 #[macro_use] extern crate error_chain;
 extern crate language_tag;
 #[macro_use] extern crate lazy_static;

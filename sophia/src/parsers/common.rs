@@ -3,11 +3,12 @@
 use std;
 use std::borrow::Cow;
 use std::iter::once;
+use std::result::Result as StdResult;
 
 use pest::{RuleType, iterators::Pair};
 use pest::error::{Error as PestError, ErrorVariant};
 
-use ::error::{Error, ErrorKind};
+use ::error::*;
 use ::term::Term;
 
 /// This macro provides a straightforward implementation of the default functions
@@ -18,19 +19,19 @@ macro_rules! def_default_parser_api {
         /// Shortcut for `Config::default().parse_bufread(bufread)`
         #[inline]
         pub fn parse_bufread<'a, B: ::std::io::BufRead+'a>(bufread: B)
-        -> impl Iterator<Item=Result<impl Triple<'a>, Error>>+'a {
+        -> impl Iterator<Item=Result<impl Triple<'a>>>+'a {
             Config::default().parse_bufread(bufread)
         }
         /// Shortcut for `Config::default().parse_read(read)`
         #[inline]
         pub fn parse_read<'a, R: ::std::io::Read+'a>(read: R)
-        -> impl Iterator<Item=Result<impl Triple<'a>, Error>>+'a {
+        -> impl Iterator<Item=Result<impl Triple<'a>>>+'a {
             Config::default().parse_read(read)
         }
         /// Shortcut for `Config::default().parse_str(txt)`
         #[inline]
         pub fn parse_str<'a>(txt: &'a str)
-        -> impl Iterator<Item=Result<impl Triple<'a>, Error>>+'a {
+        -> impl Iterator<Item=Result<impl Triple<'a>>>+'a {
             Config::default().parse_str(txt)
         }
     };
@@ -45,7 +46,7 @@ pub(crate) type CowTerm<'a> = Term<Cow<'a, str>>;
 ///
 /// `delim` is the size of the delimiter,
 /// which will be trimmed off the start and end of the result.
-pub(crate) fn unescape_str<'a, R> (pair: Pair<'a,R>, delim: usize) -> Result<Cow<'a, str>, PestError<R>> where
+pub(crate) fn unescape_str<'a, R> (pair: Pair<'a,R>, delim: usize) -> StdResult<Cow<'a, str>, PestError<R>> where
     R: RuleType,
 {
     let txt = pair.as_str();
@@ -84,7 +85,7 @@ pub(crate) fn unescape_str<'a, R> (pair: Pair<'a,R>, delim: usize) -> Result<Cow
 }
 
 /// Transform the match of ECHAR or UCHAR into the corresponding character.
-pub(crate) fn unescape_char(txt: &str) -> Result<char, String> {
+pub(crate) fn unescape_char(txt: &str) -> StdResult<char, String> {
     let bytes = txt.as_bytes();
     debug_assert_eq!(bytes[0] as char, '\\');
     match bytes[1] as char {
@@ -136,7 +137,7 @@ pub fn convert_pest_err<R: pest::RuleType> (err: PestError<R>, lineoffset: usize
         Span((l1, c1), (l2, c2)) =>
             Span((l1+lineoffset, c1), (l2+lineoffset, c2)),
     };
-    ErrorKind::Parsing(message, location, line_col).into()
+    ErrorKind::ParserError(message, location, line_col).into()
 }
 
 
@@ -149,7 +150,7 @@ use pest::iterators::Pairs;
 
 #[cfg(test)]
 pub(crate) fn test_rule<P, R, T> (parse: &P, rule: R, values: &[T]) where
-    P: Fn(R, &str) -> Result<Pairs<R>, PestError<R>>,
+    P: Fn(R, &str) -> StdResult<Pairs<R>, PestError<R>>,
     R: RuleType,
     T: std::borrow::Borrow<str>,
 {
@@ -172,7 +173,7 @@ pub(crate) fn test_rule<P, R, T> (parse: &P, rule: R, values: &[T]) where
 
 #[cfg(test)]
 pub(crate) fn test_rule_partial<P, R, T> (parse: &P, rule: R, values: &[(T, usize)]) where
-    P: Fn(R, &str) -> Result<Pairs<R>, PestError<R>>,
+    P: Fn(R, &str) -> StdResult<Pairs<R>, PestError<R>>,
     R: RuleType,
     T: std::borrow::Borrow<str>,
 {
@@ -195,7 +196,7 @@ pub(crate) fn test_rule_partial<P, R, T> (parse: &P, rule: R, values: &[(T, usiz
 
 #[cfg(test)]
 pub(crate) fn test_rule_negative<P, R, T> (parse: &P, rule: R, values: &[T]) where
-    P: Fn(R, &str) -> Result<Pairs<R>, PestError<R>>,
+    P: Fn(R, &str) -> StdResult<Pairs<R>, PestError<R>>,
     R: RuleType,
     T: std::borrow::Borrow<str>,
 {
@@ -255,7 +256,7 @@ mod test {
         use pest::Parser;
         use super::super::nt::{PestNtParser,Rule};
 
-        fn test<'a> (txt: &'a str) -> Result<String, String> {
+        fn test<'a> (txt: &'a str) -> StdResult<String, String> {
             // parsing a triple just to test that unescape_str works with an offset > 0.
             let triple = format!("<> <> {}.", txt);
             let mut pairs = PestNtParser::parse(Rule::triple, &triple[..]).unwrap();
