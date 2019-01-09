@@ -13,7 +13,7 @@
 //! "#;
 //! 
 //! let mut g = FastGraph::new();
-//! let inserted = nt::parse_str(NT_DOC).into_graph(&mut g);
+//! let inserted = nt::parse_str(NT_DOC).in_graph(&mut g);
 //! 
 //! assert_eq!(inserted.unwrap(), 1);
 //! ```
@@ -398,7 +398,7 @@ mod test {
     #[test]
     fn strict_parse_str() {
         let mut g = HashSetGraph::new();
-        let res = STRICT.parse_str(DOC).into_graph(&mut g);
+        let res = STRICT.parse_str(DOC).in_graph(&mut g);
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), 5);
         assert_eq!(g.len(), 5);
@@ -420,7 +420,7 @@ mod test {
     #[test]
     fn default_parse_str() {
         let mut g = HashSetGraph::new();
-        let res = parse_str(GENERALIZED_DOC).into_graph(&mut g);
+        let res = parse_str(GENERALIZED_DOC).in_graph(&mut g);
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), 7);
         assert_eq!(g.len(), 7);
@@ -429,7 +429,7 @@ mod test {
     #[test]
     fn strict_parse_str_refuses_generalized() {
         let mut g = HashSetGraph::new();
-        let res = STRICT.parse_str(GENERALIZED_DOC).into_graph(&mut g);
+        let res = STRICT.parse_str(GENERALIZED_DOC).in_graph(&mut g);
         assert!(res.is_err());
         assert!(g.len() < 7);
     }
@@ -438,7 +438,7 @@ mod test {
     fn strict_parse_read() {
         let mut g = HashSetGraph::new();
         let reader = io::Cursor::new(DOC);
-        let res = STRICT.parse_read(reader).into_graph(&mut g);
+        let res = STRICT.parse_read(reader).in_graph(&mut g);
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), 5);
         assert_eq!(g.len(), 5);
@@ -448,7 +448,7 @@ mod test {
     fn default_parse_read() {
         let mut g = HashSetGraph::new();
         let reader = io::Cursor::new(GENERALIZED_DOC);
-        let res = parse_read(reader).into_graph(&mut g);
+        let res = parse_read(reader).in_graph(&mut g);
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), 7);
         assert_eq!(g.len(), 7);
@@ -460,7 +460,7 @@ mod test {
 
         let mut g = HashSetGraph::new();
         let reader = io::Cursor::new(GENERALIZED_DOC);
-        let res = STRICT.parse_read(reader).into_graph(&mut g);
+        let res = STRICT.parse_read(reader).in_graph(&mut g);
         if let Err(Error(ParserError(_,_,line_pos), _)) = res {
             use ::pest::error::LineColLocation::*;
             let lineno = match line_pos {
@@ -480,7 +480,7 @@ mod test {
         let txt = r#"
           <tag:foo> <tag:bar> <tag:baz> . bla bla bla
         "#;
-        let res = parse_str(txt).into_graph(&mut g);
+        let res = parse_str(txt).in_graph(&mut g);
         assert!(res.is_err());
         assert_eq!(g.len(), 0);
     }
@@ -502,7 +502,7 @@ mod test {
                 let f = File::open(&path)?;
                 let f = io::BufReader::new(f);
                 let mut g = HashSetGraph::new();
-                let res = STRICT.parse_read(f).into_graph(&mut g);
+                let res = STRICT.parse_read(f).in_graph(&mut g);
                 let path = path.to_str().unwrap();
                 if path.contains("-bad-") {
                     assert!(res.is_err(), format!("{} should NOT parse without error", path));
@@ -535,7 +535,7 @@ mod test {
                 let f = File::open(&path)?;
                 let f = io::BufReader::new(f);
                 let mut g = HashSetGraph::new();
-                let res = parse_read(f).into_graph(&mut g);
+                let res = parse_read(f).in_graph(&mut g);
                 assert!(res.is_ok(), format!("{} should parse without error", path.to_str().unwrap()));
             }
             Ok(())

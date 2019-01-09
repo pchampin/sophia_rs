@@ -67,13 +67,13 @@ macro_rules! test_graph_impl {
             fn test_sink_mutations() {
                 let mut g = $mutable_graph_impl::new();
                 assert_eq!(g.iter().count(), 0);
-                assert_eq!(make_triple_source().into_sink(&mut g.inserter()).unwrap(), 2);
+                assert_eq!(make_triple_source().in_sink(&mut g.inserter()).unwrap(), 2);
                 assert_eq!(g.iter().count(), 2);
-                assert_eq!(make_triple_source().into_sink(&mut g.inserter()).unwrap(), 0);
+                assert_eq!(make_triple_source().in_sink(&mut g.inserter()).unwrap(), 0);
                 assert_eq!(g.iter().count(), 2);
-                assert_eq!(make_triple_source().into_sink(&mut g.remover()).unwrap(), 2);
+                assert_eq!(make_triple_source().in_sink(&mut g.remover()).unwrap(), 2);
                 assert_eq!(g.iter().count(), 0);
-                assert_eq!(make_triple_source().into_sink(&mut g.remover()).unwrap(), 0);
+                assert_eq!(make_triple_source().in_sink(&mut g.remover()).unwrap(), 0);
                 assert_eq!(g.iter().count(), 0);
             }
 
@@ -81,13 +81,13 @@ macro_rules! test_graph_impl {
             fn test_x_all_mutations() {
                 let mut g = $mutable_graph_impl::new();
                 assert_eq!(g.iter().count(), 0);
-                assert_eq!(g.insert_all(make_triple_source()).unwrap(), 2);
+                assert_eq!(g.insert_all(&mut make_triple_source()).unwrap(), 2);
                 assert_eq!(g.iter().count(), 2);
-                assert_eq!(g.insert_all(make_triple_source()).unwrap(), 0);
+                assert_eq!(g.insert_all(&mut make_triple_source()).unwrap(), 0);
                 assert_eq!(g.iter().count(), 2);
-                assert_eq!(g.remove_all(make_triple_source()).unwrap(), 2);
+                assert_eq!(g.remove_all(&mut make_triple_source()).unwrap(), 2);
                 assert_eq!(g.iter().count(), 0);
-                assert_eq!(g.remove_all(make_triple_source()).unwrap(), 0);
+                assert_eq!(g.remove_all(&mut make_triple_source()).unwrap(), 0);
                 assert_eq!(g.iter().count(), 0);
             }
 
@@ -341,12 +341,12 @@ macro_rules! test_graph_impl {
                 assert!(val <= hint.1.or(Some(val)).unwrap())
             }
 
-            fn make_triple_source() -> impl TripleSource {
+            fn make_triple_source() -> impl TripleSource<'static> {
                 vec![
                     [&*C1, &rdf::type_, &rdfs::Class],
                     [&*C1, &rdfs::subClassOf, &*C2],
                 ].into_iter()
-                .wrap_as_oks()
+                .as_triple_source()
             }
 
 

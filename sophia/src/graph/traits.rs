@@ -13,7 +13,7 @@ use ::term::matcher::TermMatcher;
 use ::triple::*;
 
 /// Type alias for fallible triple iterators produced by a graph.
-pub type GFallibleTripleIterator<'a, G> =
+pub type GTripleSource<'a, G> =
     Box<Iterator<Item=Result<<G as Graph<'a>>::Triple>>+'a>;
 
 
@@ -35,12 +35,12 @@ pub trait Graph<'a> {
     /// This iterator is fallible:
     /// its items are `Result`s,
     /// an error may occur at any time during the iteration.
-    fn iter(&'a self) -> GFallibleTripleIterator<'a, Self>;
+    fn iter(&'a self) -> GTripleSource<'a, Self>;
 
     /// An iterator visiting all triples with the given subject.
     /// 
     /// See also [`iter`](#tymethod.iter).
-    fn iter_for_s<T> (&'a self, s: &'a Term<T>) -> GFallibleTripleIterator<'a, Self> where
+    fn iter_for_s<T> (&'a self, s: &'a Term<T>) -> GTripleSource<'a, Self> where
         T: Borrow<str>,
     {
         Box::new(
@@ -50,7 +50,7 @@ pub trait Graph<'a> {
     /// An iterator visiting all triples with the given predicate.
     /// 
     /// See also [`iter`](#tymethod.iter).
-    fn iter_for_p<T> (&'a self, p: &'a Term<T>) -> GFallibleTripleIterator<'a, Self> where
+    fn iter_for_p<T> (&'a self, p: &'a Term<T>) -> GTripleSource<'a, Self> where
         T: Borrow<str>,
     {
         Box::new(
@@ -60,7 +60,7 @@ pub trait Graph<'a> {
     /// An iterator visiting all triples with the given object.
     /// 
     /// See also [`iter`](#tymethod.iter).
-    fn iter_for_o<T> (&'a self, o: &'a Term<T>) -> GFallibleTripleIterator<'a, Self> where
+    fn iter_for_o<T> (&'a self, o: &'a Term<T>) -> GTripleSource<'a, Self> where
         T: Borrow<str>,
     {
         Box::new(
@@ -70,7 +70,7 @@ pub trait Graph<'a> {
     /// An iterator visiting all triples with the given subject and predicate.
     /// 
     /// See also [`iter`](#tymethod.iter).
-    fn iter_for_sp<T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> GFallibleTripleIterator<'a, Self> where
+    fn iter_for_sp<T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> GTripleSource<'a, Self> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
@@ -81,7 +81,7 @@ pub trait Graph<'a> {
     /// An iterator visiting all triples with the given subject and object.
     /// 
     /// See also [`iter`](#tymethod.iter).
-    fn iter_for_so<T, U> (&'a self, s: &'a Term<T>, o: &'a Term<U>) -> GFallibleTripleIterator<'a, Self> where
+    fn iter_for_so<T, U> (&'a self, s: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
@@ -92,7 +92,7 @@ pub trait Graph<'a> {
     /// An iterator visiting all triples with the given predicate and object.
     /// 
     /// See also [`iter`](#tymethod.iter).
-    fn iter_for_po<T, U> (&'a self, p: &'a Term<T>, o: &'a Term<U>) -> GFallibleTripleIterator<'a, Self> where
+    fn iter_for_po<T, U> (&'a self, p: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
@@ -103,7 +103,7 @@ pub trait Graph<'a> {
     /// An iterator visiting all triples with the given subject, predicate and object.
     /// 
     /// See also [`iter`](#tymethod.iter).
-    fn iter_for_spo<T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> GFallibleTripleIterator<'a, Self> where
+    fn iter_for_spo<T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> GTripleSource<'a, Self> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
@@ -125,7 +125,7 @@ pub trait Graph<'a> {
     /// An iterator visiting all triples matching the given subject, predicate and object.
     /// 
     /// See also [`iter`](#tymethod.iter).
-    fn iter_matching<S, P, O> (&'a self, ms: &'a S, mp: &'a P, mo: &'a O) -> GFallibleTripleIterator<'a, Self> where
+    fn iter_matching<S, P, O> (&'a self, ms: &'a S, mp: &'a P, mo: &'a O) -> GTripleSource<'a, Self> where
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
@@ -195,9 +195,10 @@ pub trait MutableGraph: for<'x> Graph<'x> {
 
     /// Insert into this graph all triples from the given source.
     #[inline]
-    fn insert_all<TS: TripleSource>(&mut self, src: TS)
-    -> Result<usize> {
-        src.into_sink(&mut self.inserter())
+    fn insert_all<'a, TS>(&mut self, src: &mut TS) -> Result<usize> where
+        TS: TripleSource<'a>,
+    {
+        src.in_sink(&mut self.inserter())
     }
 
     /// Return a [`TripleSink`](../streams/trait.TripleSink.html)
@@ -209,9 +210,10 @@ pub trait MutableGraph: for<'x> Graph<'x> {
 
     /// Remove from this graph all triples from the given source.
     #[inline]
-    fn remove_all<TS: TripleSource>(&mut self, src: TS)
-    -> Result<usize> {
-        src.into_sink(&mut self.remover())
+    fn remove_all<'a, TS>(&mut self, src: &mut TS) -> Result<usize> where
+        TS: TripleSource<'a>,
+    {
+        src.in_sink(&mut self.remover())
     }
 
     /// Remove all triples matching the given matchers.
@@ -229,7 +231,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
                 [BoxTerm::from(t.s()), BoxTerm::from(t.p()), BoxTerm::from(t.o())]
             })
             .collect::<Result<Vec<_>>>()?;
-        let mut to_remove = to_remove.into_iter().wrap_as_oks();
+        let mut to_remove = to_remove.into_iter().as_triple_source();
         self.remove_all(&mut to_remove)
     }
 
@@ -252,7 +254,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
                 [BoxTerm::from(t.s()), BoxTerm::from(t.p()), BoxTerm::from(t.o())]
             })
             .collect::<Result<Vec<_>>>()?;
-        let mut to_remove = to_remove.into_iter().wrap_as_oks();
+        let mut to_remove = to_remove.into_iter().as_triple_source();
         self.remove_all(&mut to_remove)?;
         Ok(())
     }

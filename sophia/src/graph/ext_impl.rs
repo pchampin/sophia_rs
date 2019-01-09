@@ -7,7 +7,7 @@ use std::hash::Hash;
 
 use super::*;
 use ::error::*;
-use ::streams::WrapAsOks;
+use ::streams::AsTripleSource;
 use ::term::*;
 use ::triple::*;
 
@@ -18,9 +18,9 @@ impl<'a, T> Graph<'a> for [T] where
     type Triple = &'a T;
 
     #[inline]
-    fn iter(&'a self) -> GFallibleTripleIterator<Self> {
+    fn iter(&'a self) -> GTripleSource<Self> {
         Box::new(
-            <[T]>::iter(self).wrap_as_oks()
+            <[T]>::iter(self).as_triple_source()
         )
     }
 }
@@ -37,9 +37,9 @@ impl<'a, T> Graph<'a> for Vec<T> where
     type Triple = &'a T;
 
     #[inline]
-    fn iter(&'a self) -> GFallibleTripleIterator<Self> {
+    fn iter(&'a self) -> GTripleSource<Self> {
         Box::from(
-            <[T]>::iter(self).wrap_as_oks()
+            <[T]>::iter(self).as_triple_source()
         )
     }
 }
@@ -57,8 +57,8 @@ impl<'a, T> Graph<'a> for HashSet<T> where
     type Triple = &'a T;
 
     #[inline]
-    fn iter(&'a self) -> GFallibleTripleIterator<Self> {
-        Box::from(self.iter().wrap_as_oks())
+    fn iter(&'a self) -> GTripleSource<Self> {
+        Box::from(self.iter().as_triple_source())
     }
 }
 
@@ -137,7 +137,7 @@ mod test {
             [rdf::Property, rdf::type_, rdfs::Class],
             [rdfs::Class, rdf::type_, rdfs::Class],
         ];
-        let inserted = g1.insert_all(<[_] as Graph>::iter(&g2)).unwrap();
+        let inserted = g1.insert_all(&mut <[_] as Graph>::iter(&g2)).unwrap();
         assert_eq!(inserted, g2.len());
         let v: Vec<_> = <HashSet<_> as Graph>::iter(&g1).oks().collect();
         assert_eq!(v.len(), 3);

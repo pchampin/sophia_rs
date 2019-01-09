@@ -3,28 +3,6 @@
 //! 
 //! See [`TripleSource`]'s and [`TripleSink`]'s documentation for more detail.
 //! 
-//! # Why not simply use iterators of [`Triple`]s?
-//! 
-//! Iterators are well suited in the following cases:
-//! * the items are owned by a container,
-//!   and the iterator yields references to them;
-//! * each item is produced during an iteration,
-//!   and "given" by the iterator to the consuming code.
-//! 
-//! Some situations do not fit those categories.
-//! For example, a parser will get lines of text from an IO stream,
-//! and produce triples that borrow text from these lines.
-//! We do not want the parser to store all the lines
-//! (there could be too many of them),
-//! so it can not own the triples undefinitely.
-//! But it can not give them away either,
-//! as they borrow from the ephemeral lines.
-//! 
-//! 
-//! [`TripleSource`] provides an abstraction that can handle that situation.
-//! As it is more general than [`Iterator`],
-//! any iterator of (results wrapping) triples implements [`TripleSource`].
-//! 
 //! [`TripleSource`]: trait.TripleSource.html
 //! [`TripleSink`]: trait.TripleSink.html
 //! [`Triple`]: ../triple/trait.Triple.html
@@ -36,72 +14,83 @@ use ::error::*;
 use ::graph::*;
 use ::triple::*;
 
-/// A triple source is anything that yields or produces [triples](../triple/trait.Triple.html),
-/// and may also fail in the process.
+/// A triple source produces [triples], and may also fail in the process.
 /// 
-/// Typical triple sources are
-/// *fallible triple iterators*
-/// (i.e. iterators yielding [results] whose `Ok` values are [triples]).
+/// A triple source is castable, with the `as_iter` method,
+/// to an iterator yielding [triples] wrapped in [results],
+/// and any such iterator implements the `TripleSource` trait.
+/// It also has additional methods dedicated to interacting with [`TripleSink`]s.
 /// 
-/// See also [`TripleSink`].
-/// 
-/// [results]: https://doc.rust-lang.org/std/result/enum.Result.html
 /// [triples]: ../triple/trait.Triple.html
+/// [results]: ../error/type.Result.html
 /// [`TripleSink`]: trait.TripleSink.html
 /// 
-pub trait TripleSource: Sized {
+pub trait TripleSource<'a> {
+
+    /// The type of triples produced by this source.
+    type Triple: Triple<'a>;
+
+    /// The type of iterator this triple source casts to.
+    type Iter: Iterator<Item=Result<Self::Triple>>;
+
+    /// Cast to iterator.
+    fn as_iter(&mut self) -> &mut Self::Iter;
+
     /// Feed all triples from this source into the given [sink](trait.TripleSink.html).
     /// 
     /// Stop on the first error (in the source or the sink).
-    fn into_sink<TS: TripleSink>(self, sink: &mut TS) -> Result<TS::Outcome>;
-
-    /// Insert all triples from this source into the given [graph](../graph/trait.MutableGraph.html).
-    /// 
-    /// Stop on the first error (in the source or in the graph).
-    fn into_graph<G: MutableGraph>(self, graph: &mut G) -> Result<usize> {
-        self.into_sink(&mut graph.inserter())
-    }
-}
-
-impl<'a, I, T> TripleSource for I
-where
-    I: Iterator<Item=Result<T>>,
-    T: Triple<'a>,
-{
-    fn into_sink<TS: TripleSink>(self, sink: &mut TS) -> Result<TS::Outcome> {
-        for tr in self {
+    fn in_sink<TS: TripleSink>(&mut self, sink: &mut TS) -> Result<TS::Outcome> {
+        for tr in self.as_iter() {
             let t = tr?;
             sink.feed(&t)?;
         }
         return sink.finish()
     }
+
+    /// Insert all triples from this source into the given [graph](../graph/trait.MutableGraph.html).
+    /// 
+    /// Stop on the first error (in the source or in the graph).
+    fn in_graph<G: MutableGraph>(&mut self, graph: &mut G) -> Result<usize> {
+        self.in_sink(&mut graph.inserter())
+    }
 }
 
+impl<'a, I, T> TripleSource<'a> for I
+where
+    I: Iterator<Item=Result<T>>+'a,
+    T: Triple<'a>,
+{
+    type Triple = T;
+    type Iter = Self;
 
-/// A utility extension trait for converting standard iterators
-/// into result iterators.
-/// Useful for converting any [`Triple`] iterator into a valid [`TripleSource`].
+    fn as_iter(&mut self) -> &mut Self::Iter {
+        self
+    }
+}
+
+/// A utility extension trait for converting any iterator of [`Triple`]s
+/// into [`TripleSource`], by wrapping its items in `Ok` results.
 /// 
 /// [`TripleSource`]: trait.TripleSource.html
 /// [`Triple`]: ../triple/trait.Triple.html
-pub trait WrapAsOks<T>: Sized {
+pub trait AsTripleSource<T>: Sized {
     /// Map all items of this iterator into an Ok result.
-    fn wrap_as_oks(self) -> Map<Self, fn(T) -> Result<T>>;
+    fn as_triple_source(self) -> Map<Self, fn(T) -> Result<T>>;
 }
 
-impl<T, I> WrapAsOks<T> for I
-    where I: Iterator<Item=T> + Sized,
+impl<'a, T, I> AsTripleSource<T> for I where
+    I: Iterator<Item=T> + 'a + Sized,
+    T: Triple<'a>,
 {
-    fn wrap_as_oks(self) -> Map<Self, fn(T) -> Result<T>> {
+    fn as_triple_source(self) -> Map<Self, fn(T) -> Result<T>> {
         self.map(Ok)
     }
 }
 
 
 
-/// A triple sink is anything that consumes [triples](../triple/trait.Triple.html),
-/// produces a result,
-/// and may also fail in the process.
+/// A triple sink consumes [triples](../triple/trait.Triple.html),
+/// produces a result, and may also fail in the process.
 /// 
 /// Typical triple sinks are [serializers]
 /// or graphs' [inserters] and [removers].

@@ -29,34 +29,34 @@ pub trait GraphWrapper<'a>
 
     #[inline]
     /// Mimmic the [`iter`](../trait.Graph.html#tymethod.iter) method.
-    fn gw_iter(&'a self) -> GFallibleTripleIterator<'a, Self::Wrapped> {
+    fn gw_iter(&'a self) -> GTripleSource<'a, Self::Wrapped> {
         self.get_wrapped().iter()
     }
 
     #[inline]
     /// Mimmic the [`iter_for_s`](../trait.Graph.html#method.iter_for_s) method.
-    fn gw_iter_for_s<T> (&'a self, s: &'a Term<T>) -> GFallibleTripleIterator<'a, Self::Wrapped> where
+    fn gw_iter_for_s<T> (&'a self, s: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped> where
         T: Borrow<str>,
     {
         self.get_wrapped().iter_for_s(s)
     }
     #[inline]
     /// Mimmic the [`iter_for_p`](../trait.Graph.html#method.iter_for_p) method.
-    fn gw_iter_for_p<T> (&'a self, p: &'a Term<T>) -> GFallibleTripleIterator<'a, Self::Wrapped> where
+    fn gw_iter_for_p<T> (&'a self, p: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped> where
         T: Borrow<str>,
     {
         self.get_wrapped().iter_for_p(p)
     }
     #[inline]
     /// Mimmic the [`iter_for_o`](../trait.Graph.html#method.iter_for_o) method.
-    fn gw_iter_for_o<T> (&'a self, o: &'a Term<T>) -> GFallibleTripleIterator<'a, Self::Wrapped> where
+    fn gw_iter_for_o<T> (&'a self, o: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped> where
         T: Borrow<str>,
     {
         self.get_wrapped().iter_for_o(o)
     }
     #[inline]
     /// Mimmic the [`iter_for_sp`](../trait.Graph.html#method.iter_for_sp) method.
-    fn gw_iter_for_sp<T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> GFallibleTripleIterator<'a, Self::Wrapped> where
+    fn gw_iter_for_sp<T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
@@ -64,7 +64,7 @@ pub trait GraphWrapper<'a>
     }
     #[inline]
     /// Mimmic the [`iter_for_so`](../trait.Graph.html#method.iter_for_so) method.
-    fn gw_iter_for_so<T, U> (&'a self, s: &'a Term<T>, o: &'a Term<U>) -> GFallibleTripleIterator<'a, Self::Wrapped> where
+    fn gw_iter_for_so<T, U> (&'a self, s: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
@@ -72,7 +72,7 @@ pub trait GraphWrapper<'a>
     }
     #[inline]
     /// Mimmic the [`iter_for_po`](../trait.Graph.html#method.iter_for_po) method.
-    fn gw_iter_for_po<T, U> (&'a self, p: &'a Term<T>, o: &'a Term<U>) -> GFallibleTripleIterator<'a, Self::Wrapped> where
+    fn gw_iter_for_po<T, U> (&'a self, p: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
@@ -80,7 +80,7 @@ pub trait GraphWrapper<'a>
     }
     #[inline]
     /// Mimmic the [`iter_for_spo`](../trait.Graph.html#method.iter_for_spo) method.
-    fn gw_iter_for_spo<T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> GFallibleTripleIterator<'a, Self::Wrapped> where
+    fn gw_iter_for_spo<T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> GTripleSource<'a, Self::Wrapped> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
@@ -105,50 +105,50 @@ macro_rules! impl_graph_for_wrapper {
         type Triple = <<Self as GraphWrapper<'a>>::Wrapped as Graph<'a>>::Triple;
 
         #[inline]
-        fn iter(&'a self) -> GFallibleTripleIterator<'a, Self> {
+        fn iter(&'a self) -> GTripleSource<'a, Self> {
             GraphWrapper::gw_iter(self)
         }
         #[inline]
-        fn iter_for_s<T_> (&'a self, s: &'a Term<T_>) -> GFallibleTripleIterator<'a, Self> where
+        fn iter_for_s<T_> (&'a self, s: &'a Term<T_>) -> GTripleSource<'a, Self> where
             T_: Borrow<str>,
         {
             GraphWrapper::gw_iter_for_s(self, s)
         }
         #[inline]
-        fn iter_for_p<T_> (&'a self, p: &'a Term<T_>) -> GFallibleTripleIterator<'a, Self> where
+        fn iter_for_p<T_> (&'a self, p: &'a Term<T_>) -> GTripleSource<'a, Self> where
             T_: Borrow<str>,
         {
             GraphWrapper::gw_iter_for_p(self, p)
         }
         #[inline]
-        fn iter_for_o<T_> (&'a self, o: &'a Term<T_>) -> GFallibleTripleIterator<'a, Self> where
+        fn iter_for_o<T_> (&'a self, o: &'a Term<T_>) -> GTripleSource<'a, Self> where
             T_: Borrow<str>,
         {
             GraphWrapper::gw_iter_for_o(self, o)
         }
         #[inline]
-        fn iter_for_sp<T_, U_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>) -> GFallibleTripleIterator<'a, Self> where
+        fn iter_for_sp<T_, U_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>) -> GTripleSource<'a, Self> where
             T_: Borrow<str>,
             U_: Borrow<str>,
         {
             GraphWrapper::gw_iter_for_sp(self, s, p)
         }
         #[inline]
-        fn iter_for_so<T_, U_> (&'a self, s: &'a Term<T_>, o: &'a Term<U_>) -> GFallibleTripleIterator<'a, Self> where
+        fn iter_for_so<T_, U_> (&'a self, s: &'a Term<T_>, o: &'a Term<U_>) -> GTripleSource<'a, Self> where
             T_: Borrow<str>,
             U_: Borrow<str>,
         {
             GraphWrapper::gw_iter_for_so(self, s, o)
         }
         #[inline]
-        fn iter_for_po<T_, U_> (&'a self, p: &'a Term<T_>, o: &'a Term<U_>) -> GFallibleTripleIterator<'a, Self> where
+        fn iter_for_po<T_, U_> (&'a self, p: &'a Term<T_>, o: &'a Term<U_>) -> GTripleSource<'a, Self> where
             T_: Borrow<str>,
             U_: Borrow<str>,
         {
             GraphWrapper::gw_iter_for_po(self, p, o)
         }
         #[inline]
-        fn iter_for_spo<T_, U_, V_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>, o: &'a Term<V_>) -> GFallibleTripleIterator<'a, Self> where
+        fn iter_for_spo<T_, U_, V_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>, o: &'a Term<V_>) -> GTripleSource<'a, Self> where
             T_: Borrow<str>,
             U_: Borrow<str>,
             V_: Borrow<str>,
