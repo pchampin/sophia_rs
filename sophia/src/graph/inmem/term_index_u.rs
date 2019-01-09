@@ -55,79 +55,103 @@ impl<I, F> Default for TermIndexU<I, F> where
 /// where uXX is one of u16, u32...
 /// I would prefer to define a generic implementation using traits,
 /// but I found this to be non trivial.
-macro_rules! impl_term_index {
-    ($uXX:ty) => {
-        impl<F> TermIndex for TermIndexU<$uXX, F> where
-            F: TermFactory+Default,
-        {
-            type Index = $uXX;
-            type Factory = F;
+impl<T, F> TermIndex for TermIndexU<T, F> where
+    T: Unsigned,
+    F: TermFactory+Default,
+{
+    type Index = T;
+    type Factory = F;
 
-            fn get_index(&self, t: &RefTerm) -> Option<$uXX> {
-                self.t2i.get(t).map(|iref| *iref)
-            }
+    fn get_index(&self, t: &RefTerm) -> Option<T> {
+        self.t2i.get(t).map(|iref| *iref)
+    }
 
-            fn make_index(&mut self, t: &RefTerm) -> $uXX {
-                let t = self.factory.copy(&t);
-                let rt = unsafe { fake_static(&t) };
-                if let Some(i) = self.get_index(&rt) {
-                    self.i2c[i as usize] += 1;
-                    return i;
-                }
-                self.t2i.insert(rt, self.next_free);
-                let i = self.next_free as usize;
-                if i == self.i2t.len() {
-                    self.next_free += 1;
-                    self.i2t.push(Some(t));
-                    self.i2c.push(1);
-                } else {
-                    self.next_free = self.i2c[i];
-                    self.i2t[i] = Some(t);
-                    self.i2c[i] = 1;
-                }
-                i as $uXX
-            }
-
-            fn get_term(&self, i: $uXX) -> Option<&Term<F::Holder>> {
-                let i = i as usize;
-                if i < self.i2t.len() {
-                    self.i2t[i].as_ref()
-                } else {
-                    None
-                }
-            }
-
-            fn inc_ref(&mut self, i: $uXX) {
-                let i = i as usize;
-                self.i2c[i] += 1;
-            }
-
-            fn dec_ref(&mut self, i: $uXX) {
-                let i = i as usize;
-                self.i2c[i] -= 1;
-                if self.i2c[i] == 0 {
-                    let t: Term<F::Holder> = self.i2t[i].take().unwrap();
-                    self.t2i.remove(unsafe { &fake_static(&t) });
-                    self.i2c[i] = self.next_free;
-                    self.next_free = i as $uXX;
-                }
-            }
-
-            fn shrink_to_fit(&mut self) {
-                self.factory.shrink_to_fit();
-                self.i2c.shrink_to_fit();
-                self.i2t.shrink_to_fit();
-                self.t2i.shrink_to_fit();
-                debug_assert_eq!(self.i2c.len(), self.i2t.len());
-            }
+    fn make_index(&mut self, t: &RefTerm) -> T {
+        let t = self.factory.copy(&t);
+        let rt = unsafe { fake_static(&t) };
+        if let Some(i) = self.get_index(&rt) {
+            self.i2c[i.as_usize()].inc();
+            return i;
         }
+        self.t2i.insert(rt, self.next_free);
+        let i = self.next_free.as_usize();
+        if i == self.i2t.len() {
+            self.next_free.inc();
+            self.i2t.push(Some(t));
+            self.i2c.push(T::one());
+        } else {
+            self.next_free = self.i2c[i];
+            self.i2t[i] = Some(t);
+            self.i2c[i] = T::one();
+        }
+        T::from_usize(i)
+    }
+
+    fn get_term(&self, i: T) -> Option<&Term<F::Holder>> {
+        let i = i.as_usize();
+        if i < self.i2t.len() {
+            self.i2t[i].as_ref()
+        } else {
+            None
+        }
+    }
+
+    fn inc_ref(&mut self, i: T) {
+        let i = i.as_usize();
+        self.i2c[i].inc();
+    }
+
+    fn dec_ref(&mut self, i: T) {
+        let i = i.as_usize();
+        self.i2c[i].dec();
+        if self.i2c[i].is_null() {
+            let t: Term<F::Holder> = self.i2t[i].take().unwrap();
+            self.t2i.remove(unsafe { &fake_static(&t) });
+            self.i2c[i] = self.next_free;
+            self.next_free = T::from_usize(i);
+        }
+    }
+
+    fn shrink_to_fit(&mut self) {
+        self.factory.shrink_to_fit();
+        self.i2c.shrink_to_fit();
+        self.i2t.shrink_to_fit();
+        self.t2i.shrink_to_fit();
+        debug_assert_eq!(self.i2c.len(), self.i2t.len());
     }
 }
 
-impl_term_index!(u16);
-impl_term_index!(u32);
 
+/// This trait is used by [`TermIndexU`](struct.TermIndexU.html)
+/// as an abstraction of all unsigned int types.
+/// 
+pub trait Unsigned: Copy+Default+Eq+std::hash::Hash {
+    fn as_usize(&self) -> usize;
+    fn from_usize(usize) -> Self;
+    fn inc(&mut self);
+    fn dec(&mut self);
+    fn zero() -> Self;
+    fn one() -> Self;
+    fn is_null(&self) -> bool;
+}
 
+macro_rules! impl_unsigned_for {
+    ($uXX: ty) => {
+        impl Unsigned for $uXX {
+            #[inline] fn as_usize(&self) -> usize { *self as usize }
+            #[inline] fn from_usize(other: usize) -> Self { other as $uXX }
+            #[inline] fn inc(&mut self) { *self += 1 }
+            #[inline] fn dec(&mut self) { *self -= 1 }
+            #[inline] fn zero() -> Self { 0 }
+            #[inline] fn one() -> Self { 1 }
+            #[inline] fn is_null(&self) -> bool { *self == 0 }
+        }
+    };
+}
+
+impl_unsigned_for!(u16);
+impl_unsigned_for!(u32);
+impl_unsigned_for!(u64);
 
 /// Unsafely converts a term into a StaticTerm.
 /// This is to be used *only* when we can guarantee that the produced StaticTerm
