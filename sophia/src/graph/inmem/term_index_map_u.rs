@@ -2,13 +2,13 @@
 use std::borrow::Borrow;
 use std::collections::HashMap;
 
-use ::graph::index::TermIndex;
+use ::graph::index::TermIndexMap;
 use ::term::*;
 use ::term::factory::TermFactory;
 
-/// An in-memory implemention of [`TermIndex`](../index/trait.TermIndex.html)
-/// with `u16` or `u32` as indices.
-pub struct TermIndexU<I, F> where
+/// An in-memory implemention of [`TermIndexMap`](../index/trait.TermIndexMap.html)
+/// with unsigned integers as indices.
+pub struct TermIndexMapU<I, F> where
     F: TermFactory,
 {
     factory: F,
@@ -27,21 +27,21 @@ pub struct TermIndexU<I, F> where
 // (inside i2t)...
 
 
-impl<I, F> TermIndexU<I, F> where
+impl<I, F> TermIndexMapU<I, F> where
     I: Default,
     F: TermFactory+Default,
 {
-    pub fn new() -> TermIndexU<I, F> {
+    pub fn new() -> TermIndexMapU<I, F> {
         Self::default()
     }
 }
 
-impl<I, F> Default for TermIndexU<I, F> where
+impl<I, F> Default for TermIndexMapU<I, F> where
     I: Default,
     F: TermFactory+Default,
 {
-    fn default() -> TermIndexU<I, F> {
-        TermIndexU {
+    fn default() -> TermIndexMapU<I, F> {
+        TermIndexMapU {
             factory: F::default(),
             next_free: I::default(),
             i2c: Vec::default(),
@@ -51,11 +51,11 @@ impl<I, F> Default for TermIndexU<I, F> where
     }
 }
 
-/// This macro implements TermIndex for TermIndexU<uXX>,
+/// This macro implements TermIndexMap for TermIndexMapU<uXX>,
 /// where uXX is one of u16, u32...
 /// I would prefer to define a generic implementation using traits,
 /// but I found this to be non trivial.
-impl<T, F> TermIndex for TermIndexU<T, F> where
+impl<T, F> TermIndexMap for TermIndexMapU<T, F> where
     T: Unsigned,
     F: TermFactory+Default,
 {
@@ -122,7 +122,7 @@ impl<T, F> TermIndex for TermIndexU<T, F> where
 }
 
 
-/// This trait is used by [`TermIndexU`](struct.TermIndexU.html)
+/// This trait is used by [`TermIndexMapU`](struct.TermIndexMapU.html)
 /// as an abstraction of all unsigned int types.
 /// 
 pub trait Unsigned: Copy+Default+Eq+std::hash::Hash {
@@ -156,7 +156,7 @@ impl_unsigned_for!(u64);
 /// Unsafely converts a term into a StaticTerm.
 /// This is to be used *only* when we can guarantee that the produced StaticTerm
 /// will not outlive the source term.
-/// We use this for keys in TermIndexU::t2i, when the owning term is in TermIndexU::i2t.
+/// We use this for keys in TermIndexMapU::t2i, when the owning term is in TermIndexMapU::i2t.
 #[inline]
 unsafe fn fake_static<S, T> (t: &T) -> StaticTerm where
     S: Borrow<str>,
@@ -175,13 +175,13 @@ mod test {
 
     #[test]
     fn test_term_index() {
-        let mut ti = TermIndexU::<u16, RcTermFactory>::default();
+        let mut ti = TermIndexMapU::<u16, RcTermFactory>::default();
         assert_term_index_works(&mut ti);
     }
 
     #[test]
     fn test_term_index_inner() {
-        let mut ti = TermIndexU::<u16, RcTermFactory>::default();
+        let mut ti = TermIndexMapU::<u16, RcTermFactory>::default();
         assert_eq!(ti.next_free, 0);
         assert_eq!(ti.i2t.len(), 0);
 

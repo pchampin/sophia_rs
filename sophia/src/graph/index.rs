@@ -11,10 +11,10 @@ use ::term::factory::TermFactory;
 /// A bidirectionnal mapping between [`Term`](../../term/enum.Term.html)s
 /// and a smaller type.
 /// 
-/// The TermIndex maintains a reference count for each index,
+/// The TermIndexMap maintains a reference count for each index,
 /// to automatically free them whenever they are not used.
 /// 
-pub trait TermIndex: Default {
+pub trait TermIndexMap: Default {
     /// The type used to represent terms
     type Index: Copy+Eq;
     /// The factory used to instantiate terms.
@@ -30,24 +30,24 @@ pub trait TermIndex: Default {
     fn inc_ref(&mut self, i: Self::Index);
     /// Decrease the reference count of a given index.
     fn dec_ref(&mut self, i: Self::Index);
-    /// Shrinks the capacity of the TermIndex as much as possible.
+    /// Shrinks the capacity of the TermIndexMap as much as possible.
     fn shrink_to_fit(&mut self);
 }
 
 
 
 /// A utility trait for implementing [`Graph`] and [`MutableGraph`]
-/// based on an internal [`TermIndex`] for efficient storage.
+/// based on an internal [`TermIndexMap`] for efficient storage.
 /// 
 /// The `impl_mutable_graph_for_indexed_mutable_graph!` macro
 /// can be used to derive the `MutableGraph` implementation
-/// for any implementation of `IndexedMutableGraph`.
+/// for any implementation of `IndexedGraph`.
 /// 
 /// [`Graph`]: ../trait.Graph.html
 /// [`MutableGraph`]: ../trait.MutableGraph.html
-/// [`TermIndex`]: trait.TermIndex.html
+/// [`TermIndexMap`]: trait.TermIndexMap.html
 /// 
-pub trait IndexedMutableGraph {
+pub trait IndexedGraph {
     /// The type used to represent terms internally.
     type Index: Copy + Eq + Hash;
     type Holder: Borrow<str> + 'static;
@@ -79,10 +79,10 @@ pub trait IndexedMutableGraph {
     fn shrink_to_fit(&mut self);
 }
 
-/// Defines the implementation of [`MutableGraph`] for [`IndexedMutableGraph`].
+/// Defines the implementation of [`MutableGraph`] for [`IndexedGraph`].
 /// 
 /// [`MutableGraph`]: ../trait.MutableGraph.html
-/// [`IndexedMutableGraph`]: trait.IndexedMutableGraph.html
+/// [`IndexedGraph`]: trait.IndexedGraph.html
 #[macro_export]
 macro_rules! impl_mutable_graph_for_indexed_mutable_graph {
     ($indexed_mutable_graph: ty) => {
@@ -144,8 +144,8 @@ pub(crate) fn remove_one_val<K, W> (hm: &mut HashMap<K, Vec<W>>, k: K, w: W) whe
 
 
 #[cfg(test)]
-/// Takes an empty TermIndex, and checks that it behaves as expected.
-pub fn assert_term_index_works<T: TermIndex>(ti: &mut T) {
+/// Takes an empty TermIndexMap, and checks that it behaves as expected.
+pub fn assert_term_index_works<T: TermIndexMap>(ti: &mut T) {
     let t = RefTerm::new_iri("http://example.org/").unwrap();
     assert!(ti.get_index(&t).is_none());
 

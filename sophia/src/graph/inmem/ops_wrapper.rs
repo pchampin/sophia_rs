@@ -17,7 +17,7 @@ use ::graph::index::remove_one_val;
 /// 
 #[derive(Default)]
 pub struct OpsWrapper<T> where
-    T: IndexedMutableGraph,
+    T: IndexedGraph,
 {
     wrapped: T,
     o2p: HashMap<T::Index, Vec<T::Index>>,
@@ -25,7 +25,7 @@ pub struct OpsWrapper<T> where
 }
 
 impl<T> OpsWrapper<T> where
-    T: IndexedMutableGraph + Default,
+    T: IndexedGraph + Default,
     T::Index: Default,
 {
     pub fn new() -> Self {
@@ -34,7 +34,7 @@ impl<T> OpsWrapper<T> where
 }
 
 impl<'a, T> GraphWrapper<'a> for OpsWrapper<T> where
-    T: IndexedMutableGraph + Graph<'a, Triple=[&'a Term<<T as IndexedMutableGraph>::Holder>;3]>,
+    T: IndexedGraph + Graph<'a, Triple=[&'a Term<<T as IndexedGraph>::Holder>;3]>,
 {
     type Wrapped = T;
 
@@ -95,8 +95,8 @@ impl<'a, T> GraphWrapper<'a> for OpsWrapper<T> where
     }
 }
 
-impl<T> IndexedMutableGraph for OpsWrapper<T> where
-    T: IndexedMutableGraph,
+impl<T> IndexedGraph for OpsWrapper<T> where
+    T: IndexedGraph,
 {
     type Index = T::Index;
     type Holder = T::Holder;
@@ -148,25 +148,25 @@ impl<T> IndexedMutableGraph for OpsWrapper<T> where
 }
 
 impl<T> GraphBase for OpsWrapper<T> where
-    T: IndexedMutableGraph + GraphBase,
+    T: IndexedGraph + GraphBase,
 {
     type Error = T::Error;
 }
 
 impl<'a, T> Graph<'a> for OpsWrapper<T> where
-    T: IndexedMutableGraph + Graph<'a, Triple=[&'a Term<<T as IndexedMutableGraph>::Holder>;3]>,
+    T: IndexedGraph + Graph<'a, Triple=[&'a Term<<T as IndexedGraph>::Holder>;3]>,
 {
     impl_graph_for_wrapper!();
 }
 
 impl<T> MutableGraph for OpsWrapper<T> where
-    T: IndexedMutableGraph + for <'a> Graph<'a, Triple=[&'a Term<<T as IndexedMutableGraph>::Holder>;3]>,
+    T: IndexedGraph + for <'a> Graph<'a, Triple=[&'a Term<<T as IndexedGraph>::Holder>;3]>,
 {
     impl_mutable_graph_for_indexed_mutable_graph!();
 }
 
 impl<T> SetGraph for OpsWrapper<T> where
-    T: IndexedMutableGraph + SetGraph,
+    T: IndexedGraph + SetGraph,
 {}
 
 

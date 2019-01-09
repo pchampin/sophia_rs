@@ -41,20 +41,20 @@ use super::traits::*;
 
 #[macro_use]
 mod wrapper; pub use self::wrapper::*;
-mod indexed_h_graph; pub use self::indexed_h_graph::*;
+mod hash_graph; pub use self::hash_graph::*;
 mod spo_wrapper; pub use self::spo_wrapper::*;
 mod ops_wrapper; pub use self::ops_wrapper::*;
-mod term_index_u; pub use self::term_index_u::*;
+mod term_index_map_u; pub use self::term_index_map_u::*;
 
 /// A generic in-memory graph.
 /// 
-/// `I` must be a type for which [`TermIndexU`](struct.TermIndexU.html)
-/// implements [`TermIndex`](../index/trait.TermIndex.html),
+/// `I` must be a type for which [`TermIndexMapU`](struct.TermIndexMapU.html)
+/// implements [`TermIndexMap`](../index/trait.TermIndexMap.html),
 /// typically `u16` or `u32`.
 /// 
 /// `F` must implement [`TermFactory`](../../term/factory/trait.TermFactory.html).
 /// 
-pub type GenericGraph<I, F> = IndexedHGraph<TermIndexU<I, F>>;
+pub type GenericGraph<I, F> = HashGraph<TermIndexMapU<I, F>>;
 
 /// A heavily indexed graph.
 /// Fast to query but slow to load, with a relatively high memory footprint.

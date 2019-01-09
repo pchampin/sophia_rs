@@ -5,20 +5,20 @@ use std::collections::HashSet;
 use std::hash::Hash;
 
 use ::graph::*;
-use ::graph::index::{IndexedMutableGraph, TermIndex};
+use ::graph::index::{IndexedGraph, TermIndexMap};
 use ::term::{RefTerm, Term, factory::TermFactory};
 
 /// A generic implementation of [`Graph`] and [`MutableGraph`],
-/// storing its terms in a [`TermIndex`],
+/// storing its terms in a [`TermIndexMap`],
 /// and its triples in a [`HashSet`].
 ///
 /// [`Graph`]: ../trait.Graph.html
 /// [`MutableGraph`]: ../trait.MutableGraph.html
-/// [`TermIndex`]: trait.TermIndex.html
+/// [`TermIndexMap`]: trait.TermIndexMap.html
 /// [`HashSet`]: https://doc.rust-lang.org/std/collections/struct.HashSet.html
 #[derive(Default)]
-pub struct IndexedHGraph<I> where
-    I: TermIndex,
+pub struct HashGraph<I> where
+    I: TermIndexMap,
     I::Index: Hash,
     <I::Factory as TermFactory>::Holder: 'static,
 {
@@ -26,12 +26,12 @@ pub struct IndexedHGraph<I> where
     triples: HashSet<[I::Index;3]>,
 }
 
-impl<I> IndexedHGraph<I> where
-    I: TermIndex,
+impl<I> HashGraph<I> where
+    I: TermIndexMap,
     I::Index: Hash,
 {
-    pub fn new() -> IndexedHGraph<I> {
-        IndexedHGraph {
+    pub fn new() -> HashGraph<I> {
+        HashGraph {
             terms: I::default(),
             triples: HashSet::new(),
         }
@@ -42,8 +42,8 @@ impl<I> IndexedHGraph<I> where
     }
 }
 
-impl<I> IndexedMutableGraph for IndexedHGraph<I> where
-    I: TermIndex,
+impl<I> IndexedGraph for HashGraph<I> where
+    I: TermIndexMap,
     I::Index: Hash,
     <I::Factory as TermFactory>::Holder: 'static,
 {
@@ -107,20 +107,20 @@ impl<I> IndexedMutableGraph for IndexedHGraph<I> where
     }
 }
 
-impl<I> GraphBase for IndexedHGraph<I> where
-    I: TermIndex,
+impl<I> GraphBase for HashGraph<I> where
+    I: TermIndexMap,
     I::Index: Hash,
     <I::Factory as TermFactory>::Holder: 'static,
 {
     type Error = ::error::Never;
 }
 
-impl<'a, I> Graph<'a> for IndexedHGraph<I> where
-    I: TermIndex,
+impl<'a, I> Graph<'a> for HashGraph<I> where
+    I: TermIndexMap,
     I::Index: Hash,
     <I::Factory as TermFactory>::Holder: 'static,
 {
-    type Triple = [&'a Term<<Self as IndexedMutableGraph>::Holder>;3];
+    type Triple = [&'a Term<<Self as IndexedGraph>::Holder>;3];
 
     fn iter(&'a self) -> GFallibleTripleIterator<'a, Self> {
         Box::from(
@@ -134,16 +134,16 @@ impl<'a, I> Graph<'a> for IndexedHGraph<I> where
     }
 }
 
-impl<I> MutableGraph for IndexedHGraph<I> where
-    I: TermIndex,
+impl<I> MutableGraph for HashGraph<I> where
+    I: TermIndexMap,
     I::Index: Hash,
     <I::Factory as TermFactory>::Holder: 'static,
 {
     impl_mutable_graph_for_indexed_mutable_graph!();
 }
 
-impl<I> SetGraph for IndexedHGraph<I> where
-    I: TermIndex,
+impl<I> SetGraph for HashGraph<I> where
+    I: TermIndexMap,
     I::Index: Hash,
 {}
 
