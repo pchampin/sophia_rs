@@ -20,6 +20,7 @@ extern crate language_tag;
 extern crate pest;
 #[macro_use] extern crate pest_derive;
 extern crate regex;
+#[macro_use] extern crate rental;
 extern crate resiter;
 extern crate url;
 extern crate weak_table;

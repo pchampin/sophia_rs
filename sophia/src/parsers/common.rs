@@ -14,36 +14,25 @@ use ::term::Term;
 /// of a serializer module.
 #[macro_export]
 macro_rules! def_default_parser_api {
-    ($bufread_parser: ty, $read_parser: ty, $str_parser: ty) => {
+    () => {
         /// Shortcut for `Config::default().parse_bufread(bufread)`
         #[inline]
-        pub fn parse_bufread<B: ::std::io::BufRead>(bufread: B) -> $bufread_parser {
+        pub fn parse_bufread<'a, B: ::std::io::BufRead+'a>(bufread: B)
+        -> impl Iterator<Item=Result<impl Triple<'a>, Error>>+'a {
             Config::default().parse_bufread(bufread)
         }
         /// Shortcut for `Config::default().parse_read(read)`
         #[inline]
-        pub fn parse_read<R: ::std::io::Read>(read: R) -> $read_parser {
+        pub fn parse_read<'a, R: ::std::io::Read+'a>(read: R)
+        -> impl Iterator<Item=Result<impl Triple<'a>, Error>>+'a {
             Config::default().parse_read(read)
         }
         /// Shortcut for `Config::default().parse_str(txt)`
         #[inline]
-        pub fn parse_str<'a>(txt: &'a str) -> $str_parser {
+        pub fn parse_str<'a>(txt: &'a str)
+        -> impl Iterator<Item=Result<impl Triple<'a>, Error>>+'a {
             Config::default().parse_str(txt)
         }
-    };
-    ($io_parser: ident, $str_parser: ident) => {
-        def_default_parser_api!(
-            $io_parser<B>,
-            $io_parser<BufReader<R>>,
-            $str_parser<'a>
-        );
-    };
-    ($generic_parser: ident) => {
-        def_default_parser_api!(
-            $generic_parser<B>,
-            $generic_parser<BufReader<R>>,
-            $generic_parser<BufReader<Cursor<&'a str>>>
-        );
     };
 }
 

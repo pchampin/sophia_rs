@@ -26,8 +26,8 @@ use pest::error::{Error as PestError, ErrorVariant};
 
 use ::error::{Error, ErrorKind};
 use ::ns::xsd;
-use ::streams::*;
 use ::term::Term;
+use ::triple::Triple;
 use super::common::*;
 
 
@@ -56,103 +56,82 @@ pub struct Config {
 
 impl Config {
     #[inline]
-    pub fn parse_bufread<B: BufRead>(&self, bufread: B) -> IoParser<B> {
-        IoParser::new(bufread, self.clone())
+    pub fn parse_bufread<'a, B: BufRead+'a>(&self, bufread: B)
+    -> impl Iterator<Item=Result<impl Triple<'a>, Error>>+'a {
+        let config = self.clone();
+        let rule = if config.strict {Rule::ntriple_line} else {Rule::generalized_line};
+        bufread.lines().enumerate()
+        .filter_map(move |(lineidx, line)| {
+            let line = match line {
+                Ok(line) => line,
+                Err(ioerr) => { return Some(Err(ioerr.into())); }
+            };
+            {
+                let trimmed = line.trim_left();
+                if trimmed.len() == 0
+                || trimmed.as_bytes()[0] == '#' as u8 {
+                    return None;
+                }
+            }
+            Some(NtTriple::try_new(
+                line,
+                |line| parse_rule_from_line(&config, rule, line.trim_left()),
+            ).map_err(|err| convert_pest_err(err.0, lineidx)))
+        })
     }
 
     #[inline]
-    pub fn parse_read<R: Read>(&self, read: R) -> IoParser<BufReader<R>> {
+    pub fn parse_read<'a, R: Read+'a>(&self, read: R)
+    -> impl Iterator<Item=Result<impl Triple<'a>, Error>>+'a {
         self.parse_bufread(BufReader::new(read))
     }
 
     #[inline]
-    pub fn parse_str<'a>(&self, txt: &'a str) -> StrParser<'a> {
-        StrParser::new(txt, self.clone())
-    }
-}
-
-def_default_parser_api!(IoParser, StrParser);
-
-/// A [`TripleSource`] returned by [`Config::parse_bufread`]
-/// or [`Config::parse_read`].
-/// 
-/// [`TripleSource`]: ../../streams/trait.TripleSource.html
-/// [`Config::parse_bufread`]: struct.Config.html#method.parse_bufread
-/// [`Config::parse_read`]: struct.Config.html#method.parse_read
-pub struct IoParser<B: BufRead> {
-    bufread: B,
-    config: Config,
-}
-
-impl<B: BufRead> IoParser<B> {
-    pub fn new(bufread: B, config: Config) -> Self {
-        IoParser{ bufread, config }
-    }
-}
-
-impl<B: BufRead> TripleSource for IoParser<B> {
-    type Error = Error;
-
-    fn into_sink<TS: TripleSink>(self, sink: &mut TS) -> Result<TS::Outcome, WhereFrom<Self::Error, TS::Error>> {
-        let bufread = self.bufread;
-        let config = self.config;
-        let rule = if config.strict {Rule::ntriple_line} else {Rule::generalized_line};
-        for (lineidx, line) in bufread.lines().enumerate() {
-            let line = line
-                .map_err(|io_err| Upstream(io_err.into()))?;
-            let line = line.trim_left();
-            if line.len() == 0
-            || line.as_bytes()[0] == '#' as u8 {
-                continue;
-            }
-            let triple = parse_rule_from_line(&config, rule, &line)
-                .map_err(|err| Upstream(convert_pest_err(err, lineidx)))?;
-            sink.feed(&triple)
-                .map_err(|err| Downstream(err))?;
-        }
-        sink.finish()
-            .map_err(|err| Downstream(err))
-    }
-}
-
-
-
-/// A [`TripleSource`] returned by [`Config::parse_str`].
-/// 
-/// [`TripleSource`]: ../../streams/trait.TripleSource.html
-/// [`Config::parse_str`]: struct.Config.html#method.parse_str
-pub struct StrParser<'a> {
-    txt: &'a str,
-    config: Config,
-}
-
-impl<'a> StrParser<'a> {
-    pub fn new(txt: &'a str, config: Config) -> Self {
-        StrParser{ txt, config }
-    }
-}
-
-impl<'a> TripleSource for StrParser<'a> {
-    type Error = Error;
-
-    fn into_sink<TS: TripleSink>(self, sink: &mut TS) -> Result<TS::Outcome, WhereFrom<Self::Error, TS::Error>> {
-        let txt = self.txt;
-        let config = self.config;
+    pub fn parse_str<'a>(&self, txt: &'a str)
+    -> Box<dyn Iterator<Item=Result<impl Triple<'a>, Error>>+'a> {
+        let config = self.clone();
         let rule = if config.strict {Rule::ntriples_doc} else {Rule::generalized_doc};
-        let triple_pairs = PestNtParser::parse(rule, txt)
-            .map_err(|err| Upstream(convert_pest_err(err, 0)))?;
-        for triple_pair in triple_pairs {
-            if triple_pair.as_rule() == Rule::EOI { break }
-            let triple = pairs_to_triple(&config, triple_pair.into_inner())
-                .map_err(|err| Upstream(convert_pest_err(err, 0)))?;
-            sink.feed(&triple)
-                .map_err(|err| Downstream(err))?;
-        }
-        sink.finish()
-            .map_err(|err| Downstream(err))
+        let triple_pairs = match PestNtParser::parse(rule, txt) {
+            Ok(pairs) => pairs,
+            Err(err) => {
+                return Box::new(std::iter::once(Err(convert_pest_err(err, 0))));
+            }
+        };
+        Box::new(
+            triple_pairs
+            .take_while(|triple_pair| triple_pair.as_rule() != Rule::EOI)
+            .map(move |triple_pair|
+                pairs_to_triple(&config, triple_pair.into_inner())
+                .map_err(|err| convert_pest_err(err, 0))
+            )
+        )
     }
 }
 
+def_default_parser_api!();
+
+
+
+rental! {
+    pub mod nt_triple {
+        use super::*;
+
+        #[rental(covariant)]
+        pub struct NtTriple {
+            line: String,
+            triple: [Term<Cow<'line, str>>;3],
+        }
+    }
+}
+pub use self::nt_triple::NtTriple;
+impl<'a> Triple<'a> for NtTriple {
+    type Holder = Cow<'a, str>;
+    fn s(&self) -> &Term<Self::Holder> { unsafe { std::mem::transmute(self.suffix().s()) } }
+    fn p(&self) -> &Term<Self::Holder> { unsafe { std::mem::transmute(self.suffix().p()) } }
+    fn o(&self) -> &Term<Self::Holder> { unsafe { std::mem::transmute(self.suffix().o()) } }
+    // The compiler can not figure out the correct lifetime for self in the methods above,
+    // so I use transmute() to force the cast.
+}
 
 
 
@@ -233,6 +212,7 @@ mod test {
     use std::io;
     use std::path::Path;
     use pest::{Parser, error::Error as PestError, iterators::Pairs};
+    use ::streams::*;
     use ::term::BoxTerm;
     use super::*;
 

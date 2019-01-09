@@ -42,8 +42,7 @@ use ::triple::*;
 /// and may also fail in the process.
 /// 
 /// Typical triple sources are
-/// [parsers](../parsers/index.html),
-/// or *fallible triple iterators*
+/// *fallible triple iterators*
 /// (i.e. iterators yielding [results] whose `Ok` values are [triples]).
 /// 
 /// See also [`TripleSink`].
