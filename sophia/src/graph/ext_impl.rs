@@ -5,6 +5,8 @@ use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::hash::Hash;
 
+use resiter::oks::*;
+
 use super::*;
 use ::error::*;
 use ::streams::AsTripleSource;
@@ -38,16 +40,45 @@ impl<'a, T> Graph<'a> for Vec<T> where
 
     #[inline]
     fn iter(&'a self) -> GTripleSource<Self> {
-        Box::from(
+        Box::new(
             <[T]>::iter(self).as_triple_source()
         )
+    }
+}
+
+impl MutableGraph for Vec<[BoxTerm;3]> where
+{
+    fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool> where
+        T: Borrow<str>,
+        U: Borrow<str>,
+        V: Borrow<str>,
+    {
+        let s = BoxTerm::from(s);
+        let p = BoxTerm::from(p);
+        let o = BoxTerm::from(o);
+        self.push([s, p, o]);
+        Ok(true)
+    }
+    fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool> where
+        T: Borrow<str>,
+        U: Borrow<str>,
+        V: Borrow<str>,
+    {
+        let i = self.iter().oks().position(|t|
+            s == t.s() && p == t.p() && o == t.o()
+        );
+        if let Some(i) = i {
+            self.swap_remove(i);
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 }
 
 impl<'a, T> InfallibleGraph for Vec<T> where
     T: Triple<'a>+'a
 {}
-
 
 
 
@@ -104,6 +135,7 @@ mod test {
 
     use ::graph::*;
     use ::ns::*;
+    use ::streams::*;
     use ::term::BoxTerm;
 
     #[test]
@@ -113,33 +145,36 @@ mod test {
             [rdf::Property, rdf::type_, rdfs::Class],
             [rdfs::Class, rdf::type_, rdfs::Class],
         ];
-        let v: Vec<_> = <[_] as Graph>::iter(&g).oks().collect();
-        assert_eq!(v.len(), 3);
+        let len = Graph::iter(&g[..]).oks().count();
+        assert_eq!(len, 3);
+        let len = g.iter_for_o(&rdfs::Class).oks().count();
+        assert_eq!(len, 2);
     }
 
     #[test]
     fn test_vec() {
-        let g = vec![
+        // NB: Vec<[BoxTerm;3]> can not be tested with test_graph_impl!
+        // because it assumes that the passed implementation satisfies SetGraph.
+        let mut g: Vec<[BoxTerm;3]> = Vec::new();
+
+        let triples = [
             [rdf::type_, rdf::type_, rdf::Property],
             [rdf::Property, rdf::type_, rdfs::Class],
             [rdfs::Class, rdf::type_, rdfs::Class],
         ];
-        let v: Vec<_> = <Vec<_> as Graph>::iter(&g).oks().collect();
-        assert_eq!(v.len(), 3);
+        let inserted = triples.into_iter().as_triple_source().in_graph(&mut g).unwrap();
+        assert_eq!(inserted, triples.len());
+        assert_eq!(inserted, g.len());
+
+        let len = Graph::iter(&g[..]).oks().count();
+        assert_eq!(len, 3);
+        let len = g.iter_for_o(&rdfs::Class).oks().count();
+        assert_eq!(len, 2);
+
+        MutableGraph::remove(&mut g, &rdfs::Class, &rdf::type_, &rdfs::Class).unwrap();
+        assert_eq!(g.len(), 2);
     }
 
-    #[test]
-    fn test_hashset() {
-        let mut g1: HashSet<[BoxTerm;3]> = HashSet::new();
-
-        let g2 = [
-            [rdf::type_, rdf::type_, rdf::Property],
-            [rdf::Property, rdf::type_, rdfs::Class],
-            [rdfs::Class, rdf::type_, rdfs::Class],
-        ];
-        let inserted = g1.insert_all(&mut <[_] as Graph>::iter(&g2)).unwrap();
-        assert_eq!(inserted, g2.len());
-        let v: Vec<_> = <HashSet<_> as Graph>::iter(&g1).oks().collect();
-        assert_eq!(v.len(), 3);
-    }
+    type HashSetBoxTerm = HashSet<[BoxTerm;3]>;
+    test_graph_impl!(hashset, HashSetBoxTerm);
 }
