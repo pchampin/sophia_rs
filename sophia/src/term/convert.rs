@@ -3,7 +3,7 @@
 // Convenient implementation to convert usual Rust values to `Term`s.
 
 use super::*;
-use ::ns::xsd;
+use crate::ns::xsd;
 
 impl From<String> for Term<String> {
     fn from(val: String) -> Term<String> {

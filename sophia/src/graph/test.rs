@@ -6,12 +6,12 @@ macro_rules! test_graph_impl {
     ($module_name: ident, $mutable_graph_impl: ident) => {
         #[cfg(test)]
         mod $module_name {
-            use ::graph::*;
-            use ::ns::*;
-            use ::streams::*;
-            use ::term::*;
-            use ::term::matcher::ANY;
-            use ::triple::*;
+            use crate::graph::*;
+            use crate::ns::*;
+            use crate::streams::*;
+            use crate::term::*;
+            use crate::term::matcher::ANY;
+            use crate::triple::*;
             use std::fmt::Debug;
             use resiter::oks::*;
 

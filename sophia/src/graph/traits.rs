@@ -5,12 +5,12 @@ use std::borrow::Borrow;
 use resiter::filter_x::*;
 use resiter::map_x::*;
 
-use ::error::*;
-use ::graph::sinks::*;
-use ::streams::*;
-use ::term::*;
-use ::term::matcher::TermMatcher;
-use ::triple::*;
+use crate::error::*;
+use crate::graph::sinks::*;
+use crate::streams::*;
+use crate::term::*;
+use crate::term::matcher::TermMatcher;
+use crate::triple::*;
 
 /// Type alias for results iterators produced by a graph.
 pub type GResult<'a, G, T> = std::result::Result<T, <G as Graph<'a>>::Error>;

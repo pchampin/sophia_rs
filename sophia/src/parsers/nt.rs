@@ -25,10 +25,10 @@ use std::result::Result as StdResult;
 use pest::{Parser, iterators::{Pair, Pairs}};
 use pest::error::{Error as PestError, ErrorVariant};
 
-use ::error::*;
-use ::ns::xsd;
-use ::term::Term;
-use ::triple::Triple;
+use crate::error::*;
+use crate::ns::xsd;
+use crate::term::Term;
+use crate::triple::Triple;
 use super::common::*;
 
 
@@ -218,8 +218,8 @@ mod test {
     use std::io;
     use std::path::Path;
     use pest::{Parser, error::Error as PestError, iterators::Pairs};
-    use ::streams::*;
-    use ::term::BoxTerm;
+    use crate::streams::*;
+    use crate::term::BoxTerm;
     use super::*;
 
     type HashSetGraph = HashSet<[BoxTerm;3]>;
@@ -285,7 +285,7 @@ mod test {
 
     #[test]
     fn blank_node_label() {
-        use ::term::test::*;
+        use crate::term::test::*;
         let rule = Rule::blank_node_label;
         let positive: Vec<_> =
             POSITIVE_1CHAR_IDS.iter()
@@ -308,7 +308,7 @@ mod test {
 
     #[test]
     fn variable() {
-        use ::term::test::*;
+        use crate::term::test::*;
         let rule = Rule::variable;
         let positive: Vec<_> =
             POSITIVE_1CHAR_IDS.iter()
@@ -456,7 +456,7 @@ mod test {
 
     #[test]
     fn strict_parse_read_refuses_generalized() {
-        use ::error::ErrorKind::*;
+        use crate::error::ErrorKind::*;
 
         let mut g = HashSetGraph::new();
         let reader = io::Cursor::new(GENERALIZED_DOC);

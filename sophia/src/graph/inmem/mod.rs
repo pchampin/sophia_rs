@@ -34,8 +34,8 @@
 
 use std::borrow::Borrow;
 
-use ::term::*;
-use ::term::factory::*;
+use crate::term::*;
+use crate::term::factory::*;
 use super::index::*;
 use super::traits::*;
 

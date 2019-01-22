@@ -1,8 +1,8 @@
 // this module is transparently re-exported by its parent `graph`
 
-use ::graph::traits::*;
-use ::streams::*;
-use ::triple::*;
+use crate::graph::traits::*;
+use crate::streams::*;
+use crate::triple::*;
 
 /// The [`TripleSink`] returned by [`MutableGraph::inserter`].
 /// 

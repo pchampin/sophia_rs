@@ -8,10 +8,10 @@ use std::hash::Hash;
 use resiter::oks::*;
 
 use super::*;
-use ::error::*;
-use ::streams::AsTripleSource;
-use ::term::*;
-use ::triple::*;
+use crate::error::*;
+use crate::streams::AsTripleSource;
+use crate::term::*;
+use crate::triple::*;
 
 
 impl<'a, T> Graph<'a> for [T] where
@@ -128,10 +128,10 @@ mod test {
     use std::collections::HashSet;
     use resiter::oks::*;
 
-    use ::graph::*;
-    use ::ns::*;
-    use ::streams::*;
-    use ::term::BoxTerm;
+    use crate::graph::*;
+    use crate::ns::*;
+    use crate::streams::*;
+    use crate::term::BoxTerm;
 
     #[test]
     fn test_slice() {

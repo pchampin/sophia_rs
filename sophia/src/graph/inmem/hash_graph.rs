@@ -4,10 +4,10 @@ use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::hash::Hash;
 
-use ::error::*;
-use ::graph::*;
-use ::graph::index::{IndexedGraph, TermIndexMap};
-use ::term::{RefTerm, Term, factory::TermFactory};
+use crate::error::*;
+use crate::graph::*;
+use crate::graph::index::{IndexedGraph, TermIndexMap};
+use crate::term::{RefTerm, Term, factory::TermFactory};
 
 /// A generic implementation of [`Graph`] and [`MutableGraph`],
 /// storing its terms in a [`TermIndexMap`],

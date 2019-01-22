@@ -14,7 +14,7 @@
 
 use std::borrow::Borrow;
 
-use ::term::*;
+use crate::term::*;
 
 /// This trait represents an abstract RDF triple,
 /// and provide convenient methods for working with triples.

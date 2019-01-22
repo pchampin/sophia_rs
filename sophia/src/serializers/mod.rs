@@ -21,10 +21,10 @@
 
 use std::io;
 
-use ::error::*;
-use ::graph::*;
-use ::streams::*;
-use ::triple::*;
+use crate::error::*;
+use crate::graph::*;
+use crate::streams::*;
+use crate::triple::*;
 
 use std::result::Result; // override ::error::Result
 

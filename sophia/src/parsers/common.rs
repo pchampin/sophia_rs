@@ -8,8 +8,8 @@ use std::result::Result as StdResult;
 use pest::{RuleType, iterators::Pair};
 use pest::error::{Error as PestError, ErrorVariant};
 
-use ::error::*;
-use ::term::Term;
+use crate::error::*;
+use crate::term::Term;
 
 /// This macro provides a straightforward implementation of the default functions
 /// of a serializer module.

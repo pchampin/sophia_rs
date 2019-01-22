@@ -1,6 +1,6 @@
 use super::*;
 
-use ::ns::xsd;
+use crate::ns::xsd;
 
 fn h<H: std::hash::Hash>(x: &H) -> u64 {
     use std::hash::Hasher;

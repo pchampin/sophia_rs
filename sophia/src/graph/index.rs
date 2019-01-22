@@ -5,8 +5,8 @@ use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::hash::Hash;
 
-use ::term::*;
-use ::term::factory::TermFactory;
+use crate::term::*;
+use crate::term::factory::TermFactory;
 
 /// A bidirectionnal mapping between [`Term`](../../term/enum.Term.html)s
 /// and a smaller type.

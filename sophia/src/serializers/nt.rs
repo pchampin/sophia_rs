@@ -13,9 +13,9 @@ use std::borrow::Borrow;
 use std::io;
 use std::mem::swap;
 
-use ::streams::*;
-use ::term::{LiteralKind,Term};
-use ::triple::Triple;
+use crate::streams::*;
+use crate::term::{LiteralKind,Term};
+use crate::triple::Triple;
 
 use super::*;
 
@@ -194,8 +194,8 @@ pub(crate) fn write_non_n3_bnode_id(w: &mut impl io::Write, id: &str) -> io::Res
 
 #[cfg(test)]
 mod test {
-    use ::ns::*;
-    use ::term::*;
+    use crate::ns::*;
+    use crate::term::*;
     use super::*;
 
     #[test]

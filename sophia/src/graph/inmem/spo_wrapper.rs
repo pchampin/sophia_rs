@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::iter::empty;
 
 use super::*;
-use ::graph::index::remove_one_val;
+use crate::graph::index::remove_one_val;
 
 /// A [`GraphWrapper`](trait.GraphWrapper.html)
 /// indexing triples by subject, then by predicate, then by object.

@@ -2,9 +2,9 @@
 use std::borrow::Borrow;
 use std::collections::HashMap;
 
-use ::graph::index::TermIndexMap;
-use ::term::*;
-use ::term::factory::TermFactory;
+use crate::graph::index::TermIndexMap;
+use crate::term::*;
+use crate::term::factory::TermFactory;
 
 /// An in-memory implemention of [`TermIndexMap`](../index/trait.TermIndexMap.html)
 /// with unsigned integers as indices.
@@ -127,7 +127,7 @@ impl<T, F> TermIndexMap for TermIndexMapU<T, F> where
 /// 
 pub trait Unsigned: Copy+Default+Eq+std::hash::Hash {
     fn as_usize(&self) -> usize;
-    fn from_usize(usize) -> Self;
+    fn from_usize(_: usize) -> Self;
     fn inc(&mut self);
     fn dec(&mut self);
     fn zero() -> Self;
@@ -170,8 +170,8 @@ unsafe fn fake_static<S, T> (t: &T) -> StaticTerm where
 #[cfg(test)]
 mod test {
     use super::*;
-    use ::term::factory::RcTermFactory;
-    use ::graph::index::assert_term_index_works;
+    use crate::term::factory::RcTermFactory;
+    use crate::graph::index::assert_term_index_works;
 
     #[test]
     fn test_term_index() {
@@ -185,7 +185,7 @@ mod test {
         assert_eq!(ti.next_free, 0);
         assert_eq!(ti.i2t.len(), 0);
 
-        use ::ns::rdf;
+        use crate::ns::rdf;
 
         assert_eq!(ti.get_index(&rdf::subject), None);
         assert_eq!(ti.make_index(&rdf::subject), 0);

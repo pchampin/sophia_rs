@@ -41,7 +41,7 @@ use std::sync::Arc;
 use language_tag::LangTag;
 use regex::Regex;
 
-use ::error::*;
+use crate::error::*;
 
 pub mod factory;
 pub mod iri_rfc3987; use self::iri_rfc3987::ParsedIri;
@@ -116,7 +116,7 @@ impl<T> Term<T> where
     /// [N3]: https://www.w3.org/DesignIssues/Notation3
     /// 
     pub fn n3(&self) -> String {
-        ::serializers::nt::stringify_term(self)
+        crate::serializers::nt::stringify_term(self)
     }
 }
 

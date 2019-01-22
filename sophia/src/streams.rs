@@ -10,9 +10,9 @@
 
 use std::iter::Map;
 
-use ::error::*;
-use ::graph::*;
-use ::triple::*;
+use crate::error::*;
+use crate::graph::*;
+use crate::triple::*;
 
 use std::result::Result; // override ::error::Result
 
