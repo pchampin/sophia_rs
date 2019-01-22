@@ -18,6 +18,7 @@ impl<'a, T> Graph<'a> for [T] where
     T: Triple<'a>+'a,
 {
     type Triple = &'a T;
+    type Error = Never;
 
     #[inline]
     fn iter(&'a self) -> GTripleSource<Self> {
@@ -27,16 +28,13 @@ impl<'a, T> Graph<'a> for [T] where
     }
 }
 
-impl<'a, T> InfallibleGraph for [T] where
-    T: Triple<'a>+'a
-{}
-
 
 
 impl<'a, T> Graph<'a> for Vec<T> where
     T: Triple<'a>+'a,
 {
     type Triple = &'a T;
+    type Error = Never;
 
     #[inline]
     fn iter(&'a self) -> GTripleSource<Self> {
@@ -48,7 +46,9 @@ impl<'a, T> Graph<'a> for Vec<T> where
 
 impl MutableGraph for Vec<[BoxTerm;3]> where
 {
-    fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool> where
+    type MutationError = Never;
+
+    fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult< Self, bool> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
@@ -59,7 +59,7 @@ impl MutableGraph for Vec<[BoxTerm;3]> where
         self.push([s, p, o]);
         Ok(true)
     }
-    fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool> where
+    fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult< Self, bool> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
@@ -76,16 +76,13 @@ impl MutableGraph for Vec<[BoxTerm;3]> where
     }
 }
 
-impl<'a, T> InfallibleGraph for Vec<T> where
-    T: Triple<'a>+'a
-{}
-
 
 
 impl<'a, T> Graph<'a> for HashSet<T> where
     T: Eq + Hash + Triple<'a> + 'a,
 {
     type Triple = &'a T;
+    type Error = Never;
 
     #[inline]
     fn iter(&'a self) -> GTripleSource<Self> {
@@ -95,7 +92,9 @@ impl<'a, T> Graph<'a> for HashSet<T> where
 
 impl MutableGraph for HashSet<[BoxTerm;3]> where
 {
-    fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool> where
+    type MutationError = Never;
+
+    fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult< Self, bool> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
@@ -105,7 +104,7 @@ impl MutableGraph for HashSet<[BoxTerm;3]> where
         let o = BoxTerm::from(o);
         Ok(HashSet::insert(self, [s, p, o]))
     }
-    fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool> where
+    fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult< Self, bool> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
@@ -118,10 +117,6 @@ impl MutableGraph for HashSet<[BoxTerm;3]> where
 }
 
 impl<'a, T> SetGraph for HashSet<T> where
-    T: Eq + Hash + Triple<'a> + 'a,
-{}
-
-impl<'a, T> InfallibleGraph for HashSet<T> where
     T: Eq + Hash + Triple<'a> + 'a,
 {}
 

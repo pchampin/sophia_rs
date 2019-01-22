@@ -8,7 +8,9 @@ documentation = "https://docs.rs/sophia"
 license = "CECILL-2.1"
 keywords = ["rdf", "linked-data", "semantic-web"]
 
+
 [dependencies]
+coercible_errors = "0.1.3"
 error-chain = "0.12.0"
 language-tag = "0.9.0"
 lazy_static = "1.1.0"

@@ -1,6 +1,5 @@
 // this module is transparently re-exported by its parent `graph`
 
-use ::error::*;
 use ::graph::traits::*;
 use ::streams::*;
 use ::triple::*;
@@ -23,15 +22,16 @@ impl<'a, G: MutableGraph + ?Sized + 'a> Inserter<'a, G> {
 
 impl<'a, G: MutableGraph + ?Sized + 'a> TripleSink for Inserter<'a, G> {
     type Outcome = usize;
+    type Error = <G as MutableGraph>::MutationError;
 
-    fn feed<'b, T: Triple<'b>>(&mut self, t: &T) -> Result<()> {
+    fn feed<'b, T: Triple<'b>>(&mut self, t: &T) -> Result<(), Self::Error> {
         self.graph.insert(t.s(), t.p(), t.o()).map(|inserted| {
             if inserted {
                 self.count += 1;
             }
         })
     }
-    fn finish(&mut self) -> Result<Self::Outcome> {
+    fn finish(&mut self) -> Result<Self::Outcome, Self::Error> {
         Ok(self.count)
     }
 
@@ -56,15 +56,16 @@ impl<'a, G: MutableGraph + ?Sized + 'a> Remover<'a, G> {
 
 impl<'a, G: MutableGraph + ?Sized + 'a> TripleSink for Remover<'a, G> {
     type Outcome = usize;
+    type Error = <G as MutableGraph>::MutationError;
 
-    fn feed<'b, T: Triple<'b>>(&mut self, t: &T) -> Result<()> {
+    fn feed<'b, T: Triple<'b>>(&mut self, t: &T) -> Result<(), Self::Error> {
         self.graph.remove(t.s(), t.p(), t.o()).map(|removed| {
             if removed {
                 self.count += 1;
             }
         })
     }
-    fn finish(&mut self) -> Result<Self::Outcome> {
+    fn finish(&mut self) -> Result<Self::Outcome, Self::Error> {
         Ok(self.count)
     }
 }

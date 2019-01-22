@@ -26,6 +26,8 @@ use ::graph::*;
 use ::streams::*;
 use ::triple::*;
 
+use std::result::Result; // override ::error::Result
+
 #[macro_use]
 pub mod common;
 pub mod nt;
@@ -41,22 +43,28 @@ pub trait WriteSerializer<W: io::Write>: TripleSink<Outcome=()> + Sized {
     fn new(write: W, config: Self::Config) -> Self;
 
     /// Serialize the triples from the given source.
-    fn write<'a, TS, T>(&mut self, mut source: TS) -> Result<()> where
+    fn write<'a, TS, T>(&mut self, mut source: TS) -> CoercedResult<(), TS::Error, Self::Error>
+    where
         TS: TripleSource<'a>,
+        TS::Error: CoercibleWith<Self::Error>,
     {
         source.in_sink(self)
     }
 
     /// Serialize the given graph.
-    fn write_graph<'a, G>(&mut self, graph: &'a mut G) -> Result<()>
-        where G: Graph<'a>,
+    fn write_graph<'a, G>(&mut self, graph: &'a mut G) -> CoercedResult<(), G::Error, Self::Error>
+    where
+        G: Graph<'a>,
+        G::Error: CoercibleWith<Self::Error>,
     {
         graph.iter().in_sink(self)
     }
 
     /// Serialize the given triple.
-    fn write_triple<'a, T>(&mut self, t: &T) -> Result<()>
-        where T: Triple<'a>,
+    fn write_triple<'a, T>(&mut self, t: &T) -> CoercedResult<(), Never, Self::Error>
+    where
+        T: Triple<'a>,
+        Never: CoercibleWith<Self::Error>,
     {
         let mut source = vec![[t.s(), t.p(), t.o()]].into_iter().as_triple_source();
         source.in_sink(self)
@@ -75,25 +83,31 @@ pub trait StringSerializer: TripleSink<Outcome=String> + Sized {
     fn new(config: Self::Config) -> Self;
 
     /// Stringify the triples from the given source.
-    fn stringify<'a, TS, T>(&mut self, mut source: TS) -> Result<String> where
+    fn stringify<'a, TS, T>(&mut self, mut source: TS) -> CoercedResult<String, TS::Error, Self::Error>
+    where
         TS: TripleSource<'a>,
+        TS::Error: CoercibleWith<Self::Error>,
     {
         source.in_sink(self)
     }
 
     /// Stringify the given graph.
-    fn stringify_graph<'a, G>(&mut self, graph: &'a mut G) -> Result<String>
-        where G: Graph<'a>,
+    fn stringify_graph<'a, G>(&mut self, graph: &'a mut G) -> CoercedResult<String, G::Error, Self::Error>
+    where
+        G: Graph<'a>,
+        G::Error: CoercibleWith<Self::Error>,
     {
         graph.iter().in_sink(self)
     }
 
     /// Stringify the given triple.
-    fn stringify_triple<'a, T>(&mut self, t: &T) -> String
-        where T: Triple<'a>,
+    fn stringify_triple<'a, T>(&mut self, t: &T) -> CoercedResult<String, Never, Self::Error>
+    where
+        T: Triple<'a>,
+        Never: CoercibleWith<Self::Error>,
     {
         let mut source = vec![[t.s(), t.p(), t.o()]].into_iter().as_triple_source();
-        source.in_sink(self).unwrap()
+        source.in_sink(self)
     }
 }
 

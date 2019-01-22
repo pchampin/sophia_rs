@@ -17,6 +17,7 @@
 // error_chain is recursing a lot
 #![recursion_limit = "256"]
 
+#[macro_use] extern crate coercible_errors;
 #[macro_use] extern crate error_chain;
 extern crate language_tag;
 #[macro_use] extern crate lazy_static;

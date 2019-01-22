@@ -114,6 +114,7 @@ impl<'a, I> Graph<'a> for HashGraph<I> where
     <I::Factory as TermFactory>::Holder: 'static,
 {
     type Triple = [&'a Term<<Self as IndexedGraph>::Holder>;3];
+    type Error = Never;
 
     fn iter(&'a self) -> GTripleSource<'a, Self> {
         Box::from(
@@ -139,13 +140,6 @@ impl<I> SetGraph for HashGraph<I> where
     I: TermIndexMap,
     I::Index: Hash,
 {}
-
-impl<I> InfallibleGraph for HashGraph<I> where
-    I: TermIndexMap,
-    I::Index: Hash,
-    <I::Factory as TermFactory>::Holder: 'static,
-{}
-
 
 
 

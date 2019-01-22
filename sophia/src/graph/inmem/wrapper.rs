@@ -2,8 +2,6 @@
 
 use super::*;
 
-use ::error::*;
-
 /// A graph wrapper wraps a [`Graph`] and overrides some of its methods.
 ///
 /// This trait mimmics the interface of the [`Graph`] trait,
@@ -90,7 +88,7 @@ pub trait GraphWrapper<'a>
 
     #[inline]
     /// Mimmic the [`contains`](../trait.Graph.html#method.contains) method.
-    fn gw_contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> Result<bool> {
+    fn gw_contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> GResult<'a, Self::Wrapped, bool> {
         self.get_wrapped().contains(s, p, o)
     }
 }
@@ -103,6 +101,7 @@ macro_rules! impl_graph_for_wrapper {
     };
     () => {
         type Triple = <<Self as GraphWrapper<'a>>::Wrapped as Graph<'a>>::Triple;
+        type Error = <<Self as GraphWrapper<'a>>::Wrapped as Graph<'a>>::Error;
 
         #[inline]
         fn iter(&'a self) -> GTripleSource<'a, Self> {
@@ -157,7 +156,7 @@ macro_rules! impl_graph_for_wrapper {
         }
 
         #[inline]
-        fn contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> Result<bool> {
+        fn contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> GResult<'a, Self, bool> {
             GraphWrapper::gw_contains(self, s, p, o)
         }
     };

@@ -76,6 +76,9 @@ pub fn make_parser_error(message: String, line_offset: usize) -> ErrorKind {
     ErrorKind::ParserError(message, il, lcl).into()
 }
 
+coercible_errors!();
+
+
 
 #[cfg(test)]
 mod test {

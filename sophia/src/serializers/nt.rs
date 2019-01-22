@@ -67,8 +67,9 @@ impl<W: io::Write> WriteSerializer<W> for Writer<W> {
 
 impl<W: io::Write> TripleSink for Writer<W> {
     type Outcome = ();
+    type Error = Error;
 
-    fn feed<'a, T: Triple<'a>>(&mut self, t: &T) -> Result<()> {
+    fn feed<'a, T: Triple<'a>>(&mut self, t: &T) -> Result<(), Self::Error> {
         let w = &mut self.write;
 
         (|| {
@@ -84,7 +85,7 @@ impl<W: io::Write> TripleSink for Writer<W> {
         )
     }
 
-    fn finish(&mut self) -> Result<()> {
+    fn finish(&mut self) -> Result<(), Self::Error> {
         Ok(())
     }
 }

@@ -6,7 +6,6 @@ macro_rules! test_graph_impl {
     ($module_name: ident, $mutable_graph_impl: ident) => {
         #[cfg(test)]
         mod $module_name {
-            use ::error::*;
             use ::graph::*;
             use ::ns::*;
             use ::streams::*;
@@ -35,7 +34,8 @@ macro_rules! test_graph_impl {
             // test MutableGraph + SetGraph
 
             #[test]
-            fn test_simple_mutations() -> Result<()> {
+            fn test_simple_mutations() -> MGResult<$mutable_graph_impl, ()>
+            {
                 let mut g = $mutable_graph_impl::new();
                 assert_eq!(Graph::iter(&g).count(), 0);
                 assert!   (MutableGraph::insert(&mut g, &C1, &rdf::type_, &rdfs::Class)?);
@@ -50,7 +50,8 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_no_duplicate() -> Result<()> {
+            fn test_no_duplicate() -> MGResult<$mutable_graph_impl, ()>
+            {
                 let mut g = $mutable_graph_impl::new();
                 assert_eq!(Graph::iter(&g).count(), 0);
                 assert!   (MutableGraph::insert(&mut g, &C1, &rdf::type_, &rdfs::Class)?);
@@ -92,7 +93,8 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_remove_matching() -> Result<()> {
+            fn test_remove_matching() -> MGResult<$mutable_graph_impl, ()>
+            {
                 let mut g = $mutable_graph_impl::new();
                 populate(&mut g)?;
 
@@ -103,7 +105,8 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_retain() -> Result<()> {
+            fn test_retain() -> MGResult<$mutable_graph_impl, ()>
+            {
                 let mut g = $mutable_graph_impl::new();
                 populate(&mut g)?;
 
@@ -117,7 +120,8 @@ macro_rules! test_graph_impl {
             // Test Graph
 
             #[test]
-            fn test_iter_and_hint() -> Result<()> {
+            fn test_iter_and_hint() -> MGResult<$mutable_graph_impl, ()>
+            {
                 let mut g = $mutable_graph_impl::new();
                 populate(&mut g)?;
 
@@ -136,7 +140,8 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_x_for_s() -> Result<()> {
+            fn test_x_for_s() -> MGResult<$mutable_graph_impl, ()>
+            {
                 let mut g = $mutable_graph_impl::new();
                 populate(&mut g)?;
 
@@ -155,7 +160,8 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_x_for_p() -> Result<()> {
+            fn test_x_for_p() -> MGResult<$mutable_graph_impl, ()>
+            {
                 let mut g = $mutable_graph_impl::new();
                 populate(&mut g)?;
 
@@ -174,7 +180,8 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_x_for_o() -> Result<()> {
+            fn test_x_for_o() -> MGResult<$mutable_graph_impl, ()>
+            {
                 let mut g = $mutable_graph_impl::new();
                 populate(&mut g)?;
 
@@ -193,7 +200,8 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_x_for_sp() -> Result<()> {
+            fn test_x_for_sp() -> MGResult<$mutable_graph_impl, ()>
+            {
                 let mut g = $mutable_graph_impl::new();
                 populate(&mut g)?;
 
@@ -212,7 +220,8 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_x_for_so() -> Result<()>  {
+            fn test_x_for_so() -> MGResult<$mutable_graph_impl, ()>
+            {
                 let mut g = $mutable_graph_impl::new();
                 populate(&mut g)?;
 
@@ -231,7 +240,8 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_x_for_po() -> Result<()> {
+            fn test_x_for_po() -> MGResult<$mutable_graph_impl, ()>
+            {
                 let mut g = $mutable_graph_impl::new();
                 populate(&mut g)?;
 
@@ -250,7 +260,8 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_x_for_spo() -> Result<()> {
+            fn test_x_for_spo() -> MGResult<$mutable_graph_impl, ()>
+            {
                 let mut g = $mutable_graph_impl::new();
                 populate(&mut g)?;
 
@@ -267,7 +278,8 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_contains() -> Result<()> {
+            fn test_contains() -> MGResult<$mutable_graph_impl, ()>
+            {
                 let mut g = $mutable_graph_impl::new();
                 populate(&mut g)?;
                 assert!(Graph::contains(&g, &C2, &rdfs::subClassOf, &C1)?);
@@ -276,7 +288,8 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_iter_matching() -> Result<()> {
+            fn test_iter_matching() -> MGResult<$mutable_graph_impl, ()>
+            {
                 let mut g = $mutable_graph_impl::new();
                 populate(&mut g)?;
 
@@ -294,7 +307,8 @@ macro_rules! test_graph_impl {
 
             // helper functions
 
-            fn populate<G: MutableGraph> (g: &mut G) -> Result<()> {
+            fn populate<G: MutableGraph> (g: &mut G) -> MGResult<G, ()>
+            {
                 g.insert(&C1, &rdf::type_, &rdfs::Class)?;
 
                 g.insert(&C2, &rdf::type_, &rdfs::Class)?;

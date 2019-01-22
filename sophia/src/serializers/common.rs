@@ -43,12 +43,13 @@ macro_rules! def_stringifier {
 
         impl TripleSink for $stringifier {
             type Outcome = String;
+            type Error = Error;
 
-            fn feed<'a, T: Triple<'a>>(&mut self, t: &T) -> Result<()> {
+            fn feed<'a, T: Triple<'a>>(&mut self, t: &T) -> std::result::Result<(), Self::Error> {
                 self.writer.feed(t).map_err(|_| unreachable!())
             }
 
-            fn finish(&mut self) -> Result<String> {
+            fn finish(&mut self) -> std::result::Result<String, Self::Error> {
                 let mut v = Vec::new();
                 swap(&mut self.writer.write, &mut v);
                 Ok(unsafe { String::from_utf8_unchecked(v) })
