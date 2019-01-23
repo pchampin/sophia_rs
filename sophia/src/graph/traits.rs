@@ -244,7 +244,16 @@ pub trait MutableGraph: for<'x> Graph<'x> {
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
+        // The following trait bound means that Self::Error must convert to Self::MutationError;
+        // it is always satisfied when both of them are either Error or Never;
+        // it is required to raise an error when building to_remove
+        for <'a> <Self as Graph<'a>>::Error: Into<Self::MutationError>,
+        // The following trait bound is required by remove_all,
+        // who coerces to_remove::Error (always Never) with self::MutationError.
         Never: CoercibleWith<Self::MutationError>,
+        // The following trait is trivially verified in all cases,
+        // (acatually T is always EQUAL to CoercedError<Never, T>)
+        // but unfortunetaly the compiler can not see that.
         Self::MutationError: From<CoercedError<Never, Self::MutationError>>,
     {
         let to_remove: Vec<_> =
@@ -252,7 +261,8 @@ pub trait MutableGraph: for<'x> Graph<'x> {
             .map_ok(|t| {
                 [BoxTerm::from(t.s()), BoxTerm::from(t.p()), BoxTerm::from(t.o())]
             })
-            .collect::<std::result::Result<_,_>>().unwrap(); // TODO replace unwrap by '?'
+            .collect::<std::result::Result<_,_>>()
+            .map_err(|err| err.into())?;
         let mut to_remove = to_remove.into_iter().as_triple_source();
         Ok(self.remove_all(&mut to_remove)?)
     }
@@ -267,7 +277,16 @@ pub trait MutableGraph: for<'x> Graph<'x> {
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
+        // The following trait bound means that Self::Error must convert to Self::MutationError;
+        // it is always satisfied when both of them are either Error or Never;
+        // it is required to raise an error when building to_remove
+        for <'a> <Self as Graph<'a>>::Error: Into<Self::MutationError>,
+        // The following trait bound is required by remove_all,
+        // who coerces to_remove::Error (always Never) with self::MutationError.
         Never: CoercibleWith<Self::MutationError>,
+        // The following trait is trivially verified in all cases,
+        // (acatually T is always EQUAL to CoercedError<Never, T>)
+        // but unfortunetaly the compiler can not see that.
         Self::MutationError: From<CoercedError<Never, Self::MutationError>>,
     {
         let to_remove: Vec<_> =
@@ -278,7 +297,8 @@ pub trait MutableGraph: for<'x> Graph<'x> {
             .map_ok(|t| {
                 [BoxTerm::from(t.s()), BoxTerm::from(t.p()), BoxTerm::from(t.o())]
             })
-            .collect::<std::result::Result<_,_>>().unwrap(); // TODO replace unwrap by '?'
+            .collect::<std::result::Result<_,_>>()
+            .map_err(|err| err.into())?;
         let mut to_remove = to_remove.into_iter().as_triple_source();
         self.remove_all(&mut to_remove)?;
         Ok(())
