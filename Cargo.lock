@@ -279,7 +279,7 @@ dependencies = [
 
 [[package]]
 name = "sophia"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "coercible_errors 0.1.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "error-chain 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
