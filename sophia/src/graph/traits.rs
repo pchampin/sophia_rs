@@ -2,8 +2,8 @@
 
 use std::borrow::Borrow;
 
-use resiter::filter_x::*;
-use resiter::map_x::*;
+use resiter::filter::*;
+use resiter::map::*;
 
 use crate::error::*;
 use crate::graph::sinks::*;

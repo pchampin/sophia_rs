@@ -1,0 +1,16 @@
+0.2.1
+    Updated dependencies
+    Committed CHANGELOG.txt
+
+0.2.0
+    Improved API
+    - the Graph trait is more generic
+    - the TripleSource trait is now basically equivalent to an iterator,
+      which is more idiomatic
+    - unified and efficient error handling (with coercible_errors)
+    - some types and traits were renamed to improve clarity
+    Improved test coverage
+    Changed license to CECILL-C (less constraining than CECILL-2.1)
+
+0.1.0
+    Initial release
