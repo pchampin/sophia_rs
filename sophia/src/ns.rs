@@ -1,28 +1,62 @@
-//! Standard namespaces.
-//! 
+//! Standard and custom namespaces.
+//!
+//! This module provides:
+//! * the [`Namespace`](struct.Namespace.html) type for defining custom namespace;
+//! * modules corresponding to the most common namespaces.
+//!
 //! # Example
 //! ```
-//! use sophia::graph::*;
+//! use sophia::graph::MutableGraph;
 //! use sophia::graph::inmem::FastGraph;
-//! use sophia::term::StaticTerm;
-//! 
-//! let mut g = FastGraph::new();
-//! let foo = StaticTerm::new_iri("http://example.org/foo").unwrap();
+//! use sophia::ns::{Namespace, rdf, rdfs, xsd};
 //!
-//! use sophia::ns::{rdf, rdfs, xsd};
-//! 
-//! g.insert(&foo, &rdf::type_, &rdf::Property);
-//! g.insert(&foo, &rdfs::range, &xsd::string);
+//!
+//! let mut g = FastGraph::new();
+//!
+//! let schema = Namespace::new("http://schema.org/").unwrap();
+//! let s_name = schema.get("name").unwrap();
+//! g.insert(&s_name, &rdf::type_, &rdf::Property);
+//! g.insert(&s_name, &rdfs::range, &xsd::string);
 //! ```
 
-#[macro_export]
+use std::borrow::Borrow;
+
+use crate::error::*;
+use crate::term::{Term, iri_rfc3987::is_valid_iri};
+
+/// A custom namespace.
+pub struct Namespace<T: Borrow<str> + Clone>(T);
+
+impl<T: Borrow<str> + Clone> Namespace<T> {
+    /// Build a custom namespace based on the given IRI.
+    ///
+    /// `iri` must be a valid IRI, othewise this constructor returns an error.
+    pub fn new(iri: T) -> Result<Namespace<T>> {
+        if is_valid_iri(iri.borrow()) {
+            Ok(Namespace(iri))
+        } else {
+            Err(ErrorKind::InvalidIri("IRI is invalid".to_string()).into())
+        }
+    }
+
+    /// Build an IRI term by appending `suffix` to this namespace.
+    ///
+    /// Return an error if the concatenation produces an invalid IRI.
+    pub fn get<U>(&self, suffix: U) -> Result<Term<T>>
+    where
+        T: From<U>,
+    {
+        Term::new_iri2(self.0.clone(), suffix)
+    }
+}
+
 macro_rules! namespace {
-    ($prefix:expr, $($suffix:ident),*) => {
-        pub static PREFIX:&'static str = $prefix;
+    ($iri_prefix:expr, $($suffix:ident),*) => {
+        pub static PREFIX:&'static str = $iri_prefix;
         $(
-            ns_term!($prefix, $suffix);
+            ns_term!($iri_prefix, $suffix);
         )*
-    };
+    }
 }
 
 macro_rules! ns_term {
@@ -31,27 +65,25 @@ macro_rules! ns_term {
     };
     ($prefix:expr, $ident:ident, $suffix:expr) => {
         #[allow(non_upper_case_globals)]
-        pub static $ident:term::StaticTerm =
-            term::Term::Iri(
-                term::IriData{
+        pub static $ident: $crate::term::StaticTerm =
+            $crate::term::Term::Iri(
+                $crate::term::IriData{
                     ns: $prefix,
                     suffix: Some($suffix),
                     absolute: true,
-            });
+            })
+        ;
     }
 }
 
 //pub static $ident:term::Term<'static> = term::Term::Iri(term::IriData{ns:$prefix, suffix:$suffix});
 
 /// The standard `rdf:` namespace.
-/// 
+///
 /// NB: since `type` is a reserved keyword in Rust,
 /// the term `rdf:type` spells `rdf::type_` (with a trailing underscore).
-/// 
-#[allow(non_upper_case_globals)]
+///
 pub mod rdf {
-    use crate::term;
-
     namespace!("http://www.w3.org/1999/02/22-rdf-syntax-ns#",
         // classes
         Alt, Bad, List, PlainLiteral, Property, Seq, Statement,
@@ -66,10 +98,7 @@ pub mod rdf {
 }
 
 /// The standard `xsd:` namespace.
-#[allow(non_upper_case_globals)]
 pub mod xsd {
-    use crate::term;
-
     namespace!("http://www.w3.org/2001/XMLSchema#",
     anyType,
     anySimpleType,
@@ -122,10 +151,7 @@ pub mod xsd {
 }
 
 /// The standard `rdfs:` namespace.
-#[allow(non_upper_case_globals)]
 pub mod rdfs {
-    use crate::term;
-
     namespace!("http://www.w3.org/2000/01/rdf-schema#",
         Class, Container, ContainerMembershipProperty, Datatype, Literal, Resource,
         domain, range, subClassOf, subPropertyOf,
@@ -138,4 +164,33 @@ pub mod rdfs {
 #[cfg(test)]
 mod test {
     // Nothing really worth testing here
+    use super::*;
+    use std::rc::Rc;
+
+    #[test]
+    fn test_same_term() {
+        let ns1 = Namespace::new("http://schema.org/").unwrap();
+        let ns2 = Namespace::new(Rc::from("http://schema.org/")).unwrap();
+
+        assert_eq!(ns1.get("name").unwrap(), ns1.get("name").unwrap());
+        assert_eq!(ns2.get("name").unwrap(), ns2.get("name").unwrap());
+        assert_eq!(ns1.get("name").unwrap(), ns2.get("name").unwrap());
+    }
+
+    #[test]
+    fn test_different_terms() {
+        let ns1 = Namespace::new("http://schema.org/").unwrap();
+        assert_ne!(ns1.get("name").unwrap(), ns1.get("nam").unwrap());
+    }
+
+    #[test]
+    fn test_invalid_namespace() {
+        assert!(Namespace::new("http://schema.org ").is_err());
+    }
+
+    #[test]
+    fn test_invalid_suffix() {
+        let ns1 = Namespace::new("http://schema.org/").unwrap();
+        assert!(ns1.get("name ").is_err());
+    }
 }
