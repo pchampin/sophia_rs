@@ -5,49 +5,49 @@
 use super::*;
 use crate::ns::xsd;
 
-impl From<String> for Term<String> {
-    fn from(val: String) -> Term<String> {
-        let dt = Term::from(&xsd::string);
-        unsafe { Term::new_literal_dt_unchecked(val, dt) }
+impl From<String> for BoxTerm {
+    fn from(val: String) -> BoxTerm {
+        let dt = BoxTerm::from(&xsd::string);
+        unsafe { BoxTerm::new_literal_dt_unchecked(val, dt) }
     }
 }
 
-impl<'a> From<&'a str> for Term<&'a str> {
-    fn from(val: &'a str) -> Term<&'a str> {
+impl<'a> From<&'a str> for RefTerm<'a> {
+    fn from(val: &'a str) -> RefTerm<'a> {
         let dt = xsd::string.clone();
-        unsafe { Term::new_literal_dt_unchecked(val, dt) }
+        unsafe { RefTerm::new_literal_dt_unchecked(val, dt) }
     }
 }
 
-impl From<bool> for Term<String> {
-    fn from(val: bool) -> Term<String> {
-        let txt = val.to_string();
-        let dt = Term::from(&xsd::boolean);
-        unsafe { Term::new_literal_dt_unchecked(txt, dt) }
+impl From<bool> for BoxTerm {
+    fn from(val: bool) -> BoxTerm {
+        let txt = val.to_string().into_boxed_str();
+        let dt = BoxTerm::from(&xsd::boolean);
+        unsafe { BoxTerm::new_literal_dt_unchecked(txt, dt) }
     }
 }
 
-impl From<f64> for Term<String> {
-    fn from(val: f64) -> Term<String> {
+impl From<f64> for BoxTerm {
+    fn from(val: f64) -> BoxTerm {
         let txt = val.to_string();
-        let dt = Term::from(&xsd::double);
-        unsafe { Term::new_literal_dt_unchecked(txt, dt) }
+        let dt = BoxTerm::from(&xsd::double);
+        unsafe { BoxTerm::new_literal_dt_unchecked(txt, dt) }
     }
 }
 
-impl From<i32> for Term<String> {
-    fn from(val: i32) -> Term<String> {
+impl From<i32> for BoxTerm {
+    fn from(val: i32) -> BoxTerm {
         let txt = val.to_string();
-        let dt = Term::from(&xsd::integer);
-        unsafe { Term::new_literal_dt_unchecked(txt, dt) }
+        let dt = BoxTerm::from(&xsd::integer);
+        unsafe { BoxTerm::new_literal_dt_unchecked(txt, dt) }
     }
 }
 
-impl From<u32> for Term<String> {
-    fn from(val: u32) -> Term<String> {
+impl From<u32> for BoxTerm {
+    fn from(val: u32) -> BoxTerm {
         let txt = val.to_string();
-        let dt = Term::from(&xsd::nonNegativeInteger);
-        unsafe { Term::new_literal_dt_unchecked(txt, dt) }
+        let dt = BoxTerm::from(&xsd::nonNegativeInteger);
+        unsafe { BoxTerm::new_literal_dt_unchecked(txt, dt) }
     }
 }
 
