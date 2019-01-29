@@ -1,7 +1,7 @@
 //! A term-matcher is something that can be used
 //! to discriminate members of a set of terms.
 //! 
-//! See [`Graph::iter_matching`](../../graph/trait.Graph.html#method.iter_matching),
+//! See [`Graph::triples_matching`](../../graph/trait.Graph.html#method.triples_matching),
 //! [`MutableGraph::remove_matching`](../../graph/trait.MutableGraph.html#method.remove_matching),
 //! [`MutableGraph::retain`](../../graph/trait.MutableGraph.html#method.retain).
 

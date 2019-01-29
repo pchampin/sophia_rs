@@ -116,7 +116,7 @@ impl<'a, I> Graph<'a> for HashGraph<I> where
     type Triple = [&'a Term<<Self as IndexedGraph>::Holder>;3];
     type Error = Never;
 
-    fn iter(&'a self) -> GTripleSource<'a, Self> {
+    fn triples(&'a self) -> GTripleSource<'a, Self> {
         Box::from(
             self.triples.iter()
             .map(move |[si, pi, oi]| Ok([

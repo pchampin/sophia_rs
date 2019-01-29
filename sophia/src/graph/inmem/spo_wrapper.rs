@@ -46,7 +46,7 @@ impl<'a, T> GraphWrapper<'a> for SpoWrapper<T> where
         &mut self.wrapped
     }
 
-    fn gw_iter_for_s<U> (&'a self, s: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped>
+    fn gw_triples_with_s<U> (&'a self, s: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped>
     where
         U: Borrow<str>,
     {
@@ -72,7 +72,7 @@ impl<'a, T> GraphWrapper<'a> for SpoWrapper<T> where
         Box::new(empty())
     }
 
-    fn gw_iter_for_sp<U, V> (&'a self, s: &'a Term<U>, p: &'a Term<V>) -> GTripleSource<'a, Self::Wrapped>
+    fn gw_triples_with_sp<U, V> (&'a self, s: &'a Term<U>, p: &'a Term<V>) -> GTripleSource<'a, Self::Wrapped>
     where
         U: Borrow<str>,
         V: Borrow<str>,

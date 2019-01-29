@@ -42,87 +42,87 @@ pub trait Graph<'a> {
     /// This iterator is fallible:
     /// its items are `Result`s,
     /// an error may occur at any time during the iteration.
-    fn iter(&'a self) -> GTripleSource<'a, Self>;
+    fn triples(&'a self) -> GTripleSource<'a, Self>;
 
     /// An iterator visiting all triples with the given subject.
     /// 
     /// See also [`iter`](#tymethod.iter).
-    fn iter_for_s<T> (&'a self, s: &'a Term<T>) -> GTripleSource<'a, Self> where
+    fn triples_with_s<T> (&'a self, s: &'a Term<T>) -> GTripleSource<'a, Self> where
         T: Borrow<str>,
     {
         Box::new(
-            self.iter().filter_ok(move |t| t.s()==s)
+            self.triples().filter_ok(move |t| t.s()==s)
         )
     }
     /// An iterator visiting all triples with the given predicate.
     /// 
     /// See also [`iter`](#tymethod.iter).
-    fn iter_for_p<T> (&'a self, p: &'a Term<T>) -> GTripleSource<'a, Self> where
+    fn triples_with_p<T> (&'a self, p: &'a Term<T>) -> GTripleSource<'a, Self> where
         T: Borrow<str>,
     {
         Box::new(
-            self.iter().filter_ok(move |t| t.p()==p)
+            self.triples().filter_ok(move |t| t.p()==p)
         )
     }
     /// An iterator visiting all triples with the given object.
     /// 
     /// See also [`iter`](#tymethod.iter).
-    fn iter_for_o<T> (&'a self, o: &'a Term<T>) -> GTripleSource<'a, Self> where
+    fn triples_with_o<T> (&'a self, o: &'a Term<T>) -> GTripleSource<'a, Self> where
         T: Borrow<str>,
     {
         Box::new(
-            self.iter().filter_ok(move |t| t.o()==o)
+            self.triples().filter_ok(move |t| t.o()==o)
         )
     }
     /// An iterator visiting all triples with the given subject and predicate.
     /// 
     /// See also [`iter`](#tymethod.iter).
-    fn iter_for_sp<T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> GTripleSource<'a, Self> where
+    fn triples_with_sp<T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> GTripleSource<'a, Self> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
         Box::new(
-            self.iter_for_s(s).filter_ok(move |t| t.p()==p)
+            self.triples_with_s(s).filter_ok(move |t| t.p()==p)
         )
     }
     /// An iterator visiting all triples with the given subject and object.
     /// 
     /// See also [`iter`](#tymethod.iter).
-    fn iter_for_so<T, U> (&'a self, s: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self> where
+    fn triples_with_so<T, U> (&'a self, s: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
         Box::new(
-            self.iter_for_s(s).filter_ok(move |t| t.o()==o)
+            self.triples_with_s(s).filter_ok(move |t| t.o()==o)
         )
     }
     /// An iterator visiting all triples with the given predicate and object.
     /// 
     /// See also [`iter`](#tymethod.iter).
-    fn iter_for_po<T, U> (&'a self, p: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self> where
+    fn triples_with_po<T, U> (&'a self, p: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
         Box::new(
-            self.iter_for_p(p).filter_ok(move |t| t.o()==o)
+            self.triples_with_p(p).filter_ok(move |t| t.o()==o)
         )
     }
     /// An iterator visiting all triples with the given subject, predicate and object.
     /// 
     /// See also [`iter`](#tymethod.iter).
-    fn iter_for_spo<T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> GTripleSource<'a, Self> where
+    fn triples_with_spo<T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> GTripleSource<'a, Self> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
     {
         Box::new(
-            self.iter_for_sp(s,p).filter_ok(move |t| t.o()==o)
+            self.triples_with_sp(s,p).filter_ok(move |t| t.o()==o)
         )
     }
 
     /// Return `true` if this graph contains the given triple.
     fn contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> GResult<'a, Self, bool> {
-        match self.iter_for_spo(s, p, o).next() {
+        match self.triples_with_spo(s, p, o).next() {
             None           => Ok(false),
             Some(Ok(_))    => Ok(true),
             Some(Err(err)) => Err(err),
@@ -132,28 +132,28 @@ pub trait Graph<'a> {
     /// An iterator visiting all triples matching the given subject, predicate and object.
     /// 
     /// See also [`iter`](#tymethod.iter).
-    fn iter_matching<S, P, O> (&'a self, ms: &'a S, mp: &'a P, mo: &'a O) -> GTripleSource<'a, Self> where
+    fn triples_matching<S, P, O> (&'a self, ms: &'a S, mp: &'a P, mo: &'a O) -> GTripleSource<'a, Self> where
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
     {
         match (&ms.constant(), &mp.constant(), &mo.constant()) {
             (None,    None,    None   )    => Box::from(
-                self.iter().filter_ok(move |t| ms.matches(t.s()) && mp.matches(t.p()) && mo.matches(t.o()))),
+                self.triples().filter_ok(move |t| ms.matches(t.s()) && mp.matches(t.p()) && mo.matches(t.o()))),
             (Some(s), None,    None   )    => Box::from(
-                self.iter_for_s(s).filter_ok(move |t| mp.matches(t.p()) && mo.matches(t.o()))),
+                self.triples_with_s(s).filter_ok(move |t| mp.matches(t.p()) && mo.matches(t.o()))),
             (None,    Some(p), None   )    => Box::from(
-                self.iter_for_p(p).filter_ok(move |t| ms.matches(t.s()) && mo.matches(t.o()))),
+                self.triples_with_p(p).filter_ok(move |t| ms.matches(t.s()) && mo.matches(t.o()))),
             (None,    None,    Some(o))    => Box::from(
-                self.iter_for_o(o).filter_ok(move |t| ms.matches(t.s()) && mp.matches(t.p()))),
+                self.triples_with_o(o).filter_ok(move |t| ms.matches(t.s()) && mp.matches(t.p()))),
             (Some(s), Some(p), None   )    => Box::from(
-                self.iter_for_sp(s, p).filter_ok(move |t| mo.matches(t.o()))),
+                self.triples_with_sp(s, p).filter_ok(move |t| mo.matches(t.o()))),
             (Some(s), None,    Some(o))    => Box::from(
-                self.iter_for_so(s, o).filter_ok(move |t| mp.matches(t.p()))),
+                self.triples_with_so(s, o).filter_ok(move |t| mp.matches(t.p()))),
             (None,    Some(p), Some(o))    => Box::from(
-                self.iter_for_po(p, o).filter_ok(move |t| ms.matches(t.s()))),
+                self.triples_with_po(p, o).filter_ok(move |t| ms.matches(t.s()))),
             (Some(s), Some(p), Some(o))    => Box::from(
-                self.iter_for_spo(s, p, o))
+                self.triples_with_spo(s, p, o))
         }
     }
 }
@@ -257,7 +257,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
         Self::MutationError: From<CoercedError<Never, Self::MutationError>>,
     {
         let to_remove: Vec<_> =
-            self.iter_matching(ms, mp, mo)
+            self.triples_matching(ms, mp, mo)
             .map_ok(|t| {
                 [BoxTerm::from(t.s()), BoxTerm::from(t.p()), BoxTerm::from(t.o())]
             })
@@ -290,7 +290,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
         Self::MutationError: From<CoercedError<Never, Self::MutationError>>,
     {
         let to_remove: Vec<_> =
-            self.iter()
+            self.triples()
             .filter_ok(|t| {
                 !(ms.matches(t.s()) && mp.matches(t.p()) && mo.matches(t.o()))
             })

@@ -21,7 +21,7 @@ impl<'a, T> Graph<'a> for [T] where
     type Error = Never;
 
     #[inline]
-    fn iter(&'a self) -> GTripleSource<Self> {
+    fn triples(&'a self) -> GTripleSource<Self> {
         Box::new(
             <[T]>::iter(self).as_triple_source()
         )
@@ -37,7 +37,7 @@ impl<'a, T> Graph<'a> for Vec<T> where
     type Error = Never;
 
     #[inline]
-    fn iter(&'a self) -> GTripleSource<Self> {
+    fn triples(&'a self) -> GTripleSource<Self> {
         Box::new(
             <[T]>::iter(self).as_triple_source()
         )
@@ -64,7 +64,7 @@ impl MutableGraph for Vec<[BoxTerm;3]> where
         U: Borrow<str>,
         V: Borrow<str>,
     {
-        let i = self.iter().oks().position(|t|
+        let i = self.triples().oks().position(|t|
             s == t.s() && p == t.p() && o == t.o()
         );
         if let Some(i) = i {
@@ -85,7 +85,7 @@ impl<'a, T> Graph<'a> for HashSet<T> where
     type Error = Never;
 
     #[inline]
-    fn iter(&'a self) -> GTripleSource<Self> {
+    fn triples(&'a self) -> GTripleSource<Self> {
         Box::from(self.iter().as_triple_source())
     }
 }
@@ -140,9 +140,9 @@ mod test {
             [rdf::Property, rdf::type_, rdfs::Class],
             [rdfs::Class, rdf::type_, rdfs::Class],
         ];
-        let len = Graph::iter(&g[..]).oks().count();
+        let len = g.triples().oks().count();
         assert_eq!(len, 3);
-        let len = g.iter_for_o(&rdfs::Class).oks().count();
+        let len = g.triples_with_o(&rdfs::Class).oks().count();
         assert_eq!(len, 2);
     }
 
@@ -161,9 +161,9 @@ mod test {
         assert_eq!(inserted, triples.len());
         assert_eq!(inserted, g.len());
 
-        let len = Graph::iter(&g[..]).oks().count();
+        let len = g.triples().oks().count();
         assert_eq!(len, 3);
-        let len = g.iter_for_o(&rdfs::Class).oks().count();
+        let len = g.triples_with_o(&rdfs::Class).oks().count();
         assert_eq!(len, 2);
 
         MutableGraph::remove(&mut g, &rdfs::Class, &rdf::type_, &rdfs::Class).unwrap();

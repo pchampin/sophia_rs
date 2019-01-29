@@ -27,63 +27,63 @@ pub trait GraphWrapper<'a>
 
     #[inline]
     /// Mimmic the [`iter`](../trait.Graph.html#tymethod.iter) method.
-    fn gw_iter(&'a self) -> GTripleSource<'a, Self::Wrapped> {
-        self.get_wrapped().iter()
+    fn gw_triples(&'a self) -> GTripleSource<'a, Self::Wrapped> {
+        self.get_wrapped().triples()
     }
 
     #[inline]
-    /// Mimmic the [`iter_for_s`](../trait.Graph.html#method.iter_for_s) method.
-    fn gw_iter_for_s<T> (&'a self, s: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped> where
+    /// Mimmic the [`triples_with_s`](../trait.Graph.html#method.triples_with_s) method.
+    fn gw_triples_with_s<T> (&'a self, s: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped> where
         T: Borrow<str>,
     {
-        self.get_wrapped().iter_for_s(s)
+        self.get_wrapped().triples_with_s(s)
     }
     #[inline]
-    /// Mimmic the [`iter_for_p`](../trait.Graph.html#method.iter_for_p) method.
-    fn gw_iter_for_p<T> (&'a self, p: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped> where
+    /// Mimmic the [`triples_with_p`](../trait.Graph.html#method.triples_with_p) method.
+    fn gw_triples_with_p<T> (&'a self, p: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped> where
         T: Borrow<str>,
     {
-        self.get_wrapped().iter_for_p(p)
+        self.get_wrapped().triples_with_p(p)
     }
     #[inline]
-    /// Mimmic the [`iter_for_o`](../trait.Graph.html#method.iter_for_o) method.
-    fn gw_iter_for_o<T> (&'a self, o: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped> where
+    /// Mimmic the [`triples_with_o`](../trait.Graph.html#method.triples_with_o) method.
+    fn gw_triples_with_o<T> (&'a self, o: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped> where
         T: Borrow<str>,
     {
-        self.get_wrapped().iter_for_o(o)
+        self.get_wrapped().triples_with_o(o)
     }
     #[inline]
-    /// Mimmic the [`iter_for_sp`](../trait.Graph.html#method.iter_for_sp) method.
-    fn gw_iter_for_sp<T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped> where
-        T: Borrow<str>,
-        U: Borrow<str>,
-    {
-        self.get_wrapped().iter_for_sp(s, p)
-    }
-    #[inline]
-    /// Mimmic the [`iter_for_so`](../trait.Graph.html#method.iter_for_so) method.
-    fn gw_iter_for_so<T, U> (&'a self, s: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped> where
+    /// Mimmic the [`triples_with_sp`](../trait.Graph.html#method.triples_with_sp) method.
+    fn gw_triples_with_sp<T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
-        self.get_wrapped().iter_for_so(s, o)
+        self.get_wrapped().triples_with_sp(s, p)
     }
     #[inline]
-    /// Mimmic the [`iter_for_po`](../trait.Graph.html#method.iter_for_po) method.
-    fn gw_iter_for_po<T, U> (&'a self, p: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped> where
+    /// Mimmic the [`triples_with_so`](../trait.Graph.html#method.triples_with_so) method.
+    fn gw_triples_with_so<T, U> (&'a self, s: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped> where
         T: Borrow<str>,
         U: Borrow<str>,
     {
-        self.get_wrapped().iter_for_po(p, o)
+        self.get_wrapped().triples_with_so(s, o)
     }
     #[inline]
-    /// Mimmic the [`iter_for_spo`](../trait.Graph.html#method.iter_for_spo) method.
-    fn gw_iter_for_spo<T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> GTripleSource<'a, Self::Wrapped> where
+    /// Mimmic the [`triples_with_po`](../trait.Graph.html#method.triples_with_po) method.
+    fn gw_triples_with_po<T, U> (&'a self, p: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped> where
+        T: Borrow<str>,
+        U: Borrow<str>,
+    {
+        self.get_wrapped().triples_with_po(p, o)
+    }
+    #[inline]
+    /// Mimmic the [`triples_with_spo`](../trait.Graph.html#method.triples_with_spo) method.
+    fn gw_triples_with_spo<T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> GTripleSource<'a, Self::Wrapped> where
         T: Borrow<str>,
         U: Borrow<str>,
         V: Borrow<str>,
     {
-        self.get_wrapped().iter_for_spo(s, p, o)
+        self.get_wrapped().triples_with_spo(s, p, o)
     }
 
     #[inline]
@@ -104,55 +104,55 @@ macro_rules! impl_graph_for_wrapper {
         type Error = <<Self as GraphWrapper<'a>>::Wrapped as Graph<'a>>::Error;
 
         #[inline]
-        fn iter(&'a self) -> GTripleSource<'a, Self> {
-            GraphWrapper::gw_iter(self)
+        fn triples(&'a self) -> GTripleSource<'a, Self> {
+            GraphWrapper::gw_triples(self)
         }
         #[inline]
-        fn iter_for_s<T_> (&'a self, s: &'a Term<T_>) -> GTripleSource<'a, Self> where
+        fn triples_with_s<T_> (&'a self, s: &'a Term<T_>) -> GTripleSource<'a, Self> where
             T_: Borrow<str>,
         {
-            GraphWrapper::gw_iter_for_s(self, s)
+            GraphWrapper::gw_triples_with_s(self, s)
         }
         #[inline]
-        fn iter_for_p<T_> (&'a self, p: &'a Term<T_>) -> GTripleSource<'a, Self> where
+        fn triples_with_p<T_> (&'a self, p: &'a Term<T_>) -> GTripleSource<'a, Self> where
             T_: Borrow<str>,
         {
-            GraphWrapper::gw_iter_for_p(self, p)
+            GraphWrapper::gw_triples_with_p(self, p)
         }
         #[inline]
-        fn iter_for_o<T_> (&'a self, o: &'a Term<T_>) -> GTripleSource<'a, Self> where
+        fn triples_with_o<T_> (&'a self, o: &'a Term<T_>) -> GTripleSource<'a, Self> where
             T_: Borrow<str>,
         {
-            GraphWrapper::gw_iter_for_o(self, o)
+            GraphWrapper::gw_triples_with_o(self, o)
         }
         #[inline]
-        fn iter_for_sp<T_, U_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>) -> GTripleSource<'a, Self> where
-            T_: Borrow<str>,
-            U_: Borrow<str>,
-        {
-            GraphWrapper::gw_iter_for_sp(self, s, p)
-        }
-        #[inline]
-        fn iter_for_so<T_, U_> (&'a self, s: &'a Term<T_>, o: &'a Term<U_>) -> GTripleSource<'a, Self> where
+        fn triples_with_sp<T_, U_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>) -> GTripleSource<'a, Self> where
             T_: Borrow<str>,
             U_: Borrow<str>,
         {
-            GraphWrapper::gw_iter_for_so(self, s, o)
+            GraphWrapper::gw_triples_with_sp(self, s, p)
         }
         #[inline]
-        fn iter_for_po<T_, U_> (&'a self, p: &'a Term<T_>, o: &'a Term<U_>) -> GTripleSource<'a, Self> where
+        fn triples_with_so<T_, U_> (&'a self, s: &'a Term<T_>, o: &'a Term<U_>) -> GTripleSource<'a, Self> where
             T_: Borrow<str>,
             U_: Borrow<str>,
         {
-            GraphWrapper::gw_iter_for_po(self, p, o)
+            GraphWrapper::gw_triples_with_so(self, s, o)
         }
         #[inline]
-        fn iter_for_spo<T_, U_, V_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>, o: &'a Term<V_>) -> GTripleSource<'a, Self> where
+        fn triples_with_po<T_, U_> (&'a self, p: &'a Term<T_>, o: &'a Term<U_>) -> GTripleSource<'a, Self> where
+            T_: Borrow<str>,
+            U_: Borrow<str>,
+        {
+            GraphWrapper::gw_triples_with_po(self, p, o)
+        }
+        #[inline]
+        fn triples_with_spo<T_, U_, V_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>, o: &'a Term<V_>) -> GTripleSource<'a, Self> where
             T_: Borrow<str>,
             U_: Borrow<str>,
             V_: Borrow<str>,
         {
-            GraphWrapper::gw_iter_for_spo(self, s, p, o)
+            GraphWrapper::gw_triples_with_spo(self, s, p, o)
         }
 
         #[inline]

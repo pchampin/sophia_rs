@@ -57,7 +57,7 @@ pub trait WriteSerializer<W: io::Write>: TripleSink<Outcome=()> + Sized {
         G: Graph<'a>,
         G::Error: CoercibleWith<Self::Error>,
     {
-        graph.iter().in_sink(self)
+        graph.triples().in_sink(self)
     }
 
     /// Serialize the given triple.
@@ -97,7 +97,7 @@ pub trait StringSerializer: TripleSink<Outcome=String> + Sized {
         G: Graph<'a>,
         G::Error: CoercibleWith<Self::Error>,
     {
-        graph.iter().in_sink(self)
+        graph.triples().in_sink(self)
     }
 
     /// Stringify the given triple.
