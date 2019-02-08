@@ -1,6 +1,7 @@
 // this module is transparently re-exported by its parent `graph`
 use std::borrow::Borrow;
 use std::collections::HashMap;
+use std::hash::Hash;
 
 use crate::graph::index::TermIndexMap;
 use crate::term::*;
@@ -159,7 +160,7 @@ impl_unsigned_for!(u64);
 /// We use this for keys in TermIndexMapU::t2i, when the owning term is in TermIndexMapU::i2t.
 #[inline]
 unsafe fn fake_static<S, T> (t: &T) -> StaticTerm where
-    S: Borrow<str>,
+    S: Borrow<str> + Clone + Eq + Hash,
     T: Borrow<Term<S>>,
 {
     StaticTerm::from_with(t.borrow(), |txt| &*(txt as *const str))

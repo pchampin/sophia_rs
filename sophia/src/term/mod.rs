@@ -34,6 +34,7 @@
 
 use std::borrow::Borrow;
 use std::fmt::Debug;
+use std::hash::Hash;
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -57,7 +58,10 @@ mod literal_kind; pub use self::literal_kind::*;
 /// See [module documentation](index.html) for more detail.
 /// 
 #[derive(Clone,Copy,Debug,Eq,Hash)]
-pub enum Term<T: Borrow<str>> {
+pub enum Term<T>
+where
+    T: Borrow<str> + Clone + Eq + Hash
+{
     Iri(IriData<T>),
     BNode(BNodeId<T>),
     Literal(T, LiteralKind<T>),
@@ -94,7 +98,7 @@ pub type StaticTerm = RefTerm<'static>;
 
 
 impl<T> Term<T> where
-    T: Borrow<str>,
+    T: Borrow<str> + Clone + Eq + Hash,
 {
     /// Return a copy of this term's underlying text.
     /// 
@@ -121,7 +125,7 @@ impl<T> Term<T> where
 }
 
 impl<T> Term<T> where
-    T: Borrow<str>,
+    T: Borrow<str> + Clone + Eq + Hash,
 {
     /// Return a new IRI term from the given text.
     /// 
@@ -200,7 +204,7 @@ impl<T> Term<T> where
 
     /// Copy another term with the given factory.
     pub fn from_with<'a, U, F> (other: &'a Term<U>, mut factory: F) -> Term<T> where
-        U: Borrow<str>,
+        U: Borrow<str> + Clone + Eq + Hash,
         F: FnMut(&'a str) -> T,
     {
         match other {
@@ -219,7 +223,7 @@ impl<T> Term<T> where
     /// Copy another term with the given factory,
     /// applying the given normalization policy.
     pub fn normalized_with<'a, U, F> (other: &'a Term<U>, mut factory: F, norm: Normalization) -> Term<T> where
-        U: Borrow<str>,
+        U: Borrow<str> + Clone + Eq + Hash,
         F: FnMut(&str) -> T,
     {
         match other {
@@ -306,7 +310,7 @@ impl<T> Term<T> where
     /// as it factorizes the pre-processing required for joining IRIs.
     ///
     pub fn join<U> (&self, t: &Term<U>) -> Term<U> where
-        U: Borrow<str> + Clone + From<String>,
+        U: Borrow<str> + Clone + Eq + Hash + From<String>,
     {
         let mut ret = None;
         self.batch_join(|join| {
@@ -342,7 +346,7 @@ impl<T> Term<T> where
     ///
     pub fn batch_join<'a, F, U> (&self, task: F) where
         F: FnOnce(&Fn(&Term<U>) -> Term<U>) -> (),
-        U: Borrow<str> + Clone + From<String>,
+        U: Borrow<str> + Clone + Eq + Hash + From<String>,
     {
         match self {
             Iri(iri) if iri.is_absolute() => {
@@ -377,8 +381,8 @@ impl<T> Term<T> where
 }
 
 impl<T, U> PartialEq<Term<U>> for Term<T> where
-    T: Borrow<str>,
-    U: Borrow<str>,
+    T: Borrow<str> + Clone + Eq + Hash,
+    U: Borrow<str> + Clone + Eq + Hash,
 {
     fn eq(&self, other: &Term<U>) -> bool {
         match (self, other) {
@@ -396,8 +400,8 @@ impl<T, U> PartialEq<Term<U>> for Term<T> where
 }
 
 impl<T, U> PartialEq<IriData<U>> for Term<T> where
-    T: Borrow<str>,
-    U: Borrow<str>,
+    T: Borrow<str> + Clone + Eq + Hash,
+    U: Borrow<str> + Clone + Eq + Hash,
 {
     fn eq(&self, other: &IriData<U>) -> bool {
         match self {
@@ -408,8 +412,8 @@ impl<T, U> PartialEq<IriData<U>> for Term<T> where
 }
 
 impl<'a, T, U> From<&'a Term<U>> for Term<T> where
-        T: Borrow<str> + From<&'a str>,
-        U: Borrow<str>,
+        T: Borrow<str> + Clone + Eq + Hash + From<&'a str>,
+        U: Borrow<str> + Clone + Eq + Hash,
 {
     fn from(other: &'a Term<U>) -> Term<T> {
         Self::from_with(other, T::from)

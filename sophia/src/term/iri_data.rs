@@ -231,11 +231,14 @@ impl<'a, T> PartialEq<&'a str> for IriData<T> where
 
 impl<T, U> PartialEq<Term<U>> for IriData<T> where
     T: Borrow<str>,
-    U: Borrow<str>,
+    U: Borrow<str> + Clone + Eq + Hash,
 {
     #[inline]
     fn eq(&self, other: &Term<U>) -> bool {
-        other == self
+        match other {
+            Iri(other_iri) => other_iri == self,
+            _              => false,
+        }
     }
 }
 

@@ -11,6 +11,7 @@
 
 use std::borrow::Borrow;
 use std::io;
+use std::hash::Hash;
 use std::mem::swap;
 
 use crate::streams::*;
@@ -95,7 +96,7 @@ def_stringifier!();
 
 /// Write a single RDF term into `w` using the NT syntax.
 pub fn write_term<T,W> (w: &mut W, t: &Term<T>) -> io::Result<()> where
-    T: Borrow<str>,
+    T: Borrow<str> + Clone + Eq + Hash,
     W: io::Write,
 {
     use self::Term::*;
@@ -140,7 +141,7 @@ pub fn write_term<T,W> (w: &mut W, t: &Term<T>) -> io::Result<()> where
 
 /// Stringifies a single RDF term using the NT syntax.
 pub fn stringify_term<T> (t: &Term<T>) -> String where
-    T: Borrow<str>,
+    T: Borrow<str> + Clone + Eq + Hash,
 {
     let mut v = Vec::new();
     write_term(&mut v, t).unwrap();

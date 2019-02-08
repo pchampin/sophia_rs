@@ -13,13 +13,14 @@
 //! 
 
 use std::borrow::Borrow;
+use std::hash::Hash;
 
 use crate::term::*;
 
 /// This trait represents an abstract RDF triple,
 /// and provide convenient methods for working with triples.
 pub trait Triple<'a> {
-    type Holder: Borrow<str>+'a;
+    type Holder: Borrow<str> + Clone + Eq + Hash + 'a;
     /// The subject of this triple.
     fn s(&self) -> &Term<Self::Holder>;
     /// The predicate of this triple.
@@ -28,14 +29,20 @@ pub trait Triple<'a> {
     fn o(&self) -> &Term<Self::Holder>;
 }
 
-impl<'a, T: Borrow<str>+'a> Triple<'a> for [Term<T>;3] {
+impl<'a, T> Triple<'a> for [Term<T>;3]
+where
+    T: Borrow<str> + Clone + Eq + Hash + 'a,
+{
     type Holder= T;
     #[inline] fn s(&self) -> &Term<T> { &self[0] }
     #[inline] fn p(&self) -> &Term<T> { &self[1] }
     #[inline] fn o(&self) -> &Term<T> { &self[2] }
 }
 
-impl<'a, T: Borrow<str>+'a> Triple<'a> for [&'a Term<T>;3] {
+impl<'a, T> Triple<'a> for [&'a Term<T>;3]
+where
+    T: Borrow<str> + Clone + Eq + Hash + 'a,
+{
     type Holder= T;
     #[inline] fn s(&self) -> &Term<T> { self[0] }
     #[inline] fn p(&self) -> &Term<T> { self[1] }

@@ -1,6 +1,7 @@
 // this module is transparently re-exported by its parent `graph`
 
 use std::borrow::Borrow;
+use std::hash::Hash;
 
 use resiter::filter::*;
 use resiter::map::*;
@@ -48,7 +49,7 @@ pub trait Graph<'a> {
     /// 
     /// See also [`iter`](#tymethod.iter).
     fn triples_with_s<T> (&'a self, s: &'a Term<T>) -> GTripleSource<'a, Self> where
-        T: Borrow<str>,
+        T: Borrow<str> + Clone + Eq + Hash,
     {
         Box::new(
             self.triples().filter_ok(move |t| t.s()==s)
@@ -58,7 +59,7 @@ pub trait Graph<'a> {
     /// 
     /// See also [`iter`](#tymethod.iter).
     fn triples_with_p<T> (&'a self, p: &'a Term<T>) -> GTripleSource<'a, Self> where
-        T: Borrow<str>,
+        T: Borrow<str> + Clone + Eq + Hash,
     {
         Box::new(
             self.triples().filter_ok(move |t| t.p()==p)
@@ -68,7 +69,7 @@ pub trait Graph<'a> {
     /// 
     /// See also [`iter`](#tymethod.iter).
     fn triples_with_o<T> (&'a self, o: &'a Term<T>) -> GTripleSource<'a, Self> where
-        T: Borrow<str>,
+        T: Borrow<str> + Clone + Eq + Hash,
     {
         Box::new(
             self.triples().filter_ok(move |t| t.o()==o)
@@ -78,8 +79,8 @@ pub trait Graph<'a> {
     /// 
     /// See also [`iter`](#tymethod.iter).
     fn triples_with_sp<T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> GTripleSource<'a, Self> where
-        T: Borrow<str>,
-        U: Borrow<str>,
+        T: Borrow<str> + Clone + Eq + Hash,
+        U: Borrow<str> + Clone + Eq + Hash,
     {
         Box::new(
             self.triples_with_s(s).filter_ok(move |t| t.p()==p)
@@ -89,8 +90,8 @@ pub trait Graph<'a> {
     /// 
     /// See also [`iter`](#tymethod.iter).
     fn triples_with_so<T, U> (&'a self, s: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self> where
-        T: Borrow<str>,
-        U: Borrow<str>,
+        T: Borrow<str> + Clone + Eq + Hash,
+        U: Borrow<str> + Clone + Eq + Hash,
     {
         Box::new(
             self.triples_with_s(s).filter_ok(move |t| t.o()==o)
@@ -100,8 +101,8 @@ pub trait Graph<'a> {
     /// 
     /// See also [`iter`](#tymethod.iter).
     fn triples_with_po<T, U> (&'a self, p: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self> where
-        T: Borrow<str>,
-        U: Borrow<str>,
+        T: Borrow<str> + Clone + Eq + Hash,
+        U: Borrow<str> + Clone + Eq + Hash,
     {
         Box::new(
             self.triples_with_p(p).filter_ok(move |t| t.o()==o)
@@ -111,9 +112,9 @@ pub trait Graph<'a> {
     /// 
     /// See also [`iter`](#tymethod.iter).
     fn triples_with_spo<T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> GTripleSource<'a, Self> where
-        T: Borrow<str>,
-        U: Borrow<str>,
-        V: Borrow<str>,
+        T: Borrow<str> + Clone + Eq + Hash,
+        U: Borrow<str> + Clone + Eq + Hash,
+        V: Borrow<str> + Clone + Eq + Hash,
     {
         Box::new(
             self.triples_with_sp(s,p).filter_ok(move |t| t.o()==o)
@@ -182,9 +183,9 @@ pub trait MutableGraph: for<'x> Graph<'x> {
     /// only that the graph now has one more occurence of it.
     /// 
     fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool> where
-        T: Borrow<str>,
-        U: Borrow<str>,
-        V: Borrow<str>,
+        T: Borrow<str> + Clone + Eq + Hash,
+        U: Borrow<str> + Clone + Eq + Hash,
+        V: Borrow<str> + Clone + Eq + Hash,
     ;
 
     /// Insert the given triple in this graph.
@@ -196,9 +197,9 @@ pub trait MutableGraph: for<'x> Graph<'x> {
     /// only that the graph now has one less occurence of it.
     /// 
     fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult< Self, bool> where
-        T: Borrow<str>,
-        U: Borrow<str>,
-        V:Borrow<str>,
+        T: Borrow<str> + Clone + Eq + Hash,
+        U: Borrow<str> + Clone + Eq + Hash,
+        V: Borrow<str> + Clone + Eq + Hash,
     ;
 
     /// Return a [`TripleSink`](../streams/trait.TripleSink.html)

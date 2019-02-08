@@ -12,30 +12,43 @@ use super::*;
 /// [term]: ../enum.Term.html
 /// 
 pub trait TermMatcher {
-    type Holder: Borrow<str>;
+    type Holder: Borrow<str> + Clone + Eq + Hash;
     /// If this matcher matches only one term, return this term, else `None`.
     fn constant(&self) -> Option<&Term<Self::Holder>>;
 
     /// Check whether this matcher matches `t`.
-    fn matches<T: Borrow<str>> (&self, t: &Term<T>) -> bool;
+    fn matches<T> (&self, t: &Term<T>) -> bool
+    where T: Borrow<str> + Clone + Eq + Hash;
 }
 
-impl<U: Borrow<str>> TermMatcher for Term<U> where {
+impl<U> TermMatcher for Term<U>
+where
+    U: Borrow<str> + Clone + Eq + Hash
+{
     type Holder = U;
     fn constant(&self) -> Option<&Term<Self::Holder>> {
         Some(self)
     }
-    fn matches<T: Borrow<str>> (&self, t: &Term<T>) -> bool {
+    fn matches<T> (&self, t: &Term<T>) -> bool
+    where
+        T: Borrow<str> + Clone + Eq + Hash
+    {
         t==self
     }
 }
 
-impl<U: Borrow<str>> TermMatcher for Option<Term<U>> {
+impl<U> TermMatcher for Option<Term<U>>
+where
+    U: Borrow<str> + Clone + Eq + Hash
+{
     type Holder = U;
     fn constant(&self) -> Option<&Term<Self::Holder>> {
         self.as_ref()
     }
-    fn matches<T: Borrow<str>> (&self, t: &Term<T>) -> bool {
+    fn matches<T> (&self, t: &Term<T>) -> bool
+    where
+        T: Borrow<str> + Clone + Eq + Hash
+    {
         match self {
             Some(term) => t == term,
             None => true,
@@ -43,13 +56,19 @@ impl<U: Borrow<str>> TermMatcher for Option<Term<U>> {
     }
 }
 
-impl<U: Borrow<str>> TermMatcher for [Term<U>] {
+impl<U> TermMatcher for [Term<U>]
+where
+    U: Borrow<str> + Clone + Eq + Hash
+{
     type Holder = U;
     fn constant(&self) -> Option<&Term<Self::Holder>> {
         if self.len() == 1 { Some(&self[0]) }
         else { None }
     }
-    fn matches<T: Borrow<str>> (&self, t: &Term<T>) -> bool {
+    fn matches<T> (&self, t: &Term<T>) -> bool
+    where
+        T: Borrow<str> + Clone + Eq + Hash
+    {
         for term in self {
             if t == term { return true; }
         }
@@ -62,7 +81,10 @@ impl<F: Fn(&RefTerm) -> bool> TermMatcher for F {
     fn constant(&self) -> Option<&Term<Self::Holder>> {
         None
     }
-    fn matches<T: Borrow<str>> (&self, t: &Term<T>) -> bool {
+    fn matches<T> (&self, t: &Term<T>) -> bool
+    where
+        T: Borrow<str> + Clone + Eq + Hash
+    {
         self(&RefTerm::from(t))
     }
 }

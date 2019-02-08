@@ -53,7 +53,7 @@ impl<I> IndexedGraph for HashGraph<I> where
 
     #[inline]
     fn get_index<T> (&self, t: &Term<T>) -> Option<Self::Index> where
-        T: Borrow<str>,
+        T: Borrow<str> + Clone + Eq + Hash,
     {
         self.terms.get_index(&RefTerm::from(t))
     }
@@ -64,9 +64,9 @@ impl<I> IndexedGraph for HashGraph<I> where
     }
 
     fn insert_indexed<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Option<[I::Index;3]> where
-        T: Borrow<str>,
-        U: Borrow<str>,
-        V: Borrow<str>,
+        T: Borrow<str> + Clone + Eq + Hash,
+        U: Borrow<str> + Clone + Eq + Hash,
+        V: Borrow<str> + Clone + Eq + Hash,
     {
         let si = self.terms.make_index(&RefTerm::from(s));
         let pi = self.terms.make_index(&RefTerm::from(p));
@@ -83,9 +83,9 @@ impl<I> IndexedGraph for HashGraph<I> where
     }
 
     fn remove_indexed<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Option<[I::Index;3]> where
-        T: Borrow<str>,
-        U: Borrow<str>,
-        V: Borrow<str>,
+        T: Borrow<str> + Clone + Eq + Hash,
+        U: Borrow<str> + Clone + Eq + Hash,
+        V: Borrow<str> + Clone + Eq + Hash,
     {
         let si = self.terms.get_index(&RefTerm::from(s));
         let pi = self.terms.get_index(&RefTerm::from(p));

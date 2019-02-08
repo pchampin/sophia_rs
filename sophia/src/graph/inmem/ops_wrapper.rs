@@ -48,7 +48,7 @@ impl<'a, T> GraphWrapper<'a> for OpsWrapper<T> where
 
     fn gw_triples_with_o<U> (&'a self, o: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped>
     where
-        U: Borrow<str>,
+        U: Borrow<str> + Clone + Eq + Hash,
     {
         if let Some(oi) = self.wrapped.get_index(o) {
             if let Some(pis) = self.o2p.get(&oi) {
@@ -74,8 +74,8 @@ impl<'a, T> GraphWrapper<'a> for OpsWrapper<T> where
 
     fn gw_triples_with_po<U, V> (&'a self, p: &'a Term<U>, o: &'a Term<V>) -> GTripleSource<'a, Self::Wrapped>
     where
-        U: Borrow<str>,
-        V: Borrow<str>,
+        U: Borrow<str> + Clone + Eq + Hash,
+        V: Borrow<str> + Clone + Eq + Hash,
     {
         if let Some(pi) = self.wrapped.get_index(p) {
             if let Some(oi) = self.wrapped.get_index(o) {
@@ -103,7 +103,7 @@ impl<T> IndexedGraph for OpsWrapper<T> where
 
     #[inline]
     fn get_index<U> (&self, t: &Term<U>) -> Option<Self::Index> where
-        U: Borrow<str>,
+        U: Borrow<str> + Clone + Eq + Hash,
     {
         self.wrapped.get_index(t)
     }
@@ -115,9 +115,9 @@ impl<T> IndexedGraph for OpsWrapper<T> where
     }
 
     fn insert_indexed<U, V, W> (&mut self, s: &Term<U>, p: &Term<V>, o: &Term<W>) -> Option<[Self::Index;3]> where
-        U: Borrow<str>,
-        V: Borrow<str>,
-        W: Borrow<str>,
+        U: Borrow<str> + Clone + Eq + Hash,
+        V: Borrow<str> + Clone + Eq + Hash,
+        W: Borrow<str> + Clone + Eq + Hash,
     {
         let modified = self.wrapped.insert_indexed(s, p, o);
         if let Some([si, pi, oi]) = modified {
@@ -128,9 +128,9 @@ impl<T> IndexedGraph for OpsWrapper<T> where
     }
 
     fn remove_indexed<U, V, W> (&mut self, s: &Term<U>, p: &Term<V>, o: &Term<W>) -> Option<[Self::Index;3]> where
-        U: Borrow<str>,
-        V: Borrow<str>,
-        W: Borrow<str>,
+        U: Borrow<str> + Clone + Eq + Hash,
+        V: Borrow<str> + Clone + Eq + Hash,
+        W: Borrow<str> + Clone + Eq + Hash,
     {
         let modified = self.wrapped.remove_indexed(s, p, o);
         if let Some([si, pi, oi]) = modified {

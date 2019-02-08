@@ -33,6 +33,7 @@
 //! [`SmallGraph`]: type.SmallGraph.html
 
 use std::borrow::Borrow;
+use std::hash::Hash;
 
 use crate::term::*;
 use crate::term::factory::*;
