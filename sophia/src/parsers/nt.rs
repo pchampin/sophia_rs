@@ -131,10 +131,10 @@ rental! {
 }
 pub use self::nt_triple::NtTriple;
 impl<'a> Triple<'a> for NtTriple {
-    type Holder = Cow<'a, str>;
-    fn s(&self) -> &Term<Self::Holder> { unsafe { std::mem::transmute(self.suffix().s()) } }
-    fn p(&self) -> &Term<Self::Holder> { unsafe { std::mem::transmute(self.suffix().p()) } }
-    fn o(&self) -> &Term<Self::Holder> { unsafe { std::mem::transmute(self.suffix().o()) } }
+    type TermData = Cow<'a, str>;
+    fn s(&self) -> &Term<Self::TermData> { unsafe { std::mem::transmute(self.suffix().s()) } }
+    fn p(&self) -> &Term<Self::TermData> { unsafe { std::mem::transmute(self.suffix().p()) } }
+    fn o(&self) -> &Term<Self::TermData> { unsafe { std::mem::transmute(self.suffix().o()) } }
     // The compiler can not figure out the correct lifetime for self in the methods above,
     // so I use transmute() to force the cast.
 }

@@ -25,7 +25,7 @@ pub trait TermIndexMap: Default {
     /// Return the index associated to the given term, creating it if required, and increasing its ref count.
     fn make_index(&mut self, t: &RefTerm) -> Self::Index;
     /// Return the term associated to the given index, if it exists.
-    fn get_term(&self, i: Self::Index) -> Option<&Term<<Self::Factory as TermFactory>::Holder>>;
+    fn get_term(&self, i: Self::Index) -> Option<&Term<<Self::Factory as TermFactory>::TermData>>;
     /// Increase the reference count of a given index.
     fn inc_ref(&mut self, i: Self::Index);
     /// Decrease the reference count of a given index.
@@ -50,7 +50,7 @@ pub trait TermIndexMap: Default {
 pub trait IndexedGraph {
     /// The type used to represent terms internally.
     type Index: Copy + Eq + Hash;
-    type Holder: Borrow<str> + Clone + Eq + Hash + 'static;
+    type TermData: Borrow<str> + Clone + Eq + Hash + 'static;
 
     /// Return the index for the given term, if it exists.
     fn get_index<T> (&self, t: &Term<T>) -> Option<Self::Index> where
@@ -58,7 +58,7 @@ pub trait IndexedGraph {
     ;
 
     /// Return the term for the given index, if it exists.
-    fn get_term(&self, i: Self::Index) -> Option<&Term<Self::Holder>>;
+    fn get_term(&self, i: Self::Index) -> Option<&Term<Self::TermData>>;
 
     /// Insert a triple in this Graph,
     /// and return the corresponding tuple of indices.

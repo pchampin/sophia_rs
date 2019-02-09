@@ -21,7 +21,7 @@ use crate::term::{RefTerm, Term, factory::TermFactory};
 pub struct HashGraph<I> where
     I: TermIndexMap,
     I::Index: Hash,
-    <I::Factory as TermFactory>::Holder: 'static,
+    <I::Factory as TermFactory>::TermData: 'static,
 {
     terms: I,
     triples: HashSet<[I::Index;3]>,
@@ -46,10 +46,10 @@ impl<I> HashGraph<I> where
 impl<I> IndexedGraph for HashGraph<I> where
     I: TermIndexMap,
     I::Index: Hash,
-    <I::Factory as TermFactory>::Holder: 'static,
+    <I::Factory as TermFactory>::TermData: 'static,
 {
     type Index = I::Index;
-    type Holder = <I::Factory as TermFactory>::Holder;
+    type TermData = <I::Factory as TermFactory>::TermData;
 
     #[inline]
     fn get_index<T> (&self, t: &Term<T>) -> Option<Self::Index> where
@@ -59,7 +59,7 @@ impl<I> IndexedGraph for HashGraph<I> where
     }
 
     #[inline]
-    fn get_term<'a>(&'a self, i: Self::Index) -> Option<&Term<Self::Holder>> {
+    fn get_term<'a>(&'a self, i: Self::Index) -> Option<&Term<Self::TermData>> {
         self.terms.get_term(i)
     }
 
@@ -111,9 +111,9 @@ impl<I> IndexedGraph for HashGraph<I> where
 impl<'a, I> Graph<'a> for HashGraph<I> where
     I: TermIndexMap,
     I::Index: Hash,
-    <I::Factory as TermFactory>::Holder: 'static,
+    <I::Factory as TermFactory>::TermData: 'static,
 {
-    type Triple = [&'a Term<<Self as IndexedGraph>::Holder>;3];
+    type Triple = [&'a Term<<Self as IndexedGraph>::TermData>;3];
     type Error = Never;
 
     fn triples(&'a self) -> GTripleSource<'a, Self> {
@@ -131,7 +131,7 @@ impl<'a, I> Graph<'a> for HashGraph<I> where
 impl<I> MutableGraph for HashGraph<I> where
     I: TermIndexMap,
     I::Index: Hash,
-    <I::Factory as TermFactory>::Holder: 'static,
+    <I::Factory as TermFactory>::TermData: 'static,
 {
     impl_mutable_graph_for_indexed_mutable_graph!();
 }

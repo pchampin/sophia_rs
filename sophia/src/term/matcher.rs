@@ -12,9 +12,9 @@ use super::*;
 /// [term]: ../enum.Term.html
 /// 
 pub trait TermMatcher {
-    type Holder: Borrow<str> + Clone + Eq + Hash;
+    type TermData: Borrow<str> + Clone + Eq + Hash;
     /// If this matcher matches only one term, return this term, else `None`.
-    fn constant(&self) -> Option<&Term<Self::Holder>>;
+    fn constant(&self) -> Option<&Term<Self::TermData>>;
 
     /// Check whether this matcher matches `t`.
     fn matches<T> (&self, t: &Term<T>) -> bool
@@ -25,8 +25,8 @@ impl<U> TermMatcher for Term<U>
 where
     U: Borrow<str> + Clone + Eq + Hash
 {
-    type Holder = U;
-    fn constant(&self) -> Option<&Term<Self::Holder>> {
+    type TermData = U;
+    fn constant(&self) -> Option<&Term<Self::TermData>> {
         Some(self)
     }
     fn matches<T> (&self, t: &Term<T>) -> bool
@@ -41,8 +41,8 @@ impl<U> TermMatcher for Option<Term<U>>
 where
     U: Borrow<str> + Clone + Eq + Hash
 {
-    type Holder = U;
-    fn constant(&self) -> Option<&Term<Self::Holder>> {
+    type TermData = U;
+    fn constant(&self) -> Option<&Term<Self::TermData>> {
         self.as_ref()
     }
     fn matches<T> (&self, t: &Term<T>) -> bool
@@ -60,8 +60,8 @@ impl<U> TermMatcher for [Term<U>]
 where
     U: Borrow<str> + Clone + Eq + Hash
 {
-    type Holder = U;
-    fn constant(&self) -> Option<&Term<Self::Holder>> {
+    type TermData = U;
+    fn constant(&self) -> Option<&Term<Self::TermData>> {
         if self.len() == 1 { Some(&self[0]) }
         else { None }
     }
@@ -77,8 +77,8 @@ where
 }
 
 impl<F: Fn(&RefTerm) -> bool> TermMatcher for F {
-    type Holder = &'static str;
-    fn constant(&self) -> Option<&Term<Self::Holder>> {
+    type TermData = &'static str;
+    fn constant(&self) -> Option<&Term<Self::TermData>> {
         None
     }
     fn matches<T> (&self, t: &Term<T>) -> bool

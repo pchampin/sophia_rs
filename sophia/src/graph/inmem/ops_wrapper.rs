@@ -34,7 +34,7 @@ impl<T> OpsWrapper<T> where
 }
 
 impl<'a, T> GraphWrapper<'a> for OpsWrapper<T> where
-    T: IndexedGraph + Graph<'a, Triple=[&'a Term<<T as IndexedGraph>::Holder>;3]>,
+    T: IndexedGraph + Graph<'a, Triple=[&'a Term<<T as IndexedGraph>::TermData>;3]>,
 {
     type Wrapped = T;
 
@@ -99,7 +99,7 @@ impl<T> IndexedGraph for OpsWrapper<T> where
     T: IndexedGraph,
 {
     type Index = T::Index;
-    type Holder = T::Holder;
+    type TermData = T::TermData;
 
     #[inline]
     fn get_index<U> (&self, t: &Term<U>) -> Option<Self::Index> where
@@ -109,7 +109,7 @@ impl<T> IndexedGraph for OpsWrapper<T> where
     }
 
     #[inline]
-    fn get_term<'a>(&'a self, i: Self::Index) -> Option<&Term<Self::Holder>>
+    fn get_term<'a>(&'a self, i: Self::Index) -> Option<&Term<Self::TermData>>
     {
         self.wrapped.get_term(i)
     }
@@ -148,13 +148,13 @@ impl<T> IndexedGraph for OpsWrapper<T> where
 }
 
 impl<'a, T> Graph<'a> for OpsWrapper<T> where
-    T: IndexedGraph + Graph<'a, Triple=[&'a Term<<T as IndexedGraph>::Holder>;3]>,
+    T: IndexedGraph + Graph<'a, Triple=[&'a Term<<T as IndexedGraph>::TermData>;3]>,
 {
     impl_graph_for_wrapper!();
 }
 
 impl<T> MutableGraph for OpsWrapper<T> where
-    T: IndexedGraph + for <'a> Graph<'a, Triple=[&'a Term<<T as IndexedGraph>::Holder>;3]>,
+    T: IndexedGraph + for <'a> Graph<'a, Triple=[&'a Term<<T as IndexedGraph>::TermData>;3]>,
 {
     impl_mutable_graph_for_indexed_mutable_graph!();
 }

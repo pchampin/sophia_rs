@@ -14,7 +14,7 @@ pub struct TermIndexMapU<I, F> where
 {
     factory: F,
     next_free: I,
-    i2t: Vec<Option<Term<F::Holder>>>,
+    i2t: Vec<Option<Term<F::TermData>>>,
     i2c: Vec<I>,
     t2i: HashMap<StaticTerm, I>,
 }
@@ -88,7 +88,7 @@ impl<T, F> TermIndexMap for TermIndexMapU<T, F> where
         T::from_usize(i)
     }
 
-    fn get_term(&self, i: T) -> Option<&Term<F::Holder>> {
+    fn get_term(&self, i: T) -> Option<&Term<F::TermData>> {
         let i = i.as_usize();
         if i < self.i2t.len() {
             self.i2t[i].as_ref()
@@ -106,7 +106,7 @@ impl<T, F> TermIndexMap for TermIndexMapU<T, F> where
         let i = i.as_usize();
         self.i2c[i].dec();
         if self.i2c[i].is_null() {
-            let t: Term<F::Holder> = self.i2t[i].take().unwrap();
+            let t: Term<F::TermData> = self.i2t[i].take().unwrap();
             self.t2i.remove(unsafe { &fake_static(&t) });
             self.i2c[i] = self.next_free;
             self.next_free = T::from_usize(i);

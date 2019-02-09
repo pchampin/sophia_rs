@@ -340,7 +340,7 @@ macro_rules! test_graph_impl {
 
             #[allow(dead_code)]
             fn dump_graph<'a, G: Graph<'a>> (g: &'a G) where
-                <G::Triple as Triple<'a>>::Holder: Debug,
+                <G::Triple as Triple<'a>>::TermData: Debug,
             {
                 println!("<<<<");
                 for t in g.triples() {
