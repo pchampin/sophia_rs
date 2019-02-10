@@ -366,6 +366,15 @@ fn term_similar_but_not_eq() {
     assert_ne!(t2, t3); assert_ne!(h(&t2), h(&t3));
 }
 
+#[test]
+fn convert() {
+    let t1 = StaticTerm::new_iri("http://champin.net/#pa").unwrap();
+    let t2 = BoxTerm::from(&t1);
+    let t3 = RcTerm::from(&t2);
+    let t4 = ArcTerm::from(&t3);
+    let _t = RefTerm::from(&t4);
+}
+
 pub(crate) const POSITIVE_1CHAR_IDS:&[&str] = &[
     // PN_CHARS_BASE
     "a", "z", "A", "Z",
