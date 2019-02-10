@@ -305,6 +305,135 @@ macro_rules! test_graph_impl {
                 Ok(())
             }
 
+            #[test]
+            fn test_subjects() -> MGResult<$mutable_graph_impl, ()>
+            {
+                let mut g = $mutable_graph_impl::new();
+                populate(&mut g)?;
+
+                let subjects = g.subjects().unwrap();
+                assert_eq!(subjects.len(), 8);
+
+                let rsubjects: std::collections::HashSet<_> =
+                    subjects.iter().map(|t| RefTerm::from(t)).collect();
+                assert!(rsubjects.contains(&C1));
+                assert!(rsubjects.contains(&C2));
+                assert!(rsubjects.contains(&P1));
+                assert!(rsubjects.contains(&P2));
+                assert!(rsubjects.contains(&I1A));
+                assert!(rsubjects.contains(&I1B));
+                assert!(rsubjects.contains(&I2A));
+                assert!(rsubjects.contains(&I2B));
+                Ok(())
+            }
+
+            #[test]
+            fn test_predicates() -> MGResult<$mutable_graph_impl, ()>
+            {
+                let mut g = $mutable_graph_impl::new();
+                populate(&mut g)?;
+
+                let predicates = g.predicates().unwrap();
+                assert_eq!(predicates.len(), 6);
+
+                let rpredicates: std::collections::HashSet<_> =
+                    predicates.iter().map(|t| RefTerm::from(t)).collect();
+                assert!(rpredicates.contains(&rdf::type_));
+                assert!(rpredicates.contains(&rdfs::subClassOf));
+                assert!(rpredicates.contains(&rdfs::domain));
+                assert!(rpredicates.contains(&rdfs::range));
+                assert!(rpredicates.contains(&P1));
+                assert!(rpredicates.contains(&P2));
+                Ok(())
+            }
+
+            #[test]
+            fn test_objects() -> MGResult<$mutable_graph_impl, ()>
+            {
+                let mut g = $mutable_graph_impl::new();
+                populate(&mut g)?;
+
+                let objects = g.objects().unwrap();
+                assert_eq!(objects.len(), 6);
+
+                let robjects: std::collections::HashSet<_> =
+                    objects.iter().map(|t| RefTerm::from(t)).collect();
+                assert!(robjects.contains(&rdf::Property));
+                assert!(robjects.contains(&rdfs::Class));
+                assert!(robjects.contains(&C1));
+                assert!(robjects.contains(&C2));
+                assert!(robjects.contains(&I2A));
+                assert!(robjects.contains(&I2B));
+                Ok(())
+            }
+
+            #[test]
+            fn test_iris() -> MGResult<$mutable_graph_impl, ()>
+            {
+                let mut g = $mutable_graph_impl::new();
+                populate_nodes_types(&mut g)?;
+
+                let iris = g.iris().unwrap();
+                assert_eq!(iris.len(), 2);
+
+                let riris: std::collections::HashSet<_> =
+                    iris.iter().map(|t| RefTerm::from(t)).collect();
+                assert!(riris.contains(&rdf::Property));
+                assert!(riris.contains(&rdf::type_));
+                Ok(())
+            }
+
+            #[test]
+            fn test_bnodes() -> MGResult<$mutable_graph_impl, ()>
+            {
+                let mut g = $mutable_graph_impl::new();
+                populate_nodes_types(&mut g)?;
+
+                let bnodes = g.bnodes().unwrap();
+                assert_eq!(bnodes.len(), 2);
+
+                let rbnodes: std::collections::HashSet<_> =
+                    bnodes.iter().map(|t| t.value()).collect();
+                assert!(rbnodes.contains("b1"));
+                assert!(rbnodes.contains("b2"));
+                Ok(())
+            }
+
+            #[test]
+            fn test_literals() -> MGResult<$mutable_graph_impl, ()>
+            {
+                let mut g = $mutable_graph_impl::new();
+                populate_nodes_types(&mut g)?;
+
+                let literals = g.literals().unwrap();
+                assert_eq!(literals.len(), 3);
+
+                let rliterals: std::collections::HashSet<_> =
+                    literals.iter().map(|t| RefTerm::from(t)).collect();
+                assert!(rliterals.contains(&StaticTerm::from("lit1")));
+                assert!(rliterals.contains(&StaticTerm::from("lit2")));
+                assert!(rliterals.contains(&StaticTerm::new_literal_lang("lit2", "en").unwrap()));
+                Ok(())
+            }
+
+            #[test]
+            fn test_variables() -> MGResult<$mutable_graph_impl, ()>
+            {
+                let mut g = $mutable_graph_impl::new();
+                populate_nodes_types(&mut g)?;
+
+                let variables = g.variables().unwrap();
+                assert_eq!(variables.len(), 3);
+
+                let rvariables: std::collections::HashSet<_> =
+                    variables.iter().map(|t| t.value()).collect();
+                assert!(rvariables.contains("v1"));
+                assert!(rvariables.contains("v2"));
+                assert!(rvariables.contains("v3"));
+                Ok(())
+            }
+
+
             // helper functions
 
             fn populate<G: MutableGraph> (g: &mut G) -> MGResult<G, ()>
@@ -333,6 +462,34 @@ macro_rules! test_graph_impl {
                 assert_consistent_hint(16, g.triples().size_hint());
                 Ok(())
             }
+
+            fn populate_nodes_types<G: MutableGraph> (g: &mut G) -> MGResult<G, ()>
+            {
+                g.insert(&rdf::type_,
+                         &rdf::type_,
+                         &rdf::Property,
+                        )?;
+                g.insert(&StaticTerm::new_bnode("b1").unwrap(),
+                         &StaticTerm::new_bnode("b2").unwrap(),
+                         &StaticTerm::new_bnode("b1").unwrap(),
+                        )?;
+                g.insert(&StaticTerm::from("lit2"),
+                         &StaticTerm::from("lit1"),
+                         &StaticTerm::from("lit1"),
+                        )?;
+                g.insert(&StaticTerm::new_variable("v1").unwrap(),
+                         &StaticTerm::new_variable("v2").unwrap(),
+                         &StaticTerm::new_variable("v3").unwrap(),
+                        )?;
+                g.insert(&StaticTerm::new_bnode("b2").unwrap(),
+                         &StaticTerm::new_variable("v1").unwrap(),
+                         &StaticTerm::new_literal_lang("lit2", "en").unwrap(),
+                        )?;
+
+                assert_consistent_hint(5, g.triples().size_hint());
+                Ok(())
+            }
+
 
             fn as_box_t<'a, T: Triple<'a>+'a> (triple: T) -> [BoxTerm;3] {
                 [triple.s().into(), triple.p().into(), triple.o().into()]

@@ -1,6 +1,7 @@
 // this module is transparently re-exported by its parent `graph`
 
 use std::borrow::Borrow;
+use std::collections::HashSet;
 use std::hash::Hash;
 
 use resiter::filter::*;
@@ -157,6 +158,85 @@ pub trait Graph<'a> {
                 self.triples_with_spo(s, p, o))
         }
     }
+
+    /// Build a Hashset of all the terms used as subject in this Graph.
+    fn subjects(&'a self) -> GResult<'a, Self, HashSet<Term<<Self::Triple as Triple<'a>>::TermData>>> {
+        let mut res = std::collections::HashSet::new();
+        for t in self.triples() {
+            insert_if_absent(&mut res, t?.s());
+        }
+        Ok(res)
+    }
+
+    /// Build a Hashset of all the terms used as predicate in this Graph.
+    fn predicates(&'a self) -> GResult<'a, Self, HashSet<Term<<Self::Triple as Triple<'a>>::TermData>>> {
+        let mut res = std::collections::HashSet::new();
+        for t in self.triples() {
+            insert_if_absent(&mut res, t?.p());
+        }
+        Ok(res)
+    }
+
+    /// Build a Hashset of all the terms used as object in this Graph.
+    fn objects(&'a self) -> GResult<'a, Self, HashSet<Term<<Self::Triple as Triple<'a>>::TermData>>> {
+        let mut res = std::collections::HashSet::new();
+        for t in self.triples() {
+            insert_if_absent(&mut res, t?.o());
+        }
+        Ok(res)
+    }
+
+    /// Build a Hashset of all the IRIs used in this Graph.
+    fn iris(&'a self) -> GResult<'a, Self, HashSet<Term<<Self::Triple as Triple<'a>>::TermData>>> {
+        let mut res = std::collections::HashSet::new();
+        for t in self.triples() {
+            let t = t?;
+            let (s, p, o) = (t.s(), t.p(), t.o());
+            if let Iri(_) = s { insert_if_absent(&mut res, s) };
+            if let Iri(_) = p { insert_if_absent(&mut res, p) };
+            if let Iri(_) = o { insert_if_absent(&mut res, o) };
+        }
+        Ok(res)
+    }
+
+    /// Build a Hashset of all the BNodes used in this Graph.
+    fn bnodes(&'a self) -> GResult<'a, Self, HashSet<Term<<Self::Triple as Triple<'a>>::TermData>>> {
+        let mut res = std::collections::HashSet::new();
+        for t in self.triples() {
+            let t = t?;
+            let (s, p, o) = (t.s(), t.p(), t.o());
+            if let BNode(_) = s { insert_if_absent(&mut res, s) };
+            if let BNode(_) = p { insert_if_absent(&mut res, p) };
+            if let BNode(_) = o { insert_if_absent(&mut res, o) };
+        }
+        Ok(res)
+    }
+
+    /// Build a Hashset of all the Literals used in this Graph.
+    fn literals(&'a self) -> GResult<'a, Self, HashSet<Term<<Self::Triple as Triple<'a>>::TermData>>> {
+        let mut res = std::collections::HashSet::new();
+        for t in self.triples() {
+            let t = t?;
+            let (s, p, o) = (t.s(), t.p(), t.o());
+            if let Literal(_, _) = s { insert_if_absent(&mut res, s) };
+            if let Literal(_, _) = p { insert_if_absent(&mut res, p) };
+            if let Literal(_, _) = o { insert_if_absent(&mut res, o) };
+        }
+        Ok(res)
+    }
+
+    /// Build a Hashset of all the variables used in this Graph.
+    fn variables(&'a self) -> GResult<'a, Self, HashSet<Term<<Self::Triple as Triple<'a>>::TermData>>> {
+        let mut res = std::collections::HashSet::new();
+        for t in self.triples() {
+            let t = t?;
+            let (s, p, o) = (t.s(), t.p(), t.o());
+            if let Variable(_) = s { insert_if_absent(&mut res, s) };
+            if let Variable(_) = p { insert_if_absent(&mut res, p) };
+            if let Variable(_) = o { insert_if_absent(&mut res, o) };
+        }
+        Ok(res)
+    }
 }
 
 /// Type alias for results iterators produced by a graph.
@@ -311,6 +391,14 @@ pub trait MutableGraph: for<'x> Graph<'x> {
 /// [`Graph`](trait.Graph.html) and [`MutableGraph`](trait.MutableGraph.html),
 /// by guaranteeing that triples will never be returned / stored multiple times.
 pub trait SetGraph {
+}
+
+
+#[inline]
+fn insert_if_absent<T: Clone + Eq + Hash>(set: &mut HashSet<T>, val: &T) {
+    if !set.contains(val) {
+        set.insert(val.clone());
+    }
 }
 
 

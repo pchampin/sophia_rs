@@ -1,10 +1,11 @@
 // this module is transparently re-exported by its parent `graphe`
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::iter::empty;
 
 use super::*;
 use crate::graph::index::remove_one_val;
+use crate::triple::Triple;
 
 /// A [`GraphWrapper`](trait.GraphWrapper.html)
 /// indexing triples by object, then by predicate, then by subject.
@@ -92,6 +93,13 @@ impl<'a, T> GraphWrapper<'a> for OpsWrapper<T> where
             }
         }
         Box::new(empty())
+    }
+
+    fn gw_objects(&'a self) -> GResult<'a, Self::Wrapped, HashSet<Term<<<Self::Wrapped as Graph<'a>>::Triple as Triple<'a>>::TermData>>> {
+        let objects: HashSet<_> = self.o2p.keys()
+            .map(|i| self.get_term(*i).unwrap().clone())
+            .collect();
+        Ok(objects)
     }
 }
 

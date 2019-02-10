@@ -1,5 +1,9 @@
 // this module is transparently re-exported by its parent `graph`
 
+use std::collections::HashSet;
+
+use crate::triple::Triple;
+
 use super::*;
 
 /// A graph wrapper wraps a [`Graph`] and overrides some of its methods.
@@ -91,6 +95,48 @@ pub trait GraphWrapper<'a>
     fn gw_contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> GResult<'a, Self::Wrapped, bool> {
         self.get_wrapped().contains(s, p, o)
     }
+
+    #[inline]
+    /// Mimmic the [`subjects`](../trait.Graph.html#method.subjects) method.
+    fn gw_subjects(&'a self) -> GResult<'a, Self::Wrapped, HashSet<Term<<<Self::Wrapped as Graph<'a>>::Triple as Triple<'a>>::TermData>>> {
+        self.get_wrapped().subjects()
+    }
+
+    #[inline]
+    /// Mimmic the [`predicates`](../trait.Graph.html#method.predicates) method.
+    fn gw_predicates(&'a self) -> GResult<'a, Self::Wrapped, HashSet<Term<<<Self::Wrapped as Graph<'a>>::Triple as Triple<'a>>::TermData>>> {
+        self.get_wrapped().predicates()
+    }
+
+    #[inline]
+    /// Mimmic the [`objects`](../trait.Graph.html#method.objects) method.
+    fn gw_objects(&'a self) -> GResult<'a, Self::Wrapped, HashSet<Term<<<Self::Wrapped as Graph<'a>>::Triple as Triple<'a>>::TermData>>> {
+        self.get_wrapped().objects()
+    }
+
+    #[inline]
+    /// Mimmic the [`iris`](../trait.Graph.html#method.iris) method.
+    fn gw_iris(&'a self) -> GResult<'a, Self::Wrapped, HashSet<Term<<<Self::Wrapped as Graph<'a>>::Triple as Triple<'a>>::TermData>>> {
+        self.get_wrapped().iris()
+    }
+
+    #[inline]
+    /// Mimmic the [`bnodes`](../trait.Graph.html#method.bnodes) method.
+    fn gw_bnodes(&'a self) -> GResult<'a, Self::Wrapped, HashSet<Term<<<Self::Wrapped as Graph<'a>>::Triple as Triple<'a>>::TermData>>> {
+        self.get_wrapped().bnodes()
+    }
+
+    #[inline]
+    /// Mimmic the [`literals`](../trait.Graph.html#method.literals) method.
+    fn gw_literals(&'a self) -> GResult<'a, Self::Wrapped, HashSet<Term<<<Self::Wrapped as Graph<'a>>::Triple as Triple<'a>>::TermData>>> {
+        self.get_wrapped().literals()
+    }
+
+    #[inline]
+    /// Mimmic the [`variables`](../trait.Graph.html#method.variables) method.
+    fn gw_variables(&'a self) -> GResult<'a, Self::Wrapped, HashSet<Term<<<Self::Wrapped as Graph<'a>>::Triple as Triple<'a>>::TermData>>> {
+        self.get_wrapped().variables()
+    }
 }
 
 macro_rules! impl_graph_for_wrapper {
@@ -158,6 +204,41 @@ macro_rules! impl_graph_for_wrapper {
         #[inline]
         fn contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> GResult<'a, Self, bool> {
             GraphWrapper::gw_contains(self, s, p, o)
+        }
+
+        #[inline]
+        fn subjects(&'a self) -> GResult<'a, Self, std::collections::HashSet<Term<<Self::Triple as crate::triple::Triple<'a>>::TermData>>> {
+            GraphWrapper::gw_subjects(self)
+        }
+
+        #[inline]
+        fn predicates(&'a self) -> GResult<'a, Self, std::collections::HashSet<Term<<Self::Triple as crate::triple::Triple<'a>>::TermData>>> {
+            GraphWrapper::gw_predicates(self)
+        }
+
+        #[inline]
+        fn objects(&'a self) -> GResult<'a, Self, std::collections::HashSet<Term<<Self::Triple as crate::triple::Triple<'a>>::TermData>>> {
+            GraphWrapper::gw_objects(self)
+        }
+
+        #[inline]
+        fn iris(&'a self) -> GResult<'a, Self, std::collections::HashSet<Term<<Self::Triple as crate::triple::Triple<'a>>::TermData>>> {
+            GraphWrapper::gw_iris(self)
+        }
+
+        #[inline]
+        fn bnodes(&'a self) -> GResult<'a, Self, std::collections::HashSet<Term<<Self::Triple as crate::triple::Triple<'a>>::TermData>>> {
+            GraphWrapper::gw_bnodes(self)
+        }
+
+        #[inline]
+        fn literals(&'a self) -> GResult<'a, Self, std::collections::HashSet<Term<<Self::Triple as crate::triple::Triple<'a>>::TermData>>> {
+            GraphWrapper::gw_literals(self)
+        }
+
+        #[inline]
+        fn variables(&'a self) -> GResult<'a, Self, std::collections::HashSet<Term<<Self::Triple as crate::triple::Triple<'a>>::TermData>>> {
+            GraphWrapper::gw_variables(self)
         }
     };
 }
