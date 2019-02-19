@@ -56,6 +56,25 @@ where
     }
 }
 
+impl<'a, U> TermMatcher for Option<&'a Term<U>>
+where
+    U: Borrow<str> + Clone + Eq + Hash
+{
+    type TermData = U;
+    fn constant(&self) -> Option<&Term<Self::TermData>> {
+        *self
+    }
+    fn matches<T> (&self, t: &Term<T>) -> bool
+    where
+        T: Borrow<str> + Clone + Eq + Hash
+    {
+        match self {
+            Some(term) => t == *term,
+            None => true,
+        }
+    }
+}
+
 impl<U> TermMatcher for [Term<U>]
 where
     U: Borrow<str> + Clone + Eq + Hash

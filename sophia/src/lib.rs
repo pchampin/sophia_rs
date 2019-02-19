@@ -33,6 +33,7 @@ pub mod error;
 pub mod graph;
 pub mod ns;
 pub mod parsers;
+pub mod query;
 pub mod serializers;
 pub mod streams;
 pub mod term;
