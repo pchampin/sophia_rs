@@ -4,11 +4,11 @@ use pest::error::{InputLocation, LineColLocation};
 
 error_chain! {
     errors {
-        /// Raised by the methods of the [`Graph`](../traits/trait.Graph.html) trait.
+        /// Raised by the methods of the [`Graph`](../graph/trait.Graph.html) trait.
         GraphError(message: String) {
             display("error while querying Graph: {}", message)
         }
-        /// Raised by the methods of the [`MutableGraph`](../traits/trait.MutableGraph.html) trait.
+        /// Raised by the methods of the [`MutableGraph`](../graph/trait.MutableGraph.html) trait.
         GraphMutationError(msg: String) {
             display("error while modifying Graph: {}", msg)
         }

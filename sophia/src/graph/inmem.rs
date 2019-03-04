@@ -5,7 +5,7 @@
 //! with fine-tuned trade-offs between memory footprint and performance.
 //! 
 //! It also provides two pre-defined trade-offs:
-//! [`FastGraph`] and [`SmallGraph`],
+//! [`FastGraph`] and [`LightGraph`],
 //! provided in different flavours
 //! ([default](#types), [`small`](small/index.html), [`sync`](sync/index.html)).
 //! 
@@ -30,7 +30,7 @@
 //! [`Graph`]: ../trait.Graph.html
 //! [`MutableGraph`]: ../trait.MutableGraph.html
 //! [`FastGraph`]: type.FastGraph.html
-//! [`SmallGraph`]: type.SmallGraph.html
+//! [`LightGraph`]: type.LightGraph.html
 
 use std::borrow::Borrow;
 use std::hash::Hash;
@@ -38,14 +38,14 @@ use std::hash::Hash;
 use crate::term::*;
 use crate::term::factory::*;
 use super::index::*;
-use super::traits::*;
+use super::_traits::*;
 
 #[macro_use]
-mod wrapper; pub use self::wrapper::*;
-mod hash_graph; pub use self::hash_graph::*;
-mod spo_wrapper; pub use self::spo_wrapper::*;
-mod ops_wrapper; pub use self::ops_wrapper::*;
-mod term_index_map_u; pub use self::term_index_map_u::*;
+mod _wrapper; pub use self::_wrapper::*;
+mod _hash_graph; pub use self::_hash_graph::*;
+mod _spo_wrapper; pub use self::_spo_wrapper::*;
+mod _ops_wrapper; pub use self::_ops_wrapper::*;
+mod _term_index_map_u; pub use self::_term_index_map_u::*;
 
 /// A generic in-memory graph.
 /// 

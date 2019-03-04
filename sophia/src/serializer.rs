@@ -17,13 +17,13 @@
 //! [`Default`]: https://doc.rust-lang.org/std/default/trait.Default.html
 //! [`WriteSerializer`]: trait.WriteSerializer.html
 //! [`StringSerializer`]: trait.StringSerializer.html
-//! [`TripleSink`]: ../streams/trait.TripleSink.html
+//! [`TripleSink`]: ../stream/trait.TripleSink.html
 
 use std::io;
 
 use crate::error::*;
 use crate::graph::*;
-use crate::streams::*;
+use crate::stream::*;
 use crate::triple::*;
 
 use std::result::Result; // override ::error::Result
@@ -35,7 +35,7 @@ pub mod nt;
 /// An extension of the [`TripleSink`] trait,
 /// dedicated to serialization to IO streams.
 /// 
-/// [`TripleSink`]: ../../streams/trait.TripleSink.html
+/// [`TripleSink`]: ../stream/trait.TripleSink.html
 /// 
 pub trait WriteSerializer<W: io::Write>: TripleSink<Outcome=()> + Sized {
     type Config;
@@ -75,7 +75,7 @@ pub trait WriteSerializer<W: io::Write>: TripleSink<Outcome=()> + Sized {
 /// dedicated to serialization to strings,
 /// with methods more explicitly named.
 /// 
-/// [`TripleSink`]: ../../streams/trait.TripleSink.html
+/// [`TripleSink`]: ../stream/trait.TripleSink.html
 /// 
 pub trait StringSerializer: TripleSink<Outcome=String> + Sized {
     type Config;

@@ -66,5 +66,5 @@ macro_rules! def_stringifier {
 #[cfg(test)]
 mod test {
     // The code from this module is tested through its use in other modules
-    // (especially the ::serializers::nt::test module).
+    // (especially the ::serializer::nt::test module).
 }

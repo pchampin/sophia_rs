@@ -8,8 +8,8 @@ use resiter::filter::*;
 use resiter::map::*;
 
 use crate::error::*;
-use crate::graph::sinks::*;
-use crate::streams::*;
+use crate::graph::{Inserter, Remover};
+use crate::stream::*;
 use crate::term::*;
 use crate::term::matcher::TermMatcher;
 use crate::triple::*;
@@ -282,7 +282,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
         V: Borrow<str> + Clone + Eq + Hash,
     ;
 
-    /// Return a [`TripleSink`](../streams/trait.TripleSink.html)
+    /// Return a [`TripleSink`](../stream/trait.TripleSink.html)
     /// that will insert into this graph all the triples it receives.
     #[inline]
     fn inserter(&mut self) -> Inserter<Self> {
@@ -299,7 +299,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
         src.in_sink(&mut self.inserter())
     }
 
-    /// Return a [`TripleSink`](../streams/trait.TripleSink.html)
+    /// Return a [`TripleSink`](../stream/trait.TripleSink.html)
     /// that will remove from this graph all the triples it receives.
     #[inline]
     fn remover(&mut self) -> Remover<Self> {

@@ -15,7 +15,7 @@ use crate::term::{RefTerm, Term, factory::TermFactory};
 ///
 /// [`Graph`]: ../trait.Graph.html
 /// [`MutableGraph`]: ../trait.MutableGraph.html
-/// [`TermIndexMap`]: trait.TermIndexMap.html
+/// [`TermIndexMap`]: ../index/trait.TermIndexMap.html
 /// [`HashSet`]: https://doc.rust-lang.org/std/collections/struct.HashSet.html
 #[derive(Default)]
 pub struct HashGraph<I> where

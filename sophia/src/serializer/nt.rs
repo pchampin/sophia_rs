@@ -14,7 +14,7 @@ use std::io;
 use std::hash::Hash;
 use std::mem::swap;
 
-use crate::streams::*;
+use crate::stream::*;
 use crate::term::{LiteralKind,Term};
 use crate::triple::Triple;
 
@@ -49,7 +49,7 @@ def_default_serializer_api!();
 
 /// A [`TripleSink`] returned by [`Config::writer`].
 /// 
-/// [`TripleSink`]: ../../streams/trait.TripleSink.html
+/// [`TripleSink`]: ../../stream/trait.TripleSink.html
 /// [`Config::writer`]: struct.Config.html#method.writer
 pub struct Writer<W: io::Write> {
     write: W,

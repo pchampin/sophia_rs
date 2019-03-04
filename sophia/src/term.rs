@@ -48,10 +48,10 @@ pub mod factory;
 pub mod iri_rfc3987; use self::iri_rfc3987::ParsedIri;
 pub mod matcher;
 
-mod bnode_id;  pub use self::bnode_id::*;
-mod convert;  pub use self::convert::*;
-mod iri_data;  pub use self::iri_data::*;
-mod literal_kind; pub use self::literal_kind::*;
+mod _bnode_id; pub use self::_bnode_id::*;
+mod _convert; pub use self::_convert::*;
+mod _iri_data; pub use self::_iri_data::*;
+mod _literal_kind; pub use self::_literal_kind::*;
 
 /// Generic type for RDF terms.
 ///
@@ -120,7 +120,7 @@ impl<T> Term<T> where
     /// [N3]: https://www.w3.org/DesignIssues/Notation3
     /// 
     pub fn n3(&self) -> String {
-        crate::serializers::nt::stringify_term(self)
+        crate::serializer::nt::stringify_term(self)
     }
 }
 

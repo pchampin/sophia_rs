@@ -9,7 +9,7 @@ use resiter::oks::*;
 
 use super::*;
 use crate::error::*;
-use crate::streams::AsTripleSource;
+use crate::stream::AsTripleSource;
 use crate::term::*;
 use crate::triple::*;
 
@@ -130,7 +130,7 @@ mod test {
 
     use crate::graph::*;
     use crate::ns::*;
-    use crate::streams::*;
+    use crate::stream::*;
     use crate::term::BoxTerm;
 
     #[test]

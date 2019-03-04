@@ -105,12 +105,12 @@ impl<'a, T, I> AsTripleSource<T> for I where
 /// A triple sink consumes [triples](../triple/trait.Triple.html),
 /// produces a result, and may also fail in the process.
 /// 
-/// Typical triple sinks are [serializers]
+/// Typical triple sinks are [serializer]
 /// or graphs' [inserters] and [removers].
 /// 
 /// See also [`TripleSource`].
 /// 
-/// [serializers]: ../serializers/index.html
+/// [serializer]: ../serializer/index.html
 /// [inserters]: ../graph/trait.MutableGraph.html#method.inserter
 /// [removers]: ../graph/trait.MutableGraph.html#method.remover
 /// [`TripleSource`]: trait.TripleSource.html
@@ -150,5 +150,5 @@ impl TripleSink for () {
 #[cfg(test)]
 mod test {
     // The code from this module is tested through its use in other modules
-    // (especially the parsers/serializers modules).
+    // (especially the parser/serializer modules).
 }

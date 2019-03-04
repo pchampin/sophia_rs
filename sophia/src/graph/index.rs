@@ -81,8 +81,8 @@ pub trait IndexedGraph {
 
 /// Defines the implementation of [`MutableGraph`] for [`IndexedGraph`].
 /// 
-/// [`MutableGraph`]: ../trait.MutableGraph.html
-/// [`IndexedGraph`]: trait.IndexedGraph.html
+/// [`MutableGraph`]: graph/trait.MutableGraph.html
+/// [`IndexedGraph`]: graph/index/trait.IndexedGraph.html
 #[macro_export]
 macro_rules! impl_mutable_graph_for_indexed_mutable_graph {
     ($indexed_mutable_graph: ty) => {

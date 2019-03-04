@@ -13,6 +13,6 @@ mod test;
 pub mod index;
 pub mod inmem;
 
-mod ext_impl; pub use self::ext_impl::*;
-mod sinks; pub use self::sinks::*;
-mod traits; pub use self::traits::*;
+mod _ext_impl; pub use self::_ext_impl::*;
+mod _sinks; pub use self::_sinks::*;
+mod _traits; pub use self::_traits::*;
