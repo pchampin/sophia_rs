@@ -35,6 +35,5 @@ pub mod ns;
 pub mod parser;
 pub mod query;
 pub mod serializer;
-pub mod stream;
 pub mod term;
 pub mod triple;

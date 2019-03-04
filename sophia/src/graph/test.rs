@@ -8,10 +8,10 @@ macro_rules! test_graph_impl {
         mod $module_name {
             use crate::graph::*;
             use crate::ns::*;
-            use crate::stream::*;
             use crate::term::*;
             use crate::term::matcher::ANY;
             use crate::triple::*;
+            use crate::triple::stream::*;
             use std::fmt::Debug;
             use resiter::oks::*;
 

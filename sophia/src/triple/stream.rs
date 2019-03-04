@@ -5,7 +5,7 @@
 //! 
 //! [`TripleSource`]: trait.TripleSource.html
 //! [`TripleSink`]: trait.TripleSink.html
-//! [`Triple`]: ../triple/trait.Triple.html
+//! [`Triple`]: ../trait.Triple.html
 //! [`Iterator`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html
 
 use std::iter::Map;
@@ -23,8 +23,8 @@ use std::result::Result; // override ::error::Result
 /// and any such iterator implements the `TripleSource` trait.
 /// It also has additional methods dedicated to interacting with [`TripleSink`]s.
 /// 
-/// [triples]: ../triple/trait.Triple.html
-/// [results]: ../error/type.Result.html
+/// [triples]: ../trait.Triple.html
+/// [results]: ../../error/type.Result.html
 /// [`TripleSink`]: trait.TripleSink.html
 /// 
 pub trait TripleSource<'a> {
@@ -55,7 +55,7 @@ pub trait TripleSource<'a> {
         Ok(sink.finish()?)
     }
 
-    /// Insert all triples from this source into the given [graph](../graph/trait.MutableGraph.html).
+    /// Insert all triples from this source into the given [graph](../../graph/trait.MutableGraph.html).
     /// 
     /// Stop on the first error (in the source or in the graph).
     fn in_graph<G: MutableGraph>(&mut self, graph: &mut G) -> CoercedResult<usize, Self::Error, <G as MutableGraph>::MutationError> 
@@ -85,7 +85,7 @@ where
 /// into [`TripleSource`], by wrapping its items in `Ok` results.
 /// 
 /// [`TripleSource`]: trait.TripleSource.html
-/// [`Triple`]: ../triple/trait.Triple.html
+/// [`Triple`]: ../trait.Triple.html
 pub trait AsTripleSource<T>: Sized {
     /// Map all items of this iterator into an Ok result.
     fn as_triple_source(self) -> Map<Self, fn(T) -> OkResult<T,>>;
@@ -102,7 +102,7 @@ impl<'a, T, I> AsTripleSource<T> for I where
 
 
 
-/// A triple sink consumes [triples](../triple/trait.Triple.html),
+/// A triple sink consumes [triples](../trait.Triple.html),
 /// produces a result, and may also fail in the process.
 /// 
 /// Typical triple sinks are [serializer]
@@ -110,9 +110,9 @@ impl<'a, T, I> AsTripleSource<T> for I where
 /// 
 /// See also [`TripleSource`].
 /// 
-/// [serializer]: ../serializer/index.html
-/// [inserters]: ../graph/trait.MutableGraph.html#method.inserter
-/// [removers]: ../graph/trait.MutableGraph.html#method.remover
+/// [serializer]: ../../serializer/index.html
+/// [inserters]: ../../graph/trait.MutableGraph.html#method.inserter
+/// [removers]: ../../graph/trait.MutableGraph.html#method.remover
 /// [`TripleSource`]: trait.TripleSource.html
 /// 
 pub trait TripleSink {

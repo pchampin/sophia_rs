@@ -17,6 +17,8 @@ use std::hash::Hash;
 
 use crate::term::*;
 
+pub mod stream;
+
 /// This trait represents an abstract RDF triple,
 /// and provide convenient methods for working with triples.
 pub trait Triple<'a> {

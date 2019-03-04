@@ -9,9 +9,9 @@ use resiter::oks::*;
 
 use super::*;
 use crate::error::*;
-use crate::stream::AsTripleSource;
 use crate::term::*;
 use crate::triple::*;
+use crate::triple::stream::AsTripleSource;
 
 
 impl<'a, T> Graph<'a> for [T] where
@@ -130,8 +130,8 @@ mod test {
 
     use crate::graph::*;
     use crate::ns::*;
-    use crate::stream::*;
     use crate::term::BoxTerm;
+    use crate::triple::stream::*;
 
     #[test]
     fn test_slice() {

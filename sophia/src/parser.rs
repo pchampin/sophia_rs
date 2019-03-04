@@ -17,7 +17,7 @@
 //! [`io::BufRead`]: https://doc.rust-lang.org/std/io/trait.BufRead.html
 //! [`io::Read`]: https://doc.rust-lang.org/std/io/trait.Read.html
 //! [`&str`]: https://doc.rust-lang.org/std/primitive.str.html
-//! [`TripleSource`]: ../stream/trait.TripleSource.html
+//! [`TripleSource`]: ../triple/stream/trait.TripleSource.html
 
 #[macro_use]
 pub mod common;

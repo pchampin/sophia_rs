@@ -6,7 +6,7 @@
 //! ```
 //! use sophia::graph::inmem::FastGraph;
 //! use sophia::parser::nt;
-//! use sophia::stream::*;
+//! use sophia::triple::stream::*;
 //! 
 //! static NT_DOC: &str = r#"
 //!   <http://champin.net/#pa> <http://schema.org/name> "Pierre-Antoine Champin".
@@ -218,8 +218,8 @@ mod test {
     use std::io;
     use std::path::Path;
     use pest::{Parser, error::Error as PestError, iterators::Pairs};
-    use crate::stream::*;
     use crate::term::BoxTerm;
+    use crate::triple::stream::*;
     use super::*;
 
     type HashSetGraph = HashSet<[BoxTerm;3]>;

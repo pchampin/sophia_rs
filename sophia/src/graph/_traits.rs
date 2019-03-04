@@ -9,10 +9,10 @@ use resiter::map::*;
 
 use crate::error::*;
 use crate::graph::{Inserter, Remover};
-use crate::stream::*;
 use crate::term::*;
 use crate::term::matcher::TermMatcher;
 use crate::triple::*;
+use crate::triple::stream::*;
 
 /// Type alias for results iterators produced by a graph.
 pub type GResult<'a, G, T> = std::result::Result<T, <G as Graph<'a>>::Error>;
@@ -282,7 +282,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
         V: Borrow<str> + Clone + Eq + Hash,
     ;
 
-    /// Return a [`TripleSink`](../stream/trait.TripleSink.html)
+    /// Return a [`TripleSink`](../triple/stream/trait.TripleSink.html)
     /// that will insert into this graph all the triples it receives.
     #[inline]
     fn inserter(&mut self) -> Inserter<Self> {
@@ -299,7 +299,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
         src.in_sink(&mut self.inserter())
     }
 
-    /// Return a [`TripleSink`](../stream/trait.TripleSink.html)
+    /// Return a [`TripleSink`](../triple/stream/trait.TripleSink.html)
     /// that will remove from this graph all the triples it receives.
     #[inline]
     fn remover(&mut self) -> Remover<Self> {
