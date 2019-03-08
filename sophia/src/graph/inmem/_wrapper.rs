@@ -92,7 +92,11 @@ pub trait GraphWrapper<'a>
 
     #[inline]
     /// Mimmic the [`contains`](../trait.Graph.html#method.contains) method.
-    fn gw_contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> GResult<'a, Self::Wrapped, bool> {
+    fn gw_contains<T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> GResult<'a, Self::Wrapped, bool> where
+        T: Borrow<str> + Clone + Eq + Hash,
+        U: Borrow<str> + Clone + Eq + Hash,
+        V: Borrow<str> + Clone + Eq + Hash,
+    {
         self.get_wrapped().contains(s, p, o)
     }
 
@@ -202,7 +206,11 @@ macro_rules! impl_graph_for_wrapper {
         }
 
         #[inline]
-        fn contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> GResult<'a, Self, bool> {
+        fn contains<T_, U_, V_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>, o: &'a Term<V_>) -> GResult<'a, Self, bool> where
+            T_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
+            U_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
+            V_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
+        {
             GraphWrapper::gw_contains(self, s, p, o)
         }
 

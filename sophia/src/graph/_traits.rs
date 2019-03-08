@@ -14,7 +14,7 @@ use crate::term::matcher::TermMatcher;
 use crate::triple::*;
 use crate::triple::stream::*;
 
-/// Type alias for results iterators produced by a graph.
+/// Type alias for results produced by a graph.
 pub type GResult<'a, G, T> = std::result::Result<T, <G as Graph<'a>>::Error>;
 /// Type alias for fallible triple iterators produced by a graph.
 pub type GTripleSource<'a, G> =
@@ -48,7 +48,7 @@ pub trait Graph<'a> {
 
     /// An iterator visiting all triples with the given subject.
     /// 
-    /// See also [`iter`](#tymethod.iter).
+    /// See also [`triples`](#tymethod.triples).
     fn triples_with_s<T> (&'a self, s: &'a Term<T>) -> GTripleSource<'a, Self> where
         T: Borrow<str> + Clone + Eq + Hash,
     {
@@ -58,7 +58,7 @@ pub trait Graph<'a> {
     }
     /// An iterator visiting all triples with the given predicate.
     /// 
-    /// See also [`iter`](#tymethod.iter).
+    /// See also [`triples`](#tymethod.triples).
     fn triples_with_p<T> (&'a self, p: &'a Term<T>) -> GTripleSource<'a, Self> where
         T: Borrow<str> + Clone + Eq + Hash,
     {
@@ -68,7 +68,7 @@ pub trait Graph<'a> {
     }
     /// An iterator visiting all triples with the given object.
     /// 
-    /// See also [`iter`](#tymethod.iter).
+    /// See also [`triples`](#tymethod.triples).
     fn triples_with_o<T> (&'a self, o: &'a Term<T>) -> GTripleSource<'a, Self> where
         T: Borrow<str> + Clone + Eq + Hash,
     {
@@ -78,7 +78,7 @@ pub trait Graph<'a> {
     }
     /// An iterator visiting all triples with the given subject and predicate.
     /// 
-    /// See also [`iter`](#tymethod.iter).
+    /// See also [`triples`](#tymethod.triples).
     fn triples_with_sp<T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> GTripleSource<'a, Self> where
         T: Borrow<str> + Clone + Eq + Hash,
         U: Borrow<str> + Clone + Eq + Hash,
@@ -89,7 +89,7 @@ pub trait Graph<'a> {
     }
     /// An iterator visiting all triples with the given subject and object.
     /// 
-    /// See also [`iter`](#tymethod.iter).
+    /// See also [`triples`](#tymethod.triples).
     fn triples_with_so<T, U> (&'a self, s: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self> where
         T: Borrow<str> + Clone + Eq + Hash,
         U: Borrow<str> + Clone + Eq + Hash,
@@ -100,7 +100,7 @@ pub trait Graph<'a> {
     }
     /// An iterator visiting all triples with the given predicate and object.
     /// 
-    /// See also [`iter`](#tymethod.iter).
+    /// See also [`triples`](#tymethod.triples).
     fn triples_with_po<T, U> (&'a self, p: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self> where
         T: Borrow<str> + Clone + Eq + Hash,
         U: Borrow<str> + Clone + Eq + Hash,
@@ -111,7 +111,7 @@ pub trait Graph<'a> {
     }
     /// An iterator visiting all triples with the given subject, predicate and object.
     /// 
-    /// See also [`iter`](#tymethod.iter).
+    /// See also [`triples`](#tymethod.triples).
     fn triples_with_spo<T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> GTripleSource<'a, Self> where
         T: Borrow<str> + Clone + Eq + Hash,
         U: Borrow<str> + Clone + Eq + Hash,
@@ -123,7 +123,11 @@ pub trait Graph<'a> {
     }
 
     /// Return `true` if this graph contains the given triple.
-    fn contains(&'a self, s: &'a RefTerm, p: &'a RefTerm, o: &'a RefTerm) -> GResult<'a, Self, bool> {
+    fn contains<T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> GResult<'a, Self, bool> where
+        T: Borrow<str> + Clone + Eq + Hash,
+        U: Borrow<str> + Clone + Eq + Hash,
+        V: Borrow<str> + Clone + Eq + Hash,
+    {
         match self.triples_with_spo(s, p, o).next() {
             None           => Ok(false),
             Some(Ok(_))    => Ok(true),
@@ -133,7 +137,7 @@ pub trait Graph<'a> {
 
     /// An iterator visiting all triples matching the given subject, predicate and object.
     /// 
-    /// See also [`iter`](#tymethod.iter).
+    /// See also [`triples`](#tymethod.triples).
     fn triples_matching<S, P, O> (&'a self, ms: &'a S, mp: &'a P, mo: &'a O) -> GTripleSource<'a, Self> where
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
@@ -192,9 +196,9 @@ pub trait Graph<'a> {
         for t in self.triples() {
             let t = t?;
             let (s, p, o) = (t.s(), t.p(), t.o());
-            if let Iri(_) = s { insert_if_absent(&mut res, s) };
-            if let Iri(_) = p { insert_if_absent(&mut res, p) };
-            if let Iri(_) = o { insert_if_absent(&mut res, o) };
+            if let Iri(_) = s { insert_if_absent(&mut res, s) }
+            if let Iri(_) = p { insert_if_absent(&mut res, p) }
+            if let Iri(_) = o { insert_if_absent(&mut res, o) }
         }
         Ok(res)
     }
@@ -205,9 +209,9 @@ pub trait Graph<'a> {
         for t in self.triples() {
             let t = t?;
             let (s, p, o) = (t.s(), t.p(), t.o());
-            if let BNode(_) = s { insert_if_absent(&mut res, s) };
-            if let BNode(_) = p { insert_if_absent(&mut res, p) };
-            if let BNode(_) = o { insert_if_absent(&mut res, o) };
+            if let BNode(_) = s { insert_if_absent(&mut res, s) }
+            if let BNode(_) = p { insert_if_absent(&mut res, p) }
+            if let BNode(_) = o { insert_if_absent(&mut res, o) }
         }
         Ok(res)
     }
@@ -218,9 +222,9 @@ pub trait Graph<'a> {
         for t in self.triples() {
             let t = t?;
             let (s, p, o) = (t.s(), t.p(), t.o());
-            if let Literal(_, _) = s { insert_if_absent(&mut res, s) };
-            if let Literal(_, _) = p { insert_if_absent(&mut res, p) };
-            if let Literal(_, _) = o { insert_if_absent(&mut res, o) };
+            if let Literal(_, _) = s { insert_if_absent(&mut res, s) }
+            if let Literal(_, _) = p { insert_if_absent(&mut res, p) }
+            if let Literal(_, _) = o { insert_if_absent(&mut res, o) }
         }
         Ok(res)
     }
@@ -231,15 +235,15 @@ pub trait Graph<'a> {
         for t in self.triples() {
             let t = t?;
             let (s, p, o) = (t.s(), t.p(), t.o());
-            if let Variable(_) = s { insert_if_absent(&mut res, s) };
-            if let Variable(_) = p { insert_if_absent(&mut res, p) };
-            if let Variable(_) = o { insert_if_absent(&mut res, o) };
+            if let Variable(_) = s { insert_if_absent(&mut res, s) }
+            if let Variable(_) = p { insert_if_absent(&mut res, p) }
+            if let Variable(_) = o { insert_if_absent(&mut res, o) }
         }
         Ok(res)
     }
 }
 
-/// Type alias for results iterators produced by a graph.
+/// Type alias for results produced by a mutable graph.
 pub type MGResult<G, T> = std::result::Result<T, <G as MutableGraph>::MutationError>;
 
 /// Generic trait for mutable RDF graphs.
