@@ -7,6 +7,8 @@
 
 use super::*;
 
+pub use super::_graph_key_matcher::*;
+
 /// Anything that matches a [term] or a set of [term]s.
 /// 
 /// [term]: ../enum.Term.html
@@ -132,8 +134,8 @@ mod test {
         let mc = TermMatcher::constant(&m);
         assert!(mc.is_some());
         assert_eq!(mc.unwrap(), &t1);
-        assert!(m.matches(&t1));
-        assert!(!m.matches(&t2));
+        assert!(TermMatcher::matches(&m, &t1));
+        assert!(!TermMatcher::matches(&m, &t2));
     }
 
     #[test]
@@ -147,8 +149,8 @@ mod test {
         let mc = TermMatcher::constant(&m);
         assert!(mc.is_some());
         assert_eq!(mc.unwrap(), &t1);
-        assert!(m.matches(&t1));
-        assert!(!m.matches(&t2));
+        assert!(TermMatcher::matches(&m, &t1));
+        assert!(!TermMatcher::matches(&m, &t2));
     }
 
     #[test]
@@ -160,7 +162,7 @@ mod test {
 
         let mc = TermMatcher::constant(&m);
         assert!(mc.is_none());
-        assert!(m.matches(&t1));
+        assert!(TermMatcher::matches(&m, &t1));
     }
 
     #[test]
@@ -174,8 +176,8 @@ mod test {
         let mc = TermMatcher::constant(&m[..]);
         assert!(mc.is_some());
         assert_eq!(mc.unwrap(), &t1);
-        assert!(m.matches(&t1));
-        assert!(!m.matches(&t2));
+        assert!(TermMatcher::matches(&m[..], &t1));
+        assert!(!TermMatcher::matches(&m[..], &t2));
     }
 
     #[test]
@@ -192,9 +194,9 @@ mod test {
 
         let mc = TermMatcher::constant(&m[..]);
         assert!(mc.is_none());
-        assert!(m.matches(&t1));
-        assert!(m.matches(&t2));
-        assert!(!m.matches(&t3));
+        assert!(TermMatcher::matches(&m[..], &t1));
+        assert!(TermMatcher::matches(&m[..], &t2));
+        assert!(!TermMatcher::matches(&m[..], &t3));
     }
 
     #[test]
@@ -206,7 +208,7 @@ mod test {
 
         let mc = TermMatcher::constant(&m[..]);
         assert!(mc.is_none());
-        assert!(!m.matches(&t1));
+        assert!(!TermMatcher::matches(&m[..], &t1));
     }
 
     #[test]
@@ -215,8 +217,8 @@ mod test {
         let t2 = RcTerm::new_iri("http://example.org/").unwrap();
 
         let m = |t: &RefTerm| t.value().starts_with("http://champin");
-        assert!(m.constant().is_none());
-        assert!(m.matches(&t1));
-        assert!(!m.matches(&t2));
+        assert!(TermMatcher::constant(&m).is_none());
+        assert!(TermMatcher::matches(&m, &t1));
+        assert!(!TermMatcher::matches(&m, &t2));
     }
 }

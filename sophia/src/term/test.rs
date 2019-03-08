@@ -367,6 +367,16 @@ fn term_similar_but_not_eq() {
 }
 
 #[test]
+fn test_as_graph_key() {
+    use crate::term::graph_key::GraphKey;
+    assert_eq!(
+        std::mem::size_of::<BoxTerm>(),
+        std::mem::size_of::<GraphKey<Box<str>>>(),
+    );
+    // this guarantees that the implementation of as_graph_key() is indeed safe
+}
+
+#[test]
 fn convert() {
     let t1 = StaticTerm::new_iri("http://champin.net/#pa").unwrap();
     let t2 = BoxTerm::from(&t1);

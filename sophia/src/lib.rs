@@ -29,10 +29,12 @@ extern crate resiter;
 extern crate url;
 extern crate weak_table;
 
+pub mod dataset;
 pub mod error;
 pub mod graph;
 pub mod ns;
 pub mod parser;
+pub mod quad;
 pub mod query;
 pub mod serializer;
 pub mod term;

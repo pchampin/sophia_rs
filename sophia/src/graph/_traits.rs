@@ -399,7 +399,7 @@ pub trait SetGraph {
 
 
 #[inline]
-fn insert_if_absent<T: Clone + Eq + Hash>(set: &mut HashSet<T>, val: &T) {
+pub(crate) fn insert_if_absent<T: Clone + Eq + Hash>(set: &mut HashSet<T>, val: &T) {
     if !set.contains(val) {
         set.insert(val.clone());
     }

@@ -45,12 +45,14 @@ use regex::Regex;
 use crate::error::*;
 
 pub mod factory;
+pub mod graph_key;
 pub mod iri_rfc3987; use self::iri_rfc3987::ParsedIri;
 pub mod matcher;
 
 mod _bnode_id; pub use self::_bnode_id::*;
 mod _convert; pub use self::_convert::*;
 mod _iri_data; pub use self::_iri_data::*;
+mod _graph_key_matcher; // is 'pub use'd by module 'matcher'
 mod _literal_kind; pub use self::_literal_kind::*;
 
 /// Generic type for RDF terms.
@@ -121,6 +123,13 @@ impl<T> Term<T> where
     /// 
     pub fn n3(&self) -> String {
         crate::serializer::nt::stringify_term(self)
+    }
+
+    /// Converts a `&Term` to a `&GraphKey`.
+    /// 
+    /// This conversion has 0 cost, since both types actually have the same size.
+    pub fn as_graph_key(&self) -> &self::graph_key::GraphKey<T> {
+        unsafe { std::mem::transmute(self) }
     }
 }
 
