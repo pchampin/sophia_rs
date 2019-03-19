@@ -1,5 +1,6 @@
 //! A quad expresses a single fact within a context.
 //! Quads are RDF triples augmented with an optional graph name.
+//!
 //! They are the individual statements of an RDF dataset.
 
 use std::hash::Hash;
@@ -10,8 +11,8 @@ use crate::triple::*;
 
 pub mod stream;
 
-/// This trait represents an abstract RDF triple,
-/// and provide convenient methods for working with triples.
+/// This trait represents an abstract RDF quad,
+/// and provide convenient methods for working with quads.
 pub trait Quad<'a>: Triple<'a> {
     /// The graph key (either a graph name or "default graph") of this quad.
     fn g(&self) -> &GraphKey<Self::TermData>;

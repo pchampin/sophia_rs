@@ -1,22 +1,27 @@
-/// RDF [datasets](../../dataset/index.html) contain multiple [graphs](../../graph/index.html),
-/// the default graph, and zero or more named graphs indexed by [terms](../../term/index.html).
-/// The [`GraphKey`](enum.GraphKey.html) type is a wrapper around
-/// [`Term`](../../term/struct.Term.html) to identify a graph in a dataset.
+//! A graph key is the fourth component of a quad.
+//! It identifies the graph of a dataset to which this quad belongs.
+
 
 use std::hash::Hash;
 
 use crate::term::Term;
 
-/// A graph key is the fourth component of a [`Quad`](./trait.Quad.html).
-/// It identifies the graph of a dataset to which this quad belongs.
+/// A wrapper around a [`Term`] to identify a [`Graph`] in a [`Dataset`].
+///
+/// Used as the fourth component of a [`Quad`].
+///
+/// [`Term`]: ../enum.Term.html
+/// [`Graph`]: ../../graph/trait.Graph.html
+/// [`Dataset`]: ../../dataset/trait.Dataset.html
+/// [`Quad`]: ../../quad/trait.Quad.html
 #[derive(Clone, Debug, Eq, Hash)]
 pub enum GraphKey<T>
 where
     T: AsRef<str> + Clone + Eq + Hash,
 {
-    /// The default graph of the [`dataset`](../dataset/index.html).
+    /// Identifies the default graph of the [`dataset`](../../dataset/index.html).
     Default,
-    /// A named graph of the [`dataset`](../dataset/index.html).
+    /// Identifies a named graph of the [`dataset`](../../dataset/index.html).
     Name(Term<T>),
 }
 
