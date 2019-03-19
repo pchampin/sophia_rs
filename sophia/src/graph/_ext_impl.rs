@@ -131,7 +131,6 @@ mod test {
     use crate::graph::*;
     use crate::ns::*;
     use crate::term::BoxTerm;
-    use crate::triple::stream::*;
 
     #[test]
     fn test_slice() {
@@ -146,30 +145,9 @@ mod test {
         assert_eq!(len, 2);
     }
 
-    #[test]
-    fn test_vec() {
-        // NB: Vec<[BoxTerm;3]> can not be tested with test_graph_impl!
-        // because it assumes that the passed implementation satisfies SetGraph.
-        let mut g: Vec<[BoxTerm;3]> = Vec::new();
+    type VecAsGraph = Vec<[BoxTerm;3]>;
+    test_graph_impl!(vec, VecAsGraph, false);
 
-        let triples = [
-            [rdf::type_, rdf::type_, rdf::Property],
-            [rdf::Property, rdf::type_, rdfs::Class],
-            [rdfs::Class, rdf::type_, rdfs::Class],
-        ];
-        let inserted = triples.into_iter().as_triple_source().in_graph(&mut g).unwrap();
-        assert_eq!(inserted, triples.len());
-        assert_eq!(inserted, g.len());
-
-        let len = g.triples().oks().count();
-        assert_eq!(len, 3);
-        let len = g.triples_with_o(&rdfs::Class).oks().count();
-        assert_eq!(len, 2);
-
-        MutableGraph::remove(&mut g, &rdfs::Class, &rdf::type_, &rdfs::Class).unwrap();
-        assert_eq!(g.len(), 2);
-    }
-
-    type HashSetBoxTerm = HashSet<[BoxTerm;3]>;
-    test_graph_impl!(hashset, HashSetBoxTerm);
+    type HashSetAsGraph = HashSet<[BoxTerm;3]>;
+    test_graph_impl!(hashset, HashSetAsGraph);
 }

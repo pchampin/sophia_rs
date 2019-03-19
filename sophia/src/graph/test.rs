@@ -4,6 +4,9 @@ macro_rules! test_graph_impl {
         test_graph_impl!(test, $mutable_graph_impl);
     };
     ($module_name: ident, $mutable_graph_impl: ident) => {
+        test_graph_impl!($module_name, $mutable_graph_impl, true);
+    };
+    ($module_name: ident, $mutable_graph_impl: ident, $is_set: expr) => {
         #[cfg(test)]
         mod $module_name {
             use $crate::graph::*;
@@ -52,16 +55,20 @@ macro_rules! test_graph_impl {
             #[test]
             fn test_no_duplicate() -> MGResult<$mutable_graph_impl, ()>
             {
-                let mut g = $mutable_graph_impl::new();
-                assert_eq!(g.triples().count(), 0);
-                assert!   (MutableGraph::insert(&mut g, &C1, &rdf::type_, &rdfs::Class)?);
-                assert_eq!(g.triples().count(), 1);
-                assert!  (!MutableGraph::insert(&mut g, &C1, &rdf::type_, &rdfs::Class)?);
-                assert_eq!(g.triples().count(), 1);
-                assert!   (MutableGraph::remove(&mut g, &C1, &rdf::type_, &rdfs::Class)?);
-                assert_eq!(g.triples().count(), 0);
-                assert!  (!MutableGraph::remove(&mut g, &C1, &rdf::type_, &rdfs::Class)?);
-                assert_eq!(g.triples().count(), 0);
+                if $is_set {
+                    let mut g = $mutable_graph_impl::new();
+                    assert_eq!(g.triples().count(), 0);
+                    assert!   (MutableGraph::insert(&mut g, &C1, &rdf::type_, &rdfs::Class)?);
+                    assert_eq!(g.triples().count(), 1);
+                    assert!  (!MutableGraph::insert(&mut g, &C1, &rdf::type_, &rdfs::Class)?);
+                    assert_eq!(g.triples().count(), 1);
+                    assert!   (MutableGraph::remove(&mut g, &C1, &rdf::type_, &rdfs::Class)?);
+                    assert_eq!(g.triples().count(), 0);
+                    assert!  (!MutableGraph::remove(&mut g, &C1, &rdf::type_, &rdfs::Class)?);
+                    assert_eq!(g.triples().count(), 0);
+                } else {
+                    println!("effectively skipped, since is_set is false");
+                }
                 Ok(())
             }
 
@@ -71,8 +78,10 @@ macro_rules! test_graph_impl {
                 assert_eq!(g.triples().count(), 0);
                 assert_eq!(make_triple_source().in_sink(&mut g.inserter()).unwrap(), 2);
                 assert_eq!(g.triples().count(), 2);
-                assert_eq!(make_triple_source().in_sink(&mut g.inserter()).unwrap(), 0);
-                assert_eq!(g.triples().count(), 2);
+                if $is_set {
+                    assert_eq!(make_triple_source().in_sink(&mut g.inserter()).unwrap(), 0);
+                    assert_eq!(g.triples().count(), 2);
+                }
                 assert_eq!(make_triple_source().in_sink(&mut g.remover()).unwrap(), 2);
                 assert_eq!(g.triples().count(), 0);
                 assert_eq!(make_triple_source().in_sink(&mut g.remover()).unwrap(), 0);
@@ -85,8 +94,10 @@ macro_rules! test_graph_impl {
                 assert_eq!(g.triples().count(), 0);
                 assert_eq!(g.insert_all(&mut make_triple_source()).unwrap(), 2);
                 assert_eq!(g.triples().count(), 2);
-                assert_eq!(g.insert_all(&mut make_triple_source()).unwrap(), 0);
-                assert_eq!(g.triples().count(), 2);
+                if $is_set {
+                    assert_eq!(g.insert_all(&mut make_triple_source()).unwrap(), 0);
+                    assert_eq!(g.triples().count(), 2);
+                }
                 assert_eq!(g.remove_all(&mut make_triple_source()).unwrap(), 2);
                 assert_eq!(g.triples().count(), 0);
                 assert_eq!(g.remove_all(&mut make_triple_source()).unwrap(), 0);
