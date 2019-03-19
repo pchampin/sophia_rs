@@ -44,7 +44,7 @@ impl<'a, T> Graph<'a> for Vec<T> where
     }
 }
 
-impl MutableGraph for Vec<[BoxTerm;3]> where
+impl MutableGraph for Vec<[BoxTerm;3]>
 {
     type MutationError = Never;
 
