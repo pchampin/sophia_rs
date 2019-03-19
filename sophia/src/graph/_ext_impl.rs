@@ -1,7 +1,6 @@
 // this module is transparently re-exported by its parent `graph`
 // It defines implementation of Graph and MutableGraph for existing types.
 
-use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::hash::Hash;
 
@@ -49,9 +48,9 @@ impl MutableGraph for Vec<[BoxTerm;3]>
     type MutationError = Never;
 
     fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult< Self, bool> where
-        T: Borrow<str> + Clone + Eq + Hash,
-        U: Borrow<str> + Clone + Eq + Hash,
-        V: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
+        U: AsRef<str> + Clone + Eq + Hash,
+        V: AsRef<str> + Clone + Eq + Hash,
     {
         let s = BoxTerm::from(s);
         let p = BoxTerm::from(p);
@@ -60,9 +59,9 @@ impl MutableGraph for Vec<[BoxTerm;3]>
         Ok(true)
     }
     fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult< Self, bool> where
-        T: Borrow<str> + Clone + Eq + Hash,
-        U: Borrow<str> + Clone + Eq + Hash,
-        V: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
+        U: AsRef<str> + Clone + Eq + Hash,
+        V: AsRef<str> + Clone + Eq + Hash,
     {
         let i = self.triples().oks().position(|t|
             s == t.s() && p == t.p() && o == t.o()
@@ -95,9 +94,9 @@ impl MutableGraph for HashSet<[BoxTerm;3]> where
     type MutationError = Never;
 
     fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult< Self, bool> where
-        T: Borrow<str> + Clone + Eq + Hash,
-        U: Borrow<str> + Clone + Eq + Hash,
-        V: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
+        U: AsRef<str> + Clone + Eq + Hash,
+        V: AsRef<str> + Clone + Eq + Hash,
     {
         let s = BoxTerm::from(s);
         let p = BoxTerm::from(p);
@@ -105,9 +104,9 @@ impl MutableGraph for HashSet<[BoxTerm;3]> where
         Ok(HashSet::insert(self, [s, p, o]))
     }
     fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult< Self, bool> where
-        T: Borrow<str> + Clone + Eq + Hash,
-        U: Borrow<str> + Clone + Eq + Hash,
-        V: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
+        U: AsRef<str> + Clone + Eq + Hash,
+        V: AsRef<str> + Clone + Eq + Hash,
     {
         let s = BoxTerm::from(s);
         let p = BoxTerm::from(p);

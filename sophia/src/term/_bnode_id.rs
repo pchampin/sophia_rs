@@ -29,30 +29,30 @@ use super::*;
 /// See [module documentation](index.html)
 /// for more detail.
 #[derive(Clone,Copy,Debug,Eq)]
-pub struct BNodeId<T: Borrow<str>> {
+pub struct BNodeId<T: AsRef<str>> {
     value: T,
     n3: bool,
 }
 
 impl<T> BNodeId<T> where
-    T: Borrow<str>
+    T: AsRef<str>
 {
     /// You would usually not use this constructor directly,
     /// but instead use [`Term::new_bnode`](enum.Term.html#method.new_bnode)
     /// or [`Term::new_bnode_unchecked`](enum.Term.html#method.new_bnode_unchecked).
     pub(crate) fn new(value: T) -> BNodeId<T> {
-        let n3 = N3_BNODE_ID.is_match(value.borrow());
+        let n3 = N3_BNODE_ID.is_match(value.as_ref());
         BNodeId{value, n3}
     }
 
     /// You would usually not use this constructor directly,
     /// but instead use [`Term::from_with`](enum.Term.html#method.from_with).
     pub(crate) fn from_with<'a, U, F> (other: &'a BNodeId<U>, mut factory: F) -> BNodeId<T> where
-        U: Borrow<str>,
+        U: AsRef<str>,
         F: FnMut(&'a str) -> T,
     {
         BNodeId{
-            value: factory(other.value.borrow()),
+            value: factory(other.value.as_ref()),
             n3: other.n3,
         }
     }
@@ -65,16 +65,16 @@ impl<T> BNodeId<T> where
     }
 }
 
-impl<T> Borrow<str> for BNodeId<T> where
-    T:Borrow<str>
+impl<T> AsRef<str> for BNodeId<T> where
+    T:AsRef<str>
 {
-    fn borrow(&self) -> &str {
-        self.value.borrow()
+    fn as_ref(&self) -> &str {
+        &self.value.as_ref()
     }
 }
 
 impl<T> Deref for BNodeId<T> where
-    T:Borrow<str>
+    T:AsRef<str>
 {
     type Target = T;
     fn deref(&self) -> &T {
@@ -83,27 +83,27 @@ impl<T> Deref for BNodeId<T> where
 }
 
 impl<T, U> PartialEq<BNodeId<U>> for BNodeId<T> where
-    T: Borrow<str>,
-    U: Borrow<str>,
+    T: AsRef<str>,
+    U: AsRef<str>,
 {
     fn eq(&self, other: &BNodeId<U>) -> bool {
-        self.value.borrow() == other.value.borrow()
+        self.value.as_ref() == other.value.as_ref()
     }
 }
 
 impl<'a, T> PartialEq<&'a str> for BNodeId<T> where
-    T: Borrow<str>,
+    T: AsRef<str>,
 {
     fn eq(&self, other: &&'a str) -> bool {
-        self.value.borrow() == *other
+        self.value.as_ref() == *other
     }
 }
 
 impl<T> Hash for BNodeId<T> where
-    T: Borrow<str>,
+    T: AsRef<str>,
 {
     fn hash<H:Hasher> (&self, state: &mut H) {
-        self.value.borrow().hash(state)
+        self.value.as_ref().hash(state)
     }
 }
 

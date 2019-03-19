@@ -19,38 +19,38 @@ use self::iri_rfc3987::{is_absolute_iri, is_relative_iri};
 /// See [module documentation](index.html)
 /// for more detail.
 #[derive(Clone,Copy,Debug,Eq)]
-pub struct IriData<T: Borrow<str>> {
+pub struct IriData<T: AsRef<str>> {
     pub(crate) ns: T,
     pub(crate) suffix: Option<T>,
     pub(crate) absolute: bool,
 }
 
 impl<T> IriData<T> where
-    T: Borrow<str>,
+    T: AsRef<str>,
 {
     /// The length of this IRI.
     pub fn len(&self) -> usize {
-        self.ns.borrow().len() +
+        self.ns.as_ref().len() +
             self.suffix_borrow().len()
     }
 
     /// Iterate over the bytes representing this IRI.
     pub fn bytes<'a>(&'a self) -> impl Iterator<Item=u8>+'a {
-        self.ns.borrow().bytes().chain(
+        self.ns.as_ref().bytes().chain(
             self.suffix_borrow().bytes()
         )
     }
 
     /// Iterate over the characters representing this IRI.
     pub fn chars<'a>(&'a self) -> impl Iterator<Item=char>+'a {
-        self.ns.borrow().chars().chain(
+        self.ns.as_ref().chars().chain(
             self.suffix_borrow().chars()
         )
     }
 
     /// Construct a copy of this IRI as a `String`.
     pub fn to_string(&self) -> String {
-        let ns = self.ns.borrow();
+        let ns = self.ns.as_ref();
         let suffix = self.suffix_borrow();
         let mut ret = String::with_capacity(ns.len() + suffix.len());
         ret.push_str(ns);
@@ -67,9 +67,9 @@ impl<T> IriData<T> where
     pub fn write_to<W> (&self, w: &mut W) -> IoResult<()> where
         W: Write,
     {
-        w.write_all(self.ns.borrow().as_bytes())?;
+        w.write_all(self.ns.as_ref().as_bytes())?;
         if let Some(ref suffix) = self.suffix {
-            w.write_all(suffix.borrow().as_bytes())?;
+            w.write_all(suffix.as_ref().as_bytes())?;
         }
         Ok(())
     }
@@ -93,19 +93,19 @@ impl<T> IriData<T> where
     }
 
     pub(crate) fn from_with<'a, U, F> (other: &'a IriData<U>, mut factory: F) -> IriData<T> where
-        U: Borrow<str>,
+        U: AsRef<str>,
         F: FnMut(&'a str) -> T,
     {
-        let ns = factory(other.ns.borrow());
+        let ns = factory(other.ns.as_ref());
         let suffix = match other.suffix {
-            Some(ref suffix) => Some(factory(suffix.borrow())),
+            Some(ref suffix) => Some(factory(suffix.as_ref())),
             None => None,
         };
         IriData{ns, suffix, absolute: other.absolute}
     }
 
     pub(crate) fn normalized_with<'a, U, F> (other: &'a IriData<U>, factory: F, norm: Normalization) -> IriData<T> where
-        U: Borrow<str>,
+        U: AsRef<str>,
         F: FnMut(&str) -> T,
     {
         match norm {
@@ -117,25 +117,25 @@ impl<T> IriData<T> where
     }
 
     fn no_suffix_with<'a, U, F> (other: &'a IriData<U>, mut factory: F) -> IriData<T> where
-        U: Borrow<str>,
+        U: AsRef<str>,
         F: FnMut(&str) -> T,
     {
         let ns = match other.suffix {
             Some(_) => factory(&other.to_string()),
-            None => factory(other.ns.borrow()),
+            None => factory(other.ns.as_ref()),
         };
         IriData{ns, suffix: None, absolute: other.absolute}
     }
 
     fn last_hash_or_slash_with<'a, U, F> (other: &'a IriData<U>, mut factory: F) -> IriData<T> where
-        U: Borrow<str>,
+        U: AsRef<str>,
         F: FnMut(&str) -> T,
     {
         let sep = ['#', '/'];
-        let ns = other.ns.borrow();
+        let ns = other.ns.as_ref();
         let absolute = other.absolute;
         if let Some(ref suffix) = other.suffix {
-            let suffix = suffix.borrow();
+            let suffix = suffix.as_ref();
             if let Some(spos) = suffix.rfind(&sep[..]) {
                 let mut new_ns = String::with_capacity(ns.len() + spos+1);
                 new_ns.push_str(ns);
@@ -180,20 +180,20 @@ impl<T> IriData<T> where
 
     fn suffix_borrow(&self) -> &str {
         match self.suffix {
-            Some(ref suffix) => suffix.borrow(),
+            Some(ref suffix) => suffix.as_ref(),
             None         => "",
         }
     }
 }
 
 impl<T, U> PartialEq<IriData<U>> for IriData<T> where
-    T: Borrow<str>,
-    U: Borrow<str>,
+    T: AsRef<str>,
+    U: AsRef<str>,
 {
     fn eq(&self, other: &IriData<U>) -> bool {
-        let s_ns = self.ns.borrow();
+        let s_ns = self.ns.as_ref();
         let s_sf = self.suffix_borrow();
-        let o_ns = other.ns.borrow();
+        let o_ns = other.ns.as_ref();
         let o_sf = other.suffix_borrow();
         (s_ns.len() + s_sf.len()) == (o_ns.len() + o_sf.len())
         &&
@@ -210,10 +210,10 @@ impl<T, U> PartialEq<IriData<U>> for IriData<T> where
 }
 
 impl<'a, T> PartialEq<&'a str> for IriData<T> where
-    T: Borrow<str>,
+    T: AsRef<str>,
 {
     fn eq(&self, other: &&'a str) -> bool {
-        let s_ns = self.ns.borrow();
+        let s_ns = self.ns.as_ref();
         let s_sf = self.suffix_borrow();
         (s_ns.len() + s_sf.len()) == (other.len())
         &&
@@ -230,8 +230,8 @@ impl<'a, T> PartialEq<&'a str> for IriData<T> where
 }
 
 impl<T, U> PartialEq<Term<U>> for IriData<T> where
-    T: Borrow<str>,
-    U: Borrow<str> + Clone + Eq + Hash,
+    T: AsRef<str>,
+    U: AsRef<str> + Clone + Eq + Hash,
 {
     #[inline]
     fn eq(&self, other: &Term<U>) -> bool {
@@ -243,10 +243,10 @@ impl<T, U> PartialEq<Term<U>> for IriData<T> where
 }
 
 impl<T> Hash for IriData<T> where
-    T: Borrow<str>,
+    T: AsRef<str>,
 {
     fn hash<H:Hasher> (&self, state: &mut H) {
-        state.write(self.ns.borrow().as_bytes());
+        state.write(self.ns.as_ref().as_bytes());
         state.write(self.suffix_borrow().as_bytes());
         state.write_u8(0xff);
     }
@@ -272,9 +272,9 @@ pub enum Normalization {
 
 impl<'a> ParsedIri<'a> {
     pub fn join_iri<T> (&self, iri_term: &IriData<T>) -> IriData<T> where
-        T: Borrow<str> + Clone + From<String>,
+        T: AsRef<str> + Clone + From<String>,
     {
-        let parsed_ns = ParsedIri::new(iri_term.ns.borrow()).unwrap();
+        let parsed_ns = ParsedIri::new(iri_term.ns.as_ref()).unwrap();
         let abs_ns = T::from(self.join(&parsed_ns).to_string());
         IriData {
             ns: abs_ns,

@@ -3,7 +3,6 @@
 /// The [`GraphKey`](enum.GraphKey.html) type is a wrapper around
 /// [`Term`](../../term/struct.Term.html) to identify a graph in a dataset.
 
-use std::borrow::Borrow;
 use std::hash::Hash;
 
 use crate::term::Term;
@@ -13,7 +12,7 @@ use crate::term::Term;
 #[derive(Clone, Debug, Eq, Hash)]
 pub enum GraphKey<T>
 where
-    T: Borrow<str> + Clone + Eq + Hash,
+    T: AsRef<str> + Clone + Eq + Hash,
 {
     /// The default graph of the [`dataset`](../dataset/index.html).
     Default,
@@ -24,7 +23,7 @@ where
 
 impl<T> GraphKey<T>
 where
-    T: Borrow<str> + Clone + Eq + Hash,
+    T: AsRef<str> + Clone + Eq + Hash,
 {
     pub fn name(&self) -> Option<&Term<T>> {
         match self {
@@ -42,8 +41,8 @@ where
 }
 
 impl<'a, T, U> From<&'a Term<U>> for GraphKey<T> where
-        T: Borrow<str> + Clone + Eq + Hash + From<&'a str>,
-        U: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash + From<&'a str>,
+        U: AsRef<str> + Clone + Eq + Hash,
 {
     fn from(other: &'a Term<U>) -> GraphKey<T> {
         GraphKey::Name(other.into())
@@ -51,8 +50,8 @@ impl<'a, T, U> From<&'a Term<U>> for GraphKey<T> where
 }
 
 impl<'a, T, U> From<&'a GraphKey<U>> for GraphKey<T> where
-        T: Borrow<str> + Clone + Eq + Hash + From<&'a str>,
-        U: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash + From<&'a str>,
+        U: AsRef<str> + Clone + Eq + Hash,
 {
     fn from(other: &'a GraphKey<U>) -> GraphKey<T> {
         match other {
@@ -63,8 +62,8 @@ impl<'a, T, U> From<&'a GraphKey<U>> for GraphKey<T> where
 }
 
 impl<T, U> PartialEq<GraphKey<U>> for GraphKey<T> where
-    T: Borrow<str> + Clone + Eq + Hash,
-    U: Borrow<str> + Clone + Eq + Hash,
+    T: AsRef<str> + Clone + Eq + Hash,
+    U: AsRef<str> + Clone + Eq + Hash,
 {
     fn eq(&self, other: &GraphKey<U>) -> bool {
         match (self, other) {
@@ -76,8 +75,8 @@ impl<T, U> PartialEq<GraphKey<U>> for GraphKey<T> where
 }
 
 impl<T, U> PartialEq<Term<U>> for GraphKey<T> where
-    T: Borrow<str> + Clone + Eq + Hash,
-    U: Borrow<str> + Clone + Eq + Hash,
+    T: AsRef<str> + Clone + Eq + Hash,
+    U: AsRef<str> + Clone + Eq + Hash,
 {
     fn eq(&self, other: &Term<U>) -> bool {
         match self {
@@ -88,8 +87,8 @@ impl<T, U> PartialEq<Term<U>> for GraphKey<T> where
 }
 
 impl<T, U> PartialEq<GraphKey<U>> for Term<T> where
-    T: Borrow<str> + Clone + Eq + Hash,
-    U: Borrow<str> + Clone + Eq + Hash,
+    T: AsRef<str> + Clone + Eq + Hash,
+    U: AsRef<str> + Clone + Eq + Hash,
 {
     fn eq(&self, other: &GraphKey<U>) -> bool {
         match other {

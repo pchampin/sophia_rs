@@ -32,7 +32,6 @@
 //! [`FastGraph`]: type.FastGraph.html
 //! [`LightGraph`]: type.LightGraph.html
 
-use std::borrow::Borrow;
 use std::hash::Hash;
 
 use crate::term::*;

@@ -9,7 +9,6 @@
 //! [`Write`]: https://doc.rust-lang.org/std/io/trait.Write.html
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
-use std::borrow::Borrow;
 use std::io;
 use std::hash::Hash;
 use std::mem::swap;
@@ -96,7 +95,7 @@ def_stringifier!();
 
 /// Write a single RDF term into `w` using the NT syntax.
 pub fn write_term<T,W> (w: &mut W, t: &Term<T>) -> io::Result<()> where
-    T: Borrow<str> + Clone + Eq + Hash,
+    T: AsRef<str> + Clone + Eq + Hash,
     W: io::Write,
 {
     use self::Term::*;
@@ -110,20 +109,20 @@ pub fn write_term<T,W> (w: &mut W, t: &Term<T>) -> io::Result<()> where
         BNode(ident) => {
             w.write_all("_:".as_bytes())?;
             if ident.is_n3() {
-                w.write_all((ident.borrow() as &str).as_bytes())?;
+                w.write_all((ident.as_ref()).as_bytes())?;
             } else {
-                write_non_n3_bnode_id(w, ident.borrow())?;
+                write_non_n3_bnode_id(w, ident.as_ref())?;
             }
         }
         Literal(value, Lang(tag)) => {
             w.write_all("\"".as_bytes())?;
-            write_quoted_string(w, value.borrow())?;
+            write_quoted_string(w, value.as_ref())?;
             w.write_all("\"@".as_bytes())?;
-            w.write_all(tag.borrow().as_bytes())?;
+            w.write_all(tag.as_ref().as_bytes())?;
         }
         Literal(value, Datatype(iri)) => {
             w.write_all("\"".as_bytes())?;
-            write_quoted_string(w, value.borrow())?;
+            write_quoted_string(w, value.as_ref())?;
             w.write_all("\"".as_bytes())?;
             if iri != &"http://www.w3.org/2001/XMLSchema#string" {
                 w.write_all("^^<".as_bytes())?;
@@ -133,7 +132,7 @@ pub fn write_term<T,W> (w: &mut W, t: &Term<T>) -> io::Result<()> where
         }
         Variable(name) => {
             w.write_all("?".as_bytes())?;
-            w.write_all(name.borrow().as_bytes())?;
+            w.write_all(name.as_ref().as_bytes())?;
         }
     };
     Ok(())
@@ -141,7 +140,7 @@ pub fn write_term<T,W> (w: &mut W, t: &Term<T>) -> io::Result<()> where
 
 /// Stringifies a single RDF term using the NT syntax.
 pub fn stringify_term<T> (t: &Term<T>) -> String where
-    T: Borrow<str> + Clone + Eq + Hash,
+    T: AsRef<str> + Clone + Eq + Hash,
 {
     let mut v = Vec::new();
     write_term(&mut v, t).unwrap();

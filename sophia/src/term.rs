@@ -32,7 +32,6 @@
 //!   and be cloned and sent without any restriction.
 //! 
 
-use std::borrow::Borrow;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::rc::Rc;
@@ -62,7 +61,7 @@ mod _literal_kind; pub use self::_literal_kind::*;
 #[derive(Clone,Copy,Debug,Eq,Hash)]
 pub enum Term<T>
 where
-    T: Borrow<str> + Clone + Eq + Hash
+    T: AsRef<str> + Clone + Eq + Hash
 {
     Iri(IriData<T>),
     BNode(BNodeId<T>),
@@ -100,7 +99,7 @@ pub type StaticTerm = RefTerm<'static>;
 
 
 impl<T> Term<T> where
-    T: Borrow<str> + Clone + Eq + Hash,
+    T: AsRef<str> + Clone + Eq + Hash,
 {
     /// Return a copy of this term's underlying text.
     /// 
@@ -111,9 +110,9 @@ impl<T> Term<T> where
     pub fn value(&self) -> String {
         match self {
             Iri(iri) => iri.to_string(),
-            BNode(id) => String::from(id.borrow()),
-            Literal(value, _) => String::from(value.borrow()),
-            Variable(name) => String::from(name.borrow()),
+            BNode(id) => String::from(id.as_ref()),
+            Literal(value, _) => String::from(value.as_ref()),
+            Variable(name) => String::from(name.as_ref()),
         }
     }
 
@@ -134,7 +133,7 @@ impl<T> Term<T> where
 }
 
 impl<T> Term<T> where
-    T: Borrow<str> + Clone + Eq + Hash,
+    T: AsRef<str> + Clone + Eq + Hash,
 {
     /// Return a new IRI term from the given text.
     /// 
@@ -175,9 +174,9 @@ impl<T> Term<T> where
         T: From<U> + From<V>
     {
         let tag = T::from(lang);
-        match LangTag::from_str(tag.borrow()) {
+        match LangTag::from_str(tag.as_ref()) {
             Err(msg) => Err(ErrorKind::InvalidLanguageTag(
-                tag.borrow().to_string(), msg,
+                tag.as_ref().to_string(), msg,
             ).into()),
             Ok(_) => Ok(Literal(T::from(txt), Lang(tag))),
         }
@@ -202,18 +201,18 @@ impl<T> Term<T> where
         T: From<U>
     {
         let name = T::from(name);
-        if N3_VARIABLE_NAME.is_match(name.borrow()) {
+        if N3_VARIABLE_NAME.is_match(name.as_ref()) {
             Ok(Variable(name))
         } else {
             Err(ErrorKind::InvalidVariableName(
-                name.borrow().to_string()
+                name.as_ref().to_string()
             ).into())
         }
     }
 
     /// Copy another term with the given factory.
     pub fn from_with<'a, U, F> (other: &'a Term<U>, mut factory: F) -> Term<T> where
-        U: Borrow<str> + Clone + Eq + Hash,
+        U: AsRef<str> + Clone + Eq + Hash,
         F: FnMut(&'a str) -> T,
     {
         match other {
@@ -222,24 +221,24 @@ impl<T> Term<T> where
             BNode(id)
                 => BNode(BNodeId::from_with(&id, factory)),
             Literal(value, kind)
-                => Literal(factory(value.borrow()),
+                => Literal(factory(value.as_ref()),
                            LiteralKind::from_with(kind, factory)),
             Variable(name)
-                => Variable(factory(name.borrow())),
+                => Variable(factory(name.as_ref())),
         }
     }
 
     /// Copy another term with the given factory,
     /// applying the given normalization policy.
     pub fn normalized_with<'a, U, F> (other: &'a Term<U>, mut factory: F, norm: Normalization) -> Term<T> where
-        U: Borrow<str> + Clone + Eq + Hash,
+        U: AsRef<str> + Clone + Eq + Hash,
         F: FnMut(&str) -> T,
     {
         match other {
             Iri(iri)
                 => Iri(IriData::normalized_with(&iri, factory, norm)),
             Literal(value, kind)
-                => Literal(factory(value.borrow()),
+                => Literal(factory(value.as_ref()),
                            LiteralKind::normalized_with(kind, factory, norm)),
             _
                 => Self::from_with(other, factory)
@@ -319,7 +318,7 @@ impl<T> Term<T> where
     /// as it factorizes the pre-processing required for joining IRIs.
     ///
     pub fn join<U> (&self, t: &Term<U>) -> Term<U> where
-        U: Borrow<str> + Clone + Eq + Hash + From<String>,
+        U: AsRef<str> + Clone + Eq + Hash + From<String>,
     {
         let mut ret = None;
         self.batch_join(|join| {
@@ -355,7 +354,7 @@ impl<T> Term<T> where
     ///
     pub fn batch_join<'a, F, U> (&self, task: F) where
         F: FnOnce(&Fn(&Term<U>) -> Term<U>) -> (),
-        U: Borrow<str> + Clone + Eq + Hash + From<String>,
+        U: AsRef<str> + Clone + Eq + Hash + From<String>,
     {
         match self {
             Iri(iri) if iri.is_absolute() => {
@@ -390,8 +389,8 @@ impl<T> Term<T> where
 }
 
 impl<T, U> PartialEq<Term<U>> for Term<T> where
-    T: Borrow<str> + Clone + Eq + Hash,
-    U: Borrow<str> + Clone + Eq + Hash,
+    T: AsRef<str> + Clone + Eq + Hash,
+    U: AsRef<str> + Clone + Eq + Hash,
 {
     fn eq(&self, other: &Term<U>) -> bool {
         match (self, other) {
@@ -400,17 +399,17 @@ impl<T, U> PartialEq<Term<U>> for Term<T> where
             (BNode(id1), BNode(id2))
                 => id1 == id2,
             (Literal(value1, kind1), Literal(value2, kind2))
-                => value1.borrow() == value2.borrow() && kind1 == kind2,
+                => value1.as_ref() == value2.as_ref() && kind1 == kind2,
             (Variable(name1), Variable(name2))
-                => name1.borrow() == name2.borrow(),
+                => name1.as_ref() == name2.as_ref(),
             _ => false,
         }
     }
 }
 
 impl<T, U> PartialEq<IriData<U>> for Term<T> where
-    T: Borrow<str> + Clone + Eq + Hash,
-    U: Borrow<str> + Clone + Eq + Hash,
+    T: AsRef<str> + Clone + Eq + Hash,
+    U: AsRef<str> + Clone + Eq + Hash,
 {
     fn eq(&self, other: &IriData<U>) -> bool {
         match self {
@@ -421,8 +420,8 @@ impl<T, U> PartialEq<IriData<U>> for Term<T> where
 }
 
 impl<'a, T, U> From<&'a Term<U>> for Term<T> where
-        T: Borrow<str> + Clone + Eq + Hash + From<&'a str>,
-        U: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash + From<&'a str>,
+        U: AsRef<str> + Clone + Eq + Hash,
 {
     fn from(other: &'a Term<U>) -> Term<T> {
         Self::from_with(other, T::from)

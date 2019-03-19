@@ -160,7 +160,7 @@ impl_unsigned_for!(u64);
 /// We use this for keys in TermIndexMapU::t2i, when the owning term is in TermIndexMapU::i2t.
 #[inline]
 unsafe fn fake_static<S, T> (t: &T) -> StaticTerm where
-    S: Borrow<str> + Clone + Eq + Hash,
+    S: AsRef<str> + Clone + Eq + Hash,
     T: Borrow<Term<S>>,
 {
     StaticTerm::from_with(t.borrow(), |txt| &*(txt as *const str))

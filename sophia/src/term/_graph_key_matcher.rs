@@ -1,6 +1,5 @@
 // this module is transparently re-exported by its sibbling `matcher`
 
-use std::borrow::Borrow;
 use std::hash::Hash;
 
 use crate::term::*;
@@ -14,18 +13,18 @@ use super::graph_key::GraphKey;
 /// [`MutableDataset::remove_matching`](../../dataset/trait.MutableDataset.html#method.remove_matching),
 /// [`MutableDataset::retain`](../../dataset/trait.MutableDataset.html#method.retain).
 pub trait GraphKeyMatcher {
-    type TermData: Borrow<str> + Clone + Eq + Hash;
+    type TermData: AsRef<str> + Clone + Eq + Hash;
     /// If this matcher matches only one graph key, return it, else `None`.
     fn constant(&self) -> Option<&GraphKey<Self::TermData>>;
 
     /// Check whether this matcher matches `t`.
     fn matches<T> (&self, g: &GraphKey<T>) -> bool
-    where T: Borrow<str> + Clone + Eq + Hash;
+    where T: AsRef<str> + Clone + Eq + Hash;
 }
 
 impl<U> GraphKeyMatcher for GraphKey<U>
 where
-    U: Borrow<str> + Clone + Eq + Hash,
+    U: AsRef<str> + Clone + Eq + Hash,
 {
     type TermData = U;
     fn constant(&self) -> Option<&GraphKey<Self::TermData>> {
@@ -33,7 +32,7 @@ where
     }
     fn matches<T> (&self, g: &GraphKey<T>) -> bool
     where
-        T: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
     {
         g==self
     }
@@ -41,7 +40,7 @@ where
 
 impl<U> GraphKeyMatcher for Term<U>
 where
-    U: Borrow<str> + Clone + Eq + Hash,
+    U: AsRef<str> + Clone + Eq + Hash,
 {
     type TermData = U;
     fn constant(&self) -> Option<&GraphKey<Self::TermData>> {
@@ -49,7 +48,7 @@ where
     }
     fn matches<T> (&self, g: &GraphKey<T>) -> bool
     where
-        T: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
     {
         g==self
     }
@@ -57,7 +56,7 @@ where
 
 impl<U> GraphKeyMatcher for Option<GraphKey<U>>
 where
-    U: Borrow<str> + Clone + Eq + Hash,
+    U: AsRef<str> + Clone + Eq + Hash,
 {
     type TermData = U;
     fn constant(&self) -> Option<&GraphKey<Self::TermData>> {
@@ -65,7 +64,7 @@ where
     }
     fn matches<T> (&self, g: &GraphKey<T>) -> bool
     where
-        T: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
     {
         match self {
             Some(graph_key) => g == graph_key,
@@ -76,7 +75,7 @@ where
 
 impl<U> GraphKeyMatcher for Option<Term<U>>
 where
-    U: Borrow<str> + Clone + Eq + Hash,
+    U: AsRef<str> + Clone + Eq + Hash,
 {
     type TermData = U;
     fn constant(&self) -> Option<&GraphKey<Self::TermData>> {
@@ -84,7 +83,7 @@ where
     }
     fn matches<T> (&self, g: &GraphKey<T>) -> bool
     where
-        T: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
     {
         match self {
             Some(term) => g == term,
@@ -104,7 +103,7 @@ where
     }
     fn matches<T> (&self, g: &GraphKey<T>) -> bool
     where
-        T: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
     {
         for matcher in self {
             if matcher.matches(g) { return true; }
@@ -120,7 +119,7 @@ impl<F: Fn(&GraphKey<&str>) -> bool> GraphKeyMatcher for F {
     }
     fn matches<T> (&self, t: &GraphKey<T>) -> bool
     where
-        T: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
     {
         match t {
             GraphKey::Default => {

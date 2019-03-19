@@ -130,7 +130,7 @@ fn bnode() {
     assert_eq!(b1.n3(), "_:foo".to_string());
 
     if let BNode(id1) = b1 {
-        assert_eq!(Borrow::<str>::borrow(&id1), "foo");
+        assert_eq!(AsRef::<str>::as_ref(&id1), "foo");
     } else {
         panic!("b1 should be a BNode");
     }
@@ -220,8 +220,8 @@ fn literal_lang() {
     assert_eq!(lit.n3(), "\"hello\"@en".to_string());
 
     if let Literal(val, Lang(tag)) = lit {
-        assert_eq!(val.borrow(), "hello");
-        assert_eq!(tag.borrow(), "en");
+        assert_eq!(val.as_ref() as &str, "hello");
+        assert_eq!(tag.as_ref() as &str, "en");
     } else {
         assert!(false, "Should have returned Literal(_, Lang(_))");
     }
@@ -236,7 +236,7 @@ fn literal_dt() {
     assert_eq!(lit.n3(), "\"hello\"".to_string());
 
     if let Literal(val, Datatype(iri)) = lit {
-        assert_eq!(val.borrow(), "hello");
+        assert_eq!(val.as_ref() as &str, "hello");
         assert_eq!(iri, xsd::string);
     } else {
         assert!(false, "Should have returned Literal(_, Datatype(_))");

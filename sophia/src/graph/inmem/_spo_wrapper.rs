@@ -49,7 +49,7 @@ impl<'a, T> GraphWrapper<'a> for SpoWrapper<T> where
 
     fn gw_triples_with_s<U> (&'a self, s: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped>
     where
-        U: Borrow<str> + Clone + Eq + Hash,
+        U: AsRef<str> + Clone + Eq + Hash,
     {
         if let Some(si) = self.wrapped.get_index(s) {
             if let Some(pis) = self.s2p.get(&si) {
@@ -75,8 +75,8 @@ impl<'a, T> GraphWrapper<'a> for SpoWrapper<T> where
 
     fn gw_triples_with_sp<U, V> (&'a self, s: &'a Term<U>, p: &'a Term<V>) -> GTripleSource<'a, Self::Wrapped>
     where
-        U: Borrow<str> + Clone + Eq + Hash,
-        V: Borrow<str> + Clone + Eq + Hash,
+        U: AsRef<str> + Clone + Eq + Hash,
+        V: AsRef<str> + Clone + Eq + Hash,
     {
         if let Some(si) = self.wrapped.get_index(s) {
             if let Some(pi) = self.wrapped.get_index(p) {
@@ -111,7 +111,7 @@ impl<T> IndexedGraph for SpoWrapper<T> where
 
     #[inline]
     fn get_index<U> (&self, t: &Term<U>) -> Option<Self::Index> where
-        U: Borrow<str> + Clone + Eq + Hash,
+        U: AsRef<str> + Clone + Eq + Hash,
     {
         self.wrapped.get_index(t)
     }
@@ -123,9 +123,9 @@ impl<T> IndexedGraph for SpoWrapper<T> where
     }
 
     fn insert_indexed<U, V, W> (&mut self, s: &Term<U>, p: &Term<V>, o: &Term<W>) -> Option<[Self::Index;3]> where
-        U: Borrow<str> + Clone + Eq + Hash,
-        V: Borrow<str> + Clone + Eq + Hash,
-        W: Borrow<str> + Clone + Eq + Hash,
+        U: AsRef<str> + Clone + Eq + Hash,
+        V: AsRef<str> + Clone + Eq + Hash,
+        W: AsRef<str> + Clone + Eq + Hash,
     {
         let modified = self.wrapped.insert_indexed(s, p, o);
         if let Some([si, pi, oi]) = modified {
@@ -136,9 +136,9 @@ impl<T> IndexedGraph for SpoWrapper<T> where
     }
 
     fn remove_indexed<U, V, W> (&mut self, s: &Term<U>, p: &Term<V>, o: &Term<W>) -> Option<([Self::Index;3])> where
-        U: Borrow<str> + Clone + Eq + Hash,
-        V: Borrow<str> + Clone + Eq + Hash,
-        W: Borrow<str> + Clone + Eq + Hash,
+        U: AsRef<str> + Clone + Eq + Hash,
+        V: AsRef<str> + Clone + Eq + Hash,
+        W: AsRef<str> + Clone + Eq + Hash,
     {
         let modified = self.wrapped.remove_indexed(s, p, o);
         if let Some([si, pi, oi]) = modified {

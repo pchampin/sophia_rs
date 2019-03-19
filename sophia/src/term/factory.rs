@@ -11,58 +11,58 @@ use weak_table::{WeakHashSet};
 use super::*;
 
 pub trait TermFactory {
-    type TermData: Borrow<str> + Clone + Eq + Hash;
+    type TermData: AsRef<str> + Clone + Eq + Hash;
 
     fn get_holder(&mut self, txt: &str) -> Self::TermData;
 
     fn iri<T> (&mut self, iri: T) -> Result<Term<Self::TermData>> where
-        T: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
     {
-        Term::new_iri(self.get_holder(iri.borrow()))
+        Term::new_iri(self.get_holder(iri.as_ref()))
     }
 
     fn iri2<T, U> (&mut self, ns: T, suffix: U) -> Result<Term<Self::TermData>> where
-        T: Borrow<str> + Clone + Eq + Hash,
-        U: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
+        U: AsRef<str> + Clone + Eq + Hash,
     {
-        Term::new_iri2(self.get_holder(ns.borrow()), self.get_holder(suffix.borrow()))
+        Term::new_iri2(self.get_holder(ns.as_ref()), self.get_holder(suffix.as_ref()))
     }
 
     fn bnode<T> (&mut self, id: T) -> Result<Term<Self::TermData>> where
-        T: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
     {
-        Term::new_bnode(self.get_holder(id.borrow()))
+        Term::new_bnode(self.get_holder(id.as_ref()))
     }
 
     fn literal_lang<T, U> (&mut self, txt: T, lang: U) -> Result<Term<Self::TermData>> where
-        T: Borrow<str> + Clone + Eq + Hash,
-        U: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
+        U: AsRef<str> + Clone + Eq + Hash,
     {
-        Term::new_literal_lang(self.get_holder(txt.borrow()), self.get_holder(lang.borrow()))
+        Term::new_literal_lang(self.get_holder(txt.as_ref()), self.get_holder(lang.as_ref()))
     }
 
     fn literal_dt<T, U> (&mut self, txt: T, dt: Term<U>) -> Result<Term<Self::TermData>> where
-        T: Borrow<str> + Clone + Eq + Hash,
-        U: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
+        U: AsRef<str> + Clone + Eq + Hash,
         Self::TermData: Debug,
     {
-        Term::new_literal_dt(self.get_holder(txt.borrow()), self.copy(&dt))
+        Term::new_literal_dt(self.get_holder(txt.as_ref()), self.copy(&dt))
     }
 
     fn variable<T> (&mut self, name: T) -> Result<Term<Self::TermData>> where
-        T: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
     {
-        Term::new_variable(self.get_holder(name.borrow()))
+        Term::new_variable(self.get_holder(name.as_ref()))
     }
 
     fn copy<T> (&mut self, other: &Term<T>) -> Term<Self::TermData> where
-        T: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
     {
         Term::from_with(other, |txt| self.get_holder(txt))
     }
 
     fn copy_normalized<T> (&mut self, other: &Term<T>, norm: Normalization) -> Term<Self::TermData> where
-        T: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
     {
         Term::normalized_with(other, |txt| self.get_holder(txt), norm)
     }

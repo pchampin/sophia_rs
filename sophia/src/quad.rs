@@ -2,7 +2,6 @@
 //! Quads are RDF triples augmented with an optional graph name.
 //! They are the individual statements of an RDF dataset.
 
-use std::borrow::Borrow;
 use std::hash::Hash;
 
 use crate::term::*;
@@ -20,7 +19,7 @@ pub trait Quad<'a>: Triple<'a> {
 
 impl<'a, T> Triple<'a> for [Term<T>;4]
 where
-    T: Borrow<str> + Clone + Eq + Hash + 'a,
+    T: AsRef<str> + Clone + Eq + Hash + 'a,
 {
     type TermData= T;
     #[inline] fn s(&self) -> &Term<T> { &self[0] }
@@ -30,7 +29,7 @@ where
 
 impl<'a, T> Quad<'a> for [Term<T>;4]
 where
-    T: Borrow<str> + Clone + Eq + Hash + 'a,
+    T: AsRef<str> + Clone + Eq + Hash + 'a,
 {
     #[inline] fn g(&self) -> &GraphKey<T> { self[3].as_graph_key() }
 }
@@ -39,7 +38,7 @@ where
 
 impl<'a, T> Triple<'a> for [&'a Term<T>;4]
 where
-    T: Borrow<str> + Clone + Eq + Hash + 'a,
+    T: AsRef<str> + Clone + Eq + Hash + 'a,
 {
     type TermData= T;
     #[inline] fn s(&self) -> &Term<T> { self[0] }
@@ -49,7 +48,7 @@ where
 
 impl<'a, T> Quad<'a> for [&'a Term<T>;4]
 where
-    T: Borrow<str> + Clone + Eq + Hash + 'a,
+    T: AsRef<str> + Clone + Eq + Hash + 'a,
 {
     #[inline] fn g(&self) -> &GraphKey<T> { self[3].as_graph_key() }
 }

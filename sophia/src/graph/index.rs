@@ -1,6 +1,5 @@
 //! Types for indexing terms.
 
-use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::hash::Hash;
@@ -50,11 +49,11 @@ pub trait TermIndexMap: Default {
 pub trait IndexedGraph {
     /// The type used to represent terms internally.
     type Index: Copy + Eq + Hash;
-    type TermData: Borrow<str> + Clone + Eq + Hash + 'static;
+    type TermData: AsRef<str> + Clone + Eq + Hash + 'static;
 
     /// Return the index for the given term, if it exists.
     fn get_index<T> (&self, t: &Term<T>) -> Option<Self::Index> where
-        T: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
     ;
 
     /// Return the term for the given index, if it exists.
@@ -63,17 +62,17 @@ pub trait IndexedGraph {
     /// Insert a triple in this Graph,
     /// and return the corresponding tuple of indices.
     fn insert_indexed<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Option<[Self::Index;3]> where
-        T: Borrow<str> + Clone + Eq + Hash,
-        U: Borrow<str> + Clone + Eq + Hash,
-        V: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
+        U: AsRef<str> + Clone + Eq + Hash,
+        V: AsRef<str> + Clone + Eq + Hash,
     ;
 
     /// Remove a triple from this Graph,
     /// and return the corresponding tuple of indices.
     fn remove_indexed<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Option<[Self::Index;3]> where
-        T: Borrow<str> + Clone + Eq + Hash,
-        U: Borrow<str> + Clone + Eq + Hash,
-        V: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
+        U: AsRef<str> + Clone + Eq + Hash,
+        V: AsRef<str> + Clone + Eq + Hash,
     ;
 
     fn shrink_to_fit(&mut self);
@@ -94,16 +93,16 @@ macro_rules! impl_mutable_graph_for_indexed_mutable_graph {
         type MutationError = coercible_errors::Never;
 
         fn insert<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> MGResult< Self, bool> where
-            T_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
-            U_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
-            V_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
+            T_: AsRef<str> + Clone + Eq + std::hash::Hash,
+            U_: AsRef<str> + Clone + Eq + std::hash::Hash,
+            V_: AsRef<str> + Clone + Eq + std::hash::Hash,
         {
             Ok(self.insert_indexed(s, p, o).is_some())
         }
         fn remove<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> MGResult< Self, bool> where
-            T_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
-            U_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
-            V_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
+            T_: AsRef<str> + Clone + Eq + std::hash::Hash,
+            U_: AsRef<str> + Clone + Eq + std::hash::Hash,
+            V_: AsRef<str> + Clone + Eq + std::hash::Hash,
         {
             Ok(self.remove_indexed(s, p, o).is_some())
         }

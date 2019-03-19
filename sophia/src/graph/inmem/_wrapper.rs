@@ -38,54 +38,54 @@ pub trait GraphWrapper<'a>
     #[inline]
     /// Mimmic the [`triples_with_s`](../trait.Graph.html#method.triples_with_s) method.
     fn gw_triples_with_s<T> (&'a self, s: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped> where
-        T: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
     {
         self.get_wrapped().triples_with_s(s)
     }
     #[inline]
     /// Mimmic the [`triples_with_p`](../trait.Graph.html#method.triples_with_p) method.
     fn gw_triples_with_p<T> (&'a self, p: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped> where
-        T: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
     {
         self.get_wrapped().triples_with_p(p)
     }
     #[inline]
     /// Mimmic the [`triples_with_o`](../trait.Graph.html#method.triples_with_o) method.
     fn gw_triples_with_o<T> (&'a self, o: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped> where
-        T: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
     {
         self.get_wrapped().triples_with_o(o)
     }
     #[inline]
     /// Mimmic the [`triples_with_sp`](../trait.Graph.html#method.triples_with_sp) method.
     fn gw_triples_with_sp<T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped> where
-        T: Borrow<str> + Clone + Eq + Hash,
-        U: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
+        U: AsRef<str> + Clone + Eq + Hash,
     {
         self.get_wrapped().triples_with_sp(s, p)
     }
     #[inline]
     /// Mimmic the [`triples_with_so`](../trait.Graph.html#method.triples_with_so) method.
     fn gw_triples_with_so<T, U> (&'a self, s: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped> where
-        T: Borrow<str> + Clone + Eq + Hash,
-        U: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
+        U: AsRef<str> + Clone + Eq + Hash,
     {
         self.get_wrapped().triples_with_so(s, o)
     }
     #[inline]
     /// Mimmic the [`triples_with_po`](../trait.Graph.html#method.triples_with_po) method.
     fn gw_triples_with_po<T, U> (&'a self, p: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped> where
-        T: Borrow<str> + Clone + Eq + Hash,
-        U: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
+        U: AsRef<str> + Clone + Eq + Hash,
     {
         self.get_wrapped().triples_with_po(p, o)
     }
     #[inline]
     /// Mimmic the [`triples_with_spo`](../trait.Graph.html#method.triples_with_spo) method.
     fn gw_triples_with_spo<T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> GTripleSource<'a, Self::Wrapped> where
-        T: Borrow<str> + Clone + Eq + Hash,
-        U: Borrow<str> + Clone + Eq + Hash,
-        V: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
+        U: AsRef<str> + Clone + Eq + Hash,
+        V: AsRef<str> + Clone + Eq + Hash,
     {
         self.get_wrapped().triples_with_spo(s, p, o)
     }
@@ -93,9 +93,9 @@ pub trait GraphWrapper<'a>
     #[inline]
     /// Mimmic the [`contains`](../trait.Graph.html#method.contains) method.
     fn gw_contains<T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> GResult<'a, Self::Wrapped, bool> where
-        T: Borrow<str> + Clone + Eq + Hash,
-        U: Borrow<str> + Clone + Eq + Hash,
-        V: Borrow<str> + Clone + Eq + Hash,
+        T: AsRef<str> + Clone + Eq + Hash,
+        U: AsRef<str> + Clone + Eq + Hash,
+        V: AsRef<str> + Clone + Eq + Hash,
     {
         self.get_wrapped().contains(s, p, o)
     }
@@ -159,57 +159,57 @@ macro_rules! impl_graph_for_wrapper {
         }
         #[inline]
         fn triples_with_s<T_> (&'a self, s: &'a Term<T_>) -> GTripleSource<'a, Self> where
-            T_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
+            T_: AsRef<str> + Clone + Eq + std::hash::Hash,
         {
             GraphWrapper::gw_triples_with_s(self, s)
         }
         #[inline]
         fn triples_with_p<T_> (&'a self, p: &'a Term<T_>) -> GTripleSource<'a, Self> where
-            T_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
+            T_: AsRef<str> + Clone + Eq + std::hash::Hash,
         {
             GraphWrapper::gw_triples_with_p(self, p)
         }
         #[inline]
         fn triples_with_o<T_> (&'a self, o: &'a Term<T_>) -> GTripleSource<'a, Self> where
-            T_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
+            T_: AsRef<str> + Clone + Eq + std::hash::Hash,
         {
             GraphWrapper::gw_triples_with_o(self, o)
         }
         #[inline]
         fn triples_with_sp<T_, U_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>) -> GTripleSource<'a, Self> where
-            T_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
-            U_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
+            T_: AsRef<str> + Clone + Eq + std::hash::Hash,
+            U_: AsRef<str> + Clone + Eq + std::hash::Hash,
         {
             GraphWrapper::gw_triples_with_sp(self, s, p)
         }
         #[inline]
         fn triples_with_so<T_, U_> (&'a self, s: &'a Term<T_>, o: &'a Term<U_>) -> GTripleSource<'a, Self> where
-            T_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
-            U_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
+            T_: AsRef<str> + Clone + Eq + std::hash::Hash,
+            U_: AsRef<str> + Clone + Eq + std::hash::Hash,
         {
             GraphWrapper::gw_triples_with_so(self, s, o)
         }
         #[inline]
         fn triples_with_po<T_, U_> (&'a self, p: &'a Term<T_>, o: &'a Term<U_>) -> GTripleSource<'a, Self> where
-            T_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
-            U_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
+            T_: AsRef<str> + Clone + Eq + std::hash::Hash,
+            U_: AsRef<str> + Clone + Eq + std::hash::Hash,
         {
             GraphWrapper::gw_triples_with_po(self, p, o)
         }
         #[inline]
         fn triples_with_spo<T_, U_, V_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>, o: &'a Term<V_>) -> GTripleSource<'a, Self> where
-            T_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
-            U_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
-            V_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
+            T_: AsRef<str> + Clone + Eq + std::hash::Hash,
+            U_: AsRef<str> + Clone + Eq + std::hash::Hash,
+            V_: AsRef<str> + Clone + Eq + std::hash::Hash,
         {
             GraphWrapper::gw_triples_with_spo(self, s, p, o)
         }
 
         #[inline]
         fn contains<T_, U_, V_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>, o: &'a Term<V_>) -> GResult<'a, Self, bool> where
-            T_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
-            U_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
-            V_: std::borrow::Borrow<str> + Clone + Eq + std::hash::Hash,
+            T_: AsRef<str> + Clone + Eq + std::hash::Hash,
+            U_: AsRef<str> + Clone + Eq + std::hash::Hash,
+            V_: AsRef<str> + Clone + Eq + std::hash::Hash,
         {
             GraphWrapper::gw_contains(self, s, p, o)
         }
