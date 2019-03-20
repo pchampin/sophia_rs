@@ -7,7 +7,7 @@
 //! - implements [`Default`],
 //! - has three methods `parse_bufread`, `parse_read` and `parse_str`,
 //!   accepting [`io::BufRead`], [`io::Read`] and [`&str`] respectively,
-//!   and all returning a [`TripleSource`] iterator.
+//!   and all returning a [`TripleSource`] or [`QuadSource`] iterator.
 //! 
 //! Each parser module also has three functions
 //! `parse_bufread`, `parse_read` and `parse_str`,
@@ -18,7 +18,9 @@
 //! [`io::Read`]: https://doc.rust-lang.org/std/io/trait.Read.html
 //! [`&str`]: https://doc.rust-lang.org/std/primitive.str.html
 //! [`TripleSource`]: ../triple/stream/trait.TripleSource.html
+//! [`QuadSource`]: ../quad/stream/trait.QuadSource.html
 
 #[macro_use]
 pub mod common;
 pub mod nt;
+pub mod nq;

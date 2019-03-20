@@ -1,4 +1,4 @@
-//! Parser for the [N-Triples] concrete syntax of RDF.
+//! Parser for [N-Triples], a simple line-oriented syntax for serializing RDF graphs.
 //! 
 //! [N-Triples]: https://www.w3.org/TR/n-triples/
 //! 
@@ -33,14 +33,14 @@ use super::common::*;
 
 
 #[cfg(debug_assertions)]
-const _GRAMMAR: &'static str = include_str!("nt.pest");
+const _GRAMMAR: &'static str = include_str!("ntq.pest");
 
 #[derive(Parser)]
-#[grammar = "parser/nt.pest"]
-pub(crate) struct PestNtParser;
+#[grammar = "parser/ntq.pest"]
+pub(crate) struct PestNtqParser;
 
 
-/// NT parser configuration.
+/// N-Triples parser configuration.
 /// 
 /// For more information,
 /// see the [uniform interface] of parsers.
@@ -60,7 +60,7 @@ impl Config {
     pub fn parse_bufread<'a, B: BufRead+'a>(&self, bufread: B)
     -> impl Iterator<Item=Result<NtTriple>>+'a {
         let config = self.clone();
-        let rule = if config.strict {Rule::ntriple_line} else {Rule::generalized_line};
+        let rule = if config.strict {Rule::ntriples_line} else {Rule::generalized_nt_line};
         bufread.lines().enumerate()
         .filter_map(move |(lineidx, line)| {
             let line = match line {
@@ -96,8 +96,8 @@ impl Config {
     pub fn parse_str<'a>(&self, txt: &'a str)
     -> Box<dyn Iterator<Item=Result<[Term<Cow<'a, str>>;3]>>+'a> {
         let config = self.clone();
-        let rule = if config.strict {Rule::ntriples_doc} else {Rule::generalized_doc};
-        let triple_pairs = match PestNtParser::parse(rule, txt) {
+        let rule = if config.strict {Rule::ntriples_doc} else {Rule::generalized_nt_doc};
+        let triple_pairs = match PestNtqParser::parse(rule, txt) {
             Ok(pairs) => pairs,
             Err(err) => {
                 return Box::new(std::iter::once(Err(convert_pest_err(err, 0))));
@@ -114,7 +114,7 @@ impl Config {
     }
 }
 
-def_default_parser_api!();
+def_default_triple_parser_api!{}
 
 
 
@@ -142,7 +142,7 @@ impl<'a> Triple<'a> for NtTriple {
 
 
 fn parse_rule_from_line<'a> (config: &Config, rule: Rule, txt: &'a str) -> StdResult<[CowTerm<'a>;3], PestError<Rule>> {
-    let triple_pair = PestNtParser::parse(rule, txt)?.next().unwrap();
+    let triple_pair = PestNtqParser::parse(rule, txt)?.next().unwrap();
     pairs_to_triple(config, triple_pair.into_inner())
 }
 
@@ -153,7 +153,7 @@ fn pairs_to_triple<'a> (config: &Config, mut pairs: Pairs<'a, Rule>) -> StdResul
     Ok([s, p, o])
 }
 
-fn pair_to_term<'a> (pair: Pair<'a, Rule>, strict: bool) -> StdResult<CowTerm<'a>, PestError<Rule>> {
+pub(crate) fn pair_to_term<'a> (pair: Pair<'a, Rule>, strict: bool) -> StdResult<CowTerm<'a>, PestError<Rule>> {
     match pair.as_rule() {
         Rule::iriref => {
             let cow = unescape_str(pair.clone(), 1)?;
@@ -227,7 +227,7 @@ mod test {
     static STRICT: Config = Config{ strict: true };
 
     fn parse(rule: Rule, txt: &str) -> StdResult<Pairs<Rule>, PestError<Rule>> {
-        PestNtParser::parse(rule, txt)
+        PestNtqParser::parse(rule, txt)
     }
 
     /* does not work since the rule 'comment' has been made silent

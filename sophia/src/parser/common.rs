@@ -12,26 +12,41 @@ use crate::error::*;
 use crate::term::Term;
 
 /// This macro provides a straightforward implementation of the default functions
-/// of a serializer module.
+/// of a parser module producing triples.
 #[macro_export]
-macro_rules! def_default_parser_api {
+macro_rules! def_default_triple_parser_api {
     () => {
+        def_default_parser_api!{Triple}
+    }
+}
+
+/// This macro provides a straightforward implementation of the default functions
+/// of a parser module producing quads.
+#[macro_export]
+macro_rules! def_default_quad_parser_api {
+    () => {
+        def_default_parser_api!{Quad}
+    }
+}
+
+macro_rules! def_default_parser_api {
+    ($item: ident) => {
         /// Shortcut for `Config::default().parse_bufread(bufread)`
         #[inline]
         pub fn parse_bufread<'a, B: ::std::io::BufRead+'a>(bufread: B)
-        -> impl Iterator<Item=Result<impl Triple<'a>>>+'a {
+        -> impl Iterator<Item=Result<impl $item<'a>>>+'a {
             Config::default().parse_bufread(bufread)
         }
         /// Shortcut for `Config::default().parse_read(read)`
         #[inline]
         pub fn parse_read<'a, R: ::std::io::Read+'a>(read: R)
-        -> impl Iterator<Item=Result<impl Triple<'a>>>+'a {
+        -> impl Iterator<Item=Result<impl $item<'a>>>+'a {
             Config::default().parse_read(read)
         }
         /// Shortcut for `Config::default().parse_str(txt)`
         #[inline]
         pub fn parse_str<'a>(txt: &'a str)
-        -> impl Iterator<Item=Result<impl Triple<'a>>>+'a {
+        -> impl Iterator<Item=Result<impl $item<'a>>>+'a {
             Config::default().parse_str(txt)
         }
     };
@@ -254,12 +269,12 @@ mod test {
     #[test]
     fn unescape_str_() {
         use pest::Parser;
-        use super::super::nt::{PestNtParser,Rule};
+        use super::super::nt::{PestNtqParser,Rule};
 
         fn test<'a> (txt: &'a str) -> StdResult<String, String> {
             // parsing a triple just to test that unescape_str works with an offset > 0.
             let triple = format!("<> <> {}.", txt);
-            let mut pairs = PestNtParser::parse(Rule::triple, &triple[..]).unwrap();
+            let mut pairs = PestNtqParser::parse(Rule::triple, &triple[..]).unwrap();
             let pairs = pairs.next().unwrap().into_inner(); // into 'triple'
             let object = pairs.skip(2).next().unwrap();
             let pair =
