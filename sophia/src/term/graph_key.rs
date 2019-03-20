@@ -1,7 +1,6 @@
 //! A graph key is the fourth component of a quad.
 //! It identifies the graph of a dataset to which this quad belongs.
 
-
 use std::hash::Hash;
 
 use crate::term::Term;
@@ -25,7 +24,6 @@ where
     Name(Term<T>),
 }
 
-
 impl<T> GraphKey<T>
 where
     T: AsRef<str> + Clone + Eq + Hash,
@@ -45,18 +43,20 @@ where
     }
 }
 
-impl<'a, T, U> From<&'a Term<U>> for GraphKey<T> where
-        T: AsRef<str> + Clone + Eq + Hash + From<&'a str>,
-        U: AsRef<str> + Clone + Eq + Hash,
+impl<'a, T, U> From<&'a Term<U>> for GraphKey<T>
+where
+    T: AsRef<str> + Clone + Eq + Hash + From<&'a str>,
+    U: AsRef<str> + Clone + Eq + Hash,
 {
     fn from(other: &'a Term<U>) -> GraphKey<T> {
         GraphKey::Name(other.into())
     }
 }
 
-impl<'a, T, U> From<&'a GraphKey<U>> for GraphKey<T> where
-        T: AsRef<str> + Clone + Eq + Hash + From<&'a str>,
-        U: AsRef<str> + Clone + Eq + Hash,
+impl<'a, T, U> From<&'a GraphKey<U>> for GraphKey<T>
+where
+    T: AsRef<str> + Clone + Eq + Hash + From<&'a str>,
+    U: AsRef<str> + Clone + Eq + Hash,
 {
     fn from(other: &'a GraphKey<U>) -> GraphKey<T> {
         match other {
@@ -66,7 +66,8 @@ impl<'a, T, U> From<&'a GraphKey<U>> for GraphKey<T> where
     }
 }
 
-impl<T, U> PartialEq<GraphKey<U>> for GraphKey<T> where
+impl<T, U> PartialEq<GraphKey<U>> for GraphKey<T>
+where
     T: AsRef<str> + Clone + Eq + Hash,
     U: AsRef<str> + Clone + Eq + Hash,
 {
@@ -79,7 +80,8 @@ impl<T, U> PartialEq<GraphKey<U>> for GraphKey<T> where
     }
 }
 
-impl<T, U> PartialEq<Term<U>> for GraphKey<T> where
+impl<T, U> PartialEq<Term<U>> for GraphKey<T>
+where
     T: AsRef<str> + Clone + Eq + Hash,
     U: AsRef<str> + Clone + Eq + Hash,
 {
@@ -91,7 +93,8 @@ impl<T, U> PartialEq<Term<U>> for GraphKey<T> where
     }
 }
 
-impl<T, U> PartialEq<GraphKey<U>> for Term<T> where
+impl<T, U> PartialEq<GraphKey<U>> for Term<T>
+where
     T: AsRef<str> + Clone + Eq + Hash,
     U: AsRef<str> + Clone + Eq + Hash,
 {

@@ -9,15 +9,16 @@ use crate::triple::Triple;
 
 /// A [`GraphWrapper`](trait.GraphWrapper.html)
 /// indexing triples by subject, then by predicate, then by object.
-/// 
+///
 /// Compared to its wrapped graph,
 /// it overrides the methods that can efficiently be implemented using this index.
-/// 
+///
 /// Since it must be able to produce triples instead of the underlying graphs,
 /// it is limited to wrapping graphs whose triples are `[&Triple<H>]`.
-/// 
+///
 #[derive(Default)]
-pub struct SpoWrapper<T> where
+pub struct SpoWrapper<T>
+where
     T: IndexedGraph,
 {
     wrapped: T,
@@ -25,7 +26,8 @@ pub struct SpoWrapper<T> where
     sp2o: HashMap<(T::Index, T::Index), Vec<T::Index>>,
 }
 
-impl<T> SpoWrapper<T> where
+impl<T> SpoWrapper<T>
+where
     T: IndexedGraph + Default,
     T::Index: Default,
 {
@@ -34,8 +36,9 @@ impl<T> SpoWrapper<T> where
     }
 }
 
-impl<'a, T> GraphWrapper<'a> for SpoWrapper<T> where
-    T: IndexedGraph + Graph<'a, Triple=[&'a Term<<T as IndexedGraph>::TermData>;3]>,
+impl<'a, T> GraphWrapper<'a> for SpoWrapper<T>
+where
+    T: IndexedGraph + Graph<'a, Triple = [&'a Term<<T as IndexedGraph>::TermData>; 3]>,
 {
     type Wrapped = T;
 
@@ -47,7 +50,7 @@ impl<'a, T> GraphWrapper<'a> for SpoWrapper<T> where
         &mut self.wrapped
     }
 
-    fn gw_triples_with_s<U> (&'a self, s: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped>
+    fn gw_triples_with_s<U>(&'a self, s: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped>
     where
         U: AsRef<str> + Clone + Eq + Hash,
     {
@@ -56,24 +59,28 @@ impl<'a, T> GraphWrapper<'a> for SpoWrapper<T> where
                 let s = self.wrapped.get_term(si).unwrap();
                 return Box::new(
                     pis.iter()
-                    .map(move |pi| (
-                        s,
-                        self.wrapped.get_term(*pi).unwrap(),
-                        self.sp2o.get(&(si, *pi)).unwrap(),
-                    ))
-                    .flat_map(move |(s,p,ois)|
-                        ois.iter()
-                        .map(move |oi| Ok([
-                            s, p, self.wrapped.get_term(*oi).unwrap(),
-                        ]))
-                    )
-                )
+                        .map(move |pi| {
+                            (
+                                s,
+                                self.wrapped.get_term(*pi).unwrap(),
+                                self.sp2o.get(&(si, *pi)).unwrap(),
+                            )
+                        })
+                        .flat_map(move |(s, p, ois)| {
+                            ois.iter()
+                                .map(move |oi| Ok([s, p, self.wrapped.get_term(*oi).unwrap()]))
+                        }),
+                );
             }
         }
         Box::new(empty())
     }
 
-    fn gw_triples_with_sp<U, V> (&'a self, s: &'a Term<U>, p: &'a Term<V>) -> GTripleSource<'a, Self::Wrapped>
+    fn gw_triples_with_sp<U, V>(
+        &'a self,
+        s: &'a Term<U>,
+        p: &'a Term<V>,
+    ) -> GTripleSource<'a, Self::Wrapped>
     where
         U: AsRef<str> + Clone + Eq + Hash,
         V: AsRef<str> + Clone + Eq + Hash,
@@ -85,44 +92,57 @@ impl<'a, T> GraphWrapper<'a> for SpoWrapper<T> where
                     let p = self.wrapped.get_term(pi).unwrap();
                     return Box::new(
                         ois.iter()
-                        .map(move |oi| Ok([
-                            s, p, self.wrapped.get_term(*oi).unwrap(),
-                        ]))
-                    )
+                            .map(move |oi| Ok([s, p, self.wrapped.get_term(*oi).unwrap()])),
+                    );
                 }
             }
         }
         Box::new(empty())
     }
 
-    fn gw_subjects(&'a self) -> GResult<'a, Self::Wrapped, HashSet<Term<<<Self::Wrapped as Graph<'a>>::Triple as Triple<'a>>::TermData>>> {
-        let subjects: HashSet<_> = self.s2p.keys()
+    fn gw_subjects(
+        &'a self,
+    ) -> GResult<
+        'a,
+        Self::Wrapped,
+        HashSet<Term<<<Self::Wrapped as Graph<'a>>::Triple as Triple<'a>>::TermData>>,
+    > {
+        let subjects: HashSet<_> = self
+            .s2p
+            .keys()
             .map(|i| self.get_term(*i).unwrap().clone())
             .collect();
         Ok(subjects)
     }
 }
 
-impl<T> IndexedGraph for SpoWrapper<T> where
+impl<T> IndexedGraph for SpoWrapper<T>
+where
     T: IndexedGraph,
 {
     type Index = T::Index;
     type TermData = T::TermData;
 
     #[inline]
-    fn get_index<U> (&self, t: &Term<U>) -> Option<Self::Index> where
+    fn get_index<U>(&self, t: &Term<U>) -> Option<Self::Index>
+    where
         U: AsRef<str> + Clone + Eq + Hash,
     {
         self.wrapped.get_index(t)
     }
 
     #[inline]
-    fn get_term<'a>(&'a self, i: Self::Index) -> Option<&Term<Self::TermData>>
-    {
+    fn get_term<'a>(&'a self, i: Self::Index) -> Option<&Term<Self::TermData>> {
         self.wrapped.get_term(i)
     }
 
-    fn insert_indexed<U, V, W> (&mut self, s: &Term<U>, p: &Term<V>, o: &Term<W>) -> Option<[Self::Index;3]> where
+    fn insert_indexed<U, V, W>(
+        &mut self,
+        s: &Term<U>,
+        p: &Term<V>,
+        o: &Term<W>,
+    ) -> Option<[Self::Index; 3]>
+    where
         U: AsRef<str> + Clone + Eq + Hash,
         V: AsRef<str> + Clone + Eq + Hash,
         W: AsRef<str> + Clone + Eq + Hash,
@@ -130,12 +150,21 @@ impl<T> IndexedGraph for SpoWrapper<T> where
         let modified = self.wrapped.insert_indexed(s, p, o);
         if let Some([si, pi, oi]) = modified {
             self.s2p.entry(si).or_insert_with(|| Vec::new()).push(pi);
-            self.sp2o.entry((si, pi)).or_insert_with(|| Vec::new()).push(oi);
+            self.sp2o
+                .entry((si, pi))
+                .or_insert_with(|| Vec::new())
+                .push(oi);
         }
         modified
     }
 
-    fn remove_indexed<U, V, W> (&mut self, s: &Term<U>, p: &Term<V>, o: &Term<W>) -> Option<([Self::Index;3])> where
+    fn remove_indexed<U, V, W>(
+        &mut self,
+        s: &Term<U>,
+        p: &Term<V>,
+        o: &Term<W>,
+    ) -> Option<([Self::Index; 3])>
+    where
         U: AsRef<str> + Clone + Eq + Hash,
         V: AsRef<str> + Clone + Eq + Hash,
         W: AsRef<str> + Clone + Eq + Hash,
@@ -155,22 +184,21 @@ impl<T> IndexedGraph for SpoWrapper<T> where
     }
 }
 
-impl<'a, T> Graph<'a> for SpoWrapper<T> where
-    T: IndexedGraph + Graph<'a, Triple=[&'a Term<<T as IndexedGraph>::TermData>;3]>,
+impl<'a, T> Graph<'a> for SpoWrapper<T>
+where
+    T: IndexedGraph + Graph<'a, Triple = [&'a Term<<T as IndexedGraph>::TermData>; 3]>,
 {
     impl_graph_for_wrapper!();
 }
 
-impl<T> MutableGraph for SpoWrapper<T> where
-    T: IndexedGraph + for <'a> Graph<'a, Triple=[&'a Term<<T as IndexedGraph>::TermData>;3]>,
+impl<T> MutableGraph for SpoWrapper<T>
+where
+    T: IndexedGraph + for<'a> Graph<'a, Triple = [&'a Term<<T as IndexedGraph>::TermData>; 3]>,
 {
     impl_mutable_graph_for_indexed_mutable_graph!();
 }
 
-impl<T> SetGraph for SpoWrapper<T> where
-    T: IndexedGraph + SetGraph,
-{}
-
+impl<T> SetGraph for SpoWrapper<T> where T: IndexedGraph + SetGraph {}
 
 #[cfg(test)]
 type SpoGraph = SpoWrapper<LightGraph>;

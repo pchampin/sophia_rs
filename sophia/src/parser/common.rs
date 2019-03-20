@@ -5,8 +5,8 @@ use std::borrow::Cow;
 use std::iter::once;
 use std::result::Result as StdResult;
 
-use pest::{RuleType, iterators::Pair};
 use pest::error::{Error as PestError, ErrorVariant};
+use pest::{iterators::Pair, RuleType};
 
 use crate::error::*;
 use crate::term::Term;
@@ -16,8 +16,8 @@ use crate::term::Term;
 #[macro_export]
 macro_rules! def_default_triple_parser_api {
     () => {
-        def_default_parser_api!{Triple}
-    }
+        def_default_parser_api! {Triple}
+    };
 }
 
 /// This macro provides a straightforward implementation of the default functions
@@ -25,33 +25,33 @@ macro_rules! def_default_triple_parser_api {
 #[macro_export]
 macro_rules! def_default_quad_parser_api {
     () => {
-        def_default_parser_api!{Quad}
-    }
+        def_default_parser_api! {Quad}
+    };
 }
 
 macro_rules! def_default_parser_api {
     ($item: ident) => {
         /// Shortcut for `Config::default().parse_bufread(bufread)`
         #[inline]
-        pub fn parse_bufread<'a, B: ::std::io::BufRead+'a>(bufread: B)
-        -> impl Iterator<Item=Result<impl $item<'a>>>+'a {
+        pub fn parse_bufread<'a, B: ::std::io::BufRead + 'a>(
+            bufread: B,
+        ) -> impl Iterator<Item = Result<impl $item<'a>>> + 'a {
             Config::default().parse_bufread(bufread)
         }
         /// Shortcut for `Config::default().parse_read(read)`
         #[inline]
-        pub fn parse_read<'a, R: ::std::io::Read+'a>(read: R)
-        -> impl Iterator<Item=Result<impl $item<'a>>>+'a {
+        pub fn parse_read<'a, R: ::std::io::Read + 'a>(
+            read: R,
+        ) -> impl Iterator<Item = Result<impl $item<'a>>> + 'a {
             Config::default().parse_read(read)
         }
         /// Shortcut for `Config::default().parse_str(txt)`
         #[inline]
-        pub fn parse_str<'a>(txt: &'a str)
-        -> impl Iterator<Item=Result<impl $item<'a>>>+'a {
+        pub fn parse_str<'a>(txt: &'a str) -> impl Iterator<Item = Result<impl $item<'a>>> + 'a {
             Config::default().parse_str(txt)
         }
     };
 }
-
 
 pub(crate) type CowTerm<'a> = Term<Cow<'a, str>>;
 
@@ -61,24 +61,27 @@ pub(crate) type CowTerm<'a> = Term<Cow<'a, str>>;
 ///
 /// `delim` is the size of the delimiter,
 /// which will be trimmed off the start and end of the result.
-pub(crate) fn unescape_str<'a, R> (pair: Pair<'a,R>, delim: usize) -> StdResult<Cow<'a, str>, PestError<R>> where
+pub(crate) fn unescape_str<'a, R>(
+    pair: Pair<'a, R>,
+    delim: usize,
+) -> StdResult<Cow<'a, str>, PestError<R>>
+where
     R: RuleType,
 {
     let txt = pair.as_str();
     let mut inner_pairs = pair.clone().into_inner();
     let first_inner = inner_pairs.next();
     if first_inner.is_none() {
-        return Ok(Cow::Borrowed(&txt[delim..txt.len()-delim]));
+        return Ok(Cow::Borrowed(&txt[delim..txt.len() - delim]));
     }
     // else we have escape sequences to unescape
-    let mut dst = String::with_capacity(txt.len()-2*delim);
+    let mut dst = String::with_capacity(txt.len() - 2 * delim);
     let span = pair.as_span();
     let offset = -(span.start() as isize);
 
     // rebuild src containing the original text on which inner pairs are indexed
     let slice = unsafe {
-        std::slice::from_raw_parts(txt.as_ptr().offset(offset),
-                                   txt.len()+span.start())
+        std::slice::from_raw_parts(txt.as_ptr().offset(offset), txt.len() + span.start())
     };
     let src = std::str::from_utf8(slice).unwrap();
 
@@ -87,15 +90,12 @@ pub(crate) fn unescape_str<'a, R> (pair: Pair<'a,R>, delim: usize) -> StdResult<
         let escape_seq = pair.as_str();
         let span = pair.as_span();
         dst.push_str(&src[i..span.start()]);
-        dst.push(unescape_char(escape_seq)
-            .map_err(|message| PestError::new_from_span(
-                ErrorVariant::CustomError{message},
-                pair.as_span(),
-            ))?
-        );
+        dst.push(unescape_char(escape_seq).map_err(|message| {
+            PestError::new_from_span(ErrorVariant::CustomError { message }, pair.as_span())
+        })?);
         i = span.end();
     }
-    dst.push_str(&src[i..(src.len()-delim)]);
+    dst.push_str(&src[i..(src.len() - delim)]);
     Ok(Cow::Owned(dst))
 }
 
@@ -105,56 +105,48 @@ pub(crate) fn unescape_char(txt: &str) -> StdResult<char, String> {
     debug_assert_eq!(bytes[0] as char, '\\');
     match bytes[1] as char {
         // ECHAR
-        't'  => Ok('\t'),
-        'b'  => Ok('\x08'),
-        'n'  => Ok('\n'),
-        'r'  => Ok('\r'),
-        'f'  => Ok('\x0c'),
-        '"'  => Ok('"'),
+        't' => Ok('\t'),
+        'b' => Ok('\x08'),
+        'n' => Ok('\n'),
+        'r' => Ok('\r'),
+        'f' => Ok('\x0c'),
+        '"' => Ok('"'),
         '\\' => Ok('\\'),
         '\'' => Ok('\''),
 
         // UCHAR
-        'u' | 'U'  => {
-            match u32::from_str_radix(&txt[2..], 16) {
-                Ok(code) => {
-                    std::char::from_u32(code).ok_or_else(||
-                        format!("Invalid codepoint {:x}", code)
-                    )
-                },
-                Err(err) => Err(format!("{}", err)),
+        'u' | 'U' => match u32::from_str_radix(&txt[2..], 16) {
+            Ok(code) => {
+                std::char::from_u32(code).ok_or_else(|| format!("Invalid codepoint {:x}", code))
             }
-        }
+            Err(err) => Err(format!("{}", err)),
+        },
 
         // other ??
-        _    => {
-            Err(format!("Invalid ECHAR: {}", txt))
-        }
+        _ => Err(format!("Invalid ECHAR: {}", txt)),
     }
 }
 
 /// Utility function for converting [Pest] errors into [Sophia errors](../../error/index.html).
-/// 
+///
 /// [Pest]: https://docs.rs/crate/pest/
-/// 
-pub fn convert_pest_err<R: pest::RuleType> (err: PestError<R>, lineoffset: usize) -> Error {
+///
+pub fn convert_pest_err<R: pest::RuleType>(err: PestError<R>, lineoffset: usize) -> Error {
     let message = match err.variant {
-        ErrorVariant::ParsingError{positives, negatives} => {
-            format!("expected: {:?}\nunexpected: {:?}", positives, negatives)
-        }
-        ErrorVariant::CustomError{message} => message
+        ErrorVariant::ParsingError {
+            positives,
+            negatives,
+        } => format!("expected: {:?}\nunexpected: {:?}", positives, negatives),
+        ErrorVariant::CustomError { message } => message,
     };
     let location = err.location.clone();
     use ::pest::error::LineColLocation::*;
     let line_col = match err.line_col.clone() {
-        Pos((l, c)) =>
-            Pos((l+lineoffset, c)),
-        Span((l1, c1), (l2, c2)) =>
-            Span((l1+lineoffset, c1), (l2+lineoffset, c2)),
+        Pos((l, c)) => Pos((l + lineoffset, c)),
+        Span((l1, c1), (l2, c2)) => Span((l1 + lineoffset, c1), (l2 + lineoffset, c2)),
     };
     ErrorKind::ParserError(message, location, line_col).into()
 }
-
 
 // ---------------------------------------------------------------------------------
 //                               utility test function
@@ -164,7 +156,8 @@ pub fn convert_pest_err<R: pest::RuleType> (err: PestError<R>, lineoffset: usize
 use pest::iterators::Pairs;
 
 #[cfg(test)]
-pub(crate) fn test_rule<P, R, T> (parse: &P, rule: R, values: &[T]) where
+pub(crate) fn test_rule<P, R, T>(parse: &P, rule: R, values: &[T])
+where
     P: Fn(R, &str) -> StdResult<Pairs<R>, PestError<R>>,
     R: RuleType,
     T: std::borrow::Borrow<str>,
@@ -179,15 +172,14 @@ pub(crate) fn test_rule<P, R, T> (parse: &P, rule: R, values: &[T]) where
                 assert_eq!(span.start(), 0, "expected match at start");
                 assert_eq!(span.end(), val.len(), "expected total match");
             }
-            Err(err) => {
-                assert!(false, format!("{:?} -> {}", val, err))
-            }
+            Err(err) => assert!(false, format!("{:?} -> {}", val, err)),
         }
     }
 }
 
 #[cfg(test)]
-pub(crate) fn test_rule_partial<P, R, T> (parse: &P, rule: R, values: &[(T, usize)]) where
+pub(crate) fn test_rule_partial<P, R, T>(parse: &P, rule: R, values: &[(T, usize)])
+where
     P: Fn(R, &str) -> StdResult<Pairs<R>, PestError<R>>,
     R: RuleType,
     T: std::borrow::Borrow<str>,
@@ -202,15 +194,14 @@ pub(crate) fn test_rule_partial<P, R, T> (parse: &P, rule: R, values: &[(T, usiz
                 assert_eq!(span.start(), 0, "expected match at start");
                 assert_eq!(span.end(), *match_length, "expected match of given length");
             }
-            Err(err) => {
-                assert!(false, format!("{:?} -> {}", val, err))
-            }
+            Err(err) => assert!(false, format!("{:?} -> {}", val, err)),
         }
     }
 }
 
 #[cfg(test)]
-pub(crate) fn test_rule_negative<P, R, T> (parse: &P, rule: R, values: &[T]) where
+pub(crate) fn test_rule_negative<P, R, T>(parse: &P, rule: R, values: &[T])
+where
     P: Fn(R, &str) -> StdResult<Pairs<R>, PestError<R>>,
     R: RuleType,
     T: std::borrow::Borrow<str>,
@@ -220,16 +211,19 @@ pub(crate) fn test_rule_negative<P, R, T> (parse: &P, rule: R, values: &[T]) whe
         match parse(rule, val) {
             Ok(pairs) => {
                 let v: Vec<_> = pairs.collect();
-                if v.len() != 1 { continue }
+                if v.len() != 1 {
+                    continue;
+                }
                 let span = v[0].as_span();
-                if span.start() != 0 || span.end() != val.len() { continue }
+                if span.start() != 0 || span.end() != val.len() {
+                    continue;
+                }
                 assert!(false, format!("unexpected match {:?}", val))
             }
             Err(_) => {} // pass
         }
     }
 }
-
 
 // ---------------------------------------------------------------------------------
 //                                      tests
@@ -268,45 +262,39 @@ mod test {
 
     #[test]
     fn unescape_str_() {
+        use super::super::nt::{PestNtqParser, Rule};
         use pest::Parser;
-        use super::super::nt::{PestNtqParser,Rule};
 
-        fn test<'a> (txt: &'a str) -> StdResult<String, String> {
+        fn test<'a>(txt: &'a str) -> StdResult<String, String> {
             // parsing a triple just to test that unescape_str works with an offset > 0.
             let triple = format!("<> <> {}.", txt);
             let mut pairs = PestNtqParser::parse(Rule::triple, &triple[..]).unwrap();
             let pairs = pairs.next().unwrap().into_inner(); // into 'triple'
             let object = pairs.skip(2).next().unwrap();
-            let pair =
-                if object.as_rule() == Rule::literal {
-                    object.into_inner().next().unwrap() // into 'literal'
-                } else {
-                    object
-                };
+            let pair = if object.as_rule() == Rule::literal {
+                object.into_inner().next().unwrap() // into 'literal'
+            } else {
+                object
+            };
             unescape_str(pair, 1)
-            .map(|cow| cow.into_owned())
-            .map_err(|err| format!("{:?}", err))
+                .map(|cow| cow.into_owned())
+                .map_err(|err| format!("{:?}", err))
         }
 
-        assert_eq!(test(&r#""hello world""#).unwrap(),
-                            "hello world");
-        assert_eq!(test(&r#""hello\nworld""#).unwrap(),
-                            "hello\nworld");
-        assert_eq!(test(&r#""hell\u006f\nworld""#).unwrap(),
-                            "hello\nworld");
-        assert_eq!(test(&r#""hell\u006f\nw\U0000006Frld""#).unwrap(),
-                            "hello\nworld");
+        assert_eq!(test(&r#""hello world""#).unwrap(), "hello world");
+        assert_eq!(test(&r#""hello\nworld""#).unwrap(), "hello\nworld");
+        assert_eq!(test(&r#""hell\u006f\nworld""#).unwrap(), "hello\nworld");
+        assert_eq!(
+            test(&r#""hell\u006f\nw\U0000006Frld""#).unwrap(),
+            "hello\nworld"
+        );
 
         assert!(test(r#""hello\UFFFFFFFFworld""#).is_err());
 
-        assert_eq!(test(&r"<hello>").unwrap(),
-                           "hello");
-        assert_eq!(test(&r"<hell\u006F>").unwrap(),
-                           "hello");
-        assert_eq!(test(&r"<he\U0000006cl\u006F>").unwrap(),
-                           "hello");
-        assert_eq!(test(&r"<hel\U0000006c\u006F>").unwrap(),
-                           "hello");
+        assert_eq!(test(&r"<hello>").unwrap(), "hello");
+        assert_eq!(test(&r"<hell\u006F>").unwrap(), "hello");
+        assert_eq!(test(&r"<he\U0000006cl\u006F>").unwrap(), "hello");
+        assert_eq!(test(&r"<hel\U0000006c\u006F>").unwrap(), "hello");
 
         assert!(test(r"<hello\UFFFFFFFFworld>").is_err());
     }

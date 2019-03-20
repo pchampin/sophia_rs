@@ -51,8 +51,6 @@ impl From<u32> for BoxTerm {
     }
 }
 
-
-
 #[cfg(test)]
 mod test {
     use super::*;

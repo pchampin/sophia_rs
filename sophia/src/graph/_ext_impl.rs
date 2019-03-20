@@ -9,45 +9,40 @@ use resiter::oks::*;
 use super::*;
 use crate::error::*;
 use crate::term::*;
-use crate::triple::*;
 use crate::triple::stream::AsTripleSource;
+use crate::triple::*;
 
-
-impl<'a, T> Graph<'a> for [T] where
-    T: Triple<'a>+'a,
+impl<'a, T> Graph<'a> for [T]
+where
+    T: Triple<'a> + 'a,
 {
     type Triple = &'a T;
     type Error = Never;
 
     #[inline]
     fn triples(&'a self) -> GTripleSource<Self> {
-        Box::new(
-            <[T]>::iter(self).as_triple_source()
-        )
+        Box::new(<[T]>::iter(self).as_triple_source())
     }
 }
 
-
-
-impl<'a, T> Graph<'a> for Vec<T> where
-    T: Triple<'a>+'a,
+impl<'a, T> Graph<'a> for Vec<T>
+where
+    T: Triple<'a> + 'a,
 {
     type Triple = &'a T;
     type Error = Never;
 
     #[inline]
     fn triples(&'a self) -> GTripleSource<Self> {
-        Box::new(
-            <[T]>::iter(self).as_triple_source()
-        )
+        Box::new(<[T]>::iter(self).as_triple_source())
     }
 }
 
-impl MutableGraph for Vec<[BoxTerm;3]>
-{
+impl MutableGraph for Vec<[BoxTerm; 3]> {
     type MutationError = Never;
 
-    fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult< Self, bool> where
+    fn insert<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
         V: AsRef<str> + Clone + Eq + Hash,
@@ -58,14 +53,16 @@ impl MutableGraph for Vec<[BoxTerm;3]>
         self.push([s, p, o]);
         Ok(true)
     }
-    fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult< Self, bool> where
+    fn remove<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
         V: AsRef<str> + Clone + Eq + Hash,
     {
-        let i = self.triples().oks().position(|t|
-            s == t.s() && p == t.p() && o == t.o()
-        );
+        let i = self
+            .triples()
+            .oks()
+            .position(|t| s == t.s() && p == t.p() && o == t.o());
         if let Some(i) = i {
             self.swap_remove(i);
             Ok(true)
@@ -75,9 +72,8 @@ impl MutableGraph for Vec<[BoxTerm;3]>
     }
 }
 
-
-
-impl<'a, T> Graph<'a> for HashSet<T> where
+impl<'a, T> Graph<'a> for HashSet<T>
+where
     T: Eq + Hash + Triple<'a> + 'a,
 {
     type Triple = &'a T;
@@ -89,11 +85,11 @@ impl<'a, T> Graph<'a> for HashSet<T> where
     }
 }
 
-impl MutableGraph for HashSet<[BoxTerm;3]> where
-{
+impl MutableGraph for HashSet<[BoxTerm; 3]> where {
     type MutationError = Never;
 
-    fn insert<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult< Self, bool> where
+    fn insert<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
         V: AsRef<str> + Clone + Eq + Hash,
@@ -103,7 +99,8 @@ impl MutableGraph for HashSet<[BoxTerm;3]> where
         let o = BoxTerm::from(o);
         Ok(HashSet::insert(self, [s, p, o]))
     }
-    fn remove<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult< Self, bool> where
+    fn remove<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
         V: AsRef<str> + Clone + Eq + Hash,
@@ -115,17 +112,12 @@ impl MutableGraph for HashSet<[BoxTerm;3]> where
     }
 }
 
-impl<'a, T> SetGraph for HashSet<T> where
-    T: Eq + Hash + Triple<'a> + 'a,
-{}
-
-
-
+impl<'a, T> SetGraph for HashSet<T> where T: Eq + Hash + Triple<'a> + 'a {}
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
     use resiter::oks::*;
+    use std::collections::HashSet;
 
     use crate::graph::*;
     use crate::ns::*;
@@ -144,9 +136,9 @@ mod test {
         assert_eq!(len, 2);
     }
 
-    type VecAsGraph = Vec<[BoxTerm;3]>;
+    type VecAsGraph = Vec<[BoxTerm; 3]>;
     test_graph_impl!(vec, VecAsGraph, false);
 
-    type HashSetAsGraph = HashSet<[BoxTerm;3]>;
+    type HashSetAsGraph = HashSet<[BoxTerm; 3]>;
     test_graph_impl!(hashset, HashSetAsGraph);
 }

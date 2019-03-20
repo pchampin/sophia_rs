@@ -4,12 +4,13 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 use crate::graph::index::TermIndexMap;
-use crate::term::*;
 use crate::term::factory::TermFactory;
+use crate::term::*;
 
 /// An in-memory implemention of [`TermIndexMap`](../index/trait.TermIndexMap.html)
 /// with unsigned integers as indices.
-pub struct TermIndexMapU<I, F> where
+pub struct TermIndexMapU<I, F>
+where
     F: TermFactory,
 {
     factory: F,
@@ -27,19 +28,20 @@ pub struct TermIndexMapU<I, F> where
 // However, we ensure that keys do not exist longer than the data they borrow
 // (inside i2t)...
 
-
-impl<I, F> TermIndexMapU<I, F> where
+impl<I, F> TermIndexMapU<I, F>
+where
     I: Default,
-    F: TermFactory+Default,
+    F: TermFactory + Default,
 {
     pub fn new() -> TermIndexMapU<I, F> {
         Self::default()
     }
 }
 
-impl<I, F> Default for TermIndexMapU<I, F> where
+impl<I, F> Default for TermIndexMapU<I, F>
+where
     I: Default,
-    F: TermFactory+Default,
+    F: TermFactory + Default,
 {
     fn default() -> TermIndexMapU<I, F> {
         TermIndexMapU {
@@ -56,9 +58,10 @@ impl<I, F> Default for TermIndexMapU<I, F> where
 /// where uXX is one of u16, u32...
 /// I would prefer to define a generic implementation using traits,
 /// but I found this to be non trivial.
-impl<T, F> TermIndexMap for TermIndexMapU<T, F> where
+impl<T, F> TermIndexMap for TermIndexMapU<T, F>
+where
     T: Unsigned,
-    F: TermFactory+Default,
+    F: TermFactory + Default,
 {
     type Index = T;
     type Factory = F;
@@ -122,11 +125,10 @@ impl<T, F> TermIndexMap for TermIndexMapU<T, F> where
     }
 }
 
-
 /// This trait is used by [`TermIndexMapU`](struct.TermIndexMapU.html)
 /// as an abstraction of all unsigned int types.
-/// 
-pub trait Unsigned: Copy+Default+Eq+std::hash::Hash {
+///
+pub trait Unsigned: Copy + Default + Eq + std::hash::Hash {
     fn as_usize(&self) -> usize;
     fn from_usize(_: usize) -> Self;
     fn inc(&mut self);
@@ -139,13 +141,34 @@ pub trait Unsigned: Copy+Default+Eq+std::hash::Hash {
 macro_rules! impl_unsigned_for {
     ($uXX: ty) => {
         impl Unsigned for $uXX {
-            #[inline] fn as_usize(&self) -> usize { *self as usize }
-            #[inline] fn from_usize(other: usize) -> Self { other as $uXX }
-            #[inline] fn inc(&mut self) { *self += 1 }
-            #[inline] fn dec(&mut self) { *self -= 1 }
-            #[inline] fn zero() -> Self { 0 }
-            #[inline] fn one() -> Self { 1 }
-            #[inline] fn is_null(&self) -> bool { *self == 0 }
+            #[inline]
+            fn as_usize(&self) -> usize {
+                *self as usize
+            }
+            #[inline]
+            fn from_usize(other: usize) -> Self {
+                other as $uXX
+            }
+            #[inline]
+            fn inc(&mut self) {
+                *self += 1
+            }
+            #[inline]
+            fn dec(&mut self) {
+                *self -= 1
+            }
+            #[inline]
+            fn zero() -> Self {
+                0
+            }
+            #[inline]
+            fn one() -> Self {
+                1
+            }
+            #[inline]
+            fn is_null(&self) -> bool {
+                *self == 0
+            }
         }
     };
 }
@@ -159,20 +182,19 @@ impl_unsigned_for!(u64);
 /// will not outlive the source term.
 /// We use this for keys in TermIndexMapU::t2i, when the owning term is in TermIndexMapU::i2t.
 #[inline]
-unsafe fn fake_static<S, T> (t: &T) -> StaticTerm where
+unsafe fn fake_static<S, T>(t: &T) -> StaticTerm
+where
     S: AsRef<str> + Clone + Eq + Hash,
     T: Borrow<Term<S>>,
 {
     StaticTerm::from_with(t.borrow(), |txt| &*(txt as *const str))
 }
 
-
-
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::term::factory::RcTermFactory;
     use crate::graph::index::assert_term_index_works;
+    use crate::term::factory::RcTermFactory;
 
     #[test]
     fn test_term_index() {

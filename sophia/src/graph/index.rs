@@ -1,21 +1,21 @@
 //! Types for indexing terms.
 
-use std::collections::HashMap;
 use std::collections::hash_map::Entry;
+use std::collections::HashMap;
 use std::hash::Hash;
 
-use crate::term::*;
 use crate::term::factory::TermFactory;
+use crate::term::*;
 
 /// A bidirectionnal mapping between [`Term`](../../term/enum.Term.html)s
 /// and a smaller type.
-/// 
+///
 /// The TermIndexMap maintains a reference count for each index,
 /// to automatically free them whenever they are not used.
-/// 
+///
 pub trait TermIndexMap: Default {
     /// The type used to represent terms
-    type Index: Copy+Eq;
+    type Index: Copy + Eq;
     /// The factory used to instantiate terms.
     type Factory: TermFactory;
 
@@ -33,53 +33,61 @@ pub trait TermIndexMap: Default {
     fn shrink_to_fit(&mut self);
 }
 
-
-
 /// A utility trait for implementing [`Graph`] and [`MutableGraph`]
 /// based on an internal [`TermIndexMap`] for efficient storage.
-/// 
+///
 /// The `impl_mutable_graph_for_indexed_mutable_graph!` macro
 /// can be used to derive the `MutableGraph` implementation
 /// for any implementation of `IndexedGraph`.
-/// 
+///
 /// [`Graph`]: ../trait.Graph.html
 /// [`MutableGraph`]: ../trait.MutableGraph.html
 /// [`TermIndexMap`]: trait.TermIndexMap.html
-/// 
+///
 pub trait IndexedGraph {
     /// The type used to represent terms internally.
     type Index: Copy + Eq + Hash;
     type TermData: AsRef<str> + Clone + Eq + Hash + 'static;
 
     /// Return the index for the given term, if it exists.
-    fn get_index<T> (&self, t: &Term<T>) -> Option<Self::Index> where
-        T: AsRef<str> + Clone + Eq + Hash,
-    ;
+    fn get_index<T>(&self, t: &Term<T>) -> Option<Self::Index>
+    where
+        T: AsRef<str> + Clone + Eq + Hash;
 
     /// Return the term for the given index, if it exists.
     fn get_term(&self, i: Self::Index) -> Option<&Term<Self::TermData>>;
 
     /// Insert a triple in this Graph,
     /// and return the corresponding tuple of indices.
-    fn insert_indexed<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Option<[Self::Index;3]> where
+    fn insert_indexed<T, U, V>(
+        &mut self,
+        s: &Term<T>,
+        p: &Term<U>,
+        o: &Term<V>,
+    ) -> Option<[Self::Index; 3]>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
-    ;
+        V: AsRef<str> + Clone + Eq + Hash;
 
     /// Remove a triple from this Graph,
     /// and return the corresponding tuple of indices.
-    fn remove_indexed<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Option<[Self::Index;3]> where
+    fn remove_indexed<T, U, V>(
+        &mut self,
+        s: &Term<T>,
+        p: &Term<U>,
+        o: &Term<V>,
+    ) -> Option<[Self::Index; 3]>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
-    ;
+        V: AsRef<str> + Clone + Eq + Hash;
 
     fn shrink_to_fit(&mut self);
 }
 
 /// Defines the implementation of [`MutableGraph`] for [`IndexedGraph`].
-/// 
+///
 /// [`MutableGraph`]: graph/trait.MutableGraph.html
 /// [`IndexedGraph`]: graph/index/trait.IndexedGraph.html
 #[macro_export]
@@ -109,18 +117,16 @@ macro_rules! impl_mutable_graph_for_indexed_mutable_graph {
     };
 }
 
-
-
-
 /// Remove *one* value in the Vec value of a HashMap,
 /// removing the entry completely if the Vec ends up empty.
 ///
 /// # Panics
-/// 
+///
 /// This function will panic if either
 /// * `k` is not a key of `hm`, or
 /// * `w` is not contained in the value associated to `k`.
-pub(crate) fn remove_one_val<K, W> (hm: &mut HashMap<K, Vec<W>>, k: K, w: W) where
+pub(crate) fn remove_one_val<K, W>(hm: &mut HashMap<K, Vec<W>>, k: K, w: W)
+where
     K: Eq + Hash,
     W: Copy + Eq,
 {
@@ -129,20 +135,21 @@ pub(crate) fn remove_one_val<K, W> (hm: &mut HashMap<K, Vec<W>>, k: K, w: W) whe
             {
                 let ws = e.get_mut();
                 if ws.len() > 1 {
-                    let wi = ws.iter().enumerate()
+                    let wi = ws
+                        .iter()
+                        .enumerate()
                         .filter_map(|(i, w2)| if *w2 == w { Some(i) } else { None })
-                        .next().unwrap();
+                        .next()
+                        .unwrap();
                     ws.swap_remove(wi);
                     return;
                 }
             }
             e.remove_entry();
         }
-        Entry::Vacant(_) => unreachable!()
+        Entry::Vacant(_) => unreachable!(),
     }
 }
-
-
 
 #[cfg(test)]
 /// Takes an empty TermIndexMap, and checks that it behaves as expected.
@@ -161,7 +168,6 @@ pub fn assert_term_index_works<T: TermIndexMap>(ti: &mut T) {
     ti.dec_ref(it);
     assert!(ti.get_index(&t).is_none());
     assert!(ti.get_term(it).is_none());
-
 
     // insert term twice, then remove it
 
@@ -184,7 +190,6 @@ pub fn assert_term_index_works<T: TermIndexMap>(ti: &mut T) {
     assert!(ti.get_index(&t).is_none());
     assert!(ti.get_term(it).is_none());
 
-
     // insert term, incref it, then remove it
 
     let it = ti.make_index(&t);
@@ -204,7 +209,6 @@ pub fn assert_term_index_works<T: TermIndexMap>(ti: &mut T) {
     ti.dec_ref(it);
     assert!(ti.get_index(&t).is_none());
     assert!(ti.get_term(it).is_none());
-
 
     // insert two terms, then remove them
 

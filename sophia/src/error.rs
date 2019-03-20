@@ -54,17 +54,13 @@ fn display_location(il: &InputLocation, lcl: &LineColLocation) -> String {
     };
     if line == 0 {
         match il {
-            InputLocation::Pos(pos) =>
-                format!("{}", pos),
-            InputLocation::Span((s, e)) =>
-                format!("{}-{}", s, e),
+            InputLocation::Pos(pos) => format!("{}", pos),
+            InputLocation::Span((s, e)) => format!("{}-{}", s, e),
         }
     } else {
         match lcl {
-            LineColLocation::Pos((l, c)) =>
-                format!("{}:{}", l, c),
-            LineColLocation::Span((l1, c1), (l2, c2)) =>
-                format!("{}:{}-{}:{}", l1, c1, l2, c2),
+            LineColLocation::Pos((l, c)) => format!("{}:{}", l, c),
+            LineColLocation::Span((l1, c1), (l2, c2)) => format!("{}:{}-{}:{}", l1, c1, l2, c2),
         }
     }
 }
@@ -77,8 +73,6 @@ pub fn make_parser_error(message: String, line_offset: usize) -> ErrorKind {
 }
 
 coercible_errors!();
-
-
 
 #[cfg(test)]
 mod test {

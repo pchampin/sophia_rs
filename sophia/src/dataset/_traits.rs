@@ -7,11 +7,11 @@ use resiter::filter::*;
 use resiter::map::*;
 
 use crate::error::*;
-use crate::quad::*;
 use crate::quad::stream::*;
-use crate::term::*;
+use crate::quad::*;
 use crate::term::graph_key::GraphKey;
 use crate::term::matcher::*;
+use crate::term::*;
 use crate::triple::*;
 
 use super::*;
@@ -20,18 +20,16 @@ use crate::graph::insert_if_absent;
 /// Type alias for results iterators produced by a dataset.
 pub type DResult<'a, D, T> = std::result::Result<T, <D as Dataset<'a>>::Error>;
 /// Type alias for fallible quad iterators produced by a dataset.
-pub type DQuadSource<'a, D> =
-    Box<Iterator<Item=DResult<'a, D, <D as Dataset<'a>>::Quad>>+'a>;
-
+pub type DQuadSource<'a, D> = Box<Iterator<Item = DResult<'a, D, <D as Dataset<'a>>::Quad>> + 'a>;
 
 /// Generic trait for RDF datasets.
-/// 
+///
 /// For convenience, this trait is implemented
 /// by [standard collections of quads](#foreign-impls).
-/// 
+///
 /// NB: the semantics of this trait allows a dataset to contain duplicate quads;
 /// see also [`SetDataset`](trait.SetDataset.html).
-/// 
+///
 pub trait Dataset<'a> {
     /// The type of [`Quad`](../quad/trait.Quad.html)s
     /// that the methods of this dataset will yield.
@@ -43,242 +41,305 @@ pub trait Dataset<'a> {
     type Error: CoercibleWith<Error> + CoercibleWith<Never>;
 
     /// An iterator visiting all quads of this dataset in arbitrary order.
-    /// 
+    ///
     /// This iterator is fallible:
     /// its items are `Result`s,
     /// an error may occur at any time during the iteration.
     fn quads(&'a self) -> DQuadSource<'a, Self>;
 
     /// An iterator visiting all quads with the given subject.
-    /// 
+    ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_s<T> (&'a self, s: &'a Term<T>) -> DQuadSource<'a, Self> where
+    fn quads_with_s<T>(&'a self, s: &'a Term<T>) -> DQuadSource<'a, Self>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
     {
-        Box::new(
-            self.quads().filter_ok(move |q| q.s()==s)
-        )
+        Box::new(self.quads().filter_ok(move |q| q.s() == s))
     }
     /// An iterator visiting all quads with the given predicate.
-    /// 
+    ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_p<T> (&'a self, p: &'a Term<T>) -> DQuadSource<'a, Self> where
+    fn quads_with_p<T>(&'a self, p: &'a Term<T>) -> DQuadSource<'a, Self>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
     {
-        Box::new(
-            self.quads().filter_ok(move |q| q.p()==p)
-        )
+        Box::new(self.quads().filter_ok(move |q| q.p() == p))
     }
     /// An iterator visiting add quads with the given object.
-    /// 
+    ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_o<T> (&'a self, o: &'a Term<T>) -> DQuadSource<'a, Self> where
+    fn quads_with_o<T>(&'a self, o: &'a Term<T>) -> DQuadSource<'a, Self>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
     {
-        Box::new(
-            self.quads().filter_ok(move |q| q.o()==o)
-        )
+        Box::new(self.quads().filter_ok(move |q| q.o() == o))
     }
     /// An iterator visiting add quads with the given graph key.
-    /// 
+    ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_g<T> (&'a self, g: &'a GraphKey<T>) -> DQuadSource<'a, Self> where
+    fn quads_with_g<T>(&'a self, g: &'a GraphKey<T>) -> DQuadSource<'a, Self>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
     {
-        Box::new(
-            self.quads().filter_ok(move |q| q.g()==g)
-        )
+        Box::new(self.quads().filter_ok(move |q| q.g() == g))
     }
     /// An iterator visiting add quads with the given subject and predicate.
-    /// 
+    ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_sp<T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> DQuadSource<'a, Self> where
+    fn quads_with_sp<T, U>(&'a self, s: &'a Term<T>, p: &'a Term<U>) -> DQuadSource<'a, Self>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
     {
-        Box::new(
-            self.quads_with_s(s).filter_ok(move |q| q.p()==p)
-        )
+        Box::new(self.quads_with_s(s).filter_ok(move |q| q.p() == p))
     }
     /// An iterator visiting add quads with the given subject and object.
-    /// 
+    ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_so<T, U> (&'a self, s: &'a Term<T>, o: &'a Term<U>) -> DQuadSource<'a, Self> where
+    fn quads_with_so<T, U>(&'a self, s: &'a Term<T>, o: &'a Term<U>) -> DQuadSource<'a, Self>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
     {
-        Box::new(
-            self.quads_with_s(s).filter_ok(move |q| q.o()==o)
-        )
+        Box::new(self.quads_with_s(s).filter_ok(move |q| q.o() == o))
     }
     /// An iterator visiting add quads with the given subject and graph key.
-    /// 
+    ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_sg<T, U> (&'a self, s: &'a Term<T>, g: &'a GraphKey<U>) -> DQuadSource<'a, Self> where
+    fn quads_with_sg<T, U>(&'a self, s: &'a Term<T>, g: &'a GraphKey<U>) -> DQuadSource<'a, Self>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
     {
-        Box::new(
-            self.quads_with_g(g).filter_ok(move |q| q.s()==s)
-        )
+        Box::new(self.quads_with_g(g).filter_ok(move |q| q.s() == s))
     }
     /// An iterator visiting add quads with the given predicate and object.
-    /// 
+    ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_po<T, U> (&'a self, p: &'a Term<T>, o: &'a Term<U>) -> DQuadSource<'a, Self> where
+    fn quads_with_po<T, U>(&'a self, p: &'a Term<T>, o: &'a Term<U>) -> DQuadSource<'a, Self>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
     {
-        Box::new(
-            self.quads_with_p(p).filter_ok(move |q| q.o()==o)
-        )
+        Box::new(self.quads_with_p(p).filter_ok(move |q| q.o() == o))
     }
     /// An iterator visiting add quads with the given predicate and graph key.
-    /// 
+    ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_pg<T, U> (&'a self, p: &'a Term<T>, g: &'a GraphKey<U>) -> DQuadSource<'a, Self> where
+    fn quads_with_pg<T, U>(&'a self, p: &'a Term<T>, g: &'a GraphKey<U>) -> DQuadSource<'a, Self>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
     {
-        Box::new(
-            self.quads_with_g(g).filter_ok(move |q| q.p()==p)
-        )
+        Box::new(self.quads_with_g(g).filter_ok(move |q| q.p() == p))
     }
     /// An iterator visiting add quads with the given object and graph key.
-    /// 
+    ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_og<T, U> (&'a self, o: &'a Term<T>, g: &'a GraphKey<U>) -> DQuadSource<'a, Self> where
+    fn quads_with_og<T, U>(&'a self, o: &'a Term<T>, g: &'a GraphKey<U>) -> DQuadSource<'a, Self>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
     {
-        Box::new(
-            self.quads_with_g(g).filter_ok(move |q| q.o()==o)
-        )
+        Box::new(self.quads_with_g(g).filter_ok(move |q| q.o() == o))
     }
     /// An iterator visiting add quads with the given subject, predicate and object.
-    /// 
+    ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_spo<T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> DQuadSource<'a, Self> where
+    fn quads_with_spo<T, U, V>(
+        &'a self,
+        s: &'a Term<T>,
+        p: &'a Term<U>,
+        o: &'a Term<V>,
+    ) -> DQuadSource<'a, Self>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
         V: AsRef<str> + Clone + Eq + Hash,
     {
-        Box::new(
-            self.quads_with_sp(s,p).filter_ok(move |q| q.o()==o)
-        )
+        Box::new(self.quads_with_sp(s, p).filter_ok(move |q| q.o() == o))
     }
     /// An iterator visiting add quads with the given subject, predicate and graph key.
-    /// 
+    ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_spg<T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, g: &'a GraphKey<V>) -> DQuadSource<'a, Self> where
+    fn quads_with_spg<T, U, V>(
+        &'a self,
+        s: &'a Term<T>,
+        p: &'a Term<U>,
+        g: &'a GraphKey<V>,
+    ) -> DQuadSource<'a, Self>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
         V: AsRef<str> + Clone + Eq + Hash,
     {
-        Box::new(
-            self.quads_with_sg(s,g).filter_ok(move |q| q.p()==p)
-        )
+        Box::new(self.quads_with_sg(s, g).filter_ok(move |q| q.p() == p))
     }
     /// An iterator visiting add quads with the given subject, object and graph key.
-    /// 
+    ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_sog<T, U, V> (&'a self, s: &'a Term<T>, o: &'a Term<U>, g: &'a GraphKey<V>) -> DQuadSource<'a, Self> where
+    fn quads_with_sog<T, U, V>(
+        &'a self,
+        s: &'a Term<T>,
+        o: &'a Term<U>,
+        g: &'a GraphKey<V>,
+    ) -> DQuadSource<'a, Self>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
         V: AsRef<str> + Clone + Eq + Hash,
     {
-        Box::new(
-            self.quads_with_sg(s,g).filter_ok(move |q| q.o()==o)
-        )
+        Box::new(self.quads_with_sg(s, g).filter_ok(move |q| q.o() == o))
     }
     /// An iterator visiting add quads with the given predicate, object and graph key.
-    /// 
+    ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_pog<T, U, V> (&'a self, p: &'a Term<T>, o: &'a Term<U>, g: &'a GraphKey<V>) -> DQuadSource<'a, Self> where
+    fn quads_with_pog<T, U, V>(
+        &'a self,
+        p: &'a Term<T>,
+        o: &'a Term<U>,
+        g: &'a GraphKey<V>,
+    ) -> DQuadSource<'a, Self>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
         V: AsRef<str> + Clone + Eq + Hash,
     {
-        Box::new(
-            self.quads_with_pg(p,g).filter_ok(move |q| q.o()==o)
-        )
+        Box::new(self.quads_with_pg(p, g).filter_ok(move |q| q.o() == o))
     }
     /// An iterator visiting add quads with the given subject, predicate, object and graph key.
-    /// 
+    ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_spog<T, U, V, W> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>, g: &'a GraphKey<W>) -> DQuadSource<'a, Self> where
+    fn quads_with_spog<T, U, V, W>(
+        &'a self,
+        s: &'a Term<T>,
+        p: &'a Term<U>,
+        o: &'a Term<V>,
+        g: &'a GraphKey<W>,
+    ) -> DQuadSource<'a, Self>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
         V: AsRef<str> + Clone + Eq + Hash,
         W: AsRef<str> + Clone + Eq + Hash,
     {
-        Box::new(
-            self.quads_with_spg(s,p,g).filter_ok(move |q| q.o()==o)
-        )
+        Box::new(self.quads_with_spg(s, p, g).filter_ok(move |q| q.o() == o))
     }
 
-
     /// Return `true` if this dataset contains the given quad.
-    fn contains<T, U, V, W> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>, g: &'a GraphKey<W>) -> DResult<'a, Self, bool> where
+    fn contains<T, U, V, W>(
+        &'a self,
+        s: &'a Term<T>,
+        p: &'a Term<U>,
+        o: &'a Term<V>,
+        g: &'a GraphKey<W>,
+    ) -> DResult<'a, Self, bool>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
         V: AsRef<str> + Clone + Eq + Hash,
         W: AsRef<str> + Clone + Eq + Hash,
     {
         match self.quads_with_spog(s, p, o, g).next() {
-            None           => Ok(false),
-            Some(Ok(_))    => Ok(true),
+            None => Ok(false),
+            Some(Ok(_)) => Ok(true),
             Some(Err(err)) => Err(err),
         }
     }
 
     /// An iterator visiting add quads matching the given subject, predicate, object and graph key.
-    /// 
+    ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_matching<S, P, O, G> (&'a self, ms: &'a S, mp: &'a P, mo: &'a O, mg: &'a G) -> DQuadSource<'a, Self> where
+    fn quads_matching<S, P, O, G>(
+        &'a self,
+        ms: &'a S,
+        mp: &'a P,
+        mo: &'a O,
+        mg: &'a G,
+    ) -> DQuadSource<'a, Self>
+    where
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
         G: GraphKeyMatcher + ?Sized,
     {
-        match (&ms.constant(), &mp.constant(), &mo.constant(), &mg.constant()) {
-            (None,    None,    None,    None   )    => Box::from(
-                self.quads().filter_ok(move |q| ms.matches(q.s()) && mp.matches(q.p()) && mo.matches(q.o()) && mg.matches(q.g()))),
-            (Some(s), None,    None,    None   )    => Box::from(
-                self.quads_with_s(s).filter_ok(move |q| mp.matches(q.p()) && mo.matches(q.o()) && mg.matches(q.g()))),
-            (None,    Some(p), None,    None   )    => Box::from(
-                self.quads_with_p(p).filter_ok(move |q| ms.matches(q.s()) && mo.matches(q.o()) && mg.matches(q.g()))),
-            (None,    None,    Some(o), None   )    => Box::from(
-                self.quads_with_o(o).filter_ok(move |q| ms.matches(q.s()) && mp.matches(q.p()) && mg.matches(q.g()))),
-            (None,    None,    None,    Some(g))    => Box::from(
-                self.quads_with_g(*g).filter_ok(move |q| ms.matches(q.s()) && mp.matches(q.p()) && mo.matches(q.o()))),
-            (Some(s), Some(p), None,    None   )    => Box::from(
-                self.quads_with_sp(s, p).filter_ok(move |q| mo.matches(q.o()) && mg.matches(q.g()))),
-            (Some(s), None,    Some(o), None   )    => Box::from(
-                self.quads_with_so(s, o).filter_ok(move |q| mp.matches(q.p()) && mg.matches(q.g()))),
-            (Some(s), None,    None,    Some(g))    => Box::from(
-                self.quads_with_sg(s, *g).filter_ok(move |q| mp.matches(q.p()) && mo.matches(q.o()))),
-            (None,    Some(p), Some(o), None   )    => Box::from(
-                self.quads_with_po(p, o).filter_ok(move |q| ms.matches(q.s()) && mg.matches(q.g()))),
-            (None,    Some(p), None   , Some(g))    => Box::from(
-                self.quads_with_pg(p, *g).filter_ok(move |q| ms.matches(q.s()) && mo.matches(q.o()))),
-            (None,    None,    Some(o), Some(g))    => Box::from(
-                self.quads_with_og(o, *g).filter_ok(move |q| ms.matches(q.s()) && mp.matches(q.p()))),
-            (Some(s), Some(p), Some(o), None)       => Box::from(
-                self.quads_with_spo(s, p, o).filter_ok(move |q| mg.matches(q.g()))),
-            (Some(s), Some(p), None,    Some(g))       => Box::from(
-                self.quads_with_spg(s, p, *g).filter_ok(move |q| mo.matches(q.o()))),
-            (Some(s), None,   Some(o), Some(g))       => Box::from(
-                self.quads_with_sog(s, o, *g).filter_ok(move |q| mp.matches(q.p()))),
-            (None,    Some(p), Some(o), Some(g))       => Box::from(
-                self.quads_with_pog(p, o, *g).filter_ok(move |q| ms.matches(q.s()))),
-            (Some(s), Some(p), Some(o), Some(g))    => Box::from(
-                self.quads_with_spog(s, p, o, *g)),
+        match (
+            &ms.constant(),
+            &mp.constant(),
+            &mo.constant(),
+            &mg.constant(),
+        ) {
+            (None, None, None, None) => Box::from(self.quads().filter_ok(move |q| {
+                ms.matches(q.s()) && mp.matches(q.p()) && mo.matches(q.o()) && mg.matches(q.g())
+            })),
+            (Some(s), None, None, None) => {
+                Box::from(self.quads_with_s(s).filter_ok(move |q| {
+                    mp.matches(q.p()) && mo.matches(q.o()) && mg.matches(q.g())
+                }))
+            }
+            (None, Some(p), None, None) => {
+                Box::from(self.quads_with_p(p).filter_ok(move |q| {
+                    ms.matches(q.s()) && mo.matches(q.o()) && mg.matches(q.g())
+                }))
+            }
+            (None, None, Some(o), None) => {
+                Box::from(self.quads_with_o(o).filter_ok(move |q| {
+                    ms.matches(q.s()) && mp.matches(q.p()) && mg.matches(q.g())
+                }))
+            }
+            (None, None, None, Some(g)) => {
+                Box::from(self.quads_with_g(*g).filter_ok(move |q| {
+                    ms.matches(q.s()) && mp.matches(q.p()) && mo.matches(q.o())
+                }))
+            }
+            (Some(s), Some(p), None, None) => Box::from(
+                self.quads_with_sp(s, p)
+                    .filter_ok(move |q| mo.matches(q.o()) && mg.matches(q.g())),
+            ),
+            (Some(s), None, Some(o), None) => Box::from(
+                self.quads_with_so(s, o)
+                    .filter_ok(move |q| mp.matches(q.p()) && mg.matches(q.g())),
+            ),
+            (Some(s), None, None, Some(g)) => Box::from(
+                self.quads_with_sg(s, *g)
+                    .filter_ok(move |q| mp.matches(q.p()) && mo.matches(q.o())),
+            ),
+            (None, Some(p), Some(o), None) => Box::from(
+                self.quads_with_po(p, o)
+                    .filter_ok(move |q| ms.matches(q.s()) && mg.matches(q.g())),
+            ),
+            (None, Some(p), None, Some(g)) => Box::from(
+                self.quads_with_pg(p, *g)
+                    .filter_ok(move |q| ms.matches(q.s()) && mo.matches(q.o())),
+            ),
+            (None, None, Some(o), Some(g)) => Box::from(
+                self.quads_with_og(o, *g)
+                    .filter_ok(move |q| ms.matches(q.s()) && mp.matches(q.p())),
+            ),
+            (Some(s), Some(p), Some(o), None) => Box::from(
+                self.quads_with_spo(s, p, o)
+                    .filter_ok(move |q| mg.matches(q.g())),
+            ),
+            (Some(s), Some(p), None, Some(g)) => Box::from(
+                self.quads_with_spg(s, p, *g)
+                    .filter_ok(move |q| mo.matches(q.o())),
+            ),
+            (Some(s), None, Some(o), Some(g)) => Box::from(
+                self.quads_with_sog(s, o, *g)
+                    .filter_ok(move |q| mp.matches(q.p())),
+            ),
+            (None, Some(p), Some(o), Some(g)) => Box::from(
+                self.quads_with_pog(p, o, *g)
+                    .filter_ok(move |q| ms.matches(q.s())),
+            ),
+            (Some(s), Some(p), Some(o), Some(g)) => Box::from(self.quads_with_spog(s, p, o, *g)),
         }
     }
 
     /// Build a Hashset of all the terms used as subject in this Dataset.
-    fn subjects(&'a self) -> DResult<'a, Self, HashSet<Term<<Self::Quad as Triple<'a>>::TermData>>> {
+    fn subjects(
+        &'a self,
+    ) -> DResult<'a, Self, HashSet<Term<<Self::Quad as Triple<'a>>::TermData>>> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             insert_if_absent(&mut res, q?.s());
@@ -287,7 +348,9 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the terms used as predicate in this Dataset.
-    fn predicates(&'a self) -> DResult<'a, Self, HashSet<Term<<Self::Quad as Triple<'a>>::TermData>>> {
+    fn predicates(
+        &'a self,
+    ) -> DResult<'a, Self, HashSet<Term<<Self::Quad as Triple<'a>>::TermData>>> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             insert_if_absent(&mut res, q?.p());
@@ -305,7 +368,9 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the terms used as graph names in this Dataset.
-    fn graph_names(&'a self) -> DResult<'a, Self, HashSet<Term<<Self::Quad as Triple<'a>>::TermData>>> {
+    fn graph_names(
+        &'a self,
+    ) -> DResult<'a, Self, HashSet<Term<<Self::Quad as Triple<'a>>::TermData>>> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             let q = q?;
@@ -323,11 +388,19 @@ pub trait Dataset<'a> {
         for q in self.quads() {
             let q = q?;
             let (s, p, o) = (q.s(), q.p(), q.o());
-            if let Iri(_) = s { insert_if_absent(&mut res, s) }
-            if let Iri(_) = p { insert_if_absent(&mut res, p) }
-            if let Iri(_) = o { insert_if_absent(&mut res, o) }
+            if let Iri(_) = s {
+                insert_if_absent(&mut res, s)
+            }
+            if let Iri(_) = p {
+                insert_if_absent(&mut res, p)
+            }
+            if let Iri(_) = o {
+                insert_if_absent(&mut res, o)
+            }
             if let Some(gn) = q.g().name() {
-                if let Iri(_) = gn { insert_if_absent(&mut res, &gn) }
+                if let Iri(_) = gn {
+                    insert_if_absent(&mut res, &gn)
+                }
             }
         }
         Ok(res)
@@ -339,43 +412,71 @@ pub trait Dataset<'a> {
         for q in self.quads() {
             let q = q?;
             let (s, p, o) = (q.s(), q.p(), q.o());
-            if let BNode(_) = s { insert_if_absent(&mut res, s) }
-            if let BNode(_) = p { insert_if_absent(&mut res, p) }
-            if let BNode(_) = o { insert_if_absent(&mut res, o) }
+            if let BNode(_) = s {
+                insert_if_absent(&mut res, s)
+            }
+            if let BNode(_) = p {
+                insert_if_absent(&mut res, p)
+            }
+            if let BNode(_) = o {
+                insert_if_absent(&mut res, o)
+            }
             if let Some(gn) = q.g().name() {
-                if let BNode(_) = gn { insert_if_absent(&mut res, &gn) }
+                if let BNode(_) = gn {
+                    insert_if_absent(&mut res, &gn)
+                }
             }
         }
         Ok(res)
     }
 
     /// Build a Hashset of all the Literals used in this Dataset.
-    fn literals(&'a self) -> DResult<'a, Self, HashSet<Term<<Self::Quad as Triple<'a>>::TermData>>> {
+    fn literals(
+        &'a self,
+    ) -> DResult<'a, Self, HashSet<Term<<Self::Quad as Triple<'a>>::TermData>>> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             let q = q?;
             let (s, p, o) = (q.s(), q.p(), q.o());
-            if let Literal(_, _) = s { insert_if_absent(&mut res, s) }
-            if let Literal(_, _) = p { insert_if_absent(&mut res, p) }
-            if let Literal(_, _) = o { insert_if_absent(&mut res, o) }
+            if let Literal(_, _) = s {
+                insert_if_absent(&mut res, s)
+            }
+            if let Literal(_, _) = p {
+                insert_if_absent(&mut res, p)
+            }
+            if let Literal(_, _) = o {
+                insert_if_absent(&mut res, o)
+            }
             if let Some(gn) = q.g().name() {
-                if let Literal(_, _) = gn { insert_if_absent(&mut res, &gn) }
+                if let Literal(_, _) = gn {
+                    insert_if_absent(&mut res, &gn)
+                }
             }
         }
         Ok(res)
     }
 
     /// Build a Hashset of all the variables used in this Dataset.
-    fn variables(&'a self) -> DResult<'a, Self, HashSet<Term<<Self::Quad as Triple<'a>>::TermData>>> {
+    fn variables(
+        &'a self,
+    ) -> DResult<'a, Self, HashSet<Term<<Self::Quad as Triple<'a>>::TermData>>> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             let q = q?;
             let (s, p, o) = (q.s(), q.p(), q.o());
-            if let Variable(_) = s { insert_if_absent(&mut res, s) }
-            if let Variable(_) = p { insert_if_absent(&mut res, p) }
-            if let Variable(_) = o { insert_if_absent(&mut res, o) }
+            if let Variable(_) = s {
+                insert_if_absent(&mut res, s)
+            }
+            if let Variable(_) = p {
+                insert_if_absent(&mut res, p)
+            }
+            if let Variable(_) = o {
+                insert_if_absent(&mut res, o)
+            }
             if let Some(gn) = q.g().name() {
-                if let Variable(_) = gn { insert_if_absent(&mut res, &gn) }
+                if let Variable(_) = gn {
+                    insert_if_absent(&mut res, &gn)
+                }
             }
         }
         Ok(res)
@@ -386,7 +487,7 @@ pub trait Dataset<'a> {
 pub type MDResult<D, T> = std::result::Result<T, <D as MutableDataset>::MutationError>;
 
 /// Generic trait for mutable RDF datasets.
-/// 
+///
 /// NB: the semantics of this trait allows a dataset to contain duplicate quads;
 /// see also [`SetDataset`](trait.SetDataset.html).
 ///
@@ -398,34 +499,46 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
     type MutationError: CoercibleWith<Error> + CoercibleWith<Never>;
 
     /// Insert the given quad in this dataset.
-    /// 
+    ///
     /// Return `true` iff the quad was actually inserted.
-    /// 
+    ///
     /// NB: unless this dataset also implements [`SetDataset`](trait.SetDataset.html),
     /// a return value of `true` does *not* mean that the quad was not already in the dataset,
     /// only that the dataset now has one more occurence of it.
-    /// 
-    fn insert<T, U, V, W> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>, g: &GraphKey<W>) -> MDResult<Self, bool> where
+    ///
+    fn insert<T, U, V, W>(
+        &mut self,
+        s: &Term<T>,
+        p: &Term<U>,
+        o: &Term<V>,
+        g: &GraphKey<W>,
+    ) -> MDResult<Self, bool>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
         V: AsRef<str> + Clone + Eq + Hash,
-        W: AsRef<str> + Clone + Eq + Hash,
-    ;
+        W: AsRef<str> + Clone + Eq + Hash;
 
     /// Remove the given quad in this dataset.
-    /// 
+    ///
     /// Return `true` iff the quad was actually removed.
-    /// 
+    ///
     /// NB: unless this dataset also implements [`SetDataset`](trait.SetDataset.html),
     /// a return value of `true` does *not* mean that the quad is not still contained in the dataset,
     /// only that the dataset now has one less occurence of it.
-    /// 
-    fn remove<T, U, V, W> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>, g: &GraphKey<W>) -> MDResult< Self, bool> where
+    ///
+    fn remove<T, U, V, W>(
+        &mut self,
+        s: &Term<T>,
+        p: &Term<U>,
+        o: &Term<V>,
+        g: &GraphKey<W>,
+    ) -> MDResult<Self, bool>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
         V: AsRef<str> + Clone + Eq + Hash,
-        W: AsRef<str> + Clone + Eq + Hash,
-    ;
+        W: AsRef<str> + Clone + Eq + Hash;
 
     /// Return a [`QuadSink`](../quad/stream/trait.QuadSink.html)
     /// that will insert into this dataset all the quads it receives.
@@ -436,7 +549,10 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
 
     /// Insert into this dataset all quads from the given source.
     #[inline]
-    fn insert_all<'a, TS>(&mut self, src: &mut TS) -> CoercedResult<usize, TS::Error, <Self as MutableDataset>::MutationError>
+    fn insert_all<'a, TS>(
+        &mut self,
+        src: &mut TS,
+    ) -> CoercedResult<usize, TS::Error, <Self as MutableDataset>::MutationError>
     where
         TS: QuadSource<'a>,
         TS::Error: CoercibleWith<<Self as MutableDataset>::MutationError>,
@@ -453,7 +569,10 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
 
     /// Remove from this dataset all quads from the given source.
     #[inline]
-    fn remove_all<'a, TS>(&mut self, src: &mut TS) -> CoercedResult<usize, TS::Error, <Self as MutableDataset>::MutationError>
+    fn remove_all<'a, TS>(
+        &mut self,
+        src: &mut TS,
+    ) -> CoercedResult<usize, TS::Error, <Self as MutableDataset>::MutationError>
     where
         TS: QuadSource<'a>,
         TS::Error: CoercibleWith<<Self as MutableDataset>::MutationError>,
@@ -465,7 +584,13 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
     ///
     /// Note that the default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
-    fn remove_matching<S, P, O, G> (&mut self, ms: &S, mp: &P, mo: &O, mg: &G) -> MDResult<Self, usize>
+    fn remove_matching<S, P, O, G>(
+        &mut self,
+        ms: &S,
+        mp: &P,
+        mo: &O,
+        mg: &G,
+    ) -> MDResult<Self, usize>
     where
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
@@ -474,7 +599,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
         // The following trait bound means that Self::Error must convert to Self::MutationError;
         // it is always satisfied when both of them are either Error or Never;
         // it is required to raise an error when building to_remove
-        for <'a> <Self as Dataset<'a>>::Error: Into<Self::MutationError>,
+        for<'a> <Self as Dataset<'a>>::Error: Into<Self::MutationError>,
         // The following trait bound is required by remove_all,
         // who coerces to_remove::Error (always Never) with self::MutationError.
         Never: CoercibleWith<Self::MutationError>,
@@ -483,13 +608,19 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
         // but unfortunetaly the compiler can not see that.
         Self::MutationError: From<CoercedError<Never, Self::MutationError>>,
     {
-        let to_remove: Vec<_> =
-            self.quads_matching(ms, mp, mo, mg)
-            .map_ok(|q| (
-                [BoxTerm::from(q.s()), BoxTerm::from(q.p()), BoxTerm::from(q.o())],
-                GraphKey::<Box<str>>::from(q.g()),
-            ))
-            .collect::<std::result::Result<_,_>>()
+        let to_remove: Vec<_> = self
+            .quads_matching(ms, mp, mo, mg)
+            .map_ok(|q| {
+                (
+                    [
+                        BoxTerm::from(q.s()),
+                        BoxTerm::from(q.p()),
+                        BoxTerm::from(q.o()),
+                    ],
+                    GraphKey::<Box<str>>::from(q.g()),
+                )
+            })
+            .collect::<std::result::Result<_, _>>()
             .map_err(|err| err.into())?;
         let mut to_remove = to_remove.into_iter().as_quad_source();
         Ok(self.remove_all(&mut to_remove)?)
@@ -500,7 +631,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
     /// Note that the default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
     ///
-    fn retain<S, P, O, G> (&mut self, ms: &S, mp: &P, mo: &O, mg: &G) -> MDResult<Self, ()>
+    fn retain<S, P, O, G>(&mut self, ms: &S, mp: &P, mo: &O, mg: &G) -> MDResult<Self, ()>
     where
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
@@ -509,7 +640,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
         // The following trait bound means that Self::Error must convert to Self::MutationError;
         // it is always satisfied when both of them are either Error or Never;
         // it is required to raise an error when building to_remove
-        for <'a> <Self as Dataset<'a>>::Error: Into<Self::MutationError>,
+        for<'a> <Self as Dataset<'a>>::Error: Into<Self::MutationError>,
         // The following trait bound is required by remove_all,
         // who coerces to_remove::Error (always Never) with self::MutationError.
         Never: CoercibleWith<Self::MutationError>,
@@ -518,31 +649,33 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
         // but unfortunetaly the compiler can not see that.
         Self::MutationError: From<CoercedError<Never, Self::MutationError>>,
     {
-        let to_remove: Vec<_> =
-            self.quads()
+        let to_remove: Vec<_> = self
+            .quads()
             .filter_ok(|q| {
-                !(ms.matches(q.s()) && mp.matches(q.p()) &&
-                  mo.matches(q.o()) && mg.matches(q.g()))
+                !(ms.matches(q.s()) && mp.matches(q.p()) && mo.matches(q.o()) && mg.matches(q.g()))
             })
-            .map_ok(|q| (
-                [BoxTerm::from(q.s()), BoxTerm::from(q.p()), BoxTerm::from(q.o())],
-                GraphKey::<Box<str>>::from(q.g()),
-            ))
-            .collect::<std::result::Result<_,_>>()
+            .map_ok(|q| {
+                (
+                    [
+                        BoxTerm::from(q.s()),
+                        BoxTerm::from(q.p()),
+                        BoxTerm::from(q.o()),
+                    ],
+                    GraphKey::<Box<str>>::from(q.g()),
+                )
+            })
+            .collect::<std::result::Result<_, _>>()
             .map_err(|err| err.into())?;
         let mut to_remove = to_remove.into_iter().as_quad_source();
         self.remove_all(&mut to_remove)?;
         Ok(())
     }
-
 }
 
 /// Marker trait constraining the semantics of
 /// [`Dataset`](trait.Dataset.html) and [`MutableDataset`](trait.MutableDataset.html),
 /// by guaranteeing that quads will never be returned / stored multiple times.
-pub trait SetDataset {
-}
-
+pub trait SetDataset {}
 
 #[cfg(test)]
 mod test {

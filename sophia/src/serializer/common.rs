@@ -22,7 +22,6 @@ macro_rules! def_default_serializer_api {
     };
 }
 
-
 /// This macro provides a straightforward implementation of the `Stringifier` type,
 /// based on the `Writer` type.
 #[macro_export]
@@ -37,7 +36,9 @@ macro_rules! def_stringifier {
             type Config = Config;
 
             fn new(config: Config) -> Stringifier {
-                $stringifier{ writer: $writer::new(Vec::new(), config) }
+                $stringifier {
+                    writer: $writer::new(Vec::new(), config),
+                }
             }
         }
 
@@ -60,8 +61,6 @@ macro_rules! def_stringifier {
         def_stringifier!(Writer, Stringifier);
     };
 }
-
-
 
 #[cfg(test)]
 mod test {

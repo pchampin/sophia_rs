@@ -22,7 +22,7 @@
 use std::hash::Hash;
 
 use crate::error::*;
-use crate::term::{Term, iri_rfc3987::is_valid_iri};
+use crate::term::{iri_rfc3987::is_valid_iri, Term};
 
 /// A custom namespace.
 pub struct Namespace<T: AsRef<str> + Clone + Eq + Hash>(T);
@@ -66,14 +66,12 @@ macro_rules! ns_term {
     ($prefix:expr, $ident:ident, $suffix:expr) => {
         #[allow(non_upper_case_globals)]
         pub static $ident: $crate::term::StaticTerm =
-            $crate::term::Term::Iri(
-                $crate::term::IriData{
-                    ns: $prefix,
-                    suffix: Some($suffix),
-                    absolute: true,
-            })
-        ;
-    }
+            $crate::term::Term::Iri($crate::term::IriData {
+                ns: $prefix,
+                suffix: Some($suffix),
+                absolute: true,
+            });
+    };
 }
 
 //pub static $ident:term::Term<'static> = term::Term::Iri(term::IriData{ns:$prefix, suffix:$suffix});
@@ -84,13 +82,27 @@ macro_rules! ns_term {
 /// the term `rdf:type` spells `rdf::type_` (with a trailing underscore).
 ///
 pub mod rdf {
-    namespace!("http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    namespace!(
+        "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
         // classes
-        Alt, Bad, List, PlainLiteral, Property, Seq, Statement,
+        Alt,
+        Bad,
+        List,
+        PlainLiteral,
+        Property,
+        Seq,
+        Statement,
         // datatypes
-        HTML, langString, XMLLiteral,
+        HTML,
+        langString,
+        XMLLiteral,
         // properties
-        first, object, predicate, rest, subject, value,
+        first,
+        object,
+        predicate,
+        rest,
+        subject,
+        value,
         // individuals
         nil
     );
@@ -99,67 +111,78 @@ pub mod rdf {
 
 /// The standard `xsd:` namespace.
 pub mod xsd {
-    namespace!("http://www.w3.org/2001/XMLSchema#",
-    anyType,
-    anySimpleType,
-
-    duration,
-    dateTime,
-    time,
-    date,
-    gYearMonth,
-    gYear,
-    gMonthDay,
-    gDay,
-    gMonth,
-    boolean,
-    base64Binary,
-    hexBinary,
-    float,
-    double,
-    anyURI,
-    QName,
-    NOTATION,
-    string,
+    namespace!(
+        "http://www.w3.org/2001/XMLSchema#",
+        anyType,
+        anySimpleType,
+        duration,
+        dateTime,
+        time,
+        date,
+        gYearMonth,
+        gYear,
+        gMonthDay,
+        gDay,
+        gMonth,
+        boolean,
+        base64Binary,
+        hexBinary,
+        float,
+        double,
+        anyURI,
+        QName,
+        NOTATION,
+        string,
         normalizedString,
-            token,
-                language,
-                Name,
-                    NCName,
-                        ID,
-                        IDREF,
-                            IDREFS,
-                        ENTITY,
-                            ENTITIES,
-                NMTOKEN,
-                    NMTOKENS,
-    decimal,
+        token,
+        language,
+        Name,
+        NCName,
+        ID,
+        IDREF,
+        IDREFS,
+        ENTITY,
+        ENTITIES,
+        NMTOKEN,
+        NMTOKENS,
+        decimal,
         integer,
-            nonPositiveInteger,
-                negativeInteger,
-            long,
-                int,
-                    short,
-                        byte,
-            nonNegativeInteger,
-                unsignedLong,
-                    unsignedInt,
-                        unsignedShort,
-                            unsignedByte,
-                positiveInteger
+        nonPositiveInteger,
+        negativeInteger,
+        long,
+        int,
+        short,
+        byte,
+        nonNegativeInteger,
+        unsignedLong,
+        unsignedInt,
+        unsignedShort,
+        unsignedByte,
+        positiveInteger
     );
 }
 
 /// The standard `rdfs:` namespace.
 pub mod rdfs {
-    namespace!("http://www.w3.org/2000/01/rdf-schema#",
-        Class, Container, ContainerMembershipProperty, Datatype, Literal, Resource,
-        domain, range, subClassOf, subPropertyOf,
-        comment, isDefinedBy, label, member, seeAlso
+    namespace!(
+        "http://www.w3.org/2000/01/rdf-schema#",
+        Class,
+        Container,
+        ContainerMembershipProperty,
+        Datatype,
+        Literal,
+        Resource,
+        domain,
+        range,
+        subClassOf,
+        subPropertyOf,
+        comment,
+        isDefinedBy,
+        label,
+        member,
+        seeAlso
     );
 }
-
-
 
 #[cfg(test)]
 mod test {

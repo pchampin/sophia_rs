@@ -8,7 +8,7 @@ use super::graph_key::GraphKey;
 
 /// A graph-key-matcher is something that can be used
 /// to discriminate members of a set of graph keys.
-/// 
+///
 /// See [`Dataset::quads_matching`](../../dataset/trait.Dataset.html#method.quads_matching),
 /// [`MutableDataset::remove_matching`](../../dataset/trait.MutableDataset.html#method.remove_matching),
 /// [`MutableDataset::retain`](../../dataset/trait.MutableDataset.html#method.retain).
@@ -18,8 +18,9 @@ pub trait GraphKeyMatcher {
     fn constant(&self) -> Option<&GraphKey<Self::TermData>>;
 
     /// Check whether this matcher matches `t`.
-    fn matches<T> (&self, g: &GraphKey<T>) -> bool
-    where T: AsRef<str> + Clone + Eq + Hash;
+    fn matches<T>(&self, g: &GraphKey<T>) -> bool
+    where
+        T: AsRef<str> + Clone + Eq + Hash;
 }
 
 impl<U> GraphKeyMatcher for GraphKey<U>
@@ -30,11 +31,11 @@ where
     fn constant(&self) -> Option<&GraphKey<Self::TermData>> {
         Some(self)
     }
-    fn matches<T> (&self, g: &GraphKey<T>) -> bool
+    fn matches<T>(&self, g: &GraphKey<T>) -> bool
     where
         T: AsRef<str> + Clone + Eq + Hash,
     {
-        g==self
+        g == self
     }
 }
 
@@ -46,11 +47,11 @@ where
     fn constant(&self) -> Option<&GraphKey<Self::TermData>> {
         Some(self.as_graph_key())
     }
-    fn matches<T> (&self, g: &GraphKey<T>) -> bool
+    fn matches<T>(&self, g: &GraphKey<T>) -> bool
     where
         T: AsRef<str> + Clone + Eq + Hash,
     {
-        g==self
+        g == self
     }
 }
 
@@ -62,7 +63,7 @@ where
     fn constant(&self) -> Option<&GraphKey<Self::TermData>> {
         self.as_ref()
     }
-    fn matches<T> (&self, g: &GraphKey<T>) -> bool
+    fn matches<T>(&self, g: &GraphKey<T>) -> bool
     where
         T: AsRef<str> + Clone + Eq + Hash,
     {
@@ -81,7 +82,7 @@ where
     fn constant(&self) -> Option<&GraphKey<Self::TermData>> {
         self.as_ref().map(Term::as_graph_key)
     }
-    fn matches<T> (&self, g: &GraphKey<T>) -> bool
+    fn matches<T>(&self, g: &GraphKey<T>) -> bool
     where
         T: AsRef<str> + Clone + Eq + Hash,
     {
@@ -98,15 +99,20 @@ where
 {
     type TermData = M::TermData;
     fn constant(&self) -> Option<&GraphKey<Self::TermData>> {
-        if self.len() == 1 { self[0].constant() }
-        else { None }
+        if self.len() == 1 {
+            self[0].constant()
+        } else {
+            None
+        }
     }
-    fn matches<T> (&self, g: &GraphKey<T>) -> bool
+    fn matches<T>(&self, g: &GraphKey<T>) -> bool
     where
         T: AsRef<str> + Clone + Eq + Hash,
     {
         for matcher in self {
-            if matcher.matches(g) { return true; }
+            if matcher.matches(g) {
+                return true;
+            }
         }
         false
     }
@@ -117,14 +123,12 @@ impl<F: Fn(&GraphKey<&str>) -> bool> GraphKeyMatcher for F {
     fn constant(&self) -> Option<&GraphKey<Self::TermData>> {
         None
     }
-    fn matches<T> (&self, t: &GraphKey<T>) -> bool
+    fn matches<T>(&self, t: &GraphKey<T>) -> bool
     where
         T: AsRef<str> + Clone + Eq + Hash,
     {
         match t {
-            GraphKey::Default => {
-                (self)(&GraphKey::Default)
-            }
+            GraphKey::Default => (self)(&GraphKey::Default),
             GraphKey::Name(n) => {
                 let n = RefTerm::from(n);
                 (self)(n.as_graph_key())
@@ -132,7 +136,6 @@ impl<F: Fn(&GraphKey<&str>) -> bool> GraphKeyMatcher for F {
         }
     }
 }
-
 
 #[cfg(test)]
 mod test {
@@ -174,7 +177,9 @@ mod test {
 
     #[test]
     fn test_some_graph_key_as_matcher() {
-        let m = Some(GraphKey::Name(BoxTerm::new_iri("http://champin.net/#pa").unwrap()));
+        let m = Some(GraphKey::Name(
+            BoxTerm::new_iri("http://champin.net/#pa").unwrap(),
+        ));
         // comparing to a term using a different holder, and differently cut,
         // to make the test less obvious
         let n0: GraphKey<&str> = GraphKey::Default;
@@ -240,9 +245,9 @@ mod test {
 
     #[test]
     fn test_vec1_as_matcher() {
-        let m = vec![
-            GraphKey::Name(BoxTerm::new_iri("http://champin.net/#pa").unwrap())
-        ];
+        let m = vec![GraphKey::Name(
+            BoxTerm::new_iri("http://champin.net/#pa").unwrap(),
+        )];
         // comparing to a term using a different holder, and differently cut,
         // to make the test less obvious
         let n0: GraphKey<&str> = GraphKey::Default;
@@ -291,7 +296,6 @@ mod test {
         assert!(!m.matches(&n1));
         assert!(!m.matches(&n2));
     }
-
 
     #[test]
     fn test_func_as_matcher() {
