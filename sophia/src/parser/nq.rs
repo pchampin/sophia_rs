@@ -251,7 +251,7 @@ mod test {
         let mut d = HashSetDataset::new();
         let reader = io::Cursor::new(DOC);
         let res = STRICT.parse_read(reader).in_dataset(&mut d);
-        assert!(dbg!(&res).is_ok());
+        assert!(res.is_ok());
         assert_eq!(res.unwrap(), 5);
         assert_eq!(d.len(), 5);
     }
