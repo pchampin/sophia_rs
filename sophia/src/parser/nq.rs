@@ -274,7 +274,7 @@ mod test {
 
             let suite = Path::new("..").join("rdf-tests").join("nquads");
             if !suite.exists() || !suite.is_dir() {
-                panic!("rdf-tests/nquads not found, can not check W3C test-suite");
+                panic!("rdf-tests/nquads not found, can not check W3C test-suite. cf README.md");
             }
 
             for entry in read_dir(&suite)? {
@@ -304,7 +304,7 @@ mod test {
 
             let suite = Path::new("..").join("rdf-tests").join("nquads");
             if !suite.exists() || !suite.is_dir() {
-                panic!("rdf-tests/nquads not found, can not check W3C test-suite");
+                panic!("rdf-tests/nquads not found, can not check W3C test-suite. cf README.md");
             }
 
             for entry in read_dir(&suite)? {
