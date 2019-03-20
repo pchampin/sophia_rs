@@ -1,0 +1,57 @@
+
+language: rust
+
+rust:
+  - 1.26.0
+  - 1.27.0
+  - 1.28.0
+  - 1.29.0
+  - 1.31.0
+  - 1.32.0
+  - 1.33.0
+  - stable
+  - beta
+  - nightly
+
+matrix:
+  allow_failures:
+    - rust: nightly
+  include:
+    # Rustfmt
+    - rust: stable
+      install:
+        - rustup component add rustfmt-preview
+      before_script:
+        - cargo fmt --version
+      script:
+        - cargo fmt -- --check
+
+    # Clippy
+    - rust: stable
+      install:
+        - rustup component add clippy-preview
+      script:
+        # Fail if clippy output contains "error:" or "warning:"
+        - cargo clippy 2>&1 | tee ./clippy.out && ! grep -qe  "error:\|warning:" ./clippy.out
+
+    # Test coverage (with Tarpaulin)
+    - rust: stable
+      # To avoid "Error: EPERM: operation not permitted" error (see https://github.com/valery-barysok/session-file-store/issues/58)
+      sudo: true
+      install:
+        - RUSTFLAGS="--cfg procmacro2_semver_exempt" cargo install cargo-tarpaulin --force
+      script:
+        - cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID
+
+script:
+  - cargo test
+cache:
+  cargo: true
+before_cache:
+  # Travis can't cache files that are not readable by "others"
+  - chmod -R a+r $HOME/.cargo
+
+addons:
+  apt:
+    packages:
+      - libssl-dev  # Required for tarpaulin
