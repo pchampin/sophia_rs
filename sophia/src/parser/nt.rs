@@ -83,14 +83,14 @@ impl Config {
                     }
                 };
                 {
-                    let trimmed = line.trim_left();
+                    let trimmed = line.trim_start();
                     if trimmed.len() == 0 || trimmed.as_bytes()[0] == '#' as u8 {
                         return None;
                     }
                 }
                 Some(
                     NtTriple::try_new(line, |line| {
-                        parse_rule_from_line(&config, rule, line.trim_left())
+                        parse_rule_from_line(&config, rule, line.trim_start())
                     })
                     .map_err(|err| convert_pest_err(err.0, lineidx)),
                 )
