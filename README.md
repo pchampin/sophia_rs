@@ -2,6 +2,9 @@
 
 A Rust toolkit for RDF and Linked Data.
 
+[![Build Status](https://travis-ci.org/media-io/sophia_rs.svg?branch=master)](https://travis-ci.org/media-io/sophia_rs)
+[![Coverage Status](https://coveralls.io/repos/github/media-io/sophia_rs/badge.svg?branch=add_travis)](https://coveralls.io/github/media-io/sophia_rs?branch=add_travis)
+
 ## Performances
 
 A comparison of Sophia with other RDF libraries is available
