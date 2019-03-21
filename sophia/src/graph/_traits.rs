@@ -180,7 +180,7 @@ pub trait Graph<'a> {
                 self.triples_with_po(p, o)
                     .filter_ok(move |t| ms.matches(t.s())),
             ),
-            (Some(s), Some(p), Some(o)) => Box::from(self.triples_with_spo(s, p, o)),
+            (Some(s), Some(p), Some(o)) => self.triples_with_spo(s, p, o),
         }
     }
 

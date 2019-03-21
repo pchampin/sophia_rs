@@ -83,7 +83,7 @@ fn bindings_for_triples<'a, G>(
 where
     G: Graph<'a>,
 {
-    if q.len() == 0 {
+    if q.is_empty() {
         Box::new(once(Ok(b)))
     } else {
         Box::new(
@@ -131,7 +131,7 @@ where
 fn matcher(t: &RcTerm, b: &Binding) -> Option<RcTerm> {
     if let Variable(vname) = t {
         let vname: &str = &vname;
-        b.get(vname).map(|x| x.clone())
+        b.get(vname).cloned()
     } else {
         Some(t.clone())
     }

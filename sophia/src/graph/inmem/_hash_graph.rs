@@ -42,6 +42,10 @@ where
     pub fn len(&self) -> usize {
         self.triples.len()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.triples.is_empty()
+    }
 }
 
 impl<I> IndexedGraph for HashGraph<I>
@@ -62,7 +66,7 @@ where
     }
 
     #[inline]
-    fn get_term<'a>(&'a self, i: Self::Index) -> Option<&Term<Self::TermData>> {
+    fn get_term(&'_ self, i: Self::Index) -> Option<&Term<Self::TermData>> {
         self.terms.get_term(i)
     }
 

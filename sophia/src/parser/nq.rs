@@ -36,6 +36,9 @@ pub struct Config {
     pub strict: bool,
 }
 
+type ParseStrResult<'a> =
+    Box<dyn Iterator<Item = Result<([Term<Cow<'a, str>>; 3], GraphKey<Cow<'a, str>>)>> + 'a>;
+
 impl Config {
     #[inline]
     pub fn parse_bufread<'a, B: BufRead + 'a>(
@@ -64,7 +67,7 @@ impl Config {
                 };
                 {
                     let trimmed = line.trim_start();
-                    if trimmed.len() == 0 || trimmed.as_bytes()[0] == '#' as u8 {
+                    if trimmed.is_empty() || trimmed.as_bytes()[0] == b'#' {
                         return None;
                     }
                 }
@@ -86,11 +89,7 @@ impl Config {
     }
 
     #[inline]
-    pub fn parse_str<'a>(
-        &self,
-        txt: &'a str,
-    ) -> Box<dyn Iterator<Item = Result<([Term<Cow<'a, str>>; 3], GraphKey<Cow<'a, str>>)>> + 'a>
-    {
+    pub fn parse_str<'a>(&self, txt: &'a str) -> ParseStrResult<'a> {
         let config = self.clone();
         let rule = if config.strict {
             Rule::nquads_doc
@@ -150,19 +149,14 @@ impl<'a> Quad<'a> for NqQuad {
     // so I use transmute() to force the cast.
 }
 
-fn parse_rule_from_line<'a>(
-    config: &Config,
-    rule: Rule,
-    txt: &'a str,
-) -> StdResult<([Term<Cow<'a, str>>; 3], GraphKey<Cow<'a, str>>), PestError<Rule>> {
+type Toto<'a> = StdResult<([Term<Cow<'a, str>>; 3], GraphKey<Cow<'a, str>>), PestError<Rule>>;
+
+fn parse_rule_from_line<'a>(config: &Config, rule: Rule, txt: &'a str) -> Toto<'a> {
     let triple_pair = PestNtqParser::parse(rule, txt)?.next().unwrap();
     pairs_to_quad(config, triple_pair.into_inner())
 }
 
-fn pairs_to_quad<'a>(
-    config: &Config,
-    mut pairs: Pairs<'a, Rule>,
-) -> StdResult<([Term<Cow<'a, str>>; 3], GraphKey<Cow<'a, str>>), PestError<Rule>> {
+fn pairs_to_quad<'a>(config: &Config, mut pairs: Pairs<'a, Rule>) -> Toto<'a> {
     let s = pair_to_term(pairs.next().unwrap(), config.strict)?;
     let p = pair_to_term(pairs.next().unwrap(), config.strict)?;
     let o = pair_to_term(pairs.next().unwrap(), config.strict)?;

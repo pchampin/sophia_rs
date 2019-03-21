@@ -332,7 +332,7 @@ pub trait Dataset<'a> {
                 self.quads_with_pog(p, o, *g)
                     .filter_ok(move |q| ms.matches(q.s())),
             ),
-            (Some(s), Some(p), Some(o), Some(g)) => Box::from(self.quads_with_spog(s, p, o, *g)),
+            (Some(s), Some(p), Some(o), Some(g)) => self.quads_with_spog(s, p, o, *g),
         }
     }
 

@@ -76,11 +76,11 @@ impl MutableDataset for Vec<([BoxTerm; 3], GraphKey<Box<str>>)> where {
         V: AsRef<str> + Clone + Eq + Hash,
         W: AsRef<str> + Clone + Eq + Hash,
     {
-        let i = self
+        let item = self
             .quads()
             .oks()
             .position(|q| s == q.s() && p == q.p() && o == q.o() && g == q.g());
-        if let Some(i) = i {
+        if let Some(i) = item {
             self.swap_remove(i);
             Ok(true)
         } else {
@@ -89,7 +89,7 @@ impl MutableDataset for Vec<([BoxTerm; 3], GraphKey<Box<str>>)> where {
     }
 }
 
-impl<'a, Q> Dataset<'a> for HashSet<Q>
+impl<'a, Q, S: ::std::hash::BuildHasher> Dataset<'a> for HashSet<Q, S>
 where
     Q: Eq + Hash + Quad<'a> + 'a,
 {
@@ -102,7 +102,9 @@ where
     }
 }
 
-impl MutableDataset for HashSet<([BoxTerm; 3], GraphKey<Box<str>>)> where {
+impl<S: ::std::hash::BuildHasher> MutableDataset
+    for HashSet<([BoxTerm; 3], GraphKey<Box<str>>), S>
+{
     type MutationError = Never;
 
     fn insert<T, U, V, W>(
@@ -145,7 +147,10 @@ impl MutableDataset for HashSet<([BoxTerm; 3], GraphKey<Box<str>>)> where {
     }
 }
 
-impl<'a, T> SetDataset for HashSet<T> where T: Eq + Hash + Triple<'a> + 'a {}
+impl<'a, T, S: ::std::hash::BuildHasher> SetDataset for HashSet<T, S> where
+    T: Eq + Hash + Triple<'a> + 'a
+{
+}
 
 #[cfg(test)]
 mod test {

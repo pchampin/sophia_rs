@@ -72,7 +72,7 @@ impl MutableGraph for Vec<[BoxTerm; 3]> {
     }
 }
 
-impl<'a, T> Graph<'a> for HashSet<T>
+impl<'a, T, S: ::std::hash::BuildHasher> Graph<'a> for HashSet<T, S>
 where
     T: Eq + Hash + Triple<'a> + 'a,
 {
@@ -85,7 +85,10 @@ where
     }
 }
 
-impl MutableGraph for HashSet<[BoxTerm; 3]> where {
+impl<S: ::std::hash::BuildHasher> MutableGraph for HashSet<[BoxTerm; 3], S>
+where
+    for<'x> std::collections::HashSet<[Term<std::boxed::Box<str>>; 3], S>: _traits::Graph<'x>,
+{
     type MutationError = Never;
 
     fn insert<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
@@ -112,7 +115,10 @@ impl MutableGraph for HashSet<[BoxTerm; 3]> where {
     }
 }
 
-impl<'a, T> SetGraph for HashSet<T> where T: Eq + Hash + Triple<'a> + 'a {}
+impl<'a, T, S: ::std::hash::BuildHasher> SetGraph for HashSet<T, S> where
+    T: Eq + Hash + Triple<'a> + 'a
+{
+}
 
 #[cfg(test)]
 mod test {

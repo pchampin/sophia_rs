@@ -7,6 +7,11 @@ use super::*;
 use crate::graph::index::remove_one_val;
 use crate::triple::Triple;
 
+type Po2s<T> = HashMap<
+    (<T as IndexedGraph>::Index, <T as IndexedGraph>::Index),
+    Vec<<T as IndexedGraph>::Index>,
+>;
+
 /// A [`GraphWrapper`](trait.GraphWrapper.html)
 /// indexing triples by subject, then by predicate, then by object.
 ///
@@ -23,7 +28,7 @@ where
 {
     wrapped: T,
     s2p: HashMap<T::Index, Vec<T::Index>>,
-    sp2o: HashMap<(T::Index, T::Index), Vec<T::Index>>,
+    sp2o: Po2s<T>,
 }
 
 impl<T> SpoWrapper<T>
@@ -35,6 +40,8 @@ where
         Self::default()
     }
 }
+
+type TermDataT<'a, T> = <<T as Graph<'a>>::Triple as Triple<'a>>::TermData;
 
 impl<'a, T> GraphWrapper<'a> for SpoWrapper<T>
 where
@@ -63,7 +70,7 @@ where
                             (
                                 s,
                                 self.wrapped.get_term(*pi).unwrap(),
-                                self.sp2o.get(&(si, *pi)).unwrap(),
+                                &self.sp2o[&(si, *pi)],
                             )
                         })
                         .flat_map(move |(s, p, ois)| {
@@ -100,13 +107,7 @@ where
         Box::new(empty())
     }
 
-    fn gw_subjects(
-        &'a self,
-    ) -> GResult<
-        'a,
-        Self::Wrapped,
-        HashSet<Term<<<Self::Wrapped as Graph<'a>>::Triple as Triple<'a>>::TermData>>,
-    > {
+    fn gw_subjects(&'a self) -> GResult<'a, Self::Wrapped, HashSet<Term<TermDataT<'a, Self>>>> {
         let subjects: HashSet<_> = self
             .s2p
             .keys()
@@ -132,7 +133,7 @@ where
     }
 
     #[inline]
-    fn get_term<'a>(&'a self, i: Self::Index) -> Option<&Term<Self::TermData>> {
+    fn get_term(&'_ self, i: Self::Index) -> Option<&Term<Self::TermData>> {
         self.wrapped.get_term(i)
     }
 
@@ -149,11 +150,8 @@ where
     {
         let modified = self.wrapped.insert_indexed(s, p, o);
         if let Some([si, pi, oi]) = modified {
-            self.s2p.entry(si).or_insert_with(|| Vec::new()).push(pi);
-            self.sp2o
-                .entry((si, pi))
-                .or_insert_with(|| Vec::new())
-                .push(oi);
+            self.s2p.entry(si).or_insert_with(Vec::new).push(pi);
+            self.sp2o.entry((si, pi)).or_insert_with(Vec::new).push(oi);
         }
         modified
     }

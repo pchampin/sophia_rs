@@ -67,7 +67,7 @@ where
     type Factory = F;
 
     fn get_index(&self, t: &RefTerm) -> Option<T> {
-        self.t2i.get(t).map(|iref| *iref)
+        self.t2i.get(t).cloned()
     }
 
     fn make_index(&mut self, t: &RefTerm) -> T {

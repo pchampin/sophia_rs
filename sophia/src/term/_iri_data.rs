@@ -34,6 +34,10 @@ where
         self.ns.as_ref().len() + self.suffix_borrow().len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.ns.as_ref().is_empty() && self.suffix_borrow().is_empty()
+    }
+
     /// Iterate over the bytes representing this IRI.
     pub fn bytes<'a>(&'a self) -> impl Iterator<Item = u8> + 'a {
         self.ns.as_ref().bytes().chain(self.suffix_borrow().bytes())
@@ -162,7 +166,7 @@ where
             if let Some(spos) = suffix.rfind(&sep[..]) {
                 let mut new_ns = String::with_capacity(ns.len() + spos + 1);
                 new_ns.push_str(ns);
-                new_ns.push_str(&suffix[..spos + 1]);
+                new_ns.push_str(&suffix[..=spos]);
                 IriData {
                     ns: factory(&new_ns),
                     suffix: Some(factory(&suffix[spos + 1..])),
@@ -173,7 +177,7 @@ where
                 new_suffix.push_str(&ns[npos + 1..]);
                 new_suffix.push_str(suffix);
                 IriData {
-                    ns: factory(&ns[..npos + 1]),
+                    ns: factory(&ns[..=npos]),
                     suffix: Some(factory(&new_suffix)),
                     absolute,
                 }
@@ -184,19 +188,17 @@ where
                     absolute,
                 }
             }
+        } else if let Some(npos) = ns.rfind(&sep[..]) {
+            IriData {
+                ns: factory(&ns[..=npos]),
+                suffix: Some(factory(&ns[npos + 1..])),
+                absolute,
+            }
         } else {
-            if let Some(npos) = ns.rfind(&sep[..]) {
-                IriData {
-                    ns: factory(&ns[..npos + 1]),
-                    suffix: Some(factory(&ns[npos + 1..])),
-                    absolute,
-                }
-            } else {
-                IriData {
-                    ns: factory(ns),
-                    suffix: None,
-                    absolute,
-                }
+            IriData {
+                ns: factory(ns),
+                suffix: None,
+                absolute,
             }
         }
     }

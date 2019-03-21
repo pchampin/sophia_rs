@@ -132,7 +132,7 @@ where
     ///
     /// This conversion has 0 cost, since both types actually have the same size.
     pub fn as_graph_key(&self) -> &self::graph_key::GraphKey<T> {
-        unsafe { std::mem::transmute(self) }
+        unsafe { &*(self as *const Term<T> as *const self::graph_key::GraphKey<T>) }
     }
 }
 
@@ -236,11 +236,7 @@ where
 
     /// Copy another term with the given factory,
     /// applying the given normalization policy.
-    pub fn normalized_with<'a, U, F>(
-        other: &'a Term<U>,
-        mut factory: F,
-        norm: Normalization,
-    ) -> Term<T>
+    pub fn normalized_with<U, F>(other: &'_ Term<U>, mut factory: F, norm: Normalization) -> Term<T>
     where
         U: AsRef<str> + Clone + Eq + Hash,
         F: FnMut(&str) -> T,
@@ -375,7 +371,7 @@ where
     /// # Panics
     /// Panics if this Term is not an IRI or is not absolute (see [`is_absolute`](#method.is_absolute)).
     ///
-    pub fn batch_join<'a, F, U>(&self, task: F)
+    pub fn batch_join<F, U>(&self, task: F)
     where
         F: FnOnce(&Fn(&Term<U>) -> Term<U>) -> (),
         U: AsRef<str> + Clone + Eq + Hash + From<String>,

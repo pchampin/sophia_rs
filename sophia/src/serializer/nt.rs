@@ -73,11 +73,11 @@ impl<W: io::Write> TripleSink for Writer<W> {
 
         (|| {
             write_term(w, t.s())?;
-            w.write_all(" ".as_bytes())?;
+            w.write_all(b" ")?;
             write_term(w, t.p())?;
-            w.write_all(" ".as_bytes())?;
+            w.write_all(b" ")?;
             write_term(w, t.o())?;
-            w.write_all(" .\n".as_bytes())
+            w.write_all(b" .\n")
         })()
         .chain_err(|| ErrorKind::SerializerError("NT serializer".into()))
     }
@@ -99,12 +99,12 @@ where
     use self::Term::*;
     match t {
         Iri(iri) => {
-            w.write_all("<".as_bytes())?;
+            w.write_all(b"<")?;
             iri.write_to(w)?;
-            w.write_all(">".as_bytes())?;
+            w.write_all(b">")?;
         }
         BNode(ident) => {
-            w.write_all("_:".as_bytes())?;
+            w.write_all(b"_:")?;
             if ident.is_n3() {
                 w.write_all((ident.as_ref()).as_bytes())?;
             } else {
@@ -112,23 +112,23 @@ where
             }
         }
         Literal(value, Lang(tag)) => {
-            w.write_all("\"".as_bytes())?;
+            w.write_all(b"\"")?;
             write_quoted_string(w, value.as_ref())?;
-            w.write_all("\"@".as_bytes())?;
+            w.write_all(b"\"@")?;
             w.write_all(tag.as_ref().as_bytes())?;
         }
         Literal(value, Datatype(iri)) => {
-            w.write_all("\"".as_bytes())?;
+            w.write_all(b"\"")?;
             write_quoted_string(w, value.as_ref())?;
-            w.write_all("\"".as_bytes())?;
+            w.write_all(b"\"")?;
             if iri != &"http://www.w3.org/2001/XMLSchema#string" {
-                w.write_all("^^<".as_bytes())?;
+                w.write_all(b"^^<")?;
                 iri.write_to(w)?;
-                w.write_all(">".as_bytes())?;
+                w.write_all(b">")?;
             }
         }
         Variable(name) => {
-            w.write_all("?".as_bytes())?;
+            w.write_all(b"?")?;
             w.write_all(name.as_ref().as_bytes())?;
         }
     };
@@ -159,16 +159,16 @@ pub(crate) fn write_quoted_string(w: &mut impl io::Write, txt: &str) -> io::Resu
     if cut < txt.len() {
         match cutchar {
             '\n' => {
-                w.write_all(r"\n".as_bytes())?;
+                w.write_all(b"\\n")?;
             }
             '\r' => {
-                w.write_all(r"\r".as_bytes())?;
+                w.write_all(b"\\r")?;
             }
             '"' => {
-                w.write_all("\\\"".as_bytes())?;
+                w.write_all(b"\\\"")?;
             }
             '\\' => {
-                w.write_all(r"\\".as_bytes())?;
+                w.write_all(b"\\\\")?;
             }
             _ => unreachable!(),
         }
@@ -182,16 +182,16 @@ pub(crate) fn write_quoted_string(w: &mut impl io::Write, txt: &str) -> io::Resu
 pub(crate) fn write_non_n3_bnode_id(w: &mut impl io::Write, id: &str) -> io::Result<()> {
     fn halfbyte_to_hex(val: u8) -> u8 {
         if val < 10 {
-            ('0' as u8) + val
+            b'0' + val
         } else {
-            ('a' as u8) + val
+            b'a' + val
         }
     }
-    w.write_all("_".as_bytes())?;
+    w.write_all(b"_")?;
     for b in id.as_bytes() {
         w.write_all(&[halfbyte_to_hex(b / 16), halfbyte_to_hex(b % 16)])?;
     }
-    w.write_all("_:_".as_bytes())?;
+    w.write_all(b"_:_")?;
     Ok(())
 }
 

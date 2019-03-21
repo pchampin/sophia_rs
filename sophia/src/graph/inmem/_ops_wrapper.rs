@@ -16,6 +16,12 @@ use crate::triple::Triple;
 /// Since it must be able to produce triples instead of the underlying graphs,
 /// it is limited to wrapping graphs whose triples are `[&Triple<H>]`.
 ///
+
+type Po2s<T> = HashMap<
+    (<T as IndexedGraph>::Index, <T as IndexedGraph>::Index),
+    Vec<<T as IndexedGraph>::Index>,
+>;
+
 #[derive(Default)]
 pub struct OpsWrapper<T>
 where
@@ -23,7 +29,7 @@ where
 {
     wrapped: T,
     o2p: HashMap<T::Index, Vec<T::Index>>,
-    po2s: HashMap<(T::Index, T::Index), Vec<T::Index>>,
+    po2s: Po2s<T>,
 }
 
 impl<T> OpsWrapper<T>
@@ -35,6 +41,8 @@ where
         Self::default()
     }
 }
+
+type TermDataT<'a, T> = <<T as Graph<'a>>::Triple as Triple<'a>>::TermData;
 
 impl<'a, T> GraphWrapper<'a> for OpsWrapper<T>
 where
@@ -61,7 +69,7 @@ where
                     pis.iter()
                         .map(move |pi| {
                             (
-                                self.po2s.get(&(*pi, oi)).unwrap(),
+                                &self.po2s[&(*pi, oi)],
                                 self.wrapped.get_term(*pi).unwrap(),
                                 o,
                             )
@@ -100,13 +108,7 @@ where
         Box::new(empty())
     }
 
-    fn gw_objects(
-        &'a self,
-    ) -> GResult<
-        'a,
-        Self::Wrapped,
-        HashSet<Term<<<Self::Wrapped as Graph<'a>>::Triple as Triple<'a>>::TermData>>,
-    > {
+    fn gw_objects(&'a self) -> GResult<'a, Self::Wrapped, HashSet<Term<TermDataT<'a, Self>>>> {
         let objects: HashSet<_> = self
             .o2p
             .keys()
@@ -132,7 +134,7 @@ where
     }
 
     #[inline]
-    fn get_term<'a>(&'a self, i: Self::Index) -> Option<&Term<Self::TermData>> {
+    fn get_term(&'_ self, i: Self::Index) -> Option<&Term<Self::TermData>> {
         self.wrapped.get_term(i)
     }
 
@@ -149,11 +151,8 @@ where
     {
         let modified = self.wrapped.insert_indexed(s, p, o);
         if let Some([si, pi, oi]) = modified {
-            self.o2p.entry(oi).or_insert_with(|| Vec::new()).push(pi);
-            self.po2s
-                .entry((pi, oi))
-                .or_insert_with(|| Vec::new())
-                .push(si);
+            self.o2p.entry(oi).or_insert_with(Vec::new).push(pi);
+            self.po2s.entry((pi, oi)).or_insert_with(Vec::new).push(si);
         }
         modified
     }

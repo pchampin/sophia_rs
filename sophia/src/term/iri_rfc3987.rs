@@ -4,7 +4,7 @@ use pest::{error::Error, iterators::Pair, Parser};
 use regex::Regex;
 
 #[cfg(debug_assertions)]
-const _GRAMMAR: &'static str = include_str!("iri_rfc3987.pest");
+const _GRAMMAR: &str = include_str!("iri_rfc3987.pest");
 
 #[inline]
 /// Check whether txt is a valid (absolute or relative) IRI.
@@ -84,7 +84,7 @@ impl<'a> ParsedIri<'a> {
                     self.authority = Some(subpair.as_str());
                 }
                 Rule::ipath_abempty => {
-                    if subpair.as_str().len() > 0 {
+                    if !subpair.as_str().is_empty() {
                         self.path.push("");
                         self.fill_with(subpair);
                     }
@@ -150,7 +150,7 @@ impl<'a> ParsedIri<'a> {
                 query = iri_ref.query;
             } else {
                 authority = self.authority;
-                if iri_ref.path.len() == 0 {
+                if iri_ref.path.is_empty() {
                     path = self.path.clone();
                     query = iri_ref.query.or(self.query);
                 } else {
@@ -176,18 +176,18 @@ impl<'a> ParsedIri<'a> {
     }
 }
 
-fn merge<'a>(base: &ParsedIri<'a>, path: &Vec<&'a str>) -> Vec<&'a str> {
+fn merge<'a>(base: &ParsedIri<'a>, path: &[&'a str]) -> Vec<&'a str> {
     let mut v = Vec::new();
-    if base.authority.is_some() && base.path.len() == 0 {
+    if base.authority.is_some() && base.path.is_empty() {
         v.push(""); // resulting path must have a leading '/'
     }
-    v.extend(base.path.iter().take(base.path.len() - 1).map(|txt| *txt));
-    v.extend(path.iter().map(|txt| *txt));
+    v.extend(base.path.iter().take(base.path.len() - 1).cloned());
+    v.extend(path.iter().cloned());
     v
 }
 
 fn remove_dot_segments(path: &mut Vec<&str>) {
-    if path.len() == 0 {
+    if path.is_empty() {
         return;
     }
     let mut i = 0;

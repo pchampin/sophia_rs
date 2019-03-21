@@ -30,8 +30,8 @@ where
 
     /// Copy another literal kind with the given factory,
     /// applying the given normalization policy.
-    pub fn normalized_with<'a, U, F>(
-        other: &'a LiteralKind<U>,
+    pub fn normalized_with<U, F>(
+        other: &'_ LiteralKind<U>,
         mut factory: F,
         norm: Normalization,
     ) -> LiteralKind<T>

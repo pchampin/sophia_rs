@@ -69,7 +69,7 @@ fn display_location(il: &InputLocation, lcl: &LineColLocation) -> String {
 pub fn make_parser_error(message: String, line_offset: usize) -> ErrorKind {
     let il = InputLocation::Pos(0);
     let lcl = LineColLocation::Pos((line_offset, 0));
-    ErrorKind::ParserError(message, il, lcl).into()
+    ErrorKind::ParserError(message, il, lcl)
 }
 
 coercible_errors!();

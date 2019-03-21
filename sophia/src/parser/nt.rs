@@ -35,7 +35,7 @@ use crate::term::Term;
 use crate::triple::Triple;
 
 #[cfg(debug_assertions)]
-const _GRAMMAR: &'static str = include_str!("ntq.pest");
+const _GRAMMAR: &str = include_str!("ntq.pest");
 
 #[derive(Parser)]
 #[grammar = "parser/ntq.pest"]
@@ -84,7 +84,7 @@ impl Config {
                 };
                 {
                     let trimmed = line.trim_start();
-                    if trimmed.len() == 0 || trimmed.as_bytes()[0] == '#' as u8 {
+                    if trimmed.is_empty() || trimmed.as_bytes()[0] == b'#' {
                         return None;
                     }
                 }
