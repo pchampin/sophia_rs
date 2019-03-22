@@ -13,8 +13,14 @@ A comparison of Sophia with other RDF libraries is available
 
 ## Testing
 
-The test suite assumes that the [RDF test-suite] is available,
-in a directory named `rdf-tests` at the root of the project.
+The test suite depends on the [RDF test-suite],
+which is included as a `git` submodule.
+In order to run all the tests, you need to execude the following commands:
+```
+$ git submodule init
+$ git submodule update
+```
+
 
 ## Licence
 
