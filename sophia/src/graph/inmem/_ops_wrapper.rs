@@ -7,7 +7,6 @@ use super::*;
 use crate::graph::index::remove_one_val;
 use crate::triple::Triple;
 
-
 type OpsWrapperMap<T> = HashMap<(T, T), Vec<T>>;
 
 /// A [`GraphWrapper`](trait.GraphWrapper.html)
