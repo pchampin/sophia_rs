@@ -341,7 +341,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the terms used as subject in this Dataset.
-    fn subjects(&'a self)-> DResultTermSet<'a, Self> {
+    fn subjects(&'a self) -> DResultTermSet<'a, Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             insert_if_absent(&mut res, q?.s());
@@ -350,7 +350,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the terms used as predicate in this Dataset.
-    fn predicates(&'a self)-> DResultTermSet<'a, Self> {
+    fn predicates(&'a self) -> DResultTermSet<'a, Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             insert_if_absent(&mut res, q?.p());
@@ -359,7 +359,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the terms used as object in this Dataset.
-    fn objects(&'a self)-> DResultTermSet<'a, Self> {
+    fn objects(&'a self) -> DResultTermSet<'a, Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             insert_if_absent(&mut res, q?.o());
@@ -368,7 +368,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the terms used as graph names in this Dataset.
-    fn graph_names(&'a self)-> DResultTermSet<'a, Self> {
+    fn graph_names(&'a self) -> DResultTermSet<'a, Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             let q = q?;
@@ -381,7 +381,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the IRIs used in this Dataset.
-    fn iris(&'a self)-> DResultTermSet<'a, Self> {
+    fn iris(&'a self) -> DResultTermSet<'a, Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             let q = q?;
@@ -405,7 +405,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the BNodes used in this Dataset.
-    fn bnodes(&'a self)-> DResultTermSet<'a, Self> {
+    fn bnodes(&'a self) -> DResultTermSet<'a, Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             let q = q?;
@@ -429,7 +429,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the Literals used in this Dataset.
-    fn literals(&'a self)-> DResultTermSet<'a, Self> {
+    fn literals(&'a self) -> DResultTermSet<'a, Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             let q = q?;
@@ -453,7 +453,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the variables used in this Dataset.
-    fn variables(&'a self)-> DResultTermSet<'a, Self> {
+    fn variables(&'a self) -> DResultTermSet<'a, Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             let q = q?;
