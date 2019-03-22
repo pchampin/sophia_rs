@@ -4,7 +4,7 @@ A Rust toolkit for RDF and Linked Data.
 
 [![Build Status](https://travis-ci.org/pchampin/sophia_rs.svg?branch=master)](https://travis-ci.org/pchampin/sophia_rs)
 [![Latest Version](https://img.shields.io/crates/v/sophia.svg)](https://crates.io/crates/sophia)
-[![Coverage Status](https://coveralls.io/repos/github/pchampin/sophia_rs/badge.svg?branch=add_travis)](https://coveralls.io/github/pchampin/sophia_rs?branch=add_travis)
+[![Coverage Status](https://coveralls.io/repos/github/pchampin/sophia_rs/badge.svg?branch=master)](https://coveralls.io/github/pchampin/sophia_rs?branch=master)
 
 ## Performances
 
