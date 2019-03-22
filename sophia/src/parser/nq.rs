@@ -149,14 +149,14 @@ impl<'a> Quad<'a> for NqQuad {
     // so I use transmute() to force the cast.
 }
 
-type Toto<'a> = StdResult<([Term<Cow<'a, str>>; 3], GraphKey<Cow<'a, str>>), PestError<Rule>>;
+type ResultQuad<'a> = StdResult<([Term<Cow<'a, str>>; 3], GraphKey<Cow<'a, str>>), PestError<Rule>>;
 
-fn parse_rule_from_line<'a>(config: &Config, rule: Rule, txt: &'a str) -> Toto<'a> {
+fn parse_rule_from_line<'a>(config: &Config, rule: Rule, txt: &'a str) -> ResultQuad<'a> {
     let triple_pair = PestNtqParser::parse(rule, txt)?.next().unwrap();
     pairs_to_quad(config, triple_pair.into_inner())
 }
 
-fn pairs_to_quad<'a>(config: &Config, mut pairs: Pairs<'a, Rule>) -> Toto<'a> {
+fn pairs_to_quad<'a>(config: &Config, mut pairs: Pairs<'a, Rule>) -> ResultQuad<'a> {
     let s = pair_to_term(pairs.next().unwrap(), config.strict)?;
     let p = pair_to_term(pairs.next().unwrap(), config.strict)?;
     let o = pair_to_term(pairs.next().unwrap(), config.strict)?;

@@ -7,7 +7,7 @@ use crate::triple::Triple;
 use super::*;
 
 type TermDataT<'a, W> = <<W as Graph<'a>>::Triple as Triple<'a>>::TermData;
-type GResultT<'a, W> = GResult<'a, W, HashSet<Term<TermDataT<'a, W>>>>;
+type GResultTermSet<'a, W> = GResult<'a, W, HashSet<Term<TermDataT<'a, W>>>>;
 
 /// A graph wrapper wraps a [`Graph`] and overrides some of its methods.
 ///
@@ -134,43 +134,43 @@ pub trait GraphWrapper<'a> {
 
     #[inline]
     /// Mimmic the [`subjects`](../trait.Graph.html#method.subjects) method.
-    fn gw_subjects(&'a self) -> GResultT<'a, Self::Wrapped> {
+    fn gw_subjects(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
         self.get_wrapped().subjects()
     }
 
     #[inline]
     /// Mimmic the [`predicates`](../trait.Graph.html#method.predicates) method.
-    fn gw_predicates(&'a self) -> GResultT<'a, Self::Wrapped> {
+    fn gw_predicates(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
         self.get_wrapped().predicates()
     }
 
     #[inline]
     /// Mimmic the [`objects`](../trait.Graph.html#method.objects) method.
-    fn gw_objects(&'a self) -> GResultT<'a, Self::Wrapped> {
+    fn gw_objects(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
         self.get_wrapped().objects()
     }
 
     #[inline]
     /// Mimmic the [`iris`](../trait.Graph.html#method.iris) method.
-    fn gw_iris(&'a self) -> GResultT<'a, Self::Wrapped> {
+    fn gw_iris(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
         self.get_wrapped().iris()
     }
 
     #[inline]
     /// Mimmic the [`bnodes`](../trait.Graph.html#method.bnodes) method.
-    fn gw_bnodes(&'a self) -> GResultT<'a, Self::Wrapped> {
+    fn gw_bnodes(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
         self.get_wrapped().bnodes()
     }
 
     #[inline]
     /// Mimmic the [`literals`](../trait.Graph.html#method.literals) method.
-    fn gw_literals(&'a self) -> GResultT<'a, Self::Wrapped> {
+    fn gw_literals(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
         self.get_wrapped().literals()
     }
 
     #[inline]
     /// Mimmic the [`variables`](../trait.Graph.html#method.variables) method.
-    fn gw_variables(&'a self) -> GResultT<'a, Self::Wrapped> {
+    fn gw_variables(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
         self.get_wrapped().variables()
     }
 }

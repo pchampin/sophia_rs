@@ -7,10 +7,7 @@ use super::*;
 use crate::graph::index::remove_one_val;
 use crate::triple::Triple;
 
-type Po2s<T> = HashMap<
-    (<T as IndexedGraph>::Index, <T as IndexedGraph>::Index),
-    Vec<<T as IndexedGraph>::Index>,
->;
+type SpoWrapperMap<T> = HashMap<(T, T), Vec<T>>;
 
 /// A [`GraphWrapper`](trait.GraphWrapper.html)
 /// indexing triples by subject, then by predicate, then by object.
@@ -28,7 +25,7 @@ where
 {
     wrapped: T,
     s2p: HashMap<T::Index, Vec<T::Index>>,
-    sp2o: Po2s<T>,
+    sp2o: SpoWrapperMap<T::Index>,
 }
 
 impl<T> SpoWrapper<T>

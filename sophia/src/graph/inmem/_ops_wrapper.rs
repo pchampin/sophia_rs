@@ -7,6 +7,9 @@ use super::*;
 use crate::graph::index::remove_one_val;
 use crate::triple::Triple;
 
+
+type OpsWrapperMap<T> = HashMap<(T, T), Vec<T>>;
+
 /// A [`GraphWrapper`](trait.GraphWrapper.html)
 /// indexing triples by object, then by predicate, then by subject.
 ///
@@ -16,12 +19,6 @@ use crate::triple::Triple;
 /// Since it must be able to produce triples instead of the underlying graphs,
 /// it is limited to wrapping graphs whose triples are `[&Triple<H>]`.
 ///
-
-type Po2s<T> = HashMap<
-    (<T as IndexedGraph>::Index, <T as IndexedGraph>::Index),
-    Vec<<T as IndexedGraph>::Index>,
->;
-
 #[derive(Default)]
 pub struct OpsWrapper<T>
 where
@@ -29,7 +26,7 @@ where
 {
     wrapped: T,
     o2p: HashMap<T::Index, Vec<T::Index>>,
-    po2s: Po2s<T>,
+    po2s: OpsWrapperMap<T::Index>,
 }
 
 impl<T> OpsWrapper<T>
