@@ -144,7 +144,7 @@ mod test {
     #[test]
     fn test_graph_key_as_matcher() {
         let m = GraphKey::Name(BoxTerm::new_iri("http://champin.net/#pa").unwrap());
-        // comparing to a term using a different holder, and differently cut,
+        // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: GraphKey<&str> = GraphKey::Default;
         let n1 = GraphKey::Name(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
@@ -161,7 +161,7 @@ mod test {
     #[test]
     fn test_term_as_matcher() {
         let m = BoxTerm::new_iri("http://champin.net/#pa").unwrap();
-        // comparing to a term using a different holder, and differently cut,
+        // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: GraphKey<&str> = GraphKey::Default;
         let n1 = GraphKey::Name(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
@@ -180,7 +180,7 @@ mod test {
         let m = Some(GraphKey::Name(
             BoxTerm::new_iri("http://champin.net/#pa").unwrap(),
         ));
-        // comparing to a term using a different holder, and differently cut,
+        // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: GraphKey<&str> = GraphKey::Default;
         let n1 = GraphKey::Name(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
@@ -197,7 +197,7 @@ mod test {
     #[test]
     fn test_none_graph_key_as_matcher() {
         let m: Option<GraphKey<Box<str>>> = None;
-        // comparing to a term using a different holder, and differently cut,
+        // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: GraphKey<&str> = GraphKey::Default;
         let n1 = GraphKey::Name(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
@@ -213,7 +213,7 @@ mod test {
     #[test]
     fn test_some_term_as_matcher() {
         let m = Some(BoxTerm::new_iri("http://champin.net/#pa").unwrap());
-        // comparing to a term using a different holder, and differently cut,
+        // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: GraphKey<&str> = GraphKey::Default;
         let n1 = GraphKey::Name(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
@@ -230,7 +230,7 @@ mod test {
     #[test]
     fn test_none_term_as_matcher() {
         let m: Option<BoxTerm> = None;
-        // comparing to a term using a different holder, and differently cut,
+        // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: GraphKey<&str> = GraphKey::Default;
         let n1 = GraphKey::Name(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
@@ -248,7 +248,7 @@ mod test {
         let m = vec![GraphKey::Name(
             BoxTerm::new_iri("http://champin.net/#pa").unwrap(),
         )];
-        // comparing to a term using a different holder, and differently cut,
+        // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: GraphKey<&str> = GraphKey::Default;
         let n1 = GraphKey::Name(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
@@ -268,7 +268,7 @@ mod test {
             GraphKey::Name(BoxTerm::new_iri("http://champin.net/#pa").unwrap()),
             GraphKey::Default,
         ];
-        // comparing to a term using a different holder, and differently cut,
+        // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: GraphKey<&str> = GraphKey::Default;
         let n1 = GraphKey::Name(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
@@ -284,7 +284,7 @@ mod test {
     #[test]
     fn test_vec0_as_matcher() {
         let m: Vec<GraphKey<Box<str>>> = vec![];
-        // comparing to a term using a different holder, and differently cut,
+        // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: GraphKey<&str> = GraphKey::Default;
         let n1 = GraphKey::Name(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());

@@ -52,7 +52,7 @@ fn iri2() {
 }
 
 #[test]
-fn iri_eq_different_holders() {
+fn iri_eq_different_term_data() {
     let i1 = BoxTerm::new_iri("http://champin.net/").unwrap();
     let i2 = RcTerm::new_iri("http://champin.net/").unwrap();
     let i3 = ArcTerm::new_iri("http://champin.net/").unwrap();
@@ -159,7 +159,7 @@ fn bnode() {
 }
 
 #[test]
-fn bnode_eq_different_holders() {
+fn bnode_eq_different_term_data() {
     let b1 = BoxTerm::new_bnode("xyz").unwrap();
     let b2 = RcTerm::new_bnode("xyz").unwrap();
     let b3 = ArcTerm::new_bnode("xyz").unwrap();
@@ -285,7 +285,7 @@ fn literal_dt() {
 }
 
 #[test]
-fn literal_eq_different_holders() {
+fn literal_eq_different_term_data() {
     let l1 = BoxTerm::new_literal_lang("hello", "en").unwrap();
     let l2 = RcTerm::new_literal_lang("hello", "en").unwrap();
     let l3 = ArcTerm::new_literal_lang("hello", "en").unwrap();
@@ -398,7 +398,7 @@ fn variable() {
 }
 
 #[test]
-fn variable_eq_different_holders() {
+fn variable_eq_different_term_data() {
     let v1 = BoxTerm::new_variable("xyz").unwrap();
     let v2 = RcTerm::new_variable("xyz").unwrap();
     let v3 = ArcTerm::new_variable("xyz").unwrap();
