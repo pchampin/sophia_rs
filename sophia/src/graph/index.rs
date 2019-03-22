@@ -4,7 +4,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use crate::term::factory::TermFactory;
+use crate::term::factory::{FTerm, TermFactory};
 use crate::term::*;
 
 /// A bidirectionnal mapping between [`Term`](../../term/enum.Term.html)s
@@ -24,7 +24,7 @@ pub trait TermIndexMap: Default {
     /// Return the index associated to the given term, creating it if required, and increasing its ref count.
     fn make_index(&mut self, t: &RefTerm) -> Self::Index;
     /// Return the term associated to the given index, if it exists.
-    fn get_term(&self, i: Self::Index) -> Option<&Term<<Self::Factory as TermFactory>::TermData>>;
+    fn get_term(&self, i: Self::Index) -> Option<&FTerm<Self::Factory>>;
     /// Increase the reference count of a given index.
     fn inc_ref(&mut self, i: Self::Index);
     /// Decrease the reference count of a given index.

@@ -10,19 +10,22 @@ use weak_table::WeakHashSet;
 
 use super::*;
 
+/// Type alias for the terms produced by a term factory.
+pub type FTerm<F> = Term<<F as TermFactory>::TermData>;
+
 pub trait TermFactory {
     type TermData: AsRef<str> + Clone + Eq + Hash;
 
     fn get_holder(&mut self, txt: &str) -> Self::TermData;
 
-    fn iri<T>(&mut self, iri: T) -> Result<Term<Self::TermData>>
+    fn iri<T>(&mut self, iri: T) -> Result<FTerm<Self>>
     where
         T: AsRef<str> + Clone + Eq + Hash,
     {
         Term::new_iri(self.get_holder(iri.as_ref()))
     }
 
-    fn iri2<T, U>(&mut self, ns: T, suffix: U) -> Result<Term<Self::TermData>>
+    fn iri2<T, U>(&mut self, ns: T, suffix: U) -> Result<FTerm<Self>>
     where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
@@ -33,14 +36,14 @@ pub trait TermFactory {
         )
     }
 
-    fn bnode<T>(&mut self, id: T) -> Result<Term<Self::TermData>>
+    fn bnode<T>(&mut self, id: T) -> Result<FTerm<Self>>
     where
         T: AsRef<str> + Clone + Eq + Hash,
     {
         Term::new_bnode(self.get_holder(id.as_ref()))
     }
 
-    fn literal_lang<T, U>(&mut self, txt: T, lang: U) -> Result<Term<Self::TermData>>
+    fn literal_lang<T, U>(&mut self, txt: T, lang: U) -> Result<FTerm<Self>>
     where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
@@ -51,7 +54,7 @@ pub trait TermFactory {
         )
     }
 
-    fn literal_dt<T, U>(&mut self, txt: T, dt: Term<U>) -> Result<Term<Self::TermData>>
+    fn literal_dt<T, U>(&mut self, txt: T, dt: Term<U>) -> Result<FTerm<Self>>
     where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
@@ -60,21 +63,21 @@ pub trait TermFactory {
         Term::new_literal_dt(self.get_holder(txt.as_ref()), self.copy(&dt))
     }
 
-    fn variable<T>(&mut self, name: T) -> Result<Term<Self::TermData>>
+    fn variable<T>(&mut self, name: T) -> Result<FTerm<Self>>
     where
         T: AsRef<str> + Clone + Eq + Hash,
     {
         Term::new_variable(self.get_holder(name.as_ref()))
     }
 
-    fn copy<T>(&mut self, other: &Term<T>) -> Term<Self::TermData>
+    fn copy<T>(&mut self, other: &Term<T>) -> FTerm<Self>
     where
         T: AsRef<str> + Clone + Eq + Hash,
     {
         Term::from_with(other, |txt| self.get_holder(txt))
     }
 
-    fn copy_normalized<T>(&mut self, other: &Term<T>, norm: Normalization) -> Term<Self::TermData>
+    fn copy_normalized<T>(&mut self, other: &Term<T>, norm: Normalization) -> FTerm<Self>
     where
         T: AsRef<str> + Clone + Eq + Hash,
     {

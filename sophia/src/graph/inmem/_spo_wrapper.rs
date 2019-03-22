@@ -5,7 +5,6 @@ use std::iter::empty;
 
 use super::*;
 use crate::graph::index::remove_one_val;
-use crate::triple::Triple;
 
 type SpoWrapperMap<T> = HashMap<(T, T), Vec<T>>;
 
@@ -37,8 +36,6 @@ where
         Self::default()
     }
 }
-
-type TermDataT<'a, T> = <<T as Graph<'a>>::Triple as Triple<'a>>::TermData;
 
 impl<'a, T> GraphWrapper<'a> for SpoWrapper<T>
 where
@@ -104,7 +101,7 @@ where
         Box::new(empty())
     }
 
-    fn gw_subjects(&'a self) -> GResult<'a, Self::Wrapped, HashSet<Term<TermDataT<'a, Self>>>> {
+    fn gw_subjects(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
         let subjects: HashSet<_> = self
             .s2p
             .keys()

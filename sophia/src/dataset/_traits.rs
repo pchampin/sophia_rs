@@ -17,10 +17,14 @@ use crate::triple::*;
 use super::*;
 use crate::graph::insert_if_absent;
 
+/// Type alias for the terms returned by a dataset.
+pub type DTerm<'a, D> = Term<<<D as Dataset<'a>>::Quad as Triple<'a>>::TermData>;
 /// Type alias for results iterators produced by a dataset.
 pub type DResult<'a, D, T> = std::result::Result<T, <D as Dataset<'a>>::Error>;
 /// Type alias for fallible quad iterators produced by a dataset.
 pub type DQuadSource<'a, D> = Box<Iterator<Item = DResult<'a, D, <D as Dataset<'a>>::Quad>> + 'a>;
+/// Type alias for fallible hashets of terms produced by a dataset.
+pub type DResultTermSet<'a, D> = DResult<'a, D, HashSet<DTerm<'a, D>>>;
 
 /// Generic trait for RDF datasets.
 ///
@@ -337,9 +341,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the terms used as subject in this Dataset.
-    fn subjects(
-        &'a self,
-    ) -> DResult<'a, Self, HashSet<Term<<Self::Quad as Triple<'a>>::TermData>>> {
+    fn subjects(&'a self)-> DResultTermSet<'a, Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             insert_if_absent(&mut res, q?.s());
@@ -348,9 +350,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the terms used as predicate in this Dataset.
-    fn predicates(
-        &'a self,
-    ) -> DResult<'a, Self, HashSet<Term<<Self::Quad as Triple<'a>>::TermData>>> {
+    fn predicates(&'a self)-> DResultTermSet<'a, Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             insert_if_absent(&mut res, q?.p());
@@ -359,7 +359,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the terms used as object in this Dataset.
-    fn objects(&'a self) -> DResult<'a, Self, HashSet<Term<<Self::Quad as Triple<'a>>::TermData>>> {
+    fn objects(&'a self)-> DResultTermSet<'a, Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             insert_if_absent(&mut res, q?.o());
@@ -368,9 +368,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the terms used as graph names in this Dataset.
-    fn graph_names(
-        &'a self,
-    ) -> DResult<'a, Self, HashSet<Term<<Self::Quad as Triple<'a>>::TermData>>> {
+    fn graph_names(&'a self)-> DResultTermSet<'a, Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             let q = q?;
@@ -383,7 +381,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the IRIs used in this Dataset.
-    fn iris(&'a self) -> DResult<'a, Self, HashSet<Term<<Self::Quad as Triple<'a>>::TermData>>> {
+    fn iris(&'a self)-> DResultTermSet<'a, Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             let q = q?;
@@ -407,7 +405,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the BNodes used in this Dataset.
-    fn bnodes(&'a self) -> DResult<'a, Self, HashSet<Term<<Self::Quad as Triple<'a>>::TermData>>> {
+    fn bnodes(&'a self)-> DResultTermSet<'a, Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             let q = q?;
@@ -431,9 +429,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the Literals used in this Dataset.
-    fn literals(
-        &'a self,
-    ) -> DResult<'a, Self, HashSet<Term<<Self::Quad as Triple<'a>>::TermData>>> {
+    fn literals(&'a self)-> DResultTermSet<'a, Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             let q = q?;
@@ -457,9 +453,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the variables used in this Dataset.
-    fn variables(
-        &'a self,
-    ) -> DResult<'a, Self, HashSet<Term<<Self::Quad as Triple<'a>>::TermData>>> {
+    fn variables(&'a self)-> DResultTermSet<'a, Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             let q = q?;

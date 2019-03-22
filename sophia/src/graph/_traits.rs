@@ -13,10 +13,15 @@ use crate::term::*;
 use crate::triple::stream::*;
 use crate::triple::*;
 
+/// Type alias for the terms returned by a graph.
+pub type GTerm<'a, G> = Term<<<G as Graph<'a>>::Triple as Triple<'a>>::TermData>;
 /// Type alias for results produced by a graph.
 pub type GResult<'a, G, T> = std::result::Result<T, <G as Graph<'a>>::Error>;
 /// Type alias for fallible triple iterators produced by a graph.
 pub type GTripleSource<'a, G> = Box<Iterator<Item = GResult<'a, G, <G as Graph<'a>>::Triple>> + 'a>;
+/// Type alias for fallible hashets of terms produced by a graph.
+pub type GResultTermSet<'a, G> = GResult<'a, G, HashSet<GTerm<'a, G>>>;
+
 
 /// Generic trait for RDF graphs.
 ///
@@ -185,9 +190,7 @@ pub trait Graph<'a> {
     }
 
     /// Build a Hashset of all the terms used as subject in this Graph.
-    fn subjects(
-        &'a self,
-    ) -> GResult<'a, Self, HashSet<Term<<Self::Triple as Triple<'a>>::TermData>>> {
+    fn subjects(&'a self)-> GResultTermSet<'a,Self> {
         let mut res = std::collections::HashSet::new();
         for t in self.triples() {
             insert_if_absent(&mut res, t?.s());
@@ -196,9 +199,7 @@ pub trait Graph<'a> {
     }
 
     /// Build a Hashset of all the terms used as predicate in this Graph.
-    fn predicates(
-        &'a self,
-    ) -> GResult<'a, Self, HashSet<Term<<Self::Triple as Triple<'a>>::TermData>>> {
+    fn predicates(&'a self)-> GResultTermSet<'a,Self> {
         let mut res = std::collections::HashSet::new();
         for t in self.triples() {
             insert_if_absent(&mut res, t?.p());
@@ -207,9 +208,7 @@ pub trait Graph<'a> {
     }
 
     /// Build a Hashset of all the terms used as object in this Graph.
-    fn objects(
-        &'a self,
-    ) -> GResult<'a, Self, HashSet<Term<<Self::Triple as Triple<'a>>::TermData>>> {
+    fn objects(&'a self)-> GResultTermSet<'a,Self> {
         let mut res = std::collections::HashSet::new();
         for t in self.triples() {
             insert_if_absent(&mut res, t?.o());
@@ -218,7 +217,7 @@ pub trait Graph<'a> {
     }
 
     /// Build a Hashset of all the IRIs used in this Graph.
-    fn iris(&'a self) -> GResult<'a, Self, HashSet<Term<<Self::Triple as Triple<'a>>::TermData>>> {
+    fn iris(&'a self)-> GResultTermSet<'a,Self> {
         let mut res = std::collections::HashSet::new();
         for t in self.triples() {
             let t = t?;
@@ -237,9 +236,7 @@ pub trait Graph<'a> {
     }
 
     /// Build a Hashset of all the BNodes used in this Graph.
-    fn bnodes(
-        &'a self,
-    ) -> GResult<'a, Self, HashSet<Term<<Self::Triple as Triple<'a>>::TermData>>> {
+    fn bnodes(&'a self)-> GResultTermSet<'a,Self> {
         let mut res = std::collections::HashSet::new();
         for t in self.triples() {
             let t = t?;
@@ -258,9 +255,7 @@ pub trait Graph<'a> {
     }
 
     /// Build a Hashset of all the Literals used in this Graph.
-    fn literals(
-        &'a self,
-    ) -> GResult<'a, Self, HashSet<Term<<Self::Triple as Triple<'a>>::TermData>>> {
+    fn literals(&'a self)-> GResultTermSet<'a,Self> {
         let mut res = std::collections::HashSet::new();
         for t in self.triples() {
             let t = t?;
@@ -279,9 +274,7 @@ pub trait Graph<'a> {
     }
 
     /// Build a Hashset of all the variables used in this Graph.
-    fn variables(
-        &'a self,
-    ) -> GResult<'a, Self, HashSet<Term<<Self::Triple as Triple<'a>>::TermData>>> {
+    fn variables(&'a self)-> GResultTermSet<'a,Self> {
         let mut res = std::collections::HashSet::new();
         for t in self.triples() {
             let t = t?;

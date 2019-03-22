@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 use crate::graph::index::TermIndexMap;
-use crate::term::factory::TermFactory;
+use crate::term::factory::{FTerm, TermFactory};
 use crate::term::*;
 
 /// An in-memory implemention of [`TermIndexMap`](../index/trait.TermIndexMap.html)
@@ -15,7 +15,7 @@ where
 {
     factory: F,
     next_free: I,
-    i2t: Vec<Option<Term<F::TermData>>>,
+    i2t: Vec<Option<FTerm<F>>>,
     i2c: Vec<I>,
     t2i: HashMap<StaticTerm, I>,
 }
@@ -91,7 +91,7 @@ where
         T::from_usize(i)
     }
 
-    fn get_term(&self, i: T) -> Option<&Term<F::TermData>> {
+    fn get_term(&self, i: T) -> Option<&FTerm<F>> {
         let i = i.as_usize();
         if i < self.i2t.len() {
             self.i2t[i].as_ref()
@@ -109,7 +109,7 @@ where
         let i = i.as_usize();
         self.i2c[i].dec();
         if self.i2c[i].is_null() {
-            let t: Term<F::TermData> = self.i2t[i].take().unwrap();
+            let t: FTerm<F> = self.i2t[i].take().unwrap();
             self.t2i.remove(unsafe { &fake_static(&t) });
             self.i2c[i] = self.next_free;
             self.next_free = T::from_usize(i);

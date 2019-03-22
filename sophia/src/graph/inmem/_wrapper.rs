@@ -1,13 +1,6 @@
 // this module is transparently re-exported by its parent `graph`
 
-use std::collections::HashSet;
-
-use crate::triple::Triple;
-
 use super::*;
-
-type TermDataT<'a, W> = <<W as Graph<'a>>::Triple as Triple<'a>>::TermData;
-type GResultTermSet<'a, W> = GResult<'a, W, HashSet<Term<TermDataT<'a, W>>>>;
 
 /// A graph wrapper wraps a [`Graph`] and overrides some of its methods.
 ///
@@ -247,37 +240,37 @@ macro_rules! impl_graph_for_wrapper {
         }
 
         #[inline]
-        fn subjects(&'a self) -> GResult<'a, Self, std::collections::HashSet<Term<<Self::Triple as crate::triple::Triple<'a>>::TermData>>> {
+        fn subjects(&'a self) -> GResult<'a, Self, std::collections::HashSet<GTerm<'a, Self>>> {
             GraphWrapper::gw_subjects(self)
         }
 
         #[inline]
-        fn predicates(&'a self) -> GResult<'a, Self, std::collections::HashSet<Term<<Self::Triple as crate::triple::Triple<'a>>::TermData>>> {
+        fn predicates(&'a self) -> GResult<'a, Self, std::collections::HashSet<GTerm<'a, Self>>> {
             GraphWrapper::gw_predicates(self)
         }
 
         #[inline]
-        fn objects(&'a self) -> GResult<'a, Self, std::collections::HashSet<Term<<Self::Triple as crate::triple::Triple<'a>>::TermData>>> {
+        fn objects(&'a self) -> GResult<'a, Self, std::collections::HashSet<GTerm<'a, Self>>> {
             GraphWrapper::gw_objects(self)
         }
 
         #[inline]
-        fn iris(&'a self) -> GResult<'a, Self, std::collections::HashSet<Term<<Self::Triple as crate::triple::Triple<'a>>::TermData>>> {
+        fn iris(&'a self) -> GResult<'a, Self, std::collections::HashSet<GTerm<'a, Self>>> {
             GraphWrapper::gw_iris(self)
         }
 
         #[inline]
-        fn bnodes(&'a self) -> GResult<'a, Self, std::collections::HashSet<Term<<Self::Triple as crate::triple::Triple<'a>>::TermData>>> {
+        fn bnodes(&'a self) -> GResult<'a, Self, std::collections::HashSet<GTerm<'a, Self>>> {
             GraphWrapper::gw_bnodes(self)
         }
 
         #[inline]
-        fn literals(&'a self) -> GResult<'a, Self, std::collections::HashSet<Term<<Self::Triple as crate::triple::Triple<'a>>::TermData>>> {
+        fn literals(&'a self) -> GResult<'a, Self, std::collections::HashSet<GTerm<'a, Self>>> {
             GraphWrapper::gw_literals(self)
         }
 
         #[inline]
-        fn variables(&'a self) -> GResult<'a, Self, std::collections::HashSet<Term<<Self::Triple as crate::triple::Triple<'a>>::TermData>>> {
+        fn variables(&'a self) -> GResult<'a, Self, std::collections::HashSet<GTerm<'a, Self>>> {
             GraphWrapper::gw_variables(self)
         }
     };
