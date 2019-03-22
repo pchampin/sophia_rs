@@ -1,8 +1,8 @@
 //! `QuadSource` and `QuadSink`,
 //! are pervasive traits for streaming quads from one object to another.
-//! 
+//!
 //! See [`QuadSource`]'s and [`QuadSink`]'s documentation for more detail.
-//! 
+//!
 //! [`QuadSource`]: trait.QuadSource.html
 //! [`QuadSink`]: trait.QuadSink.html
 //! [`Quad`]: ../trait.Quad.html
@@ -17,18 +17,17 @@ use crate::quad::*;
 use std::result::Result; // override ::error::Result
 
 /// A quad source produces [quads], and may also fail in the process.
-/// 
+///
 /// A quad source is castable, with the `as_iter` method,
 /// to an iterator yielding [quads] wrapped in [results],
 /// and any such iterator implements the `QuadSource` trait.
 /// It also has additional methods dedicated to interacting with [`QuadSink`]s.
-/// 
+///
 /// [quads]: ../trait.Quad.html
 /// [results]: ../../error/type.Result.html
 /// [`QuadSink`]: trait.QuadSink.html
-/// 
+///
 pub trait QuadSource<'a> {
-
     /// The type of quads produced by this source.
     type Quad: Quad<'a>;
 
@@ -36,15 +35,18 @@ pub trait QuadSource<'a> {
     type Error: CoercibleWith<Error> + CoercibleWith<Never>;
 
     /// The type of iterator this quad source casts to.
-    type Iter: Iterator<Item=Result<Self::Quad, Self::Error>>;
+    type Iter: Iterator<Item = Result<Self::Quad, Self::Error>>;
 
     /// Cast to iterator.
     fn as_iter(&mut self) -> &mut Self::Iter;
 
     /// Feed all quads from this source into the given [sink](trait.QuadSink.html).
-    /// 
+    ///
     /// Stop on the first error (in the source or the sink).
-    fn in_sink<TS: QuadSink>(&mut self, sink: &mut TS) -> CoercedResult<TS::Outcome, Self::Error, TS::Error>
+    fn in_sink<TS: QuadSink>(
+        &mut self,
+        sink: &mut TS,
+    ) -> CoercedResult<TS::Outcome, Self::Error, TS::Error>
     where
         Self::Error: CoercibleWith<TS::Error>,
     {
@@ -56,10 +58,13 @@ pub trait QuadSource<'a> {
     }
 
     /// Feed all quads from this source into the given [sink](trait.QuadSink.html).
-    /// 
+    ///
     /// Alias for `in_sink` to be used when there is ambiguity.
     #[inline]
-    fn in_quad_sink<TS: QuadSink>(&mut self, sink: &mut TS) -> CoercedResult<TS::Outcome, Self::Error, TS::Error>
+    fn in_quad_sink<TS: QuadSink>(
+        &mut self,
+        sink: &mut TS,
+    ) -> CoercedResult<TS::Outcome, Self::Error, TS::Error>
     where
         Self::Error: CoercibleWith<TS::Error>,
     {
@@ -67,9 +72,12 @@ pub trait QuadSource<'a> {
     }
 
     /// Insert all quads from this source into the given [dataset](../../dataset/trait.MutableDataset.html).
-    /// 
+    ///
     /// Stop on the first error (in the source or in the dataset).
-    fn in_dataset<D: MutableDataset>(&mut self, dataset: &mut D) -> CoercedResult<usize, Self::Error, <D as MutableDataset>::MutationError> 
+    fn in_dataset<D: MutableDataset>(
+        &mut self,
+        dataset: &mut D,
+    ) -> CoercedResult<usize, Self::Error, <D as MutableDataset>::MutationError>
     where
         Self::Error: CoercibleWith<<D as MutableDataset>::MutationError>,
     {
@@ -79,7 +87,7 @@ pub trait QuadSource<'a> {
 
 impl<'a, I, T, E> QuadSource<'a> for I
 where
-    I: Iterator<Item=Result<T, E>>+'a,
+    I: Iterator<Item = Result<T, E>> + 'a,
     T: Quad<'a>,
     E: CoercibleWith<Error> + CoercibleWith<Never>,
 {
@@ -94,16 +102,17 @@ where
 
 /// A utility extension trait for converting any iterator of [`Quad`]s
 /// into [`QuadSource`], by wrapping its items in `Ok` results.
-/// 
+///
 /// [`QuadSource`]: trait.QuadSource.html
 /// [`Quad`]: ../trait.Quad.html
 pub trait AsQuadSource<T>: Sized {
     /// Map all items of this iterator into an Ok result.
-    fn as_quad_source(self) -> Map<Self, fn(T) -> OkResult<T,>>;
+    fn as_quad_source(self) -> Map<Self, fn(T) -> OkResult<T>>;
 }
 
-impl<'a, T, I> AsQuadSource<T> for I where
-    I: Iterator<Item=T> + 'a + Sized,
+impl<'a, T, I> AsQuadSource<T> for I
+where
+    I: Iterator<Item = T> + 'a + Sized,
     T: Quad<'a>,
 {
     fn as_quad_source(self) -> Map<Self, fn(T) -> OkResult<T>> {
@@ -111,24 +120,22 @@ impl<'a, T, I> AsQuadSource<T> for I where
     }
 }
 
-
-
 /// A quad sink consumes [quads](../trait.Quad.html),
 /// produces a result, and may also fail in the process.
-/// 
+///
 /// Typical quad sinks are [serializer]
 /// or graphs' [inserters] and [removers].
-/// 
+///
 /// See also [`QuadSource`].
-/// 
+///
 /// [serializer]: ../../serializer/index.html
 /// [inserters]: ../../graph/trait.MutableGraph.html#method.inserter
 /// [removers]: ../../graph/trait.MutableGraph.html#method.remover
 /// [`QuadSource`]: trait.QuadSource.html
-/// 
+///
 pub trait QuadSink {
     /// The type of the result produced by this quad sink.
-    /// 
+    ///
     /// See [`finish`](#tymethod.finish).
     type Outcome;
 
@@ -139,24 +146,26 @@ pub trait QuadSink {
     fn feed<'a, T: Quad<'a>>(&mut self, t: &T) -> Result<(), Self::Error>;
 
     /// Produce the result once all quads were fed.
-    /// 
+    ///
     /// NB: the behaviour of a quad sink after `finish` is called is unspecified by this trait.
     fn finish(&mut self) -> Result<Self::Outcome, Self::Error>;
 }
 
 /// [`()`](https://doc.rust-lang.org/std/primitive.unit.html) acts as a "black hole",
 /// consuming all quads without erring, and producing no result.
-/// 
+///
 /// Useful for benchmarking quad sources.
 impl QuadSink for () {
     type Outcome = ();
     type Error = Never;
 
-    fn feed<'a, T: Quad<'a>>(&mut self, _: &T) -> OkResult<()> { Ok(()) }
-    fn finish(&mut self) -> OkResult<Self::Outcome> { Ok(()) }
+    fn feed<'a, T: Quad<'a>>(&mut self, _: &T) -> OkResult<()> {
+        Ok(())
+    }
+    fn finish(&mut self) -> OkResult<Self::Outcome> {
+        Ok(())
+    }
 }
-
-
 
 #[cfg(test)]
 mod test {

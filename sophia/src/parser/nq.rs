@@ -11,16 +11,15 @@ use std::borrow::Cow;
 use std::io::{BufRead, BufReader, Read};
 use std::result::Result as StdResult;
 
-use pest::{Parser, iterators::Pairs};
-use pest::error::{Error as PestError};
+use pest::error::Error as PestError;
+use pest::{iterators::Pairs, Parser};
 
+use super::common::*;
+use super::nt::{pair_to_term, PestNtqParser, Rule};
 use crate::error::*;
 use crate::quad::Quad;
-use crate::term::{Term, graph_key::GraphKey};
+use crate::term::{graph_key::GraphKey, Term};
 use crate::triple::Triple;
-use super::common::*;
-use super::nt::{PestNtqParser, Rule, pair_to_term};
-
 
 /// NQ parser configuration.
 ///
@@ -37,48 +36,66 @@ pub struct Config {
     pub strict: bool,
 }
 
+type ParseStrResult<'a> =
+    Box<dyn Iterator<Item = Result<([Term<Cow<'a, str>>; 3], GraphKey<Cow<'a, str>>)>> + 'a>;
+
 impl Config {
     #[inline]
-    pub fn parse_bufread<'a, B: BufRead+'a>(&self, bufread: B)
-    -> impl Iterator<Item=Result<NqQuad>>+'a {
+    pub fn parse_bufread<'a, B: BufRead + 'a>(
+        &self,
+        bufread: B,
+    ) -> impl Iterator<Item = Result<NqQuad>> + 'a {
         let config = self.clone();
-        let rule = if config.strict {Rule::nquads_line} else {Rule::generalized_nq_line};
-        bufread.lines().enumerate()
-        .filter_map(move |(lineidx, line)| {
-            let line = match line {
-                Ok(line) => line,
-                Err(ioerr) => {
-                    let msg = format!("{}", ioerr);
-                    return Some(Err(Error::with_chain(
-                        ioerr, make_parser_error(msg, lineidx),
-                    )));
+        let rule = if config.strict {
+            Rule::nquads_line
+        } else {
+            Rule::generalized_nq_line
+        };
+        bufread
+            .lines()
+            .enumerate()
+            .filter_map(move |(lineidx, line)| {
+                let line = match line {
+                    Ok(line) => line,
+                    Err(ioerr) => {
+                        let msg = format!("{}", ioerr);
+                        return Some(Err(Error::with_chain(
+                            ioerr,
+                            make_parser_error(msg, lineidx),
+                        )));
+                    }
+                };
+                {
+                    let trimmed = line.trim_start();
+                    if trimmed.is_empty() || trimmed.as_bytes()[0] == b'#' {
+                        return None;
+                    }
                 }
-            };
-            {
-                let trimmed = line.trim_left();
-                if trimmed.len() == 0
-                || trimmed.as_bytes()[0] == '#' as u8 {
-                    return None;
-                }
-            }
-            Some(NqQuad::try_new(
-                line,
-                |line| parse_rule_from_line(&config, rule, line.trim_left()),
-            ).map_err(|err| convert_pest_err(err.0, lineidx)))
-        })
+                Some(
+                    NqQuad::try_new(line, |line| {
+                        parse_rule_from_line(&config, rule, line.trim_start())
+                    })
+                    .map_err(|err| convert_pest_err(err.0, lineidx)),
+                )
+            })
     }
 
     #[inline]
-    pub fn parse_read<'a, R: Read+'a>(&self, read: R)
-    -> impl Iterator<Item=Result<NqQuad>>+'a {
+    pub fn parse_read<'a, R: Read + 'a>(
+        &self,
+        read: R,
+    ) -> impl Iterator<Item = Result<NqQuad>> + 'a {
         self.parse_bufread(BufReader::new(read))
     }
 
     #[inline]
-    pub fn parse_str<'a>(&self, txt: &'a str)
-    -> Box<dyn Iterator<Item=Result<([Term<Cow<'a, str>>;3], GraphKey<Cow<'a, str>>)>>+'a> {
+    pub fn parse_str<'a>(&self, txt: &'a str) -> ParseStrResult<'a> {
         let config = self.clone();
-        let rule = if config.strict {Rule::nquads_doc} else {Rule::generalized_nq_doc};
+        let rule = if config.strict {
+            Rule::nquads_doc
+        } else {
+            Rule::generalized_nq_doc
+        };
         let triple_pairs = match PestNtqParser::parse(rule, txt) {
             Ok(pairs) => pairs,
             Err(err) => {
@@ -87,18 +104,16 @@ impl Config {
         };
         Box::new(
             triple_pairs
-            .take_while(|triple_pair| triple_pair.as_rule() != Rule::EOI)
-            .map(move |triple_pair|
-                pairs_to_quad(&config, triple_pair.into_inner())
-                .map_err(|err| convert_pest_err(err, 0))
-            )
+                .take_while(|triple_pair| triple_pair.as_rule() != Rule::EOI)
+                .map(move |triple_pair| {
+                    pairs_to_quad(&config, triple_pair.into_inner())
+                        .map_err(|err| convert_pest_err(err, 0))
+                }),
         )
     }
 }
 
-def_default_quad_parser_api!{}
-
-
+def_default_quad_parser_api! {}
 
 rental! {
     pub mod nq_quad {
@@ -114,25 +129,34 @@ rental! {
 pub use self::nq_quad::NqQuad;
 impl<'a> Triple<'a> for NqQuad {
     type TermData = Cow<'a, str>;
-    fn s(&self) -> &Term<Self::TermData> { unsafe { std::mem::transmute(self.suffix().s()) } }
-    fn p(&self) -> &Term<Self::TermData> { unsafe { std::mem::transmute(self.suffix().p()) } }
-    fn o(&self) -> &Term<Self::TermData> { unsafe { std::mem::transmute(self.suffix().o()) } }
+    fn s(&self) -> &Term<Self::TermData> {
+        unsafe { std::mem::transmute(self.suffix().s()) }
+    }
+    fn p(&self) -> &Term<Self::TermData> {
+        unsafe { std::mem::transmute(self.suffix().p()) }
+    }
+    fn o(&self) -> &Term<Self::TermData> {
+        unsafe { std::mem::transmute(self.suffix().o()) }
+    }
     // The compiler can not figure out the correct lifetime for self in the methods above,
     // so I use transmute() to force the cast.
 }
 impl<'a> Quad<'a> for NqQuad {
-    fn g(&self) -> &GraphKey<Self::TermData> { unsafe { std::mem::transmute(self.suffix().g()) } }
+    fn g(&self) -> &GraphKey<Self::TermData> {
+        unsafe { std::mem::transmute(self.suffix().g()) }
+    }
     // The compiler can not figure out the correct lifetime for self in the methods above,
     // so I use transmute() to force the cast.
 }
 
+type ResultQuad<'a> = StdResult<([Term<Cow<'a, str>>; 3], GraphKey<Cow<'a, str>>), PestError<Rule>>;
 
-fn parse_rule_from_line<'a> (config: &Config, rule: Rule, txt: &'a str) -> StdResult<([Term<Cow<'a, str>>;3], GraphKey<Cow<'a, str>>), PestError<Rule>> {
+fn parse_rule_from_line<'a>(config: &Config, rule: Rule, txt: &'a str) -> ResultQuad<'a> {
     let triple_pair = PestNtqParser::parse(rule, txt)?.next().unwrap();
     pairs_to_quad(config, triple_pair.into_inner())
 }
 
-fn pairs_to_quad<'a> (config: &Config, mut pairs: Pairs<'a, Rule>) -> StdResult<([Term<Cow<'a, str>>;3], GraphKey<Cow<'a, str>>), PestError<Rule>> {
+fn pairs_to_quad<'a>(config: &Config, mut pairs: Pairs<'a, Rule>) -> ResultQuad<'a> {
     let s = pair_to_term(pairs.next().unwrap(), config.strict)?;
     let p = pair_to_term(pairs.next().unwrap(), config.strict)?;
     let o = pair_to_term(pairs.next().unwrap(), config.strict)?;
@@ -149,18 +173,18 @@ fn pairs_to_quad<'a> (config: &Config, mut pairs: Pairs<'a, Rule>) -> StdResult<
 
 #[cfg(test)]
 mod test {
+    use super::*;
+    use crate::quad::stream::*;
+    use crate::term::BoxTerm;
     use std::collections::HashSet;
     use std::ffi::OsStr;
-    use std::fs::{File, read_dir};
+    use std::fs::{read_dir, File};
     use std::io;
     use std::path::Path;
-    use crate::term::BoxTerm;
-    use crate::quad::stream::*;
-    use super::*;
 
-    type HashSetDataset = HashSet<([BoxTerm;3], GraphKey<Box<str>>)>;
+    type HashSetDataset = HashSet<([BoxTerm; 3], GraphKey<Box<str>>)>;
 
-    static STRICT: Config = Config{ strict: true };
+    static STRICT: Config = Config { strict: true };
 
     static DOC: &str = r#"
       # a comment
@@ -182,7 +206,7 @@ mod test {
         assert_eq!(d.len(), 5);
     }
 
-    static GENERALIZED_DOC: &str =  r#"
+    static GENERALIZED_DOC: &str = r#"
       # a comment
       <tag:foo> <tag:bar> <tag:baz> . # a trailing comment
 
@@ -221,7 +245,7 @@ mod test {
         let mut d = HashSetDataset::new();
         let reader = io::Cursor::new(DOC);
         let res = STRICT.parse_read(reader).in_dataset(&mut d);
-        assert!(dbg!(&res).is_ok());
+        assert!(res.is_ok());
         assert_eq!(res.unwrap(), 5);
         assert_eq!(d.len(), 5);
     }
@@ -243,7 +267,7 @@ mod test {
         let mut d = HashSetDataset::new();
         let reader = io::Cursor::new(GENERALIZED_DOC);
         let res = STRICT.parse_read(reader).in_dataset(&mut d);
-        if let Err(Error(ParserError(_,_,line_pos), _)) = res {
+        if let Err(Error(ParserError(_, _, line_pos), _)) = res {
             use ::pest::error::LineColLocation::*;
             let lineno = match line_pos {
                 Pos((lineno, _)) => lineno,
@@ -253,7 +277,7 @@ mod test {
         } else {
             assert!(false, "res should be an error");
         }
-        assert  !(d.len() < 11);
+        assert!(d.len() < 11);
     }
 
     #[test]
@@ -279,7 +303,9 @@ mod test {
 
             for entry in read_dir(&suite)? {
                 let path = entry?.path();
-                if path.extension() != nt_ext { continue }
+                if path.extension() != nt_ext {
+                    continue;
+                }
 
                 let f = File::open(&path)?;
                 let f = io::BufReader::new(f);
@@ -287,7 +313,10 @@ mod test {
                 let res = STRICT.parse_read(f).in_dataset(&mut d);
                 let path = path.to_str().unwrap();
                 if path.contains("-bad-") {
-                    assert!(res.is_err(), format!("{} should NOT parse without error", path));
+                    assert!(
+                        res.is_err(),
+                        format!("{} should NOT parse without error", path)
+                    );
                 } else {
                     assert!(res.is_ok(), format!("{} should parse without error", path));
                 }
@@ -309,8 +338,12 @@ mod test {
 
             for entry in read_dir(&suite)? {
                 let path = entry?.path();
-                if path.extension() != nt_ext { continue }
-                if path.to_str().unwrap().contains("-bad-") { continue }
+                if path.extension() != nt_ext {
+                    continue;
+                }
+                if path.to_str().unwrap().contains("-bad-") {
+                    continue;
+                }
                 // "bad" tests may or may not pass with the generalized parser,
                 // so we skip them
 
@@ -318,7 +351,10 @@ mod test {
                 let f = io::BufReader::new(f);
                 let mut d = HashSetDataset::new();
                 let res = parse_read(f).in_dataset(&mut d);
-                assert!(res.is_ok(), format!("{} should parse without error", path.to_str().unwrap()));
+                assert!(
+                    res.is_ok(),
+                    format!("{} should parse without error", path.to_str().unwrap())
+                );
             }
             Ok(())
         }

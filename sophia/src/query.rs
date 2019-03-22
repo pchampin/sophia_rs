@@ -12,7 +12,7 @@ use crate::triple::*;
 pub type Binding = HashMap<String, RcTerm>;
 
 pub enum Query {
-    Triples(Vec<[RcTerm;3]>),
+    Triples(Vec<[RcTerm; 3]>),
 }
 
 impl Query {
@@ -20,24 +20,27 @@ impl Query {
         match self {
             Query::Triples(triples) => {
                 // sorts triple from q according to how many results they may give
-                let mut hints: Vec<_> = triples.iter().map(|t| {
-                    let tm = vec![
-                        matcher(t.s(), &initial_binding),
-                        matcher(t.p(), &initial_binding),
-                        matcher(t.o(), &initial_binding),
-                    ];
-                    // NB: the unsafe code below is used to cheat about tm's lifetime.
-                    // Because G is bound to 'a, triples_matching() requires tm to live as long as 'a.
-                    // But in fact, that is not necessary, because we are consuming the iterator immediately.
-                    let tm_ref = unsafe { &*(&tm[..] as *const [Option<RcTerm>]) };
-                    let hint = triples_matching(graph, tm_ref).size_hint();
-                    (hint.1.unwrap_or(std::usize::MAX), hint.0)
-                }).collect();
+                let mut hints: Vec<_> = triples
+                    .iter()
+                    .map(|t| {
+                        let tm = vec![
+                            matcher(t.s(), &initial_binding),
+                            matcher(t.p(), &initial_binding),
+                            matcher(t.o(), &initial_binding),
+                        ];
+                        // NB: the unsafe code below is used to cheat about tm's lifetime.
+                        // Because G is bound to 'a, triples_matching() requires tm to live as long as 'a.
+                        // But in fact, that is not necessary, because we are consuming the iterator immediately.
+                        let tm_ref = unsafe { &*(&tm[..] as *const [Option<RcTerm>]) };
+                        let hint = triples_matching(graph, tm_ref).size_hint();
+                        (hint.1.unwrap_or(std::usize::MAX), hint.0)
+                    })
+                    .collect();
                 for i in 1..hints.len() {
                     let mut j = i;
-                    while j > 0 && hints[j-1] > hints[j] {
-                        hints.swap(j-1, j);
-                        triples.swap(j-1, j);
+                    while j > 0 && hints[j - 1] > hints[j] {
+                        hints.swap(j - 1, j);
+                        triples.swap(j - 1, j);
                         j -= 1;
                     }
                 }
@@ -46,50 +49,60 @@ impl Query {
     }
 
     /// Process this query against the given graph, and return an fallible iterator of Bindings.
-    /// 
+    ///
     /// The iterator may fail (i.e. yield `Err`) if an operation on the graph fails.
-    pub fn process<'a, G: Graph<'a>>(&'a mut self, graph: &'a G) -> Box<dyn Iterator<Item=GResult<'a, G, Binding>>+'a> {
+    pub fn process<'a, G: Graph<'a>>(
+        &'a mut self,
+        graph: &'a G,
+    ) -> Box<dyn Iterator<Item = GResult<'a, G, Binding>> + 'a> {
         self.process_with(graph, Binding::new())
     }
 
     /// Process this query against the given graph, and return an fallible iterator of Bindings,
     /// starting with the given binding.
-    /// 
+    ///
     /// The iterator may fail (i.e. yield `Err`) if an operation on the graph fails.
-    pub fn process_with<'a, G: Graph<'a>>(&'a mut self, graph: &'a G, initial_binding: Binding) -> Box<dyn Iterator<Item=GResult<'a, G, Binding>>+'a> {
+    pub fn process_with<'a, G: Graph<'a>>(
+        &'a mut self,
+        graph: &'a G,
+        initial_binding: Binding,
+    ) -> Box<dyn Iterator<Item = GResult<'a, G, Binding>> + 'a> {
         self.prepare(graph, &initial_binding);
         match self {
-            Query::Triples(triples) => {
-                bindings_for_triples(graph, triples, initial_binding)
-            }
+            Query::Triples(triples) => bindings_for_triples(graph, triples, initial_binding),
         }
     }
 }
 
 /// Iter over the bindings of all triples in `q` for graph `g`, given the binding `b`.
-fn bindings_for_triples<'a, G>(g: &'a G, q: &'a [[RcTerm;3]], b: Binding) -> Box<dyn Iterator<Item=GResult<'a, G, Binding>>+'a>
+fn bindings_for_triples<'a, G>(
+    g: &'a G,
+    q: &'a [[RcTerm; 3]],
+    b: Binding,
+) -> Box<dyn Iterator<Item = GResult<'a, G, Binding>> + 'a>
 where
-    G: Graph<'a>
+    G: Graph<'a>,
 {
-    if q.len() == 0 {
+    if q.is_empty() {
         Box::new(once(Ok(b)))
     } else {
         Box::new(
-            bindings_for_triple(g, &q[0], b)
-            .flat_map(move |res| {
-                match res {
-                    Err(err) => Box::new(once(Err(err))),
-                    Ok(b2) => bindings_for_triples(g, &q[1..], b2),
-                }            
-            })
+            bindings_for_triple(g, &q[0], b).flat_map(move |res| match res {
+                Err(err) => Box::new(once(Err(err))),
+                Ok(b2) => bindings_for_triples(g, &q[1..], b2),
+            }),
         )
     }
 }
 
 /// Iter over the bindings of triple `tq` for graph `g`, given the binding `b`.
-fn bindings_for_triple<'a, G>(g: &'a G, tq: &'a [RcTerm;3], b: Binding) -> impl Iterator<Item=GResult<'a, G, Binding>>+'a
+fn bindings_for_triple<'a, G>(
+    g: &'a G,
+    tq: &'a [RcTerm; 3],
+    b: Binding,
+) -> impl Iterator<Item = GResult<'a, G, Binding>> + 'a
 where
-    G: Graph<'a>
+    G: Graph<'a>,
 {
     let tm = vec![
         matcher(tq.s(), &b),
@@ -99,22 +112,26 @@ where
     // NB: the unsafe code below is used to convince the compiler that &tm has lifetime 'a .
     // We can guarantee that because the closure below takes ownership of tm,
     // and it will live as long as the returned iterator.
-    triples_matching(g, unsafe { &*(&tm[..] as *const [Option<RcTerm>]) })
-    .map_ok(move |tr| {
+    triples_matching(g, unsafe { &*(&tm[..] as *const [Option<RcTerm>]) }).map_ok(move |tr| {
         let mut b2 = b.clone();
-        if tm[0].is_none() { b2.insert(tq.s().value(), tr.s().into()); }
-        if tm[1].is_none() { b2.insert(tq.p().value(), tr.p().into()); }
-        if tm[2].is_none() { b2.insert(tq.o().value(), tr.o().into()); }
+        if tm[0].is_none() {
+            b2.insert(tq.s().value(), tr.s().into());
+        }
+        if tm[1].is_none() {
+            b2.insert(tq.p().value(), tr.p().into());
+        }
+        if tm[2].is_none() {
+            b2.insert(tq.o().value(), tr.o().into());
+        }
         b2
     })
 }
 
 /// Make a matcher corresponding to term `t`, given binding `b`.
-fn matcher(t: &RcTerm, b: &Binding) -> Option<RcTerm> 
-{
+fn matcher(t: &RcTerm, b: &Binding) -> Option<RcTerm> {
     if let Variable(vname) = t {
         let vname: &str = &vname;
-        b.get(vname).map(|x| x.clone())
+        b.get(vname).cloned()
     } else {
         Some(t.clone())
     }
@@ -132,11 +149,6 @@ where
     g.triples_matching(s, p, o)
 }
 
-
-
-
-
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -153,9 +165,12 @@ mod test {
         let s_event = schema.get("Event").unwrap();
         let x_alice = RcTerm::new_iri("http://example.org/alice").unwrap();
 
-        let tq: [RcTerm;3] =
-            [x_alice.clone(), RcTerm::from(&rdf::type_), RcTerm::from(&s_event)];
-        
+        let tq: [RcTerm; 3] = [
+            x_alice.clone(),
+            RcTerm::from(&rdf::type_),
+            RcTerm::from(&s_event),
+        ];
+
         let results: Result<Vec<_>, _> = bindings_for_triple(&g, &tq, Binding::new()).collect();
         let results = results.unwrap();
         assert_eq!(results.len(), 0);
@@ -169,11 +184,15 @@ mod test {
         let s_person = schema.get("Person").unwrap();
         let x_alice = RcTerm::new_iri("http://example.org/alice").unwrap();
 
-        let tq: [RcTerm;3] =
-            [x_alice.clone(), RcTerm::from(&rdf::type_), RcTerm::from(&s_person)];
-        
-        let results: Result<Vec<Binding>, _> = bindings_for_triple(&g, &tq, Binding::new()).collect();
-        let results = results.unwrap(); 
+        let tq: [RcTerm; 3] = [
+            x_alice.clone(),
+            RcTerm::from(&rdf::type_),
+            RcTerm::from(&s_person),
+        ];
+
+        let results: Result<Vec<Binding>, _> =
+            bindings_for_triple(&g, &tq, Binding::new()).collect();
+        let results = results.unwrap();
         assert_eq!(results.len(), 1);
         for r in results.iter() {
             assert_eq!(r.len(), 0);
@@ -189,11 +208,15 @@ mod test {
 
         let v1 = RcTerm::new_variable("v1").unwrap();
 
-        let tq: [RcTerm;3] =
-            [v1.clone(), RcTerm::from(&rdf::type_), RcTerm::from(&s_event)];
-        
-        let results: Result<Vec<Binding>, _> = bindings_for_triple(&g, &tq, Binding::new()).collect();
-        let results = results.unwrap(); 
+        let tq: [RcTerm; 3] = [
+            v1.clone(),
+            RcTerm::from(&rdf::type_),
+            RcTerm::from(&s_event),
+        ];
+
+        let results: Result<Vec<Binding>, _> =
+            bindings_for_triple(&g, &tq, Binding::new()).collect();
+        let results = results.unwrap();
         assert_eq!(results.len(), 0);
     }
 
@@ -206,17 +229,22 @@ mod test {
 
         let v1 = RcTerm::new_variable("v1").unwrap();
 
-        let tq: [RcTerm;3] =
-            [v1.clone(), RcTerm::from(&rdf::type_), RcTerm::from(&s_person)];
-        
-        let results: Result<Vec<Binding>, _> = bindings_for_triple(&g, &tq, Binding::new()).collect();
-        let results = results.unwrap(); 
+        let tq: [RcTerm; 3] = [
+            v1.clone(),
+            RcTerm::from(&rdf::type_),
+            RcTerm::from(&s_person),
+        ];
+
+        let results: Result<Vec<Binding>, _> =
+            bindings_for_triple(&g, &tq, Binding::new()).collect();
+        let results = results.unwrap();
         assert_eq!(results.len(), 3);
         for r in results.iter() {
             assert_eq!(r.len(), 1);
             assert!(r.contains_key("v1"));
         }
-        let mut results: Vec<_> = results.into_iter()
+        let mut results: Vec<_> = results
+            .into_iter()
             .map(|b| b.get("v1").unwrap().value())
             .collect();
         results.sort();
@@ -235,23 +263,26 @@ mod test {
         let v1 = RcTerm::new_variable("v1").unwrap();
         let v2 = RcTerm::new_variable("v2").unwrap();
 
-        let tq: [RcTerm;3] =
-            [v1.clone(), RcTerm::from(&s_name), v2.clone()];
-        
-        let results: Result<Vec<Binding>, _> = bindings_for_triple(&g, &tq, Binding::new()).collect();
-        let results = results.unwrap(); 
+        let tq: [RcTerm; 3] = [v1.clone(), RcTerm::from(&s_name), v2.clone()];
+
+        let results: Result<Vec<Binding>, _> =
+            bindings_for_triple(&g, &tq, Binding::new()).collect();
+        let results = results.unwrap();
         assert_eq!(results.len(), 5);
         for r in results.iter() {
             assert_eq!(r.len(), 2);
             assert!(r.contains_key("v1"));
             assert!(r.contains_key("v2"));
         }
-        let mut results: Vec<_> = results.into_iter()
-            .map(|b| format!("{} {}",
-                        b.get("v1").unwrap().value(),
-                        b.get("v2").unwrap().value(),
-                     )
-            )
+        let mut results: Vec<_> = results
+            .into_iter()
+            .map(|b| {
+                format!(
+                    "{} {}",
+                    b.get("v1").unwrap().value(),
+                    b.get("v2").unwrap().value(),
+                )
+            })
             .collect();
         results.sort();
         assert_eq!(results[0], "http://example.org/alice Alice");
@@ -274,31 +305,37 @@ mod test {
 
         let mut q = Query::Triples(vec![
             [v1.clone(), RcTerm::from(&s_name), v2.clone()],
-            [v1.clone(), RcTerm::from(&rdf::type_), RcTerm::from(&s_person)],
+            [
+                v1.clone(),
+                RcTerm::from(&rdf::type_),
+                RcTerm::from(&s_person),
+            ],
         ]);
 
-        
         let results: Result<Vec<Binding>, _> = q.process(&g).collect();
-        let results = results.unwrap(); 
+        let results = results.unwrap();
         assert_eq!(results.len(), 3);
         for r in results.iter() {
             assert_eq!(r.len(), 2);
             assert!(r.contains_key("v1"));
             assert!(r.contains_key("v2"));
         }
-        let mut results: Vec<_> = results.into_iter()
-            .map(|b| format!("{} {}",
-                        b.get("v1").unwrap().value(),
-                        b.get("v2").unwrap().value(),
-                     )
-            )
+        let mut results: Vec<_> = results
+            .into_iter()
+            .map(|b| {
+                format!(
+                    "{} {}",
+                    b.get("v1").unwrap().value(),
+                    b.get("v2").unwrap().value(),
+                )
+            })
             .collect();
         results.sort();
         assert_eq!(results[0], "http://example.org/alice Alice");
         assert_eq!(results[1], "http://example.org/bob Bob");
         assert_eq!(results[2], "http://example.org/charlie Charlie");
     }
-    
+
     fn data() -> FastGraph {
         let schema = Namespace::new("http://schema.org/").unwrap();
         let s_person = schema.get("Person").unwrap();
@@ -312,7 +349,7 @@ mod test {
         let x_charlie = example.get("charlie").unwrap();
         let x_dan = example.get("dan").unwrap();
         let x_alice_n_bob = example.get("alice_n_bob").unwrap();
- 
+
         let mut g = FastGraph::new();
         g.insert(&x_alice, &rdf::type_, &s_person).unwrap();
         g.insert(&x_alice, &s_name, &"Alice".into()).unwrap();
@@ -321,8 +358,10 @@ mod test {
         g.insert(&x_charlie, &rdf::type_, &s_person).unwrap();
         g.insert(&x_charlie, &s_name, &"Charlie".into()).unwrap();
         g.insert(&x_dan, &s_name, &"Dan".into()).unwrap();
-        g.insert(&x_alice_n_bob, &rdf::type_, &s_organization).unwrap();
-        g.insert(&x_alice_n_bob, &s_name, &"Alice & Bob".into()).unwrap();
+        g.insert(&x_alice_n_bob, &rdf::type_, &s_organization)
+            .unwrap();
+        g.insert(&x_alice_n_bob, &s_name, &"Alice & Bob".into())
+            .unwrap();
         g.insert(&x_alice_n_bob, &s_member, &x_alice).unwrap();
         g.insert(&x_alice_n_bob, &s_member, &x_bob).unwrap();
 

@@ -1,32 +1,31 @@
 //! Serializer for the [N-Triples] concrete syntax of RDF.
-//! 
+//!
 //! **Important**:
 //! the methods in this module accepting a [`Write`]
 //! make no effort to minimize the number of write operations.
 //! Hence, in most cased, they should be passed a [`BufWriter`].
-//! 
+//!
 //! [N-Triples]: https://www.w3.org/TR/n-triples/
 //! [`Write`]: https://doc.rust-lang.org/std/io/trait.Write.html
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
-use std::io;
 use std::hash::Hash;
+use std::io;
 use std::mem::swap;
 
-use crate::term::{LiteralKind,Term};
-use crate::triple::Triple;
+use crate::term::{LiteralKind, Term};
 use crate::triple::stream::*;
+use crate::triple::Triple;
 
 use super::*;
 
-
 /// NT serializer configuration.
-/// 
+///
 /// For more information,
 /// see the [uniform interface] of serializers.
-/// 
+///
 /// [uniform interface]: ../index.html#uniform-interface
-/// 
+///
 #[derive(Clone, Debug, Default)]
 pub struct Config {
     ascii: bool,
@@ -44,10 +43,8 @@ impl Config {
 
 def_default_serializer_api!();
 
-
-
 /// A [`TripleSink`] returned by [`Config::writer`].
-/// 
+///
 /// [`TripleSink`]: ../../triple/stream/trait.TripleSink.html
 /// [`Config::writer`]: struct.Config.html#method.writer
 pub struct Writer<W: io::Write> {
@@ -58,10 +55,12 @@ impl<W: io::Write> WriteSerializer<W> for Writer<W> {
     type Config = Config;
 
     fn new(write: W, config: Self::Config) -> Self {
-        if config.ascii { unimplemented!() }
+        if config.ascii {
+            unimplemented!()
+        }
         // TODO if ascii is true,
         // wrap write in a dedicated type that will rewrite non-ascii characters
-        Writer{ write }
+        Writer { write }
     }
 }
 
@@ -74,15 +73,13 @@ impl<W: io::Write> TripleSink for Writer<W> {
 
         (|| {
             write_term(w, t.s())?;
-            w.write_all(" ".as_bytes())?;
+            w.write_all(b" ")?;
             write_term(w, t.p())?;
-            w.write_all(" ".as_bytes())?;
+            w.write_all(b" ")?;
             write_term(w, t.o())?;
-            w.write_all(" .\n".as_bytes())
+            w.write_all(b" .\n")
         })()
-        .chain_err(||
-            ErrorKind::SerializerError("NT serializer".into())
-        )
+        .chain_err(|| ErrorKind::SerializerError("NT serializer".into()))
     }
 
     fn finish(&mut self) -> Result<(), Self::Error> {
@@ -92,22 +89,22 @@ impl<W: io::Write> TripleSink for Writer<W> {
 
 def_stringifier!();
 
-
 /// Write a single RDF term into `w` using the NT syntax.
-pub fn write_term<T,W> (w: &mut W, t: &Term<T>) -> io::Result<()> where
+pub fn write_term<T, W>(w: &mut W, t: &Term<T>) -> io::Result<()>
+where
     T: AsRef<str> + Clone + Eq + Hash,
     W: io::Write,
 {
-    use self::Term::*;
     use self::LiteralKind::*;
+    use self::Term::*;
     match t {
         Iri(iri) => {
-            w.write_all("<".as_bytes())?;
+            w.write_all(b"<")?;
             iri.write_to(w)?;
-            w.write_all(">".as_bytes())?;
+            w.write_all(b">")?;
         }
         BNode(ident) => {
-            w.write_all("_:".as_bytes())?;
+            w.write_all(b"_:")?;
             if ident.is_n3() {
                 w.write_all((ident.as_ref()).as_bytes())?;
             } else {
@@ -115,23 +112,23 @@ pub fn write_term<T,W> (w: &mut W, t: &Term<T>) -> io::Result<()> where
             }
         }
         Literal(value, Lang(tag)) => {
-            w.write_all("\"".as_bytes())?;
+            w.write_all(b"\"")?;
             write_quoted_string(w, value.as_ref())?;
-            w.write_all("\"@".as_bytes())?;
+            w.write_all(b"\"@")?;
             w.write_all(tag.as_ref().as_bytes())?;
         }
         Literal(value, Datatype(iri)) => {
-            w.write_all("\"".as_bytes())?;
+            w.write_all(b"\"")?;
             write_quoted_string(w, value.as_ref())?;
-            w.write_all("\"".as_bytes())?;
+            w.write_all(b"\"")?;
             if iri != &"http://www.w3.org/2001/XMLSchema#string" {
-                w.write_all("^^<".as_bytes())?;
+                w.write_all(b"^^<")?;
                 iri.write_to(w)?;
-                w.write_all(">".as_bytes())?;
+                w.write_all(b">")?;
             }
         }
         Variable(name) => {
-            w.write_all("?".as_bytes())?;
+            w.write_all(b"?")?;
             w.write_all(name.as_ref().as_bytes())?;
         }
     };
@@ -139,7 +136,8 @@ pub fn write_term<T,W> (w: &mut W, t: &Term<T>) -> io::Result<()> where
 }
 
 /// Stringifies a single RDF term using the NT syntax.
-pub fn stringify_term<T> (t: &Term<T>) -> String where
+pub fn stringify_term<T>(t: &Term<T>) -> String
+where
     T: AsRef<str> + Clone + Eq + Hash,
 {
     let mut v = Vec::new();
@@ -147,12 +145,11 @@ pub fn stringify_term<T> (t: &Term<T>) -> String where
     unsafe { String::from_utf8_unchecked(v) }
 }
 
-
 pub(crate) fn write_quoted_string(w: &mut impl io::Write, txt: &str) -> io::Result<()> {
     let mut cut = txt.len();
     let mut cutchar = '\0';
     for (pos, chr) in txt.char_indices() {
-        if chr<='\\' && (chr=='\n' || chr=='\r' || chr=='\\' || chr=='"') {
+        if chr <= '\\' && (chr == '\n' || chr == '\r' || chr == '\\' || chr == '"') {
             cut = pos;
             cutchar = chr;
             break;
@@ -161,30 +158,40 @@ pub(crate) fn write_quoted_string(w: &mut impl io::Write, txt: &str) -> io::Resu
     w.write_all(txt[..cut].as_bytes())?;
     if cut < txt.len() {
         match cutchar {
-            '\n' => { w.write_all(r"\n".as_bytes())?; }
-            '\r' => { w.write_all(r"\r".as_bytes())?; }
-            '"'  => { w.write_all("\\\"".as_bytes())?; }
-            '\\' => { w.write_all(r"\\".as_bytes())?; }
-            _    => unreachable!()
-         }
+            '\n' => {
+                w.write_all(b"\\n")?;
+            }
+            '\r' => {
+                w.write_all(b"\\r")?;
+            }
+            '"' => {
+                w.write_all(b"\\\"")?;
+            }
+            '\\' => {
+                w.write_all(b"\\\\")?;
+            }
+            _ => unreachable!(),
+        }
     };
-    if cut+1 >= txt.len() { return Ok(()); } // else
-    write_quoted_string(w, &txt[cut+1..])
+    if cut + 1 >= txt.len() {
+        return Ok(());
+    } // else
+    write_quoted_string(w, &txt[cut + 1..])
 }
 
 pub(crate) fn write_non_n3_bnode_id(w: &mut impl io::Write, id: &str) -> io::Result<()> {
     fn halfbyte_to_hex(val: u8) -> u8 {
-        if val < 10 { ('0' as u8) + val }
-        else        { ('a' as u8) + val }
+        if val < 10 {
+            b'0' + val
+        } else {
+            b'a' + val
+        }
     }
-    w.write_all("_".as_bytes())?;
+    w.write_all(b"_")?;
     for b in id.as_bytes() {
-        w.write_all(&[
-            halfbyte_to_hex(b/16),
-            halfbyte_to_hex(b%16),
-        ])?;
+        w.write_all(&[halfbyte_to_hex(b / 16), halfbyte_to_hex(b % 16)])?;
     }
-    w.write_all("_:_".as_bytes())?;
+    w.write_all(b"_:_")?;
     Ok(())
 }
 
@@ -194,9 +201,9 @@ pub(crate) fn write_non_n3_bnode_id(w: &mut impl io::Write, id: &str) -> io::Res
 
 #[cfg(test)]
 mod test {
+    use super::*;
     use crate::ns::*;
     use crate::term::*;
-    use super::*;
 
     #[test]
     fn iri_() {
@@ -274,13 +281,15 @@ mod test {
     fn graph() {
         let me = StaticTerm::new_iri("http://champin.net/#pa").unwrap();
         let triples = vec![
-            [ me,
-              rdf::type_,
-              StaticTerm::new_iri("http://schema.org/Person").unwrap()
+            [
+                me,
+                rdf::type_,
+                StaticTerm::new_iri("http://schema.org/Person").unwrap(),
             ],
-            [ me,
-              StaticTerm::new_iri("http://schema.org/name").unwrap(),
-              StaticTerm::new_literal_dt("Pierre-Antoine", xsd::string).unwrap()
+            [
+                me,
+                StaticTerm::new_iri("http://schema.org/name").unwrap(),
+                StaticTerm::new_literal_dt("Pierre-Antoine", xsd::string).unwrap(),
             ],
         ];
         let mut triples = triples.into_iter().as_triple_source();

@@ -2,4 +2,5 @@ Cargo.lock
 /target
 */target
 **/*.rs.bk
-rdf-tests
+Cargo.lock
+

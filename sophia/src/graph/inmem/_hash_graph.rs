@@ -4,9 +4,9 @@ use std::collections::HashSet;
 use std::hash::Hash;
 
 use crate::error::*;
-use crate::graph::*;
 use crate::graph::index::{IndexedGraph, TermIndexMap};
-use crate::term::{RefTerm, Term, factory::TermFactory};
+use crate::graph::*;
+use crate::term::{factory::TermFactory, RefTerm, Term};
 
 /// A generic implementation of [`Graph`] and [`MutableGraph`],
 /// storing its terms in a [`TermIndexMap`],
@@ -17,16 +17,18 @@ use crate::term::{RefTerm, Term, factory::TermFactory};
 /// [`TermIndexMap`]: ../index/trait.TermIndexMap.html
 /// [`HashSet`]: https://doc.rust-lang.org/std/collections/struct.HashSet.html
 #[derive(Default)]
-pub struct HashGraph<I> where
+pub struct HashGraph<I>
+where
     I: TermIndexMap,
     I::Index: Hash,
     <I::Factory as TermFactory>::TermData: 'static,
 {
     terms: I,
-    triples: HashSet<[I::Index;3]>,
+    triples: HashSet<[I::Index; 3]>,
 }
 
-impl<I> HashGraph<I> where
+impl<I> HashGraph<I>
+where
     I: TermIndexMap,
     I::Index: Hash,
 {
@@ -40,9 +42,14 @@ impl<I> HashGraph<I> where
     pub fn len(&self) -> usize {
         self.triples.len()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.triples.is_empty()
+    }
 }
 
-impl<I> IndexedGraph for HashGraph<I> where
+impl<I> IndexedGraph for HashGraph<I>
+where
     I: TermIndexMap,
     I::Index: Hash,
     <I::Factory as TermFactory>::TermData: 'static,
@@ -51,18 +58,25 @@ impl<I> IndexedGraph for HashGraph<I> where
     type TermData = <I::Factory as TermFactory>::TermData;
 
     #[inline]
-    fn get_index<T> (&self, t: &Term<T>) -> Option<Self::Index> where
+    fn get_index<T>(&self, t: &Term<T>) -> Option<Self::Index>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
     {
         self.terms.get_index(&RefTerm::from(t))
     }
 
     #[inline]
-    fn get_term<'a>(&'a self, i: Self::Index) -> Option<&Term<Self::TermData>> {
+    fn get_term(&'_ self, i: Self::Index) -> Option<&Term<Self::TermData>> {
         self.terms.get_term(i)
     }
 
-    fn insert_indexed<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Option<[I::Index;3]> where
+    fn insert_indexed<T, U, V>(
+        &mut self,
+        s: &Term<T>,
+        p: &Term<U>,
+        o: &Term<V>,
+    ) -> Option<[I::Index; 3]>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
         V: AsRef<str> + Clone + Eq + Hash,
@@ -81,7 +95,13 @@ impl<I> IndexedGraph for HashGraph<I> where
         }
     }
 
-    fn remove_indexed<T, U, V> (&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Option<[I::Index;3]> where
+    fn remove_indexed<T, U, V>(
+        &mut self,
+        s: &Term<T>,
+        p: &Term<U>,
+        o: &Term<V>,
+    ) -> Option<[I::Index; 3]>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
         V: AsRef<str> + Clone + Eq + Hash,
@@ -107,27 +127,28 @@ impl<I> IndexedGraph for HashGraph<I> where
     }
 }
 
-impl<'a, I> Graph<'a> for HashGraph<I> where
+impl<'a, I> Graph<'a> for HashGraph<I>
+where
     I: TermIndexMap,
     I::Index: Hash,
     <I::Factory as TermFactory>::TermData: 'static,
 {
-    type Triple = [&'a Term<<Self as IndexedGraph>::TermData>;3];
+    type Triple = [&'a Term<<Self as IndexedGraph>::TermData>; 3];
     type Error = Never;
 
     fn triples(&'a self) -> GTripleSource<'a, Self> {
-        Box::from(
-            self.triples.iter()
-            .map(move |[si, pi, oi]| Ok([
+        Box::from(self.triples.iter().map(move |[si, pi, oi]| {
+            Ok([
                 self.terms.get_term(*si).unwrap(),
                 self.terms.get_term(*pi).unwrap(),
                 self.terms.get_term(*oi).unwrap(),
-            ]))
-        )
+            ])
+        }))
     }
 }
 
-impl<I> MutableGraph for HashGraph<I> where
+impl<I> MutableGraph for HashGraph<I>
+where
     I: TermIndexMap,
     I::Index: Hash,
     <I::Factory as TermFactory>::TermData: 'static,
@@ -135,12 +156,12 @@ impl<I> MutableGraph for HashGraph<I> where
     impl_mutable_graph_for_indexed_mutable_graph!();
 }
 
-impl<I> SetGraph for HashGraph<I> where
+impl<I> SetGraph for HashGraph<I>
+where
     I: TermIndexMap,
     I::Index: Hash,
-{}
-
-
+{
+}
 
 #[cfg(test)]
 mod test {

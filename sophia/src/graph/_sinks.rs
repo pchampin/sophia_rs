@@ -1,11 +1,11 @@
 // this module is transparently re-exported by its parent `graph`
 
 use crate::graph::_traits::*;
-use crate::triple::*;
 use crate::triple::stream::*;
+use crate::triple::*;
 
 /// The [`TripleSink`] returned by [`MutableGraph::inserter`].
-/// 
+///
 /// [`TripleSink`]: ../triple/stream/trait.TripleSink.html
 /// [`MutableGraph::inserter`]: trait.MutableGraph.html#method.inserter
 ///
@@ -34,12 +34,10 @@ impl<'a, G: MutableGraph + ?Sized + 'a> TripleSink for Inserter<'a, G> {
     fn finish(&mut self) -> Result<Self::Outcome, Self::Error> {
         Ok(self.count)
     }
-
 }
 
-
 /// The [`TripleSink`] returned by [`MutableGraph::remover`].
-/// 
+///
 /// [`TripleSink`]: ../triple/stream/trait.TripleSink.html
 /// [`MutableGraph::remover`]: trait.MutableGraph.html#method.remover
 ///
@@ -69,8 +67,6 @@ impl<'a, G: MutableGraph + ?Sized + 'a> TripleSink for Remover<'a, G> {
         Ok(self.count)
     }
 }
-
-
 
 #[cfg(test)]
 mod test {

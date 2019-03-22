@@ -14,7 +14,7 @@ impl From<String> for BoxTerm {
 
 impl<'a> From<&'a str> for RefTerm<'a> {
     fn from(val: &'a str) -> RefTerm<'a> {
-        let dt = xsd::string.clone();
+        let dt = xsd::string;
         unsafe { RefTerm::new_literal_dt_unchecked(val, dt) }
     }
 }
@@ -50,8 +50,6 @@ impl From<u32> for BoxTerm {
         unsafe { BoxTerm::new_literal_dt_unchecked(txt, dt) }
     }
 }
-
-
 
 #[cfg(test)]
 mod test {

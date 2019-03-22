@@ -5,18 +5,20 @@ use std::hash::{Hash, Hasher};
 use super::*;
 
 /// There are two kinds of literals: language-tagged, and typed.
-#[derive(Clone,Copy,Debug,Eq)]
+#[derive(Clone, Copy, Debug, Eq)]
 pub enum LiteralKind<T: AsRef<str>> {
     Lang(T),
     Datatype(IriData<T>),
 }
 pub use self::LiteralKind::*;
 
-impl<T> LiteralKind<T> where
-    T: AsRef<str>
+impl<T> LiteralKind<T>
+where
+    T: AsRef<str>,
 {
     /// Copy another literal kind with the given factory.
-    pub fn from_with<'a, U, F> (other: &'a LiteralKind<U>, mut factory: F) -> LiteralKind<T> where
+    pub fn from_with<'a, U, F>(other: &'a LiteralKind<U>, mut factory: F) -> LiteralKind<T>
+    where
         U: AsRef<str>,
         F: FnMut(&'a str) -> T,
     {
@@ -28,7 +30,12 @@ impl<T> LiteralKind<T> where
 
     /// Copy another literal kind with the given factory,
     /// applying the given normalization policy.
-    pub fn normalized_with<'a, U, F> (other: &'a LiteralKind<U>, mut factory: F, norm: Normalization) -> LiteralKind<T> where
+    pub fn normalized_with<U, F>(
+        other: &'_ LiteralKind<U>,
+        mut factory: F,
+        norm: Normalization,
+    ) -> LiteralKind<T>
+    where
         U: AsRef<str>,
         F: FnMut(&str) -> T,
     {
@@ -39,10 +46,11 @@ impl<T> LiteralKind<T> where
     }
 }
 
-impl<T> Hash for LiteralKind<T> where
+impl<T> Hash for LiteralKind<T>
+where
     T: AsRef<str>,
 {
-    fn hash<H:Hasher> (&self, state: &mut H) {
+    fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
             Lang(tag) => tag.as_ref().hash(state),
             Datatype(iri) => iri.hash(state),
@@ -50,7 +58,8 @@ impl<T> Hash for LiteralKind<T> where
     }
 }
 
-impl<T,U> PartialEq<LiteralKind<U>> for LiteralKind<T> where
+impl<T, U> PartialEq<LiteralKind<U>> for LiteralKind<T>
+where
     T: AsRef<str>,
     U: AsRef<str>,
 {
@@ -62,8 +71,6 @@ impl<T,U> PartialEq<LiteralKind<U>> for LiteralKind<T> where
         }
     }
 }
-
-
 
 #[cfg(test)]
 mod test {

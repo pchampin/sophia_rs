@@ -6,6 +6,9 @@ use crate::triple::Triple;
 
 use super::*;
 
+type TermDataT<'a, W> = <<W as Graph<'a>>::Triple as Triple<'a>>::TermData;
+type GResultTermSet<'a, W> = GResult<'a, W, HashSet<Term<TermDataT<'a, W>>>>;
+
 /// A graph wrapper wraps a [`Graph`] and overrides some of its methods.
 ///
 /// This trait mimmics the interface of the [`Graph`] trait,
@@ -13,13 +16,12 @@ use super::*;
 /// that delegates to the corresponding method of the wrapped graph.
 /// Implementation of this trait may however expected to override
 /// *some* of the methods.
-/// 
+///
 /// Conversely, the `impl_graph_for_wrapper!` macro can be used to derive
 /// the Graph implementation for any implementation of GraphWrapper.
-/// 
+///
 /// [`Graph`]: ../trait.Graph.html
-pub trait GraphWrapper<'a>
-{
+pub trait GraphWrapper<'a> {
     /// The type of the wrapped graph.
     type Wrapped: Graph<'a>;
 
@@ -37,28 +39,36 @@ pub trait GraphWrapper<'a>
 
     #[inline]
     /// Mimmic the [`triples_with_s`](../trait.Graph.html#method.triples_with_s) method.
-    fn gw_triples_with_s<T> (&'a self, s: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped> where
+    fn gw_triples_with_s<T>(&'a self, s: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
     {
         self.get_wrapped().triples_with_s(s)
     }
     #[inline]
     /// Mimmic the [`triples_with_p`](../trait.Graph.html#method.triples_with_p) method.
-    fn gw_triples_with_p<T> (&'a self, p: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped> where
+    fn gw_triples_with_p<T>(&'a self, p: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
     {
         self.get_wrapped().triples_with_p(p)
     }
     #[inline]
     /// Mimmic the [`triples_with_o`](../trait.Graph.html#method.triples_with_o) method.
-    fn gw_triples_with_o<T> (&'a self, o: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped> where
+    fn gw_triples_with_o<T>(&'a self, o: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
     {
         self.get_wrapped().triples_with_o(o)
     }
     #[inline]
     /// Mimmic the [`triples_with_sp`](../trait.Graph.html#method.triples_with_sp) method.
-    fn gw_triples_with_sp<T, U> (&'a self, s: &'a Term<T>, p: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped> where
+    fn gw_triples_with_sp<T, U>(
+        &'a self,
+        s: &'a Term<T>,
+        p: &'a Term<U>,
+    ) -> GTripleSource<'a, Self::Wrapped>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
     {
@@ -66,7 +76,12 @@ pub trait GraphWrapper<'a>
     }
     #[inline]
     /// Mimmic the [`triples_with_so`](../trait.Graph.html#method.triples_with_so) method.
-    fn gw_triples_with_so<T, U> (&'a self, s: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped> where
+    fn gw_triples_with_so<T, U>(
+        &'a self,
+        s: &'a Term<T>,
+        o: &'a Term<U>,
+    ) -> GTripleSource<'a, Self::Wrapped>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
     {
@@ -74,7 +89,12 @@ pub trait GraphWrapper<'a>
     }
     #[inline]
     /// Mimmic the [`triples_with_po`](../trait.Graph.html#method.triples_with_po) method.
-    fn gw_triples_with_po<T, U> (&'a self, p: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped> where
+    fn gw_triples_with_po<T, U>(
+        &'a self,
+        p: &'a Term<T>,
+        o: &'a Term<U>,
+    ) -> GTripleSource<'a, Self::Wrapped>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
     {
@@ -82,7 +102,13 @@ pub trait GraphWrapper<'a>
     }
     #[inline]
     /// Mimmic the [`triples_with_spo`](../trait.Graph.html#method.triples_with_spo) method.
-    fn gw_triples_with_spo<T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> GTripleSource<'a, Self::Wrapped> where
+    fn gw_triples_with_spo<T, U, V>(
+        &'a self,
+        s: &'a Term<T>,
+        p: &'a Term<U>,
+        o: &'a Term<V>,
+    ) -> GTripleSource<'a, Self::Wrapped>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
         V: AsRef<str> + Clone + Eq + Hash,
@@ -92,7 +118,13 @@ pub trait GraphWrapper<'a>
 
     #[inline]
     /// Mimmic the [`contains`](../trait.Graph.html#method.contains) method.
-    fn gw_contains<T, U, V> (&'a self, s: &'a Term<T>, p: &'a Term<U>, o: &'a Term<V>) -> GResult<'a, Self::Wrapped, bool> where
+    fn gw_contains<T, U, V>(
+        &'a self,
+        s: &'a Term<T>,
+        p: &'a Term<U>,
+        o: &'a Term<V>,
+    ) -> GResult<'a, Self::Wrapped, bool>
+    where
         T: AsRef<str> + Clone + Eq + Hash,
         U: AsRef<str> + Clone + Eq + Hash,
         V: AsRef<str> + Clone + Eq + Hash,
@@ -102,43 +134,43 @@ pub trait GraphWrapper<'a>
 
     #[inline]
     /// Mimmic the [`subjects`](../trait.Graph.html#method.subjects) method.
-    fn gw_subjects(&'a self) -> GResult<'a, Self::Wrapped, HashSet<Term<<<Self::Wrapped as Graph<'a>>::Triple as Triple<'a>>::TermData>>> {
+    fn gw_subjects(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
         self.get_wrapped().subjects()
     }
 
     #[inline]
     /// Mimmic the [`predicates`](../trait.Graph.html#method.predicates) method.
-    fn gw_predicates(&'a self) -> GResult<'a, Self::Wrapped, HashSet<Term<<<Self::Wrapped as Graph<'a>>::Triple as Triple<'a>>::TermData>>> {
+    fn gw_predicates(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
         self.get_wrapped().predicates()
     }
 
     #[inline]
     /// Mimmic the [`objects`](../trait.Graph.html#method.objects) method.
-    fn gw_objects(&'a self) -> GResult<'a, Self::Wrapped, HashSet<Term<<<Self::Wrapped as Graph<'a>>::Triple as Triple<'a>>::TermData>>> {
+    fn gw_objects(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
         self.get_wrapped().objects()
     }
 
     #[inline]
     /// Mimmic the [`iris`](../trait.Graph.html#method.iris) method.
-    fn gw_iris(&'a self) -> GResult<'a, Self::Wrapped, HashSet<Term<<<Self::Wrapped as Graph<'a>>::Triple as Triple<'a>>::TermData>>> {
+    fn gw_iris(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
         self.get_wrapped().iris()
     }
 
     #[inline]
     /// Mimmic the [`bnodes`](../trait.Graph.html#method.bnodes) method.
-    fn gw_bnodes(&'a self) -> GResult<'a, Self::Wrapped, HashSet<Term<<<Self::Wrapped as Graph<'a>>::Triple as Triple<'a>>::TermData>>> {
+    fn gw_bnodes(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
         self.get_wrapped().bnodes()
     }
 
     #[inline]
     /// Mimmic the [`literals`](../trait.Graph.html#method.literals) method.
-    fn gw_literals(&'a self) -> GResult<'a, Self::Wrapped, HashSet<Term<<<Self::Wrapped as Graph<'a>>::Triple as Triple<'a>>::TermData>>> {
+    fn gw_literals(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
         self.get_wrapped().literals()
     }
 
     #[inline]
     /// Mimmic the [`variables`](../trait.Graph.html#method.variables) method.
-    fn gw_variables(&'a self) -> GResult<'a, Self::Wrapped, HashSet<Term<<<Self::Wrapped as Graph<'a>>::Triple as Triple<'a>>::TermData>>> {
+    fn gw_variables(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
         self.get_wrapped().variables()
     }
 }
@@ -250,8 +282,6 @@ macro_rules! impl_graph_for_wrapper {
         }
     };
 }
-
-
 
 #[cfg(test)]
 mod test {

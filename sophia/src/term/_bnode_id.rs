@@ -1,21 +1,21 @@
 // this module is transparently re-exported by its parent `term`
-use std::hash::{Hash,Hasher};
+use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 
 use super::*;
 
 /// Internal representation of a blank node identifier.
-/// 
+///
 /// May be encountered when pattern-matching on [`Term`](enum.Term.html)s
 /// of the [`BNode`](enum.Term.html#variant.BNode) variant.
 /// For that purpose, note that `BNodeId`
 ///  - derefs implicitly to its internal type `T`;
 ///  - can be directly compared to a `&str` with the `==` operator.
-/// 
+///
 /// Example :
 /// ```
 /// use sophia::term::*;
-/// 
+///
 /// fn is_foobar(t: BoxTerm) -> bool {
 ///     match t {
 ///         BNode(id) =>
@@ -25,33 +25,35 @@ use super::*;
 ///     }
 /// }
 /// ```
-/// 
+///
 /// See [module documentation](index.html)
 /// for more detail.
-#[derive(Clone,Copy,Debug,Eq)]
+#[derive(Clone, Copy, Debug, Eq)]
 pub struct BNodeId<T: AsRef<str>> {
     value: T,
     n3: bool,
 }
 
-impl<T> BNodeId<T> where
-    T: AsRef<str>
+impl<T> BNodeId<T>
+where
+    T: AsRef<str>,
 {
     /// You would usually not use this constructor directly,
     /// but instead use [`Term::new_bnode`](enum.Term.html#method.new_bnode)
     /// or [`Term::new_bnode_unchecked`](enum.Term.html#method.new_bnode_unchecked).
     pub(crate) fn new(value: T) -> BNodeId<T> {
         let n3 = N3_BNODE_ID.is_match(value.as_ref());
-        BNodeId{value, n3}
+        BNodeId { value, n3 }
     }
 
     /// You would usually not use this constructor directly,
     /// but instead use [`Term::from_with`](enum.Term.html#method.from_with).
-    pub(crate) fn from_with<'a, U, F> (other: &'a BNodeId<U>, mut factory: F) -> BNodeId<T> where
+    pub(crate) fn from_with<'a, U, F>(other: &'a BNodeId<U>, mut factory: F) -> BNodeId<T>
+    where
         U: AsRef<str>,
         F: FnMut(&'a str) -> T,
     {
-        BNodeId{
+        BNodeId {
             value: factory(other.value.as_ref()),
             n3: other.n3,
         }
@@ -65,16 +67,18 @@ impl<T> BNodeId<T> where
     }
 }
 
-impl<T> AsRef<str> for BNodeId<T> where
-    T:AsRef<str>
+impl<T> AsRef<str> for BNodeId<T>
+where
+    T: AsRef<str>,
 {
     fn as_ref(&self) -> &str {
         &self.value.as_ref()
     }
 }
 
-impl<T> Deref for BNodeId<T> where
-    T:AsRef<str>
+impl<T> Deref for BNodeId<T>
+where
+    T: AsRef<str>,
 {
     type Target = T;
     fn deref(&self) -> &T {
@@ -82,7 +86,8 @@ impl<T> Deref for BNodeId<T> where
     }
 }
 
-impl<T, U> PartialEq<BNodeId<U>> for BNodeId<T> where
+impl<T, U> PartialEq<BNodeId<U>> for BNodeId<T>
+where
     T: AsRef<str>,
     U: AsRef<str>,
 {
@@ -91,7 +96,8 @@ impl<T, U> PartialEq<BNodeId<U>> for BNodeId<T> where
     }
 }
 
-impl<'a, T> PartialEq<&'a str> for BNodeId<T> where
+impl<'a, T> PartialEq<&'a str> for BNodeId<T>
+where
     T: AsRef<str>,
 {
     fn eq(&self, other: &&'a str) -> bool {
@@ -99,14 +105,14 @@ impl<'a, T> PartialEq<&'a str> for BNodeId<T> where
     }
 }
 
-impl<T> Hash for BNodeId<T> where
+impl<T> Hash for BNodeId<T>
+where
     T: AsRef<str>,
 {
-    fn hash<H:Hasher> (&self, state: &mut H) {
+    fn hash<H: Hasher>(&self, state: &mut H) {
         self.value.as_ref().hash(state)
     }
 }
-
 
 lazy_static! {
     static ref N3_BNODE_ID: Regex = Regex::new(r"(?x)
@@ -120,8 +126,6 @@ lazy_static! {
       $
     ").unwrap();
 }
-
-
 
 #[cfg(test)]
 mod test {

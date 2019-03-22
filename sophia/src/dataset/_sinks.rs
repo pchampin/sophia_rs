@@ -1,10 +1,10 @@
 // this module is transparently re-exported by its parent `dataset`
 use crate::dataset::_traits::*;
-use crate::quad::*;
 use crate::quad::stream::*;
+use crate::quad::*;
 
 /// The [`QuadSink`] returned by [`MutableDataset::inserter`].
-/// 
+///
 /// [`QuadSink`]: ../quad/stream/trait.QuadSink.html
 /// [`MutableDataset::inserter`]: trait.MutableDataset.html#method.inserter
 ///
@@ -24,21 +24,21 @@ impl<'a, D: MutableDataset + ?Sized + 'a> QuadSink for Inserter<'a, D> {
     type Error = <D as MutableDataset>::MutationError;
 
     fn feed<'b, Q: Quad<'b>>(&mut self, q: &Q) -> Result<(), Self::Error> {
-        self.dataset.insert(q.s(), q.p(), q.o(), q.g()).map(|inserted| {
-            if inserted {
-                self.count += 1;
-            }
-        })
+        self.dataset
+            .insert(q.s(), q.p(), q.o(), q.g())
+            .map(|inserted| {
+                if inserted {
+                    self.count += 1;
+                }
+            })
     }
     fn finish(&mut self) -> Result<Self::Outcome, Self::Error> {
         Ok(self.count)
     }
-
 }
 
-
 /// The [`QuadSink`] returned by [`MutableDataset::remover`].
-/// 
+///
 /// [`QuadSink`]: ../quad/stream/trait.QuadSink.html
 /// [`MutableDataset::remover`]: trait.MutableDataset.html#method.remover
 ///
@@ -58,18 +58,18 @@ impl<'a, D: MutableDataset + ?Sized + 'a> QuadSink for Remover<'a, D> {
     type Error = <D as MutableDataset>::MutationError;
 
     fn feed<'b, Q: Quad<'b>>(&mut self, q: &Q) -> Result<(), Self::Error> {
-        self.dataset.remove(q.s(), q.p(), q.o(), q.g()).map(|removed| {
-            if removed {
-                self.count += 1;
-            }
-        })
+        self.dataset
+            .remove(q.s(), q.p(), q.o(), q.g())
+            .map(|removed| {
+                if removed {
+                    self.count += 1;
+                }
+            })
     }
     fn finish(&mut self) -> Result<Self::Outcome, Self::Error> {
         Ok(self.count)
     }
 }
-
-
 
 #[cfg(test)]
 mod test {
