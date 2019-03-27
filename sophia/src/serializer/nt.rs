@@ -51,7 +51,7 @@ pub struct Writer<W: io::Write> {
     write: W,
 }
 
-impl<W: io::Write> WriteSerializer<W> for Writer<W> {
+impl<W: io::Write> TripleWriter<W> for Writer<W> {
     type Config = Config;
 
     fn new(write: W, config: Self::Config) -> Self {
@@ -87,7 +87,7 @@ impl<W: io::Write> TripleSink for Writer<W> {
     }
 }
 
-def_stringifier!();
+def_triple_stringifier!();
 
 /// Write a single RDF term into `w` using the NT syntax.
 pub fn write_term<T, W>(w: &mut W, t: &Term<T>) -> io::Result<()>

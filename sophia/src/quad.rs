@@ -3,6 +3,7 @@
 //!
 //! They are the individual statements of an RDF dataset.
 
+use std::borrow::Borrow;
 use std::hash::Hash;
 
 use crate::term::graph_key::*;
@@ -76,9 +77,10 @@ where
     }
 }
 
-impl<'a, T> Triple<'a> for (T, GraphKey<T::TermData>)
+impl<'a, T, G> Triple<'a> for (T, G)
 where
     T: Triple<'a>,
+    G: Borrow<GraphKey<T::TermData>>,
 {
     type TermData = T::TermData;
     #[inline]
@@ -95,19 +97,20 @@ where
     }
 }
 
-impl<'a, T> Quad<'a> for (T, GraphKey<T::TermData>)
+impl<'a, T, G> Quad<'a> for (T, G)
 where
     T: Triple<'a>,
+    G: Borrow<GraphKey<T::TermData>>,
 {
     #[inline]
     fn g(&self) -> &GraphKey<T::TermData> {
-        &self.1
+        self.1.borrow()
     }
 }
 
-impl<'a, T: Quad<'a>> Quad<'a> for &'a T {
+impl<'a, Q: Quad<'a>> Quad<'a> for &'a Q {
     #[inline]
-    fn g(&self) -> &GraphKey<T::TermData> {
+    fn g(&self) -> &GraphKey<Q::TermData> {
         (*self).g()
     }
 }
