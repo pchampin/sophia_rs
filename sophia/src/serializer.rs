@@ -35,6 +35,7 @@ use std::result::Result; // override ::error::Result
 
 #[macro_use]
 pub mod common;
+pub mod nq;
 pub mod nt;
 
 /// An extension of the [`TripleSink`] trait,

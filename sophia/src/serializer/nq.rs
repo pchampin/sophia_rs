@@ -1,11 +1,11 @@
-//! Serializer for the [N-Triples] concrete syntax of RDF.
+//! Serializer for the [N-Quads] concrete syntax of RDF.
 //!
 //! **Important**:
 //! the methods in this module accepting a [`Write`]
 //! make no effort to minimize the number of write operations.
 //! Hence, in most cased, they should be passed a [`BufWriter`].
 //!
-//! [N-Triples]: https://www.w3.org/TR/n-triples/
+//! [N-Quads]: https://www.w3.org/TR/n-quads/
 //! [`Write`]: https://doc.rust-lang.org/std/io/trait.Write.html
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
@@ -14,12 +14,13 @@ use std::io;
 use std::mem::swap;
 
 use crate::term::{LiteralKind, Term};
-use crate::triple::stream::*;
-use crate::triple::Triple;
+use crate::term::graph_key::GraphKey;
+use crate::quad::stream::*;
+use crate::quad::Quad;
 
 use super::*;
 
-/// NT serializer configuration.
+/// N-Quads serializer configuration.
 ///
 /// For more information,
 /// see the [uniform interface] of serializers.
@@ -43,15 +44,15 @@ impl Config {
 
 def_default_serializer_api!();
 
-/// A [`TripleSink`] returned by [`Config::writer`].
+/// A [`QuadSink`] returned by [`Config::writer`].
 ///
-/// [`TripleSink`]: ../../triple/stream/trait.TripleSink.html
+/// [`QuadSink`]: ../../quad/stream/trait.QuadSink.html
 /// [`Config::writer`]: struct.Config.html#method.writer
 pub struct Writer<W: io::Write> {
     write: W,
 }
 
-impl<W: io::Write> TripleWriter<W> for Writer<W> {
+impl<W: io::Write> QuadWriter<W> for Writer<W> {
     type Config = Config;
 
     fn new(write: W, config: Self::Config) -> Self {
@@ -64,11 +65,11 @@ impl<W: io::Write> TripleWriter<W> for Writer<W> {
     }
 }
 
-impl<W: io::Write> TripleSink for Writer<W> {
+impl<W: io::Write> QuadSink for Writer<W> {
     type Outcome = ();
     type Error = Error;
 
-    fn feed<'a, T: Triple<'a>>(&mut self, t: &T) -> Result<(), Self::Error> {
+    fn feed<'a, T: Quad<'a>>(&mut self, t: &T) -> Result<(), Self::Error> {
         let w = &mut self.write;
 
         (|| {
@@ -77,9 +78,13 @@ impl<W: io::Write> TripleSink for Writer<W> {
             write_term(w, t.p())?;
             w.write_all(b" ")?;
             write_term(w, t.o())?;
+            if let GraphKey::Name(g) = t.g() {
+                w.write_all(b" ")?;
+                write_term(w, g)?;
+            }
             w.write_all(b" .\n")
         })()
-        .chain_err(|| ErrorKind::SerializerError("NT serializer".into()))
+        .chain_err(|| ErrorKind::SerializerError("N-Quads serializer".into()))
     }
 
     fn finish(&mut self) -> Result<(), Self::Error> {
@@ -87,9 +92,9 @@ impl<W: io::Write> TripleSink for Writer<W> {
     }
 }
 
-def_triple_stringifier!();
+def_quad_stringifier!();
 
-/// Write a single RDF term into `w` using the NT syntax.
+/// Write a single RDF term into `w` using the N-Quads syntax.
 pub fn write_term<T, W>(w: &mut W, t: &Term<T>) -> io::Result<()>
 where
     T: AsRef<str> + Clone + Eq + Hash,
@@ -135,7 +140,7 @@ where
     Ok(())
 }
 
-/// Stringifies a single RDF term using the NT syntax.
+/// Stringifies a single RDF term using the N-Quads syntax.
 pub fn stringify_term<T>(t: &Term<T>) -> String
 where
     T: AsRef<str> + Clone + Eq + Hash,
@@ -200,60 +205,11 @@ pub(crate) fn write_non_n3_bnode_id(w: &mut impl io::Write, id: &str) -> io::Res
 // ---------------------------------------------------------------------------------
 
 #[cfg(test)]
-pub(crate) mod test {
+mod test {
     use super::*;
     use crate::ns::*;
     use crate::term::*;
-
-    lazy_static! {
-        pub(crate) static ref NT_TERMS: Vec<(StaticTerm, &'static str)> = vec![
-            (
-                StaticTerm::new_iri("http://example.org/foo/bar").unwrap(),
-                r"<http://example.org/foo/bar>",
-            ),
-            (
-                StaticTerm::new_iri2("http://example.org/foo/", "bar").unwrap(),
-                r"<http://example.org/foo/bar>",
-            ),
-            (
-                // IRI with non ascii term
-                StaticTerm::new_iri("http://example.org/hé/\u{10000}/").unwrap(),
-                "<http://example.org/hé/\u{10000}/>",
-            ),
-            (
-                // BNode nice
-                StaticTerm::new_bnode("foo_bar.baz").unwrap(),
-                r"_:foo_bar.baz",
-            ),
-            (
-                // BNode naughty
-                StaticTerm::new_bnode("foo bar").unwrap(),
-                r"_:_666p6p20626172_:_",
-            ),
-            (
-                StaticTerm::new_literal_lang("chat", "fr-FR").unwrap(),
-                r#""chat"@fr-FR"#,
-            ),
-            (
-                StaticTerm::new_literal_dt("chat", xsd::string).unwrap(),
-                r#""chat""#,
-            ),
-            (
-                StaticTerm::new_literal_dt("42", xsd::integer).unwrap(),
-                r#""42"^^<http://www.w3.org/2001/XMLSchema#integer>"#,
-            ),
-            (
-                StaticTerm::new_literal_dt(" \n \r \\ \" hello world", xsd::string).unwrap(),
-                r#"" \n \r \\ \" hello world""#,
-            ),
-            (
-                // Literal with non-ascii characteres
-                StaticTerm::new_literal_dt("é \u{10000}", xsd::string).unwrap(),
-                // in canonical form, non-ascii characters are NOT escaped in literals
-                "\"é \u{10000}\"",
-            )
-        ];
-    }
+    use super::super::nt::test::NT_TERMS;
 
     #[test]
     fn terms() {
@@ -266,22 +222,28 @@ pub(crate) mod test {
     #[test]
     fn graph() {
         let me = StaticTerm::new_iri("http://champin.net/#pa").unwrap();
-        let triples = vec![
-            [
-                me,
-                rdf::type_,
-                StaticTerm::new_iri("http://schema.org/Person").unwrap(),
-            ],
-            [
-                me,
-                StaticTerm::new_iri("http://schema.org/name").unwrap(),
-                StaticTerm::new_literal_dt("Pierre-Antoine", xsd::string).unwrap(),
-            ],
+        let quads = vec![
+            (
+                [
+                    me,
+                    rdf::type_,
+                    StaticTerm::new_iri("http://schema.org/Person").unwrap(),
+                ],
+                GraphKey::Default,
+            ),
+            (
+                [
+                    me,
+                    StaticTerm::new_iri("http://schema.org/name").unwrap(),
+                    StaticTerm::new_literal_dt("Pierre-Antoine", xsd::string).unwrap(),
+                ],
+                GraphKey::Name(StaticTerm::new_iri("http://example.org/graph").unwrap())
+            ),
         ];
-        let mut triples = triples.into_iter().as_triple_source();
-        let s = triples.in_sink(&mut stringifier()).unwrap();
+        let mut quads = quads.into_iter().as_quad_source();
+        let s = quads.in_quad_sink(&mut stringifier()).unwrap();
         assert_eq!(s, r#"<http://champin.net/#pa> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person> .
-<http://champin.net/#pa> <http://schema.org/name> "Pierre-Antoine" .
+<http://champin.net/#pa> <http://schema.org/name> "Pierre-Antoine" <http://example.org/graph> .
 "#);
     }
 }
