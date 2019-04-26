@@ -19,7 +19,7 @@ use crate::triple::Triple;
 
 use super::*;
 
-/// NT serializer configuration.
+/// N-Triples serializer configuration.
 ///
 /// For more information,
 /// see the [uniform interface] of serializers.
@@ -79,7 +79,7 @@ impl<W: io::Write> TripleSink for Writer<W> {
             write_term(w, t.o())?;
             w.write_all(b" .\n")
         })()
-        .chain_err(|| ErrorKind::SerializerError("NT serializer".into()))
+        .chain_err(|| ErrorKind::SerializerError("N-Triples serializer".into()))
     }
 
     fn finish(&mut self) -> Result<(), Self::Error> {
@@ -89,7 +89,7 @@ impl<W: io::Write> TripleSink for Writer<W> {
 
 def_triple_stringifier!();
 
-/// Write a single RDF term into `w` using the NT syntax.
+/// Write a single RDF term into `w` using the N-Triples syntax.
 pub fn write_term<T, W>(w: &mut W, t: &Term<T>) -> io::Result<()>
 where
     T: AsRef<str> + Clone + Eq + Hash,
@@ -135,7 +135,7 @@ where
     Ok(())
 }
 
-/// Stringifies a single RDF term using the NT syntax.
+/// Stringifies a single RDF term using the N-Triples syntax.
 pub fn stringify_term<T>(t: &Term<T>) -> String
 where
     T: AsRef<str> + Clone + Eq + Hash,

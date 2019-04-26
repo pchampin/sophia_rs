@@ -1,4 +1,4 @@
-//! Parser [N-Quads], a simple line-oriented syntax for serializing RDF dataset.
+//! Parser for [N-Quads], a simple line-oriented syntax for serializing RDF dataset.
 //!
 //! [N-Quads]: https://www.w3.org/TR/n-quads/
 //!
@@ -21,7 +21,7 @@ use crate::quad::Quad;
 use crate::term::{graph_key::GraphKey, Term};
 use crate::triple::Triple;
 
-/// NQ parser configuration.
+/// N-Quads parser configuration.
 ///
 /// For more information,
 /// see the [uniform interface] of parsers.

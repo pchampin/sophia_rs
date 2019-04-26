@@ -81,7 +81,7 @@ COMMENT = _{ "#" ~ ( !("\n" | "\r") ~ ANY )* }
 
 ntriples_line = _{ triple ~ EOI }
 
-// generalized NTriples,
+// generalized N-Triples,
 // allowing any term (including variables and relative IRIs) in any position.
 
 generalized_nt_doc = _{ generalized_triple? ~ ( eol ~ generalized_triple )* ~ eol? ~ EOI }
@@ -115,7 +115,7 @@ graphLabel = _{ iriref | blank_node_label }
 
 nquads_line = _{ statement ~ EOI }
 
-// generalized NTriples,
+// generalized N-Quads,
 // allowing any term (including variables and relative IRIs) in any position.
 
 generalized_nq_doc = _{ generalized_statement? ~ ( eol ~ generalized_statement )* ~ eol? ~ EOI }
