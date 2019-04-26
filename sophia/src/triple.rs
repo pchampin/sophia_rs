@@ -12,8 +12,6 @@
 //! * John's family name is "Doe".
 //!
 
-use std::hash::Hash;
-
 use crate::term::*;
 
 pub mod stream;
@@ -21,7 +19,7 @@ pub mod stream;
 /// This trait represents an abstract RDF triple,
 /// and provide convenient methods for working with triples.
 pub trait Triple<'a> {
-    type TermData: AsRef<str> + Clone + Eq + Hash + 'a;
+    type TermData: TermData + 'a;
     /// The subject of this triple.
     fn s(&self) -> &Term<Self::TermData>;
     /// The predicate of this triple.
@@ -32,7 +30,7 @@ pub trait Triple<'a> {
 
 impl<'a, T> Triple<'a> for [Term<T>; 3]
 where
-    T: AsRef<str> + Clone + Eq + Hash + 'a,
+    T: TermData + 'a,
 {
     type TermData = T;
     #[inline]
@@ -51,7 +49,7 @@ where
 
 impl<'a, T> Triple<'a> for [&'a Term<T>; 3]
 where
-    T: AsRef<str> + Clone + Eq + Hash + 'a,
+    T: TermData + 'a,
 {
     type TermData = T;
     #[inline]

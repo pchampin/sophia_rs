@@ -4,7 +4,6 @@
 //! They are the individual statements of an RDF dataset.
 
 use std::borrow::Borrow;
-use std::hash::Hash;
 
 use crate::term::graph_key::*;
 use crate::term::*;
@@ -21,7 +20,7 @@ pub trait Quad<'a>: Triple<'a> {
 
 impl<'a, T> Triple<'a> for [Term<T>; 4]
 where
-    T: AsRef<str> + Clone + Eq + Hash + 'a,
+    T: TermData + 'a,
 {
     type TermData = T;
     #[inline]
@@ -40,7 +39,7 @@ where
 
 impl<'a, T> Quad<'a> for [Term<T>; 4]
 where
-    T: AsRef<str> + Clone + Eq + Hash + 'a,
+    T: TermData + 'a,
 {
     #[inline]
     fn g(&self) -> &GraphKey<T> {
@@ -50,7 +49,7 @@ where
 
 impl<'a, T> Triple<'a> for [&'a Term<T>; 4]
 where
-    T: AsRef<str> + Clone + Eq + Hash + 'a,
+    T: TermData + 'a,
 {
     type TermData = T;
     #[inline]
@@ -69,7 +68,7 @@ where
 
 impl<'a, T> Quad<'a> for [&'a Term<T>; 4]
 where
-    T: AsRef<str> + Clone + Eq + Hash + 'a,
+    T: TermData + 'a,
 {
     #[inline]
     fn g(&self) -> &GraphKey<T> {

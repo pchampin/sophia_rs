@@ -32,8 +32,6 @@
 //! [`FastGraph`]: type.FastGraph.html
 //! [`LightGraph`]: type.LightGraph.html
 
-use std::hash::Hash;
-
 use super::_traits::*;
 use super::index::*;
 use crate::term::factory::*;

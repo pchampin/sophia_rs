@@ -1,7 +1,6 @@
 // this module is transparently re-exported by its parent `dataset`
 
 use std::collections::HashSet;
-use std::hash::Hash;
 
 use resiter::filter::*;
 use resiter::map::*;
@@ -56,7 +55,7 @@ pub trait Dataset<'a> {
     /// See also [`quads`](#tymethod.quads).
     fn quads_with_s<T>(&'a self, s: &'a Term<T>) -> DQuadSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
     {
         Box::new(self.quads().filter_ok(move |q| q.s() == s))
     }
@@ -65,7 +64,7 @@ pub trait Dataset<'a> {
     /// See also [`quads`](#tymethod.quads).
     fn quads_with_p<T>(&'a self, p: &'a Term<T>) -> DQuadSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
     {
         Box::new(self.quads().filter_ok(move |q| q.p() == p))
     }
@@ -74,7 +73,7 @@ pub trait Dataset<'a> {
     /// See also [`quads`](#tymethod.quads).
     fn quads_with_o<T>(&'a self, o: &'a Term<T>) -> DQuadSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
     {
         Box::new(self.quads().filter_ok(move |q| q.o() == o))
     }
@@ -83,7 +82,7 @@ pub trait Dataset<'a> {
     /// See also [`quads`](#tymethod.quads).
     fn quads_with_g<T>(&'a self, g: &'a GraphKey<T>) -> DQuadSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
     {
         Box::new(self.quads().filter_ok(move |q| q.g() == g))
     }
@@ -92,8 +91,8 @@ pub trait Dataset<'a> {
     /// See also [`quads`](#tymethod.quads).
     fn quads_with_sp<T, U>(&'a self, s: &'a Term<T>, p: &'a Term<U>) -> DQuadSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
     {
         Box::new(self.quads_with_s(s).filter_ok(move |q| q.p() == p))
     }
@@ -102,8 +101,8 @@ pub trait Dataset<'a> {
     /// See also [`quads`](#tymethod.quads).
     fn quads_with_so<T, U>(&'a self, s: &'a Term<T>, o: &'a Term<U>) -> DQuadSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
     {
         Box::new(self.quads_with_s(s).filter_ok(move |q| q.o() == o))
     }
@@ -112,8 +111,8 @@ pub trait Dataset<'a> {
     /// See also [`quads`](#tymethod.quads).
     fn quads_with_sg<T, U>(&'a self, s: &'a Term<T>, g: &'a GraphKey<U>) -> DQuadSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
     {
         Box::new(self.quads_with_g(g).filter_ok(move |q| q.s() == s))
     }
@@ -122,8 +121,8 @@ pub trait Dataset<'a> {
     /// See also [`quads`](#tymethod.quads).
     fn quads_with_po<T, U>(&'a self, p: &'a Term<T>, o: &'a Term<U>) -> DQuadSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
     {
         Box::new(self.quads_with_p(p).filter_ok(move |q| q.o() == o))
     }
@@ -132,8 +131,8 @@ pub trait Dataset<'a> {
     /// See also [`quads`](#tymethod.quads).
     fn quads_with_pg<T, U>(&'a self, p: &'a Term<T>, g: &'a GraphKey<U>) -> DQuadSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
     {
         Box::new(self.quads_with_g(g).filter_ok(move |q| q.p() == p))
     }
@@ -142,8 +141,8 @@ pub trait Dataset<'a> {
     /// See also [`quads`](#tymethod.quads).
     fn quads_with_og<T, U>(&'a self, o: &'a Term<T>, g: &'a GraphKey<U>) -> DQuadSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
     {
         Box::new(self.quads_with_g(g).filter_ok(move |q| q.o() == o))
     }
@@ -157,9 +156,9 @@ pub trait Dataset<'a> {
         o: &'a Term<V>,
     ) -> DQuadSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
+        V: TermData,
     {
         Box::new(self.quads_with_sp(s, p).filter_ok(move |q| q.o() == o))
     }
@@ -173,9 +172,9 @@ pub trait Dataset<'a> {
         g: &'a GraphKey<V>,
     ) -> DQuadSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
+        V: TermData,
     {
         Box::new(self.quads_with_sg(s, g).filter_ok(move |q| q.p() == p))
     }
@@ -189,9 +188,9 @@ pub trait Dataset<'a> {
         g: &'a GraphKey<V>,
     ) -> DQuadSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
+        V: TermData,
     {
         Box::new(self.quads_with_sg(s, g).filter_ok(move |q| q.o() == o))
     }
@@ -205,9 +204,9 @@ pub trait Dataset<'a> {
         g: &'a GraphKey<V>,
     ) -> DQuadSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
+        V: TermData,
     {
         Box::new(self.quads_with_pg(p, g).filter_ok(move |q| q.o() == o))
     }
@@ -222,10 +221,10 @@ pub trait Dataset<'a> {
         g: &'a GraphKey<W>,
     ) -> DQuadSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
-        W: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
+        V: TermData,
+        W: TermData,
     {
         Box::new(self.quads_with_spg(s, p, g).filter_ok(move |q| q.o() == o))
     }
@@ -239,10 +238,10 @@ pub trait Dataset<'a> {
         g: &'a GraphKey<W>,
     ) -> DResult<'a, Self, bool>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
-        W: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
+        V: TermData,
+        W: TermData,
     {
         match self.quads_with_spog(s, p, o, g).next() {
             None => Ok(false),
@@ -508,10 +507,10 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
         g: &GraphKey<W>,
     ) -> MDResult<Self, bool>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
-        W: AsRef<str> + Clone + Eq + Hash;
+        T: TermData,
+        U: TermData,
+        V: TermData,
+        W: TermData;
 
     /// Remove the given quad in this dataset.
     ///
@@ -529,10 +528,10 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
         g: &GraphKey<W>,
     ) -> MDResult<Self, bool>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
-        W: AsRef<str> + Clone + Eq + Hash;
+        T: TermData,
+        U: TermData,
+        V: TermData,
+        W: TermData;
 
     /// Return a [`QuadSink`](../quad/stream/trait.QuadSink.html)
     /// that will insert into this dataset all the quads it receives.

@@ -14,19 +14,19 @@ pub use super::_graph_key_matcher::*;
 /// [term]: ../enum.Term.html
 ///
 pub trait TermMatcher {
-    type TermData: AsRef<str> + Clone + Eq + Hash;
+    type TermData: TermData;
     /// If this matcher matches only one term, return this term, else `None`.
     fn constant(&self) -> Option<&Term<Self::TermData>>;
 
     /// Check whether this matcher matches `t`.
     fn matches<T>(&self, t: &Term<T>) -> bool
     where
-        T: AsRef<str> + Clone + Eq + Hash;
+        T: TermData;
 }
 
 impl<U> TermMatcher for Term<U>
 where
-    U: AsRef<str> + Clone + Eq + Hash,
+    U: TermData,
 {
     type TermData = U;
     fn constant(&self) -> Option<&Term<Self::TermData>> {
@@ -34,7 +34,7 @@ where
     }
     fn matches<T>(&self, t: &Term<T>) -> bool
     where
-        T: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
     {
         t == self
     }
@@ -42,7 +42,7 @@ where
 
 impl<U> TermMatcher for Option<Term<U>>
 where
-    U: AsRef<str> + Clone + Eq + Hash,
+    U: TermData,
 {
     type TermData = U;
     fn constant(&self) -> Option<&Term<Self::TermData>> {
@@ -50,7 +50,7 @@ where
     }
     fn matches<T>(&self, t: &Term<T>) -> bool
     where
-        T: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
     {
         match self {
             Some(term) => t == term,
@@ -61,7 +61,7 @@ where
 
 impl<'a, U> TermMatcher for Option<&'a Term<U>>
 where
-    U: AsRef<str> + Clone + Eq + Hash,
+    U: TermData,
 {
     type TermData = U;
     fn constant(&self) -> Option<&Term<Self::TermData>> {
@@ -69,7 +69,7 @@ where
     }
     fn matches<T>(&self, t: &Term<T>) -> bool
     where
-        T: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
     {
         match self {
             Some(term) => t == *term,
@@ -80,7 +80,7 @@ where
 
 impl<U> TermMatcher for [Term<U>]
 where
-    U: AsRef<str> + Clone + Eq + Hash,
+    U: TermData,
 {
     type TermData = U;
     fn constant(&self) -> Option<&Term<Self::TermData>> {
@@ -92,7 +92,7 @@ where
     }
     fn matches<T>(&self, t: &Term<T>) -> bool
     where
-        T: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
     {
         for term in self {
             if t == term {
@@ -110,7 +110,7 @@ impl<F: Fn(&RefTerm) -> bool> TermMatcher for F {
     }
     fn matches<T>(&self, t: &Term<T>) -> bool
     where
-        T: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
     {
         self(&RefTerm::from(t))
     }

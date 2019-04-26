@@ -66,7 +66,7 @@ pub use self::_literal_kind::*;
 #[derive(Clone, Copy, Debug, Eq, Hash)]
 pub enum Term<T>
 where
-    T: AsRef<str> + Clone + Eq + Hash,
+    T: TermData,
 {
     Iri(IriData<T>),
     BNode(BNodeId<T>),
@@ -74,6 +74,10 @@ where
     Variable(T),
 }
 pub use self::Term::*;
+
+/// Trait alias for types holding the textual data of terms.
+pub trait TermData: AsRef<str> + Clone + Eq + Hash {}
+impl<T> TermData for T where T: AsRef<str> + Clone + Eq + Hash {}
 
 /// Convenient alias for a specialization of `Term<T>`.
 ///
@@ -103,7 +107,7 @@ pub type StaticTerm = RefTerm<'static>;
 
 impl<T> Term<T>
 where
-    T: AsRef<str> + Clone + Eq + Hash,
+    T: TermData,
 {
     /// Return a copy of this term's underlying text.
     ///
@@ -138,7 +142,7 @@ where
 
 impl<T> Term<T>
 where
-    T: AsRef<str> + Clone + Eq + Hash,
+    T: TermData,
 {
     /// Return a new IRI term from the given text.
     ///
@@ -220,7 +224,7 @@ where
     /// Copy another term with the given factory.
     pub fn from_with<'a, U, F>(other: &'a Term<U>, mut factory: F) -> Term<T>
     where
-        U: AsRef<str> + Clone + Eq + Hash,
+        U: TermData,
         F: FnMut(&'a str) -> T,
     {
         match other {
@@ -238,7 +242,7 @@ where
     /// applying the given normalization policy.
     pub fn normalized_with<U, F>(other: &'_ Term<U>, mut factory: F, norm: Normalization) -> Term<T>
     where
-        U: AsRef<str> + Clone + Eq + Hash,
+        U: TermData,
         F: FnMut(&str) -> T,
     {
         match other {
@@ -337,7 +341,7 @@ where
     ///
     pub fn join<U>(&self, t: &Term<U>) -> Term<U>
     where
-        U: AsRef<str> + Clone + Eq + Hash + From<String>,
+        U: TermData + From<String>,
     {
         let mut ret = None;
         self.batch_join(|join| {
@@ -374,7 +378,7 @@ where
     pub fn batch_join<F, U>(&self, task: F)
     where
         F: FnOnce(&Fn(&Term<U>) -> Term<U>) -> (),
-        U: AsRef<str> + Clone + Eq + Hash + From<String>,
+        U: TermData + From<String>,
     {
         match self {
             Iri(iri) if iri.is_absolute() => {
@@ -407,8 +411,8 @@ where
 
 impl<T, U> PartialEq<Term<U>> for Term<T>
 where
-    T: AsRef<str> + Clone + Eq + Hash,
-    U: AsRef<str> + Clone + Eq + Hash,
+    T: TermData,
+    U: TermData,
 {
     fn eq(&self, other: &Term<U>) -> bool {
         match (self, other) {
@@ -425,8 +429,8 @@ where
 
 impl<T, U> PartialEq<IriData<U>> for Term<T>
 where
-    T: AsRef<str> + Clone + Eq + Hash,
-    U: AsRef<str> + Clone + Eq + Hash,
+    T: TermData,
+    U: TermData,
 {
     fn eq(&self, other: &IriData<U>) -> bool {
         match self {
@@ -438,8 +442,8 @@ where
 
 impl<'a, T, U> From<&'a Term<U>> for Term<T>
 where
-    T: AsRef<str> + Clone + Eq + Hash + From<&'a str>,
-    U: AsRef<str> + Clone + Eq + Hash,
+    T: TermData + From<&'a str>,
+    U: TermData,
 {
     fn from(other: &'a Term<U>) -> Term<T> {
         Self::from_with(other, T::from)

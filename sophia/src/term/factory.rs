@@ -14,21 +14,21 @@ use super::*;
 pub type FTerm<F> = Term<<F as TermFactory>::TermData>;
 
 pub trait TermFactory {
-    type TermData: AsRef<str> + Clone + Eq + Hash;
+    type TermData: TermData;
 
     fn get_term_data(&mut self, txt: &str) -> Self::TermData;
 
     fn iri<T>(&mut self, iri: T) -> Result<FTerm<Self>>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
     {
         Term::new_iri(self.get_term_data(iri.as_ref()))
     }
 
     fn iri2<T, U>(&mut self, ns: T, suffix: U) -> Result<FTerm<Self>>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
     {
         Term::new_iri2(
             self.get_term_data(ns.as_ref()),
@@ -38,15 +38,15 @@ pub trait TermFactory {
 
     fn bnode<T>(&mut self, id: T) -> Result<FTerm<Self>>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
     {
         Term::new_bnode(self.get_term_data(id.as_ref()))
     }
 
     fn literal_lang<T, U>(&mut self, txt: T, lang: U) -> Result<FTerm<Self>>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
     {
         Term::new_literal_lang(
             self.get_term_data(txt.as_ref()),
@@ -56,8 +56,8 @@ pub trait TermFactory {
 
     fn literal_dt<T, U>(&mut self, txt: T, dt: Term<U>) -> Result<FTerm<Self>>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
         Self::TermData: Debug,
     {
         Term::new_literal_dt(self.get_term_data(txt.as_ref()), self.copy(&dt))
@@ -65,21 +65,21 @@ pub trait TermFactory {
 
     fn variable<T>(&mut self, name: T) -> Result<FTerm<Self>>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
     {
         Term::new_variable(self.get_term_data(name.as_ref()))
     }
 
     fn copy<T>(&mut self, other: &Term<T>) -> FTerm<Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
     {
         Term::from_with(other, |txt| self.get_term_data(txt))
     }
 
     fn copy_normalized<T>(&mut self, other: &Term<T>, norm: Normalization) -> FTerm<Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
     {
         Term::normalized_with(other, |txt| self.get_term_data(txt), norm)
     }

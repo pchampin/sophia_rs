@@ -1,7 +1,6 @@
 // this module is transparently re-exported by its parent `graph`
 use std::borrow::Borrow;
 use std::collections::HashMap;
-use std::hash::Hash;
 
 use crate::graph::index::TermIndexMap;
 use crate::term::factory::{FTerm, TermFactory};
@@ -184,7 +183,7 @@ impl_unsigned_for!(u64);
 #[inline]
 unsafe fn fake_static<S, T>(t: &T) -> StaticTerm
 where
-    S: AsRef<str> + Clone + Eq + Hash,
+    S: TermData,
     T: Borrow<Term<S>>,
 {
     StaticTerm::from_with(t.borrow(), |txt| &*(txt as *const str))

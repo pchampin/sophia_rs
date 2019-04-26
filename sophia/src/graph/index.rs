@@ -47,12 +47,12 @@ pub trait TermIndexMap: Default {
 pub trait IndexedGraph {
     /// The type used to represent terms internally.
     type Index: Copy + Eq + Hash;
-    type TermData: AsRef<str> + Clone + Eq + Hash + 'static;
+    type TermData: TermData + 'static;
 
     /// Return the index for the given term, if it exists.
     fn get_index<T>(&self, t: &Term<T>) -> Option<Self::Index>
     where
-        T: AsRef<str> + Clone + Eq + Hash;
+        T: TermData;
 
     /// Return the term for the given index, if it exists.
     fn get_term(&self, i: Self::Index) -> Option<&Term<Self::TermData>>;
@@ -66,9 +66,9 @@ pub trait IndexedGraph {
         o: &Term<V>,
     ) -> Option<[Self::Index; 3]>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash;
+        T: TermData,
+        U: TermData,
+        V: TermData;
 
     /// Remove a triple from this Graph,
     /// and return the corresponding tuple of indices.
@@ -79,9 +79,9 @@ pub trait IndexedGraph {
         o: &Term<V>,
     ) -> Option<[Self::Index; 3]>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash;
+        T: TermData,
+        U: TermData,
+        V: TermData;
 
     fn shrink_to_fit(&mut self);
 }

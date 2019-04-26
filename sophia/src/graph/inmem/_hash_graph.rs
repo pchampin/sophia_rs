@@ -6,7 +6,7 @@ use std::hash::Hash;
 use crate::error::*;
 use crate::graph::index::{IndexedGraph, TermIndexMap};
 use crate::graph::*;
-use crate::term::{factory::TermFactory, RefTerm, Term};
+use crate::term::{factory::TermFactory, RefTerm, Term, TermData};
 
 /// A generic implementation of [`Graph`] and [`MutableGraph`],
 /// storing its terms in a [`TermIndexMap`],
@@ -60,7 +60,7 @@ where
     #[inline]
     fn get_index<T>(&self, t: &Term<T>) -> Option<Self::Index>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
     {
         self.terms.get_index(&RefTerm::from(t))
     }
@@ -77,9 +77,9 @@ where
         o: &Term<V>,
     ) -> Option<[I::Index; 3]>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
+        V: TermData,
     {
         let si = self.terms.make_index(&RefTerm::from(s));
         let pi = self.terms.make_index(&RefTerm::from(p));
@@ -102,9 +102,9 @@ where
         o: &Term<V>,
     ) -> Option<[I::Index; 3]>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
+        V: TermData,
     {
         let si = self.terms.get_index(&RefTerm::from(s));
         let pi = self.terms.get_index(&RefTerm::from(p));

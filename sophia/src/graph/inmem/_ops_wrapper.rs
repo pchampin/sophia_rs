@@ -53,7 +53,7 @@ where
 
     fn gw_triples_with_o<U>(&'a self, o: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped>
     where
-        U: AsRef<str> + Clone + Eq + Hash,
+        U: TermData,
     {
         if let Some(oi) = self.wrapped.get_index(o) {
             if let Some(pis) = self.o2p.get(&oi) {
@@ -83,8 +83,8 @@ where
         o: &'a Term<V>,
     ) -> GTripleSource<'a, Self::Wrapped>
     where
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
+        U: TermData,
+        V: TermData,
     {
         if let Some(pi) = self.wrapped.get_index(p) {
             if let Some(oi) = self.wrapped.get_index(o) {
@@ -121,7 +121,7 @@ where
     #[inline]
     fn get_index<U>(&self, t: &Term<U>) -> Option<Self::Index>
     where
-        U: AsRef<str> + Clone + Eq + Hash,
+        U: TermData,
     {
         self.wrapped.get_index(t)
     }
@@ -138,9 +138,9 @@ where
         o: &Term<W>,
     ) -> Option<[Self::Index; 3]>
     where
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
-        W: AsRef<str> + Clone + Eq + Hash,
+        U: TermData,
+        V: TermData,
+        W: TermData,
     {
         let modified = self.wrapped.insert_indexed(s, p, o);
         if let Some([si, pi, oi]) = modified {
@@ -157,9 +157,9 @@ where
         o: &Term<W>,
     ) -> Option<[Self::Index; 3]>
     where
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
-        W: AsRef<str> + Clone + Eq + Hash,
+        U: TermData,
+        V: TermData,
+        W: TermData,
     {
         let modified = self.wrapped.remove_indexed(s, p, o);
         if let Some([si, pi, oi]) = modified {

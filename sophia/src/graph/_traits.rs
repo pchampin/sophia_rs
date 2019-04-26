@@ -52,7 +52,7 @@ pub trait Graph<'a> {
     /// See also [`triples`](#tymethod.triples).
     fn triples_with_s<T>(&'a self, s: &'a Term<T>) -> GTripleSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
     {
         Box::new(self.triples().filter_ok(move |t| t.s() == s))
     }
@@ -61,7 +61,7 @@ pub trait Graph<'a> {
     /// See also [`triples`](#tymethod.triples).
     fn triples_with_p<T>(&'a self, p: &'a Term<T>) -> GTripleSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
     {
         Box::new(self.triples().filter_ok(move |t| t.p() == p))
     }
@@ -70,7 +70,7 @@ pub trait Graph<'a> {
     /// See also [`triples`](#tymethod.triples).
     fn triples_with_o<T>(&'a self, o: &'a Term<T>) -> GTripleSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
     {
         Box::new(self.triples().filter_ok(move |t| t.o() == o))
     }
@@ -79,8 +79,8 @@ pub trait Graph<'a> {
     /// See also [`triples`](#tymethod.triples).
     fn triples_with_sp<T, U>(&'a self, s: &'a Term<T>, p: &'a Term<U>) -> GTripleSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
     {
         Box::new(self.triples_with_s(s).filter_ok(move |t| t.p() == p))
     }
@@ -89,8 +89,8 @@ pub trait Graph<'a> {
     /// See also [`triples`](#tymethod.triples).
     fn triples_with_so<T, U>(&'a self, s: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
     {
         Box::new(self.triples_with_s(s).filter_ok(move |t| t.o() == o))
     }
@@ -99,8 +99,8 @@ pub trait Graph<'a> {
     /// See also [`triples`](#tymethod.triples).
     fn triples_with_po<T, U>(&'a self, p: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
     {
         Box::new(self.triples_with_p(p).filter_ok(move |t| t.o() == o))
     }
@@ -114,9 +114,9 @@ pub trait Graph<'a> {
         o: &'a Term<V>,
     ) -> GTripleSource<'a, Self>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
+        V: TermData,
     {
         Box::new(self.triples_with_sp(s, p).filter_ok(move |t| t.o() == o))
     }
@@ -129,9 +129,9 @@ pub trait Graph<'a> {
         o: &'a Term<V>,
     ) -> GResult<'a, Self, bool>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
+        V: TermData,
     {
         match self.triples_with_spo(s, p, o).next() {
             None => Ok(false),
@@ -317,9 +317,9 @@ pub trait MutableGraph: for<'x> Graph<'x> {
     ///
     fn insert<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash;
+        T: TermData,
+        U: TermData,
+        V: TermData;
 
     /// Insert the given triple in this graph.
     ///
@@ -331,9 +331,9 @@ pub trait MutableGraph: for<'x> Graph<'x> {
     ///
     fn remove<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash;
+        T: TermData,
+        U: TermData,
+        V: TermData;
 
     /// Return a [`TripleSink`](../triple/stream/trait.TripleSink.html)
     /// that will insert into this graph all the triples it receives.

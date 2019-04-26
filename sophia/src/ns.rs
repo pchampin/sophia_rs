@@ -19,15 +19,13 @@
 //! g.insert(&s_name, &rdfs::range, &xsd::string);
 //! ```
 
-use std::hash::Hash;
-
 use crate::error::*;
-use crate::term::{iri_rfc3987::is_valid_iri, Term};
+use crate::term::{iri_rfc3987::is_valid_iri, Term, TermData};
 
 /// A custom namespace.
-pub struct Namespace<T: AsRef<str> + Clone + Eq + Hash>(T);
+pub struct Namespace<T: TermData>(T);
 
-impl<T: AsRef<str> + Clone + Eq + Hash> Namespace<T> {
+impl<T: TermData> Namespace<T> {
     /// Build a custom namespace based on the given IRI.
     ///
     /// `iri` must be a valid IRI, othewise this constructor returns an error.

@@ -9,11 +9,10 @@
 //! [`Write`]: https://doc.rust-lang.org/std/io/trait.Write.html
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
-use std::hash::Hash;
 use std::io;
 use std::mem::swap;
 
-use crate::term::{LiteralKind, Term};
+use crate::term::{LiteralKind, Term, TermData};
 use crate::term::graph_key::GraphKey;
 use crate::quad::stream::*;
 use crate::quad::Quad;
@@ -97,7 +96,7 @@ def_quad_stringifier!();
 /// Write a single RDF term into `w` using the N-Quads syntax.
 pub fn write_term<T, W>(w: &mut W, t: &Term<T>) -> io::Result<()>
 where
-    T: AsRef<str> + Clone + Eq + Hash,
+    T: TermData,
     W: io::Write,
 {
     use self::LiteralKind::*;
@@ -143,7 +142,7 @@ where
 /// Stringifies a single RDF term using the N-Quads syntax.
 pub fn stringify_term<T>(t: &Term<T>) -> String
 where
-    T: AsRef<str> + Clone + Eq + Hash,
+    T: TermData,
 {
     let mut v = Vec::new();
     write_term(&mut v, t).unwrap();

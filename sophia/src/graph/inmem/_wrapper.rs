@@ -34,7 +34,7 @@ pub trait GraphWrapper<'a> {
     /// Mimmic the [`triples_with_s`](../trait.Graph.html#method.triples_with_s) method.
     fn gw_triples_with_s<T>(&'a self, s: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
     {
         self.get_wrapped().triples_with_s(s)
     }
@@ -42,7 +42,7 @@ pub trait GraphWrapper<'a> {
     /// Mimmic the [`triples_with_p`](../trait.Graph.html#method.triples_with_p) method.
     fn gw_triples_with_p<T>(&'a self, p: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
     {
         self.get_wrapped().triples_with_p(p)
     }
@@ -50,7 +50,7 @@ pub trait GraphWrapper<'a> {
     /// Mimmic the [`triples_with_o`](../trait.Graph.html#method.triples_with_o) method.
     fn gw_triples_with_o<T>(&'a self, o: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
     {
         self.get_wrapped().triples_with_o(o)
     }
@@ -62,8 +62,8 @@ pub trait GraphWrapper<'a> {
         p: &'a Term<U>,
     ) -> GTripleSource<'a, Self::Wrapped>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
     {
         self.get_wrapped().triples_with_sp(s, p)
     }
@@ -75,8 +75,8 @@ pub trait GraphWrapper<'a> {
         o: &'a Term<U>,
     ) -> GTripleSource<'a, Self::Wrapped>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
     {
         self.get_wrapped().triples_with_so(s, o)
     }
@@ -88,8 +88,8 @@ pub trait GraphWrapper<'a> {
         o: &'a Term<U>,
     ) -> GTripleSource<'a, Self::Wrapped>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
     {
         self.get_wrapped().triples_with_po(p, o)
     }
@@ -102,9 +102,9 @@ pub trait GraphWrapper<'a> {
         o: &'a Term<V>,
     ) -> GTripleSource<'a, Self::Wrapped>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
+        V: TermData,
     {
         self.get_wrapped().triples_with_spo(s, p, o)
     }
@@ -118,9 +118,9 @@ pub trait GraphWrapper<'a> {
         o: &'a Term<V>,
     ) -> GResult<'a, Self::Wrapped, bool>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
+        V: TermData,
     {
         self.get_wrapped().contains(s, p, o)
     }

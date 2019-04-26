@@ -51,10 +51,10 @@ impl MutableDataset for Vec<([BoxTerm; 3], GraphKey<Box<str>>)> where {
         g: &GraphKey<W>,
     ) -> MDResult<Self, bool>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
-        W: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
+        V: TermData,
+        W: TermData,
     {
         let s = BoxTerm::from(s);
         let p = BoxTerm::from(p);
@@ -71,10 +71,10 @@ impl MutableDataset for Vec<([BoxTerm; 3], GraphKey<Box<str>>)> where {
         g: &GraphKey<W>,
     ) -> MDResult<Self, bool>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
-        W: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
+        V: TermData,
+        W: TermData,
     {
         let item = self
             .quads()
@@ -115,10 +115,10 @@ impl<S: ::std::hash::BuildHasher> MutableDataset
         g: &GraphKey<W>,
     ) -> MDResult<Self, bool>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
-        W: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
+        V: TermData,
+        W: TermData,
     {
         let s = BoxTerm::from(s);
         let p = BoxTerm::from(p);
@@ -134,10 +134,10 @@ impl<S: ::std::hash::BuildHasher> MutableDataset
         g: &GraphKey<W>,
     ) -> MDResult<Self, bool>
     where
-        T: AsRef<str> + Clone + Eq + Hash,
-        U: AsRef<str> + Clone + Eq + Hash,
-        V: AsRef<str> + Clone + Eq + Hash,
-        W: AsRef<str> + Clone + Eq + Hash,
+        T: TermData,
+        U: TermData,
+        V: TermData,
+        W: TermData,
     {
         let s = BoxTerm::from(s);
         let p = BoxTerm::from(p);

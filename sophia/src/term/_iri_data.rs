@@ -261,7 +261,7 @@ where
 impl<T, U> PartialEq<Term<U>> for IriData<T>
 where
     T: AsRef<str>,
-    U: AsRef<str> + Clone + Eq + Hash,
+    U: TermData,
 {
     #[inline]
     fn eq(&self, other: &Term<U>) -> bool {
