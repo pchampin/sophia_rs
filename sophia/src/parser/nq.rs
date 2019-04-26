@@ -294,19 +294,21 @@ mod test {
     #[test]
     fn w3c_test_suite() {
         fn do_test_suite() -> io::Result<()> {
-            let nt_ext = Some(OsStr::new("nt"));
+            let nq_ext = Some(OsStr::new("nq"));
 
             let suite = Path::new("..").join("rdf-tests").join("nquads");
             if !suite.exists() || !suite.is_dir() {
                 panic!("rdf-tests/nquads not found, can not check W3C test-suite. cf README.md");
             }
 
+            let mut tested = 0;
             for entry in read_dir(&suite)? {
                 let path = entry?.path();
-                if path.extension() != nt_ext {
+                if path.extension() != nq_ext {
                     continue;
                 }
 
+                tested += 1;
                 let f = File::open(&path)?;
                 let f = io::BufReader::new(f);
                 let mut d = HashSetDataset::new();
@@ -321,6 +323,7 @@ mod test {
                     assert!(res.is_ok(), format!("{} should parse without error", path));
                 }
             }
+            assert_ne!(tested, 0, "No test found in W3C test-suite, something must be wrong");
             Ok(())
         }
         do_test_suite().unwrap()
@@ -329,16 +332,17 @@ mod test {
     #[test]
     fn w3c_test_suite_generalized() {
         fn do_test_suite() -> io::Result<()> {
-            let nt_ext = Some(OsStr::new("nt"));
+            let nq_ext = Some(OsStr::new("nq"));
 
             let suite = Path::new("..").join("rdf-tests").join("nquads");
             if !suite.exists() || !suite.is_dir() {
                 panic!("rdf-tests/nquads not found, can not check W3C test-suite. cf README.md");
             }
 
+            let mut tested = 0;
             for entry in read_dir(&suite)? {
                 let path = entry?.path();
-                if path.extension() != nt_ext {
+                if path.extension() != nq_ext {
                     continue;
                 }
                 if path.to_str().unwrap().contains("-bad-") {
@@ -347,6 +351,7 @@ mod test {
                 // "bad" tests may or may not pass with the generalized parser,
                 // so we skip them
 
+                tested += 1;
                 let f = File::open(&path)?;
                 let f = io::BufReader::new(f);
                 let mut d = HashSetDataset::new();
@@ -356,6 +361,7 @@ mod test {
                     format!("{} should parse without error", path.to_str().unwrap())
                 );
             }
+            assert_ne!(tested, 0, "No test found in W3C test-suite, something must be wrong");
             Ok(())
         }
         do_test_suite().unwrap()

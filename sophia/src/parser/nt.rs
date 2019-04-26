@@ -600,12 +600,14 @@ mod test {
                 panic!("rdf-tests/ntriples not found, can not check W3C test-suite. cf README.md");
             }
 
+            let mut tested = 0;
             for entry in read_dir(&suite)? {
                 let path = entry?.path();
                 if path.extension() != nt_ext {
                     continue;
                 }
 
+                tested += 1;
                 let f = File::open(&path)?;
                 let f = io::BufReader::new(f);
                 let mut g = HashSetGraph::new();
@@ -620,6 +622,7 @@ mod test {
                     assert!(res.is_ok(), format!("{} should parse without error", path));
                 }
             }
+            assert_ne!(tested, 0, "No test found in W3C test-suite, something must be wrong");
             Ok(())
         }
         do_test_suite().unwrap()
@@ -635,6 +638,7 @@ mod test {
                 panic!("rdf-tests/ntriples not found, can not check W3C test-suite. cf README.md");
             }
 
+            let mut tested = 0;
             for entry in read_dir(&suite)? {
                 let path = entry?.path();
                 if path.extension() != nt_ext {
@@ -646,6 +650,7 @@ mod test {
                 // "bad" tests may or may not pass with the generalized parser,
                 // so we skip them
 
+                tested += 1;
                 let f = File::open(&path)?;
                 let f = io::BufReader::new(f);
                 let mut g = HashSetGraph::new();
@@ -655,6 +660,7 @@ mod test {
                     format!("{} should parse without error", path.to_str().unwrap())
                 );
             }
+            assert_ne!(tested, 0, "No test found in W3C test-suite, something must be wrong");
             Ok(())
         }
         do_test_suite().unwrap()
