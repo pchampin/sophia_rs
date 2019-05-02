@@ -323,7 +323,10 @@ mod test {
                     assert!(res.is_ok(), format!("{} should parse without error", path));
                 }
             }
-            assert_ne!(tested, 0, "No test found in W3C test-suite, something must be wrong");
+            assert_ne!(
+                tested, 0,
+                "No test found in W3C test-suite, something must be wrong"
+            );
             Ok(())
         }
         do_test_suite().unwrap()
@@ -361,7 +364,10 @@ mod test {
                     format!("{} should parse without error", path.to_str().unwrap())
                 );
             }
-            assert_ne!(tested, 0, "No test found in W3C test-suite, something must be wrong");
+            assert_ne!(
+                tested, 0,
+                "No test found in W3C test-suite, something must be wrong"
+            );
             Ok(())
         }
         do_test_suite().unwrap()

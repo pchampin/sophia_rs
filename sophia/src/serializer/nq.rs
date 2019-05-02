@@ -12,10 +12,10 @@
 use std::io;
 use std::mem::swap;
 
-use crate::term::{LiteralKind, Term, TermData};
-use crate::term::graph_key::GraphKey;
 use crate::quad::stream::*;
 use crate::quad::Quad;
+use crate::term::graph_key::GraphKey;
+use crate::term::{LiteralKind, Term, TermData};
 
 use super::*;
 
@@ -205,10 +205,10 @@ pub(crate) fn write_non_n3_bnode_id(w: &mut impl io::Write, id: &str) -> io::Res
 
 #[cfg(test)]
 mod test {
+    use super::super::nt::test::NT_TERMS;
     use super::*;
     use crate::ns::*;
     use crate::term::*;
-    use super::super::nt::test::NT_TERMS;
 
     #[test]
     fn terms() {
@@ -236,7 +236,7 @@ mod test {
                     StaticTerm::new_iri("http://schema.org/name").unwrap(),
                     StaticTerm::new_literal_dt("Pierre-Antoine", xsd::string).unwrap(),
                 ],
-                GraphKey::Name(StaticTerm::new_iri("http://example.org/graph").unwrap())
+                GraphKey::Name(StaticTerm::new_iri("http://example.org/graph").unwrap()),
             ),
         ];
         let mut quads = quads.into_iter().as_quad_source();
