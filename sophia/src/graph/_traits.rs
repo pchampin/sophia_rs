@@ -406,7 +406,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
                 ]
             })
             .collect::<std::result::Result<_, _>>()
-            .map_err(|err| err.into())?;
+            .map_err(Into::into)?;
         let mut to_remove = to_remove.into_iter().as_triple_source();
         Ok(self.remove_all(&mut to_remove)?)
     }
@@ -444,7 +444,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
                 ]
             })
             .collect::<std::result::Result<_, _>>()
-            .map_err(|err| err.into())?;
+            .map_err(Into::into)?;
         let mut to_remove = to_remove.into_iter().as_triple_source();
         self.remove_all(&mut to_remove)?;
         Ok(())

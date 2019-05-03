@@ -614,7 +614,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
                 )
             })
             .collect::<std::result::Result<_, _>>()
-            .map_err(|err| err.into())?;
+            .map_err(Into::into)?;
         let mut to_remove = to_remove.into_iter().as_quad_source();
         Ok(self.remove_all(&mut to_remove)?)
     }
@@ -658,7 +658,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
                 )
             })
             .collect::<std::result::Result<_, _>>()
-            .map_err(|err| err.into())?;
+            .map_err(Into::into)?;
         let mut to_remove = to_remove.into_iter().as_quad_source();
         self.remove_all(&mut to_remove)?;
         Ok(())
