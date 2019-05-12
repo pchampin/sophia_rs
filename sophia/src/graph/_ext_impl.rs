@@ -2,7 +2,7 @@
 // It defines implementation of Graph and MutableGraph for existing types.
 
 use std::collections::HashSet;
-use std::hash::Hash;
+use std::hash::{BuildHasher, Hash};
 
 use resiter::oks::*;
 
@@ -72,9 +72,10 @@ impl MutableGraph for Vec<[BoxTerm; 3]> {
     }
 }
 
-impl<'a, T, S: ::std::hash::BuildHasher> Graph<'a> for HashSet<T, S>
+impl<'a, T, BH> Graph<'a> for HashSet<T, BH>
 where
     T: Eq + Hash + Triple<'a> + 'a,
+    BH: BuildHasher,
 {
     type Triple = &'a T;
     type Error = Never;
@@ -85,9 +86,9 @@ where
     }
 }
 
-impl<S: ::std::hash::BuildHasher> MutableGraph for HashSet<[BoxTerm; 3], S>
+impl<BH> MutableGraph for HashSet<[BoxTerm; 3], BH>
 where
-    for<'x> std::collections::HashSet<[Term<std::boxed::Box<str>>; 3], S>: _traits::Graph<'x>,
+    BH: BuildHasher,
 {
     type MutationError = Never;
 
