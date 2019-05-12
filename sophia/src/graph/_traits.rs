@@ -30,6 +30,62 @@ pub type GResultTermSet<'a, G> = GResult<'a, G, HashSet<GTerm<'a, G>>>;
 /// NB: the semantics of this trait allows a graph to contain duplicate triples;
 /// see also [`SetGraph`](trait.SetGraph.html).
 ///
+/// # How to use `Graph` in a trait bound?
+///
+/// TL;DR: If the compiler complains about lifetimes,
+/// replace `G: Graph<'a>` with `G: for<'x> Graph<'x>`.
+///
+/// The lifetime parameter of `Graph` has a very specific semantics:
+/// it is the lifetime for which the graph can be borrowed when iterating over its triples.
+/// Since lifetime parameters in traits are
+/// [invariant](https://doc.rust-lang.org/nightly/nomicon/subtyping.html),
+/// an instance of `Graph<'a>` will only be usable with the *exact* lifetime `'a`,
+/// but not with shorter lifetimes, which is counter-intuitive.
+///
+/// In many situations, when you write a function accepting a graph,
+/// you can not define the appropriate lifetime in the function's signature.
+/// For example, you may need to borrow the graph for the lifetime of a *local* variable of the function:
+/// ```compile_fail
+/// use sophia::error::Never;
+/// use sophia::graph::Graph;
+/// use sophia::term::*;
+///
+/// fn count_str_mentions<'a, G>(g: &G, txt: &str) -> usize where
+///   G: Graph<'a, Error=Never>
+/// {
+///   let literal = RefTerm::from(txt);
+///   g.triples_with_o(&literal).count()
+///   // fails to compile because `literal` does not live as long as 'a .
+/// }
+/// ```
+/// NB: the compilers's error messages are not very helpful here;
+/// they suggest to add lifetime `'a` to the function parameters,
+/// but that does not solve the problem.
+///
+/// In this kind of situation, the solution consists in using a
+/// [Higher-Rank Trait Bound](https://doc.rust-lang.org/nomicon/hrtb.html)
+/// for `G`:
+/// ```
+/// use sophia::error::Never;
+/// use sophia::graph::Graph;
+/// use sophia::term::*;
+///
+/// fn count_str_mentions<G>(g: &G, txt: &str) -> usize where
+///   G: for<'x> Graph<'x, Error=Never>  // <-- higher-rank trait bound
+/// {
+///   let literal = RefTerm::from(txt);
+///   g.triples_with_o(&literal).count()
+/// }
+/// ```
+/// NB:
+/// The Higher-Ranked Type Bound above states
+/// "`G` implements `Graph<'x>` for *every* lifetime `'x`",
+/// which allows us to *not* define the lifetime in the function's signature.
+/// This has its own drawback, though:
+/// only implementations of `Graph` who *own* their data will match this bound
+/// (fortunately, it is the case of most implementations).
+
+///
 pub trait Graph<'a> {
     /// The type of [`Triple`](../triple/trait.Triple.html)s
     /// that the methods of this graph will yield.

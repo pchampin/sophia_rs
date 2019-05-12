@@ -33,6 +33,11 @@ pub type DResultTermSet<'a, D> = DResult<'a, D, HashSet<DTerm<'a, D>>>;
 /// NB: the semantics of this trait allows a dataset to contain duplicate quads;
 /// see also [`SetDataset`](trait.SetDataset.html).
 ///
+/// # How to use `Dataset` in a trait bound?
+///
+/// The same rules as for [`Graph`](../graph/trait.Graph.html#how-to-use-graph-in-a-trait-bound)
+/// apply.
+///
 pub trait Dataset<'a> {
     /// The type of [`Quad`](../quad/trait.Quad.html)s
     /// that the methods of this dataset will yield.
