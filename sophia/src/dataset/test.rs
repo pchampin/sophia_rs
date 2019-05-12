@@ -14,7 +14,6 @@ macro_rules! test_dataset_impl {
             use crate::dataset::*;
             use crate::quad::*;
             use crate::term::matcher::*;
-            use crate::triple::*;
 
             #[allow(unused_imports)]
             use super::*;
@@ -826,7 +825,7 @@ macro_rules! test_dataset_impl {
             #[allow(dead_code)]
             fn dump_graph<'a, D: Dataset<'a>>(d: &'a D)
             where
-                <D::Quad as Triple<'a>>::TermData: Debug,
+                <D::Quad as Quad<'a>>::TermData: Debug,
             {
                 println!("<<<<");
                 for q in d.quads() {

@@ -11,13 +11,12 @@ use crate::quad::*;
 use crate::term::graph_key::GraphKey;
 use crate::term::matcher::*;
 use crate::term::*;
-use crate::triple::*;
 
 use super::*;
 use crate::graph::insert_if_absent;
 
 /// Type alias for the terms returned by a dataset.
-pub type DTerm<'a, D> = Term<<<D as Dataset<'a>>::Quad as Triple<'a>>::TermData>;
+pub type DTerm<'a, D> = Term<<<D as Dataset<'a>>::Quad as Quad<'a>>::TermData>;
 /// Type alias for results iterators produced by a dataset.
 pub type DResult<'a, D, T> = std::result::Result<T, <D as Dataset<'a>>::Error>;
 /// Type alias for fallible quad iterators produced by a dataset.

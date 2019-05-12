@@ -57,20 +57,6 @@ pub trait TripleSource<'a> {
         Ok(sink.finish()?)
     }
 
-    /// Feed all triples from this source into the given [sink](trait.TripleSink.html).
-    ///
-    /// Alias for `in_sink` to be used when there is ambiguity.
-    #[inline]
-    fn in_triple_sink<TS: TripleSink>(
-        &mut self,
-        sink: &mut TS,
-    ) -> CoercedResult<TS::Outcome, Self::Error, TS::Error>
-    where
-        Self::Error: CoercibleWith<TS::Error>,
-    {
-        self.in_sink(sink)
-    }
-
     /// Insert all triples from this source into the given [graph](../../graph/trait.MutableGraph.html).
     ///
     /// Stop on the first error (in the source or in the graph).

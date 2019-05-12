@@ -19,7 +19,6 @@ use super::nt::{pair_to_term, PestNtqParser, Rule};
 use crate::error::*;
 use crate::quad::Quad;
 use crate::term::{graph_key::GraphKey, Term};
-use crate::triple::Triple;
 
 /// N-Quads parser configuration.
 ///
@@ -96,17 +95,17 @@ impl Config {
         } else {
             Rule::generalized_nq_doc
         };
-        let triple_pairs = match PestNtqParser::parse(rule, txt) {
+        let quad_pairs = match PestNtqParser::parse(rule, txt) {
             Ok(pairs) => pairs,
             Err(err) => {
                 return Box::new(std::iter::once(Err(convert_pest_err(err, 0))));
             }
         };
         Box::new(
-            triple_pairs
-                .take_while(|triple_pair| triple_pair.as_rule() != Rule::EOI)
-                .map(move |triple_pair| {
-                    pairs_to_quad(&config, triple_pair.into_inner())
+            quad_pairs
+                .take_while(|quad_pair| quad_pair.as_rule() != Rule::EOI)
+                .map(move |quad_pair| {
+                    pairs_to_quad(&config, quad_pair.into_inner())
                         .map_err(|err| convert_pest_err(err, 0))
                 }),
         )
@@ -126,23 +125,19 @@ rental! {
         }
     }
 }
-pub use self::nq_quad::NqQuad;
-impl<'a> Triple<'a> for NqQuad {
+pub use nq_quad::NqQuad;
+impl<'a> Quad<'a> for NqQuad {
     type TermData = Cow<'a, str>;
-    fn s(&self) -> &Term<Self::TermData> {
+    fn s(&self) -> &Term<Cow<'a, str>> {
         unsafe { std::mem::transmute(self.suffix().s()) }
     }
-    fn p(&self) -> &Term<Self::TermData> {
+    fn p(&self) -> &Term<Cow<'a, str>> {
         unsafe { std::mem::transmute(self.suffix().p()) }
     }
-    fn o(&self) -> &Term<Self::TermData> {
+    fn o(&self) -> &Term<Cow<'a, str>> {
         unsafe { std::mem::transmute(self.suffix().o()) }
     }
-    // The compiler can not figure out the correct lifetime for self in the methods above,
-    // so I use transmute() to force the cast.
-}
-impl<'a> Quad<'a> for NqQuad {
-    fn g(&self) -> &GraphKey<Self::TermData> {
+    fn g(&self) -> &GraphKey<Cow<'a, str>> {
         unsafe { std::mem::transmute(self.suffix().g()) }
     }
     // The compiler can not figure out the correct lifetime for self in the methods above,
@@ -152,8 +147,8 @@ impl<'a> Quad<'a> for NqQuad {
 type ResultQuad<'a> = StdResult<([Term<Cow<'a, str>>; 3], GraphKey<Cow<'a, str>>), PestError<Rule>>;
 
 fn parse_rule_from_line<'a>(config: &Config, rule: Rule, txt: &'a str) -> ResultQuad<'a> {
-    let triple_pair = PestNtqParser::parse(rule, txt)?.next().unwrap();
-    pairs_to_quad(config, triple_pair.into_inner())
+    let quad_pair = PestNtqParser::parse(rule, txt)?.next().unwrap();
+    pairs_to_quad(config, quad_pair.into_inner())
 }
 
 fn pairs_to_quad<'a>(config: &Config, mut pairs: Pairs<'a, Rule>) -> ResultQuad<'a> {

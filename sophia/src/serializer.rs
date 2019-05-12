@@ -139,7 +139,7 @@ pub trait QuadWriter<W: io::Write>: QuadSink<Outcome = ()> + Sized {
         QS: QuadSource<'a>,
         QS::Error: CoercibleWith<Self::Error>,
     {
-        source.in_quad_sink(self)
+        source.in_sink(self)
     }
 
     /// Serialize the given dataset.
@@ -151,7 +151,7 @@ pub trait QuadWriter<W: io::Write>: QuadSink<Outcome = ()> + Sized {
         D: Dataset<'a>,
         D::Error: CoercibleWith<Self::Error>,
     {
-        dataset.quads().in_quad_sink(self)
+        dataset.quads().in_sink(self)
     }
 
     /// Serialize the given triple.
@@ -163,7 +163,7 @@ pub trait QuadWriter<W: io::Write>: QuadSink<Outcome = ()> + Sized {
         let mut source = vec![([q.s(), q.p(), q.o()], q.g())]
             .into_iter()
             .as_quad_source();
-        source.in_quad_sink(self)
+        source.in_sink(self)
     }
 }
 
@@ -187,7 +187,7 @@ pub trait QuadStringifier: QuadSink<Outcome = String> + Sized {
         QS: QuadSource<'a>,
         QS::Error: CoercibleWith<Self::Error>,
     {
-        source.in_quad_sink(self)
+        source.in_sink(self)
     }
 
     /// Stringify the given dataset.
@@ -199,7 +199,7 @@ pub trait QuadStringifier: QuadSink<Outcome = String> + Sized {
         D: Dataset<'a>,
         D::Error: CoercibleWith<Self::Error>,
     {
-        dataset.quads().in_quad_sink(self)
+        dataset.quads().in_sink(self)
     }
 
     /// Stringify the given triple.
@@ -211,7 +211,7 @@ pub trait QuadStringifier: QuadSink<Outcome = String> + Sized {
         let mut source = vec![([q.s(), q.p(), q.o()], q.g())]
             .into_iter()
             .as_quad_source();
-        source.in_quad_sink(self)
+        source.in_sink(self)
     }
 }
 

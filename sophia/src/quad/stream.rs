@@ -57,20 +57,6 @@ pub trait QuadSource<'a> {
         Ok(sink.finish()?)
     }
 
-    /// Feed all quads from this source into the given [sink](trait.QuadSink.html).
-    ///
-    /// Alias for `in_sink` to be used when there is ambiguity.
-    #[inline]
-    fn in_quad_sink<TS: QuadSink>(
-        &mut self,
-        sink: &mut TS,
-    ) -> CoercedResult<TS::Outcome, Self::Error, TS::Error>
-    where
-        Self::Error: CoercibleWith<TS::Error>,
-    {
-        self.in_sink(sink)
-    }
-
     /// Insert all quads from this source into the given [dataset](../../dataset/trait.MutableDataset.html).
     ///
     /// Stop on the first error (in the source or in the dataset).
