@@ -45,6 +45,7 @@ extern crate pest_derive;
 extern crate regex;
 #[macro_use]
 extern crate rental;
+extern crate quick_xml;
 extern crate resiter;
 extern crate url;
 extern crate weak_table;

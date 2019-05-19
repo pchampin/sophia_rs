@@ -24,3 +24,4 @@
 pub mod common;
 pub mod nq;
 pub mod nt;
+pub mod xml;
