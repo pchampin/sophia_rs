@@ -112,7 +112,7 @@ pub mod rdf {
         parseType,
         resource,
         nodeID,
-        datatypes
+        datatype
     );
     ns_term!("http://www.w3.org/1999/02/22-rdf-syntax-ns#", type_, "type");
 }
@@ -193,6 +193,19 @@ pub mod rdfs {
         label,
         member,
         seeAlso
+    );
+}
+
+/// The standard `xml:` namespace
+pub mod xml {
+    namespace!(
+        "http://www.w3.org/XML/1998/namespace#",
+        lang,
+        space,
+        base,
+        id,
+        // John Bosak
+        Father
     );
 }
 
