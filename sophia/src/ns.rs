@@ -209,6 +209,31 @@ pub mod xml {
     );
 }
 
+/// The standard `dc:` namespace.
+pub mod dc {
+    /// The Dublin Core elements (`http://purl.org/dc/elements/1.1/`).
+    pub mod elements {
+        namespace!(
+            "http://purl.org/dc/elements/1.1/",
+            contributor,
+            coverage,
+            creator,
+            date,
+            description,
+            format,
+            identifier,
+            language,
+            publisher,
+            relation,
+            rights,
+            source,
+            subject,
+            title
+        );
+        ns_term!("http://purl.org/dc/elements/1.1/", type_, "type");
+    }
+}
+
 #[cfg(test)]
 mod test {
     // Nothing really worth testing here
