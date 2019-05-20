@@ -23,6 +23,7 @@ use crate::error::*;
 use crate::term::{iri_rfc3987::is_valid_iri, Term, TermData};
 
 /// A custom namespace.
+#[derive(Clone, Debug)]
 pub struct Namespace<T: TermData>(T);
 
 impl<T: TermData> Namespace<T> {
@@ -85,6 +86,7 @@ pub mod rdf {
         // classes
         Alt,
         Bad,
+        Description,
         List,
         PlainLiteral,
         Property,
@@ -102,7 +104,15 @@ pub mod rdf {
         subject,
         value,
         // individuals
-        nil
+        nil,
+        // core syntax terms
+        RDF,
+        ID,
+        about,
+        parseType,
+        resource,
+        nodeID,
+        datatypes
     );
     ns_term!("http://www.w3.org/1999/02/22-rdf-syntax-ns#", type_, "type");
 }
