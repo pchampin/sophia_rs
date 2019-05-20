@@ -12,9 +12,9 @@ use quick_xml::events::BytesStart;
 use quick_xml::events::BytesText;
 use quick_xml::events::Event;
 
-use super::common::*;
 use crate::error::*;
 use crate::ns::rdf;
+use crate::ns::xml;
 use crate::ns::xsd;
 use crate::ns::Namespace;
 use crate::term::factory::RcTermFactory;
@@ -57,7 +57,7 @@ impl Config {
 
 // ---
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct PrefixMapping<F: TermFactory> {
     default: Option<String>,
     mapping: HashMap<String, Namespace<F::TermData>>,
@@ -66,11 +66,13 @@ pub struct PrefixMapping<F: TermFactory> {
 
 impl<F: TermFactory + Default> Default for PrefixMapping<F> {
     fn default() -> Self {
-        Self {
+        let mut m = Self {
             default: None,
             mapping: HashMap::new(),
             factory: Default::default(),
-        }
+        };
+        m.add_prefix("xml", "http://www.w3.org/XML/1998/namespace#");
+        m
     }
 }
 
@@ -92,7 +94,7 @@ impl<F: TermFactory> PrefixMapping<F> {
             let reference = &curie_str[separator_idx + 1..];
             self.expand_curie(&prefix, &reference)
         } else {
-            panic!("missing prefix")
+            panic!("missing prefix: {}", curie_str)
         }
     }
 
@@ -107,10 +109,38 @@ impl<F: TermFactory> PrefixMapping<F> {
 
 // ---
 
+struct Text<T: TermData> {
+    owner: Term<T>,
+    datatype: Option<Term<T>>,
+    text: String,
+}
+
+impl<T: TermData> Text<T> {
+    fn new(owner: Term<T>) -> Self {
+        Self {
+            owner,
+            datatype: None,
+            text: String::new(),
+        }
+    }
+
+    fn set_datatype<O: Into<Option<Term<T>>>>(&mut self, datatype: O) {
+        self.datatype = datatype.into();
+    }
+
+    fn set_text(&mut self, text: String) {
+        self.text = text;
+    }
+}
+
 struct XmlParser<B: BufRead, F: TermFactory> {
     reader: quick_xml::Reader<B>,
+
     // The stack of namespaces: should be optimized.
     namespaces: Vec<PrefixMapping<F>>,
+    // The stack of `xml:lang`: should be optimized
+    lang: Vec<Option<F::TermData>>,
+
     // The stack of parents (for nested declarations)
     parents: Vec<Term<F::TermData>>,
     // The queue of produced triples
@@ -121,30 +151,21 @@ struct XmlParser<B: BufRead, F: TermFactory> {
     factory: F,
     //
     bnodes: RangeFrom<usize>,
+    //
+    text: Option<Text<F::TermData>>,
 }
 
 impl<B, F> XmlParser<B, F>
 where
     B: BufRead,
-    F: TermFactory + Clone + Default,
+    F: TermFactory + Clone + Default + Debug,
     <F as TermFactory>::TermData: Debug,
 {
-    fn new(reader: quick_xml::Reader<B>) -> Self {
-        Self {
-            reader,
-            parents: Vec::new(),
-            namespaces: vec![PrefixMapping::default()],
-            triples: LinkedList::new(),
-            in_node: false,
-            factory: Default::default(),
-            bnodes: 0..,
-        }
-    }
-
-    fn element_start(&mut self, e: BytesStart) {
-        // Add a new namespace mapping (OPTIMISE ME)
+    // ---
+    fn enter_scope(&mut self, e: &BytesStart) {
+        // Add a new namespace mapping or copy the last one (OPTIMISE ME)
         let mut ns = self.namespaces.last().unwrap().clone();
-        for attr in e.attributes() {
+        for attr in e.attributes().with_checks(true) {
             let a = attr.expect("FIXME");
             if a.key.starts_with(b"xmlns:") {
                 ns.add_prefix(
@@ -155,6 +176,46 @@ where
         }
         self.namespaces.push(ns);
 
+        // Add current lang to scope or copy last one (OPTIMISE ME)
+        let mut lang = self.lang.last().unwrap().clone();
+        for attr in e.attributes().with_checks(true) {
+            let a = attr.expect("FIXME");
+            if a.key == b"xml:lang" {
+                lang = Some(
+                    self.factory
+                        .get_term_data(&a.unescape_and_decode_value(&self.reader).unwrap()),
+                );
+            }
+        }
+        self.lang.push(lang);
+
+        // Reset text element
+        self.text = None;
+    }
+
+    fn leave_scope(&mut self) {
+        self.parents.pop();
+        self.namespaces.pop();
+        self.lang.pop();
+        self.text = None;
+    }
+
+    fn new(reader: quick_xml::Reader<B>) -> Self {
+        Self {
+            reader,
+            parents: Vec::new(),
+            namespaces: vec![PrefixMapping::default()],
+            triples: LinkedList::new(),
+            in_node: false,
+            factory: Default::default(),
+            bnodes: 0..,
+            lang: vec![None],
+            text: None,
+        }
+    }
+
+    fn element_start(&mut self, e: &BytesStart) {
+        self.enter_scope(e);
         // Ignore top-level rdf:RDF element
         if e.name() != b"rdf:RDF" {
             // Change the current element type
@@ -168,7 +229,7 @@ where
         }
     }
 
-    fn node_start(&mut self, e: BytesStart) {
+    fn node_start(&mut self, e: &BytesStart) {
         let ns = self.namespaces.last_mut().unwrap();
 
         // Separate node subject from other attributes
@@ -177,7 +238,7 @@ where
         for attr in e.attributes().with_checks(true) {
             let a = attr.expect("FIXME");
 
-            // ignore xmlns attributes (processed in element_start)
+            // ignore xmlns and xml:lang attributes (processed in element_start)
             if a.key.starts_with(b"xmlns:") {
                 continue;
             }
@@ -199,7 +260,8 @@ where
                 } else {
                     panic!("cannot have rdf:ID, rdf:about and rdf:nodeId at the same time")
                 }
-            } else {
+            } else if !k.matches(&xml::lang) {
+                println!("{:?}", k);
                 properties.insert(k, self.factory.literal_dt(v, xsd::string).expect("FIXME"));
             }
         }
@@ -219,12 +281,12 @@ where
                 .push_back(Ok([s.clone(), self.factory.copy(&rdf::type_), ty]));
         }
 
-        // Add properties
+        // Add triples described by properties in XML attributes
         for (p, lit) in properties {
             self.triples.push_back(Ok([s.clone(), p, lit]))
         }
 
-        // Add the entity as an object if it is not top-level
+        // Add the entity as a triple object if it is not top-level
         if self.parents.len() > 1 {
             let o = s;
             let s = &self.parents[self.parents.len() - 3];
@@ -233,66 +295,90 @@ where
         }
     }
 
-    fn predicate_start(&mut self, e: BytesStart) {
+    fn predicate_start(&mut self, e: &BytesStart) {
         let ns = self.namespaces.last_mut().unwrap();
+
+        // Get the predicate and add it to the current nested stack
         let p = ns.expand_curie_string(std::str::from_utf8(e.name()).expect("FIXME"));
-        self.parents.push(p)
+        self.parents.push(p.clone());
+
+        // Get the datatype of the possible literal value, if any
+        let mut txt = Text::new(p);
+        for attr in e.attributes().with_checks(true) {
+            let a = attr.expect("FIXME");
+            if !a.key.starts_with(b"xmlns") {
+                let k = ns.expand_curie_string(std::str::from_utf8(a.key).expect("FIXME"));
+                if k.matches(&rdf::datatype) {
+                    let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
+                    txt.set_datatype(ns.expand_curie_string(&v));
+                }
+            }
+        }
+        self.text = Some(txt);
     }
 
-    fn element_end(&mut self, e: BytesEnd) {
+    fn element_end(&mut self, e: &BytesEnd) {
         // Change the current element type (if not in rdf:RDF)
         if e.name() != b"rdf:RDF" {
+            if !self.in_node {
+                self.predicate_end(e);
+            }
             self.in_node = !self.in_node;
-            self.parents.pop();
+        }
+        self.leave_scope();
+    }
+
+    fn predicate_end(&mut self, e: &BytesEnd) {
+        let ns = self.namespaces.last_mut().unwrap();
+        let p = ns.expand_curie_string(std::str::from_utf8(e.name()).expect("FIXME"));
+
+        if let Some(text) = self.text.take() {
+            if p.matches(&text.owner) {
+                let s = &self.parents[self.parents.len() - 2];
+                let o = match (text.datatype, self.lang.last()) {
+                    (Some(dt), _) => self.factory.literal_dt(text.text, dt).expect("FIXME"),
+                    (None, Some(Some(l))) => {
+                        self.factory.literal_lang(text.text, l).expect("FIXME")
+                    }
+                    _ => self
+                        .factory
+                        .literal_dt(text.text, xsd::string)
+                        .expect("FIXME"),
+                };
+                self.triples.push_back(Ok([s.clone(), p, o]));
+            }
         }
     }
 
-    fn element_text(&mut self, e: BytesText) {
+    // --- Text elements ----------------------------------------------------
+
+    fn element_text(&mut self, e: &BytesText) {
         if !self.in_node {
             self.predicate_text(e);
         }
     }
 
-    // FIXME: datatype handler
-    fn predicate_text(&mut self, e: BytesText) {
-        if self.parents.len() > 1 {
-            let s = &self.parents[self.parents.len() - 2];
-            let p = &self.parents[self.parents.len() - 1];
-            let o = self
-                .factory
-                .literal_dt(
-                    e.unescape_and_decode(&self.reader).expect("FIXME"),
-                    xsd::string,
-                )
-                .expect("FIXME");
-            self.triples.push_back(Ok([s.clone(), p.clone(), o]));
+    fn predicate_text(&mut self, e: &BytesText) {
+        if let Some(text) = &mut self.text {
+            text.set_text(e.unescape_and_decode(&self.reader).expect("FIXME"));
         }
     }
 
-    fn element_empty(&mut self, e: BytesStart) {
-        // Add a new namespace mapping (OPTIMISE ME)
-        let mut ns = self.namespaces.last().unwrap().clone();
-        for attr in e.attributes() {
-            let a = attr.expect("FIXME");
-            if a.key.starts_with(b"xmlns:") {
-                ns.add_prefix(
-                    std::str::from_utf8(&a.key[6..]).expect("FIXME"),
-                    std::str::from_utf8(&a.value.as_ref()).expect("FIXME"),
-                );
-            }
-        }
+    // --- Empty elements ----------------------------------------------------
 
-        self.namespaces.push(ns);
+    fn element_empty(&mut self, e: &BytesStart) {
+        self.enter_scope(e);
         if self.in_node {
             self.predicate_empty(e)
         } else {
             self.node_empty(e)
         }
+        self.leave_scope();
     }
 
-    fn node_empty(&mut self, e: BytesStart) {}
+    fn node_empty(&mut self, e: &BytesStart) {}
 
-    fn predicate_empty(&mut self, e: BytesStart) {
+    fn predicate_empty(&mut self, e: &BytesStart) {
         let ns = self.namespaces.last_mut().unwrap();
         let p = ns.expand_curie_string(std::str::from_utf8(e.name()).expect("FIXME"));
 
@@ -328,7 +414,7 @@ where
 impl<B, F> Iterator for XmlParser<B, F>
 where
     B: BufRead,
-    F: TermFactory + Clone + Default,
+    F: TermFactory + Clone + Default + Debug,
     <F as TermFactory>::TermData: Debug,
 {
     type Item = Result<[Term<F::TermData>; 3]>;
@@ -337,12 +423,12 @@ where
             if let Some(triple) = self.triples.pop_front() {
                 return Some(triple);
             }
-            match self.reader.read_event(&mut Vec::new()).unwrap() {
+            match &self.reader.read_event(&mut Vec::new()).unwrap() {
                 Event::Eof => return None,
                 Event::Start(s) => self.element_start(s),
                 Event::Empty(e) => self.element_empty(e),
                 Event::End(e) => self.element_end(e),
-                // Event::Text(t) => self.element_text(t),
+                Event::Text(t) => self.element_text(t),
                 _ => (),
             }
         }
@@ -352,13 +438,6 @@ where
 #[cfg(test)]
 mod test {
 
-    use crate::graph::inmem::HashGraph;
-    use crate::graph::inmem::TermIndexMapU;
-    use crate::graph::Graph;
-    use crate::term::factory::RcTermFactory;
-    use crate::term::matcher::TermMatcher;
-    use crate::triple::stream::TripleSource;
-    use crate::triple::Triple;
     use std::ffi::OsStr;
     use std::fmt::Debug;
     use std::fmt::Formatter;
@@ -366,6 +445,18 @@ mod test {
     use std::fs::{read_dir, File};
     use std::io;
     use std::path::Path;
+
+    use crate::graph::inmem::HashGraph;
+    use crate::graph::inmem::TermIndexMapU;
+    use crate::graph::Graph;
+    use crate::ns::xsd;
+    use crate::term::factory::RcTermFactory;
+    use crate::term::factory::TermFactory;
+    use crate::term::matcher::TermMatcher;
+    use crate::term::Normalization;
+    use crate::term::Term;
+    use crate::triple::stream::TripleSource;
+    use crate::triple::Triple;
 
     type TestGraph = HashGraph<TermIndexMapU<u64, RcTermFactory>>;
 
@@ -490,22 +581,65 @@ mod test {
 
     #[test]
     fn w3c_example_07() {
+        let mut f = RcTermFactory::default();
         let mut actual = TestGraph::new();
         super::Config::default()
             .parse_str(
                 r#"<?xml version="1.0"?>
                     <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                            xmlns:dc="http://purl.org/dc/elements/1.1/"
-                            xmlns:ex="http://example.org/stuff/1.0/">
-
-                    <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar"
-                             dc:title="RDF1.1 XML Syntax">
-                    <ex:editor>
-                      <rdf:Description ex:fullName="Dave Beckett">
-                        <ex:homePage rdf:resource="http://purl.org/net/dajobe/" />
+                             xmlns:dc="http://purl.org/dc/elements/1.1/"
+                             xmlns:ex="http://example.org/stuff/1.0/">
+                      <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar"
+                    		   dc:title="RDF/XML Syntax Specification (Revised)">
+                        <ex:editor>
+                          <rdf:Description ex:fullName="Dave Beckett">
+                    	<ex:homePage rdf:resource="http://purl.org/net/dajobe/" />
+                          </rdf:Description>
+                        </ex:editor>
                       </rdf:Description>
-                    </ex:editor>
-                    </rdf:Description>
+                    </rdf:RDF>
+                "#,
+            )
+            .in_graph(&mut actual)
+            .expect("failed parsing XML file");
+
+        assert_eq!(
+            actual.len(),
+            4,
+            "unexpected number of triples: {:#?}",
+            actual
+        );
+        assert!(actual
+            .contains(
+                &f.iri("http://www.w3.org/TR/rdf-syntax-grammar").unwrap(),
+                &f.iri2("http://purl.org/dc/elements/1.1/", "title").unwrap(),
+                &f.literal_dt("RDF/XML Syntax Specification (Revised)", xsd::string,)
+                    .unwrap()
+            )
+            .unwrap());
+    }
+
+    #[test]
+    fn w3c_example_08() {
+        let mut f = RcTermFactory::default();
+        let mut actual = TestGraph::new();
+        super::Config::default()
+            .parse_str(
+                r#"<?xml version="1.0" encoding="utf-8"?>
+                    <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                                xmlns:dc="http://purl.org/dc/elements/1.1/">
+
+                      <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar">
+                        <dc:title>RDF 1.1 XML Syntax</dc:title>
+                        <dc:title xml:lang="en">RDF 1.1 XML Syntax</dc:title>
+                        <dc:title xml:lang="en-US">RDF 1.1 XML Syntax</dc:title>
+                      </rdf:Description>
+
+                      <rdf:Description rdf:about="http://example.org/buecher/baum" xml:lang="de">
+                        <dc:title>Der Baum</dc:title>
+                        <dc:description>Das Buch ist außergewöhnlich</dc:description>
+                        <dc:title xml:lang="en">The Tree</dc:title>
+                      </rdf:Description>
 
                     </rdf:RDF>
                 "#,
@@ -513,20 +647,22 @@ mod test {
             .in_graph(&mut actual)
             .expect("failed parsing XML file");
 
-        let mut expected = TestGraph::new();
-        crate::parser::nt::Config::default()
-            .parse_str(
-                r#"
-                <http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)" .
-                _:genid1 <http://example.org/stuff/1.0/fullName> "Dave Beckett" .
-                _:genid1 <http://example.org/stuff/1.0/homePage> <http://purl.org/net/dajobe/> .
-                <http://www.w3.org/TR/rdf-syntax-grammar> <http://example.org/stuff/1.0/editor> _:genid1 .
-                "#,
-            )
-            .in_graph(&mut expected)
-            .expect("could not parse N-Triples file");
-
-        // pretty_assertions::assert_eq!(actual, expected);
+        assert_eq!(
+            actual.len(),
+            6,
+            "unexpected number of triples: {:#?}",
+            actual
+        );
+        // assert!(
+        //     actual.contains(
+        //         &f.iri("http://www.w3.org/TR/rdf-syntax-grammar").unwrap(),
+        //         &f.iri2("http://purl.org/dc/elements/1.1/", "title").unwrap(),
+        //         &f.literal_dt(
+        //             "RDF/XML Syntax Specification (Revised)",
+        //             xsd::string,
+        //         ).unwrap()
+        //     ).unwrap()
+        // );
     }
 
 }
