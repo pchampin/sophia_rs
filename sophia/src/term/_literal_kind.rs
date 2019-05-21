@@ -52,8 +52,8 @@ where
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
-            Lang(tag) => tag.as_ref().hash(state),
             Datatype(iri) => iri.hash(state),
+            Lang(tag) => tag.as_ref().to_lowercase().hash(state),
         }
     }
 }
@@ -65,7 +65,7 @@ where
 {
     fn eq(&self, other: &LiteralKind<U>) -> bool {
         match (self, other) {
-            (Lang(tag1), Lang(tag2)) => tag1.as_ref() == tag2.as_ref(),
+            (Lang(tag1), Lang(tag2)) => tag1.as_ref().eq_ignore_ascii_case(tag2.as_ref()),
             (Datatype(iri1), Datatype(iri2)) => iri1 == iri2,
             _ => false,
         }
