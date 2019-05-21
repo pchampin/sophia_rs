@@ -59,7 +59,7 @@ impl Config {
 
 #[derive(Debug, Clone)]
 pub struct PrefixMapping<F: TermFactory> {
-    default: Option<String>,
+    default: Option<Namespace<F::TermData>>,
     mapping: HashMap<String, Namespace<F::TermData>>,
     factory: F,
 }
@@ -110,20 +110,20 @@ impl<F: TermFactory> PrefixMapping<F> {
 // ---
 
 struct Text<T: TermData> {
-    owner: Term<T>,
     datatype: Option<Term<T>>,
     text: String,
 }
 
-impl<T: TermData> Text<T> {
-    fn new(owner: Term<T>) -> Self {
+impl<T: TermData> Default for Text<T> {
+    fn default() -> Self {
         Self {
-            owner,
             datatype: None,
-            text: String::new(),
+            text: Default::default(),
         }
     }
+}
 
+impl<T: TermData> Text<T> {
     fn set_datatype<O: Into<Option<Term<T>>>>(&mut self, datatype: O) {
         self.datatype = datatype.into();
     }
@@ -133,14 +133,15 @@ impl<T: TermData> Text<T> {
     }
 }
 
-struct XmlParser<B: BufRead, F: TermFactory> {
-    reader: quick_xml::Reader<B>,
+// ---
 
+struct XmlParser<B: BufRead, F: TermFactory> {
+    //
+    reader: quick_xml::Reader<B>,
     // The stack of namespaces: should be optimized.
     namespaces: Vec<PrefixMapping<F>>,
     // The stack of `xml:lang`: should be optimized
     lang: Vec<Option<F::TermData>>,
-
     // The stack of parents (for nested declarations)
     parents: Vec<Term<F::TermData>>,
     // The queue of produced triples
@@ -162,6 +163,8 @@ where
     <F as TermFactory>::TermData: Debug,
 {
     // ---
+
+    // Add a local scope (`lang`, `namespaces`, but not `parents`)
     fn enter_scope(&mut self, e: &BytesStart) {
         // Add a new namespace mapping or copy the last one (OPTIMISE ME)
         let mut ns = self.namespaces.last().unwrap().clone();
@@ -193,8 +196,8 @@ where
         self.text = None;
     }
 
+    // Exit the local scope
     fn leave_scope(&mut self) {
-        self.parents.pop();
         self.namespaces.pop();
         self.lang.pop();
         self.text = None;
@@ -214,6 +217,8 @@ where
         }
     }
 
+    // ---
+
     fn element_start(&mut self, e: &BytesStart) {
         self.enter_scope(e);
         // Ignore top-level rdf:RDF element
@@ -227,6 +232,12 @@ where
                 self.predicate_start(e)
             }
         }
+
+        println!(
+            "Entering {}: {:?}",
+            std::str::from_utf8(e.name()).unwrap(),
+            self.parents
+        );
     }
 
     fn node_start(&mut self, e: &BytesStart) {
@@ -238,8 +249,8 @@ where
         for attr in e.attributes().with_checks(true) {
             let a = attr.expect("FIXME");
 
-            // ignore xmlns and xml:lang attributes (processed in element_start)
-            if a.key.starts_with(b"xmlns:") {
+            // ignore xmlns attributes (processed in element_start)
+            if a.key.starts_with(b"xmlns") {
                 continue;
             }
 
@@ -261,7 +272,7 @@ where
                     panic!("cannot have rdf:ID, rdf:about and rdf:nodeId at the same time")
                 }
             } else if !k.matches(&xml::lang) {
-                println!("{:?}", k);
+                // Ignore xml:lang attributes
                 properties.insert(k, self.factory.literal_dt(v, xsd::string).expect("FIXME"));
             }
         }
@@ -300,24 +311,33 @@ where
 
         // Get the predicate and add it to the current nested stack
         let p = ns.expand_curie_string(std::str::from_utf8(e.name()).expect("FIXME"));
-        self.parents.push(p.clone());
+        self.parents.push(p);
 
         // Get the datatype of the possible literal value, if any
-        let mut txt = Text::new(p);
+        let mut txt = Text::default();
         for attr in e.attributes().with_checks(true) {
             let a = attr.expect("FIXME");
             if !a.key.starts_with(b"xmlns") {
                 let k = ns.expand_curie_string(std::str::from_utf8(a.key).expect("FIXME"));
                 if k.matches(&rdf::datatype) {
                     let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
-                    txt.set_datatype(ns.expand_curie_string(&v));
+                    // txt.set_datatype(ns.expand_curie_string(&v));
+                    txt.set_datatype(self.factory.iri(v).expect("FIXME"));
                 }
             }
         }
         self.text = Some(txt);
     }
 
+    // ---
+
     fn element_end(&mut self, e: &BytesEnd) {
+        println!(
+            "Leaving {}: {:?}",
+            std::str::from_utf8(e.name()).unwrap(),
+            self.parents
+        );
+
         // Change the current element type (if not in rdf:RDF)
         if e.name() != b"rdf:RDF" {
             if !self.in_node {
@@ -326,27 +346,28 @@ where
             self.in_node = !self.in_node;
         }
         self.leave_scope();
+
+        // Remove
+        self.parents.pop();
     }
 
     fn predicate_end(&mut self, e: &BytesEnd) {
+        // Build the curie string corresponding
         let ns = self.namespaces.last_mut().unwrap();
         let p = ns.expand_curie_string(std::str::from_utf8(e.name()).expect("FIXME"));
 
+        // Get the literal value
         if let Some(text) = self.text.take() {
-            if p.matches(&text.owner) {
-                let s = &self.parents[self.parents.len() - 2];
-                let o = match (text.datatype, self.lang.last()) {
-                    (Some(dt), _) => self.factory.literal_dt(text.text, dt).expect("FIXME"),
-                    (None, Some(Some(l))) => {
-                        self.factory.literal_lang(text.text, l).expect("FIXME")
-                    }
-                    _ => self
-                        .factory
-                        .literal_dt(text.text, xsd::string)
-                        .expect("FIXME"),
-                };
-                self.triples.push_back(Ok([s.clone(), p, o]));
-            }
+            let s = &self.parents[self.parents.len() - 2];
+            let o = match (text.datatype, self.lang.last()) {
+                (Some(dt), _) => self.factory.literal_dt(text.text, dt).expect("FIXME"),
+                (None, Some(Some(l))) => self.factory.literal_lang(text.text, l).expect("FIXME"),
+                _ => self
+                    .factory
+                    .literal_dt(text.text, xsd::string)
+                    .expect("FIXME"),
+            };
+            self.triples.push_back(Ok([s.clone(), p, o]));
         }
     }
 
@@ -420,9 +441,11 @@ where
     type Item = Result<[Term<F::TermData>; 3]>;
     fn next(&mut self) -> Option<Self::Item> {
         loop {
+            // First make sure to consume the queue.
             if let Some(triple) = self.triples.pop_front() {
                 return Some(triple);
             }
+            // Then process the next event to maybe produce triples
             match &self.reader.read_event(&mut Vec::new()).unwrap() {
                 Event::Eof => return None,
                 Event::Start(s) => self.element_start(s),
@@ -435,66 +458,36 @@ where
     }
 }
 
+// ---
+
 #[cfg(test)]
 mod test {
 
-    use std::ffi::OsStr;
     use std::fmt::Debug;
     use std::fmt::Formatter;
     use std::fmt::Result as FmtResult;
-    use std::fs::{read_dir, File};
-    use std::io;
-    use std::path::Path;
 
     use crate::graph::inmem::HashGraph;
     use crate::graph::inmem::TermIndexMapU;
     use crate::graph::Graph;
+    use crate::ns::dc;
     use crate::ns::xsd;
     use crate::term::factory::RcTermFactory;
     use crate::term::factory::TermFactory;
-    use crate::term::matcher::TermMatcher;
-    use crate::term::Normalization;
+    use crate::term::IriData;
+    use crate::term::StaticTerm;
     use crate::term::Term;
     use crate::triple::stream::TripleSource;
     use crate::triple::Triple;
 
-    type TestGraph = HashGraph<TermIndexMapU<u64, RcTermFactory>>;
+    pub static GRAMMAR_DESC: &str = "RDF/XML Syntax Specification (Revised)";
+    pub static GRAMMAR: StaticTerm = Term::Iri(IriData {
+        ns: "http://www.w3.org/TR/rdf-syntax-grammar",
+        suffix: None,
+        absolute: true,
+    });
 
-    impl PartialEq for TestGraph {
-        fn eq(&self, other: &Self) -> bool {
-            let mut triples_self = Vec::new();
-            let mut triples_other = Vec::new();
-
-            //
-            for res in <Self as Graph>::triples(&self) {
-                triples_self.push(res.unwrap());
-            }
-            for res in <Self as Graph>::triples(&other) {
-                triples_other.push(res.unwrap());
-            }
-
-            //
-            triples_self.sort_by_key(|t| (t.s().value(), t.p().value(), t.o().value()));
-            triples_other.sort_by_key(|t| (t.s().value(), t.p().value(), t.o().value()));
-
-            for (ts, to) in triples_self.into_iter().zip(triples_other.into_iter()) {
-                if !ts.s().matches(to.s()) {
-                    return false;
-                }
-
-                if !ts.p().matches(to.p()) {
-                    return false;
-                }
-
-                if !ts.o().matches(to.o()) {
-                    return false;
-                }
-            }
-
-            // both graphs are included in each other so they are equal
-            true
-        }
-    }
+    type TestGraph = HashGraph<TermIndexMapU<u16, RcTermFactory>>;
 
     impl Debug for TestGraph {
         fn fmt(&self, f: &mut Formatter) -> FmtResult {
@@ -508,81 +501,81 @@ mod test {
     }
 
     // #[test]
-    fn w3c_test_suite() {
-        fn do_test_suite() -> io::Result<()> {
-            let rdf_ext = OsStr::new("rdf");
-            let nt_ext = OsStr::new("nt");
-
-            let suite = Path::new("..").join("rdf-tests").join("rdf-xml");
-            if !suite.exists() || !suite.is_dir() {
-                panic!("rdf-tests/rdf-xml not found, can not check W3C test-suite. cf README.md");
-            }
-
-            let mut tested = 0;
-
-            for e in read_dir(&suite)? {
-                let entry = e?;
-                if entry.file_type()?.is_dir() {
-                    for c in read_dir(entry.path())? {
-                        let case = c?;
-                        if case.path().extension() == Some(rdf_ext) {
-                            if case.path().with_extension(nt_ext).is_file() {
-                                println!("{}", case.path().display());
-
-                                // the reference N-Triples file
-                                let ntparser = crate::parser::nt::Config::default();
-                                let ntfile = File::open(case.path().with_extension(nt_ext))?;
-                                let mut expected = TestGraph::new();
-                                ntparser.parse_read(ntfile).in_graph(&mut expected).unwrap();
-                                // the test XML file
-                                let xmlparser = super::Config::default();
-                                let xmlfile = File::open(case.path())?;
-                                let mut actual = TestGraph::new();
-                                let res = xmlparser.parse_read(xmlfile).in_graph(&mut actual);
-
-                                // check the XML parses without error
-                                assert!(
-                                    res.is_ok(),
-                                    format!("{} should parse without error", case.path().display())
-                                );
-                                // check the XML produces the same graph
-                                pretty_assertions::assert_eq!(
-                                    actual,
-                                    expected,
-                                    "{} does not give expected results",
-                                    case.path().display()
-                                );
-
-                                tested += 1;
-                            } else if case.path().to_string_lossy().contains("error") {
-                                // let xmlparser = super::Config::default();
-                                // let xmlfile = File::open(case.path())?;
-                                // let mut actual = TestGraph::new();
-                                // assert!(
-                                //     xmlparser.parse_read(xmlfile).in_graph(&mut actual).is_err(),
-                                //     format!("{} should parse with error", case.path().display())
-                                // );
-                                //
-                                // tested += 1;
-                            }
-                        }
-                    }
-                }
-            }
-
-            assert_ne!(
-                tested, 0,
-                "No test found in W3C test-suite, something must be wrong"
-            );
-            Ok(())
-        }
-        do_test_suite().unwrap()
-    }
+    // fn w3c_test_suite() {
+    //     fn do_test_suite() -> io::Result<()> {
+    //         let rdf_ext = OsStr::new("rdf");
+    //         let nt_ext = OsStr::new("nt");
+    //
+    //         let suite = Path::new("..").join("rdf-tests").join("rdf-xml");
+    //         if !suite.exists() || !suite.is_dir() {
+    //             panic!("rdf-tests/rdf-xml not found, can not check W3C test-suite. cf README.md");
+    //         }
+    //
+    //         let mut tested = 0;
+    //
+    //         for e in read_dir(&suite)? {
+    //             let entry = e?;
+    //             if entry.file_type()?.is_dir() {
+    //                 for c in read_dir(entry.path())? {
+    //                     let case = c?;
+    //                     if case.path().extension() == Some(rdf_ext) {
+    //                         if case.path().with_extension(nt_ext).is_file() {
+    //                             println!("{}", case.path().display());
+    //
+    //                             // the reference N-Triples file
+    //                             let ntparser = crate::parser::nt::Config::default();
+    //                             let ntfile = File::open(case.path().with_extension(nt_ext))?;
+    //                             let mut expected = TestGraph::new();
+    //                             ntparser.parse_read(ntfile).in_graph(&mut expected).unwrap();
+    //                             // the test XML file
+    //                             let xmlparser = super::Config::default();
+    //                             let xmlfile = File::open(case.path())?;
+    //                             let mut actual = TestGraph::new();
+    //                             let res = xmlparser.parse_read(xmlfile).in_graph(&mut actual);
+    //
+    //                             // check the XML parses without error
+    //                             assert!(
+    //                                 res.is_ok(),
+    //                                 format!("{} should parse without error", case.path().display())
+    //                             );
+    //                             // check the XML produces the same graph
+    //                             pretty_assertions::assert_eq!(
+    //                                 actual,
+    //                                 expected,
+    //                                 "{} does not give expected results",
+    //                                 case.path().display()
+    //                             );
+    //
+    //                             tested += 1;
+    //                         } else if case.path().to_string_lossy().contains("error") {
+    //                             // let xmlparser = super::Config::default();
+    //                             // let xmlfile = File::open(case.path())?;
+    //                             // let mut actual = TestGraph::new();
+    //                             // assert!(
+    //                             //     xmlparser.parse_read(xmlfile).in_graph(&mut actual).is_err(),
+    //                             //     format!("{} should parse with error", case.path().display())
+    //                             // );
+    //                             //
+    //                             // tested += 1;
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //
+    //         assert_ne!(
+    //             tested, 0,
+    //             "No test found in W3C test-suite, something must be wrong"
+    //         );
+    //         Ok(())
+    //     }
+    //     do_test_suite().unwrap()
+    // }
 
     #[test]
     fn w3c_example_07() {
         let mut f = RcTermFactory::default();
-        let mut actual = TestGraph::new();
+        let mut g = TestGraph::new();
         super::Config::default()
             .parse_str(
                 r#"<?xml version="1.0"?>
@@ -600,39 +593,31 @@ mod test {
                     </rdf:RDF>
                 "#,
             )
-            .in_graph(&mut actual)
+            .in_graph(&mut g)
             .expect("failed parsing XML file");
 
-        assert_eq!(
-            actual.len(),
-            4,
-            "unexpected number of triples: {:#?}",
-            actual
-        );
-        assert!(actual
+        assert_eq!(g.len(), 4, "unexpected number of triples: {:#?}", g);
+        assert!(g
             .contains(
-                &f.iri("http://www.w3.org/TR/rdf-syntax-grammar").unwrap(),
-                &f.iri2("http://purl.org/dc/elements/1.1/", "title").unwrap(),
-                &f.literal_dt("RDF/XML Syntax Specification (Revised)", xsd::string,)
-                    .unwrap()
+                &GRAMMAR,
+                &dc::elements::title,
+                &f.literal_dt(GRAMMAR_DESC, xsd::string).unwrap()
             )
             .unwrap());
     }
 
     #[test]
     fn w3c_example_08() {
-        let mut f = RcTermFactory::default();
-        let mut actual = TestGraph::new();
+        let mut g = TestGraph::new();
         super::Config::default()
             .parse_str(
                 r#"<?xml version="1.0" encoding="utf-8"?>
                     <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                                xmlns:dc="http://purl.org/dc/elements/1.1/">
-
+                             xmlns:dc="http://purl.org/dc/elements/1.1/">
                       <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar">
-                        <dc:title>RDF 1.1 XML Syntax</dc:title>
-                        <dc:title xml:lang="en">RDF 1.1 XML Syntax</dc:title>
-                        <dc:title xml:lang="en-US">RDF 1.1 XML Syntax</dc:title>
+                        <dc:title>RDF/XML Syntax Specification (Revised)</dc:title>
+                        <dc:title xml:lang="en">RDF/XML Syntax Specification (Revised)</dc:title>
+                        <dc:title xml:lang="en-US">RDF/XML Syntax Specification (Revised)</dc:title>
                       </rdf:Description>
 
                       <rdf:Description rdf:about="http://example.org/buecher/baum" xml:lang="de">
@@ -640,29 +625,129 @@ mod test {
                         <dc:description>Das Buch ist außergewöhnlich</dc:description>
                         <dc:title xml:lang="en">The Tree</dc:title>
                       </rdf:Description>
-
                     </rdf:RDF>
                 "#,
             )
-            .in_graph(&mut actual)
+            .in_graph(&mut g)
             .expect("failed parsing XML file");
 
-        assert_eq!(
-            actual.len(),
-            6,
-            "unexpected number of triples: {:#?}",
-            actual
-        );
-        // assert!(
-        //     actual.contains(
-        //         &f.iri("http://www.w3.org/TR/rdf-syntax-grammar").unwrap(),
-        //         &f.iri2("http://purl.org/dc/elements/1.1/", "title").unwrap(),
-        //         &f.literal_dt(
-        //             "RDF/XML Syntax Specification (Revised)",
-        //             xsd::string,
-        //         ).unwrap()
-        //     ).unwrap()
-        // );
+        assert_eq!(g.len(), 6, "unexpected number of triples: {:#?}", g);
+        for triple in crate::parser::nt::Config::default()
+            .parse_str(r#"
+                <http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)" .
+                <http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)"@en .
+                <http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)"@en-us .
+                <http://example.org/buecher/baum> <http://purl.org/dc/elements/1.1/title> "Der Baum"@de .
+                <http://example.org/buecher/baum> <http://purl.org/dc/elements/1.1/description> "Das Buch ist au\u00DFergew\u00F6hnlich"@de .
+                <http://example.org/buecher/baum> <http://purl.org/dc/elements/1.1/title> "The Tree"@en .
+            "#)
+        {
+            let t = triple.expect("N-Triples iterator failed");
+            assert!(
+                g.contains(t.s(), t.p(), t.o()).expect(".contains failed"),
+                "missing triple: ({:?} {:?} {:?})", t.s(), t.p(), t.o()
+            );
+        }
     }
 
+    #[test]
+    fn w3c_example_09() {
+        let mut g = TestGraph::new();
+        super::Config::default()
+            .parse_str(
+                r#"<?xml version="1.0"?>
+                    <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                             xmlns:ex="http://example.org/stuff/1.0/">
+                      <rdf:Description rdf:about="http://example.org/item01">
+                        <ex:size rdf:datatype="http://www.w3.org/2001/XMLSchema#int">123</ex:size>
+                      </rdf:Description>
+                    </rdf:RDF>
+                "#,
+            )
+            .in_graph(&mut g)
+            .expect("failed parsing XML file");
+
+        assert_eq!(g.len(), 1, "unexpected number of triples: {:#?}", g);
+        for triple in crate::parser::nt::Config::default()
+            .parse_str(r#"
+                <http://example.org/item01> <http://example.org/stuff/1.0/size> "123"^^<http://www.w3.org/2001/XMLSchema#int> .
+            "#)
+        {
+            let t = triple.expect("N-Triples iterator failed");
+            assert!(
+                g.contains(t.s(), t.p(), t.o()).expect(".contains failed"),
+                "missing triple: ({:?} {:?} {:?})", t.s(), t.p(), t.o()
+            );
+        }
+    }
+
+    #[test]
+    fn w3c_example_14() {
+        let mut g = TestGraph::new();
+        super::Config::default()
+            .parse_str(
+                r#"<?xml version="1.0"?>
+                    <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                             xmlns:dc="http://purl.org/dc/elements/1.1/"
+                             xmlns:ex="http://example.org/stuff/1.0/">
+                      <rdf:Description rdf:about="http://example.org/thing">
+                        <rdf:type rdf:resource="http://example.org/stuff/1.0/Document"/>
+                        <dc:title>A marvelous thing</dc:title>
+                      </rdf:Description>
+                    </rdf:RDF>
+                "#,
+            )
+            .in_graph(&mut g)
+            .expect("failed parsing XML file");
+
+        assert_eq!(g.len(), 2, "unexpected number of triples: {:#?}", g);
+        for triple in crate::parser::nt::Config::default()
+            .parse_str(r#"
+                <http://example.org/thing> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/stuff/1.0/Document> .
+                <http://example.org/thing> <http://purl.org/dc/elements/1.1/title> "A marvelous thing" .
+            "#)
+        {
+            let t = triple.expect("N-Triples iterator failed");
+            assert!(
+                g.contains(t.s(), t.p(), t.o()).expect(".contains failed"),
+                "missing triple: ({:?} {:?} {:?})", t.s(), t.p(), t.o()
+            );
+        }
+    }
+
+    #[test]
+    fn w3c_example_15() {
+        let mut g = TestGraph::new();
+        super::Config::default()
+            .parse_str(
+                r#"<?xml version="1.0"?>
+                    <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                             xmlns:dc="http://purl.org/dc/elements/1.1/"
+                             xmlns:ex="http://example.org/stuff/1.0/">
+                      <ex:Document rdf:about="http://example.org/thing">
+                        <dc:title>A marvelous thing</dc:title>
+                      </ex:Document>
+                    </rdf:RDF>
+                "#,
+            )
+            .in_graph(&mut g)
+            .expect("failed parsing XML file");
+
+        assert_eq!(g.len(), 2, "unexpected number of triples: {:#?}", g);
+        for triple in crate::parser::nt::Config::default()
+            .parse_str(r#"
+                <http://example.org/thing> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/stuff/1.0/Document> .
+                <http://example.org/thing> <http://purl.org/dc/elements/1.1/title> "A marvelous thing" .
+            "#)
+        {
+            let t = triple.expect("N-Triples iterator failed");
+            assert!(
+                g.contains(t.s(), t.p(), t.o()).expect(".contains failed"),
+                "missing triple: ({:?} {:?} {:?})", t.s(), t.p(), t.o()
+            );
+        }
+    }
+
+    #[test]
+    fn w3c_example_16() {}
 }
