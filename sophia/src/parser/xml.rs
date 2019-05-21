@@ -1,11 +1,13 @@
 //! Parser for RDF XML.
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::LinkedList;
 use std::fmt::Debug;
 use std::io::{BufRead, BufReader, Read};
-use std::ops::RangeFrom;
 use std::rc::Rc;
+use std::sync::atomic::AtomicU64;
+use std::sync::atomic::Ordering;
 
 use quick_xml::events::BytesEnd;
 use quick_xml::events::BytesStart;
@@ -57,11 +59,13 @@ impl Config {
 
 // ---
 
-// enum ParsingMode {
-//     Node,
-//     Predicate,
-//     Resource,
-// }
+#[derive(Debug, Clone, Copy)]
+enum ParsingState {
+    Node,
+    Predicate,
+    Resource,
+    Literal, // NB: not supported by quick-xml right now
+}
 
 // ---
 
@@ -69,18 +73,24 @@ impl Config {
 pub struct PrefixMapping<F: TermFactory> {
     default: Option<Namespace<F::TermData>>,
     mapping: HashMap<String, Namespace<F::TermData>>,
-    factory: F,
+    factory: Rc<RefCell<F>>,
+}
+
+impl<F: TermFactory> PrefixMapping<F> {
+    fn with_factory(f: Rc<RefCell<F>>) -> Self {
+        let mut m = Self {
+            default: None,
+            mapping: HashMap::new(),
+            factory: f,
+        };
+        m.add_prefix("xml", "http://www.w3.org/XML/1998/namespace#");
+        m
+    }
 }
 
 impl<F: TermFactory + Default> Default for PrefixMapping<F> {
     fn default() -> Self {
-        let mut m = Self {
-            default: None,
-            mapping: HashMap::new(),
-            factory: Default::default(),
-        };
-        m.add_prefix("xml", "http://www.w3.org/XML/1998/namespace#");
-        m
+        Self::with_factory(Default::default())
     }
 }
 
@@ -89,14 +99,15 @@ impl<F: TermFactory> PrefixMapping<F> {
         if prefix == "_" {
             panic!("reserved prefix")
         } else {
+            let mut f = self.factory.borrow_mut();
             self.mapping.insert(
                 String::from(prefix),
-                Namespace::new(self.factory.get_term_data(value)).expect("FIXME"),
+                Namespace::new(f.get_term_data(value)).expect("FIXME"),
             );
         }
     }
 
-    pub fn expand_curie_string(&mut self, curie_str: &str) -> Term<F::TermData> {
+    pub fn expand_curie_string(&self, curie_str: &str) -> Term<F::TermData> {
         if let Some(separator_idx) = curie_str.chars().position(|c| c == ':') {
             let prefix = &curie_str[..separator_idx];
             let reference = &curie_str[separator_idx + 1..];
@@ -106,9 +117,10 @@ impl<F: TermFactory> PrefixMapping<F> {
         }
     }
 
-    pub fn expand_curie(&mut self, prefix: &str, local: &str) -> Term<F::TermData> {
+    pub fn expand_curie(&self, prefix: &str, local: &str) -> Term<F::TermData> {
         if let Some(ns) = self.mapping.get(prefix) {
-            ns.get(self.factory.get_term_data(local)).expect("FIXME")
+            let mut f = self.factory.borrow_mut();
+            ns.get(f.get_term_data(local)).expect("FIXME")
         } else {
             panic!("no such namespace")
         }
@@ -146,21 +158,24 @@ impl<T: TermData> Text<T> {
 struct XmlParser<B: BufRead, F: TermFactory> {
     //
     reader: quick_xml::Reader<B>,
+
     // The stack of namespaces: should be optimized.
     namespaces: Vec<PrefixMapping<F>>,
     // The stack of `xml:lang`: should be optimized
     lang: Vec<Option<F::TermData>>,
     // The stack of parents (for nested declarations)
     parents: Vec<Term<F::TermData>>,
+    // The tr
+    state: Vec<ParsingState>,
 
     // The queue of produced triples
     triples: LinkedList<Result<[Term<F::TermData>; 3]>>,
     // `true` if we are currently in a node element.
     in_node: bool,
     //
-    factory: F,
+    factory: Rc<RefCell<F>>,
     //
-    bnodes: RangeFrom<usize>,
+    bnodes: AtomicU64,
     //
     text: Option<Text<F::TermData>>,
 }
@@ -195,6 +210,7 @@ where
             if a.key == b"xml:lang" {
                 lang = Some(
                     self.factory
+                        .borrow_mut()
                         .get_term_data(&a.unescape_and_decode_value(&self.reader).unwrap()),
                 );
             }
@@ -212,47 +228,55 @@ where
         self.text = None;
     }
 
+    // Create a new bnode term (using `n` prefix).
+    fn new_bnode(&self) -> Term<F::TermData> {
+        self.factory
+            .borrow_mut()
+            .bnode(&format!("n{}", self.bnodes.fetch_add(1, Ordering::Relaxed)))
+            .unwrap()
+    }
+
     // ---
 
     fn new(reader: quick_xml::Reader<B>) -> Self {
+        let factory: Rc<RefCell<F>> = Default::default();
         Self {
             reader,
             parents: Vec::new(),
-            namespaces: vec![PrefixMapping::default()],
+            namespaces: vec![PrefixMapping::with_factory(factory.clone())],
             triples: LinkedList::new(),
             in_node: false,
-            factory: Default::default(),
-            bnodes: 0..,
+            factory: factory,
+            bnodes: AtomicU64::new(0),
             lang: vec![None],
             text: None,
+            state: vec![ParsingState::Node],
         }
     }
 
     // ---
 
     fn element_start(&mut self, e: &BytesStart) {
-        self.enter_scope(e);
-        // Ignore top-level rdf:RDF element
-        if e.name() != b"rdf:RDF" {
-            // Change the current element type
-            self.in_node = !self.in_node;
-            // Parse as a node of as a property
-            if self.in_node {
-                self.node_start(e)
-            } else {
-                self.predicate_start(e)
-            }
-        }
+        println!("{:?}", self.state);
 
-        println!(
-            "Entering {}: {:?}",
-            std::str::from_utf8(e.name()).unwrap(),
-            self.parents
-        );
+        self.enter_scope(e);
+        match self.state.last().unwrap() {
+            ParsingState::Node => self.node_start(e),
+            ParsingState::Predicate => self.predicate_start(e),
+            ParsingState::Resource => self.predicate_start(e),
+            _ => unimplemented!(),
+        }
     }
 
     fn node_start(&mut self, e: &BytesStart) {
-        let ns = self.namespaces.last_mut().unwrap();
+        // Get the namespace mapping in the current scope
+        let ns = self.namespaces.last().unwrap();
+
+        // Bail out if this the top level rdf:RDF
+        if e.name() == b"rdf:RDF" {
+            self.state.push(ParsingState::Node);
+            return;
+        }
 
         // Separate node subject from other attributes
         let mut properties = HashMap::new();
@@ -270,37 +294,47 @@ where
             let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
             if k.matches(&rdf::about) {
                 if subject.is_none() {
-                    subject = Some(self.factory.iri(v).expect("FIXME"));
+                    subject = Some(self.factory.borrow_mut().iri(v).expect("FIXME"));
                 } else {
                     panic!("cannot have rdf:ID, rdf:about and rdf:nodeId at the same time")
                 }
             } else if k.matches(&rdf::ID) {
-
+                unimplemented!()
             } else if k.matches(&rdf::nodeID) {
                 if subject.is_none() {
-                    subject = Some(self.factory.bnode(format!("o{}", v)).expect("FIXME"));
+                    subject = Some(
+                        self.factory
+                            .borrow_mut()
+                            .bnode(format!("o{}", v))
+                            .expect("FIXME"),
+                    );
                 } else {
                     panic!("cannot have rdf:ID, rdf:about and rdf:nodeId at the same time")
                 }
             } else if !k.matches(&xml::lang) {
                 // Ignore xml:lang attributes
-                properties.insert(k, self.factory.literal_dt(v, xsd::string).expect("FIXME"));
+                properties.insert(
+                    k,
+                    self.factory
+                        .borrow_mut()
+                        .literal_dt(v, xsd::string)
+                        .expect("FIXME"),
+                );
             }
         }
 
         // Get subject and add it to the current nested stack
-        let s: Term<_> = subject.unwrap_or(
-            self.factory
-                .bnode(format!("n{}", self.bnodes.next().unwrap()))
-                .expect("FIXME"),
-        );
+        let s: Term<_> = subject.unwrap_or_else(|| self.new_bnode());
         self.parents.push(s.clone());
 
         // Add the type as a triple if it is not `rdf:Description`
         let ty = ns.expand_curie_string(std::str::from_utf8(e.name()).expect("FIXME"));
         if ty != rdf::Description {
-            self.triples
-                .push_back(Ok([s.clone(), self.factory.copy(&rdf::type_), ty]));
+            self.triples.push_back(Ok([
+                s.clone(),
+                self.factory.borrow_mut().copy(&rdf::type_),
+                ty,
+            ]));
         }
 
         // Add triples described by properties in XML attributes
@@ -308,24 +342,20 @@ where
             self.triples.push_back(Ok([s.clone(), p, lit]))
         }
 
-        // Add the entity as a triple object if it is not top-level
-        if self.parents.len() > 1 {
-            let o = s;
-            let s = &self.parents[self.parents.len() - 3];
-            let p = &self.parents[self.parents.len() - 2];
-            self.triples.push_back(Ok([s.clone(), p.clone(), o]));
-        }
+        // Next start event is expected to be a predicate
+        self.state.push(ParsingState::Predicate);
     }
 
     fn predicate_start(&mut self, e: &BytesStart) {
-        let ns = self.namespaces.last_mut().unwrap();
+        let ns = self.namespaces.last().unwrap();
 
         // Get the predicate and add it to the current nested stack
         let p = ns.expand_curie_string(std::str::from_utf8(e.name()).expect("FIXME"));
         self.parents.push(p);
 
-        // Get the datatype of the possible literal value, if any
+        // Extract attributes relevant to the RDF syntax
         let mut txt = Text::default();
+        let mut next_state = ParsingState::Node;
         for attr in e.attributes().with_checks(true) {
             let a = attr.expect("FIXME");
             if !a.key.starts_with(b"xmlns") {
@@ -333,33 +363,46 @@ where
                 if k.matches(&rdf::datatype) {
                     let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
                     // txt.set_datatype(ns.expand_curie_string(&v));
-                    txt.set_datatype(self.factory.iri(v).expect("FIXME"));
+                    txt.set_datatype(self.factory.borrow_mut().iri(v).expect("FIXME"));
+                } else if k.matches(&rdf::parseType) {
+                    match a.value.as_ref() {
+                        b"Resource" => {
+                            self.parents.push(self.new_bnode());
+                            next_state = ParsingState::Resource;
+                        }
+                        b"Literal" => next_state = ParsingState::Literal,
+                        other => panic!("invalid parseType: {:?}", other),
+                    }
                 }
             }
         }
         self.text = Some(txt);
+        self.state.push(next_state);
     }
 
     // ---
 
     fn element_end(&mut self, e: &BytesEnd) {
-        println!(
-            "Leaving {}: {:?}",
-            std::str::from_utf8(e.name()).unwrap(),
-            self.parents
-        );
+        println!("{:?}", self.state);
 
-        // Change the current element type (if not in rdf:RDF)
-        if e.name() != b"rdf:RDF" {
-            if !self.in_node {
-                self.predicate_end(e);
-            }
-            self.in_node = !self.in_node;
+        match self.state.pop().unwrap() {
+            ParsingState::Node => self.predicate_end(e),
+            ParsingState::Predicate => self.node_end(e),
+            ParsingState::Resource => self.resource_end(e),
+            _ => unimplemented!(),
         }
-        self.leave_scope();
 
-        // Remove
-        self.parents.pop();
+        self.leave_scope();
+    }
+
+    fn node_end(&mut self, e: &BytesEnd) {
+        // Add the entity as a triple object if it is not top-level
+        let o = self.parents.pop().unwrap();
+        if self.parents.len() > 1 {
+            let s = &self.parents[self.parents.len() - 2];
+            let p = &self.parents[self.parents.len() - 1];
+            self.triples.push_back(Ok([s.clone(), p.clone(), o]));
+        }
     }
 
     fn predicate_end(&mut self, e: &BytesEnd) {
@@ -371,26 +414,36 @@ where
         if let Some(text) = self.text.take() {
             let s = &self.parents[self.parents.len() - 2];
             let o = match (text.datatype, self.lang.last()) {
-                (Some(dt), _) => self.factory.literal_dt(text.text, dt).expect("FIXME"),
-                (None, Some(Some(l))) => self.factory.literal_lang(text.text, l).expect("FIXME"),
+                (Some(dt), _) => self
+                    .factory
+                    .borrow_mut()
+                    .literal_dt(text.text, dt)
+                    .expect("FIXME"),
+                (None, Some(Some(l))) => self
+                    .factory
+                    .borrow_mut()
+                    .literal_lang(text.text, l)
+                    .expect("FIXME"),
                 _ => self
                     .factory
+                    .borrow_mut()
                     .literal_dt(text.text, xsd::string)
                     .expect("FIXME"),
             };
             self.triples.push_back(Ok([s.clone(), p, o]));
         }
+
+        self.parents.pop();
+    }
+
+    fn resource_end(&mut self, e: &BytesEnd) {
+        self.node_end(e);
+        self.predicate_end(e)
     }
 
     // --- Text elements ----------------------------------------------------
 
     fn element_text(&mut self, e: &BytesText) {
-        if !self.in_node {
-            self.predicate_text(e);
-        }
-    }
-
-    fn predicate_text(&mut self, e: &BytesText) {
         if let Some(text) = &mut self.text {
             text.set_text(e.unescape_and_decode(&self.reader).expect("FIXME"));
         }
@@ -400,15 +453,20 @@ where
 
     fn element_empty(&mut self, e: &BytesStart) {
         self.enter_scope(e);
-        if self.in_node {
-            self.predicate_empty(e)
-        } else {
-            self.node_empty(e)
+
+        match self.state.last().unwrap() {
+            ParsingState::Node => self.node_empty(e),
+            ParsingState::Predicate => self.predicate_empty(e),
+            ParsingState::Resource => self.resource_empty(e),
+            _ => (),
         }
+
         self.leave_scope();
     }
 
-    fn node_empty(&mut self, e: &BytesStart) {}
+    fn node_empty(&mut self, e: &BytesStart) {
+        // FIXME
+    }
 
     fn predicate_empty(&mut self, e: &BytesStart) {
         let ns = self.namespaces.last_mut().unwrap();
@@ -428,13 +486,18 @@ where
             let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
             if k.matches(&rdf::resource) {
                 if object.is_none() {
-                    object = Some(self.factory.iri(v).expect("FIXME"));
+                    object = Some(self.factory.borrow_mut().iri(v).expect("FIXME"));
                 } else {
                     panic!("cannot have rdf:resource and rdf:nodeId at the same time")
                 }
             } else if k.matches(&rdf::nodeID) {
                 if object.is_none() {
-                    object = Some(self.factory.bnode(format!("o{}", v)).expect("FIXME"));
+                    object = Some(
+                        self.factory
+                            .borrow_mut()
+                            .bnode(format!("o{}", v))
+                            .expect("FIXME"),
+                    );
                 } else {
                     panic!("cannot have rdf:resource and rdf:nodeId at the same time")
                 }
@@ -444,6 +507,10 @@ where
         let s = self.parents.last().unwrap();
         let o = object.unwrap(); // FIXME
         self.triples.push_back(Ok([s.clone(), p, o]));
+    }
+
+    fn resource_empty(&mut self, e: &BytesStart) {
+        self.predicate_empty(e)
     }
 }
 
@@ -716,6 +783,30 @@ mod test {
            <http://www.w3.org/TR/rdf-syntax-grammar> <http://example.org/stuff/1.0/editor> _:oabc .
            _:oabc <http://example.org/stuff/1.0/fullName> "Dave Beckett" .
            _:oabc <http://example.org/stuff/1.0/homePage> <http://purl.org/net/dajobe/> .
+        "#
+    }
+
+    // Example 12: 'Complete example using rdf:parseType="Resource"'
+    w3c_example! {
+        w3c_example_12,
+        r#"<?xml version="1.0"?>
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:dc="http://purl.org/dc/elements/1.1/"
+                     xmlns:ex="http://example.org/stuff/1.0/">
+              <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar"
+            		   dc:title="RDF/XML Syntax Specification (Revised)">
+                <ex:editor rdf:parseType="Resource">
+                  <ex:fullName>Dave Beckett</ex:fullName>
+                  <ex:homePage rdf:resource="http://purl.org/net/dajobe/"/>
+                </ex:editor>
+              </rdf:Description>
+            </rdf:RDF>
+        "#,
+        // This is with renamed node IDs
+        r#"<http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)" .
+           _:n0 <http://example.org/stuff/1.0/fullName> "Dave Beckett" .
+           _:n0 <http://example.org/stuff/1.0/homePage> <http://purl.org/net/dajobe/> .
+           <http://www.w3.org/TR/rdf-syntax-grammar> <http://example.org/stuff/1.0/editor> _:n0 .
         "#
     }
 
