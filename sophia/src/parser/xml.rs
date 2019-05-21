@@ -24,7 +24,6 @@ use crate::term::factory::TermFactory;
 use crate::term::matcher::TermMatcher;
 use crate::term::Term;
 use crate::term::TermData;
-use crate::triple::Triple;
 
 // ---
 
@@ -170,8 +169,6 @@ struct XmlParser<B: BufRead, F: TermFactory> {
 
     // The queue of produced triples
     triples: LinkedList<Result<[Term<F::TermData>; 3]>>,
-    // `true` if we are currently in a node element.
-    in_node: bool,
     //
     factory: Rc<RefCell<F>>,
     //
@@ -245,7 +242,6 @@ where
             parents: Vec::new(),
             namespaces: vec![PrefixMapping::with_factory(factory.clone())],
             triples: LinkedList::new(),
-            in_node: false,
             factory: factory,
             bnodes: AtomicU64::new(0),
             lang: vec![None],
