@@ -57,6 +57,14 @@ impl Config {
 
 // ---
 
+// enum ParsingMode {
+//     Node,
+//     Predicate,
+//     Resource,
+// }
+
+// ---
+
 #[derive(Debug, Clone)]
 pub struct PrefixMapping<F: TermFactory> {
     default: Option<Namespace<F::TermData>>,
@@ -144,6 +152,7 @@ struct XmlParser<B: BufRead, F: TermFactory> {
     lang: Vec<Option<F::TermData>>,
     // The stack of parents (for nested declarations)
     parents: Vec<Term<F::TermData>>,
+
     // The queue of produced triples
     triples: LinkedList<Result<[Term<F::TermData>; 3]>>,
     // `true` if we are currently in a node element.
@@ -202,6 +211,8 @@ where
         self.lang.pop();
         self.text = None;
     }
+
+    // ---
 
     fn new(reader: quick_xml::Reader<B>) -> Self {
         Self {
@@ -419,10 +430,14 @@ where
                 if object.is_none() {
                     object = Some(self.factory.iri(v).expect("FIXME"));
                 } else {
-                    panic!("cannot have rdf:resource rdf:nodeId at the same time")
+                    panic!("cannot have rdf:resource and rdf:nodeId at the same time")
                 }
             } else if k.matches(&rdf::nodeID) {
-
+                if object.is_none() {
+                    object = Some(self.factory.bnode(format!("o{}", v)).expect("FIXME"));
+                } else {
+                    panic!("cannot have rdf:resource and rdf:nodeId at the same time")
+                }
             }
         }
 
@@ -572,6 +587,35 @@ mod test {
     //     do_test_suite().unwrap()
     // }
 
+    macro_rules! w3c_example {
+        ($name:ident, $xml:literal, $nt:literal) => {
+            #[test]
+            fn $name() {
+                let mut g = TestGraph::new();
+                super::Config::default()
+                    .parse_str($xml)
+                    .in_graph(&mut g)
+                    .expect("failed parsing XML file");
+
+                let mut nt = Vec::new();
+                for triple in crate::parser::nt::Config::default().parse_str($nt) {
+                    nt.push(triple.expect("N-Triples iterator failed"));
+                }
+
+                assert_eq!(g.len(), nt.len(), "unexpected number of triples: {:#?}", g);
+                for t in nt.into_iter() {
+                    assert!(
+                        g.contains(t.s(), t.p(), t.o()).expect(".contains failed"),
+                        "missing triple: ({:?} {:?} {:?})",
+                        t.s(),
+                        t.p(),
+                        t.o()
+                    );
+                }
+            }
+        };
+    }
+
     #[test]
     fn w3c_example_07() {
         let mut f = RcTermFactory::default();
@@ -606,148 +650,126 @@ mod test {
             .unwrap());
     }
 
-    #[test]
-    fn w3c_example_08() {
-        let mut g = TestGraph::new();
-        super::Config::default()
-            .parse_str(
-                r#"<?xml version="1.0" encoding="utf-8"?>
-                    <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                             xmlns:dc="http://purl.org/dc/elements/1.1/">
-                      <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar">
-                        <dc:title>RDF/XML Syntax Specification (Revised)</dc:title>
-                        <dc:title xml:lang="en">RDF/XML Syntax Specification (Revised)</dc:title>
-                        <dc:title xml:lang="en-US">RDF/XML Syntax Specification (Revised)</dc:title>
-                      </rdf:Description>
+    // Example 08: 'Complete example of xml:lang'
+    w3c_example! {
+        w3c_example_08,
+        r#"<?xml version="1.0" encoding="utf-8"?>
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:dc="http://purl.org/dc/elements/1.1/">
+              <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar">
+                <dc:title>RDF/XML Syntax Specification (Revised)</dc:title>
+                <dc:title xml:lang="en">RDF/XML Syntax Specification (Revised)</dc:title>
+                <dc:title xml:lang="en-US">RDF/XML Syntax Specification (Revised)</dc:title>
+              </rdf:Description>
 
-                      <rdf:Description rdf:about="http://example.org/buecher/baum" xml:lang="de">
-                        <dc:title>Der Baum</dc:title>
-                        <dc:description>Das Buch ist außergewöhnlich</dc:description>
-                        <dc:title xml:lang="en">The Tree</dc:title>
-                      </rdf:Description>
-                    </rdf:RDF>
-                "#,
-            )
-            .in_graph(&mut g)
-            .expect("failed parsing XML file");
-
-        assert_eq!(g.len(), 6, "unexpected number of triples: {:#?}", g);
-        for triple in crate::parser::nt::Config::default()
-            .parse_str(r#"
-                <http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)" .
-                <http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)"@en .
-                <http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)"@en-us .
-                <http://example.org/buecher/baum> <http://purl.org/dc/elements/1.1/title> "Der Baum"@de .
-                <http://example.org/buecher/baum> <http://purl.org/dc/elements/1.1/description> "Das Buch ist au\u00DFergew\u00F6hnlich"@de .
-                <http://example.org/buecher/baum> <http://purl.org/dc/elements/1.1/title> "The Tree"@en .
-            "#)
-        {
-            let t = triple.expect("N-Triples iterator failed");
-            assert!(
-                g.contains(t.s(), t.p(), t.o()).expect(".contains failed"),
-                "missing triple: ({:?} {:?} {:?})", t.s(), t.p(), t.o()
-            );
-        }
+              <rdf:Description rdf:about="http://example.org/buecher/baum" xml:lang="de">
+                <dc:title>Der Baum</dc:title>
+                <dc:description>Das Buch ist außergewöhnlich</dc:description>
+                <dc:title xml:lang="en">The Tree</dc:title>
+              </rdf:Description>
+            </rdf:RDF>
+        "#,
+        r#"<http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)" .
+           <http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)"@en .
+           <http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)"@en-us .
+           <http://example.org/buecher/baum> <http://purl.org/dc/elements/1.1/title> "Der Baum"@de .
+           <http://example.org/buecher/baum> <http://purl.org/dc/elements/1.1/description> "Das Buch ist au\u00DFergew\u00F6hnlich"@de .
+           <http://example.org/buecher/baum> <http://purl.org/dc/elements/1.1/title> "The Tree"@en .
+        "#
     }
 
-    #[test]
-    fn w3c_example_09() {
-        let mut g = TestGraph::new();
-        super::Config::default()
-            .parse_str(
-                r#"<?xml version="1.0"?>
-                    <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                             xmlns:ex="http://example.org/stuff/1.0/">
-                      <rdf:Description rdf:about="http://example.org/item01">
-                        <ex:size rdf:datatype="http://www.w3.org/2001/XMLSchema#int">123</ex:size>
-                      </rdf:Description>
-                    </rdf:RDF>
-                "#,
-            )
-            .in_graph(&mut g)
-            .expect("failed parsing XML file");
-
-        assert_eq!(g.len(), 1, "unexpected number of triples: {:#?}", g);
-        for triple in crate::parser::nt::Config::default()
-            .parse_str(r#"
-                <http://example.org/item01> <http://example.org/stuff/1.0/size> "123"^^<http://www.w3.org/2001/XMLSchema#int> .
-            "#)
-        {
-            let t = triple.expect("N-Triples iterator failed");
-            assert!(
-                g.contains(t.s(), t.p(), t.o()).expect(".contains failed"),
-                "missing triple: ({:?} {:?} {:?})", t.s(), t.p(), t.o()
-            );
-        }
+    // Example 09: 'Complete example of rdf:parseType="Literal"'
+    w3c_example! {
+        w3c_example_09,
+        r#"<?xml version="1.0"?>
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:ex="http://example.org/stuff/1.0/">
+              <rdf:Description rdf:about="http://example.org/item01">
+                <ex:size rdf:datatype="http://www.w3.org/2001/XMLSchema#int">123</ex:size>
+              </rdf:Description>
+            </rdf:RDF>
+        "#,
+        r#"<http://example.org/item01> <http://example.org/stuff/1.0/size> "123"^^<http://www.w3.org/2001/XMLSchema#int> .
+        "#
     }
 
-    #[test]
-    fn w3c_example_14() {
-        let mut g = TestGraph::new();
-        super::Config::default()
-            .parse_str(
-                r#"<?xml version="1.0"?>
-                    <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                             xmlns:dc="http://purl.org/dc/elements/1.1/"
-                             xmlns:ex="http://example.org/stuff/1.0/">
-                      <rdf:Description rdf:about="http://example.org/thing">
-                        <rdf:type rdf:resource="http://example.org/stuff/1.0/Document"/>
-                        <dc:title>A marvelous thing</dc:title>
-                      </rdf:Description>
-                    </rdf:RDF>
-                "#,
-            )
-            .in_graph(&mut g)
-            .expect("failed parsing XML file");
+    // Example 11: 'Complete RDF/XML description of graph using rdf:nodeID identifying the blank node'
+    w3c_example! {
+        w3c_example_11,
+        r#"<?xml version="1.0"?>
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:dc="http://purl.org/dc/elements/1.1/"
+                     xmlns:ex="http://example.org/stuff/1.0/">
+              <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar"
+            		   dc:title="RDF/XML Syntax Specification (Revised)">
+                <ex:editor rdf:nodeID="abc"/>
+              </rdf:Description>
 
-        assert_eq!(g.len(), 2, "unexpected number of triples: {:#?}", g);
-        for triple in crate::parser::nt::Config::default()
-            .parse_str(r#"
-                <http://example.org/thing> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/stuff/1.0/Document> .
-                <http://example.org/thing> <http://purl.org/dc/elements/1.1/title> "A marvelous thing" .
-            "#)
-        {
-            let t = triple.expect("N-Triples iterator failed");
-            assert!(
-                g.contains(t.s(), t.p(), t.o()).expect(".contains failed"),
-                "missing triple: ({:?} {:?} {:?})", t.s(), t.p(), t.o()
-            );
-        }
+              <rdf:Description rdf:nodeID="abc"
+                               ex:fullName="Dave Beckett">
+                <ex:homePage rdf:resource="http://purl.org/net/dajobe/"/>
+              </rdf:Description>
+            </rdf:RDF>
+        "#,
+        // This is with renamed node IDs
+        r#"<http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)" .
+           <http://www.w3.org/TR/rdf-syntax-grammar> <http://example.org/stuff/1.0/editor> _:oabc .
+           _:oabc <http://example.org/stuff/1.0/fullName> "Dave Beckett" .
+           _:oabc <http://example.org/stuff/1.0/homePage> <http://purl.org/net/dajobe/> .
+        "#
     }
 
-    #[test]
-    fn w3c_example_15() {
-        let mut g = TestGraph::new();
-        super::Config::default()
-            .parse_str(
-                r#"<?xml version="1.0"?>
-                    <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                             xmlns:dc="http://purl.org/dc/elements/1.1/"
-                             xmlns:ex="http://example.org/stuff/1.0/">
-                      <ex:Document rdf:about="http://example.org/thing">
-                        <dc:title>A marvelous thing</dc:title>
-                      </ex:Document>
-                    </rdf:RDF>
-                "#,
-            )
-            .in_graph(&mut g)
-            .expect("failed parsing XML file");
-
-        assert_eq!(g.len(), 2, "unexpected number of triples: {:#?}", g);
-        for triple in crate::parser::nt::Config::default()
-            .parse_str(r#"
-                <http://example.org/thing> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/stuff/1.0/Document> .
-                <http://example.org/thing> <http://purl.org/dc/elements/1.1/title> "A marvelous thing" .
-            "#)
-        {
-            let t = triple.expect("N-Triples iterator failed");
-            assert!(
-                g.contains(t.s(), t.p(), t.o()).expect(".contains failed"),
-                "missing triple: ({:?} {:?} {:?})", t.s(), t.p(), t.o()
-            );
-        }
+    // Example 14: 'Complete example with rdf:type'
+    w3c_example! {
+        w3c_example_14,
+        r#"<?xml version="1.0"?>
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:dc="http://purl.org/dc/elements/1.1/"
+                     xmlns:ex="http://example.org/stuff/1.0/">
+              <rdf:Description rdf:about="http://example.org/thing">
+                <rdf:type rdf:resource="http://example.org/stuff/1.0/Document"/>
+                <dc:title>A marvelous thing</dc:title>
+              </rdf:Description>
+            </rdf:RDF>
+        "#,
+        r#"<http://example.org/thing> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/stuff/1.0/Document> .
+           <http://example.org/thing> <http://purl.org/dc/elements/1.1/title> "A marvelous thing" .
+        "#
     }
 
-    #[test]
-    fn w3c_example_16() {}
+    // Example 15: 'Complete example using a typed node element to replace an rdf:type'
+    w3c_example! {
+        w3c_example_15,
+        r#"<?xml version="1.0"?>
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:dc="http://purl.org/dc/elements/1.1/"
+                     xmlns:ex="http://example.org/stuff/1.0/">
+              <ex:Document rdf:about="http://example.org/thing">
+                <dc:title>A marvelous thing</dc:title>
+              </ex:Document>
+            </rdf:RDF>
+        "#,
+        r#"<http://example.org/thing> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/stuff/1.0/Document> .
+           <http://example.org/thing> <http://purl.org/dc/elements/1.1/title> "A marvelous thing" .
+        "#
+    }
+
+    // Example 17: 'Complex example using RDF list properties'
+    w3c_example! {
+        w3c_example_17,
+        r#"<?xml version="1.0"?>
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+              <rdf:Seq rdf:about="http://example.org/favourite-fruit">
+                <rdf:_1 rdf:resource="http://example.org/banana"/>
+                <rdf:_2 rdf:resource="http://example.org/apple"/>
+                <rdf:_3 rdf:resource="http://example.org/pear"/>
+              </rdf:Seq>
+            </rdf:RDF>
+        "#,
+        r#"<http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> .
+           <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://example.org/banana> .
+           <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> <http://example.org/apple> .
+           <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_3> <http://example.org/pear> .
+        "#
+    }
 }
