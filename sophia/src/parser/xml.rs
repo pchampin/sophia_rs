@@ -69,7 +69,7 @@ enum ParsingState {
 
 // ---
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Scope<F: TermFactory> {
     /// The XML namespaces declared in this scope.
     ns: HashMap<String, Namespace<F::TermData>>,
@@ -91,6 +91,27 @@ pub struct Scope<F: TermFactory> {
 
     /// The text gathered in the current scope.
     text: Option<String>,
+
+    /// The current count of list elements
+    li: AtomicU64,
+}
+
+// We implement it ourselves instead of deriving so that:
+// * F does not need to be `Clone` (deriving requires it).
+// * we can clone `li` although `AtomicU64` is not `Clone`.
+impl<F: TermFactory> Clone for Scope<F> {
+    fn clone(&self) -> Self {
+        Self {
+            ns: self.ns.clone(),
+            default: self.default.clone(),
+            base: self.base.clone(),
+            factory: self.factory.clone(),
+            datatype: self.datatype.clone(),
+            lang: self.lang.clone(),
+            text: self.text.clone(),
+            li: AtomicU64::new(self.li.load(Ordering::Relaxed)),
+        }
+    }
 }
 
 impl<F: TermFactory> Scope<F> {
@@ -109,6 +130,7 @@ impl<F: TermFactory> Scope<F> {
             datatype: None,
             lang: None,
             text: None,
+            li: AtomicU64::new(1),
         };
         // These namespaces are always in scope
         scope
@@ -204,6 +226,26 @@ impl<F: TermFactory> Scope<F> {
             _ => self.factory.borrow_mut().literal_dt(text, xsd::string),
         }
     }
+
+    /// Create a new `rdf:li` property.
+    fn new_li(&self) -> Result<Term<F::TermData>> {
+        if let Some(ns) = self.ns.get("rdf") {
+            let mut f = self.factory.borrow_mut();
+            ns.get(f.get_term_data(&format!("_{}", self.li.fetch_add(1, Ordering::Relaxed))))
+        } else {
+            panic!("undeclared `rdf` prefix !")
+        }
+    }
+
+    /// Get the current `rdf:li` property.
+    fn current_li(&self) -> Result<Term<F::TermData>> {
+        if let Some(ns) = self.ns.get("rdf") {
+            let mut f = self.factory.borrow_mut();
+            ns.get(f.get_term_data(&format!("_{}", self.li.load(Ordering::Relaxed))))
+        } else {
+            panic!("undeclared `rdf` prefix !")
+        }
+    }
 }
 
 impl<F: TermFactory + Default> Default for Scope<F> {
@@ -261,6 +303,7 @@ where
         // Create a local scope using values from the outer one.
         let mut scope = prev.clone();
         scope.text = Some(String::new());
+        scope.li.store(1, Ordering::Relaxed);
 
         // Update XML namespaces with those defined in the document.
         for attr in e.attributes().with_checks(true) {
@@ -304,12 +347,36 @@ where
         self.scopes.pop().expect("FIXME");
     }
 
+    // ---
+
     // Create a new bnode term (using `n` prefix).
     fn new_bnode(&self) -> Term<F::TermData> {
         self.factory
             .borrow_mut()
             .bnode(&format!("n{}", self.bnodes.fetch_add(1, Ordering::Relaxed)))
             .unwrap()
+    }
+
+    // Create a new predicate IRI from an XML name (or a RDF metasyntactic element)
+    fn predicate_iri_start(&self, name: &str) -> Result<Term<F::TermData>> {
+        let mut p = self.scope().expand_attribute(name)?;
+        if p.matches(&rdf::li) {
+            let parent_scope = self.scopes.get(self.scopes.len() - 2).unwrap();
+            parent_scope.new_li()
+        } else {
+            Ok(p)
+        }
+    }
+
+    // Retrieve a predicate IRI from an XML name
+    fn predicate_iri_end(&self, name: &str) -> Result<Term<F::TermData>> {
+        let mut p = self.scope().expand_attribute(name)?;
+        if p.matches(&rdf::li) {
+            let parent_scope = self.scopes.get(self.scopes.len() - 2).unwrap();
+            parent_scope.current_li()
+        } else {
+            Ok(p)
+        }
     }
 
     // ---
@@ -330,8 +397,6 @@ where
     // ---
 
     fn element_start(&mut self, e: &BytesStart) {
-        println!("{:?}", self.state);
-
         self.enter_scope(e);
         let res = match self.state.last().unwrap() {
             ParsingState::Node => self.node_start(e),
@@ -435,10 +500,10 @@ where
 
     fn predicate_start(&mut self, e: &BytesStart) {
         // Get the predicate and add it to the current nested stack
+        // or build a new `rdf:_n` IRI if the predicate is `rdf:li`.
         let p = self
-            .scope()
-            .expand_attribute(std::str::from_utf8(e.name()).expect("FIXME"))
-            .expect("FIXME");
+            .predicate_iri_start(std::str::from_utf8(e.name()).expect("FIXME"))
+            .expect("INVALID PREDICATE IRI");
         self.parents.push(p);
 
         // Extract attributes relevant to the RDF syntax
@@ -499,13 +564,10 @@ where
     }
 
     fn predicate_end(&mut self, e: &BytesEnd) {
-        // Build the curie string corresponding
+        // Build the predicate IRI
         let p = self
-            .scope()
-            .expand_attribute(std::str::from_utf8(e.name()).expect("FIXME"))
-            .expect("INVALID ATTRIBUTE IRI");
-
-        println!("exiting {}: {:?}", p.value(), self.parents);
+            .predicate_iri_end(std::str::from_utf8(e.name()).expect("FIXME"))
+            .expect("INVALID PREDICATE IRI");
 
         // Get the literal value
         if self.parents.len() > 2 {
@@ -554,9 +616,8 @@ where
 
     fn predicate_empty(&mut self, e: &BytesStart) {
         let p = self
-            .scope()
-            .expand_attribute(std::str::from_utf8(e.name()).expect("FIXME"))
-            .expect("INVALID ATTRIBUTE IRI");
+            .predicate_iri_start(std::str::from_utf8(e.name()).expect("FIXME"))
+            .expect("INVALID PREDICATE IRI");
 
         let mut object = Vec::with_capacity(1);
         let mut attributes = HashMap::new();
@@ -998,4 +1059,95 @@ mod test {
            <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_3> <http://example.org/pear> .
         "#
     }
+
+    // Example 18: 'Complete example using rdf:li property element for list properties'
+    w3c_example! {
+        w3c_example_18,
+        r#"<?xml version="1.0"?>
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+              <rdf:Seq rdf:about="http://example.org/favourite-fruit">
+                <rdf:li rdf:resource="http://example.org/banana"/>
+                <rdf:li rdf:resource="http://example.org/apple"/>
+                <rdf:li rdf:resource="http://example.org/pear"/>
+              </rdf:Seq>
+            </rdf:RDF>
+        "#,
+        r#"<http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> .
+           <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://example.org/banana> .
+           <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> <http://example.org/apple> .
+           <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_3> <http://example.org/pear> .
+        "#
+    }
+
+    // Example 19: 'Complete example of a RDF collection of nodes using rdf:parseType="Collection"'
+    w3c_example! {
+        w3c_example_19,
+        r#"<?xml version="1.0"?>
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                 xmlns:ex="http://example.org/stuff/1.0/">
+                <rdf:Description rdf:about="http://example.org/basket">
+                    <ex:hasFruit rdf:parseType="Collection">
+                      <rdf:Description rdf:about="http://example.org/banana"/>
+                      <rdf:Description rdf:about="http://example.org/apple"/>
+                      <rdf:Description rdf:about="http://example.org/pear"/>
+                    </ex:hasFruit>
+                </rdf:Description>
+            </rdf:RDF>
+        "#,
+        r#"_:genid1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://example.org/banana> .
+           _:genid2 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://example.org/apple> .
+           _:genid1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:genid2 .
+           _:genid3 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://example.org/pear> .
+           _:genid2 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:genid3 .
+           _:genid3 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+           <http://example.org/basket> <http://example.org/stuff/1.0/hasFruit> _:genid1 .
+        "#
+    }
+
+    // Example 20: 'Complete example of rdf:ID reifying a property element'
+    w3c_example! {
+        w3c_example_20,
+        r#"<?xml version="1.0"?>
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:ex="http://example.org/stuff/1.0/"
+                     xml:base="http://example.org/triples/">
+              <rdf:Description rdf:about="http://example.org/">
+                <ex:prop rdf:ID="triple1">blah</ex:prop>
+              </rdf:Description>
+            </rdf:RDF>
+        "#,
+        r#"<http://example.org/> <http://example.org/stuff/1.0/prop> "blah" .
+           <http://example.org/triples/#triple1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> .
+           <http://example.org/triples/#triple1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> <http://example.org/> .
+           <http://example.org/triples/#triple1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://example.org/stuff/1.0/prop> .
+           <http://example.org/triples/#triple1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> "blah" .
+        "#
+    }
+
+    w3c_example! {
+        nested_li,
+        r#"<?xml version="1.0"?>
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+              <rdf:Seq rdf:about="http://example.org/favourite-fruit">
+                <rdf:li rdf:resource="http://example.org/banana"/>
+                <rdf:li>
+                    <rdf:Seq rdf:about="http://example.org/berry">
+                        <rdf:li rdf:resource="http://example.org/blueberry"/>
+                        <rdf:li rdf:resource="http://example.org/strawberry"/>
+                    </rdf:Seq>
+                </rdf:li>
+                <rdf:li rdf:resource="http://example.org/orange"/>
+              </rdf:Seq>
+            </rdf:RDF>
+        "#,
+        r#"<http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> .
+           <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://example.org/banana> .
+           <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> <http://example.org/berry> .
+           <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_3> <http://example.org/orange> .
+           <http://example.org/berry> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> .
+           <http://example.org/berry> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://example.org/blueberry> .
+           <http://example.org/berry> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> <http://example.org/strawberry> .
+        "#
+    }
+
 }

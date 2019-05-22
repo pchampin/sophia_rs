@@ -111,6 +111,7 @@ pub mod rdf {
         about,
         parseType,
         resource,
+        li,
         nodeID,
         datatype
     );
