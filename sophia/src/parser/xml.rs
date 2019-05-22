@@ -286,6 +286,7 @@ where
     <F as TermFactory>::TermData: Debug,
 {
     // ---
+
     fn scope(&self) -> &Scope<F> {
         self.scopes.last().unwrap()
     }
@@ -359,7 +360,7 @@ where
 
     // Create a new predicate IRI from an XML name (or a RDF metasyntactic element)
     fn predicate_iri_start(&self, name: &str) -> Result<Term<F::TermData>> {
-        let mut p = self.scope().expand_attribute(name)?;
+        let p = self.scope().expand_attribute(name)?;
         if p.matches(&rdf::li) {
             let parent_scope = self.scopes.get(self.scopes.len() - 2).unwrap();
             parent_scope.new_li()
@@ -370,7 +371,7 @@ where
 
     // Retrieve a predicate IRI from an XML name
     fn predicate_iri_end(&self, name: &str) -> Result<Term<F::TermData>> {
-        let mut p = self.scope().expand_attribute(name)?;
+        let p = self.scope().expand_attribute(name)?;
         if p.matches(&rdf::li) {
             let parent_scope = self.scopes.get(self.scopes.len() - 2).unwrap();
             parent_scope.current_li()
@@ -434,20 +435,8 @@ where
 
             if k.matches(&rdf::about) {
                 subject.push(self.scope().expand_iri(&v).expect("INVALID IRI"));
-
-            //
-            // if is_absolute_iri(&v) {
-            //     subject.push(self.factory.borrow_mut().iri(v).expect("FIXME"));
-            // } else if is_relative_iri(&v) {
-            //     subject.push(ns.expand_resource(&v));
-            // }
             } else if k.matches(&rdf::ID) {
                 subject.push(self.scope().expand_id(&v).expect("INVALID NAME"));
-            // if v.starts_with("#") {
-            //     subject.push(ns.expand_id(&v))
-            // } else {
-            //     subject.push(ns.expand_id(&format!("#{}", v)));
-            // }
             } else if k.matches(&rdf::nodeID) {
                 subject.push(
                     self.factory
@@ -517,6 +506,9 @@ where
             if k.matches(&rdf::datatype) {
                 let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
                 self.scope_mut().set_datatype(&v);
+            } else if k.matches(&rdf::ID) {
+                let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
+                return self.reification_start(e, self.scope().expand_id(&v).expect("FIXME"));
             } else if k.matches(&rdf::parseType) {
                 match a.value.as_ref() {
                     b"Resource" => {
@@ -529,6 +521,34 @@ where
             }
         }
         self.state.push(next_state);
+    }
+
+    fn reification_start(&mut self, e: &BytesStart, id: Term<F::TermData>) {
+        // Get the subject and predicate of the triple
+        let p = self.parents.pop().unwrap();
+        let s = self.parents.last().unwrap().clone();
+
+        // Get the object of the triple
+        let txt = self.reader.read_text(e.name(), &mut Vec::new()).unwrap();
+        let o = self.scope().new_literal(txt).unwrap();
+
+        // Add the actual triple
+        self.triples
+            .push_back(Ok([s.clone(), p.clone(), o.clone()]));
+
+        // Add the reified triples
+        let ty = self.factory.borrow_mut().copy(&rdf::type_);
+        let subject = self.factory.borrow_mut().copy(&rdf::subject);
+        let predicate = self.factory.borrow_mut().copy(&rdf::predicate);
+        let object = self.factory.borrow_mut().copy(&rdf::object);
+        self.triples.push_back(Ok([
+            id.clone(),
+            ty,
+            self.factory.borrow_mut().copy(&rdf::Statement),
+        ]));
+        self.triples.push_back(Ok([id.clone(), subject, s]));
+        self.triples.push_back(Ok([id.clone(), predicate, p]));
+        self.triples.push_back(Ok([id.clone(), object, o]));
     }
 
     // ---
@@ -582,7 +602,9 @@ where
     }
 
     fn resource_end(&mut self, e: &BytesEnd) {
+        // End of the implicit node element
         self.node_end(e);
+        // End of the resource predicate
         self.predicate_end(e)
     }
 
