@@ -195,6 +195,15 @@ impl<F: TermFactory> Scope<F> {
             self.expand_iri(&format!("#{}", id))
         }
     }
+
+    /// Create a new literal with the `rdf:type` and `xml:lang` in scope.
+    fn new_literal(&self, text: String) -> Result<Term<F::TermData>> {
+        match (&self.datatype, &self.lang) {
+            (Some(dt), _) => self.factory.borrow_mut().literal_dt(text, dt.clone()),
+            (None, Some(l)) => self.factory.borrow_mut().literal_lang(text, l.clone()),
+            _ => self.factory.borrow_mut().literal_dt(text, xsd::string),
+        }
+    }
 }
 
 impl<F: TermFactory + Default> Default for Scope<F> {
@@ -502,26 +511,7 @@ where
         if self.parents.len() > 2 {
             if let Some(text) = self.scope_mut().text.take() {
                 let s = self.parents[self.parents.len() - 2].clone();
-                let o = match (
-                    self.scope_mut().datatype.take(),
-                    self.scope_mut().lang.take(),
-                ) {
-                    (Some(dt), _) => self
-                        .factory
-                        .borrow_mut()
-                        .literal_dt(text, dt)
-                        .expect("FIXME"),
-                    (None, Some(l)) => self
-                        .factory
-                        .borrow_mut()
-                        .literal_lang(text, l)
-                        .expect("FIXME"),
-                    _ => self
-                        .factory
-                        .borrow_mut()
-                        .literal_dt(text, xsd::string)
-                        .unwrap(),
-                };
+                let o = self.scope_mut().new_literal(text).expect("FIXME");
                 self.triples.push_back(Ok([s, p, o]));
             }
         }
@@ -569,6 +559,7 @@ where
             .expect("INVALID ATTRIBUTE IRI");
 
         let mut object = Vec::with_capacity(1);
+        let mut attributes = HashMap::new();
         for attr in e.attributes().with_checks(true) {
             let a = attr.expect("FIXME");
 
@@ -587,16 +578,38 @@ where
                         .bnode(format!("o{}", v))
                         .expect("FIXME"),
                 );
+            } else if !k.matches(&xml::lang) && !a.key.starts_with(b"xmlns") {
+                attributes.insert(k, v);
             }
         }
 
-        let s = self.parents.last().unwrap();
-        let o = match object.len() {
-            0 => panic!("missing resource in empty predicate !"),
-            1 => object.pop().unwrap(),
-            _ => panic!("cannot have rdf:resource and rdf:nodeId at the same time"),
-        };
-        self.triples.push_back(Ok([s.clone(), p, o]));
+        match object.len() {
+            0 => {
+                let s = self.parents.last().unwrap().clone();
+                let o = self.new_bnode();
+                self.triples.push_back(Ok([s, p, o.clone()]));
+                for (prop, value) in attributes.into_iter() {
+                    let literal = self.scope().new_literal(value).expect("FIXME");
+                    self.triples.push_back(Ok([o.clone(), prop, literal]));
+                }
+            }
+            1 => {
+                // Ignoring property attributes
+                let s = self.parents.last().unwrap().clone();
+                let o = object.pop().unwrap();
+                self.triples.push_back(Ok([s, p, o]));
+            }
+            _ => {
+                panic!("cannot have rdf:resource and rdf:nodeID at the same time");
+            }
+        }
+
+        // let o = match object.len() {
+        //     0 => panic!("missing resource in empty predicate !"),
+        //     1 => object.pop().unwrap(),
+        //     _ => panic!(""),
+        // };
+        // self.triples.push_back(Ok([s.clone(), p, o]));
     }
 
     fn resource_empty(&mut self, e: &BytesStart) {
