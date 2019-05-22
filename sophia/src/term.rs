@@ -198,7 +198,7 @@ where
     /// May fail if `dt` is not a valid datatype.
     pub fn new_literal_dt<U>(txt: U, dt: Term<T>) -> Result<Term<T>>
     where
-        T: From<U> + Debug,
+        T: From<U>,
     {
         match dt {
             Iri(iri) => Ok(Literal(T::from(txt), Datatype(iri))),

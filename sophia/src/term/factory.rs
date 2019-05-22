@@ -58,7 +58,7 @@ pub trait TermFactory {
     where
         T: TermData,
         U: TermData,
-        Self::TermData: Debug,
+        // Self::TermData: Debug,
     {
         Term::new_literal_dt(self.get_term_data(txt.as_ref()), self.copy(&dt))
     }
