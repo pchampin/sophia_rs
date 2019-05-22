@@ -14,7 +14,6 @@ edition = "2018"
 
 [dependencies]
 coercible_errors = "0.1.3"
-curie = "0.0.8"
 error-chain = "0.12.0"
 language-tag = "0.9.0"
 lazy_static = "1.2.0"
@@ -26,5 +25,3 @@ rental = "0.5.2"
 resiter = "0.3.0"
 url = "1.7.2"
 weak-table = "0.2.3"
-
-pretty_assertions = "*"

@@ -808,7 +808,7 @@ mod test {
     //     do_test_suite().unwrap()
     // }
 
-    macro_rules! w3c_example {
+    macro_rules! nt_example {
         ($name:ident, $xml:literal, $nt:literal) => {
             #[test]
             fn $name() {
@@ -838,8 +838,8 @@ mod test {
         };
     }
 
-    // Example 07: 'Complete RDF/XML description of Figure 1 graph'
-    w3c_example! {
+    // W3C Example 07: 'Complete RDF/XML description of Figure 1 graph'
+    nt_example! {
         w3c_example_07,
         r#"<?xml version="1.0"?>
             <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -862,8 +862,8 @@ mod test {
         "#
     }
 
-    // Example 08: 'Complete example of xml:lang'
-    w3c_example! {
+    // W3C Example 08: 'Complete example of xml:lang'
+    nt_example! {
         w3c_example_08,
         r#"<?xml version="1.0" encoding="utf-8"?>
             <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -890,8 +890,8 @@ mod test {
         "#
     }
 
-    // Example 09: 'Complete example of rdf:parseType="Literal"'
-    w3c_example! {
+    // W3C Example 09: 'Complete example of rdf:parseType="Literal"'
+    nt_example! {
         w3c_example_09,
         r#"<?xml version="1.0"?>
             <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -905,8 +905,8 @@ mod test {
         "#
     }
 
-    // Example 10: 'Complete example of rdf:datatype'
-    w3c_example! {
+    // W3C Example 10: 'Complete example of rdf:datatype'
+    nt_example! {
         w3c_example_10,
         r#"<?xml version="1.0"?>
             <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -920,8 +920,8 @@ mod test {
         "#
     }
 
-    // Example 11: 'Complete RDF/XML description of graph using rdf:nodeID identifying the blank node'
-    w3c_example! {
+    // W3C Example 11: 'Complete RDF/XML description of graph using rdf:nodeID identifying the blank node'
+    nt_example! {
         w3c_example_11,
         r#"<?xml version="1.0"?>
             <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -946,8 +946,8 @@ mod test {
         "#
     }
 
-    // Example 12: 'Complete example using rdf:parseType="Resource"'
-    w3c_example! {
+    // W3C Example 12: 'Complete example using rdf:parseType="Resource"'
+    nt_example! {
         w3c_example_12,
         r#"<?xml version="1.0"?>
             <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -970,8 +970,8 @@ mod test {
         "#
     }
 
-    // Example 13: 'Complete example of property attributes on an empty property element'
-    w3c_example! {
+    // W3C Example 13: 'Complete example of property attributes on an empty property element'
+    nt_example! {
         w3c_example_13,
         r#"<?xml version="1.0"?>
             <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -990,8 +990,8 @@ mod test {
         "#
     }
 
-    // Example 14: 'Complete example with rdf:type'
-    w3c_example! {
+    // W3C Example 14: 'Complete example with rdf:type'
+    nt_example! {
         w3c_example_14,
         r#"<?xml version="1.0"?>
             <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -1008,8 +1008,8 @@ mod test {
         "#
     }
 
-    // Example 15: 'Complete example using a typed node element to replace an rdf:type'
-    w3c_example! {
+    // W3C Example 15: 'Complete example using a typed node element to replace an rdf:type'
+    nt_example! {
         w3c_example_15,
         r#"<?xml version="1.0"?>
             <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -1025,8 +1025,8 @@ mod test {
         "#
     }
 
-    // Example 16: 'Complete example using rdf:ID and xml:base for shortening URIs'
-    w3c_example! {
+    // W3C Example 16: 'Complete example using rdf:ID and xml:base for shortening URIs'
+    nt_example! {
         w3c_example_16,
         r#"<?xml version="1.0"?>
             <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -1041,8 +1041,8 @@ mod test {
         "#
     }
 
-    // Example 17: 'Complex example using RDF list properties'
-    w3c_example! {
+    // W3C Example 17: 'Complex example using RDF list properties'
+    nt_example! {
         w3c_example_17,
         r#"<?xml version="1.0"?>
             <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
@@ -1060,8 +1060,8 @@ mod test {
         "#
     }
 
-    // Example 18: 'Complete example using rdf:li property element for list properties'
-    w3c_example! {
+    // W3C Example 18: 'Complete example using rdf:li property element for list properties'
+    nt_example! {
         w3c_example_18,
         r#"<?xml version="1.0"?>
             <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
@@ -1079,8 +1079,8 @@ mod test {
         "#
     }
 
-    // Example 19: 'Complete example of a RDF collection of nodes using rdf:parseType="Collection"'
-    w3c_example! {
+    // W3C Example 19: 'Complete example of a RDF collection of nodes using rdf:parseType="Collection"'
+    nt_example! {
         w3c_example_19,
         r#"<?xml version="1.0"?>
             <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -1104,8 +1104,8 @@ mod test {
         "#
     }
 
-    // Example 20: 'Complete example of rdf:ID reifying a property element'
-    w3c_example! {
+    // W3C Example 20: 'Complete example of rdf:ID reifying a property element'
+    nt_example! {
         w3c_example_20,
         r#"<?xml version="1.0"?>
             <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -1124,7 +1124,8 @@ mod test {
         "#
     }
 
-    w3c_example! {
+    // Check that nested `rdf:li` keeps independent counters for nested elements.
+    nt_example! {
         nested_li,
         r#"<?xml version="1.0"?>
             <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
