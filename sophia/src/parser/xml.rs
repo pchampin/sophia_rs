@@ -65,6 +65,9 @@ enum ParsingState {
     Predicate,
     Resource,
     Literal, // NB: not supported by quick-xml right now
+
+    Collection,
+    CollectionItem,
 }
 
 // ---
@@ -94,6 +97,8 @@ pub struct Scope<F: TermFactory> {
 
     /// The current count of list elements
     li: AtomicU64,
+
+    collection: Vec<Term<F::TermData>>,
 }
 
 // We implement it ourselves instead of deriving so that:
@@ -110,6 +115,7 @@ impl<F: TermFactory> Clone for Scope<F> {
             lang: self.lang.clone(),
             text: self.text.clone(),
             li: AtomicU64::new(self.li.load(Ordering::Relaxed)),
+            collection: self.collection.clone(),
         }
     }
 }
@@ -131,6 +137,7 @@ impl<F: TermFactory> Scope<F> {
             lang: None,
             text: None,
             li: AtomicU64::new(1),
+            collection: Vec::new(),
         };
         // These namespaces are always in scope
         scope
@@ -304,6 +311,7 @@ where
         // Create a local scope using values from the outer one.
         let mut scope = prev.clone();
         scope.text = Some(String::new());
+        scope.collection = Vec::new();
         scope.li.store(1, Ordering::Relaxed);
 
         // Update XML namespaces with those defined in the document.
@@ -398,11 +406,20 @@ where
     // ---
 
     fn element_start(&mut self, e: &BytesStart) {
+        // println!(
+        //     "entering {:?}: \ntrace:  {:?}\nparents: {:?}",
+        //     std::str::from_utf8(e.name()),
+        //     self.state,
+        //     self.parents
+        // );
+
         self.enter_scope(e);
         let res = match self.state.last().unwrap() {
             ParsingState::Node => self.node_start(e),
             ParsingState::Predicate => self.predicate_start(e),
             ParsingState::Resource => self.predicate_start(e),
+            ParsingState::Collection => self.collection_start(e),
+            ParsingState::CollectionItem => unreachable!(),
             _ => unimplemented!(),
         };
     }
@@ -515,6 +532,9 @@ where
                         self.parents.push(self.new_bnode());
                         next_state = ParsingState::Resource;
                     }
+                    b"Collection" => {
+                        next_state = ParsingState::Collection;
+                    }
                     b"Literal" => next_state = ParsingState::Literal,
                     other => panic!("invalid parseType: {:?}", other),
                 }
@@ -551,27 +571,38 @@ where
         self.triples.push_back(Ok([id.clone(), object, o]));
     }
 
+    fn collection_start(&mut self, e: &BytesStart) {
+        self.state.push(ParsingState::CollectionItem);
+        self.node_start(e);
+        let new_iri = self.parents.last().unwrap().clone();
+
+        let l = self.scopes.len();
+        self.scopes.get_mut(l - 2).unwrap().collection.push(new_iri);
+    }
+
     // ---
 
     fn element_end(&mut self, e: &BytesEnd) {
-        println!("{:?}", self.state);
-        println!(
-            "exiting {:?}: {:?}",
-            std::str::from_utf8(e.name()),
-            self.parents
-        );
+        // println!(
+        //     "exiting {:?}: \ntrace:  {:?}\nparents: {:?}",
+        //     std::str::from_utf8(e.name()),
+        //     self.state,
+        //     self.parents
+        // );
 
         match self.state.pop().unwrap() {
             ParsingState::Node => self.predicate_end(e),
-            ParsingState::Predicate => self.node_end(e),
+            ParsingState::Predicate => self.node_end(),
             ParsingState::Resource => self.resource_end(e),
+            ParsingState::CollectionItem => self.collection_item_end(),
+            ParsingState::Collection => self.collection_end(e),
             _ => unimplemented!(),
         }
 
         self.leave_scope();
     }
 
-    fn node_end(&mut self, e: &BytesEnd) {
+    fn node_end(&mut self) {
         // Add the entity as a triple object if it is not top-level
         let o = self.parents.pop().unwrap();
         if self.parents.len() > 2 {
@@ -603,9 +634,58 @@ where
 
     fn resource_end(&mut self, e: &BytesEnd) {
         // End of the implicit node element
-        self.node_end(e);
+        self.node_end();
         // End of the resource predicate
         self.predicate_end(e)
+    }
+
+    fn collection_item_end(&mut self) {
+        // End of the node parent.
+        self.parents.pop();
+        // Remove `CollectionItem`
+        self.state.pop();
+    }
+
+    fn collection_end(&mut self, e: &BytesEnd) {
+        self.state.pop(); // Remove the `Predicate` parsing state as well.
+
+        let collection = self.scope().collection.clone();
+        if !collection.is_empty() {
+            let mut node = self.new_bnode();
+            let mut elements = collection.into_iter().peekable();
+
+            self.triples.push_back(Ok([
+                self.parents[self.parents.len() - 2].clone(),
+                self.parents[self.parents.len() - 1].clone(),
+                node.clone(),
+            ]));
+
+            while let Some(e) = elements.next() {
+                self.triples.push_back(Ok([
+                    node.clone(),
+                    self.factory.borrow_mut().copy(&rdf::first),
+                    e.clone(),
+                ]));
+                if elements.peek().is_some() {
+                    let next_node = self.new_bnode();
+                    self.triples.push_back(Ok([
+                        node,
+                        self.factory.borrow_mut().copy(&rdf::rest),
+                        next_node.clone(),
+                    ]));
+                    node = next_node;
+                } else {
+                    let mut f = self.factory.borrow_mut();
+                    self.triples.push_back(Ok([
+                        node.clone(),
+                        f.copy(&rdf::rest),
+                        f.copy(&rdf::nil),
+                    ]));
+                }
+            }
+        }
+
+        self.predicate_end(e);
     }
 
     // --- Text elements ----------------------------------------------------
@@ -620,12 +700,21 @@ where
     // --- Empty elements ----------------------------------------------------
 
     fn element_empty(&mut self, e: &BytesStart) {
+        // println!(
+        //     "empty {:?}: \ntrace:  {:?}\nparents: {:?}",
+        //     std::str::from_utf8(e.name()),
+        //     self.state,
+        //     self.parents
+        // );
+
         self.enter_scope(e);
 
         match self.state.last().unwrap() {
             ParsingState::Node => self.node_empty(e),
             ParsingState::Predicate => self.predicate_empty(e),
             ParsingState::Resource => self.resource_empty(e),
+            ParsingState::Collection => self.collection_item_empty(e),
+            ParsingState::CollectionItem => unreachable!(),
             _ => (),
         }
 
@@ -633,7 +722,9 @@ where
     }
 
     fn node_empty(&mut self, e: &BytesStart) {
-        // FIXME
+        self.node_start(e);
+        self.state.pop();
+        self.node_end();
     }
 
     fn predicate_empty(&mut self, e: &BytesStart) {
@@ -697,6 +788,12 @@ where
 
     fn resource_empty(&mut self, e: &BytesStart) {
         self.predicate_empty(e)
+    }
+
+    fn collection_item_empty(&mut self, e: &BytesStart) {
+        self.collection_start(e);
+        self.state.pop();
+        self.collection_item_end();
     }
 }
 
@@ -1116,13 +1213,13 @@ mod test {
                 </rdf:Description>
             </rdf:RDF>
         "#,
-        r#"_:genid1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://example.org/banana> .
-           _:genid2 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://example.org/apple> .
-           _:genid1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:genid2 .
-           _:genid3 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://example.org/pear> .
-           _:genid2 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:genid3 .
-           _:genid3 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
-           <http://example.org/basket> <http://example.org/stuff/1.0/hasFruit> _:genid1 .
+        r#"_:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://example.org/banana> .
+           _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:n1 .
+           _:n1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://example.org/apple> .
+           _:n1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:n2 .
+           _:n2 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://example.org/pear> .
+           _:n2 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+           <http://example.org/basket> <http://example.org/stuff/1.0/hasFruit> _:n0 .
         "#
     }
 
@@ -1170,6 +1267,23 @@ mod test {
            <http://example.org/berry> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> .
            <http://example.org/berry> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://example.org/blueberry> .
            <http://example.org/berry> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> <http://example.org/strawberry> .
+        "#
+    }
+
+    // Check that an empty node is used as a leaf.
+    nt_example! {
+        empty_node,
+        r#"<?xml version="1.0"?>
+            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:ex="http://example.org/stuff/1.0/">
+              <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar">
+                <ex:editor>
+                    <rdf:Description rdf:about="http://example.org/user/dave-beckett"/>
+                </ex:editor>
+              </rdf:Description>
+            </rdf:RDF>
+        "#,
+        r#"<http://www.w3.org/TR/rdf-syntax-grammar> <http://example.org/stuff/1.0/editor> <http://example.org/user/dave-beckett> .
         "#
     }
 
