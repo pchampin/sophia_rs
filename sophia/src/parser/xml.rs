@@ -406,20 +406,13 @@ where
     // ---
 
     fn element_start(&mut self, e: &BytesStart) {
-        // println!(
-        //     "entering {:?}: \ntrace:  {:?}\nparents: {:?}",
-        //     std::str::from_utf8(e.name()),
-        //     self.state,
-        //     self.parents
-        // );
-
         self.enter_scope(e);
         let res = match self.state.last().unwrap() {
             ParsingState::Node => self.node_start(e),
             ParsingState::Predicate => self.predicate_start(e),
             ParsingState::Resource => self.predicate_start(e),
             ParsingState::Collection => self.collection_start(e),
-            ParsingState::CollectionItem => unreachable!(),
+            ParsingState::CollectionItem => self.collection_item_start(e),
             _ => unimplemented!(),
         };
     }
@@ -573,9 +566,14 @@ where
 
     fn collection_start(&mut self, e: &BytesStart) {
         self.state.push(ParsingState::CollectionItem);
+        self.collection_item_start(e);
+    }
+
+    fn collection_item_start(&mut self, e: &BytesStart) {
+        // Start the inner node element and get its IRI.
         self.node_start(e);
         let new_iri = self.parents.last().unwrap().clone();
-
+        // Add the iri of the node to the parent scope (not current!)
         let l = self.scopes.len();
         self.scopes.get_mut(l - 2).unwrap().collection.push(new_iri);
     }
@@ -583,13 +581,6 @@ where
     // ---
 
     fn element_end(&mut self, e: &BytesEnd) {
-        // println!(
-        //     "exiting {:?}: \ntrace:  {:?}\nparents: {:?}",
-        //     std::str::from_utf8(e.name()),
-        //     self.state,
-        //     self.parents
-        // );
-
         match self.state.pop().unwrap() {
             ParsingState::Node => self.predicate_end(e),
             ParsingState::Predicate => self.node_end(),
@@ -598,7 +589,6 @@ where
             ParsingState::Collection => self.collection_end(e),
             _ => unimplemented!(),
         }
-
         self.leave_scope();
     }
 
@@ -647,8 +637,6 @@ where
     }
 
     fn collection_end(&mut self, e: &BytesEnd) {
-        self.state.pop(); // Remove the `Predicate` parsing state as well.
-
         let collection = self.scope().collection.clone();
         if !collection.is_empty() {
             let mut node = self.new_bnode();
@@ -700,15 +688,7 @@ where
     // --- Empty elements ----------------------------------------------------
 
     fn element_empty(&mut self, e: &BytesStart) {
-        // println!(
-        //     "empty {:?}: \ntrace:  {:?}\nparents: {:?}",
-        //     std::str::from_utf8(e.name()),
-        //     self.state,
-        //     self.parents
-        // );
-
         self.enter_scope(e);
-
         match self.state.last().unwrap() {
             ParsingState::Node => self.node_empty(e),
             ParsingState::Predicate => self.predicate_empty(e),
@@ -717,7 +697,6 @@ where
             ParsingState::CollectionItem => unreachable!(),
             _ => (),
         }
-
         self.leave_scope();
     }
 
@@ -1286,5 +1265,4 @@ mod test {
         r#"<http://www.w3.org/TR/rdf-syntax-grammar> <http://example.org/stuff/1.0/editor> <http://example.org/user/dave-beckett> .
         "#
     }
-
 }
