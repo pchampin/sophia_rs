@@ -418,8 +418,14 @@ where
     }
 
     fn node_start(&mut self, e: &BytesStart) {
-        // Bail out if this the top level rdf:RDF
-        if e.name() == b"rdf:RDF" {
+        // Get node type from the XML attribute.
+        let ty = self
+            .scope()
+            .expand_attribute(std::str::from_utf8(e.name()).expect("INVALID UTF8"))
+            .expect("INVALID DATATYPE IRI REFERENCE");
+
+        // Bail out if an rdf:RDF element
+        if ty.matches(&rdf::RDF) {
             self.state.push(ParsingState::Node);
             self.parents.push(self.factory.borrow_mut().copy(&rdf::RDF));
             return;
@@ -454,6 +460,8 @@ where
                         .bnode(&format!("o{}", v))
                         .expect("INVALID BNODE"),
                 );
+            } else if k.matches(&rdf::type_) {
+                properties.insert(k, self.scope().expand_iri(&v).expect("INVALID IRI"));
             } else if !k.matches(&xml::lang) {
                 // Ignore xml:lang attributes
                 properties.insert(
@@ -474,12 +482,6 @@ where
         self.parents.push(s.clone());
 
         // Add the type as a triple if it is not `rdf:Description`
-        let ty = self
-            .scope()
-            .expand_attribute(
-                std::str::from_utf8(e.name()).expect("INVALID DATATYPE IRI REFERENCE"),
-            )
-            .expect("INVALID DATATYPE IRI REFERENCE");
         if !ty.matches(&rdf::Description) {
             self.triples.push_back(Ok([
                 s.clone(),
@@ -1260,6 +1262,22 @@ mod test {
         use super::*;
 
         rdf_test!(rdf_element_not_mandatory / test001 where "a" => "n0");
+    }
+
+    mod rdf_ns_prefix_confusion {
+        use super::*;
+
+        rdf_test!(rdf_ns_prefix_confusion / test0001);
+        rdf_test!(rdf_ns_prefix_confusion / test0003);
+        rdf_test!(rdf_ns_prefix_confusion / test0004);
+        rdf_test!(rdf_ns_prefix_confusion / test0005 where "genid" => "n0");
+        rdf_test!(rdf_ns_prefix_confusion / test0006);
+        rdf_test!(rdf_ns_prefix_confusion / test0009);
+        rdf_test!(rdf_ns_prefix_confusion / test0010);
+        rdf_test!(rdf_ns_prefix_confusion / test0011);
+        rdf_test!(rdf_ns_prefix_confusion / test0012);
+        rdf_test!(rdf_ns_prefix_confusion / test0013);
+        rdf_test!(rdf_ns_prefix_confusion / test0014);
     }
 
     // Check that nested `rdf:li` keeps independent counters for nested elements.
