@@ -611,7 +611,7 @@ where
             .expect("INVALID PREDICATE IRI");
 
         // Get the literal value
-        if self.parents.len() > 2 {
+        if self.parents.len() > 1 {
             if let Some(text) = self.scope_mut().text.take() {
                 let s = self.parents[self.parents.len() - 2].clone();
                 let o = self.scope_mut().new_literal(text).expect("FIXME");
@@ -1254,6 +1254,12 @@ mod test {
         rdf_test!(rdf_containers_syntax_vs_schema / test006 where "bag" => "n0");
         rdf_test!(rdf_containers_syntax_vs_schema / test007 where "d1" => "n0", "d2" => "n1");
         rdf_test!(rdf_containers_syntax_vs_schema / test008);
+    }
+
+    mod rdf_element_not_mandatory {
+        use super::*;
+
+        rdf_test!(rdf_element_not_mandatory / test001 where "a" => "n0");
     }
 
     // Check that nested `rdf:li` keeps independent counters for nested elements.
