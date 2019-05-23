@@ -13,6 +13,7 @@ use quick_xml::events::BytesEnd;
 use quick_xml::events::BytesStart;
 use quick_xml::events::BytesText;
 use quick_xml::events::Event;
+use quick_xml::Reader;
 
 use crate::error::*;
 use crate::ns::rdf;
@@ -29,7 +30,17 @@ use crate::term::Term;
 // ---
 
 #[derive(Clone, Debug, Default)]
-pub struct Config;
+pub struct Config {
+    base: Option<Namespace<Rc<str>>>,
+}
+
+impl Config {
+    fn with_base(base: &str) -> Result<Self> {
+        Ok(Self {
+            base: Some(Namespace::new(Rc::from(base))?),
+        })
+    }
+}
 
 impl Config {
     #[inline]
@@ -37,7 +48,11 @@ impl Config {
         &self,
         bufread: B,
     ) -> impl Iterator<Item = Result<[Term<Rc<str>>; 3]>> + 'a {
-        XmlParser::<_, RcTermFactory>::new(quick_xml::Reader::from_reader(bufread))
+        type Parser<B> = XmlParser<B, RcTermFactory>;
+        match &self.base {
+            Some(base) => Parser::with_base(Reader::from_reader(bufread), base.clone()),
+            None => Parser::new(Reader::from_reader(bufread)),
+        }
     }
 
     #[inline]
@@ -53,7 +68,11 @@ impl Config {
         &self,
         txt: &'a str,
     ) -> impl Iterator<Item = Result<[Term<Rc<str>>; 3]>> + 'a {
-        XmlParser::<_, RcTermFactory>::new(quick_xml::Reader::from_str(txt))
+        type Parser<B> = XmlParser<B, RcTermFactory>;
+        match &self.base {
+            Some(base) => Parser::with_base(Reader::from_str(txt), base.clone()),
+            None => Parser::new(Reader::from_str(txt)),
+        }
     }
 }
 
@@ -265,7 +284,7 @@ impl<F: TermFactory + Default> Default for Scope<F> {
 
 struct XmlParser<B: BufRead, F: TermFactory> {
     /// The underlying XML reader.
-    reader: quick_xml::Reader<B>,
+    reader: Reader<B>,
 
     /// The stack of scoped data (for nested declaration).
     scopes: Vec<Scope<F>>,
@@ -390,7 +409,7 @@ where
 
     // ---
 
-    fn new(reader: quick_xml::Reader<B>) -> Self {
+    fn new(reader: Reader<B>) -> Self {
         let factory: Rc<RefCell<F>> = Default::default();
         Self {
             reader,
@@ -401,6 +420,13 @@ where
             bnodes: AtomicU64::new(0),
             state: vec![ParsingState::Node],
         }
+    }
+
+    fn with_base(reader: Reader<B>, base: Namespace<F::TermData>) -> Self {
+        let mut parser = Self::new(reader);
+        let mut scope = parser.scope_mut();
+        scope.base = Some(base);
+        parser
     }
 
     // ---
@@ -864,7 +890,12 @@ mod test {
                 let xmlfile = std::fs::File::open(path.with_extension("rdf")).unwrap();
 
                 let mut xml = TestGraph::new();
-                $crate::parser::xml::Config::default()
+                $crate::parser::xml::Config::with_base(&format!(
+                        "http://www.w3.org/2013/RDFXMLTests/{}/{}.rdf",
+                        stringify!($suite).replace('_', "-"),
+                        stringify!($case).replace('_', "-"),
+                    ))
+                    .unwrap()
                     .parse_read(xmlfile)
                     .in_graph(&mut xml)
                     .expect("failed parsing XML file");
@@ -903,7 +934,6 @@ mod test {
                 assert_graph_eq!(xml, iso);
             }
         };
-
         ($suite:ident / $case:ident) => {
             rdf_test!($suite / $case where);
         };
