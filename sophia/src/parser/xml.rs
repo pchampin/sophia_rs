@@ -827,32 +827,103 @@ mod test {
         }
     }
 
+    macro_rules! assert_graph_eq {
+        ($l:ident, $r:ident) => {
+            assert_eq!(
+                $l.len(),
+                $r.len(),
+                "unexpected number of triples: {:#?}",
+                $l
+            );
+            for t in $r.triples().map(Result::unwrap) {
+                assert!(
+                    $l.contains(t.s(), t.p(), t.o()).expect(".contains failed"),
+                    "missing triple: ({:?} {:?} {:?}) in {:#?}",
+                    t.s(),
+                    t.p(),
+                    t.o(),
+                    $l
+                );
+            }
+        };
+    }
+
+    macro_rules! rdf_test {
+        ($suite:ident / $case:ident where $($l:pat => $r:literal),*) => {
+            #[test]
+            fn $case() {
+                let path = std::path::PathBuf::from("..")
+                    .join("rdf-tests")
+                    .join("rdf-xml")
+                    .join(stringify!($suite).replace('_', "-"))
+                    .join(stringify!($case).replace('_', "-"));
+
+                let ntfile = std::fs::File::open(path.with_extension("nt")).unwrap();
+                let xmlfile = std::fs::File::open(path.with_extension("rdf")).unwrap();
+
+                let mut xml = TestGraph::new();
+                $crate::parser::xml::Config::default()
+                    .parse_read(xmlfile)
+                    .in_graph(&mut xml)
+                    .expect("failed parsing XML file");
+
+                let mut nt = TestGraph::new();
+                $crate::parser::nt::Config::default()
+                    .parse_read(ntfile)
+                    .in_graph(&mut nt)
+                    .expect("failed parsing N-Triples file");
+
+                use std::rc::Rc;
+                use crate::term::factory::TermFactory;
+                use crate::graph::MutableGraph;
+
+                fn relabel(factory: &mut RcTermFactory, t: Term<Rc<str>>) -> Term<Rc<str>> {
+                    if let Term::BNode(bnode) = t {
+                        match bnode.as_ref() {
+                            $($l => factory.bnode($r).unwrap(),)*
+                            other => factory.bnode(other).unwrap(),
+                        }
+                    } else {
+                        t
+                    }
+                }
+
+                let mut iso = TestGraph::new();
+                let mut factory = RcTermFactory::default();
+                for t in nt.triples().map(Result::unwrap) {
+                    iso.insert(
+                        &relabel(&mut factory, t.s().clone()),
+                        &relabel(&mut factory, t.p().clone()),
+                        &relabel(&mut factory, t.o().clone()),
+                    ).unwrap();
+                }
+
+                assert_graph_eq!(xml, iso);
+            }
+        };
+
+        ($suite:ident / $case:ident) => {
+            rdf_test!($suite / $case where);
+        };
+    }
+
     macro_rules! nt_test {
         ($name:ident, $xml:literal, $nt:literal) => {
             #[test]
             fn $name() {
-                let mut g = TestGraph::new();
+                let mut xml = TestGraph::new();
                 $crate::parser::xml::Config::default()
                     .parse_str($xml)
-                    .in_graph(&mut g)
+                    .in_graph(&mut xml)
                     .expect("failed parsing XML file");
 
-                let mut nt = Vec::new();
-                for triple in $crate::parser::nt::Config::default().parse_str($nt) {
-                    nt.push(triple.expect("N-Triples iterator failed"));
-                }
+                let mut nt = TestGraph::new();
+                $crate::parser::nt::Config::default()
+                    .parse_str($nt)
+                    .in_graph(&mut nt)
+                    .expect("failed parsing N-Triples file");
 
-                assert_eq!(g.len(), nt.len(), "unexpected number of triples: {:#?}", g);
-                for t in nt.into_iter() {
-                    assert!(
-                        g.contains(t.s(), t.p(), t.o()).expect(".contains failed"),
-                        "missing triple: ({:?} {:?} {:?}) in {:#?}",
-                        t.s(),
-                        t.p(),
-                        t.o(),
-                        g
-                    );
-                }
+                assert_graph_eq!(xml, nt);
             }
         };
     }
@@ -1147,160 +1218,42 @@ mod test {
         }
     }
 
+    mod amp_in_url {
+        use super::*;
+
+        rdf_test!(amp_in_url / test001);
+    }
+
+    mod datatypes {
+        use super::*;
+
+        rdf_test!(datatypes / test001);
+        rdf_test!(datatypes / test002);
+    }
+
+    mod rdf_charmod_literals {
+        use super::*;
+
+        rdf_test!(rdf_charmod_literals / test001 where "a" => "n0");
+    }
+
+    mod rdf_charmod_uris {
+        use super::*;
+
+        rdf_test!(rdf_charmod_uris / test001);
+        rdf_test!(rdf_charmod_uris / test002);
+    }
+
     mod rdf_containers_syntax_vs_schema {
         use super::*;
 
-        // Simple container
-        nt_test! {
-            test001,
-            r#"<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-              <rdf:Bag>
-                <rdf:li>1</rdf:li>
-                <rdf:li>2</rdf:li>
-              </rdf:Bag>
-            </rdf:RDF>
-            "#,
-            r#"_:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Bag> .
-               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> "1" .
-               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> "2" .
-            "#
-        }
-
-        // rdf:li is unaffected by other rdf:_nnn properties.
-        nt_test! {
-            test002,
-            r#"<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                     xmlns:foo="http://foo/">
-                  <foo:Bar>
-                    <rdf:_1>_1</rdf:_1>
-                    <rdf:li>1</rdf:li>
-                    <rdf:_3>_3</rdf:_3>
-                    <rdf:li>2</rdf:li>
-                  </foo:Bar>
-                </rdf:RDF>
-            "#,
-            r#"_:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://foo/Bar> .
-               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> "_1" .
-               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> "1" .
-               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_3> "_3" .
-               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> "2" .
-            "#
-        }
-
-        // rdf:li elements can exist in any description element
-        nt_test! {
-            test003,
-            r#"<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                     xmlns:foo="http://foo/">
-                  <foo:Bar>
-                    <rdf:li>1</rdf:li>
-                    <rdf:li>2</rdf:li>
-                  </foo:Bar>
-                </rdf:RDF>
-            "#,
-            r#"_:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://foo/Bar> .
-               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> "1" .
-               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> "2" .
-            "#
-        }
-
-        // rdf:li elements match any of the property element productions
-        nt_test! {
-            test004,
-            r#"<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                     xmlns:foo="http://foo/"
-                     xml:base="http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test004.rdf">
-                  <foo:Bar>
-                    <rdf:li rdf:ID="e1">1</rdf:li>
-                    <rdf:li rdf:parseType="Literal">2</rdf:li>
-                    <rdf:li rdf:parseType="Resource">
-                      <rdf:type rdf:resource="http://foo/Bar"/>
-                    </rdf:li>
-                    <rdf:li rdf:ID="e4" foo:bar="foobar"/>
-                  </foo:Bar>
-                </rdf:RDF>
-            "#,
-            r#"_:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://foo/Bar> .
-               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> "1" .
-               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test004.rdf#e1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> .
-               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test004.rdf#e1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> _:bar .
-               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test004.rdf#e1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> .
-               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test004.rdf#e1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> "1" .
-               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> "2"^^<http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> .
-               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_3> _:res .
-               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://foo/Bar> .
-               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_4> _:res2 .
-               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test004.rdf#e4> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> .
-               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test004.rdf#e4> <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> _:bar .
-               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test004.rdf#e4> <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_4> .
-               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test004.rdf#e4> <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> _:res2 .
-               _:res2 <http://foo/bar> "foobar" .
-            "#
-        }
-
-        // containers match the typed node production
-        nt_test! {
-            test006,
-            r##"<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                     xmlns:foo="http://foo/"
-                     xml:base="http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test006.rdf">
-                  <rdf:Seq rdf:ID="e1" rdf:_3="3" rdf:value="foobar"/>
-                  <rdf:Alt rdf:about="#e2" rdf:_2="2" rdf:value="foobar">
-                    <rdf:value>barfoo</rdf:value>
-                  </rdf:Alt>
-                  <rdf:Bag />
-                </rdf:RDF>
-            "##,
-            r#"<http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test006.rdf#e1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> .
-               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test006.rdf#e1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_3> "3" .
-               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test006.rdf#e1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "foobar" .
-               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test006.rdf#e2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://www.w3.org/1999/02/22-rdf-syntax-ns#Alt> .
-               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test006.rdf#e2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> "2" .
-               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test006.rdf#e2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "foobar" .
-               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test006.rdf#e2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "barfoo" .
-               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://www.w3.org/1999/02/22-rdf-syntax-ns#Bag> .
-            "#
-        }
-
-        // rdf:li processing within each element is independent
-        nt_test! {
-            test007,
-            r##"<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                     xmlns:foo="http://foo/">
-                  <rdf:Description>
-                    <rdf:li>
-                      <rdf:Description>
-                        <rdf:li>1</rdf:li>
-                        <rdf:li>2</rdf:li>
-                      </rdf:Description>
-                    </rdf:li>
-                    <rdf:li>2</rdf:li>
-                  </rdf:Description>
-                </rdf:RDF>
-            "##,
-            r#"_:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> _:n1 .
-               _:n1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> "1" .
-               _:n1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> "2" .
-               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> "2" .
-            "#
-        }
-
-        // rdf:li processing is per element, not per resource.
-        nt_test! {
-            test008,
-            r##"<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-                  <rdf:Description rdf:about="http://desc">
-                    <rdf:li>1</rdf:li>
-                  </rdf:Description>
-                  <rdf:Description rdf:about="http://desc">
-                    <rdf:li>1-again</rdf:li>
-                  </rdf:Description>
-                </rdf:RDF>
-            "##,
-            r#"<http://desc> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> "1" .
-               <http://desc> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> "1-again" .
-            "#
-        }
+        rdf_test!(rdf_containers_syntax_vs_schema / test001 where "bag" => "n0");
+        rdf_test!(rdf_containers_syntax_vs_schema / test002 where "bag" => "n0");
+        rdf_test!(rdf_containers_syntax_vs_schema / test003 where "bar" => "n0");
+        rdf_test!(rdf_containers_syntax_vs_schema / test004);
+        rdf_test!(rdf_containers_syntax_vs_schema / test006 where "bag" => "n0");
+        rdf_test!(rdf_containers_syntax_vs_schema / test007 where "d1" => "n0", "d2" => "n1");
+        rdf_test!(rdf_containers_syntax_vs_schema / test008);
     }
 
     // Check that nested `rdf:li` keeps independent counters for nested elements.
