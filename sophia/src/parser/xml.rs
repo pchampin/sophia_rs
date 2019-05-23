@@ -248,7 +248,7 @@ impl<F: TermFactory> Scope<F> {
     fn current_li(&self) -> Result<Term<F::TermData>> {
         if let Some(ns) = self.ns.get("rdf") {
             let mut f = self.factory.borrow_mut();
-            ns.get(f.get_term_data(&format!("_{}", self.li.load(Ordering::Relaxed))))
+            ns.get(f.get_term_data(&format!("_{}", self.li.load(Ordering::Relaxed) - 1)))
         } else {
             panic!("undeclared `rdf` prefix !")
         }
@@ -1258,7 +1258,7 @@ mod test {
                <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test006.rdf#e2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> "2" .
                <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test006.rdf#e2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "foobar" .
                <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test006.rdf#e2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "barfoo" .
-               _:bag <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://www.w3.org/1999/02/22-rdf-syntax-ns#Bag> .
+               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://www.w3.org/1999/02/22-rdf-syntax-ns#Bag> .
             "#
         }
 
