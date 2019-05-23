@@ -756,13 +756,6 @@ where
                 panic!("cannot have rdf:resource and rdf:nodeID at the same time");
             }
         }
-
-        // let o = match object.len() {
-        //     0 => panic!("missing resource in empty predicate !"),
-        //     1 => object.pop().unwrap(),
-        //     _ => panic!(""),
-        // };
-        // self.triples.push_back(Ok([s.clone(), p, o]));
     }
 
     fn resource_empty(&mut self, e: &BytesStart) {
@@ -834,90 +827,18 @@ mod test {
         }
     }
 
-    // #[test]
-    // fn w3c_test_suite() {
-    //     fn do_test_suite() -> io::Result<()> {
-    //         let rdf_ext = OsStr::new("rdf");
-    //         let nt_ext = OsStr::new("nt");
-    //
-    //         let suite = Path::new("..").join("rdf-tests").join("rdf-xml");
-    //         if !suite.exists() || !suite.is_dir() {
-    //             panic!("rdf-tests/rdf-xml not found, can not check W3C test-suite. cf README.md");
-    //         }
-    //
-    //         let mut tested = 0;
-    //
-    //         for e in read_dir(&suite)? {
-    //             let entry = e?;
-    //             if entry.file_type()?.is_dir() {
-    //                 for c in read_dir(entry.path())? {
-    //                     let case = c?;
-    //                     if case.path().extension() == Some(rdf_ext) {
-    //                         if case.path().with_extension(nt_ext).is_file() {
-    //                             println!("{}", case.path().display());
-    //
-    //                             // the reference N-Triples file
-    //                             let ntparser = crate::parser::nt::Config::default();
-    //                             let ntfile = File::open(case.path().with_extension(nt_ext))?;
-    //                             let mut expected = TestGraph::new();
-    //                             ntparser.parse_read(ntfile).in_graph(&mut expected).unwrap();
-    //                             // the test XML file
-    //                             let xmlparser = super::Config::default();
-    //                             let xmlfile = File::open(case.path())?;
-    //                             let mut actual = TestGraph::new();
-    //                             let res = xmlparser.parse_read(xmlfile).in_graph(&mut actual);
-    //
-    //                             // check the XML parses without error
-    //                             assert!(
-    //                                 res.is_ok(),
-    //                                 format!("{} should parse without error", case.path().display())
-    //                             );
-    //                             // check the XML produces the same graph
-    //                             pretty_assertions::assert_eq!(
-    //                                 actual,
-    //                                 expected,
-    //                                 "{} does not give expected results",
-    //                                 case.path().display()
-    //                             );
-    //
-    //                             tested += 1;
-    //                         } else if case.path().to_string_lossy().contains("error") {
-    //                             // let xmlparser = super::Config::default();
-    //                             // let xmlfile = File::open(case.path())?;
-    //                             // let mut actual = TestGraph::new();
-    //                             // assert!(
-    //                             //     xmlparser.parse_read(xmlfile).in_graph(&mut actual).is_err(),
-    //                             //     format!("{} should parse with error", case.path().display())
-    //                             // );
-    //                             //
-    //                             // tested += 1;
-    //                         }
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //
-    //         assert_ne!(
-    //             tested, 0,
-    //             "No test found in W3C test-suite, something must be wrong"
-    //         );
-    //         Ok(())
-    //     }
-    //     do_test_suite().unwrap()
-    // }
-
-    macro_rules! nt_example {
+    macro_rules! nt_test {
         ($name:ident, $xml:literal, $nt:literal) => {
             #[test]
             fn $name() {
                 let mut g = TestGraph::new();
-                super::Config::default()
+                $crate::parser::xml::Config::default()
                     .parse_str($xml)
                     .in_graph(&mut g)
                     .expect("failed parsing XML file");
 
                 let mut nt = Vec::new();
-                for triple in crate::parser::nt::Config::default().parse_str($nt) {
+                for triple in $crate::parser::nt::Config::default().parse_str($nt) {
                     nt.push(triple.expect("N-Triples iterator failed"));
                 }
 
@@ -936,294 +857,454 @@ mod test {
         };
     }
 
-    // W3C Example 07: 'Complete RDF/XML description of Figure 1 graph'
-    nt_example! {
-        w3c_example_07,
-        r#"<?xml version="1.0"?>
-            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                     xmlns:dc="http://purl.org/dc/elements/1.1/"
-                     xmlns:ex="http://example.org/stuff/1.0/">
-              <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar"
-                       dc:title="RDF/XML Syntax Specification (Revised)">
-                <ex:editor>
-                  <rdf:Description ex:fullName="Dave Beckett">
-                <ex:homePage rdf:resource="http://purl.org/net/dajobe/" />
+    mod w3c_example {
+        use super::*;
+
+        // W3C Example 07: 'Complete RDF/XML description of Figure 1 graph'
+        nt_test! {
+            ex07,
+            r#"<?xml version="1.0"?>
+                <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                         xmlns:dc="http://purl.org/dc/elements/1.1/"
+                         xmlns:ex="http://example.org/stuff/1.0/">
+                  <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar"
+                           dc:title="RDF/XML Syntax Specification (Revised)">
+                    <ex:editor>
+                      <rdf:Description ex:fullName="Dave Beckett">
+                    <ex:homePage rdf:resource="http://purl.org/net/dajobe/" />
+                      </rdf:Description>
+                    </ex:editor>
                   </rdf:Description>
-                </ex:editor>
-              </rdf:Description>
-            </rdf:RDF>
-        "#,
-        r#"<http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)" .
-           _:n0 <http://example.org/stuff/1.0/fullName> "Dave Beckett" .
-           _:n0 <http://example.org/stuff/1.0/homePage> <http://purl.org/net/dajobe/> .
-           <http://www.w3.org/TR/rdf-syntax-grammar> <http://example.org/stuff/1.0/editor> _:n0 .
-        "#
-    }
+                </rdf:RDF>
+            "#,
+            r#"<http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)" .
+               _:n0 <http://example.org/stuff/1.0/fullName> "Dave Beckett" .
+               _:n0 <http://example.org/stuff/1.0/homePage> <http://purl.org/net/dajobe/> .
+               <http://www.w3.org/TR/rdf-syntax-grammar> <http://example.org/stuff/1.0/editor> _:n0 .
+            "#
+        }
 
-    // W3C Example 08: 'Complete example of xml:lang'
-    nt_example! {
-        w3c_example_08,
-        r#"<?xml version="1.0" encoding="utf-8"?>
-            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                     xmlns:dc="http://purl.org/dc/elements/1.1/">
-              <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar">
-                <dc:title>RDF/XML Syntax Specification (Revised)</dc:title>
-                <dc:title xml:lang="en">RDF/XML Syntax Specification (Revised)</dc:title>
-                <dc:title xml:lang="en-US">RDF/XML Syntax Specification (Revised)</dc:title>
-              </rdf:Description>
+        // W3C Example 08: 'Complete example of xml:lang'
+        nt_test! {
+            ex08,
+            r#"<?xml version="1.0" encoding="utf-8"?>
+                <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                         xmlns:dc="http://purl.org/dc/elements/1.1/">
+                  <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar">
+                    <dc:title>RDF/XML Syntax Specification (Revised)</dc:title>
+                    <dc:title xml:lang="en">RDF/XML Syntax Specification (Revised)</dc:title>
+                    <dc:title xml:lang="en-US">RDF/XML Syntax Specification (Revised)</dc:title>
+                  </rdf:Description>
 
-              <rdf:Description rdf:about="http://example.org/buecher/baum" xml:lang="de">
-                <dc:title>Der Baum</dc:title>
-                <dc:description>Das Buch ist außergewöhnlich</dc:description>
-                <dc:title xml:lang="en">The Tree</dc:title>
-              </rdf:Description>
-            </rdf:RDF>
-        "#,
-        r#"<http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)" .
-           <http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)"@en .
-           <http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)"@en-us .
-           <http://example.org/buecher/baum> <http://purl.org/dc/elements/1.1/title> "Der Baum"@de .
-           <http://example.org/buecher/baum> <http://purl.org/dc/elements/1.1/description> "Das Buch ist au\u00DFergew\u00F6hnlich"@de .
-           <http://example.org/buecher/baum> <http://purl.org/dc/elements/1.1/title> "The Tree"@en .
-        "#
-    }
+                  <rdf:Description rdf:about="http://example.org/buecher/baum" xml:lang="de">
+                    <dc:title>Der Baum</dc:title>
+                    <dc:description>Das Buch ist außergewöhnlich</dc:description>
+                    <dc:title xml:lang="en">The Tree</dc:title>
+                  </rdf:Description>
+                </rdf:RDF>
+            "#,
+            r#"<http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)" .
+               <http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)"@en .
+               <http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)"@en-us .
+               <http://example.org/buecher/baum> <http://purl.org/dc/elements/1.1/title> "Der Baum"@de .
+               <http://example.org/buecher/baum> <http://purl.org/dc/elements/1.1/description> "Das Buch ist au\u00DFergew\u00F6hnlich"@de .
+               <http://example.org/buecher/baum> <http://purl.org/dc/elements/1.1/title> "The Tree"@en .
+            "#
+        }
 
-    // W3C Example 09: 'Complete example of rdf:parseType="Literal"'
-    nt_example! {
-        w3c_example_09,
-        r#"<?xml version="1.0"?>
-            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+        // W3C Example 09: 'Complete example of rdf:parseType="Literal"'
+        nt_test! {
+            ex09,
+            r#"<?xml version="1.0"?>
+                <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                         xmlns:ex="http://example.org/stuff/1.0/">
+                  <rdf:Description rdf:about="http://example.org/item01">
+                    <ex:size rdf:datatype="http://www.w3.org/2001/XMLSchema#int">123</ex:size>
+                  </rdf:Description>
+                </rdf:RDF>
+            "#,
+            r#"<http://example.org/item01> <http://example.org/stuff/1.0/size> "123"^^<http://www.w3.org/2001/XMLSchema#int> .
+            "#
+        }
+
+        // W3C Example 10: 'Complete example of rdf:datatype'
+        nt_test! {
+            ex10,
+            r#"<?xml version="1.0"?>
+                <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                         xmlns:ex="http://example.org/stuff/1.0/">
+                  <rdf:Description rdf:about="http://example.org/item01">
+                    <ex:size rdf:datatype="http://www.w3.org/2001/XMLSchema#int">123</ex:size>
+                  </rdf:Description>
+                </rdf:RDF>
+            "#,
+            r#"<http://example.org/item01> <http://example.org/stuff/1.0/size> "123"^^<http://www.w3.org/2001/XMLSchema#int> .
+            "#
+        }
+
+        // W3C Example 11: 'Complete RDF/XML description of graph using rdf:nodeID identifying the blank node'
+        nt_test! {
+            ex11,
+            r#"<?xml version="1.0"?>
+                <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                         xmlns:dc="http://purl.org/dc/elements/1.1/"
+                         xmlns:ex="http://example.org/stuff/1.0/">
+                  <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar"
+                		   dc:title="RDF/XML Syntax Specification (Revised)">
+                    <ex:editor rdf:nodeID="abc"/>
+                  </rdf:Description>
+
+                  <rdf:Description rdf:nodeID="abc"
+                                   ex:fullName="Dave Beckett">
+                    <ex:homePage rdf:resource="http://purl.org/net/dajobe/"/>
+                  </rdf:Description>
+                </rdf:RDF>
+            "#,
+            // This is with renamed node IDs
+            r#"<http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)" .
+               <http://www.w3.org/TR/rdf-syntax-grammar> <http://example.org/stuff/1.0/editor> _:oabc .
+               _:oabc <http://example.org/stuff/1.0/fullName> "Dave Beckett" .
+               _:oabc <http://example.org/stuff/1.0/homePage> <http://purl.org/net/dajobe/> .
+            "#
+        }
+
+        // W3C Example 12: 'Complete example using rdf:parseType="Resource"'
+        nt_test! {
+            ex12,
+            r#"<?xml version="1.0"?>
+                <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                         xmlns:dc="http://purl.org/dc/elements/1.1/"
+                         xmlns:ex="http://example.org/stuff/1.0/">
+                  <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar"
+                		   dc:title="RDF/XML Syntax Specification (Revised)">
+                    <ex:editor rdf:parseType="Resource">
+                      <ex:fullName>Dave Beckett</ex:fullName>
+                      <ex:homePage rdf:resource="http://purl.org/net/dajobe/"/>
+                    </ex:editor>
+                  </rdf:Description>
+                </rdf:RDF>
+            "#,
+            // This is with renamed node IDs
+            r#"<http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)" .
+               _:n0 <http://example.org/stuff/1.0/fullName> "Dave Beckett" .
+               _:n0 <http://example.org/stuff/1.0/homePage> <http://purl.org/net/dajobe/> .
+               <http://www.w3.org/TR/rdf-syntax-grammar> <http://example.org/stuff/1.0/editor> _:n0 .
+            "#
+        }
+
+        // W3C Example 13: 'Complete example of property attributes on an empty property element'
+        nt_test! {
+            ex13,
+            r#"<?xml version="1.0"?>
+                <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                         xmlns:dc="http://purl.org/dc/elements/1.1/"
+                         xmlns:ex="http://example.org/stuff/1.0/">
+                  <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar"
+                		   dc:title="RDF/XML Syntax Specification (Revised)">
+                    <ex:editor ex:fullName="Dave Beckett" />
+                    <!-- Note the ex:homePage property has been ignored for this example -->
+                  </rdf:Description>
+                </rdf:RDF>
+            "#,
+            r#"<http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)" .
+               _:n0 <http://example.org/stuff/1.0/fullName> "Dave Beckett" .
+               <http://www.w3.org/TR/rdf-syntax-grammar> <http://example.org/stuff/1.0/editor> _:n0 .
+            "#
+        }
+
+        // W3C Example 14: 'Complete example with rdf:type'
+        nt_test! {
+            ex14,
+            r#"<?xml version="1.0"?>
+                <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                         xmlns:dc="http://purl.org/dc/elements/1.1/"
+                         xmlns:ex="http://example.org/stuff/1.0/">
+                  <rdf:Description rdf:about="http://example.org/thing">
+                    <rdf:type rdf:resource="http://example.org/stuff/1.0/Document"/>
+                    <dc:title>A marvelous thing</dc:title>
+                  </rdf:Description>
+                </rdf:RDF>
+            "#,
+            r#"<http://example.org/thing> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/stuff/1.0/Document> .
+               <http://example.org/thing> <http://purl.org/dc/elements/1.1/title> "A marvelous thing" .
+            "#
+        }
+
+        // W3C Example 15: 'Complete example using a typed node element to replace an rdf:type'
+        nt_test! {
+            ex15,
+            r#"<?xml version="1.0"?>
+                <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                         xmlns:dc="http://purl.org/dc/elements/1.1/"
+                         xmlns:ex="http://example.org/stuff/1.0/">
+                  <ex:Document rdf:about="http://example.org/thing">
+                    <dc:title>A marvelous thing</dc:title>
+                  </ex:Document>
+                </rdf:RDF>
+            "#,
+            r#"<http://example.org/thing> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/stuff/1.0/Document> .
+               <http://example.org/thing> <http://purl.org/dc/elements/1.1/title> "A marvelous thing" .
+            "#
+        }
+
+        // W3C Example 16: 'Complete example using rdf:ID and xml:base for shortening URIs'
+        nt_test! {
+            ex16,
+            r#"<?xml version="1.0"?>
+                <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                         xmlns:ex="http://example.org/stuff/1.0/"
+                         xml:base="http://example.org/here/">
+                  <rdf:Description rdf:ID="snack">
+                    <ex:prop rdf:resource="fruit/apple"/>
+                  </rdf:Description>
+                </rdf:RDF>
+            "#,
+            r#"<http://example.org/here/#snack> <http://example.org/stuff/1.0/prop> <http://example.org/here/fruit/apple> .
+            "#
+        }
+
+        // W3C Example 17: 'Complex example using RDF list properties'
+        nt_test! {
+            ex17,
+            r#"<?xml version="1.0"?>
+                <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+                  <rdf:Seq rdf:about="http://example.org/favourite-fruit">
+                    <rdf:_1 rdf:resource="http://example.org/banana"/>
+                    <rdf:_2 rdf:resource="http://example.org/apple"/>
+                    <rdf:_3 rdf:resource="http://example.org/pear"/>
+                  </rdf:Seq>
+                </rdf:RDF>
+            "#,
+            r#"<http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> .
+               <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://example.org/banana> .
+               <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> <http://example.org/apple> .
+               <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_3> <http://example.org/pear> .
+            "#
+        }
+
+        // W3C Example 18: 'Complete example using rdf:li property element for list properties'
+        nt_test! {
+            ex18,
+            r#"<?xml version="1.0"?>
+                <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+                  <rdf:Seq rdf:about="http://example.org/favourite-fruit">
+                    <rdf:li rdf:resource="http://example.org/banana"/>
+                    <rdf:li rdf:resource="http://example.org/apple"/>
+                    <rdf:li rdf:resource="http://example.org/pear"/>
+                  </rdf:Seq>
+                </rdf:RDF>
+            "#,
+            r#"<http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> .
+               <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://example.org/banana> .
+               <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> <http://example.org/apple> .
+               <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_3> <http://example.org/pear> .
+            "#
+        }
+
+        // W3C Example 19: 'Complete example of a RDF collection of nodes using rdf:parseType="Collection"'
+        nt_test! {
+            ex19,
+            r#"<?xml version="1.0"?>
+                <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
                      xmlns:ex="http://example.org/stuff/1.0/">
-              <rdf:Description rdf:about="http://example.org/item01">
-                <ex:size rdf:datatype="http://www.w3.org/2001/XMLSchema#int">123</ex:size>
-              </rdf:Description>
-            </rdf:RDF>
-        "#,
-        r#"<http://example.org/item01> <http://example.org/stuff/1.0/size> "123"^^<http://www.w3.org/2001/XMLSchema#int> .
-        "#
+                    <rdf:Description rdf:about="http://example.org/basket">
+                        <ex:hasFruit rdf:parseType="Collection">
+                          <rdf:Description rdf:about="http://example.org/banana"/>
+                          <rdf:Description rdf:about="http://example.org/apple"/>
+                          <rdf:Description rdf:about="http://example.org/pear"/>
+                        </ex:hasFruit>
+                    </rdf:Description>
+                </rdf:RDF>
+            "#,
+            r#"_:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://example.org/banana> .
+               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:n1 .
+               _:n1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://example.org/apple> .
+               _:n1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:n2 .
+               _:n2 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://example.org/pear> .
+               _:n2 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
+               <http://example.org/basket> <http://example.org/stuff/1.0/hasFruit> _:n0 .
+            "#
+        }
+
+        // W3C Example 20: 'Complete example of rdf:ID reifying a property element'
+        nt_test! {
+            ex20,
+            r#"<?xml version="1.0"?>
+                <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                         xmlns:ex="http://example.org/stuff/1.0/"
+                         xml:base="http://example.org/triples/">
+                  <rdf:Description rdf:about="http://example.org/">
+                    <ex:prop rdf:ID="triple1">blah</ex:prop>
+                  </rdf:Description>
+                </rdf:RDF>
+            "#,
+            r#"<http://example.org/> <http://example.org/stuff/1.0/prop> "blah" .
+               <http://example.org/triples/#triple1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> .
+               <http://example.org/triples/#triple1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> <http://example.org/> .
+               <http://example.org/triples/#triple1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://example.org/stuff/1.0/prop> .
+               <http://example.org/triples/#triple1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> "blah" .
+            "#
+        }
     }
 
-    // W3C Example 10: 'Complete example of rdf:datatype'
-    nt_example! {
-        w3c_example_10,
-        r#"<?xml version="1.0"?>
-            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                     xmlns:ex="http://example.org/stuff/1.0/">
-              <rdf:Description rdf:about="http://example.org/item01">
-                <ex:size rdf:datatype="http://www.w3.org/2001/XMLSchema#int">123</ex:size>
-              </rdf:Description>
-            </rdf:RDF>
-        "#,
-        r#"<http://example.org/item01> <http://example.org/stuff/1.0/size> "123"^^<http://www.w3.org/2001/XMLSchema#int> .
-        "#
-    }
+    mod rdf_containers_syntax_vs_schema {
+        use super::*;
 
-    // W3C Example 11: 'Complete RDF/XML description of graph using rdf:nodeID identifying the blank node'
-    nt_example! {
-        w3c_example_11,
-        r#"<?xml version="1.0"?>
-            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                     xmlns:dc="http://purl.org/dc/elements/1.1/"
-                     xmlns:ex="http://example.org/stuff/1.0/">
-              <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar"
-            		   dc:title="RDF/XML Syntax Specification (Revised)">
-                <ex:editor rdf:nodeID="abc"/>
-              </rdf:Description>
-
-              <rdf:Description rdf:nodeID="abc"
-                               ex:fullName="Dave Beckett">
-                <ex:homePage rdf:resource="http://purl.org/net/dajobe/"/>
-              </rdf:Description>
+        // Simple container
+        nt_test! {
+            test001,
+            r#"<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+              <rdf:Bag>
+                <rdf:li>1</rdf:li>
+                <rdf:li>2</rdf:li>
+              </rdf:Bag>
             </rdf:RDF>
-        "#,
-        // This is with renamed node IDs
-        r#"<http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)" .
-           <http://www.w3.org/TR/rdf-syntax-grammar> <http://example.org/stuff/1.0/editor> _:oabc .
-           _:oabc <http://example.org/stuff/1.0/fullName> "Dave Beckett" .
-           _:oabc <http://example.org/stuff/1.0/homePage> <http://purl.org/net/dajobe/> .
-        "#
-    }
+            "#,
+            r#"_:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Bag> .
+               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> "1" .
+               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> "2" .
+            "#
+        }
 
-    // W3C Example 12: 'Complete example using rdf:parseType="Resource"'
-    nt_example! {
-        w3c_example_12,
-        r#"<?xml version="1.0"?>
-            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                     xmlns:dc="http://purl.org/dc/elements/1.1/"
-                     xmlns:ex="http://example.org/stuff/1.0/">
-              <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar"
-            		   dc:title="RDF/XML Syntax Specification (Revised)">
-                <ex:editor rdf:parseType="Resource">
-                  <ex:fullName>Dave Beckett</ex:fullName>
-                  <ex:homePage rdf:resource="http://purl.org/net/dajobe/"/>
-                </ex:editor>
-              </rdf:Description>
-            </rdf:RDF>
-        "#,
-        // This is with renamed node IDs
-        r#"<http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)" .
-           _:n0 <http://example.org/stuff/1.0/fullName> "Dave Beckett" .
-           _:n0 <http://example.org/stuff/1.0/homePage> <http://purl.org/net/dajobe/> .
-           <http://www.w3.org/TR/rdf-syntax-grammar> <http://example.org/stuff/1.0/editor> _:n0 .
-        "#
-    }
+        // rdf:li is unaffected by other rdf:_nnn properties.
+        nt_test! {
+            test002,
+            r#"<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:foo="http://foo/">
+                  <foo:Bar>
+                    <rdf:_1>_1</rdf:_1>
+                    <rdf:li>1</rdf:li>
+                    <rdf:_3>_3</rdf:_3>
+                    <rdf:li>2</rdf:li>
+                  </foo:Bar>
+                </rdf:RDF>
+            "#,
+            r#"_:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://foo/Bar> .
+               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> "_1" .
+               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> "1" .
+               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_3> "_3" .
+               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> "2" .
+            "#
+        }
 
-    // W3C Example 13: 'Complete example of property attributes on an empty property element'
-    nt_example! {
-        w3c_example_13,
-        r#"<?xml version="1.0"?>
-            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                     xmlns:dc="http://purl.org/dc/elements/1.1/"
-                     xmlns:ex="http://example.org/stuff/1.0/">
-              <rdf:Description rdf:about="http://www.w3.org/TR/rdf-syntax-grammar"
-            		   dc:title="RDF/XML Syntax Specification (Revised)">
-                <ex:editor ex:fullName="Dave Beckett" />
-                <!-- Note the ex:homePage property has been ignored for this example -->
-              </rdf:Description>
-            </rdf:RDF>
-        "#,
-        r#"<http://www.w3.org/TR/rdf-syntax-grammar> <http://purl.org/dc/elements/1.1/title> "RDF/XML Syntax Specification (Revised)" .
-           _:n0 <http://example.org/stuff/1.0/fullName> "Dave Beckett" .
-           <http://www.w3.org/TR/rdf-syntax-grammar> <http://example.org/stuff/1.0/editor> _:n0 .
-        "#
-    }
+        // rdf:li elements can exist in any description element
+        nt_test! {
+            test003,
+            r#"<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:foo="http://foo/">
+                  <foo:Bar>
+                    <rdf:li>1</rdf:li>
+                    <rdf:li>2</rdf:li>
+                  </foo:Bar>
+                </rdf:RDF>
+            "#,
+            r#"_:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://foo/Bar> .
+               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> "1" .
+               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> "2" .
+            "#
+        }
 
-    // W3C Example 14: 'Complete example with rdf:type'
-    nt_example! {
-        w3c_example_14,
-        r#"<?xml version="1.0"?>
-            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                     xmlns:dc="http://purl.org/dc/elements/1.1/"
-                     xmlns:ex="http://example.org/stuff/1.0/">
-              <rdf:Description rdf:about="http://example.org/thing">
-                <rdf:type rdf:resource="http://example.org/stuff/1.0/Document"/>
-                <dc:title>A marvelous thing</dc:title>
-              </rdf:Description>
-            </rdf:RDF>
-        "#,
-        r#"<http://example.org/thing> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/stuff/1.0/Document> .
-           <http://example.org/thing> <http://purl.org/dc/elements/1.1/title> "A marvelous thing" .
-        "#
-    }
+        // rdf:li elements match any of the property element productions
+        nt_test! {
+            test004,
+            r#"<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:foo="http://foo/"
+                     xml:base="http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test004.rdf">
+                  <foo:Bar>
+                    <rdf:li rdf:ID="e1">1</rdf:li>
+                    <rdf:li rdf:parseType="Literal">2</rdf:li>
+                    <rdf:li rdf:parseType="Resource">
+                      <rdf:type rdf:resource="http://foo/Bar"/>
+                    </rdf:li>
+                    <rdf:li rdf:ID="e4" foo:bar="foobar"/>
+                  </foo:Bar>
+                </rdf:RDF>
+            "#,
+            r#"_:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://foo/Bar> .
+               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> "1" .
+               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test004.rdf#e1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> .
+               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test004.rdf#e1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> _:bar .
+               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test004.rdf#e1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> .
+               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test004.rdf#e1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> "1" .
+               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> "2"^^<http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral> .
+               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_3> _:res .
+               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://foo/Bar> .
+               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_4> _:res2 .
+               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test004.rdf#e4> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> .
+               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test004.rdf#e4> <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> _:bar .
+               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test004.rdf#e4> <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_4> .
+               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test004.rdf#e4> <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> _:res2 .
+               _:res2 <http://foo/bar> "foobar" .
+            "#
+        }
 
-    // W3C Example 15: 'Complete example using a typed node element to replace an rdf:type'
-    nt_example! {
-        w3c_example_15,
-        r#"<?xml version="1.0"?>
-            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                     xmlns:dc="http://purl.org/dc/elements/1.1/"
-                     xmlns:ex="http://example.org/stuff/1.0/">
-              <ex:Document rdf:about="http://example.org/thing">
-                <dc:title>A marvelous thing</dc:title>
-              </ex:Document>
-            </rdf:RDF>
-        "#,
-        r#"<http://example.org/thing> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/stuff/1.0/Document> .
-           <http://example.org/thing> <http://purl.org/dc/elements/1.1/title> "A marvelous thing" .
-        "#
-    }
+        // containers match the typed node production
+        nt_test! {
+            test006,
+            r##"<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:foo="http://foo/"
+                     xml:base="http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test006.rdf">
+                  <rdf:Seq rdf:ID="e1" rdf:_3="3" rdf:value="foobar"/>
+                  <rdf:Alt rdf:about="#e2" rdf:_2="2" rdf:value="foobar">
+                    <rdf:value>barfoo</rdf:value>
+                  </rdf:Alt>
+                  <rdf:Bag />
+                </rdf:RDF>
+            "##,
+            r#"<http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test006.rdf#e1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> .
+               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test006.rdf#e1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_3> "3" .
+               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test006.rdf#e1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "foobar" .
+               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test006.rdf#e2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://www.w3.org/1999/02/22-rdf-syntax-ns#Alt> .
+               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test006.rdf#e2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> "2" .
+               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test006.rdf#e2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "foobar" .
+               <http://www.w3.org/2013/RDFXMLTests/rdf-containers-syntax-vs-schema/test006.rdf#e2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "barfoo" .
+               _:bag <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://www.w3.org/1999/02/22-rdf-syntax-ns#Bag> .
+            "#
+        }
 
-    // W3C Example 16: 'Complete example using rdf:ID and xml:base for shortening URIs'
-    nt_example! {
-        w3c_example_16,
-        r#"<?xml version="1.0"?>
-            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                     xmlns:ex="http://example.org/stuff/1.0/"
-                     xml:base="http://example.org/here/">
-              <rdf:Description rdf:ID="snack">
-                <ex:prop rdf:resource="fruit/apple"/>
-              </rdf:Description>
-            </rdf:RDF>
-        "#,
-        r#"<http://example.org/here/#snack> <http://example.org/stuff/1.0/prop> <http://example.org/here/fruit/apple> .
-        "#
-    }
+        // rdf:li processing within each element is independent
+        nt_test! {
+            test007,
+            r##"<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                     xmlns:foo="http://foo/">
+                  <rdf:Description>
+                    <rdf:li>
+                      <rdf:Description>
+                        <rdf:li>1</rdf:li>
+                        <rdf:li>2</rdf:li>
+                      </rdf:Description>
+                    </rdf:li>
+                    <rdf:li>2</rdf:li>
+                  </rdf:Description>
+                </rdf:RDF>
+            "##,
+            r#"_:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> _:n1 .
+               _:n1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> "1" .
+               _:n1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> "2" .
+               _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> "2" .
+            "#
+        }
 
-    // W3C Example 17: 'Complex example using RDF list properties'
-    nt_example! {
-        w3c_example_17,
-        r#"<?xml version="1.0"?>
-            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-              <rdf:Seq rdf:about="http://example.org/favourite-fruit">
-                <rdf:_1 rdf:resource="http://example.org/banana"/>
-                <rdf:_2 rdf:resource="http://example.org/apple"/>
-                <rdf:_3 rdf:resource="http://example.org/pear"/>
-              </rdf:Seq>
-            </rdf:RDF>
-        "#,
-        r#"<http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> .
-           <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://example.org/banana> .
-           <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> <http://example.org/apple> .
-           <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_3> <http://example.org/pear> .
-        "#
-    }
-
-    // W3C Example 18: 'Complete example using rdf:li property element for list properties'
-    nt_example! {
-        w3c_example_18,
-        r#"<?xml version="1.0"?>
-            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-              <rdf:Seq rdf:about="http://example.org/favourite-fruit">
-                <rdf:li rdf:resource="http://example.org/banana"/>
-                <rdf:li rdf:resource="http://example.org/apple"/>
-                <rdf:li rdf:resource="http://example.org/pear"/>
-              </rdf:Seq>
-            </rdf:RDF>
-        "#,
-        r#"<http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> .
-           <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> <http://example.org/banana> .
-           <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_2> <http://example.org/apple> .
-           <http://example.org/favourite-fruit> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_3> <http://example.org/pear> .
-        "#
-    }
-
-    // W3C Example 19: 'Complete example of a RDF collection of nodes using rdf:parseType="Collection"'
-    nt_example! {
-        w3c_example_19,
-        r#"<?xml version="1.0"?>
-            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                 xmlns:ex="http://example.org/stuff/1.0/">
-                <rdf:Description rdf:about="http://example.org/basket">
-                    <ex:hasFruit rdf:parseType="Collection">
-                      <rdf:Description rdf:about="http://example.org/banana"/>
-                      <rdf:Description rdf:about="http://example.org/apple"/>
-                      <rdf:Description rdf:about="http://example.org/pear"/>
-                    </ex:hasFruit>
-                </rdf:Description>
-            </rdf:RDF>
-        "#,
-        r#"_:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://example.org/banana> .
-           _:n0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:n1 .
-           _:n1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://example.org/apple> .
-           _:n1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> _:n2 .
-           _:n2 <http://www.w3.org/1999/02/22-rdf-syntax-ns#first> <http://example.org/pear> .
-           _:n2 <http://www.w3.org/1999/02/22-rdf-syntax-ns#rest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#nil> .
-           <http://example.org/basket> <http://example.org/stuff/1.0/hasFruit> _:n0 .
-        "#
-    }
-
-    // W3C Example 20: 'Complete example of rdf:ID reifying a property element'
-    nt_example! {
-        w3c_example_20,
-        r#"<?xml version="1.0"?>
-            <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-                     xmlns:ex="http://example.org/stuff/1.0/"
-                     xml:base="http://example.org/triples/">
-              <rdf:Description rdf:about="http://example.org/">
-                <ex:prop rdf:ID="triple1">blah</ex:prop>
-              </rdf:Description>
-            </rdf:RDF>
-        "#,
-        r#"<http://example.org/> <http://example.org/stuff/1.0/prop> "blah" .
-           <http://example.org/triples/#triple1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/1999/02/22-rdf-syntax-ns#Statement> .
-           <http://example.org/triples/#triple1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#subject> <http://example.org/> .
-           <http://example.org/triples/#triple1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate> <http://example.org/stuff/1.0/prop> .
-           <http://example.org/triples/#triple1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#object> "blah" .
-        "#
+        // rdf:li processing is per element, not per resource.
+        nt_test! {
+            test008,
+            r##"<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+                  <rdf:Description rdf:about="http://desc">
+                    <rdf:li>1</rdf:li>
+                  </rdf:Description>
+                  <rdf:Description rdf:about="http://desc">
+                    <rdf:li>1-again</rdf:li>
+                  </rdf:Description>
+                </rdf:RDF>
+            "##,
+            r#"<http://desc> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> "1" .
+               <http://desc> <http://www.w3.org/1999/02/22-rdf-syntax-ns#_1> "1-again" .
+            "#
+        }
     }
 
     // Check that nested `rdf:li` keeps independent counters for nested elements.
-    nt_example! {
+    nt_test! {
         nested_li,
         r#"<?xml version="1.0"?>
             <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
@@ -1250,7 +1331,7 @@ mod test {
     }
 
     // Check that an empty node is used as a leaf.
-    nt_example! {
+    nt_test! {
         empty_node,
         r#"<?xml version="1.0"?>
             <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
