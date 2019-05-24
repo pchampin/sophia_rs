@@ -18,7 +18,6 @@ use url::Url;
 
 use crate::error::*;
 use crate::ns::rdf;
-use crate::ns::xml;
 use crate::ns::xsd;
 use crate::ns::Namespace;
 use crate::term::factory::RcTermFactory;
@@ -466,7 +465,7 @@ where
             ParsingState::Collection => self.collection_start(e),
             ParsingState::CollectionItem => self.collection_item_start(e),
             ParsingState::Res => panic!("expecting text, not new element"),
-            _ => unimplemented!(),
+            ParsingState::Literal => unimplemented!("entering element as literal"),
         };
     }
 
@@ -554,6 +553,7 @@ where
         self.parents.push(p);
 
         // Extract attributes relevant to the RDF syntax
+        let mut attributes = HashMap::new();
         let mut next_state = ParsingState::Node;
         for attr in e.attributes().with_checks(true) {
             let a = attr.expect("FIXME");
@@ -598,9 +598,22 @@ where
                     }
                     other => panic!("invalid parseType: {:?}", other),
                 }
+            } else {
+                let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
+                attributes.insert(k, self.scope().new_literal(v).expect("FIXME"));
             }
         }
-        self.state.push(next_state);
+
+        if !attributes.is_empty() {
+            let o = self.new_bnode();
+            self.parents.push(o.clone());
+            std::mem::replace(self.state.last_mut().unwrap(), ParsingState::Resource);
+            for (k, v) in attributes.into_iter() {
+                self.triples.push_back(Ok([o.clone(), k, v]));
+            }
+        } else {
+            self.state.push(next_state);
+        }
     }
 
     fn collection_start(&mut self, e: &BytesStart) {
@@ -627,7 +640,6 @@ where
             ParsingState::CollectionItem => self.collection_item_end(),
             ParsingState::Collection => self.collection_end(e),
             ParsingState::Res => self.res_end(),
-            _ => unimplemented!(),
         }
         self.leave_scope();
     }
@@ -665,6 +677,8 @@ where
     fn resource_end(&mut self, e: &BytesEnd) {
         // End of the implicit node element
         self.node_end();
+        // Drop text, since it is not relevant in a Resource predicate.
+        self.scope_mut().text.take();
         // End of the resource predicate
         self.predicate_end(e)
     }
@@ -761,7 +775,7 @@ where
             ParsingState::Collection => self.collection_item_empty(e),
             ParsingState::CollectionItem => unreachable!(),
             ParsingState::Res => panic!("expected end element, not empty"),
-            _ => (),
+            ParsingState::Literal => unimplemented!("empty element as literal"),
         }
         self.leave_scope();
     }
@@ -1427,7 +1441,7 @@ mod test {
         rdf_test!(#[ignore] rdfms_empty_property_elements / test012 where "a1" => "n0");
         rdf_test!(rdfms_empty_property_elements / test013);
         rdf_test!(rdfms_empty_property_elements / test014 where "a1" => "n0");
-        rdf_test!(#[ignore] rdfms_empty_property_elements / test015 where "a1" => "n0");
+        rdf_test!(rdfms_empty_property_elements / test015 where "a1" => "n0");
         rdf_test!(rdfms_empty_property_elements / test016);
         rdf_test!(rdfms_empty_property_elements / test017);
     }
@@ -1571,6 +1585,7 @@ mod test {
         rdf_test!(unrecognised_xml_attributes / test002);
     }
 
+    // FIXME(@althonos): requires `parseType=Literal` to work.
     mod xml_canon {
         use super::*;
 
