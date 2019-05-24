@@ -7,7 +7,7 @@ use std::fmt::Debug;
 use std::io::{BufRead, BufReader, Read};
 use std::ops::Deref;
 use std::rc::Rc;
-use std::sync::atomic::AtomicU64;
+use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
 use quick_xml::events::BytesEnd;
@@ -123,7 +123,6 @@ pub struct XmlReader<B: BufRead> {
 impl<B: BufRead> XmlReader<B> {
     /// Read an XML event.
     pub fn read_event<'a>(&mut self, buf: &'a mut Vec<u8>) -> XmlResult<Event<'a>> {
-
         // Clear the event peeking cache if it is not empty.
         if let Some(e) = self.event.take() {
             return Ok(e);
@@ -146,19 +145,17 @@ impl<B: BufRead> XmlReader<B> {
             other => unsafe {
                 self.event = Some(std::mem::transmute(other));
                 return Ok(Event::Start(start));
-            }
+            },
         }
 
         // Get an `End` event, org return if it is something else.
         self.buffer.clear();
         match self.inner.read_event(&mut self.buffer)? {
-            Event::End(_) => {
-                Ok(Event::Empty(start))
-            },
+            Event::End(_) => Ok(Event::Empty(start)),
             other => unsafe {
                 self.event = Some(std::mem::transmute(other));
                 Ok(Event::Start(start))
-            }
+            },
         }
     }
 }
@@ -200,14 +197,14 @@ pub struct Scope<F: TermFactory> {
     /// The text gathered in the current scope.
     text: Option<String>,
     /// The current count of list elements
-    li: AtomicU64,
+    li: AtomicUsize,
     /// The
     collection: Vec<Term<F::TermData>>,
 }
 
 // We implement it ourselves instead of deriving so that:
 // * F does not need to be `Clone` (deriving requires it).
-// * we can clone `li` although `AtomicU64` is not `Clone`.
+// * we can clone `li` although `AtomicUsize` is not `Clone`.
 impl<F: TermFactory> Clone for Scope<F> {
     fn clone(&self) -> Self {
         Self {
@@ -218,7 +215,7 @@ impl<F: TermFactory> Clone for Scope<F> {
             datatype: self.datatype.clone(),
             lang: self.lang.clone(),
             text: self.text.clone(),
-            li: AtomicU64::new(self.li.load(Ordering::Relaxed)),
+            li: AtomicUsize::new(self.li.load(Ordering::Relaxed)),
             collection: self.collection.clone(),
         }
     }
@@ -240,7 +237,7 @@ impl<F: TermFactory> Scope<F> {
             datatype: None,
             lang: None,
             text: None,
-            li: AtomicU64::new(1),
+            li: AtomicUsize::new(1),
             collection: Vec::new(),
         };
         // These namespaces are always in scope
@@ -406,7 +403,7 @@ struct XmlParser<B: BufRead, F: TermFactory> {
     factory: Rc<RefCell<F>>,
 
     //
-    bnodes: AtomicU64,
+    bnodes: AtomicUsize,
 
     /// The current state of the parser.
     state: Vec<ParsingState>,
@@ -536,7 +533,7 @@ where
             scopes: vec![Scope::with_factory_rc(factory.clone())],
             triples: LinkedList::new(),
             factory: factory,
-            bnodes: AtomicU64::new(0),
+            bnodes: AtomicUsize::new(0),
             state: vec![ParsingState::Node],
         }
     }
@@ -1076,7 +1073,7 @@ mod test {
     }
 
     macro_rules! rdf_test {
-        ($(#[$attr:meta])* $suite:ident / $case:ident where $($l:pat => $r:literal),*) => {
+        ($(#[$attr:meta])* $suite:ident / $case:ident where $($l:pat => $r:expr),*) => {
             $(#[$attr])*
             #[test]
             fn $case() {
@@ -1140,7 +1137,7 @@ mod test {
     }
 
     macro_rules! nt_test {
-        ($name:ident, $xml:literal, $nt:literal) => {
+        ($name:ident, $xml:expr, $nt:expr) => {
             #[test]
             fn $name() {
                 let mut xml = TestGraph::new();
