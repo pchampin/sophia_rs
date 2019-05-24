@@ -717,6 +717,13 @@ where
     }
 
     fn res_end(&mut self) {
+        // Subject, predicate, object and ID of the reified triple
+        let id = self.parents.pop().unwrap();
+        let p = self.parents.pop().unwrap();
+        let s = self.parents.last().unwrap().clone();
+        let txt = self.scope_mut().text.take().unwrap_or_default();
+        let o = self.scope().new_literal(txt).expect("FIXME");
+
         // Types for the reification
         let mut factory = self.factory.borrow_mut();
         let ty = factory.copy(&rdf::type_);
@@ -724,14 +731,6 @@ where
         let predicate = factory.copy(&rdf::predicate);
         let object = factory.copy(&rdf::object);
         let stmt = factory.copy(&rdf::Statement);
-        drop(factory);
-
-        // Subject, predicate, object and ID of the reified triple
-        let id = self.parents.pop().unwrap();
-        let p = self.parents.pop().unwrap();
-        let s = self.parents.last().unwrap().clone();
-        let txt = self.scope_mut().text.take().unwrap_or_default();
-        let o = self.scope().new_literal(txt).expect("FIXME");
 
         // Add all triples
         self.triples
@@ -830,32 +829,20 @@ where
             scope.datatype = Some(xmlliteral);
         }
 
-        // Process the object of the triple.
-        match object.len() {
-            0 if !attributes.is_empty() => {
-                let s = self.parents.last().unwrap().clone();
-                let o = self.new_bnode();
-                object.push(o.clone());
-                self.triples.push_back(Ok([s, p.clone(), o.clone()]));
-                for (prop, value) in attributes.into_iter() {
-                    let literal = self.scope().new_literal(value).expect("FIXME");
-                    self.triples.push_back(Ok([o.clone(), prop, literal]));
-                }
-            }
-            0 if attributes.is_empty() => {
-                let s = self.parents.last().unwrap().clone();
-                let o = self.scope().new_literal(String::new()).expect("FIXME");
-                object.push(o.clone());
-                self.triples.push_back(Ok([s, p.clone(), o]));
-            }
-            1 => {
-                let s = self.parents.last().unwrap().clone();
-                let o = object.last().unwrap().clone();
-                self.triples.push_back(Ok([s, p.clone(), o]));
-            }
-            _ => {
-                panic!("cannot have rdf:resource and rdf:nodeID at the same time");
-            }
+        // Extract subjet and object of the triple
+        let s = self.parents.last().unwrap().clone();
+        let o = match object.len() {
+            0 if !attributes.is_empty() => self.new_bnode(),
+            1 => object.last().unwrap().clone(),
+            0 if attributes.is_empty() => self.scope().new_literal(String::new()).expect("FIXME"),
+            _ => panic!("cannot have rdf:resource and rdf:nodeID at the same time"),
+        };
+
+        // Add the triple and all subsequent triples as attributes
+        self.triples.push_back(Ok([s.clone(), p.clone(), o.clone()]));
+        for (prop, value) in attributes.into_iter() {
+            let literal = self.scope().new_literal(value).expect("FIXME");
+            self.triples.push_back(Ok([o.clone(), prop, literal]));
         }
 
         // Reify the triple if needed.
@@ -867,11 +854,6 @@ where
             let predicate = factory.copy(&rdf::predicate);
             let obj = factory.copy(&rdf::object);
             let stmt = factory.copy(&rdf::Statement);
-            drop(factory);
-
-            // Subject and object of the reification
-            let s = self.parents.last().unwrap().clone();
-            let o = object.pop().unwrap();
 
             // Add all triples
             self.triples.push_back(Ok([id.clone(), ty, stmt]));
@@ -1443,11 +1425,7 @@ mod test {
         rdf_test!(rdfms_empty_property_elements / test010 where "a1" => "n0");
         rdf_test!(rdfms_empty_property_elements / test011);
         rdf_test!(#[ignore] rdfms_empty_property_elements / test012 where "a1" => "n0");
-        rdf_test!(
-            #[ignore]
-            rdfms_empty_property_elements
-                / test013
-        );
+        rdf_test!(rdfms_empty_property_elements / test013);
         rdf_test!(rdfms_empty_property_elements / test014 where "a1" => "n0");
         rdf_test!(#[ignore] rdfms_empty_property_elements / test015 where "a1" => "n0");
         rdf_test!(rdfms_empty_property_elements / test016);
@@ -1470,7 +1448,7 @@ mod test {
         rdf_test!(#[ignore] rdfms_not_id_and_resource_attr / test001 where "j88090" => "n0", "j88091" => "n1");
         rdf_test!(#[ignore] rdfms_not_id_and_resource_attr / test002 where "j88093" => "n0");
         rdf_test!(rdfms_not_id_and_resource_attr / test004 where "j88101" => "n0");
-        rdf_test!(#[ignore] rdfms_not_id_and_resource_attr / test005 where "j88106" => "n0");
+        rdf_test!(rdfms_not_id_and_resource_attr / test005 where "j88106" => "n0");
     }
 
     mod rdfms_para196 {
