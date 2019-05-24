@@ -14,6 +14,7 @@ use quick_xml::events::BytesStart;
 use quick_xml::events::BytesText;
 use quick_xml::events::Event;
 use quick_xml::Reader;
+use url::Url;
 
 use crate::error::*;
 use crate::ns::rdf;
@@ -24,6 +25,7 @@ use crate::term::factory::RcTermFactory;
 use crate::term::factory::TermFactory;
 use crate::term::iri_rfc3987::is_absolute_iri;
 use crate::term::iri_rfc3987::is_relative_iri;
+use crate::term::iri_rfc3987::is_valid_iri;
 use crate::term::matcher::TermMatcher;
 use crate::term::Term;
 
@@ -31,14 +33,15 @@ use crate::term::Term;
 
 #[derive(Clone, Debug, Default)]
 pub struct Config {
-    base: Option<Namespace<Rc<str>>>,
+    base: Option<Url>,
 }
 
 impl Config {
     fn with_base(base: &str) -> Result<Self> {
-        Ok(Self {
-            base: Some(Namespace::new(Rc::from(base))?),
-        })
+        match Url::parse(base) {
+            Ok(url) => Ok(Self { base: Some(url) }),
+            Err(_) => Err(Error::from_kind(ErrorKind::InvalidIri(base.to_owned()))),
+        }
     }
 }
 
@@ -102,7 +105,7 @@ pub struct Scope<F: TermFactory> {
     default: Option<Namespace<F::TermData>>,
 
     /// The base IRI namespace to expand `rdf:ID`, `rdf:resource` and `rdf:about`.
-    base: Option<Namespace<F::TermData>>,
+    base: Option<Url>,
 
     /// The term factory used to create new terms.
     factory: Rc<RefCell<F>>,
@@ -194,9 +197,12 @@ impl<F: TermFactory> Scope<F> {
 
     /// Set the base IRI prefix.
     fn set_base(&mut self, base: &str) -> Result<()> {
-        let mut f = self.factory.borrow_mut();
-        self.base = Some(Namespace::new(f.get_term_data(base))?);
-        Ok(())
+        if let Ok(url) = Url::parse(base) {
+            self.base = Some(url);
+            Ok(())
+        } else {
+            Err(Error::from_kind(ErrorKind::InvalidIri(String::from(base))))
+        }
     }
 
     fn set_datatype(&mut self, datatype: &str) -> Result<()> {
@@ -228,8 +234,19 @@ impl<F: TermFactory> Scope<F> {
         if is_absolute_iri(iri) {
             self.factory.borrow_mut().iri(iri)
         } else if is_relative_iri(iri) {
-            if let Some(ns) = &self.base {
-                ns.get(self.factory.borrow_mut().get_term_data(iri))
+            if let Some(url) = &self.base {
+
+                match url.join(iri) {
+                    Ok(iri) => self.factory.borrow_mut().iri(iri),
+                    Err(e) => Err(Error::from_kind(ErrorKind::InvalidIri(String::from(iri)))),
+                }
+                // self.factory.borrow_mut().iri(
+                //     url.join(iri)
+                // );
+                //
+                //
+                //
+                // ns.get(self.factory.borrow_mut().get_term_data(iri))
             } else {
                 panic!("NO BASE IRI")
             }
@@ -431,7 +448,7 @@ where
         }
     }
 
-    fn with_base(reader: Reader<B>, base: Namespace<F::TermData>) -> Self {
+    fn with_base(reader: Reader<B>, base: Url) -> Self {
         let mut parser = Self::new(reader);
         let mut scope = parser.scope_mut();
         scope.base = Some(base);
@@ -473,8 +490,8 @@ where
         for attr in e.attributes().with_checks(true) {
             let a = attr.expect("FIXME");
 
-            // ignore xmlns attributes (processed in element_start)
-            if a.key.starts_with(b"xmlns:") || a.key == b"xmlns" {
+            // ignore xml attributes (processed in element_start)
+            if a.key.starts_with(b"xml") {
                 continue;
             }
 
@@ -498,7 +515,7 @@ where
                 );
             } else if k.matches(&rdf::type_) {
                 properties.insert(k, self.scope().expand_iri(&v).expect("INVALID IRI"));
-            } else if !k.matches(&xml::lang) && a.key != b"xmlns" && !a.key.starts_with(b"xmlns:") {
+            } else {
                 properties.insert(k, self.scope().new_literal(v).expect("FIXME"));
             }
         }
@@ -540,6 +557,12 @@ where
         let mut next_state = ParsingState::Node;
         for attr in e.attributes().with_checks(true) {
             let a = attr.expect("FIXME");
+
+            // Ignore `xml` attributes
+            if a.key.starts_with(b"xml") {
+                continue
+            }
+
             let k = self
                 .scope()
                 .expand_attribute(std::str::from_utf8(a.key).expect("FIXME"))
@@ -764,6 +787,11 @@ where
         for attr in e.attributes().with_checks(true) {
             let a = attr.expect("FIXME");
 
+            // ignore XML attributes (processed when entering scope)
+            if a.key.starts_with(b"xml") {
+                continue
+            }
+
             // try to extract the annotation object
             let k = self
                 .scope()
@@ -787,7 +815,7 @@ where
                     b"Literal" => parse_type = Some(&b"Literal"[..]),
                     other => panic!("invalid parseType: {:?}", other),
                 };
-            } else if !k.matches(&xml::lang) && !a.key.starts_with(b"xmlns:") && a.key != b"xmlns" {
+            } else {
                 attributes.insert(k, v);
             }
         }
@@ -1562,11 +1590,7 @@ mod test {
         use super::*;
 
         rdf_test!(unrecognised_xml_attributes / test001);
-        rdf_test!(
-            #[ignore]
-            unrecognised_xml_attributes
-                / test002
-        );
+        rdf_test!(unrecognised_xml_attributes / test002);
     }
 
     mod xml_canon {
@@ -1583,49 +1607,17 @@ mod test {
         use super::*;
 
         rdf_test!(xmlbase / test001);
-        rdf_test!(#[ignore] xmlbase / test002 where "j0" => "n0");
-        rdf_test!(
-            #[ignore]
-            xmlbase
-                / test003
-        );
+        rdf_test!(xmlbase / test002 where "j0" => "n0");
+        rdf_test!(xmlbase / test003);
         rdf_test!(xmlbase / test004 where "j0" => "n0");
-        rdf_test!(
-            #[ignore]
-            xmlbase
-                / test006
-        );
-        rdf_test!(
-            #[ignore]
-            xmlbase
-                / test007
-        );
+        rdf_test!(xmlbase / test006);
+        rdf_test!(xmlbase / test007);
         rdf_test!(xmlbase / test008);
-        rdf_test!(
-            #[ignore]
-            xmlbase
-                / test009
-        );
-        rdf_test!(
-            #[ignore]
-            xmlbase
-                / test010
-        );
-        rdf_test!(
-            #[ignore]
-            xmlbase
-                / test011
-        );
-        rdf_test!(
-            #[ignore]
-            xmlbase
-                / test013
-        );
-        rdf_test!(
-            #[ignore]
-            xmlbase
-                / test014
-        );
+        rdf_test!(xmlbase / test009);
+        rdf_test!(xmlbase / test010);
+        rdf_test!(xmlbase / test011);
+        rdf_test!(xmlbase / test013);
+        rdf_test!(xmlbase / test014);
     }
 
     // Check that nested `rdf:li` keeps independent counters for nested elements.
