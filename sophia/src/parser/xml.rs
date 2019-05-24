@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::collections::LinkedList;
 use std::fmt::Debug;
 use std::io::{BufRead, BufReader, Read};
+use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
@@ -14,6 +15,7 @@ use quick_xml::events::BytesStart;
 use quick_xml::events::BytesText;
 use quick_xml::events::Event;
 use quick_xml::Reader;
+use quick_xml::Result as XmlResult;
 use url::Url;
 
 use crate::error::*;
@@ -30,13 +32,20 @@ use crate::term::Term;
 
 // ---
 
+/// RDF/XML parser configuration.
+///
+/// For more information,
+/// see the [uniform interface] of parsers.
+///
+/// [uniform interface]: ../index.html#uniform-interface
+///
 #[derive(Clone, Debug, Default)]
 pub struct Config {
     base: Option<Url>,
 }
 
 impl Config {
-    fn with_base(base: &str) -> Result<Self> {
+    pub fn with_base(base: &str) -> Result<Self> {
         match Url::parse(base) {
             Ok(url) => Ok(Self { base: Some(url) }),
             Err(_) => Err(Error::from_kind(ErrorKind::InvalidIri(base.to_owned()))),
@@ -80,47 +89,119 @@ impl Config {
 
 // ---
 
+/// The state of the parser.
 #[derive(Debug, Clone, Copy)]
 enum ParsingState {
+    /// The parser is in a predicate, and the next expected element is a node.
     Node,
+    /// The parser is in a node, and the next expected element is a predicate.
     Predicate,
+    /// The parser is in a resource predicate, and the next expected element
+    /// is a predicate.
     Resource,
+    /// The parser is in a predicate and will process its content as a literal.
     Literal, // NB: not supported by quick-xml right now
-
+    /// The parser is in a reified element, and the next expected element is
+    /// a text to be used as a reified triple object.
     Res,
-
+    /// The parser is in a collection, and the next expected element is a node.
     Collection,
+    /// The parser is in a collection, and the next expected element is a node,
+    /// but exiting this does not exit the collection.
     CollectionItem,
 }
 
 // ---
 
+/// A wrapper for `quick_xml::Reader` ignoring or merging some events.
+pub struct XmlReader<B: BufRead> {
+    inner: Reader<B>,
+    event: Option<Event<'static>>, // actually 'buffer
+    buffer: Vec<u8>,
+}
+
+impl<B: BufRead> XmlReader<B> {
+    /// Read an XML event.
+    pub fn read_event<'a>(&mut self, buf: &'a mut Vec<u8>) -> XmlResult<Event<'a>> {
+
+        // Clear the event peeking cache if it is not empty.
+        if let Some(e) = self.event.take() {
+            return Ok(e);
+        }
+
+        // Get a `Start` event, or return if it is something else.
+        let start = match self.inner.read_event(buf)? {
+            Event::Start(ref s) => s.clone(),
+            other => return Ok(other),
+        };
+
+        // Get a `Text` event, or return if it is something else.
+        // The `transmute` make the compiler think the event now has a
+        // static lifetime, where it only has the lifetime of the struct.
+        // This is OK because we never return an event exceeding the lifetime
+        // of the `XmlReader` itself.
+        self.buffer.clear();
+        match self.inner.read_event(&mut self.buffer)? {
+            Event::Text(ref e) if e.is_empty() => (),
+            other => unsafe {
+                self.event = Some(std::mem::transmute(other));
+                return Ok(Event::Start(start));
+            }
+        }
+
+        // Get an `End` event, org return if it is something else.
+        self.buffer.clear();
+        match self.inner.read_event(&mut self.buffer)? {
+            Event::End(_) => {
+                Ok(Event::Empty(start))
+            },
+            other => unsafe {
+                self.event = Some(std::mem::transmute(other));
+                Ok(Event::Start(start))
+            }
+        }
+    }
+}
+
+impl<B: BufRead> From<Reader<B>> for XmlReader<B> {
+    fn from(r: Reader<B>) -> Self {
+        Self {
+            inner: r,
+            event: None,
+            buffer: Vec::new(),
+        }
+    }
+}
+
+impl<B: BufRead> Deref for XmlReader<B> {
+    type Target = Reader<B>;
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+// ---
+
+/// Data relevant to an XML scope.
 #[derive(Debug)]
 pub struct Scope<F: TermFactory> {
     /// The XML namespaces declared in this scope.
     ns: HashMap<String, Namespace<F::TermData>>,
-
     /// The default XML namespace to expand tags without namespaces with.
     default: Option<Namespace<F::TermData>>,
-
     /// The base IRI namespace to expand `rdf:ID`, `rdf:resource` and `rdf:about`.
     base: Option<Url>,
-
     /// The term factory used to create new terms.
     factory: Rc<RefCell<F>>,
-
     /// The datatype of the containing element.
     datatype: Option<Term<F::TermData>>,
-
     /// The language tag of the containing element.
     lang: Option<F::TermData>,
-
     /// The text gathered in the current scope.
     text: Option<String>,
-
     /// The current count of list elements
     li: AtomicU64,
-
+    /// The
     collection: Vec<Term<F::TermData>>,
 }
 
@@ -196,23 +277,32 @@ impl<F: TermFactory> Scope<F> {
 
     /// Set the base IRI prefix.
     fn set_base(&mut self, base: &str) -> Result<()> {
+        // Accept the URL only if it is a valid URL and a valid base.
         if let Ok(url) = Url::parse(base) {
-            self.base = Some(url);
-            Ok(())
-        } else {
-            Err(Error::from_kind(ErrorKind::InvalidIri(String::from(base))))
+            if !url.cannot_be_a_base() {
+                self.base = Some(url);
+                return Ok(());
+            }
         }
+
+        Err(Error::from_kind(ErrorKind::InvalidIri(String::from(base))))
     }
 
+    /// Set the scope datatype.
     fn set_datatype(&mut self, datatype: &str) -> Result<()> {
         self.datatype = Some(self.expand_iri(datatype)?);
         Ok(())
     }
 
+    /// Set the scope text.
     fn set_text<T: Into<Option<String>>>(&mut self, text: T) {
         self.text = text.into();
     }
 
+    /// Expand an XML attribute in the form `namespace:id` into an IRI.
+    ///
+    /// This uses the `xmlns` default namespace to expand local attributes,
+    /// or any declared namespace in the current scope.
     fn expand_attribute(&self, attr: &str) -> Result<Term<F::TermData>> {
         if let Some(separator_idx) = attr.chars().position(|c| c == ':') {
             let prefix = &attr[..separator_idx];
@@ -229,30 +319,29 @@ impl<F: TermFactory> Scope<F> {
         }
     }
 
+    /// Expand an IRI reference (in a `rdf:resource` or `rdf:about`) into an IRI.
+    ///
+    /// This uses `xml:base` to expand local resources, and does nothing in
+    /// case the IRI is already in expanded form.
     fn expand_iri(&self, iri: &str) -> Result<Term<F::TermData>> {
-        if is_absolute_iri(iri) {
-            self.factory.borrow_mut().iri(iri)
-        } else if is_relative_iri(iri) {
+        if is_relative_iri(&iri) {
             if let Some(url) = &self.base {
                 match url.join(iri) {
                     Ok(iri) => self.factory.borrow_mut().iri(iri),
-                    Err(e) => Err(Error::from_kind(ErrorKind::InvalidIri(String::from(iri)))),
+                    Err(e) => bail!(ErrorKind::InvalidIri(String::from(iri))),
                 }
-            // self.factory.borrow_mut().iri(
-            //     url.join(iri)
-            // );
-            //
-            //
-            //
-            // ns.get(self.factory.borrow_mut().get_term_data(iri))
             } else {
                 panic!("NO BASE IRI")
             }
         } else {
-            Err(Error::from_kind(ErrorKind::InvalidIri(iri.to_owned())))
+            self.factory.borrow_mut().iri(&iri)
         }
     }
 
+    /// Expand an ID (in a `rdf:ID`) into an IRI.
+    ///
+    /// This also uses `xml:base` to expand local resources, and prefixes
+    /// identifiers in the document with a `#` if needed.
     fn expand_id(&self, id: &str) -> Result<Term<F::TermData>> {
         if id.starts_with("#") {
             self.expand_iri(id)
@@ -270,7 +359,7 @@ impl<F: TermFactory> Scope<F> {
         }
     }
 
-    /// Create a new `rdf:li` property.
+    /// Create a new `rdf:li` property by incrementing the scope `li` counter.
     fn new_li(&self) -> Result<Term<F::TermData>> {
         if let Some(ns) = self.ns.get("rdf") {
             let mut f = self.factory.borrow_mut();
@@ -299,9 +388,10 @@ impl<F: TermFactory + Default> Default for Scope<F> {
 
 // ---
 
+/// An XML parser supporting any term factory as a backend.
 struct XmlParser<B: BufRead, F: TermFactory> {
     /// The underlying XML reader.
-    reader: Reader<B>,
+    reader: XmlReader<B>,
 
     /// The stack of scoped data (for nested declaration).
     scopes: Vec<Scope<F>>,
@@ -330,24 +420,28 @@ where
 {
     // ---
 
+    /// Get a reference to the current scope.
     fn scope(&self) -> &Scope<F> {
         self.scopes.last().unwrap()
     }
 
+    /// Get a mutable reference to the current scope.
     fn scope_mut(&mut self) -> &mut Scope<F> {
         self.scopes.last_mut().unwrap()
     }
 
+    /// Get a reference to the parent scope.
     fn parent_scope(&self) -> &Scope<F> {
         &self.scopes[self.scopes.len() - 2]
     }
 
+    /// Get a mutable reference to the current scope.
     fn parent_scope_mut(&mut self) -> &mut Scope<F> {
         let l = self.scopes.len();
         &mut self.scopes[l - 2]
     }
 
-    // Add a local scope (`lang`, `namespaces`, but not `parents`)
+    // Enter a new scope, parsing `xml:lang`, `xmlns` and `rdf:datatype`.
     fn enter_scope(&mut self, e: &BytesStart) -> Result<()> {
         // We are entering a new elements: text is not relevant anymore.
         let mut prev = self.scope_mut();
@@ -376,7 +470,7 @@ where
             }
         }
 
-        // Add current lang to scope or copy last one (OPTIMISE ME)
+        // Add current lang to scope or copy last one
         for attr in e.attributes().with_checks(true) {
             let a = attr.expect("FIXME");
             if a.key == b"xml:lang" {
@@ -396,7 +490,7 @@ where
         Ok(())
     }
 
-    // Exit the local scope
+    // Exit the local scope.
     fn leave_scope(&mut self) {
         self.scopes.pop().expect("FIXME");
     }
@@ -433,10 +527,11 @@ where
 
     // ---
 
+    /// Create a new `XmlParser` from the given `quick_xml::Reader`.
     fn new(reader: Reader<B>) -> Self {
         let factory: Rc<RefCell<F>> = Default::default();
         Self {
-            reader,
+            reader: XmlReader::from(reader),
             parents: Vec::new(),
             scopes: vec![Scope::with_factory_rc(factory.clone())],
             triples: LinkedList::new(),
@@ -446,6 +541,7 @@ where
         }
     }
 
+    /// Create a new `XmlParser` using the given URL as the top-level `xml:base`.
     fn with_base(reader: Reader<B>, base: Url) -> Self {
         let mut parser = Self::new(reader);
         let mut scope = parser.scope_mut();
@@ -577,9 +673,7 @@ where
             } else if k.matches(&rdf::resource) {
                 let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
                 object.push(self.scope().expand_iri(&v).expect("FIXME"));
-                // self.state.pop();
                 next_state = ParsingState::Predicate;
-            // self.reification_start(e, self.scope().expand_id(&v).expect("FIXME"));
             } else if k.matches(&rdf::parseType) {
                 match a.value.as_ref() {
                     b"Resource" => {
@@ -907,13 +1001,14 @@ where
 {
     type Item = Result<[Term<F::TermData>; 3]>;
     fn next(&mut self) -> Option<Self::Item> {
+        let mut buffer = Vec::new();
         loop {
             // First make sure to consume the queue.
             if let Some(triple) = self.triples.pop_front() {
                 return Some(triple);
             }
             // Then process the next event to maybe produce triples
-            match &self.reader.read_event(&mut Vec::new()).unwrap() {
+            match &self.reader.read_event(&mut buffer).unwrap() {
                 Event::Eof => return None,
                 Event::Start(s) => self.element_start(s),
                 Event::Empty(e) => self.element_empty(e),
@@ -921,6 +1016,8 @@ where
                 Event::Text(t) => self.element_text(t),
                 _ => (),
             }
+            // Finally clear the buffer if we are going to use it again.
+            buffer.clear();
         }
     }
 }
@@ -1449,7 +1546,7 @@ mod test {
         rdf_test!(rdfms_empty_property_elements / test009);
         rdf_test!(rdfms_empty_property_elements / test010 where "a1" => "n0");
         rdf_test!(rdfms_empty_property_elements / test011);
-        rdf_test!(#[ignore] rdfms_empty_property_elements / test012 where "a1" => "n0");
+        rdf_test!(rdfms_empty_property_elements / test012 where "a1" => "n0");
         rdf_test!(rdfms_empty_property_elements / test013);
         rdf_test!(rdfms_empty_property_elements / test014 where "a1" => "n0");
         rdf_test!(rdfms_empty_property_elements / test015 where "a1" => "n0");
@@ -1470,7 +1567,7 @@ mod test {
     mod rdfms_not_id_and_resource_attr {
         use super::*;
 
-        rdf_test!(#[ignore] rdfms_not_id_and_resource_attr / test001 where "j88090" => "n0", "j88091" => "n1");
+        rdf_test!(rdfms_not_id_and_resource_attr / test001 where "j88090" => "n0", "j88091" => "n1");
         rdf_test!(rdfms_not_id_and_resource_attr / test002 where "j88093" => "n0");
         rdf_test!(rdfms_not_id_and_resource_attr / test004 where "j88101" => "n0");
         rdf_test!(rdfms_not_id_and_resource_attr / test005 where "j88106" => "n0");
