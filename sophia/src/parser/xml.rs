@@ -85,6 +85,8 @@ enum ParsingState {
     Resource,
     Literal, // NB: not supported by quick-xml right now
 
+    Res,
+
     Collection,
     CollectionItem,
 }
@@ -246,11 +248,6 @@ impl<F: TermFactory> Scope<F> {
 
     /// Create a new literal with the `rdf:type` and `xml:lang` in scope.
     fn new_literal(&self, text: String) -> Result<Term<F::TermData>> {
-        println!(
-            "creating new text: {} (scope lang is {:?})",
-            &text,
-            &self.lang.as_ref().map(|t| t.as_ref().to_owned())
-        );
         match (&self.datatype, &self.lang) {
             (Some(dt), _) => self.factory.borrow_mut().literal_dt(text, dt.clone()),
             (None, Some(l)) => self.factory.borrow_mut().literal_lang(text, l.clone()),
@@ -326,6 +323,15 @@ where
         self.scopes.last_mut().unwrap()
     }
 
+    fn parent_scope(&self) -> &Scope<F> {
+        &self.scopes[self.scopes.len() - 2]
+    }
+
+    fn parent_scope_mut(&mut self) -> &mut Scope<F> {
+        let l = self.scopes.len();
+        &mut self.scopes[l - 2]
+    }
+
     // Add a local scope (`lang`, `namespaces`, but not `parents`)
     fn enter_scope(&mut self, e: &BytesStart) -> Result<()> {
         // We are entering a new elements: text is not relevant anymore.
@@ -394,8 +400,7 @@ where
     fn predicate_iri_start(&self, name: &str) -> Result<Term<F::TermData>> {
         let p = self.scope().expand_attribute(name)?;
         if p.matches(&rdf::li) {
-            let parent_scope = self.scopes.get(self.scopes.len() - 2).unwrap();
-            parent_scope.new_li()
+            self.parent_scope().new_li()
         } else {
             Ok(p)
         }
@@ -405,8 +410,7 @@ where
     fn predicate_iri_end(&self, name: &str) -> Result<Term<F::TermData>> {
         let p = self.scope().expand_attribute(name)?;
         if p.matches(&rdf::li) {
-            let parent_scope = self.scopes.get(self.scopes.len() - 2).unwrap();
-            parent_scope.current_li()
+            self.parent_scope().current_li()
         } else {
             Ok(p)
         }
@@ -444,6 +448,7 @@ where
             ParsingState::Resource => self.predicate_start(e),
             ParsingState::Collection => self.collection_start(e),
             ParsingState::CollectionItem => self.collection_item_start(e),
+            ParsingState::Res => panic!("expecting text, not new element"),
             _ => unimplemented!(),
         };
     }
@@ -544,12 +549,14 @@ where
                 self.scope_mut().set_datatype(&v);
             } else if k.matches(&rdf::ID) {
                 let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
-                return self.reification_start(e, self.scope().expand_id(&v).expect("FIXME"));
+                self.parents
+                    .push(self.scope().expand_id(&v).expect("FIXME"));
+                next_state = ParsingState::Res;
             } else if k.matches(&rdf::resource) {
                 let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
                 self.parents
                     .push(self.scope().expand_iri(&v).expect("FIXME"));
-                self.state.push(ParsingState::Node);
+                self.state.pop();
                 next_state = ParsingState::Predicate;
             // self.reification_start(e, self.scope().expand_id(&v).expect("FIXME"));
             } else if k.matches(&rdf::parseType) {
@@ -573,34 +580,6 @@ where
         self.state.push(next_state);
     }
 
-    fn reification_start(&mut self, e: &BytesStart, id: Term<F::TermData>) {
-        // Get the subject and predicate of the triple
-        let p = self.parents.pop().unwrap();
-        let s = self.parents.last().unwrap().clone();
-
-        // Get the object of the triple
-        let txt = self.reader.read_text(e.name(), &mut Vec::new()).unwrap();
-        let o = self.scope().new_literal(txt).unwrap();
-
-        // Add the actual triple
-        self.triples
-            .push_back(Ok([s.clone(), p.clone(), o.clone()]));
-
-        // Add the reified triples
-        let ty = self.factory.borrow_mut().copy(&rdf::type_);
-        let subject = self.factory.borrow_mut().copy(&rdf::subject);
-        let predicate = self.factory.borrow_mut().copy(&rdf::predicate);
-        let object = self.factory.borrow_mut().copy(&rdf::object);
-        self.triples.push_back(Ok([
-            id.clone(),
-            ty,
-            self.factory.borrow_mut().copy(&rdf::Statement),
-        ]));
-        self.triples.push_back(Ok([id.clone(), subject, s]));
-        self.triples.push_back(Ok([id.clone(), predicate, p]));
-        self.triples.push_back(Ok([id.clone(), object, o]));
-    }
-
     fn collection_start(&mut self, e: &BytesStart) {
         self.state.push(ParsingState::CollectionItem);
         self.collection_item_start(e);
@@ -611,8 +590,7 @@ where
         self.node_start(e);
         let new_iri = self.parents.last().unwrap().clone();
         // Add the iri of the node to the parent scope (not current!)
-        let l = self.scopes.len();
-        self.scopes.get_mut(l - 2).unwrap().collection.push(new_iri);
+        self.parent_scope_mut().collection.push(new_iri);
     }
 
     // ---
@@ -625,6 +603,7 @@ where
             ParsingState::Resource => self.resource_end(e),
             ParsingState::CollectionItem => self.collection_item_end(),
             ParsingState::Collection => self.collection_end(e),
+            ParsingState::Res => self.res_end(),
             _ => unimplemented!(),
         }
         self.leave_scope();
@@ -714,6 +693,32 @@ where
         self.predicate_end(e);
     }
 
+    fn res_end(&mut self) {
+        // Types for the reification
+        let mut factory = self.factory.borrow_mut();
+        let ty = factory.copy(&rdf::type_);
+        let subject = factory.copy(&rdf::subject);
+        let predicate = factory.copy(&rdf::predicate);
+        let object = factory.copy(&rdf::object);
+        let stmt = factory.copy(&rdf::Statement);
+        drop(factory);
+
+        // Subject, predicate, object and ID of the reified triple
+        let id = self.parents.pop().unwrap();
+        let p = self.parents.pop().unwrap();
+        let s = self.parents.last().unwrap().clone();
+        let txt = self.scope_mut().text.take().unwrap_or_default();
+        let o = self.scope().new_literal(txt).expect("FIXME");
+
+        // Add all triples
+        self.triples
+            .push_back(Ok([s.clone(), p.clone(), o.clone()]));
+        self.triples.push_back(Ok([id.clone(), ty, stmt]));
+        self.triples.push_back(Ok([id.clone(), subject, s]));
+        self.triples.push_back(Ok([id.clone(), predicate, p]));
+        self.triples.push_back(Ok([id.clone(), object, o]));
+    }
+
     // --- Text elements ----------------------------------------------------
 
     fn element_text(&mut self, e: &BytesText) {
@@ -733,6 +738,7 @@ where
             ParsingState::Resource => self.resource_empty(e),
             ParsingState::Collection => self.collection_item_empty(e),
             ParsingState::CollectionItem => unreachable!(),
+            ParsingState::Res => panic!("expected end element, not empty"),
             _ => (),
         }
         self.leave_scope();
@@ -786,7 +792,8 @@ where
             }
         }
 
-        // Make sure to create
+        // Make sure to create the right kind of object if `parseType` was
+        // explicitly given in the source document.
         if parse_type == Some(b"Resource") && object.is_empty() {
             object.push(self.new_bnode());
         } else if parse_type == Some(b"Literal") {
@@ -795,6 +802,7 @@ where
             scope.datatype = Some(xmlliteral);
         }
 
+        // Process the object of the triple.
         match object.len() {
             0 if !attributes.is_empty() => {
                 let s = self.parents.last().unwrap().clone();
@@ -822,19 +830,22 @@ where
             }
         }
 
+        // Reify the triple if needed.
         if let Some(id) = reification {
             // Types for the reification
-            let ty = self.factory.borrow_mut().copy(&rdf::type_);
-            let subject = self.factory.borrow_mut().copy(&rdf::subject);
-            let predicate = self.factory.borrow_mut().copy(&rdf::predicate);
-            let obj = self.factory.borrow_mut().copy(&rdf::object);
-            let stmt = self.factory.borrow_mut().copy(&rdf::Statement);
+            let mut factory = self.factory.borrow_mut();
+            let ty = factory.copy(&rdf::type_);
+            let subject = factory.copy(&rdf::subject);
+            let predicate = factory.copy(&rdf::predicate);
+            let obj = factory.copy(&rdf::object);
+            let stmt = factory.copy(&rdf::Statement);
+            drop(factory);
 
-            //
+            // Subject and object of the reification
             let s = self.parents.last().unwrap().clone();
             let o = object.pop().unwrap();
 
-            //
+            // Add all triples
             self.triples.push_back(Ok([id.clone(), ty, stmt]));
             self.triples.push_back(Ok([id.clone(), subject, s]));
             self.triples.push_back(Ok([id.clone(), predicate, p]));
@@ -1340,16 +1351,24 @@ mod test {
     mod rdf_containers_syntax_vs_schema {
         use super::*;
 
-        rdf_test!(rdf_containers_syntax_vs_schema / test001 where "bag" => "n0");
-        rdf_test!(rdf_containers_syntax_vs_schema / test002 where "bag" => "n0");
-        rdf_test!(rdf_containers_syntax_vs_schema / test003 where "bar" => "n0");
-        rdf_test!(
-            #[ignore]
-            rdf_containers_syntax_vs_schema
-                / test004
+        rdf_test!(rdf_containers_syntax_vs_schema / test001
+            where "bag" => "n0"
         );
-        rdf_test!(rdf_containers_syntax_vs_schema / test006 where "bag" => "n0");
-        rdf_test!(rdf_containers_syntax_vs_schema / test007 where "d1" => "n0", "d2" => "n1");
+        rdf_test!(rdf_containers_syntax_vs_schema / test002
+            where "bag" => "n0"
+        );
+        rdf_test!(rdf_containers_syntax_vs_schema / test003
+            where "bar" => "n0"
+        );
+        rdf_test!(rdf_containers_syntax_vs_schema / test004
+            where "res2" => "n2", "bar" => "n0", "res" => "n1"
+        );
+        rdf_test!(rdf_containers_syntax_vs_schema / test006
+            where "bag" => "n0"
+        );
+        rdf_test!(rdf_containers_syntax_vs_schema / test007
+            where "d1" => "n0", "d2" => "n1"
+        );
         rdf_test!(rdf_containers_syntax_vs_schema / test008);
     }
 
