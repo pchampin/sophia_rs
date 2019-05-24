@@ -555,6 +555,7 @@ where
         // Extract attributes relevant to the RDF syntax
         let mut attributes = HashMap::new();
         let mut next_state = ParsingState::Node;
+        let mut object = Vec::with_capacity(1);
         for attr in e.attributes().with_checks(true) {
             let a = attr.expect("FIXME");
 
@@ -572,20 +573,18 @@ where
                 self.scope_mut().set_datatype(&v);
             } else if k.matches(&rdf::ID) {
                 let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
-                self.parents
-                    .push(self.scope().expand_id(&v).expect("FIXME"));
+                object.push(self.scope().expand_id(&v).expect("FIXME"));
                 next_state = ParsingState::Res;
             } else if k.matches(&rdf::resource) {
                 let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
-                self.parents
-                    .push(self.scope().expand_iri(&v).expect("FIXME"));
-                self.state.pop();
+                object.push(self.scope().expand_iri(&v).expect("FIXME"));
+                // self.state.pop();
                 next_state = ParsingState::Predicate;
             // self.reification_start(e, self.scope().expand_id(&v).expect("FIXME"));
             } else if k.matches(&rdf::parseType) {
                 match a.value.as_ref() {
                     b"Resource" => {
-                        self.parents.push(self.new_bnode());
+                        object.push(self.new_bnode());
                         self.scope_mut().set_text(None);
                         next_state = ParsingState::Resource;
                     }
@@ -601,19 +600,29 @@ where
             } else {
                 let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
                 attributes.insert(k, self.scope().new_literal(v).expect("FIXME"));
+                next_state = ParsingState::Resource;
             }
         }
 
-        if !attributes.is_empty() {
-            let o = self.new_bnode();
+        // Extract subjet and object of the triple
+        let s = self.parents.last().unwrap().clone();
+        let o = match object.len() {
+            0 if !attributes.is_empty() => Some(self.new_bnode()),
+            0 if attributes.is_empty() => None,
+            1 => Some(object.last().unwrap().clone()),
+            _ => panic!("cannot have rdf:resource, rdf::ID or rdf:nodeID at the same time"),
+        };
+
+        // Make the predicate a resource element if an objec tis present.
+        if let Some(o) = o {
             self.parents.push(o.clone());
             std::mem::replace(self.state.last_mut().unwrap(), ParsingState::Resource);
             for (k, v) in attributes.into_iter() {
                 self.triples.push_back(Ok([o.clone(), k, v]));
             }
-        } else {
-            self.state.push(next_state);
         }
+
+        self.state.push(next_state);
     }
 
     fn collection_start(&mut self, e: &BytesStart) {
@@ -1460,7 +1469,7 @@ mod test {
         use super::*;
 
         rdf_test!(#[ignore] rdfms_not_id_and_resource_attr / test001 where "j88090" => "n0", "j88091" => "n1");
-        rdf_test!(#[ignore] rdfms_not_id_and_resource_attr / test002 where "j88093" => "n0");
+        rdf_test!(rdfms_not_id_and_resource_attr / test002 where "j88093" => "n0");
         rdf_test!(rdfms_not_id_and_resource_attr / test004 where "j88101" => "n0");
         rdf_test!(rdfms_not_id_and_resource_attr / test005 where "j88106" => "n0");
     }
