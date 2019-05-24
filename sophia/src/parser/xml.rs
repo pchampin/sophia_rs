@@ -234,18 +234,17 @@ impl<F: TermFactory> Scope<F> {
             self.factory.borrow_mut().iri(iri)
         } else if is_relative_iri(iri) {
             if let Some(url) = &self.base {
-
                 match url.join(iri) {
                     Ok(iri) => self.factory.borrow_mut().iri(iri),
                     Err(e) => Err(Error::from_kind(ErrorKind::InvalidIri(String::from(iri)))),
                 }
-                // self.factory.borrow_mut().iri(
-                //     url.join(iri)
-                // );
-                //
-                //
-                //
-                // ns.get(self.factory.borrow_mut().get_term_data(iri))
+            // self.factory.borrow_mut().iri(
+            //     url.join(iri)
+            // );
+            //
+            //
+            //
+            // ns.get(self.factory.borrow_mut().get_term_data(iri))
             } else {
                 panic!("NO BASE IRI")
             }
@@ -561,7 +560,7 @@ where
 
             // Ignore `xml` attributes
             if a.key.starts_with(b"xml") {
-                continue
+                continue;
             }
 
             let k = self
@@ -584,7 +583,9 @@ where
             } else if k.matches(&rdf::parseType) {
                 match a.value.as_ref() {
                     b"Resource" => {
-                        object.push(self.new_bnode());
+                        if object.is_empty() {
+                            object.push(self.new_bnode());
+                        }
                         self.scope_mut().set_text(None);
                         next_state = ParsingState::Resource;
                     }
@@ -811,7 +812,7 @@ where
 
             // ignore XML attributes (processed when entering scope)
             if a.key.starts_with(b"xml") {
-                continue
+                continue;
             }
 
             // try to extract the annotation object
@@ -862,7 +863,8 @@ where
         };
 
         // Add the triple and all subsequent triples as attributes
-        self.triples.push_back(Ok([s.clone(), p.clone(), o.clone()]));
+        self.triples
+            .push_back(Ok([s.clone(), p.clone(), o.clone()]));
         for (prop, value) in attributes.into_iter() {
             let literal = self.scope().new_literal(value).expect("FIXME");
             self.triples.push_back(Ok([o.clone(), prop, literal]));
@@ -1477,11 +1479,7 @@ mod test {
     mod rdfms_para196 {
         use super::*;
 
-        rdf_test!(
-            #[ignore]
-            rdfms_not_id_and_resource_attr
-                / test001
-        );
+        rdf_test!(rdfms_para196 / test001);
     }
 
     mod rdfms_rdf_names_use {
