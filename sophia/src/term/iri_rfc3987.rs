@@ -679,35 +679,38 @@ mod test {
         ("?", (false, None, None, &[], Some(""), None)),
         ("#", (false, None, None, &[], None, Some(""))),
         ("?#", (false, None, None, &[], Some(""), Some(""))),
-        ("http://example.org/#Andr%C3%A9",
-          (
-            true,
-            Some("http"),
-            Some("example.org"),
-            &["", ""],
-            None,
-            Some("Andr%C3%A9"),
-          ),
+        (
+            "http://example.org/#Andr%C3%A9",
+            (
+                true,
+                Some("http"),
+                Some("example.org"),
+                &["", ""],
+                None,
+                Some("Andr%C3%A9"),
+            ),
         ),
-        ("http://example.org/?Andr%C3%A9",
-          (
-            true,
-            Some("http"),
-            Some("example.org"),
-            &["", ""],
-            Some("Andr%C3%A9"),
-            None,
-          ),
+        (
+            "http://example.org/?Andr%C3%A9",
+            (
+                true,
+                Some("http"),
+                Some("example.org"),
+                &["", ""],
+                Some("Andr%C3%A9"),
+                None,
+            ),
         ),
-        ("?Andr%C3%A9#Andr%C3%A9",
-          (
-            false,
-            None,
-            None,
-            &[],
-            Some("Andr%C3%A9"),
-            Some("Andr%C3%A9")
-          ),
+        (
+            "?Andr%C3%A9#Andr%C3%A9",
+            (
+                false,
+                None,
+                None,
+                &[],
+                Some("Andr%C3%A9"),
+                Some("Andr%C3%A9"),
+            ),
         ),
     ];
 

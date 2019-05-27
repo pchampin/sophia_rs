@@ -142,7 +142,6 @@ pub fn as_triple<'a, Q: Quad<'a>>(quad: Q) -> impl Triple<'a> {
     TripleWrapper(quad)
 }
 
-
 struct DGQuadWrapper<T>(T);
 
 impl<'a, T: Triple<'a>> Quad<'a> for DGQuadWrapper<T> {
