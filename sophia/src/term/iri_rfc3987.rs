@@ -486,11 +486,9 @@ mod test {
     #[test]
     fn regex_abs() {
         for (txt, parsed) in POSITIVE_IRIS {
-            dbg!(txt);
             assert_eq!(IRI_REGEX.is_match(txt), parsed.0);
         }
         for txt in NEGATIVE_IRIS {
-            dbg!(txt);
             assert!(!IRI_REGEX.is_match(txt));
         }
     }

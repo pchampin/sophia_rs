@@ -125,7 +125,7 @@ rental! {
         }
     }
 }
-pub use nq_quad::NqQuad;
+pub use super::nq_quad::NqQuad;
 impl<'a> Quad<'a> for NqQuad {
     type TermData = Cow<'a, str>;
     fn s(&self) -> &Term<Cow<'a, str>> {
