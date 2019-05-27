@@ -305,9 +305,17 @@ fn literal_eq_different_term_data() {
 }
 
 #[test]
+fn literal_eq_different_case() {
+    let l1 = BoxTerm::new_literal_lang("hello", "en").unwrap();
+    let l2 = RcTerm::new_literal_lang("hello", "EN").unwrap();
+    assert_eq!(l1, l2);
+    assert_eq!(h(&l1), h(&l2));
+}
+
+#[test]
 fn literal_similar_but_not_eq() {
     let l1 = RefTerm::new_literal_lang("42", "en").unwrap();
-    let l2 = RefTerm::new_literal_lang("42", "fr").unwrap();
+    let l2 = RefTerm::new_literal_lang("42", "en-us").unwrap();
     let l3 = RefTerm::new_literal_dt("42", xsd::string.clone()).unwrap();
     let l4 = RefTerm::new_literal_dt("42", xsd::integer.clone()).unwrap();
     assert_ne!(l1, l2);
