@@ -123,7 +123,6 @@ pub struct XmlReader<B: BufRead> {
 impl<B: BufRead> XmlReader<B> {
     /// Read an XML event.
     pub fn read_event<'a>(&mut self, buf: &'a mut Vec<u8>) -> XmlResult<Event<'a>> {
-
         use quick_xml::events::Event::*;
 
         // Clear the event peeking cache if it is not empty.
@@ -333,17 +332,23 @@ impl<F: TermFactory> Scope<F> {
     /// This uses `xml:base` to expand local resources, and does nothing in
     /// case the IRI is already in expanded form.
     fn expand_iri(&self, iri: &str) -> Result<Term<F::TermData>> {
-        if is_relative_iri(&iri) {
+        fn dec(x: &str) -> std::borrow::Cow<str> {
+            url::percent_encoding::percent_decode(x.as_bytes())
+                .decode_utf8()
+                .unwrap()
+        }
+
+        if is_relative_iri(iri) {
             if let Some(url) = &self.base {
                 match url.join(iri) {
-                    Ok(iri) => self.factory.borrow_mut().iri(iri),
+                    Ok(u) => self.factory.borrow_mut().iri(&dec(u.as_str())),
                     Err(e) => bail!(ErrorKind::InvalidIri(String::from(iri))),
                 }
             } else {
                 panic!("NO BASE IRI")
             }
         } else {
-            self.factory.borrow_mut().iri(&iri)
+            self.factory.borrow_mut().iri(&dec(iri))
         }
     }
 
