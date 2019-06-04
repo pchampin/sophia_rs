@@ -123,6 +123,9 @@ pub struct XmlReader<B: BufRead> {
 impl<B: BufRead> XmlReader<B> {
     /// Read an XML event.
     pub fn read_event<'a>(&mut self, buf: &'a mut Vec<u8>) -> XmlResult<Event<'a>> {
+
+        use quick_xml::events::Event::*;
+
         // Clear the event peeking cache if it is not empty.
         if let Some(e) = self.event.take() {
             return Ok(e);
@@ -130,32 +133,41 @@ impl<B: BufRead> XmlReader<B> {
 
         // Get a `Start` event, or return if it is something else.
         let start = match self.inner.read_event(buf)? {
-            Event::Start(ref s) => s.clone(),
+            Start(ref s) => s.clone(),
             other => return Ok(other),
         };
 
-        // Get a `Text` event, or return if it is something else.
+        // Get a `Text` event, return `Start`, `End`, `Empty` or `Eof`,
+        // or ignore other event (such as `Comment`).
         // The `transmute` make the compiler think the event now has a
         // static lifetime, where it only has the lifetime of the struct.
         // This is OK because we never return an event exceeding the lifetime
         // of the `XmlReader` itself.
-        self.buffer.clear();
-        match self.inner.read_event(&mut self.buffer)? {
-            Event::Text(ref e) if e.is_empty() => (),
-            other => unsafe {
-                self.event = Some(std::mem::transmute(other));
-                return Ok(Event::Start(start));
-            },
+        loop {
+            self.buffer.clear();
+            match self.inner.read_event(&mut self.buffer)? {
+                Text(ref e) if e.is_empty() => break,
+                Comment(_) | CData(_) | Decl(_) | PI(_) | DocType(_) => (),
+                other => unsafe {
+                    self.event = Some(std::mem::transmute(other));
+                    return Ok(Start(start));
+                },
+            }
         }
 
-        // Get an `End` event, org return if it is something else.
-        self.buffer.clear();
-        match self.inner.read_event(&mut self.buffer)? {
-            Event::End(_) => Ok(Event::Empty(start)),
-            other => unsafe {
-                self.event = Some(std::mem::transmute(other));
-                Ok(Event::Start(start))
-            },
+        // Get an `End` event, or return if it is something else with
+        // semantic value.
+        loop {
+            self.buffer.clear();
+            match self.inner.read_event(&mut self.buffer)? {
+                End(_) => return Ok(Empty(start)),
+                Text(ref e) if e.is_empty() => (),
+                Comment(_) | CData(_) | Decl(_) | PI(_) | DocType(_) => (),
+                other => unsafe {
+                    self.event = Some(std::mem::transmute(other));
+                    return Ok(Start(start));
+                },
+            }
         }
     }
 }
