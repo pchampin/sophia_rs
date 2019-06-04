@@ -1153,6 +1153,10 @@ mod test {
         };
     }
 
+    macro_rules! rdf_failure {
+        ($(#[$attr:meta])* $suite:ident / $case:ident) => {};
+    }
+
     macro_rules! nt_test {
         ($name:ident, $xml:expr, $nt:expr) => {
             #[test]
@@ -1497,24 +1501,15 @@ mod test {
     mod rdf_containers_syntax_vs_schema {
         use super::*;
 
-        rdf_test!(rdf_containers_syntax_vs_schema / test001
-            where "bag" => "n0"
-        );
-        rdf_test!(rdf_containers_syntax_vs_schema / test002
-            where "bag" => "n0"
-        );
-        rdf_test!(rdf_containers_syntax_vs_schema / test003
-            where "bar" => "n0"
-        );
-        rdf_test!(rdf_containers_syntax_vs_schema / test004
-            where "res2" => "n2", "bar" => "n0", "res" => "n1"
-        );
-        rdf_test!(rdf_containers_syntax_vs_schema / test006
-            where "bag" => "n0"
-        );
-        rdf_test!(rdf_containers_syntax_vs_schema / test007
-            where "d1" => "n0", "d2" => "n1"
-        );
+        rdf_failure!(rdf_containers_syntax_vs_schema / error001);
+        rdf_failure!(rdf_containers_syntax_vs_schema / error002);
+
+        rdf_test!(rdf_containers_syntax_vs_schema / test001 where "bag" => "n0");
+        rdf_test!(rdf_containers_syntax_vs_schema / test002 where "bag" => "n0");
+        rdf_test!(rdf_containers_syntax_vs_schema / test003 where "bar" => "n0");
+        rdf_test!(rdf_containers_syntax_vs_schema / test004 where "res2" => "n2", "bar" => "n0", "res" => "n1");
+        rdf_test!(rdf_containers_syntax_vs_schema / test006 where "bag" => "n0");
+        rdf_test!(rdf_containers_syntax_vs_schema / test007 where "d1" => "n0", "d2" => "n1");
         rdf_test!(rdf_containers_syntax_vs_schema / test008);
     }
 
@@ -1540,6 +1535,22 @@ mod test {
         rdf_test!(rdf_ns_prefix_confusion / test0014);
     }
 
+    mod rdfms_abouteach {
+        use super::*;
+
+        rdf_failure!(rdfms_abouteach / error001);
+        rdf_failure!(rdfms_abouteach / error002);
+    }
+
+    mod rdfms_difference_between_ID_and_about {
+        use super::*;
+
+        rdf_failure!(rdfms_difference_between_ID_and_about / error1);
+        rdf_test!(rdfms_difference_between_ID_and_about / test1);
+        rdf_test!(rdfms_difference_between_ID_and_about / test2);
+        rdf_test!(rdfms_difference_between_ID_and_about / test3);
+    }
+
     mod rdfms_duplicate_member_props {
         use super::*;
 
@@ -1548,6 +1559,10 @@ mod test {
 
     mod rdfms_empty_property_elements {
         use super::*;
+
+        rdf_failure!(rdfms_empty_property_elements / error001);
+        rdf_failure!(rdfms_empty_property_elements / error002);
+        rdf_failure!(rdfms_empty_property_elements / error003);
 
         rdf_test!(rdfms_empty_property_elements / test001);
         rdf_test!(rdfms_empty_property_elements / test002);
@@ -1593,8 +1608,41 @@ mod test {
         rdf_test!(rdfms_para196 / test001);
     }
 
+    mod rdfms_rdf_id {
+        use super::*;
+
+        rdf_failure!(rdfms_rdf_id / error_001);
+        rdf_failure!(rdfms_rdf_id / error_002);
+        rdf_failure!(rdfms_rdf_id / error_003);
+        rdf_failure!(rdfms_rdf_id / error_004);
+        rdf_failure!(rdfms_rdf_id / error_005);
+        rdf_failure!(rdfms_rdf_id / error_006);
+        rdf_failure!(rdfms_rdf_id / error_007);
+    }
+
     mod rdfms_rdf_names_use {
         use super::*;
+
+        rdf_failure!(rdfms_rdf_names_use / error_001);
+        rdf_failure!(rdfms_rdf_names_use / error_002);
+        rdf_failure!(rdfms_rdf_names_use / error_003);
+        rdf_failure!(rdfms_rdf_names_use / error_004);
+        rdf_failure!(rdfms_rdf_names_use / error_005);
+        rdf_failure!(rdfms_rdf_names_use / error_006);
+        rdf_failure!(rdfms_rdf_names_use / error_007);
+        rdf_failure!(rdfms_rdf_names_use / error_008);
+        rdf_failure!(rdfms_rdf_names_use / error_009);
+        rdf_failure!(rdfms_rdf_names_use / error_010);
+        rdf_failure!(rdfms_rdf_names_use / error_011);
+        rdf_failure!(rdfms_rdf_names_use / error_012);
+        rdf_failure!(rdfms_rdf_names_use / error_013);
+        rdf_failure!(rdfms_rdf_names_use / error_014);
+        rdf_failure!(rdfms_rdf_names_use / error_015);
+        rdf_failure!(rdfms_rdf_names_use / error_016);
+        rdf_failure!(rdfms_rdf_names_use / error_017);
+        rdf_failure!(rdfms_rdf_names_use / error_018);
+        rdf_failure!(rdfms_rdf_names_use / error_019);
+        rdf_failure!(rdfms_rdf_names_use / error_020);
 
         rdf_test!(rdfms_rdf_names_use / test_001);
         rdf_test!(rdfms_rdf_names_use / test_002);
@@ -1650,6 +1698,13 @@ mod test {
 
     mod rdfms_syntax_incomplete {
         use super::*;
+
+        rdf_failure!(rdfms_syntax_incomplete / error001);
+        rdf_failure!(rdfms_syntax_incomplete / error002);
+        rdf_failure!(rdfms_syntax_incomplete / error003);
+        rdf_failure!(rdfms_syntax_incomplete / error004);
+        rdf_failure!(rdfms_syntax_incomplete / error005);
+        rdf_failure!(rdfms_syntax_incomplete / error006);
 
         rdf_test!(rdfms_syntax_incomplete / test001 where "j0" => "oa");
         rdf_test!(rdfms_syntax_incomplete / test002 where "j0A" => "oa", "j2" => "n0", "j1B" => "ob");
