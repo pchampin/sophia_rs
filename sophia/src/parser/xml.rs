@@ -468,7 +468,7 @@ where
             if a.key.starts_with(b"xmlns:") {
                 scope
                     .add_prefix(
-                        std::str::from_utf8(&a.key[6..]).expect("FIXME"),
+                        &self.reader.decode(&a.key[6..]),
                         &a.unescape_and_decode_value(&self.reader).expect("FIXME"),
                     )
                     .expect("FIXME");
@@ -577,7 +577,7 @@ where
         // Get node type from the XML attribute.
         let ty = self
             .scope()
-            .expand_attribute(std::str::from_utf8(e.name()).expect("INVALID UTF8"))
+            .expand_attribute(&self.reader.decode(e.name()))
             .expect("INVALID DATATYPE IRI REFERENCE");
 
         // Bail out if an rdf:RDF element
@@ -601,7 +601,7 @@ where
             // try to extract the subject annotation
             let k = self
                 .scope()
-                .expand_attribute(std::str::from_utf8(a.key).expect("FIXME"))
+                .expand_attribute(&self.reader.decode(a.key))
                 .expect("FIXME");
             let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
 
@@ -652,7 +652,7 @@ where
         // Get the predicate and add it to the current nested stack
         // or build a new `rdf:_n` IRI if the predicate is `rdf:li`.
         let p = self
-            .predicate_iri_start(std::str::from_utf8(e.name()).expect("FIXME"))
+            .predicate_iri_start(&self.reader.decode(e.name()))
             .expect("INVALID PREDICATE IRI");
         self.parents.push(p);
 
@@ -670,7 +670,7 @@ where
 
             let k = self
                 .scope()
-                .expand_attribute(std::str::from_utf8(a.key).expect("FIXME"))
+                .expand_attribute(&self.reader.decode(a.key))
                 .expect("INVALID ATTRIBUTE");
             if k.matches(&rdf::datatype) {
                 let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
@@ -772,7 +772,7 @@ where
     fn predicate_end(&mut self, e: &BytesEnd) {
         // Build the predicate IRI
         let p = self
-            .predicate_iri_end(std::str::from_utf8(e.name()).expect("FIXME"))
+            .predicate_iri_end(&self.reader.decode(e.name()))
             .expect("INVALID PREDICATE IRI");
 
         // Get the literal value
@@ -901,7 +901,7 @@ where
 
     fn predicate_empty(&mut self, e: &BytesStart) {
         let p = self
-            .predicate_iri_start(std::str::from_utf8(e.name()).expect("FIXME"))
+            .predicate_iri_start(&self.reader.decode(e.name()))
             .expect("INVALID PREDICATE IRI");
 
         let mut object = Vec::with_capacity(1);
@@ -921,7 +921,7 @@ where
             // try to extract the annotation object
             let k = self
                 .scope()
-                .expand_attribute(std::str::from_utf8(a.key).expect("FIXME"))
+                .expand_attribute(&self.reader.decode(a.key))
                 .expect("FIXME");
             let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
             if k.matches(&rdf::resource) {
