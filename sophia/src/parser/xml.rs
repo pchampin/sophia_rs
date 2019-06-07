@@ -123,6 +123,10 @@ pub mod error {
                 description("invalid XML name")
                 display("invalid XML name: {:?}", n)
             }
+            InvalidParseType(ty: String) {
+                description("invalid `parseType` value in this context")
+                display("cannot use `parseType={}` in this context", ty)
+            }
             AmbiguousSubject {
                 description("cannot have `rdf:ID`, `rdf:nodeID` and `rdf:about` at the same time")
                 display("cannot have `rdf:ID`, `rdf:nodeID` and `rdf:about` at the same time")
@@ -1146,9 +1150,14 @@ where
         if parse_type == Some(b"Resource") && object.is_empty() {
             object.push(self.new_bnode());
         } else if parse_type == Some(b"Literal") {
-            let xmlliteral = self.factory.borrow_mut().copy(&rdf::XMLLiteral);
-            let mut scope = self.scope_mut();
-            scope.datatype = Some(xmlliteral);
+            if object.is_empty() && attributes.is_empty() {
+                let xmlliteral = self.factory.borrow_mut().copy(&rdf::XMLLiteral);
+                let mut scope = self.scope_mut();
+                scope.datatype = Some(xmlliteral);
+            } else {
+                let kind = self::error::ErrorKind::InvalidParseType("Literal".to_string());
+                return Err(Error::from(self::error::Error::from_kind(kind)));
+            }
         }
 
         // Extract subjet and object of the triple
@@ -1785,9 +1794,9 @@ mod test {
     mod rdfms_empty_property_elements {
         use super::*;
 
-        rdf_failure!(#[ignore] rdfms_empty_property_elements / error001);
-        rdf_failure!(#[ignore] rdfms_empty_property_elements / error002);
-        rdf_failure!(#[ignore] rdfms_empty_property_elements / error003);
+        rdf_failure!(rdfms_empty_property_elements / error001);
+        rdf_failure!(rdfms_empty_property_elements / error002);
+        rdf_failure!(rdfms_empty_property_elements / error003);
 
         rdf_test!(rdfms_empty_property_elements / test001);
         rdf_test!(rdfms_empty_property_elements / test002);
