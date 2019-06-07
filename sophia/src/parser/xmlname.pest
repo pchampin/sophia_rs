@@ -1,6 +1,5 @@
 NameStartChar = {
-    ":"
-  | 'A'..'Z'
+    'A'..'Z'
   | "_"
   | 'a'..'z'
   | '\u{C0}'..'\u{D6}'
@@ -27,4 +26,4 @@ NameChar = {
   | '\u{203F}'..'\u{2040}'
 }
 
-Name = { NameStartChar ~ NameChar* }
+Name = { NameStartChar ~ NameChar* ~ EOI }
