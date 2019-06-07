@@ -15,7 +15,7 @@ use quick_xml::events::BytesStart;
 use quick_xml::events::BytesText;
 use quick_xml::events::Event;
 use quick_xml::Reader;
-use quick_xml::Result as XmlResult;
+use quick_xml::Result as QuickXmlResult;
 use url::Url;
 
 use crate::error::*;
@@ -140,7 +140,21 @@ pub mod error {
             Self::from_kind(ErrorKind::XmlError(e))
         }
     }
+
+    impl From<quick_xml::Error> for crate::error::Error {
+        fn from(e: quick_xml::Error) -> Self {
+            Error::from(e).into()
+        }
+    }
+
+    impl From<ErrorKind> for crate::error::Error {
+        fn from(kind: ErrorKind) -> Self {
+            Self::from(Error::from_kind(kind))
+        }
+    }
 }
+
+use self::error::ErrorKind as XmlErrorKind;
 
 /// RDF/XML parser configuration.
 ///
@@ -232,7 +246,7 @@ pub struct XmlReader<B: BufRead> {
 
 impl<B: BufRead> XmlReader<B> {
     /// Read an XML event.
-    pub fn read_event<'a>(&mut self, buf: &'a mut Vec<u8>) -> XmlResult<Event<'a>> {
+    pub fn read_event<'a>(&mut self, buf: &'a mut Vec<u8>) -> QuickXmlResult<Event<'a>> {
         use quick_xml::events::Event::*;
 
         // Clear the event peeking cache if it is not empty.
@@ -374,9 +388,7 @@ impl<F: TermFactory> Scope<F> {
     /// Add a new XML prefix to the namespace mapping.
     fn add_prefix(&mut self, prefix: &str, value: &str) -> Result<()> {
         if prefix == "_" {
-            Err(Error::from(self::error::Error::from(
-                self::error::ErrorKind::InvalidPrefix(prefix.into()),
-            )))
+            bail!(XmlErrorKind::InvalidPrefix(prefix.into()))
         } else {
             let mut f = self.factory.borrow_mut();
             self.ns.insert(
@@ -404,7 +416,7 @@ impl<F: TermFactory> Scope<F> {
             }
         }
 
-        Err(Error::from_kind(ErrorKind::InvalidIri(String::from(base))))
+        bail!(ErrorKind::InvalidIri(String::from(base)))
     }
 
     /// Set the scope datatype.
@@ -429,14 +441,12 @@ impl<F: TermFactory> Scope<F> {
             if let Some(ns) = self.ns.get(prefix) {
                 ns.get(self.factory.borrow_mut().get_term_data(reference))
             } else {
-                let kind = self::error::ErrorKind::UnknownNamespace(prefix.to_string());
-                Err(Error::from(self::error::Error::from_kind(kind)))
+                bail!(XmlErrorKind::UnknownNamespace(prefix.to_string()))
             }
         } else if let Some(ns) = &self.default {
             ns.get(self.factory.borrow_mut().get_term_data(attr))
         } else {
-            let kind = self::error::ErrorKind::UnknownNamespace("_".to_string());
-            Err(Error::from(self::error::Error::from_kind(kind)))
+            bail!(XmlErrorKind::UnknownNamespace("_".to_string()))
         }
     }
 
@@ -468,8 +478,7 @@ impl<F: TermFactory> Scope<F> {
                     Err(_) => bail!(ErrorKind::InvalidIri(String::from(iri))),
                 }
             } else {
-                let kind = self::error::ErrorKind::NoBaseIri(iri.to_string());
-                Err(Error::from(self::error::Error::from_kind(kind)))
+                bail!(XmlErrorKind::NoBaseIri(iri.to_string()))
             }
         } else if is_absolute_iri(iri) {
             factory.iri(iri)
@@ -484,10 +493,8 @@ impl<F: TermFactory> Scope<F> {
     /// identifiers in the document with a `#` if needed.
     fn expand_id(&self, id: &str) -> Result<Term<F::TermData>> {
         if !xmlname::is_valid_xmlname(id) {
-            return Err(Error::from(self::error::Error::from_kind(
-                self::error::ErrorKind::InvalidXmlName(id.to_string()),
-            )));
-        } else if id.starts_with("#") {
+            bail!(XmlErrorKind::InvalidXmlName(id.to_string()))
+        } else if id.starts_with('#') {
             self.expand_iri(id)
         } else {
             self.expand_iri(&format!("#{}", id))
@@ -509,8 +516,7 @@ impl<F: TermFactory> Scope<F> {
             let mut f = self.factory.borrow_mut();
             ns.get(f.get_term_data(&format!("_{}", self.li.fetch_add(1, Ordering::Relaxed))))
         } else {
-            let kind = self::error::ErrorKind::UnknownNamespace("rdf".to_string());
-            Err(Error::from(self::error::Error::from_kind(kind)))
+            bail!(XmlErrorKind::UnknownNamespace("rdf".to_string()))
         }
     }
 
@@ -520,8 +526,7 @@ impl<F: TermFactory> Scope<F> {
             let mut f = self.factory.borrow_mut();
             ns.get(f.get_term_data(&format!("_{}", self.li.load(Ordering::Relaxed) - 1)))
         } else {
-            let kind = self::error::ErrorKind::UnknownNamespace("rdf".to_string());
-            Err(Error::from(self::error::Error::from_kind(kind)))
+            bail!(XmlErrorKind::UnknownNamespace("rdf".to_string()))
         }
     }
 }
@@ -633,30 +638,21 @@ where
         // * Change scope language if there is any `xml:lang` attribute
         // * Fail if there is an invalid `rdf:li` attribute
         for attr in e.attributes().with_checks(true) {
-            let a = attr.map_err(self::error::Error::from)?;
+            let a = attr?;
             if a.key.starts_with(b"xmlns:") {
                 scope.add_prefix(
                     &self.reader.decode(&a.key[6..]),
-                    &a.unescape_and_decode_value(&self.reader)
-                        .map_err(self::error::Error::from)?,
+                    &a.unescape_and_decode_value(&self.reader)?,
                 )?;
             } else if a.key == b"xmlns" {
-                scope.set_default(
-                    &a.unescape_and_decode_value(&self.reader)
-                        .map_err(self::error::Error::from)?,
-                )?;
+                scope.set_default(&a.unescape_and_decode_value(&self.reader)?)?;
             } else if a.key == b"xml:base" {
-                scope.set_base(
-                    &a.unescape_and_decode_value(&self.reader)
-                        .map_err(self::error::Error::from)?,
-                )?;
+                scope.set_base(&a.unescape_and_decode_value(&self.reader)?)?;
             } else if a.key == b"xml:lang" {
                 scope.lang = if a.value.is_empty() {
                     None
                 } else {
-                    let v = &a
-                        .unescape_and_decode_value(&self.reader)
-                        .map_err(|e| self::error::Error::from(e))?;
+                    let v = &a.unescape_and_decode_value(&self.reader)?;
                     self.factory.borrow_mut().get_term_data(v).into()
                 };
             }
@@ -687,17 +683,14 @@ where
         if xmlname::is_valid_xmlname(id) {
             self.factory.borrow_mut().bnode(&format!("o{}", id))
         } else {
-            Err(Error::from(self::error::Error::from_kind(
-                self::error::ErrorKind::InvalidXmlName(id.to_string()),
-            )))
+            bail!(XmlErrorKind::InvalidXmlName(id.to_string()))
         }
     }
 
     /// Check the given `ID` is unique.
     fn check_unique_id(&mut self, id: Term<F::TermData>) -> Result<Term<F::TermData>> {
         if self.ids.contains(&id) {
-            let kind = self::error::ErrorKind::DuplicateId(id.value());
-            Err(Error::from(self::error::Error::from_kind(kind)))
+            bail!(XmlErrorKind::DuplicateId(id.value()))
         } else {
             self.ids.insert(id.clone());
             Ok(id)
@@ -734,7 +727,7 @@ where
             parents: Vec::new(),
             scopes: vec![Scope::with_factory_rc(factory.clone())],
             triples: LinkedList::new(),
-            factory: factory,
+            factory,
             bnodes: AtomicUsize::new(0),
             state: vec![ParsingState::Node],
             ids: HashSet::new(),
@@ -763,13 +756,10 @@ where
             ParsingState::Collection => self.collection_start(e),
             ParsingState::CollectionItem => self.collection_item_start(e),
             ParsingState::Literal => unimplemented!("entering element as literal"),
-            ParsingState::Res => {
-                let kind = self::error::ErrorKind::UnexpectedEvent(
-                    format!("<{}>", self.reader.decode(e.name())),
-                    "text".to_string(),
-                );
-                Err(Error::from(self::error::Error::from_kind(kind)))
-            }
+            ParsingState::Res => Err(Error::from(XmlErrorKind::UnexpectedEvent(
+                format!("<{}>", self.reader.decode(e.name())),
+                "text".to_string(),
+            ))),
         } {
             self.triples.push_back(Err(e));
         }
@@ -781,24 +771,23 @@ where
             .scope()
             .expand_attribute(&self.reader.decode(e.name()))?;
 
-        // Bail out if in a top-level rdf:RDF element
+        // Return early if in a top-level rdf:RDF element
         if rdf::RDF.matches(&ty) && self.parents.is_empty() {
             self.state.push(ParsingState::Node);
             self.parents.push(self.factory.borrow_mut().copy(&rdf::RDF));
             return Ok(());
         }
 
-        //
+        // Bail out if the node has an invalid name.
         if RESERVED_NODE_NAMES.matches(&ty) {
-            let kind = self::error::ErrorKind::InvalidNodeName(ty.value());
-            return Err(Error::from(self::error::Error::from_kind(kind)));
+            bail!(XmlErrorKind::InvalidNodeName(ty.value()))
         }
 
         // Separate node subject from other attributes
         let mut properties = HashMap::new();
         let mut subject = Vec::new();
         for attr in e.attributes().with_checks(true) {
-            let a = attr.map_err(self::error::Error::from)?;
+            let a = attr?;
 
             // ignore xml attributes (processed in element_start)
             if a.key.starts_with(b"xml") {
@@ -807,9 +796,7 @@ where
 
             // try to extract the subject annotation
             let k = self.scope().expand_attribute(&self.reader.decode(a.key))?;
-            let v = a
-                .unescape_and_decode_value(&self.reader)
-                .map_err(self::error::Error::from)?;
+            let v = a.unescape_and_decode_value(&self.reader)?;
 
             if k.matches(&rdf::about) {
                 subject.push(self.scope().expand_iri(&v)?);
@@ -821,29 +808,21 @@ where
             } else if k.matches(&rdf::type_) {
                 properties.insert(k, self.scope().expand_iri(&v)?);
             } else if RESERVED_ATTRIBUTES_NAMES.matches(&k) {
-                let kind = self::error::ErrorKind::InvalidAttribute(k.value());
-                return Err(Error::from(self::error::Error::from_kind(kind)));
+                bail!(self::error::ErrorKind::InvalidAttribute(k.value()));
             } else {
                 properties.insert(k, self.scope().new_literal(v)?);
             }
         }
 
         // Get subject and add it to the current nested stack
-        if subject.len() > 1 {
-            return Err(
-                self::error::Error::from_kind(self::error::ErrorKind::AmbiguousSubject).into(),
-            );
-        }
+        ensure!(subject.len() < 2, XmlErrorKind::AmbiguousSubject);
         let s: Term<_> = subject.pop().unwrap_or_else(|| self.new_bnode());
         self.parents.push(s.clone());
 
         // Add the type as a triple if it is not `rdf:Description`
         if !ty.matches(&rdf::Description) {
-            self.triples.push_back(Ok([
-                s.clone(),
-                self.factory.borrow_mut().copy(&rdf::type_),
-                ty,
-            ]));
+            let type_ = self.factory.borrow_mut().copy(&rdf::type_);
+            self.triples.push_back(Ok([s.clone(), type_, ty]));
         }
 
         // Add triples described by properties in XML attributes
@@ -859,14 +838,13 @@ where
     fn predicate_start(&mut self, e: &BytesStart) -> Result<()> {
         // Get the predicate and add it to the current nested stack
         // or build a new `rdf:_n` IRI if the predicate is `rdf:li`.
-        let p = self.predicate_iri_start(&self.reader.decode(e.name()))?;
+        let pred = self.predicate_iri_start(&self.reader.decode(e.name()))?;
 
         // Fail if the property is among forbidden names.
-        if RESERVED_PROPERTY_NAMES.matches(&p) {
-            let kind = self::error::ErrorKind::InvalidNodeName(p.value());
-            return Err(Error::from(self::error::Error::from_kind(kind)));
+        if RESERVED_PROPERTY_NAMES.matches(&pred) {
+            bail!(XmlErrorKind::InvalidNodeName(pred.value()))
         } else {
-            self.parents.push(p);
+            self.parents.push(pred);
         }
 
         // Extract attributes relevant to the RDF syntax
@@ -874,7 +852,7 @@ where
         let mut next_state = ParsingState::Node;
         let mut object = Vec::with_capacity(1);
         for attr in e.attributes().with_checks(true) {
-            let a = attr.map_err(self::error::Error::from)?;
+            let a = attr?;
 
             // Ignore `xml` attributes
             if a.key.starts_with(b"xml") {
@@ -883,21 +861,15 @@ where
 
             let k = self.scope().expand_attribute(&self.reader.decode(a.key))?;
             if k.matches(&rdf::datatype) {
-                let v = a
-                    .unescape_and_decode_value(&self.reader)
-                    .map_err(self::error::Error::from)?;
+                let v = a.unescape_and_decode_value(&self.reader)?;
                 self.scope_mut().set_datatype(&v)?;
             } else if k.matches(&rdf::ID) {
-                let v = a
-                    .unescape_and_decode_value(&self.reader)
-                    .map_err(self::error::Error::from)?;
+                let v = a.unescape_and_decode_value(&self.reader)?;
                 let id = self.scope().expand_id(&v)?;
                 object.push(self.check_unique_id(id)?);
                 next_state = ParsingState::Res;
             } else if k.matches(&rdf::resource) {
-                let v = a
-                    .unescape_and_decode_value(&self.reader)
-                    .map_err(self::error::Error::from)?;
+                let v = a.unescape_and_decode_value(&self.reader)?;
                 object.push(self.scope().expand_iri(&v)?);
                 next_state = ParsingState::Predicate;
             } else if k.matches(&rdf::parseType) {
@@ -918,17 +890,13 @@ where
                     }
                     other => {
                         let ty = String::from_utf8_lossy(other).to_string();
-                        let kind = self::error::ErrorKind::InvalidParseType(ty);
-                        return Err(Error::from(self::error::Error::from_kind(kind)));
+                        bail!(XmlErrorKind::InvalidParseType(ty));
                     }
                 }
             } else if RESERVED_ATTRIBUTES_NAMES.matches(&k) {
-                let kind = self::error::ErrorKind::InvalidAttribute(k.value());
-                return Err(Error::from(self::error::Error::from_kind(kind)));
+                bail!(XmlErrorKind::InvalidAttribute(k.value()));
             } else {
-                let v = a
-                    .unescape_and_decode_value(&self.reader)
-                    .map_err(self::error::Error::from)?;
+                let v = a.unescape_and_decode_value(&self.reader)?;
                 attributes.insert(k, self.scope().new_literal(v)?);
                 next_state = ParsingState::Resource;
             }
@@ -939,11 +907,7 @@ where
             0 if !attributes.is_empty() => Some(self.new_bnode()),
             0 if attributes.is_empty() => None,
             1 => Some(object.last().unwrap().clone()),
-            _ => {
-                return Err(
-                    self::error::Error::from_kind(self::error::ErrorKind::AmbiguousSubject).into(),
-                )
-            }
+            _ => bail!(XmlErrorKind::AmbiguousSubject),
         };
 
         // Make the predicate a resource element if an objec tis present.
@@ -1081,26 +1045,15 @@ where
     fn res_end(&mut self) -> Result<()> {
         // Subject, predicate, object and ID of the reified triple
         let id = self.parents.pop().unwrap();
-        let p = self.parents.pop().unwrap();
-        let s = self.parents.last().unwrap().clone();
+        let pred = self.parents.pop().unwrap();
+        let sbj = self.parents.last().unwrap().clone();
         let txt = self.scope_mut().text.take().unwrap_or_default();
-        let o = self.scope().new_literal(txt)?;
-
-        // Types for the reification
-        let mut factory = self.factory.borrow_mut();
-        let ty = factory.copy(&rdf::type_);
-        let subject = factory.copy(&rdf::subject);
-        let predicate = factory.copy(&rdf::predicate);
-        let object = factory.copy(&rdf::object);
-        let stmt = factory.copy(&rdf::Statement);
+        let obj = self.scope().new_literal(txt)?;
 
         // Add all triples
         self.triples
-            .push_back(Ok([s.clone(), p.clone(), o.clone()]));
-        self.triples.push_back(Ok([id.clone(), ty, stmt]));
-        self.triples.push_back(Ok([id.clone(), subject, s]));
-        self.triples.push_back(Ok([id.clone(), predicate, p]));
-        self.triples.push_back(Ok([id.clone(), object, o]));
+            .push_back(Ok([sbj.clone(), pred.clone(), obj.clone()]));
+        self.reify(id, sbj, pred, obj);
 
         Ok(())
     }
@@ -1111,9 +1064,7 @@ where
         if self.scope().text.is_some() {
             match e.unescape_and_decode(&self.reader) {
                 Ok(text) => self.scope_mut().set_text(text),
-                Err(e) => self
-                    .triples
-                    .push_back(Err(self::error::Error::from(e).into())),
+                Err(e) => self.triples.push_back(Err(Error::from(e))),
             }
         }
     }
@@ -1137,7 +1088,7 @@ where
                     format!("<{}/>", self.reader.decode(e.name())),
                     "end".to_string(),
                 );
-                Err(Error::from(self::error::Error::from_kind(kind)))
+                Err(Error::from(kind))
             }
         } {
             self.triples.push_back(Err(e));
@@ -1153,12 +1104,11 @@ where
     }
 
     fn predicate_empty(&mut self, e: &BytesStart) -> Result<()> {
-        let p = self.predicate_iri_start(&self.reader.decode(e.name()))?;
+        let pred = self.predicate_iri_start(&self.reader.decode(e.name()))?;
 
         // Fail if the property is among forbidden names.
-        if RESERVED_PROPERTY_NAMES.matches(&p) {
-            let kind = self::error::ErrorKind::InvalidNodeName(p.value());
-            return Err(Error::from(self::error::Error::from_kind(kind)));
+        if RESERVED_PROPERTY_NAMES.matches(&pred) {
+            bail!(XmlErrorKind::InvalidNodeName(pred.value()));
         }
 
         let mut object = Vec::with_capacity(1);
@@ -1168,7 +1118,7 @@ where
 
         // Extract attributes
         for attr in e.attributes().with_checks(true) {
-            let a = attr.map_err(self::error::Error::from)?;
+            let a = attr?;
 
             // ignore XML attributes (processed when entering scope)
             if a.key.starts_with(b"xml") {
@@ -1177,9 +1127,7 @@ where
 
             // try to extract the annotation object
             let k = self.scope().expand_attribute(&self.reader.decode(a.key))?;
-            let v = a
-                .unescape_and_decode_value(&self.reader)
-                .map_err(self::error::Error::from)?;
+            let v = a.unescape_and_decode_value(&self.reader)?;
             if k.matches(&rdf::resource) {
                 object.push(self.scope().expand_iri(&v)?);
             } else if k.matches(&rdf::nodeID) {
@@ -1193,13 +1141,11 @@ where
                     b"Literal" => parse_type = Some(&b"Literal"[..]),
                     other => {
                         let ty = String::from_utf8_lossy(other).to_string();
-                        let kind = self::error::ErrorKind::InvalidParseType(ty);
-                        return Err(Error::from(self::error::Error::from_kind(kind)));
+                        bail!(XmlErrorKind::InvalidParseType(ty));
                     }
                 };
             } else if RESERVED_ATTRIBUTES_NAMES.matches(&k) {
-                let kind = self::error::ErrorKind::InvalidAttribute(k.value());
-                return Err(Error::from(self::error::Error::from_kind(kind)));
+                bail!(XmlErrorKind::InvalidAttribute(k.value()));
             } else {
                 attributes.insert(k, v);
             }
@@ -1215,47 +1161,30 @@ where
                 let mut scope = self.scope_mut();
                 scope.datatype = Some(xmlliteral);
             } else {
-                let kind = self::error::ErrorKind::InvalidParseType("Literal".to_string());
-                return Err(Error::from(self::error::Error::from_kind(kind)));
+                bail!(XmlErrorKind::InvalidParseType("Literal".to_string()));
             }
         }
 
-        // Extract subjet and object of the triple
-        let s = self.parents.last().unwrap().clone();
-        let o = match object.len() {
+        // Extract subject and object of the triple
+        let sbj = self.parents.last().unwrap().clone();
+        let obj = match object.len() {
             0 if !attributes.is_empty() => self.new_bnode(),
             1 => object.last().unwrap().clone(),
             0 if attributes.is_empty() => self.scope().new_literal(String::new())?,
-            _ => {
-                return Err(
-                    self::error::Error::from_kind(self::error::ErrorKind::AmbiguousSubject).into(),
-                )
-            }
+            _ => bail!(XmlErrorKind::AmbiguousSubject),
         };
 
         // Add the triple and all subsequent triples as attributes
         self.triples
-            .push_back(Ok([s.clone(), p.clone(), o.clone()]));
+            .push_back(Ok([sbj.clone(), pred.clone(), obj.clone()]));
         for (prop, value) in attributes.into_iter() {
             let literal = self.scope().new_literal(value)?;
-            self.triples.push_back(Ok([o.clone(), prop, literal]));
+            self.triples.push_back(Ok([obj.clone(), prop, literal]));
         }
 
         // Reify the triple if needed.
         if let Some(id) = reification {
-            // Types for the reification
-            let mut factory = self.factory.borrow_mut();
-            let ty = factory.copy(&rdf::type_);
-            let subject = factory.copy(&rdf::subject);
-            let predicate = factory.copy(&rdf::predicate);
-            let obj = factory.copy(&rdf::object);
-            let stmt = factory.copy(&rdf::Statement);
-
-            // Add all triples
-            self.triples.push_back(Ok([id.clone(), ty, stmt]));
-            self.triples.push_back(Ok([id.clone(), subject, s]));
-            self.triples.push_back(Ok([id.clone(), predicate, p]));
-            self.triples.push_back(Ok([id.clone(), obj, o]));
+            self.reify(id, sbj, pred, obj);
         }
 
         Ok(())
@@ -1269,6 +1198,28 @@ where
         self.collection_start(e)?;
         self.state.pop();
         self.collection_item_end()
+    }
+
+    // ---
+
+    fn reify(
+        &mut self,
+        id: Term<F::TermData>,
+        sbj: Term<F::TermData>,
+        pred: Term<F::TermData>,
+        obj: Term<F::TermData>,
+    ) {
+        let mut factory = self.factory.borrow_mut();
+        let ty = factory.copy(&rdf::type_);
+        let subject = factory.copy(&rdf::subject);
+        let predicate = factory.copy(&rdf::predicate);
+        let object = factory.copy(&rdf::object);
+        let stmt = factory.copy(&rdf::Statement);
+
+        self.triples.push_back(Ok([id.clone(), ty, stmt]));
+        self.triples.push_back(Ok([id.clone(), subject, sbj]));
+        self.triples.push_back(Ok([id.clone(), predicate, pred]));
+        self.triples.push_back(Ok([id.clone(), object, obj]));
     }
 }
 
@@ -1298,8 +1249,7 @@ where
                 Ok(_) => (),
                 Err(e) => {
                     let kind = self::error::ErrorKind::XmlError(e);
-                    let err = self::error::Error::from_kind(kind);
-                    self.handler.triples.push_back(Err(Error::from(err)));
+                    self.handler.triples.push_back(Err(Error::from(kind)));
                 }
             }
         }
