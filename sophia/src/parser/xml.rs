@@ -27,10 +27,11 @@ use crate::term::factory::RcTermFactory;
 use crate::term::factory::TermFactory;
 use crate::term::iri_rfc3987::is_absolute_iri;
 use crate::term::iri_rfc3987::is_relative_iri;
-use crate::term::iri_rfc3987::is_valid_iri;
 use crate::term::matcher::TermMatcher;
 use crate::term::StaticTerm;
 use crate::term::Term;
+
+const DEFAULT_BUFFER_SIZE: usize = 8 * 1024;
 
 static RESERVED_NODE_NAMES: &'static [StaticTerm] = &[
     rdf::RDF,
@@ -78,16 +79,6 @@ mod xmlname {
 
     pub fn is_valid_xmlname(n: &str) -> bool {
         PestXmlNameParser::parse(Rule::Name, n).is_ok()
-    }
-
-    pub fn validate(n: &str) -> Result<&str, super::error::Error> {
-        if is_valid_xmlname(n) {
-            Ok(n)
-        } else {
-            Err(super::error::Error::from_kind(
-                super::error::ErrorKind::InvalidXmlName(n.to_string())
-            ))
-        }
     }
 }
 
@@ -289,7 +280,7 @@ impl<B: BufRead> From<Reader<B>> for XmlReader<B> {
         Self {
             inner: r,
             event: None,
-            buffer: Vec::new(),
+            buffer: Vec::with_capacity(DEFAULT_BUFFER_SIZE),
         }
     }
 }
@@ -469,13 +460,15 @@ impl<F: TermFactory> Scope<F> {
                 match url.join(iri) {
                     Ok(ref u) if ascii => factory.iri(u),
                     Ok(ref u) => factory.iri(decode(u.as_ref())),
-                    Err(ref e) => bail!(ErrorKind::InvalidIri(String::from(iri))),
+                    Err(_) => bail!(ErrorKind::InvalidIri(String::from(iri))),
                 }
             } else {
                 panic!("NO BASE IRI")
             }
-        } else {
+        } else if is_absolute_iri(iri) {
             factory.iri(iri)
+        } else {
+            bail!(ErrorKind::InvalidIri(String::from(iri)))
         }
     }
 
@@ -533,8 +526,36 @@ impl<F: TermFactory + Default> Default for Scope<F> {
 
 // ---
 
-/// An XML parser supporting any term factory as a backend.
 struct XmlParser<B: BufRead, F: TermFactory> {
+    handler: XmlHandler<B, F>,
+    buffer: Vec<u8>,
+}
+
+impl<B, F> XmlParser<B, F>
+where
+    B: BufRead,
+    F: TermFactory + Clone + Default + Debug,
+    <F as TermFactory>::TermData: Debug,
+{
+    /// Create a new `XmlParser` from the given `quick_xml::Reader`.
+    fn new(reader: Reader<B>) -> Self {
+        Self {
+            handler: XmlHandler::new(reader),
+            buffer: Vec::with_capacity(DEFAULT_BUFFER_SIZE),
+        }
+    }
+
+    /// Create a new `XmlParser` using the given URL as the top-level `xml:base`.
+    fn with_base(reader: Reader<B>, base: Url) -> Self {
+        Self {
+            handler: XmlHandler::with_base(reader, base),
+            buffer: Vec::with_capacity(DEFAULT_BUFFER_SIZE),
+        }
+    }
+}
+
+/// An XML parser supporting any term factory as a backend.
+struct XmlHandler<B: BufRead, F: TermFactory> {
     /// The underlying XML reader.
     reader: XmlReader<B>,
 
@@ -560,7 +581,7 @@ struct XmlParser<B: BufRead, F: TermFactory> {
     state: Vec<ParsingState>,
 }
 
-impl<B, F> XmlParser<B, F>
+impl<B, F> XmlHandler<B, F>
 where
     B: BufRead,
     F: TermFactory + Clone + Default + Debug,
@@ -698,7 +719,7 @@ where
 
     // ---
 
-    /// Create a new `XmlParser` from the given `quick_xml::Reader`.
+    /// Create a new `XmlHandler` from the given `quick_xml::Reader`.
     fn new(reader: Reader<B>) -> Self {
         let factory: Rc<RefCell<F>> = Default::default();
         Self {
@@ -713,7 +734,7 @@ where
         }
     }
 
-    /// Create a new `XmlParser` using the given URL as the top-level `xml:base`.
+    /// Create a new `XmlHandler` using the given URL as the top-level `xml:base`.
     fn with_base(reader: Reader<B>, base: Url) -> Self {
         let mut parser = Self::new(reader);
         let mut scope = parser.scope_mut();
@@ -896,8 +917,7 @@ where
             }
         }
 
-        // Extract subjet and object of the triple
-        let s = self.parents.last().unwrap().clone();
+        // Extract object of the triple
         let o = match object.len() {
             0 if !attributes.is_empty() => Some(self.new_bnode()),
             0 if attributes.is_empty() => None,
@@ -1233,28 +1253,31 @@ where
 {
     type Item = Result<[Term<F::TermData>; 3]>;
     fn next(&mut self) -> Option<Self::Item> {
-        let mut buffer = Vec::new();
+
         loop {
+
             // First make sure to consume the queue.
-            if let Some(res) = self.triples.pop_front() {
+            if let Some(res) = self.handler.triples.pop_front() {
                 return Some(res);
             }
+
+            //
+            self.buffer.clear();
+
             // Then process the next event to maybe produce triples
-            match self.reader.read_event(&mut buffer) {
+            match self.handler.reader.read_event(&mut self.buffer) {
                 Ok(Event::Eof) => return None,
-                Ok(Event::Start(s)) => self.element_start(&s),
-                Ok(Event::Empty(e)) => self.element_empty(&e),
-                Ok(Event::End(e)) => self.element_end(&e),
-                Ok(Event::Text(t)) => self.element_text(&t),
+                Ok(Event::Start(s)) => self.handler.element_start(&s),
+                Ok(Event::Empty(e)) => self.handler.element_empty(&e),
+                Ok(Event::End(e)) => self.handler.element_end(&e),
+                Ok(Event::Text(t)) => self.handler.element_text(&t),
                 Ok(_) => (),
                 Err(e) => {
                     let kind = self::error::ErrorKind::XmlError(e);
                     let err = self::error::Error::from_kind(kind);
-                    self.triples.push_back(Err(Error::from(err)));
+                    self.handler.triples.push_back(Err(Error::from(err)));
                 }
             }
-            // Finally clear the buffer if we are going to use it again.
-            buffer.clear();
         }
     }
 }
@@ -1262,6 +1285,7 @@ where
 // ---
 
 #[cfg(test)]
+#[allow(non_snake_case)]
 mod test {
 
     use std::fmt::Debug;
@@ -1272,8 +1296,6 @@ mod test {
     use crate::graph::inmem::TermIndexMapU;
     use crate::graph::Graph;
     use crate::term::factory::RcTermFactory;
-    use crate::term::IriData;
-    use crate::term::StaticTerm;
     use crate::term::Term;
     use crate::triple::stream::TripleSource;
     use crate::triple::Triple;
