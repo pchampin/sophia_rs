@@ -2,6 +2,7 @@
 
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::collections::LinkedList;
 use std::fmt::Debug;
 use std::io::{BufRead, BufReader, Read};
@@ -101,6 +102,10 @@ pub mod error {
             XmlError(e: ::quick_xml::Error) {
                 description("xml parser failed")
                 display("xml parser failed: {:?}", e)
+            }
+            DuplicateId(id: String) {
+                description("duplicate ID")
+                display("duplicate ID: {:?}", id)
             }
             InvalidNodeName(n: String) {
                 description("invalid property name")
@@ -531,6 +536,9 @@ struct XmlParser<B: BufRead, F: TermFactory> {
     //
     bnodes: AtomicUsize,
 
+    //
+    ids: HashSet<Term<F::TermData>>,
+
     /// The current state of the parser.
     state: Vec<ParsingState>,
 }
@@ -640,6 +648,17 @@ where
         }
     }
 
+    /// Check the given `ID` is unique.
+    fn check_unique_id(&mut self, id: Term<F::TermData>) -> Result<Term<F::TermData>> {
+        if self.ids.contains(&id) {
+            let kind = self::error::ErrorKind::DuplicateId(id.value());
+            Err(Error::from(self::error::Error::from_kind(kind)))
+        } else {
+            self.ids.insert(id.clone());
+            Ok(id)
+        }
+    }
+
     /// Create a new predicate IRI from an XML name (or a RDF metasyntactic element)
     fn predicate_iri_start(&self, name: &str) -> Result<Term<F::TermData>> {
         let p = self.scope().expand_attribute(name)?;
@@ -673,6 +692,7 @@ where
             factory: factory,
             bnodes: AtomicUsize::new(0),
             state: vec![ParsingState::Node],
+            ids: HashSet::new(),
         }
     }
 
@@ -743,7 +763,8 @@ where
             if k.matches(&rdf::about) {
                 subject.push(self.scope().expand_iri(&v)?);
             } else if k.matches(&rdf::ID) {
-                subject.push(self.scope().expand_id(&v)?);
+                let id = self.scope().expand_id(&v)?;
+                subject.push(self.check_unique_id(id)?);
             } else if k.matches(&rdf::nodeID) {
                 subject.push(self.rename_bnode(&v)?);
             } else if k.matches(&rdf::type_) {
@@ -819,7 +840,8 @@ where
                 let v = a
                     .unescape_and_decode_value(&self.reader)
                     .map_err(self::error::Error::from)?;
-                object.push(self.scope().expand_id(&v)?);
+                let id = self.scope().expand_id(&v)?;
+                object.push(self.check_unique_id(id)?);
                 next_state = ParsingState::Res;
             } else if k.matches(&rdf::resource) {
                 let v = a
@@ -1103,7 +1125,8 @@ where
             } else if k.matches(&rdf::nodeID) {
                 object.push(self.rename_bnode(&v)?);
             } else if k.matches(&rdf::ID) {
-                reification = Some(self.scope().expand_id(&v)?);
+                let id = self.scope().expand_id(&v)?;
+                reification = Some(self.check_unique_id(id)?);
             } else if k.matches(&rdf::parseType) {
                 match a.value.as_ref() {
                     b"Resource" => parse_type = Some(&b"Resource"[..]),
@@ -1762,9 +1785,9 @@ mod test {
     mod rdfms_empty_property_elements {
         use super::*;
 
-        // rdf_failure!(rdfms_empty_property_elements / error001);
-        // rdf_failure!(rdfms_empty_property_elements / error002);
-        // rdf_failure!(rdfms_empty_property_elements / error003);
+        rdf_failure!(#[ignore] rdfms_empty_property_elements / error001);
+        rdf_failure!(#[ignore] rdfms_empty_property_elements / error002);
+        rdf_failure!(#[ignore] rdfms_empty_property_elements / error003);
 
         rdf_test!(rdfms_empty_property_elements / test001);
         rdf_test!(rdfms_empty_property_elements / test002);
