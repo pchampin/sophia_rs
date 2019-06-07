@@ -446,23 +446,36 @@ impl<F: TermFactory> Scope<F> {
     /// This uses `xml:base` to expand local resources, and does nothing in
     /// case the IRI is already in expanded form.
     fn expand_iri(&self, iri: &str) -> Result<Term<F::TermData>> {
-        fn dec(x: &str) -> std::borrow::Cow<str> {
-            url::percent_encoding::percent_decode(x.as_bytes())
-                .decode_utf8()
-                .unwrap()
-        }
 
+
+        let mut factory = self.factory.borrow_mut();
         if is_relative_iri(iri) {
+
+            // NB: We should not be percent-encoding, but `url::Url::parse`
+            // does it anyway: as a fudge, we percent-decode any input that
+            // contained non-ASCII characters back. This may cause strange
+            // behaviour with URLs that contain a mix of percent-encoded and
+            // raw Unicode characters, but this is the best we can do without
+            // reimplementing the `url` crate from scratch.
+            let ascii = iri.chars().all(|c| c.is_ascii());
+
+            fn decode(s: &str) -> std::borrow::Cow<str> {
+                url::percent_encoding::percent_decode(s.as_bytes())
+                    .decode_utf8()
+                    .unwrap()
+            }
+
             if let Some(url) = &self.base {
                 match url.join(iri) {
-                    Ok(u) => self.factory.borrow_mut().iri(&dec(u.as_str())),
-                    Err(e) => bail!(ErrorKind::InvalidIri(String::from(iri))),
+                    Ok(ref u) if ascii => factory.iri(u),
+                    Ok(ref u) => factory.iri(decode(u.as_ref())),
+                    Err(ref e) => bail!(ErrorKind::InvalidIri(String::from(iri))),
                 }
             } else {
                 panic!("NO BASE IRI")
             }
         } else {
-            self.factory.borrow_mut().iri(&dec(iri))
+            factory.iri(iri)
         }
     }
 
@@ -1725,11 +1738,7 @@ mod test {
         use super::*;
 
         rdf_test!(rdf_charmod_uris / test001);
-        rdf_test!(
-            #[ignore]
-            rdf_charmod_uris
-                / test002
-        );
+        rdf_test!(rdf_charmod_uris / test002);
     }
 
     mod rdf_containers_syntax_vs_schema {
