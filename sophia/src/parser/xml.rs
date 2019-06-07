@@ -98,6 +98,10 @@ pub mod error {
                 description("duplicate ID")
                 display("duplicate ID: {:?}", id)
             }
+            UnknownNamespace(ns: String) {
+                description("unknown namespace")
+                display("unknown or undeclared namespace: {:?}", ns)
+            }
             InvalidNodeName(n: String) {
                 description("invalid property name")
                 display("invalid property name: {:?}", n)
@@ -121,6 +125,14 @@ pub mod error {
             AmbiguousSubject {
                 description("cannot have `rdf:ID`, `rdf:nodeID` and `rdf:about` at the same time")
                 display("cannot have `rdf:ID`, `rdf:nodeID` and `rdf:about` at the same time")
+            }
+            UnexpectedEvent(exp: String, found: String) {
+                description("unexpected XML event")
+                display("unexpected XML event: expected {}, found {}", exp, found)
+            }
+            NoBaseIri(iri: String) {
+                description("document does not define a base IRI")
+                display("base IRI needed to expand: {:?}", iri)
             }
             InvalidPrefix(p: String) {
                 description("invalid prefix")
@@ -423,12 +435,14 @@ impl<F: TermFactory> Scope<F> {
             if let Some(ns) = self.ns.get(prefix) {
                 ns.get(self.factory.borrow_mut().get_term_data(reference))
             } else {
-                panic!("unknown namespace: {}", prefix)
+                let kind = self::error::ErrorKind::UnknownNamespace(prefix.to_string());
+                Err(Error::from(self::error::Error::from_kind(kind)))
             }
         } else if let Some(ns) = &self.default {
             ns.get(self.factory.borrow_mut().get_term_data(attr))
         } else {
-            panic!("missing prefix: {}", attr)
+            let kind = self::error::ErrorKind::UnknownNamespace("_".to_string());
+            Err(Error::from(self::error::Error::from_kind(kind)))
         }
     }
 
@@ -463,7 +477,8 @@ impl<F: TermFactory> Scope<F> {
                     Err(_) => bail!(ErrorKind::InvalidIri(String::from(iri))),
                 }
             } else {
-                panic!("NO BASE IRI")
+                let kind = self::error::ErrorKind::NoBaseIri(iri.to_string());
+                Err(Error::from(self::error::Error::from_kind(kind)))
             }
         } else if is_absolute_iri(iri) {
             factory.iri(iri)
@@ -503,7 +518,8 @@ impl<F: TermFactory> Scope<F> {
             let mut f = self.factory.borrow_mut();
             ns.get(f.get_term_data(&format!("_{}", self.li.fetch_add(1, Ordering::Relaxed))))
         } else {
-            panic!("undeclared `rdf` prefix !")
+            let kind = self::error::ErrorKind::UnknownNamespace("rdf".to_string());
+            Err(Error::from(self::error::Error::from_kind(kind)))
         }
     }
 
@@ -513,7 +529,8 @@ impl<F: TermFactory> Scope<F> {
             let mut f = self.factory.borrow_mut();
             ns.get(f.get_term_data(&format!("_{}", self.li.load(Ordering::Relaxed) - 1)))
         } else {
-            panic!("undeclared `rdf` prefix !")
+            let kind = self::error::ErrorKind::UnknownNamespace("rdf".to_string());
+            Err(Error::from(self::error::Error::from_kind(kind)))
         }
     }
 }
@@ -755,8 +772,14 @@ where
             ParsingState::Resource => self.predicate_start(e),
             ParsingState::Collection => self.collection_start(e),
             ParsingState::CollectionItem => self.collection_item_start(e),
-            ParsingState::Res => panic!("expecting text, not new element"),
             ParsingState::Literal => unimplemented!("entering element as literal"),
+            ParsingState::Res => {
+                let kind = self::error::ErrorKind::UnexpectedEvent(
+                    format!("<{}>", self.reader.decode(e.name())),
+                    "text".to_string()
+                );
+                Err(Error::from(self::error::Error::from_kind(kind)))
+            },
         } {
             self.triples.push_back(Err(e));
         }
@@ -903,7 +926,11 @@ where
                         self.scope_mut().set_datatype(&rdf::XMLLiteral.value())?;
                         next_state = ParsingState::Literal;
                     }
-                    other => panic!("invalid parseType: {:?}", other),
+                    other => {
+                        let ty = String::from_utf8_lossy(other).to_string();
+                        let kind = self::error::ErrorKind::InvalidParseType(ty);
+                        return Err(Error::from(self::error::Error::from_kind(kind)));
+                    }
                 }
             } else if RESERVED_ATTRIBUTES_NAMES.matches(&k) {
                 let kind = self::error::ErrorKind::InvalidAttribute(k.value());
@@ -1114,8 +1141,14 @@ where
             ParsingState::Resource => self.resource_empty(e),
             ParsingState::Collection => self.collection_item_empty(e),
             ParsingState::CollectionItem => unreachable!(),
-            ParsingState::Res => panic!("expected end element, not empty"),
             ParsingState::Literal => unimplemented!("empty element as literal"),
+            ParsingState::Res => {
+                let kind = self::error::ErrorKind::UnexpectedEvent(
+                    format!("<{}/>", self.reader.decode(e.name())),
+                    "end".to_string()
+                );
+                Err(Error::from(self::error::Error::from_kind(kind)))
+            }
         } {
             self.triples.push_back(Err(e));
         }
@@ -1168,7 +1201,11 @@ where
                 match a.value.as_ref() {
                     b"Resource" => parse_type = Some(&b"Resource"[..]),
                     b"Literal" => parse_type = Some(&b"Literal"[..]),
-                    other => panic!("invalid parseType: {:?}", other),
+                    other => {
+                        let ty = String::from_utf8_lossy(other).to_string();
+                        let kind = self::error::ErrorKind::InvalidParseType(ty);
+                        return Err(Error::from(self::error::Error::from_kind(kind)));
+                    }
                 };
             } else if RESERVED_ATTRIBUTES_NAMES.matches(&k) {
                 let kind = self::error::ErrorKind::InvalidAttribute(k.value());
