@@ -22,13 +22,13 @@ use crate::error::*;
 use crate::ns::rdf;
 use crate::ns::xsd;
 use crate::ns::Namespace;
-use crate::term::StaticTerm;
 use crate::term::factory::RcTermFactory;
 use crate::term::factory::TermFactory;
 use crate::term::iri_rfc3987::is_absolute_iri;
 use crate::term::iri_rfc3987::is_relative_iri;
 use crate::term::iri_rfc3987::is_valid_iri;
 use crate::term::matcher::TermMatcher;
+use crate::term::StaticTerm;
 use crate::term::Term;
 
 static RESERVED_NODE_NAMES: &'static [StaticTerm] = &[
@@ -57,6 +57,30 @@ static RESERVED_PROPERTY_NAMES: &'static [StaticTerm] = &[
     rdf::aboutEachPrefix,
 ];
 
+static RESERVED_ATTRIBUTES_NAMES: &'static [StaticTerm] = &[
+    rdf::li,
+    rdf::aboutEach,
+    rdf::aboutEachPrefix,
+    rdf::bagID,
+];
+
+mod xmlname {
+
+    use pest::Parser;
+
+    #[cfg(debug_assertions)]
+    const _GRAMMAR: &str = include_str!("xmlname.pest");
+
+    #[derive(Parser)]
+    #[grammar = "parser/xmlname.pest"]
+    struct PestXmlNameParser;
+
+    pub fn is_valid_xmlname(n: &str) -> bool {
+        PestXmlNameParser::parse(Rule::Name, n).is_ok()
+    }
+}
+
+
 // ---
 pub mod error {
     error_chain! {
@@ -75,6 +99,10 @@ pub mod error {
             InvalidPropertyName(n: String) {
                 description("invalid property name")
                 display("invalid property name: {:?}", n)
+            }
+            InvalidAttribute(n: String) {
+                description("invalid attribute")
+                display("invalid attribute: {:?}", n)
             }
             AmbiguousSubject {
                 description("cannot have `rdf:ID`, `rdf:nodeID` and `rdf:about` at the same time")
@@ -326,9 +354,9 @@ impl<F: TermFactory> Scope<F> {
     /// Add a new XML prefix to the namespace mapping.
     fn add_prefix(&mut self, prefix: &str, value: &str) -> Result<()> {
         if prefix == "_" {
-            Err(Error::from(
-                self::error::Error::from(self::error::ErrorKind::InvalidPrefix(prefix.into()))
-            ))
+            Err(Error::from(self::error::Error::from(
+                self::error::ErrorKind::InvalidPrefix(prefix.into()),
+            )))
         } else {
             let mut f = self.factory.borrow_mut();
             self.ns.insert(
@@ -530,38 +558,35 @@ where
         scope.collection = Vec::new();
         scope.li.store(1, Ordering::Relaxed);
 
-        // Update XML namespaces with those defined in the document.
+        // * Update XML namespaces with those defined in the document.
+        // * Change scope language if there is any `xml:lang` attribute
+        // * Fail if there is an invalid `rdf:li` attribute
         for attr in e.attributes().with_checks(true) {
             let a = attr.map_err(self::error::Error::from)?;
             if a.key.starts_with(b"xmlns:") {
-                scope
-                    .add_prefix(
-                        &self.reader.decode(&a.key[6..]),
-                        &a.unescape_and_decode_value(&self.reader)
-                            .map_err(self::error::Error::from)?
-                    )?;
+                scope.add_prefix(
+                    &self.reader.decode(&a.key[6..]),
+                    &a.unescape_and_decode_value(&self.reader)
+                        .map_err(self::error::Error::from)?,
+                )?;
             } else if a.key == b"xmlns" {
-                scope.set_default(&a.unescape_and_decode_value(&self.reader)
-                    .map_err(self::error::Error::from)?)?;
+                scope.set_default(
+                    &a.unescape_and_decode_value(&self.reader)
+                        .map_err(self::error::Error::from)?,
+                )?;
             } else if a.key == b"xml:base" {
-                scope.set_base(&a.unescape_and_decode_value(&self.reader)
-                    .map_err(self::error::Error::from)?)?;
-            }
-        }
-
-        // Add current lang to scope or copy last one
-        for attr in e.attributes().with_checks(true) {
-            let a = attr.map_err(self::error::Error::from)?;
-            if a.key == b"xml:lang" {
+                scope.set_base(
+                    &a.unescape_and_decode_value(&self.reader)
+                        .map_err(self::error::Error::from)?,
+                )?;
+            } else if a.key == b"xml:lang" {
                 scope.lang = if a.value.is_empty() {
                     None
                 } else {
-                    let v = &a.unescape_and_decode_value(&self.reader)
+                    let v = &a
+                        .unescape_and_decode_value(&self.reader)
                         .map_err(|e| self::error::Error::from(e))?;
-                    self.factory
-                        .borrow_mut()
-                        .get_term_data(v)
-                        .into()
+                    self.factory.borrow_mut().get_term_data(v).into()
                 };
             }
         }
@@ -681,10 +706,9 @@ where
             }
 
             // try to extract the subject annotation
-            let k = self
-                .scope()
-                .expand_attribute(&self.reader.decode(a.key))?;
-            let v = a.unescape_and_decode_value(&self.reader)
+            let k = self.scope().expand_attribute(&self.reader.decode(a.key))?;
+            let v = a
+                .unescape_and_decode_value(&self.reader)
                 .map_err(self::error::Error::from)?;
 
             if k.matches(&rdf::about) {
@@ -692,13 +716,12 @@ where
             } else if k.matches(&rdf::ID) {
                 subject.push(self.scope().expand_id(&v)?);
             } else if k.matches(&rdf::nodeID) {
-                subject.push(
-                    self.factory
-                        .borrow_mut()
-                        .bnode(&format!("o{}", v))?,
-                );
+                subject.push(self.factory.borrow_mut().bnode(&format!("o{}", v))?);
             } else if k.matches(&rdf::type_) {
                 properties.insert(k, self.scope().expand_iri(&v)?);
+            } else if RESERVED_ATTRIBUTES_NAMES.matches(&k) {
+                let kind = self::error::ErrorKind::InvalidAttribute(k.value());
+                return Err(Error::from(self::error::Error::from_kind(kind)));
             } else {
                 properties.insert(k, self.scope().new_literal(v)?);
             }
@@ -707,8 +730,7 @@ where
         // Get subject and add it to the current nested stack
         if subject.len() > 1 {
             return Err(
-                self::error::Error::from_kind(self::error::ErrorKind::AmbiguousSubject)
-                .into()
+                self::error::Error::from_kind(self::error::ErrorKind::AmbiguousSubject).into(),
             );
         }
         let s: Term<_> = subject.pop().unwrap_or_else(|| self.new_bnode());
@@ -758,20 +780,21 @@ where
                 continue;
             }
 
-            let k = self
-                .scope()
-                .expand_attribute(&self.reader.decode(a.key))?;
+            let k = self.scope().expand_attribute(&self.reader.decode(a.key))?;
             if k.matches(&rdf::datatype) {
-                let v = a.unescape_and_decode_value(&self.reader)
+                let v = a
+                    .unescape_and_decode_value(&self.reader)
                     .map_err(self::error::Error::from)?;
                 self.scope_mut().set_datatype(&v)?;
             } else if k.matches(&rdf::ID) {
-                let v = a.unescape_and_decode_value(&self.reader)
+                let v = a
+                    .unescape_and_decode_value(&self.reader)
                     .map_err(self::error::Error::from)?;
                 object.push(self.scope().expand_id(&v)?);
                 next_state = ParsingState::Res;
             } else if k.matches(&rdf::resource) {
-                let v = a.unescape_and_decode_value(&self.reader)
+                let v = a
+                    .unescape_and_decode_value(&self.reader)
                     .map_err(self::error::Error::from)?;
                 object.push(self.scope().expand_iri(&v)?);
                 next_state = ParsingState::Predicate;
@@ -793,8 +816,12 @@ where
                     }
                     other => panic!("invalid parseType: {:?}", other),
                 }
+            } else if RESERVED_ATTRIBUTES_NAMES.matches(&k) {
+                let kind = self::error::ErrorKind::InvalidAttribute(k.value());
+                return Err(Error::from(self::error::Error::from_kind(kind)));
             } else {
-                let v = a.unescape_and_decode_value(&self.reader)
+                let v = a
+                    .unescape_and_decode_value(&self.reader)
                     .map_err(self::error::Error::from)?;
                 attributes.insert(k, self.scope().new_literal(v)?);
                 next_state = ParsingState::Resource;
@@ -807,10 +834,11 @@ where
             0 if !attributes.is_empty() => Some(self.new_bnode()),
             0 if attributes.is_empty() => None,
             1 => Some(object.last().unwrap().clone()),
-            _ => return Err(
-                self::error::Error::from_kind(self::error::ErrorKind::AmbiguousSubject)
-                .into()
-            )
+            _ => {
+                return Err(
+                    self::error::Error::from_kind(self::error::ErrorKind::AmbiguousSubject).into(),
+                )
+            }
         };
 
         // Make the predicate a resource element if an objec tis present.
@@ -978,7 +1006,9 @@ where
         if self.scope().text.is_some() {
             match e.unescape_and_decode(&self.reader) {
                 Ok(text) => self.scope_mut().set_text(text),
-                Err(e) => self.triples.push_back(Err(self::error::Error::from(e).into())),
+                Err(e) => self
+                    .triples
+                    .push_back(Err(self::error::Error::from(e).into())),
             }
         }
     }
@@ -986,8 +1016,6 @@ where
     // --- Empty elements ----------------------------------------------------
 
     fn element_empty(&mut self, e: &BytesStart) {
-
-
         if let Err(e) = self.enter_scope(e) {
             self.triples.push_back(Err(e));
         }
@@ -1021,7 +1049,7 @@ where
             let kind = self::error::ErrorKind::InvalidNodeName(p.value());
             return Err(Error::from(self::error::Error::from_kind(kind)));
         }
-        
+
         let mut object = Vec::with_capacity(1);
         let mut attributes = HashMap::new();
         let mut parse_type = None;
@@ -1037,19 +1065,14 @@ where
             }
 
             // try to extract the annotation object
-            let k = self
-                .scope()
-                .expand_attribute(&self.reader.decode(a.key))?;
-            let v = a.unescape_and_decode_value(&self.reader)
+            let k = self.scope().expand_attribute(&self.reader.decode(a.key))?;
+            let v = a
+                .unescape_and_decode_value(&self.reader)
                 .map_err(self::error::Error::from)?;
             if k.matches(&rdf::resource) {
                 object.push(self.scope().expand_iri(&v)?);
             } else if k.matches(&rdf::nodeID) {
-                object.push(
-                    self.factory
-                        .borrow_mut()
-                        .bnode(format!("o{}", v))?
-                );
+                object.push(self.factory.borrow_mut().bnode(format!("o{}", v))?);
             } else if k.matches(&rdf::ID) {
                 reification = Some(self.scope().expand_id(&v)?);
             } else if k.matches(&rdf::parseType) {
@@ -1079,10 +1102,11 @@ where
             0 if !attributes.is_empty() => self.new_bnode(),
             1 => object.last().unwrap().clone(),
             0 if attributes.is_empty() => self.scope().new_literal(String::new())?,
-            _ => return Err(
-                self::error::Error::from_kind(self::error::ErrorKind::AmbiguousSubject)
-                .into()
-            ),
+            _ => {
+                return Err(
+                    self::error::Error::from_kind(self::error::ErrorKind::AmbiguousSubject).into(),
+                )
+            }
         };
 
         // Add the triple and all subsequent triples as attributes
@@ -1762,8 +1786,14 @@ mod test {
         rdf_failure!(rdfms_rdf_id / error003);
         rdf_failure!(rdfms_rdf_id / error004);
         rdf_failure!(rdfms_rdf_id / error005);
-        rdf_failure!(rdfms_rdf_id / error006);
-        rdf_failure!(rdfms_rdf_id / error007);
+        rdf_failure!(
+            rdfms_rdf_id
+                / error006
+        );
+        rdf_failure!(
+            rdfms_rdf_id
+                / error007
+        );
     }
 
     mod rdfms_rdf_names_use {

@@ -116,7 +116,7 @@ pub mod rdf {
         datatype,
         bagID,
         aboutEach,
-        aboutEachPrefix        
+        aboutEachPrefix
     );
     ns_term!("http://www.w3.org/1999/02/22-rdf-syntax-ns#", type_, "type");
 }
