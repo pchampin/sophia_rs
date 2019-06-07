@@ -4,7 +4,6 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::LinkedList;
-use std::fmt::Debug;
 use std::io::{BufRead, BufReader, Read};
 use std::ops::Deref;
 use std::rc::Rc;
@@ -59,12 +58,8 @@ static RESERVED_PROPERTY_NAMES: &'static [StaticTerm] = &[
     rdf::aboutEachPrefix,
 ];
 
-static RESERVED_ATTRIBUTES_NAMES: &'static [StaticTerm] = &[
-    rdf::li,
-    rdf::aboutEach,
-    rdf::aboutEachPrefix,
-    rdf::bagID,
-];
+static RESERVED_ATTRIBUTES_NAMES: &'static [StaticTerm] =
+    &[rdf::li, rdf::aboutEach, rdf::aboutEachPrefix, rdf::bagID];
 
 mod xmlname {
 
@@ -81,7 +76,6 @@ mod xmlname {
         PestXmlNameParser::parse(Rule::Name, n).is_ok()
     }
 }
-
 
 // ---
 pub mod error {
@@ -451,11 +445,8 @@ impl<F: TermFactory> Scope<F> {
     /// This uses `xml:base` to expand local resources, and does nothing in
     /// case the IRI is already in expanded form.
     fn expand_iri(&self, iri: &str) -> Result<Term<F::TermData>> {
-
-
         let mut factory = self.factory.borrow_mut();
         if is_relative_iri(iri) {
-
             // NB: We should not be percent-encoding, but `url::Url::parse`
             // does it anyway: as a fudge, we percent-decode any input that
             // contained non-ASCII characters back. This may cause strange
@@ -467,7 +458,7 @@ impl<F: TermFactory> Scope<F> {
             fn decode(s: &str) -> std::borrow::Cow<str> {
                 url::percent_encoding::percent_decode(s.as_bytes())
                     .decode_utf8()
-                    .unwrap()
+                    .expect("always OK since validated with `is_relative_iri`")
             }
 
             if let Some(url) = &self.base {
@@ -494,8 +485,8 @@ impl<F: TermFactory> Scope<F> {
     fn expand_id(&self, id: &str) -> Result<Term<F::TermData>> {
         if !xmlname::is_valid_xmlname(id) {
             return Err(Error::from(self::error::Error::from_kind(
-                self::error::ErrorKind::InvalidXmlName(id.to_string())
-            )))
+                self::error::ErrorKind::InvalidXmlName(id.to_string()),
+            )));
         } else if id.starts_with("#") {
             self.expand_iri(id)
         } else {
@@ -551,8 +542,7 @@ struct XmlParser<B: BufRead, F: TermFactory> {
 impl<B, F> XmlParser<B, F>
 where
     B: BufRead,
-    F: TermFactory + Clone + Default + Debug,
-    <F as TermFactory>::TermData: Debug,
+    F: TermFactory + Clone + Default,
 {
     /// Create a new `XmlParser` from the given `quick_xml::Reader`.
     fn new(reader: Reader<B>) -> Self {
@@ -601,19 +591,19 @@ struct XmlHandler<B: BufRead, F: TermFactory> {
 impl<B, F> XmlHandler<B, F>
 where
     B: BufRead,
-    F: TermFactory + Clone + Default + Debug,
-    <F as TermFactory>::TermData: Debug,
+    F: TermFactory + Clone + Default,
 {
     // ---
 
     /// Get a reference to the current scope.
     fn scope(&self) -> &Scope<F> {
-        self.scopes.last().unwrap()
+        &self.scopes[self.scopes.len() - 1]
     }
 
     /// Get a mutable reference to the current scope.
     fn scope_mut(&mut self) -> &mut Scope<F> {
-        self.scopes.last_mut().unwrap()
+        let l = self.scopes.len();
+        &mut self.scopes[l - 1]
     }
 
     /// Get a reference to the parent scope.
@@ -689,7 +679,7 @@ where
         self.factory
             .borrow_mut()
             .bnode(&format!("n{}", self.bnodes.fetch_add(1, Ordering::Relaxed)))
-            .unwrap()
+            .expect("always produces a correct BNode")
     }
 
     /// Rename a bnode using the `nodeID` in the document (using `o` prefix)
@@ -698,7 +688,7 @@ where
             self.factory.borrow_mut().bnode(&format!("o{}", id))
         } else {
             Err(Error::from(self::error::Error::from_kind(
-                self::error::ErrorKind::InvalidXmlName(id.to_string())
+                self::error::ErrorKind::InvalidXmlName(id.to_string()),
             )))
         }
     }
@@ -776,10 +766,10 @@ where
             ParsingState::Res => {
                 let kind = self::error::ErrorKind::UnexpectedEvent(
                     format!("<{}>", self.reader.decode(e.name())),
-                    "text".to_string()
+                    "text".to_string(),
                 );
                 Err(Error::from(self::error::Error::from_kind(kind)))
-            },
+            }
         } {
             self.triples.push_back(Err(e));
         }
@@ -1145,7 +1135,7 @@ where
             ParsingState::Res => {
                 let kind = self::error::ErrorKind::UnexpectedEvent(
                     format!("<{}/>", self.reader.decode(e.name())),
-                    "end".to_string()
+                    "end".to_string(),
                 );
                 Err(Error::from(self::error::Error::from_kind(kind)))
             }
@@ -1285,14 +1275,11 @@ where
 impl<B, F> Iterator for XmlParser<B, F>
 where
     B: BufRead,
-    F: TermFactory + Clone + Default + Debug,
-    <F as TermFactory>::TermData: Debug,
+    F: TermFactory + Clone + Default,
 {
     type Item = Result<[Term<F::TermData>; 3]>;
     fn next(&mut self) -> Option<Self::Item> {
-
         loop {
-
             // First make sure to consume the queue.
             if let Some(res) = self.handler.triples.pop_front() {
                 return Some(res);
