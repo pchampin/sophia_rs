@@ -22,6 +22,7 @@ use crate::error::*;
 use crate::ns::rdf;
 use crate::ns::xsd;
 use crate::ns::Namespace;
+use crate::term::StaticTerm;
 use crate::term::factory::RcTermFactory;
 use crate::term::factory::TermFactory;
 use crate::term::iri_rfc3987::is_absolute_iri;
@@ -30,7 +31,68 @@ use crate::term::iri_rfc3987::is_valid_iri;
 use crate::term::matcher::TermMatcher;
 use crate::term::Term;
 
+static RESERVED_NODE_NAMES: &'static [StaticTerm] = &[
+    rdf::RDF,
+    rdf::ID,
+    rdf::about,
+    rdf::bagID,
+    rdf::parseType,
+    rdf::resource,
+    rdf::nodeID,
+    rdf::li,
+    rdf::aboutEach,
+    rdf::aboutEachPrefix,
+];
+
+static RESERVED_PROPERTY_NAMES: &'static [StaticTerm] = &[
+    rdf::Description,
+    rdf::RDF,
+    rdf::ID,
+    rdf::about,
+    rdf::bagID,
+    rdf::parseType,
+    rdf::resource,
+    rdf::nodeID,
+    rdf::aboutEach,
+    rdf::aboutEachPrefix,
+];
+
 // ---
+pub mod error {
+    error_chain! {
+        types {
+            Error, ErrorKind, ResultExt;
+        }
+        errors {
+            XmlError(e: ::quick_xml::Error) {
+                description("xml parser failed")
+                display("xml parser failed: {:?}", e)
+            }
+            InvalidNodeName(n: String) {
+                description("invalid property name")
+                display("invalid property name: {:?}", n)
+            }
+            InvalidPropertyName(n: String) {
+                description("invalid property name")
+                display("invalid property name: {:?}", n)
+            }
+            AmbiguousSubject {
+                description("cannot have `rdf:ID`, `rdf:nodeID` and `rdf:about` at the same time")
+                display("cannot have `rdf:ID`, `rdf:nodeID` and `rdf:about` at the same time")
+            }
+            InvalidPrefix(p: String) {
+                description("invalid prefix")
+                display("{:?} cannot be used as a prefix", p)
+            }
+        }
+    }
+
+    impl From<quick_xml::Error> for Error {
+        fn from(e: quick_xml::Error) -> Self {
+            Self::from_kind(ErrorKind::XmlError(e))
+        }
+    }
+}
 
 /// RDF/XML parser configuration.
 ///
@@ -264,16 +326,17 @@ impl<F: TermFactory> Scope<F> {
     /// Add a new XML prefix to the namespace mapping.
     fn add_prefix(&mut self, prefix: &str, value: &str) -> Result<()> {
         if prefix == "_" {
-            panic!("reserved prefix")
+            Err(Error::from(
+                self::error::Error::from(self::error::ErrorKind::InvalidPrefix(prefix.into()))
+            ))
         } else {
             let mut f = self.factory.borrow_mut();
             self.ns.insert(
                 String::from(prefix),
                 Namespace::new(f.get_term_data(value))?,
             );
+            Ok(())
         }
-
-        Ok(())
     }
 
     /// Set the default XML prefix.
@@ -469,31 +532,35 @@ where
 
         // Update XML namespaces with those defined in the document.
         for attr in e.attributes().with_checks(true) {
-            let a = attr.expect("FIXME");
+            let a = attr.map_err(self::error::Error::from)?;
             if a.key.starts_with(b"xmlns:") {
                 scope
                     .add_prefix(
                         &self.reader.decode(&a.key[6..]),
-                        &a.unescape_and_decode_value(&self.reader).expect("FIXME"),
-                    )
-                    .expect("FIXME");
+                        &a.unescape_and_decode_value(&self.reader)
+                            .map_err(self::error::Error::from)?
+                    )?;
             } else if a.key == b"xmlns" {
-                scope.set_default(&a.unescape_and_decode_value(&self.reader).expect("FIXME"))?;
+                scope.set_default(&a.unescape_and_decode_value(&self.reader)
+                    .map_err(self::error::Error::from)?)?;
             } else if a.key == b"xml:base" {
-                scope.set_base(&a.unescape_and_decode_value(&self.reader).expect("FIXME"))?;
+                scope.set_base(&a.unescape_and_decode_value(&self.reader)
+                    .map_err(self::error::Error::from)?)?;
             }
         }
 
         // Add current lang to scope or copy last one
         for attr in e.attributes().with_checks(true) {
-            let a = attr.expect("FIXME");
+            let a = attr.map_err(self::error::Error::from)?;
             if a.key == b"xml:lang" {
                 scope.lang = if a.value.is_empty() {
                     None
                 } else {
+                    let v = &a.unescape_and_decode_value(&self.reader)
+                        .map_err(|e| self::error::Error::from(e))?;
                     self.factory
                         .borrow_mut()
-                        .get_term_data(&a.unescape_and_decode_value(&self.reader).unwrap())
+                        .get_term_data(v)
                         .into()
                 };
             }
@@ -506,7 +573,7 @@ where
 
     // Exit the local scope.
     fn leave_scope(&mut self) {
-        self.scopes.pop().expect("FIXME");
+        self.scopes.pop().expect("XML is not balanced");
     }
 
     // ---
@@ -566,8 +633,11 @@ where
     // ---
 
     fn element_start(&mut self, e: &BytesStart) {
-        self.enter_scope(e);
-        let res = match self.state.last().unwrap() {
+        if let Err(e) = self.enter_scope(e) {
+            self.triples.push_back(Err(e));
+        }
+
+        if let Err(e) = match self.state.last().unwrap() {
             ParsingState::Node => self.node_start(e),
             ParsingState::Predicate => self.predicate_start(e),
             ParsingState::Resource => self.predicate_start(e),
@@ -575,28 +645,35 @@ where
             ParsingState::CollectionItem => self.collection_item_start(e),
             ParsingState::Res => panic!("expecting text, not new element"),
             ParsingState::Literal => unimplemented!("entering element as literal"),
-        };
+        } {
+            self.triples.push_back(Err(e));
+        }
     }
 
-    fn node_start(&mut self, e: &BytesStart) {
+    fn node_start(&mut self, e: &BytesStart) -> Result<()> {
         // Get node type from the XML attribute.
         let ty = self
             .scope()
-            .expand_attribute(&self.reader.decode(e.name()))
-            .expect("INVALID DATATYPE IRI REFERENCE");
+            .expand_attribute(&self.reader.decode(e.name()))?;
 
-        // Bail out if an rdf:RDF element
-        if ty.matches(&rdf::RDF) {
+        // Bail out if in a top-level rdf:RDF element
+        if rdf::RDF.matches(&ty) && self.parents.is_empty() {
             self.state.push(ParsingState::Node);
             self.parents.push(self.factory.borrow_mut().copy(&rdf::RDF));
-            return;
+            return Ok(());
+        }
+
+        //
+        if RESERVED_NODE_NAMES.matches(&ty) {
+            let kind = self::error::ErrorKind::InvalidNodeName(ty.value());
+            return Err(Error::from(self::error::Error::from_kind(kind)));
         }
 
         // Separate node subject from other attributes
         let mut properties = HashMap::new();
         let mut subject = Vec::new();
         for attr in e.attributes().with_checks(true) {
-            let a = attr.expect("FIXME");
+            let a = attr.map_err(self::error::Error::from)?;
 
             // ignore xml attributes (processed in element_start)
             if a.key.starts_with(b"xml") {
@@ -606,31 +683,33 @@ where
             // try to extract the subject annotation
             let k = self
                 .scope()
-                .expand_attribute(&self.reader.decode(a.key))
-                .expect("FIXME");
-            let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
+                .expand_attribute(&self.reader.decode(a.key))?;
+            let v = a.unescape_and_decode_value(&self.reader)
+                .map_err(self::error::Error::from)?;
 
             if k.matches(&rdf::about) {
-                subject.push(self.scope().expand_iri(&v).expect("INVALID IRI"));
+                subject.push(self.scope().expand_iri(&v)?);
             } else if k.matches(&rdf::ID) {
-                subject.push(self.scope().expand_id(&v).expect("INVALID NAME"));
+                subject.push(self.scope().expand_id(&v)?);
             } else if k.matches(&rdf::nodeID) {
                 subject.push(
                     self.factory
                         .borrow_mut()
-                        .bnode(&format!("o{}", v))
-                        .expect("INVALID BNODE"),
+                        .bnode(&format!("o{}", v))?,
                 );
             } else if k.matches(&rdf::type_) {
-                properties.insert(k, self.scope().expand_iri(&v).expect("INVALID IRI"));
+                properties.insert(k, self.scope().expand_iri(&v)?);
             } else {
-                properties.insert(k, self.scope().new_literal(v).expect("FIXME"));
+                properties.insert(k, self.scope().new_literal(v)?);
             }
         }
 
         // Get subject and add it to the current nested stack
         if subject.len() > 1 {
-            panic!("cannot have rdf:ID, rdf:about and rdf:nodeId at the same time")
+            return Err(
+                self::error::Error::from_kind(self::error::ErrorKind::AmbiguousSubject)
+                .into()
+            );
         }
         let s: Term<_> = subject.pop().unwrap_or_else(|| self.new_bnode());
         self.parents.push(s.clone());
@@ -651,22 +730,28 @@ where
 
         // Next start event is expected to be a predicate
         self.state.push(ParsingState::Predicate);
+        Ok(())
     }
 
-    fn predicate_start(&mut self, e: &BytesStart) {
+    fn predicate_start(&mut self, e: &BytesStart) -> Result<()> {
         // Get the predicate and add it to the current nested stack
         // or build a new `rdf:_n` IRI if the predicate is `rdf:li`.
-        let p = self
-            .predicate_iri_start(&self.reader.decode(e.name()))
-            .expect("INVALID PREDICATE IRI");
-        self.parents.push(p);
+        let p = self.predicate_iri_start(&self.reader.decode(e.name()))?;
+
+        // Fail if the property is among forbidden names.
+        if RESERVED_PROPERTY_NAMES.matches(&p) {
+            let kind = self::error::ErrorKind::InvalidNodeName(p.value());
+            return Err(Error::from(self::error::Error::from_kind(kind)));
+        } else {
+            self.parents.push(p);
+        }
 
         // Extract attributes relevant to the RDF syntax
         let mut attributes = HashMap::new();
         let mut next_state = ParsingState::Node;
         let mut object = Vec::with_capacity(1);
         for attr in e.attributes().with_checks(true) {
-            let a = attr.expect("FIXME");
+            let a = attr.map_err(self::error::Error::from)?;
 
             // Ignore `xml` attributes
             if a.key.starts_with(b"xml") {
@@ -675,18 +760,20 @@ where
 
             let k = self
                 .scope()
-                .expand_attribute(&self.reader.decode(a.key))
-                .expect("INVALID ATTRIBUTE");
+                .expand_attribute(&self.reader.decode(a.key))?;
             if k.matches(&rdf::datatype) {
-                let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
-                self.scope_mut().set_datatype(&v);
+                let v = a.unescape_and_decode_value(&self.reader)
+                    .map_err(self::error::Error::from)?;
+                self.scope_mut().set_datatype(&v)?;
             } else if k.matches(&rdf::ID) {
-                let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
-                object.push(self.scope().expand_id(&v).expect("FIXME"));
+                let v = a.unescape_and_decode_value(&self.reader)
+                    .map_err(self::error::Error::from)?;
+                object.push(self.scope().expand_id(&v)?);
                 next_state = ParsingState::Res;
             } else if k.matches(&rdf::resource) {
-                let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
-                object.push(self.scope().expand_iri(&v).expect("FIXME"));
+                let v = a.unescape_and_decode_value(&self.reader)
+                    .map_err(self::error::Error::from)?;
+                object.push(self.scope().expand_iri(&v)?);
                 next_state = ParsingState::Predicate;
             } else if k.matches(&rdf::parseType) {
                 match a.value.as_ref() {
@@ -701,14 +788,15 @@ where
                         next_state = ParsingState::Collection;
                     }
                     b"Literal" => {
-                        self.scope_mut().set_datatype(&rdf::XMLLiteral.value());
+                        self.scope_mut().set_datatype(&rdf::XMLLiteral.value())?;
                         next_state = ParsingState::Literal;
                     }
                     other => panic!("invalid parseType: {:?}", other),
                 }
             } else {
-                let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
-                attributes.insert(k, self.scope().new_literal(v).expect("FIXME"));
+                let v = a.unescape_and_decode_value(&self.reader)
+                    .map_err(self::error::Error::from)?;
+                attributes.insert(k, self.scope().new_literal(v)?);
                 next_state = ParsingState::Resource;
             }
         }
@@ -719,7 +807,10 @@ where
             0 if !attributes.is_empty() => Some(self.new_bnode()),
             0 if attributes.is_empty() => None,
             1 => Some(object.last().unwrap().clone()),
-            _ => panic!("cannot have rdf:resource, rdf::ID or rdf:nodeID at the same time"),
+            _ => return Err(
+                self::error::Error::from_kind(self::error::ErrorKind::AmbiguousSubject)
+                .into()
+            )
         };
 
         // Make the predicate a resource element if an objec tis present.
@@ -732,25 +823,27 @@ where
         }
 
         self.state.push(next_state);
+        Ok(())
     }
 
-    fn collection_start(&mut self, e: &BytesStart) {
+    fn collection_start(&mut self, e: &BytesStart) -> Result<()> {
         self.state.push(ParsingState::CollectionItem);
-        self.collection_item_start(e);
+        self.collection_item_start(e)
     }
 
-    fn collection_item_start(&mut self, e: &BytesStart) {
+    fn collection_item_start(&mut self, e: &BytesStart) -> Result<()> {
         // Start the inner node element and get its IRI.
-        self.node_start(e);
+        self.node_start(e)?;
         let new_iri = self.parents.last().unwrap().clone();
         // Add the iri of the node to the parent scope (not current!)
         self.parent_scope_mut().collection.push(new_iri);
+        Ok(())
     }
 
     // ---
 
     fn element_end(&mut self, e: &BytesEnd) {
-        match self.state.pop().unwrap() {
+        if let Err(e) = match self.state.pop().unwrap() {
             ParsingState::Node => self.predicate_end(e),
             ParsingState::Predicate => self.node_end(),
             ParsingState::Literal => self.predicate_end(e),
@@ -758,11 +851,13 @@ where
             ParsingState::CollectionItem => self.collection_item_end(),
             ParsingState::Collection => self.collection_end(e),
             ParsingState::Res => self.res_end(),
+        } {
+            self.triples.push_back(Err(e));
         }
         self.leave_scope();
     }
 
-    fn node_end(&mut self) {
+    fn node_end(&mut self) -> Result<()> {
         // Add the entity as a triple object if it is not top-level
         let o = self.parents.pop().unwrap();
         if self.parents.len() > 2 {
@@ -772,43 +867,45 @@ where
                 self.triples.push_back(Ok([s.clone(), p.clone(), o]));
             }
         }
+
+        Ok(())
     }
 
-    fn predicate_end(&mut self, e: &BytesEnd) {
+    fn predicate_end(&mut self, e: &BytesEnd) -> Result<()> {
         // Build the predicate IRI
-        let p = self
-            .predicate_iri_end(&self.reader.decode(e.name()))
-            .expect("INVALID PREDICATE IRI");
+        let p = self.predicate_iri_end(&self.reader.decode(e.name()))?;
 
         // Get the literal value
         if self.parents.len() > 1 {
             if let Some(text) = self.scope_mut().text.take() {
                 let s = self.parents[self.parents.len() - 2].clone();
-                let o = self.scope_mut().new_literal(text).expect("FIXME");
+                let o = self.scope_mut().new_literal(text)?;
                 self.triples.push_back(Ok([s, p, o]));
             }
         }
 
         self.parents.pop();
+        Ok(())
     }
 
-    fn resource_end(&mut self, e: &BytesEnd) {
+    fn resource_end(&mut self, e: &BytesEnd) -> Result<()> {
         // End of the implicit node element
-        self.node_end();
+        self.node_end()?;
         // Drop text, since it is not relevant in a Resource predicate.
         self.scope_mut().text.take();
         // End of the resource predicate
         self.predicate_end(e)
     }
 
-    fn collection_item_end(&mut self) {
+    fn collection_item_end(&mut self) -> Result<()> {
         // End of the node parent.
         self.parents.pop();
         // Remove `CollectionItem`
         self.state.pop();
+        Ok(())
     }
 
-    fn collection_end(&mut self, e: &BytesEnd) {
+    fn collection_end(&mut self, e: &BytesEnd) -> Result<()> {
         let collection = self.scope().collection.clone();
         if !collection.is_empty() {
             let mut node = self.new_bnode();
@@ -845,16 +942,16 @@ where
             }
         }
 
-        self.predicate_end(e);
+        self.predicate_end(e)
     }
 
-    fn res_end(&mut self) {
+    fn res_end(&mut self) -> Result<()> {
         // Subject, predicate, object and ID of the reified triple
         let id = self.parents.pop().unwrap();
         let p = self.parents.pop().unwrap();
         let s = self.parents.last().unwrap().clone();
         let txt = self.scope_mut().text.take().unwrap_or_default();
-        let o = self.scope().new_literal(txt).expect("FIXME");
+        let o = self.scope().new_literal(txt)?;
 
         // Types for the reification
         let mut factory = self.factory.borrow_mut();
@@ -871,22 +968,31 @@ where
         self.triples.push_back(Ok([id.clone(), subject, s]));
         self.triples.push_back(Ok([id.clone(), predicate, p]));
         self.triples.push_back(Ok([id.clone(), object, o]));
+
+        Ok(())
     }
 
     // --- Text elements ----------------------------------------------------
 
     fn element_text(&mut self, e: &BytesText) {
         if self.scope().text.is_some() {
-            let text = e.unescape_and_decode(&self.reader).expect("FIXME");
-            self.scope_mut().set_text(text);
+            match e.unescape_and_decode(&self.reader) {
+                Ok(text) => self.scope_mut().set_text(text),
+                Err(e) => self.triples.push_back(Err(self::error::Error::from(e).into())),
+            }
         }
     }
 
     // --- Empty elements ----------------------------------------------------
 
     fn element_empty(&mut self, e: &BytesStart) {
-        self.enter_scope(e);
-        match self.state.last().unwrap() {
+
+
+        if let Err(e) = self.enter_scope(e) {
+            self.triples.push_back(Err(e));
+        }
+
+        if let Err(e) = match self.state.last().unwrap() {
             ParsingState::Node => self.node_empty(e),
             ParsingState::Predicate => self.predicate_empty(e),
             ParsingState::Resource => self.resource_empty(e),
@@ -894,21 +1000,28 @@ where
             ParsingState::CollectionItem => unreachable!(),
             ParsingState::Res => panic!("expected end element, not empty"),
             ParsingState::Literal => unimplemented!("empty element as literal"),
+        } {
+            self.triples.push_back(Err(e));
         }
+
         self.leave_scope();
     }
 
-    fn node_empty(&mut self, e: &BytesStart) {
-        self.node_start(e);
+    fn node_empty(&mut self, e: &BytesStart) -> Result<()> {
+        self.node_start(e)?;
         self.state.pop();
-        self.node_end();
+        self.node_end()
     }
 
-    fn predicate_empty(&mut self, e: &BytesStart) {
-        let p = self
-            .predicate_iri_start(&self.reader.decode(e.name()))
-            .expect("INVALID PREDICATE IRI");
+    fn predicate_empty(&mut self, e: &BytesStart) -> Result<()> {
+        let p = self.predicate_iri_start(&self.reader.decode(e.name()))?;
 
+        // Fail if the property is among forbidden names.
+        if RESERVED_PROPERTY_NAMES.matches(&p) {
+            let kind = self::error::ErrorKind::InvalidNodeName(p.value());
+            return Err(Error::from(self::error::Error::from_kind(kind)));
+        }
+        
         let mut object = Vec::with_capacity(1);
         let mut attributes = HashMap::new();
         let mut parse_type = None;
@@ -916,7 +1029,7 @@ where
 
         // Extract attributes
         for attr in e.attributes().with_checks(true) {
-            let a = attr.expect("FIXME");
+            let a = attr.map_err(self::error::Error::from)?;
 
             // ignore XML attributes (processed when entering scope)
             if a.key.starts_with(b"xml") {
@@ -926,20 +1039,19 @@ where
             // try to extract the annotation object
             let k = self
                 .scope()
-                .expand_attribute(&self.reader.decode(a.key))
-                .expect("FIXME");
-            let v = a.unescape_and_decode_value(&self.reader).expect("FIXME");
+                .expand_attribute(&self.reader.decode(a.key))?;
+            let v = a.unescape_and_decode_value(&self.reader)
+                .map_err(self::error::Error::from)?;
             if k.matches(&rdf::resource) {
-                object.push(self.scope().expand_iri(&v).expect("INVALID IRI"));
+                object.push(self.scope().expand_iri(&v)?);
             } else if k.matches(&rdf::nodeID) {
                 object.push(
                     self.factory
                         .borrow_mut()
-                        .bnode(format!("o{}", v))
-                        .expect("FIXME"),
+                        .bnode(format!("o{}", v))?
                 );
             } else if k.matches(&rdf::ID) {
-                reification = Some(self.scope().expand_id(&v).expect("FIXME"));
+                reification = Some(self.scope().expand_id(&v)?);
             } else if k.matches(&rdf::parseType) {
                 match a.value.as_ref() {
                     b"Resource" => parse_type = Some(&b"Resource"[..]),
@@ -966,15 +1078,18 @@ where
         let o = match object.len() {
             0 if !attributes.is_empty() => self.new_bnode(),
             1 => object.last().unwrap().clone(),
-            0 if attributes.is_empty() => self.scope().new_literal(String::new()).expect("FIXME"),
-            _ => panic!("cannot have rdf:resource and rdf:nodeID at the same time"),
+            0 if attributes.is_empty() => self.scope().new_literal(String::new())?,
+            _ => return Err(
+                self::error::Error::from_kind(self::error::ErrorKind::AmbiguousSubject)
+                .into()
+            ),
         };
 
         // Add the triple and all subsequent triples as attributes
         self.triples
             .push_back(Ok([s.clone(), p.clone(), o.clone()]));
         for (prop, value) in attributes.into_iter() {
-            let literal = self.scope().new_literal(value).expect("FIXME");
+            let literal = self.scope().new_literal(value)?;
             self.triples.push_back(Ok([o.clone(), prop, literal]));
         }
 
@@ -994,16 +1109,18 @@ where
             self.triples.push_back(Ok([id.clone(), predicate, p]));
             self.triples.push_back(Ok([id.clone(), obj, o]));
         }
+
+        Ok(())
     }
 
-    fn resource_empty(&mut self, e: &BytesStart) {
+    fn resource_empty(&mut self, e: &BytesStart) -> Result<()> {
         self.predicate_empty(e)
     }
 
-    fn collection_item_empty(&mut self, e: &BytesStart) {
-        self.collection_start(e);
+    fn collection_item_empty(&mut self, e: &BytesStart) -> Result<()> {
+        self.collection_start(e)?;
         self.state.pop();
-        self.collection_item_end();
+        self.collection_item_end()
     }
 }
 
@@ -1018,17 +1135,22 @@ where
         let mut buffer = Vec::new();
         loop {
             // First make sure to consume the queue.
-            if let Some(triple) = self.triples.pop_front() {
-                return Some(triple);
+            if let Some(res) = self.triples.pop_front() {
+                return Some(res);
             }
             // Then process the next event to maybe produce triples
-            match &self.reader.read_event(&mut buffer).unwrap() {
-                Event::Eof => return None,
-                Event::Start(s) => self.element_start(s),
-                Event::Empty(e) => self.element_empty(e),
-                Event::End(e) => self.element_end(e),
-                Event::Text(t) => self.element_text(t),
-                _ => (),
+            match self.reader.read_event(&mut buffer) {
+                Ok(Event::Eof) => return None,
+                Ok(Event::Start(s)) => self.element_start(&s),
+                Ok(Event::Empty(e)) => self.element_empty(&e),
+                Ok(Event::End(e)) => self.element_end(&e),
+                Ok(Event::Text(t)) => self.element_text(&t),
+                Ok(_) => (),
+                Err(e) => {
+                    let kind = self::error::ErrorKind::XmlError(e);
+                    let err = self::error::Error::from_kind(kind);
+                    self.triples.push_back(Err(Error::from(err)));
+                }
             }
             // Finally clear the buffer if we are going to use it again.
             buffer.clear();
@@ -1154,7 +1276,31 @@ mod test {
     }
 
     macro_rules! rdf_failure {
-        ($(#[$attr:meta])* $suite:ident / $case:ident) => {};
+        ($(#[$attr:meta])* $suite:ident / $case:ident) => {
+            $(#[$attr])*
+            #[test]
+            fn $case() {
+                let path = std::path::PathBuf::from("..")
+                    .join("rdf-tests")
+                    .join("rdf-xml")
+                    .join(stringify!($suite).replace('_', "-"))
+                    .join(stringify!($case).replace('_', "-"));
+
+                let xmlfile = std::fs::File::open(path.with_extension("rdf")).unwrap();
+                let mut xml = TestGraph::new();
+                assert!(
+                    $crate::parser::xml::Config::with_base(&format!(
+                        "http://www.w3.org/2013/RDFXMLTests/{}/{}.rdf",
+                        stringify!($suite).replace('_', "-"),
+                        stringify!($case).replace('_', "-"),
+                    ))
+                    .unwrap()
+                    .parse_read(xmlfile)
+                    .in_graph(&mut xml)
+                    .is_err()
+                );
+            }
+        };
     }
 
     macro_rules! nt_test {
@@ -1611,13 +1757,13 @@ mod test {
     mod rdfms_rdf_id {
         use super::*;
 
-        rdf_failure!(rdfms_rdf_id / error_001);
-        rdf_failure!(rdfms_rdf_id / error_002);
-        rdf_failure!(rdfms_rdf_id / error_003);
-        rdf_failure!(rdfms_rdf_id / error_004);
-        rdf_failure!(rdfms_rdf_id / error_005);
-        rdf_failure!(rdfms_rdf_id / error_006);
-        rdf_failure!(rdfms_rdf_id / error_007);
+        rdf_failure!(rdfms_rdf_id / error001);
+        rdf_failure!(rdfms_rdf_id / error002);
+        rdf_failure!(rdfms_rdf_id / error003);
+        rdf_failure!(rdfms_rdf_id / error004);
+        rdf_failure!(rdfms_rdf_id / error005);
+        rdf_failure!(rdfms_rdf_id / error006);
+        rdf_failure!(rdfms_rdf_id / error007);
     }
 
     mod rdfms_rdf_names_use {
