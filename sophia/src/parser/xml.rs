@@ -63,17 +63,19 @@ static RESERVED_ATTRIBUTES_NAMES: &'static [StaticTerm] =
 
 mod xmlname {
 
-    use pest::Parser;
+    use regex::Regex;
 
-    #[cfg(debug_assertions)]
-    const _GRAMMAR: &str = include_str!("xmlname.pest");
-
-    #[derive(Parser)]
-    #[grammar = "parser/xmlname.pest"]
-    struct PestXmlNameParser;
+    lazy_static! {
+        static ref XMLNAME_REGEX: Regex = Regex::new(r"(?x)^
+            # NameStartChar
+            [_A-Za-z\u{C0}-\u{D6}\u{D8}-\u{F6}\u{F8}-\u{2FF}\u{370}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}]
+            # NameChar
+            [-.0-9\u{B7}_A-Za-z\u{C0}-\u{D6}\u{D8}-\u{F6}\u{F8}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{203F}-\u{2040}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}]*
+        $").unwrap();
+    }
 
     pub fn is_valid_xmlname(n: &str) -> bool {
-        PestXmlNameParser::parse(Rule::Name, n).is_ok()
+        XMLNAME_REGEX.is_match(n)
     }
 }
 
