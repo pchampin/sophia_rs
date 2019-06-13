@@ -158,7 +158,7 @@ pub mod error {
                     message,
                     pest::error::InputLocation::Pos(0),
                     pest::error::LineColLocation::Pos((0, 0)),
-                )
+                ),
             )
         }
     }
@@ -1095,7 +1095,7 @@ where
                 Err(e) => {
                     let e = error::with_position(Error::from(e), self.reader.buffer_position());
                     self.triples.push_back(Err(e))
-                },
+                }
             }
         }
     }
