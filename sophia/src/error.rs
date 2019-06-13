@@ -3,9 +3,6 @@
 use pest::error::{InputLocation, LineColLocation};
 
 error_chain! {
-    links {
-        XmlError(crate::parser::xml::error::Error, crate::parser::xml::error::ErrorKind);
-    }
     errors {
         /// Raised by the methods of the [`Graph`](../graph/trait.Graph.html) trait.
         GraphError(message: String) {

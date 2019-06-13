@@ -149,10 +149,33 @@ pub mod error {
         }
     }
 
+    impl From<Error> for crate::error::Error {
+        fn from(error: Error) -> Self {
+            let message = error.0.to_string();
+            crate::error::Error::with_chain(
+                error,
+                crate::error::ErrorKind::ParserError(
+                    message,
+                    pest::error::InputLocation::Pos(0),
+                    pest::error::LineColLocation::Pos((0, 0)),
+                )
+            )
+        }
+    }
+
     impl From<ErrorKind> for crate::error::Error {
         fn from(kind: ErrorKind) -> Self {
-            Self::from(Error::from_kind(kind))
+            let error = Error::from_kind(kind);
+            Self::from(error)
         }
+    }
+
+    /// Patch the `location` field of the error kind if the error is a `ParserError`.
+    pub fn with_position(mut e: crate::error::Error, n: usize) -> crate::error::Error {
+        if let crate::error::ErrorKind::ParserError(_, ref mut location, _) = e.0 {
+            *location = pest::error::InputLocation::Pos(n);
+        }
+        e
     }
 }
 
@@ -748,6 +771,7 @@ where
 
     fn element_start(&mut self, e: &BytesStart) {
         if let Err(e) = self.enter_scope(e) {
+            let e = error::with_position(e, self.reader.buffer_position());
             self.triples.push_back(Err(e));
         }
 
@@ -763,6 +787,7 @@ where
                 "text".to_string(),
             ))),
         } {
+            let e = error::with_position(e, self.reader.buffer_position());
             self.triples.push_back(Err(e));
         }
     }
@@ -951,6 +976,7 @@ where
             ParsingState::Collection => self.collection_end(e),
             ParsingState::Res => self.res_end(),
         } {
+            let e = error::with_position(e, self.reader.buffer_position());
             self.triples.push_back(Err(e));
         }
         self.leave_scope();
@@ -1066,7 +1092,10 @@ where
         if self.scope().text.is_some() {
             match e.unescape_and_decode(&self.reader) {
                 Ok(text) => self.scope_mut().set_text(text),
-                Err(e) => self.triples.push_back(Err(Error::from(e))),
+                Err(e) => {
+                    let e = error::with_position(Error::from(e), self.reader.buffer_position());
+                    self.triples.push_back(Err(e))
+                },
             }
         }
     }
@@ -1075,6 +1104,7 @@ where
 
     fn element_empty(&mut self, e: &BytesStart) {
         if let Err(e) = self.enter_scope(e) {
+            let e = error::with_position(e, self.reader.buffer_position());
             self.triples.push_back(Err(e));
         }
 
@@ -1093,6 +1123,7 @@ where
                 Err(Error::from(kind))
             }
         } {
+            let e = error::with_position(e, self.reader.buffer_position());
             self.triples.push_back(Err(e));
         }
 
