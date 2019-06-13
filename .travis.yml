@@ -40,7 +40,7 @@ matrix:
         - cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID
 
 script:
-  - cargo test
+  - cargo test --all-features
 cache:
   cargo: true
 before_cache:

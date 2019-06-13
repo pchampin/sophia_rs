@@ -24,4 +24,5 @@
 pub mod common;
 pub mod nq;
 pub mod nt;
+#[cfg(feature = "xml")]
 pub mod xml;
