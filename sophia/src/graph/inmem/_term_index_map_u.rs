@@ -13,10 +13,22 @@ where
     F: TermFactory,
 {
     factory: F,
-    next_free: I,
     i2t: Vec<Option<FTerm<F>>>,
     i2c: Vec<I>,
     t2i: HashMap<StaticTerm, I>,
+
+    // factory is used to make new terms (used by make_term)
+    // i2t (index to term) maps
+    // - each used index to Some(Term)
+    // - each free index to None
+    // i2c (index to count) maps
+    // - each used index to its ref counter (used by inc_ref and dec_ref)
+    // - each free index to the next free index
+    // t2i (term to index) maps each term to its index
+    //
+    // 0 is the null_index (index not mapped to any Term), so
+    // - i2t[0] is initialized to None but never used,
+    // - i2c[0] is used to store the first free index
 }
 
 // Implementation note:
@@ -29,7 +41,7 @@ where
 
 impl<I, F> TermIndexMapU<I, F>
 where
-    I: Default,
+    I: Unsigned,
     F: TermFactory + Default,
 {
     pub fn new() -> TermIndexMapU<I, F> {
@@ -39,17 +51,35 @@ where
 
 impl<I, F> Default for TermIndexMapU<I, F>
 where
-    I: Default,
+    I: Unsigned,
     F: TermFactory + Default,
 {
     fn default() -> TermIndexMapU<I, F> {
         TermIndexMapU {
             factory: F::default(),
-            next_free: I::default(),
-            i2c: Vec::default(),
-            i2t: Vec::default(),
+            i2c: vec![I::ONE],
+            i2t: vec![None],
             t2i: HashMap::default(),
         }
+    }
+}
+
+impl<I, F> TermIndexMapU<I, F>
+where
+    I: Unsigned,
+    F: TermFactory + Default,
+{
+    #[inline]
+    fn next_free(&self) -> I {
+        self.i2c[0]
+    }
+
+    fn set_next_free(&mut self, new: I) {
+        self.i2c[0] = new
+    }
+
+    fn inc_next_free(&mut self) {
+        self.i2c[0].inc()
     }
 }
 
@@ -65,6 +95,9 @@ where
     type Index = T;
     type Factory = F;
 
+    const NULL_INDEX: Self::Index = T::ZERO;
+
+    #[inline]
     fn get_index(&self, t: &RefTerm) -> Option<T> {
         self.t2i.get(t).cloned()
     }
@@ -76,16 +109,17 @@ where
             self.i2c[i.as_usize()].inc();
             return i;
         }
-        self.t2i.insert(rt, self.next_free);
-        let i = self.next_free.as_usize();
+        let i = self.next_free();
+        self.t2i.insert(rt, i);
+        let i = i.as_usize();
         if i == self.i2t.len() {
-            self.next_free.inc();
+            self.inc_next_free();
             self.i2t.push(Some(t));
-            self.i2c.push(T::one());
+            self.i2c.push(T::ONE);
         } else {
-            self.next_free = self.i2c[i];
+            self.set_next_free(self.i2c[i]);
             self.i2t[i] = Some(t);
-            self.i2c[i] = T::one();
+            self.i2c[i] = T::ONE;
         }
         T::from_usize(i)
     }
@@ -107,11 +141,11 @@ where
     fn dec_ref(&mut self, i: T) {
         let i = i.as_usize();
         self.i2c[i].dec();
-        if self.i2c[i].is_null() {
+        if self.i2c[i] == T::ZERO {
             let t: FTerm<F> = self.i2t[i].take().unwrap();
             self.t2i.remove(unsafe { &fake_static(&t) });
-            self.i2c[i] = self.next_free;
-            self.next_free = T::from_usize(i);
+            self.i2c[i] = self.next_free();
+            self.set_next_free(T::from_usize(i));
         }
     }
 
@@ -127,19 +161,21 @@ where
 /// This trait is used by [`TermIndexMapU`](struct.TermIndexMapU.html)
 /// as an abstraction of all unsigned int types.
 ///
-pub trait Unsigned: Copy + Default + Eq + std::hash::Hash {
+pub trait Unsigned: Copy + Eq + std::hash::Hash {
+    const ZERO: Self;
+    const ONE: Self;
     fn as_usize(&self) -> usize;
     fn from_usize(_: usize) -> Self;
     fn inc(&mut self);
     fn dec(&mut self);
-    fn zero() -> Self;
-    fn one() -> Self;
-    fn is_null(&self) -> bool;
 }
 
 macro_rules! impl_unsigned_for {
     ($uXX: ty) => {
         impl Unsigned for $uXX {
+            const ZERO: Self = 0;
+            const ONE: Self = 1;
+
             #[inline]
             fn as_usize(&self) -> usize {
                 *self as usize
@@ -155,18 +191,6 @@ macro_rules! impl_unsigned_for {
             #[inline]
             fn dec(&mut self) {
                 *self -= 1
-            }
-            #[inline]
-            fn zero() -> Self {
-                0
-            }
-            #[inline]
-            fn one() -> Self {
-                1
-            }
-            #[inline]
-            fn is_null(&self) -> bool {
-                *self == 0
             }
         }
     };
@@ -204,70 +228,70 @@ mod test {
     #[test]
     fn test_term_index_inner() {
         let mut ti = TermIndexMapU::<u16, RcTermFactory>::default();
-        assert_eq!(ti.next_free, 0);
-        assert_eq!(ti.i2t.len(), 0);
+        assert_eq!(ti.next_free(), 1);
+        assert_eq!(ti.i2t.len(), 1);
 
         use crate::ns::rdf;
 
         assert_eq!(ti.get_index(&rdf::subject), None);
-        assert_eq!(ti.make_index(&rdf::subject), 0);
-        assert_eq!(ti.get_index(&rdf::subject), Some(0));
-        assert_eq!(ti.i2c[0], 1);
-        assert_eq!(ti.next_free, 1);
-        assert_eq!(ti.i2t.len(), 1);
-
-        assert_eq!(ti.get_index(&rdf::predicate), None);
-        assert_eq!(ti.make_index(&rdf::predicate), 1);
-        assert_eq!(ti.get_index(&rdf::predicate), Some(1));
+        assert_eq!(ti.make_index(&rdf::subject), 1);
+        assert_eq!(ti.get_index(&rdf::subject), Some(1));
         assert_eq!(ti.i2c[1], 1);
-        assert_eq!(ti.next_free, 2);
+        assert_eq!(ti.next_free(), 2);
         assert_eq!(ti.i2t.len(), 2);
 
-        assert_eq!(ti.get_index(&rdf::object), None);
-        assert_eq!(ti.make_index(&rdf::object), 2);
-        assert_eq!(ti.get_index(&rdf::object), Some(2));
-        assert_eq!(ti.i2c[2], 1);
-        assert_eq!(ti.next_free, 3);
-        assert_eq!(ti.i2t.len(), 3);
-
-        assert_eq!(ti.make_index(&rdf::predicate), 1);
-        assert_eq!(ti.i2c[1], 2);
-
-        ti.inc_ref(1);
-        assert_eq!(ti.i2c[1], 3);
-
-        ti.dec_ref(1);
-        assert_eq!(ti.i2c[1], 2);
-        assert_eq!(ti.next_free, 3);
-
-        ti.dec_ref(1);
-        assert_eq!(ti.i2c[1], 1);
-        assert_eq!(ti.next_free, 3);
-
-        ti.dec_ref(1);
         assert_eq!(ti.get_index(&rdf::predicate), None);
-        assert_eq!(ti.next_free, 1);
-        assert_eq!(ti.i2c[1], 3); // now the previous version of next_free
-
-        ti.dec_ref(0);
-        assert_eq!(ti.get_index(&rdf::subject), None);
-        assert_eq!(ti.next_free, 0);
-        assert_eq!(ti.i2c[0], 1); // now the previous version of next_free
-
-        assert_eq!(ti.make_index(&rdf::type_), 0);
-        assert_eq!(ti.i2c[0], 1);
+        assert_eq!(ti.make_index(&rdf::predicate), 2);
+        assert_eq!(ti.get_index(&rdf::predicate), Some(2));
+        assert_eq!(ti.i2c[2], 1);
+        assert_eq!(ti.next_free(), 3);
         assert_eq!(ti.i2t.len(), 3);
-        assert_eq!(ti.next_free, 1);
+
+        assert_eq!(ti.get_index(&rdf::object), None);
+        assert_eq!(ti.make_index(&rdf::object), 3);
+        assert_eq!(ti.get_index(&rdf::object), Some(3));
+        assert_eq!(ti.i2c[3], 1);
+        assert_eq!(ti.next_free(), 4);
+        assert_eq!(ti.i2t.len(), 4);
+
+        assert_eq!(ti.make_index(&rdf::predicate), 2);
+        assert_eq!(ti.i2c[2], 2);
+
+        ti.inc_ref(2);
+        assert_eq!(ti.i2c[2], 3);
+
+        ti.dec_ref(2);
+        assert_eq!(ti.i2c[2], 2);
+        assert_eq!(ti.next_free(), 4);
+
+        ti.dec_ref(2);
+        assert_eq!(ti.i2c[2], 1);
+        assert_eq!(ti.next_free(), 4);
+
+        ti.dec_ref(2);
+        assert_eq!(ti.get_index(&rdf::predicate), None);
+        assert_eq!(ti.next_free(), 2);
+        assert_eq!(ti.i2c[2], 4); // now the previous version of next_free()
+
+        ti.dec_ref(1);
+        assert_eq!(ti.get_index(&rdf::subject), None);
+        assert_eq!(ti.next_free(), 1);
+        assert_eq!(ti.i2c[1], 2); // now the previous version of next_free()
+
+        assert_eq!(ti.make_index(&rdf::type_), 1);
+        assert_eq!(ti.i2c[1], 1);
+        assert_eq!(ti.i2t.len(), 4);
+        assert_eq!(ti.next_free(), 2);
 
         // re-inserting rdf::subject, now ends up in a different place
-        assert_eq!(ti.make_index(&rdf::subject), 1);
-        assert_eq!(ti.i2c[1], 1);
-        assert_eq!(ti.i2t.len(), 3);
-        assert_eq!(ti.next_free, 3);
-
-        assert_eq!(ti.make_index(&rdf::Property), 3);
-        assert_eq!(ti.i2c[3], 1);
+        assert_eq!(ti.make_index(&rdf::subject), 2);
+        assert_eq!(ti.i2c[2], 1);
         assert_eq!(ti.i2t.len(), 4);
-        assert_eq!(ti.next_free, 4);
+        assert_eq!(ti.next_free(), 4);
+
+        assert_eq!(ti.make_index(&rdf::Property), 4);
+        assert_eq!(ti.i2c[4], 1);
+        assert_eq!(ti.i2t.len(), 5);
+        assert_eq!(ti.next_free(), 5);
     }
 }

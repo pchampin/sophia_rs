@@ -1,4 +1,4 @@
-// this module is transparently re-exported by its parent `graphe`
+// this module is transparently re-exported by its parent `graph`
 
 use std::collections::HashSet;
 use std::hash::Hash;

@@ -7,11 +7,14 @@ use std::hash::Hash;
 use crate::term::factory::{FTerm, TermFactory};
 use crate::term::*;
 
-/// A bidirectionnal mapping between [`Term`](../../term/enum.Term.html)s
-/// and a smaller type.
+/// A bidirectionnal mapping between [`Term`]s and *indexes* of a smaller type.
 ///
 /// The TermIndexMap maintains a reference count for each index,
 /// to automatically free them whenever they are not used.
+///
+/// One special index (called the *null index*) is never mapped to any [`Term`].
+///
+/// [`Term`]: ../../term/enum.Term.html
 ///
 pub trait TermIndexMap: Default {
     /// The type used to represent terms
@@ -19,15 +22,18 @@ pub trait TermIndexMap: Default {
     /// The factory used to instantiate terms.
     type Factory: TermFactory;
 
+    // A reserved index representing no term
+    const NULL_INDEX: Self::Index;
+
     /// Return the index associated to the given term, if it exists.
     fn get_index(&self, t: &RefTerm) -> Option<Self::Index>;
     /// Return the index associated to the given term, creating it if required, and increasing its ref count.
     fn make_index(&mut self, t: &RefTerm) -> Self::Index;
     /// Return the term associated to the given index, if it exists.
     fn get_term(&self, i: Self::Index) -> Option<&FTerm<Self::Factory>>;
-    /// Increase the reference count of a given index.
+    /// Increase the reference count of a given (non-null) index.
     fn inc_ref(&mut self, i: Self::Index);
-    /// Decrease the reference count of a given index.
+    /// Decrease the reference count of a given (non-null) index.
     fn dec_ref(&mut self, i: Self::Index);
     /// Shrinks the capacity of the TermIndexMap as much as possible.
     fn shrink_to_fit(&mut self);
@@ -101,16 +107,16 @@ macro_rules! impl_mutable_graph_for_indexed_mutable_graph {
         type MutationError = coercible_errors::Never;
 
         fn insert<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> MGResult< Self, bool> where
-            T_: AsRef<str> + Clone + Eq + std::hash::Hash,
-            U_: AsRef<str> + Clone + Eq + std::hash::Hash,
-            V_: AsRef<str> + Clone + Eq + std::hash::Hash,
+            T_: $crate::term::TermData,
+            U_: $crate::term::TermData,
+            V_: $crate::term::TermData,
         {
             Ok(self.insert_indexed(s, p, o).is_some())
         }
         fn remove<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> MGResult< Self, bool> where
-            T_: AsRef<str> + Clone + Eq + std::hash::Hash,
-            U_: AsRef<str> + Clone + Eq + std::hash::Hash,
-            V_: AsRef<str> + Clone + Eq + std::hash::Hash,
+            T_: $crate::term::TermData,
+            U_: $crate::term::TermData,
+            V_: $crate::term::TermData,
         {
             Ok(self.remove_indexed(s, p, o).is_some())
         }
