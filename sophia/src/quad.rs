@@ -6,7 +6,7 @@
 
 use std::borrow::Borrow;
 
-use crate::term::graph_key::*;
+use crate::term::graph_id::*;
 use crate::term::*;
 use crate::triple::*;
 
@@ -22,8 +22,8 @@ pub trait Quad<'a> {
     fn p(&self) -> &Term<<Self as Quad<'a>>::TermData>;
     /// The object of this quad.
     fn o(&self) -> &Term<<Self as Quad<'a>>::TermData>;
-    /// The graph key (either a graph name or "default graph") of this quad.
-    fn g(&self) -> &GraphKey<<Self as Quad<'a>>::TermData>;
+    /// The graph identifier (either a graph name or "default graph") of this quad.
+    fn g(&self) -> &GraphId<<Self as Quad<'a>>::TermData>;
 }
 
 impl<'a, T> Quad<'a> for [Term<T>; 4]
@@ -44,8 +44,8 @@ where
         &self[2]
     }
     #[inline]
-    fn g(&self) -> &GraphKey<T> {
-        self[3].as_graph_key()
+    fn g(&self) -> &GraphId<T> {
+        self[3].as_graph_id()
     }
 }
 
@@ -67,15 +67,15 @@ where
         self[2]
     }
     #[inline]
-    fn g(&self) -> &GraphKey<T> {
-        self[3].as_graph_key()
+    fn g(&self) -> &GraphId<T> {
+        self[3].as_graph_id()
     }
 }
 
 impl<'a, T, G> Quad<'a> for (T, G)
 where
     T: Triple<'a>,
-    G: Borrow<GraphKey<T::TermData>>,
+    G: Borrow<GraphId<T::TermData>>,
 {
     type TermData = T::TermData;
     #[inline]
@@ -91,7 +91,7 @@ where
         &self.0.o()
     }
     #[inline]
-    fn g(&self) -> &GraphKey<T::TermData> {
+    fn g(&self) -> &GraphId<T::TermData> {
         self.1.borrow()
     }
 }
@@ -114,7 +114,7 @@ where
         (*self).o()
     }
     #[inline]
-    fn g(&self) -> &GraphKey<<Q as Quad<'a>>::TermData> {
+    fn g(&self) -> &GraphId<<Q as Quad<'a>>::TermData> {
         (*self).g()
     }
 }
@@ -159,7 +159,7 @@ impl<'a, T: Triple<'a>> Quad<'a> for DGQuadWrapper<T> {
         self.0.o()
     }
     #[inline]
-    fn g(&self) -> &GraphKey<T::TermData> {
+    fn g(&self) -> &GraphId<T::TermData> {
         unimplemented!()
     }
 }
@@ -186,14 +186,14 @@ impl<'a, T: Triple<'a>> Quad<'a> for NGQuadWrapper<'a, T> {
         self.0.o()
     }
     #[inline]
-    fn g(&self) -> &GraphKey<T::TermData> {
-        self.1.as_graph_key()
+    fn g(&self) -> &GraphId<T::TermData> {
+        self.1.as_graph_id()
     }
 }
 
 /// Convert any triple into a quad from the default graph.
-pub fn as_quad_from<'a, T: Triple<'a>>(triple: T, graph_key: Term<T::TermData>) -> impl Quad<'a> {
-    NGQuadWrapper(triple, graph_key)
+pub fn as_quad_from<'a, T: Triple<'a>>(triple: T, graph_id: Term<T::TermData>) -> impl Quad<'a> {
+    NGQuadWrapper(triple, graph_id)
 }
 
 #[cfg(test)]

@@ -10,7 +10,7 @@ use super::*;
 use crate::error::*;
 use crate::quad::stream::AsQuadSource;
 use crate::quad::*;
-use crate::term::graph_key::*;
+use crate::term::graph_id::*;
 use crate::term::*;
 use crate::triple::*;
 
@@ -40,7 +40,7 @@ where
     }
 }
 
-impl MutableDataset for Vec<([BoxTerm; 3], GraphKey<Box<str>>)> where {
+impl MutableDataset for Vec<([BoxTerm; 3], GraphId<Box<str>>)> where {
     type MutationError = Never;
 
     fn insert<T, U, V, W>(
@@ -48,7 +48,7 @@ impl MutableDataset for Vec<([BoxTerm; 3], GraphKey<Box<str>>)> where {
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphKey<W>,
+        g: &GraphId<W>,
     ) -> MDResult<Self, bool>
     where
         T: TermData,
@@ -59,7 +59,7 @@ impl MutableDataset for Vec<([BoxTerm; 3], GraphKey<Box<str>>)> where {
         let s = BoxTerm::from(s);
         let p = BoxTerm::from(p);
         let o = BoxTerm::from(o);
-        let g = GraphKey::from(g);
+        let g = GraphId::from(g);
         self.push(([s, p, o], g));
         Ok(true)
     }
@@ -68,7 +68,7 @@ impl MutableDataset for Vec<([BoxTerm; 3], GraphKey<Box<str>>)> where {
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphKey<W>,
+        g: &GraphId<W>,
     ) -> MDResult<Self, bool>
     where
         T: TermData,
@@ -103,7 +103,7 @@ where
 }
 
 impl<S: ::std::hash::BuildHasher> MutableDataset
-    for HashSet<([BoxTerm; 3], GraphKey<Box<str>>), S>
+    for HashSet<([BoxTerm; 3], GraphId<Box<str>>), S>
 {
     type MutationError = Never;
 
@@ -112,7 +112,7 @@ impl<S: ::std::hash::BuildHasher> MutableDataset
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphKey<W>,
+        g: &GraphId<W>,
     ) -> MDResult<Self, bool>
     where
         T: TermData,
@@ -123,7 +123,7 @@ impl<S: ::std::hash::BuildHasher> MutableDataset
         let s = BoxTerm::from(s);
         let p = BoxTerm::from(p);
         let o = BoxTerm::from(o);
-        let g = GraphKey::from(g);
+        let g = GraphId::from(g);
         Ok(HashSet::insert(self, ([s, p, o], g)))
     }
     fn remove<T, U, V, W>(
@@ -131,7 +131,7 @@ impl<S: ::std::hash::BuildHasher> MutableDataset
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphKey<W>,
+        g: &GraphId<W>,
     ) -> MDResult<Self, bool>
     where
         T: TermData,
@@ -142,7 +142,7 @@ impl<S: ::std::hash::BuildHasher> MutableDataset
         let s = BoxTerm::from(s);
         let p = BoxTerm::from(p);
         let o = BoxTerm::from(o);
-        let g = GraphKey::from(g);
+        let g = GraphId::from(g);
         Ok(HashSet::remove(self, &([s, p, o], g)))
     }
 }
@@ -160,15 +160,15 @@ mod test {
     use crate::dataset::*;
     use crate::ns::*;
     use crate::quad::stream::*;
-    use crate::term::{graph_key::*, *};
+    use crate::term::{graph_id::*, *};
 
     #[test]
     fn test_slice() {
         let gn = StaticTerm::new_bnode("x").unwrap();
-        let gn = GraphKey::<&str>::from(&gn);
+        let gn = GraphId::<&str>::from(&gn);
         let d = [
-            ([rdf::type_, rdf::type_, rdf::Property], GraphKey::Default),
-            ([rdf::Property, rdf::type_, rdfs::Class], GraphKey::Default),
+            ([rdf::type_, rdf::type_, rdf::Property], GraphId::Default),
+            ([rdf::Property, rdf::type_, rdfs::Class], GraphId::Default),
             ([rdfs::Class, rdf::type_, rdfs::Class], gn.clone()),
         ];
         let len = d.quads().oks().count();
@@ -179,9 +179,9 @@ mod test {
         assert_eq!(len, 1);
     }
 
-    type VecAsDataset = Vec<([BoxTerm; 3], GraphKey<Box<str>>)>;
+    type VecAsDataset = Vec<([BoxTerm; 3], GraphId<Box<str>>)>;
     test_dataset_impl!(vec, VecAsDataset, false);
 
-    type HashSetAsDataset = HashSet<([BoxTerm; 3], GraphKey<Box<str>>)>;
+    type HashSetAsDataset = HashSet<([BoxTerm; 3], GraphId<Box<str>>)>;
     test_dataset_impl!(hashset, HashSetAsDataset);
 }

@@ -1,4 +1,4 @@
-//! A graph key is the fourth component of a quad.
+//! A graph identifier is the fourth component of a quad.
 //! It identifies the graph of a dataset to which this quad belongs.
 
 use crate::term::{Term, TermData};
@@ -12,7 +12,7 @@ use crate::term::{Term, TermData};
 /// [`Dataset`]: ../../dataset/trait.Dataset.html
 /// [`Quad`]: ../../quad/trait.Quad.html
 #[derive(Clone, Debug, Eq, Hash)]
-pub enum GraphKey<T>
+pub enum GraphId<T>
 where
     T: TermData,
 {
@@ -22,84 +22,84 @@ where
     Name(Term<T>),
 }
 
-impl<T> GraphKey<T>
+impl<T> GraphId<T>
 where
     T: TermData,
 {
     pub fn name(&self) -> Option<&Term<T>> {
         match self {
-            GraphKey::Default => None,
-            GraphKey::Name(t) => Some(t),
+            GraphId::Default => None,
+            GraphId::Name(t) => Some(t),
         }
     }
 
     pub fn in_default_graph(&self) -> bool {
         match self {
-            GraphKey::Default => true,
+            GraphId::Default => true,
             _ => false,
         }
     }
 }
 
-impl<'a, T, U> From<&'a Term<U>> for GraphKey<T>
+impl<'a, T, U> From<&'a Term<U>> for GraphId<T>
 where
     T: TermData + From<&'a str>,
     U: TermData,
 {
-    fn from(other: &'a Term<U>) -> GraphKey<T> {
-        GraphKey::Name(other.into())
+    fn from(other: &'a Term<U>) -> GraphId<T> {
+        GraphId::Name(other.into())
     }
 }
 
-impl<'a, T, U> From<&'a GraphKey<U>> for GraphKey<T>
+impl<'a, T, U> From<&'a GraphId<U>> for GraphId<T>
 where
     T: TermData + From<&'a str>,
     U: TermData,
 {
-    fn from(other: &'a GraphKey<U>) -> GraphKey<T> {
+    fn from(other: &'a GraphId<U>) -> GraphId<T> {
         match other {
-            GraphKey::Default => GraphKey::Default,
-            GraphKey::Name(other) => GraphKey::Name(other.into()),
+            GraphId::Default => GraphId::Default,
+            GraphId::Name(other) => GraphId::Name(other.into()),
         }
     }
 }
 
-impl<T, U> PartialEq<GraphKey<U>> for GraphKey<T>
+impl<T, U> PartialEq<GraphId<U>> for GraphId<T>
 where
     T: TermData,
     U: TermData,
 {
-    fn eq(&self, other: &GraphKey<U>) -> bool {
+    fn eq(&self, other: &GraphId<U>) -> bool {
         match (self, other) {
-            (GraphKey::Default, GraphKey::Default) => true,
-            (GraphKey::Name(t1), GraphKey::Name(t2)) => t1 == t2,
+            (GraphId::Default, GraphId::Default) => true,
+            (GraphId::Name(t1), GraphId::Name(t2)) => t1 == t2,
             _ => false,
         }
     }
 }
 
-impl<T, U> PartialEq<Term<U>> for GraphKey<T>
+impl<T, U> PartialEq<Term<U>> for GraphId<T>
 where
     T: TermData,
     U: TermData,
 {
     fn eq(&self, other: &Term<U>) -> bool {
         match self {
-            GraphKey::Default => false,
-            GraphKey::Name(t) => t == other,
+            GraphId::Default => false,
+            GraphId::Name(t) => t == other,
         }
     }
 }
 
-impl<T, U> PartialEq<GraphKey<U>> for Term<T>
+impl<T, U> PartialEq<GraphId<U>> for Term<T>
 where
     T: TermData,
     U: TermData,
 {
-    fn eq(&self, other: &GraphKey<U>) -> bool {
+    fn eq(&self, other: &GraphId<U>) -> bool {
         match other {
-            GraphKey::Default => false,
-            GraphKey::Name(t) => t == self,
+            GraphId::Default => false,
+            GraphId::Name(t) => t == self,
         }
     }
 }

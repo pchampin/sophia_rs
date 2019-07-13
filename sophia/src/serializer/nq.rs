@@ -14,7 +14,7 @@ use std::mem::swap;
 
 use crate::quad::stream::*;
 use crate::quad::Quad;
-use crate::term::graph_key::GraphKey;
+use crate::term::graph_id::GraphId;
 use crate::term::{LiteralKind, Term, TermData};
 
 use super::*;
@@ -77,7 +77,7 @@ impl<W: io::Write> QuadSink for Writer<W> {
             write_term(w, t.p())?;
             w.write_all(b" ")?;
             write_term(w, t.o())?;
-            if let GraphKey::Name(g) = t.g() {
+            if let GraphId::Name(g) = t.g() {
                 w.write_all(b" ")?;
                 write_term(w, g)?;
             }
@@ -228,7 +228,7 @@ mod test {
                     rdf::type_,
                     StaticTerm::new_iri("http://schema.org/Person").unwrap(),
                 ],
-                GraphKey::Default,
+                GraphId::Default,
             ),
             (
                 [
@@ -236,7 +236,7 @@ mod test {
                     StaticTerm::new_iri("http://schema.org/name").unwrap(),
                     StaticTerm::new_literal_dt("Pierre-Antoine", xsd::string).unwrap(),
                 ],
-                GraphKey::Name(StaticTerm::new_iri("http://example.org/graph").unwrap()),
+                GraphId::Name(StaticTerm::new_iri("http://example.org/graph").unwrap()),
             ),
         ];
         let mut quads = quads.into_iter().as_quad_source();

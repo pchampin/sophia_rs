@@ -448,13 +448,13 @@ fn term_similar_but_not_eq() {
 }
 
 #[test]
-fn test_as_graph_key() {
-    use crate::term::graph_key::GraphKey;
+fn test_as_graph_id() {
+    use crate::term::graph_id::GraphId;
     assert_eq!(
         std::mem::size_of::<BoxTerm>(),
-        std::mem::size_of::<GraphKey<Box<str>>>(),
+        std::mem::size_of::<GraphId<Box<str>>>(),
     );
-    // this guarantees that the implementation of as_graph_key() is indeed safe
+    // this guarantees that the implementation of as_graph_id() is indeed safe
 }
 
 #[test]

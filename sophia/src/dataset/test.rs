@@ -31,9 +31,9 @@ macro_rules! test_dataset_impl {
                 static ref I1B: StaticTerm = StaticTerm::new_iri2(NS, "I1B").unwrap();
                 static ref I2A: StaticTerm = StaticTerm::new_iri2(NS, "I2A").unwrap();
                 static ref I2B: StaticTerm = StaticTerm::new_iri2(NS, "I2B").unwrap();
-                static ref DG: GraphKey<&'static str> = GraphKey::Default;
-                static ref GN1: GraphKey<&'static str> = GraphKey::Name(G1.clone());
-                static ref GN2: GraphKey<&'static str> = GraphKey::Name(G2.clone());
+                static ref DG: GraphId<&'static str> = GraphId::Default;
+                static ref GN1: GraphId<&'static str> = GraphId::Name(G1.clone());
+                static ref GN2: GraphId<&'static str> = GraphId::Name(G2.clone());
             }
 
             // test MutableDataset + SetGraph
@@ -593,7 +593,7 @@ macro_rules! test_dataset_impl {
 
                 let p_matcher: [StaticTerm; 2] = [rdf::type_.clone(), rdfs::domain.clone()];
                 let o_matcher: [StaticTerm; 2] = [C1.clone(), C2.clone()];
-                let g_matcher = |g: &GraphKey<&str>| g.name().is_some();
+                let g_matcher = |g: &GraphId<&str>| g.name().is_some();
                 let v: Vec<_> = d
                     .quads_matching(&ANY, &p_matcher[..], &o_matcher[..], &g_matcher)
                     .oks()
@@ -781,23 +781,23 @@ macro_rules! test_dataset_impl {
             }
 
             fn populate_nodes_types<D: MutableDataset>(d: &mut D) -> MDResult<D, ()> {
-                let gn = GraphKey::Name(StaticTerm::from(&rdf::type_));
+                let gn = GraphId::Name(StaticTerm::from(&rdf::type_));
                 d.insert(&rdf::type_, &rdf::type_, &rdf::Property, &gn)?;
-                let gn = GraphKey::Name(StaticTerm::new_bnode("b2").unwrap());
+                let gn = GraphId::Name(StaticTerm::new_bnode("b2").unwrap());
                 d.insert(
                     &StaticTerm::new_bnode("b1").unwrap(),
                     &StaticTerm::new_bnode("b2").unwrap(),
                     &StaticTerm::new_bnode("b1").unwrap(),
                     &gn,
                 )?;
-                let gn = GraphKey::Name(StaticTerm::from("lit2"));
+                let gn = GraphId::Name(StaticTerm::from("lit2"));
                 d.insert(
                     &StaticTerm::from("lit2"),
                     &StaticTerm::from("lit1"),
                     &StaticTerm::from("lit1"),
                     &gn,
                 )?;
-                let gn = GraphKey::Name(StaticTerm::new_variable("v3").unwrap());
+                let gn = GraphId::Name(StaticTerm::new_variable("v3").unwrap());
                 d.insert(
                     &StaticTerm::new_variable("v1").unwrap(),
                     &StaticTerm::new_variable("v2").unwrap(),
@@ -815,7 +815,7 @@ macro_rules! test_dataset_impl {
                 Ok(())
             }
 
-            fn as_box_q<'a, Q: Quad<'a> + 'a>(quad: Q) -> ([BoxTerm; 3], GraphKey<Box<str>>) {
+            fn as_box_q<'a, Q: Quad<'a> + 'a>(quad: Q) -> ([BoxTerm; 3], GraphId<Box<str>>) {
                 (
                     [quad.s().into(), quad.p().into(), quad.o().into()],
                     quad.g().into(),
