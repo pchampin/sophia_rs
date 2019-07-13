@@ -1,4 +1,4 @@
-// this module is transparently re-exported by its parent `graph`
+// this module is transparently re-exported by its parent `graph::inmem`
 
 use std::collections::{HashMap, HashSet};
 use std::iter::empty;

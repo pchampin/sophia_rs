@@ -1,4 +1,4 @@
-// this module is transparently re-exported by its parent `graph`
+// this module is transparently re-exported by its parent `dataset`
 // It defines implementation of Graph and MutableGraph for existing types.
 
 use std::collections::HashSet;
