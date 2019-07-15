@@ -6,8 +6,6 @@ use std::iter::empty;
 use super::*;
 use crate::graph::index::remove_one_val;
 
-type OpsWrapperMap<T> = HashMap<(T, T), Vec<T>>;
-
 /// A [`GraphWrapper`](trait.GraphWrapper.html)
 /// indexing triples by object, then by predicate, then by subject.
 ///
@@ -15,7 +13,7 @@ type OpsWrapperMap<T> = HashMap<(T, T), Vec<T>>;
 /// it overrides the methods that can efficiently be implemented using this index.
 ///
 /// Since it must be able to produce triples instead of the underlying graphs,
-/// it is limited to wrapping graphs whose triples are `[&Triple<H>]`.
+/// it is limited to wrapping graphs whose triples are `[&Term<H>;3]`.
 ///
 #[derive(Default)]
 pub struct OpsWrapper<T>
@@ -24,7 +22,7 @@ where
 {
     wrapped: T,
     o2p: HashMap<T::Index, Vec<T::Index>>,
-    po2s: OpsWrapperMap<T::Index>,
+    po2s: HashMap<[T::Index;2], Vec<T::Index>>,
 }
 
 impl<T> OpsWrapper<T>
@@ -60,17 +58,15 @@ where
                 let o = self.wrapped.get_term(oi).unwrap();
                 return Box::new(
                     pis.iter()
-                        .map(move |pi| {
-                            (
-                                &self.po2s[&(*pi, oi)],
-                                self.wrapped.get_term(*pi).unwrap(),
-                                o,
-                            )
-                        })
-                        .flat_map(move |(sis, p, o)| {
+                        .flat_map(move |pi| {
+                            let p = self.wrapped.get_term(*pi).unwrap();
+                            let sis = &self.po2s[&[*pi, oi]];
                             sis.iter()
-                                .map(move |si| Ok([self.wrapped.get_term(*si).unwrap(), p, o]))
-                        }),
+                                .map(move |si| {
+                                    let s = self.wrapped.get_term(*si).unwrap();
+                                    Ok([s, p, o])
+                                })
+                        })
                 );
             }
         }
@@ -88,12 +84,15 @@ where
     {
         if let Some(pi) = self.wrapped.get_index(p) {
             if let Some(oi) = self.wrapped.get_index(o) {
-                if let Some(sis) = self.po2s.get(&(pi, oi)) {
+                if let Some(sis) = self.po2s.get(&[pi, oi]) {
                     let p = self.wrapped.get_term(pi).unwrap();
                     let o = self.wrapped.get_term(oi).unwrap();
                     return Box::new(
                         sis.iter()
-                            .map(move |si| Ok([self.wrapped.get_term(*si).unwrap(), p, o])),
+                            .map(move |si| {
+                                let s = self.wrapped.get_term(*si).unwrap();
+                                Ok([s, p, o])
+                            }),
                     );
                 }
             }
@@ -145,7 +144,7 @@ where
         let modified = self.wrapped.insert_indexed(s, p, o);
         if let Some([si, pi, oi]) = modified {
             self.o2p.entry(oi).or_insert_with(Vec::new).push(pi);
-            self.po2s.entry((pi, oi)).or_insert_with(Vec::new).push(si);
+            self.po2s.entry([pi, oi]).or_insert_with(Vec::new).push(si);
         }
         modified
     }
@@ -164,7 +163,7 @@ where
         let modified = self.wrapped.remove_indexed(s, p, o);
         if let Some([si, pi, oi]) = modified {
             remove_one_val(&mut self.o2p, oi, pi);
-            remove_one_val(&mut self.po2s, (pi, oi), si);
+            remove_one_val(&mut self.po2s, [pi, oi], si);
         }
         modified
     }
