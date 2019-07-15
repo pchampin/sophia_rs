@@ -123,15 +123,41 @@ macro_rules! impl_mutable_graph_for_indexed_mutable_graph {
     };
 }
 
-/// Remove *one* value in the Vec value of a HashMap,
+/// Insert an absent value in the Vec value of a HashMap,
+/// creating the Vec if it does not exist.
+///
+/// # Returns
+///
+/// `true` if the Vec was created,
+///  meaning that "parent" indexes need to be updated.
+///
+pub(crate) fn insert_in_index<K, W>(hm: &mut HashMap<K, Vec<W>>, k: K, w: W) -> bool
+where
+    K: Eq + Hash,
+    W: Copy + Eq,
+{
+    let mut ret = false;
+    hm.entry(k).or_insert_with(|| {
+        ret = true;
+        Vec::new()
+    }).push(w);
+    ret
+}
+
+/// Remove an existing value in the Vec value of a HashMap,
 /// removing the entry completely if the Vec ends up empty.
+///
+/// # Returns
+///
+/// `true` if the entry was removed,
+///  meaning that "parent" indexes need to be updated.
 ///
 /// # Panics
 ///
 /// This function will panic if either
 /// * `k` is not a key of `hm`, or
 /// * `w` is not contained in the value associated to `k`.
-pub(crate) fn remove_one_val<K, W>(hm: &mut HashMap<K, Vec<W>>, k: K, w: W)
+pub(crate) fn remove_from_index<K, W>(hm: &mut HashMap<K, Vec<W>>, k: K, w: W) -> bool
 where
     K: Eq + Hash,
     W: Copy + Eq,
@@ -148,10 +174,11 @@ where
                         .next()
                         .unwrap();
                     ws.swap_remove(wi);
-                    return;
+                    return false;
                 }
             }
             e.remove_entry();
+            return true;
         }
         Entry::Vacant(_) => unreachable!(),
     }

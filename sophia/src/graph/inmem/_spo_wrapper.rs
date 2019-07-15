@@ -4,7 +4,6 @@ use std::collections::{HashMap, HashSet};
 use std::iter::empty;
 
 use super::*;
-use crate::graph::index::remove_one_val;
 
 /// A [`GraphWrapper`](trait.GraphWrapper.html)
 /// indexing triples by subject, then by predicate, then by object.
@@ -117,16 +116,18 @@ where
     #[inline]
     fn igw_hook_insert_indexed(&mut self, modified: &Option<[T::Index; 3]>) {
         if let Some([si, pi, oi]) = *modified {
-            self.s2p.entry(si).or_insert_with(Vec::new).push(pi);
-            self.sp2o.entry([si, pi]).or_insert_with(Vec::new).push(oi);
+            if insert_in_index(&mut self.sp2o, [si, pi], oi) {
+                insert_in_index(&mut self.s2p, si, pi);
+            }
         }
     }
 
     #[inline]
     fn igw_hook_remove_indexed(&mut self, modified: &Option<[T::Index; 3]>) {
         if let Some([si, pi, oi]) = *modified {
-            remove_one_val(&mut self.s2p, si, pi);
-            remove_one_val(&mut self.sp2o, [si, pi], oi);
+            if remove_from_index(&mut self.sp2o, [si, pi], oi) {
+                remove_from_index(&mut self.s2p, si, pi);
+            }
         }
     }
 
@@ -162,6 +163,6 @@ where
 impl<T> SetGraph for SpoWrapper<T> where T: IndexedGraph + SetGraph {}
 
 #[cfg(test)]
-type SpoGraph = SpoWrapper<LightGraph>;
+type SpoGraph = super::SpoWrapper<super::LightGraph>;
 #[cfg(test)]
 test_graph_impl!(SpoGraph);

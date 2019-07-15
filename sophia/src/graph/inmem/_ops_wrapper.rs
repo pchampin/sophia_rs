@@ -4,7 +4,6 @@ use std::collections::{HashMap, HashSet};
 use std::iter::empty;
 
 use super::*;
-use crate::graph::index::remove_one_val;
 
 /// A [`GraphWrapper`](trait.GraphWrapper.html)
 /// indexing triples by object, then by predicate, then by subject.
@@ -117,16 +116,18 @@ where
     #[inline]
     fn igw_hook_insert_indexed(&mut self, modified: &Option<[T::Index; 3]>) {
         if let Some([si, pi, oi]) = *modified {
-            self.o2p.entry(oi).or_insert_with(Vec::new).push(pi);
-            self.po2s.entry([pi, oi]).or_insert_with(Vec::new).push(si);
+            if insert_in_index(&mut self.po2s, [pi, oi], si) {
+                insert_in_index(&mut self.o2p, oi, pi);
+            }
         }
     }
 
     #[inline]
     fn igw_hook_remove_indexed(&mut self, modified: &Option<[T::Index; 3]>) {
         if let Some([si, pi, oi]) = *modified {
-            remove_one_val(&mut self.o2p, oi, pi);
-            remove_one_val(&mut self.po2s, [pi, oi], si);
+            if remove_from_index(&mut self.po2s, [pi, oi], si) {
+                remove_from_index(&mut self.o2p, oi, pi);
+            }
         }
     }
 
