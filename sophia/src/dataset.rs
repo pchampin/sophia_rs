@@ -11,6 +11,10 @@
 #[macro_use]
 mod test;
 
+#[macro_use]
+pub mod index;
+pub mod inmem;
+
 mod _ext_impl;
 pub use self::_ext_impl::*;
 mod _sinks;

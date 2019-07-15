@@ -9,11 +9,12 @@ macro_rules! test_dataset_impl {
     ($module_name: ident, $mutable_dataset_impl: ident, $is_set: expr) => {
         #[cfg(test)]
         mod $module_name {
+            use resiter::oks::*;
             use std::fmt::Debug;
-
-            use crate::dataset::*;
-            use crate::quad::*;
-            use crate::term::matcher::*;
+            use $crate::dataset::*;
+            use $crate::ns::*;
+            use $crate::quad::{stream::*, *};
+            use $crate::term::{graph_id::GraphId, matcher::ANY, *};
 
             #[allow(unused_imports)]
             use super::*;
