@@ -21,7 +21,7 @@ where
 {
     wrapped: T,
     s2p: HashMap<T::Index, Vec<T::Index>>,
-    sp2o: HashMap<[T::Index;2], Vec<T::Index>>,
+    sp2o: HashMap<[T::Index; 2], Vec<T::Index>>,
 }
 
 impl<T> SpoWrapper<T>
@@ -55,18 +55,14 @@ where
         if let Some(si) = self.wrapped.get_index(s) {
             if let Some(pis) = self.s2p.get(&si) {
                 let s = self.wrapped.get_term(si).unwrap();
-                return Box::new(
-                    pis.iter()
-                        .flat_map(move |pi| {
-                            let p = self.wrapped.get_term(*pi).unwrap();
-                            let ois = &self.sp2o[&[si, *pi]];
-                            ois.iter()
-                                .map(move |oi| {
-                                    let o = self.wrapped.get_term(*oi).unwrap();
-                                    Ok([s, p, o])
-                                })
-                        })
-                );
+                return Box::new(pis.iter().flat_map(move |pi| {
+                    let p = self.wrapped.get_term(*pi).unwrap();
+                    let ois = &self.sp2o[&[si, *pi]];
+                    ois.iter().map(move |oi| {
+                        let o = self.wrapped.get_term(*oi).unwrap();
+                        Ok([s, p, o])
+                    })
+                }));
             }
         }
         Box::new(empty())
@@ -86,13 +82,10 @@ where
                 if let Some(ois) = self.sp2o.get(&[si, pi]) {
                     let s = self.wrapped.get_term(si).unwrap();
                     let p = self.wrapped.get_term(pi).unwrap();
-                    return Box::new(
-                        ois.iter()
-                            .map(move |oi| {
-                                let o = self.wrapped.get_term(*oi).unwrap();
-                                Ok([s, p, o])
-                            }),
-                    );
+                    return Box::new(ois.iter().map(move |oi| {
+                        let o = self.wrapped.get_term(*oi).unwrap();
+                        Ok([s, p, o])
+                    }));
                 }
             }
         }
@@ -138,7 +131,6 @@ where
     }
 }
 
-
 impl<'a, T> Graph<'a> for SpoWrapper<T>
 where
     T: IndexedGraph + Graph<'a, Triple = [&'a Term<<T as IndexedGraph>::TermData>; 3]>,
@@ -148,7 +140,7 @@ where
 
 impl<T> IndexedGraph for SpoWrapper<T>
 where
-    T: IndexedGraph + for <'a> Graph<'a, Triple = [&'a Term<<T as IndexedGraph>::TermData>; 3]>,
+    T: IndexedGraph + for<'a> Graph<'a, Triple = [&'a Term<<T as IndexedGraph>::TermData>; 3]>,
 {
     impl_indexed_graph_for_wrapper!();
 }

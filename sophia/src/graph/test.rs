@@ -203,7 +203,12 @@ macro_rules! test_graph_impl {
                     assert_eq!(v.len(), 9);
                     assert_consistent_hint(v.len(), hint);
                     assert!(Graph::contains(&v, &C2, &rdf::type_, &rdfs::Resource)?);
-                    assert!(!Graph::contains(&v, &C2, &rdfs::subClassOf, &rdfs::Resource)?);
+                    assert!(!Graph::contains(
+                        &v,
+                        &C2,
+                        &rdfs::subClassOf,
+                        &rdfs::Resource
+                    )?);
                 }
                 Ok(())
             }
@@ -254,7 +259,12 @@ macro_rules! test_graph_impl {
                     let v: Vec<_> = iter.oks().map(as_box_t).collect();
                     assert_eq!(v.len(), 2);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Graph::contains(&v, &C2, &rdfs::subClassOf, &rdfs::Resource)?);
+                    assert!(Graph::contains(
+                        &v,
+                        &C2,
+                        &rdfs::subClassOf,
+                        &rdfs::Resource
+                    )?);
                     assert!(!Graph::contains(&v, &C2, &rdf::type_, &rdfs::Class)?);
                 }
                 Ok(())
@@ -284,12 +294,20 @@ macro_rules! test_graph_impl {
 
                 let triples = g.triples_with_spo(&C2, &rdf::type_, &rdfs::Resource);
                 let hint = triples.size_hint();
-                for iter in vec![triples, g.triples_matching(&*C2, &rdf::type_, &rdfs::Resource)] {
+                for iter in vec![
+                    triples,
+                    g.triples_matching(&*C2, &rdf::type_, &rdfs::Resource),
+                ] {
                     let v: Vec<_> = iter.oks().map(as_box_t).collect();
                     assert_eq!(v.len(), 1);
                     assert_consistent_hint(v.len(), hint);
                     assert!(Graph::contains(&v, &C2, &rdf::type_, &rdfs::Resource)?);
-                    assert!(!Graph::contains(&v, &C1, &rdfs::subClassOf, &rdfs::Resource)?);
+                    assert!(!Graph::contains(
+                        &v,
+                        &C1,
+                        &rdfs::subClassOf,
+                        &rdfs::Resource
+                    )?);
                 }
                 Ok(())
             }

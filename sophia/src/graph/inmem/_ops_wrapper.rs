@@ -21,7 +21,7 @@ where
 {
     wrapped: T,
     o2p: HashMap<T::Index, Vec<T::Index>>,
-    po2s: HashMap<[T::Index;2], Vec<T::Index>>,
+    po2s: HashMap<[T::Index; 2], Vec<T::Index>>,
 }
 
 impl<T> OpsWrapper<T>
@@ -55,18 +55,14 @@ where
         if let Some(oi) = self.wrapped.get_index(o) {
             if let Some(pis) = self.o2p.get(&oi) {
                 let o = self.wrapped.get_term(oi).unwrap();
-                return Box::new(
-                    pis.iter()
-                        .flat_map(move |pi| {
-                            let p = self.wrapped.get_term(*pi).unwrap();
-                            let sis = &self.po2s[&[*pi, oi]];
-                            sis.iter()
-                                .map(move |si| {
-                                    let s = self.wrapped.get_term(*si).unwrap();
-                                    Ok([s, p, o])
-                                })
-                        })
-                );
+                return Box::new(pis.iter().flat_map(move |pi| {
+                    let p = self.wrapped.get_term(*pi).unwrap();
+                    let sis = &self.po2s[&[*pi, oi]];
+                    sis.iter().map(move |si| {
+                        let s = self.wrapped.get_term(*si).unwrap();
+                        Ok([s, p, o])
+                    })
+                }));
             }
         }
         Box::new(empty())
@@ -86,13 +82,10 @@ where
                 if let Some(sis) = self.po2s.get(&[pi, oi]) {
                     let p = self.wrapped.get_term(pi).unwrap();
                     let o = self.wrapped.get_term(oi).unwrap();
-                    return Box::new(
-                        sis.iter()
-                            .map(move |si| {
-                                let s = self.wrapped.get_term(*si).unwrap();
-                                Ok([s, p, o])
-                            }),
-                    );
+                    return Box::new(sis.iter().map(move |si| {
+                        let s = self.wrapped.get_term(*si).unwrap();
+                        Ok([s, p, o])
+                    }));
                 }
             }
         }
@@ -138,8 +131,6 @@ where
     }
 }
 
-
-
 impl<'a, T> Graph<'a> for OpsWrapper<T>
 where
     T: IndexedGraph + Graph<'a, Triple = [&'a Term<<T as IndexedGraph>::TermData>; 3]>,
@@ -149,11 +140,10 @@ where
 
 impl<T> IndexedGraph for OpsWrapper<T>
 where
-    T: IndexedGraph + for <'a> Graph<'a, Triple = [&'a Term<<T as IndexedGraph>::TermData>; 3]>,
+    T: IndexedGraph + for<'a> Graph<'a, Triple = [&'a Term<<T as IndexedGraph>::TermData>; 3]>,
 {
     impl_indexed_graph_for_wrapper!();
 }
-
 
 impl<T> MutableGraph for OpsWrapper<T>
 where

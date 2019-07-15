@@ -102,9 +102,7 @@ where
     }
 }
 
-impl<S: ::std::hash::BuildHasher> MutableDataset
-    for HashSet<([BoxTerm; 3], GraphId<Box<str>>), S>
-{
+impl<S: ::std::hash::BuildHasher> MutableDataset for HashSet<([BoxTerm; 3], GraphId<Box<str>>), S> {
     type MutationError = Never;
 
     fn insert<T, U, V, W>(
@@ -159,7 +157,6 @@ mod test {
 
     use crate::dataset::*;
     use crate::ns::*;
-    use crate::quad::stream::*;
     use crate::term::{graph_id::*, *};
 
     #[test]

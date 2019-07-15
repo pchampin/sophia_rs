@@ -137,10 +137,12 @@ where
     W: Copy + Eq,
 {
     let mut ret = false;
-    hm.entry(k).or_insert_with(|| {
-        ret = true;
-        Vec::new()
-    }).push(w);
+    hm.entry(k)
+        .or_insert_with(|| {
+            ret = true;
+            Vec::new()
+        })
+        .push(w);
     ret
 }
 
@@ -178,7 +180,7 @@ where
                 }
             }
             e.remove_entry();
-            return true;
+            true
         }
         Entry::Vacant(_) => unreachable!(),
     }

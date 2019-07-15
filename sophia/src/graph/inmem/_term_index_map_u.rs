@@ -16,7 +16,6 @@ where
     i2t: Vec<Option<FTerm<F>>>,
     i2c: Vec<I>,
     t2i: HashMap<StaticTerm, I>,
-
     // factory is used to make new terms (used by make_term)
     // i2t (index to term) maps
     // - each used index to Some(Term)

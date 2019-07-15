@@ -183,46 +183,79 @@ macro_rules! impl_graph_for_wrapper {
             $crate::graph::inmem::GraphWrapper::gw_triples(self)
         }
         #[inline]
-        fn triples_with_s<T_> (&'a self, s: &'a $crate::term::Term<T_>) -> $crate::graph::GTripleSource<'a, Self> where
+        fn triples_with_s<T_>(
+            &'a self,
+            s: &'a $crate::term::Term<T_>
+        )-> $crate::graph::GTripleSource<'a, Self>
+        where
             T_: $crate::term::TermData,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_s(self, s)
         }
         #[inline]
-        fn triples_with_p<T_> (&'a self, p: &'a $crate::term::Term<T_>) -> $crate::graph::GTripleSource<'a, Self> where
+        fn triples_with_p<T_>(
+            &'a self,
+            p: &'a $crate::term::Term<T_>
+        ) -> $crate::graph::GTripleSource<'a, Self>
+        where
             T_: $crate::term::TermData,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_p(self, p)
         }
         #[inline]
-        fn triples_with_o<T_> (&'a self, o: &'a $crate::term::Term<T_>) -> $crate::graph::GTripleSource<'a, Self> where
+        fn triples_with_o<T_>(
+            &'a self,
+            o: &'a $crate::term::Term<T_>
+        ) -> $crate::graph::GTripleSource<'a, Self>
+        where
             T_: $crate::term::TermData,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_o(self, o)
         }
         #[inline]
-        fn triples_with_sp<T_, U_> (&'a self, s: &'a $crate::term::Term<T_>, p: &'a $crate::term::Term<U_>) -> $crate::graph::GTripleSource<'a, Self> where
+        fn triples_with_sp<T_, U_>(
+            &'a self,
+            s: &'a $crate::term::Term<T_>,
+            p: &'a $crate::term::Term<U_>
+        ) -> $crate::graph::GTripleSource<'a, Self>
+        where
             T_: $crate::term::TermData,
             U_: $crate::term::TermData,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_sp(self, s, p)
         }
         #[inline]
-        fn triples_with_so<T_, U_> (&'a self, s: &'a $crate::term::Term<T_>, o: &'a $crate::term::Term<U_>) -> $crate::graph::GTripleSource<'a, Self> where
+        fn triples_with_so<T_, U_>(
+            &'a self,
+            s: &'a $crate::term::Term<T_>,
+            o: &'a $crate::term::Term<U_>
+        ) -> $crate::graph::GTripleSource<'a, Self>
+        where
             T_: $crate::term::TermData,
             U_: $crate::term::TermData,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_so(self, s, o)
         }
         #[inline]
-        fn triples_with_po<T_, U_> (&'a self, p: &'a $crate::term::Term<T_>, o: &'a $crate::term::Term<U_>) -> $crate::graph::GTripleSource<'a, Self> where
+        fn triples_with_po<T_, U_>(
+            &'a self,
+            p: &'a $crate::term::Term<T_>,
+            o: &'a $crate::term::Term<U_>
+        ) -> $crate::graph::GTripleSource<'a, Self>
+        where
             T_: $crate::term::TermData,
             U_: $crate::term::TermData,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_po(self, p, o)
         }
         #[inline]
-        fn triples_with_spo<T_, U_, V_> (&'a self, s: &'a $crate::term::Term<T_>, p: &'a $crate::term::Term<U_>, o: &'a $crate::term::Term<V_>) -> $crate::graph::GTripleSource<'a, Self> where
+        fn triples_with_spo<T_, U_, V_>(
+            &'a self,
+            s: &'a $crate::term::Term<T_>,
+            p: &'a $crate::term::Term<U_>,
+            o: &'a $crate::term::Term<V_>
+        ) -> $crate::graph::GTripleSource<'a, Self>
+        where
             T_: $crate::term::TermData,
             U_: $crate::term::TermData,
             V_: $crate::term::TermData,
@@ -231,7 +264,13 @@ macro_rules! impl_graph_for_wrapper {
         }
 
         #[inline]
-        fn contains<T_, U_, V_> (&'a self, s: &'a $crate::term::Term<T_>, p: &'a $crate::term::Term<U_>, o: &'a $crate::term::Term<V_>) -> $crate::graph::GResult<'a, Self, bool> where
+        fn contains<T_, U_, V_>(
+            &'a self,
+            s: &'a $crate::term::Term<T_>,
+            p: &'a $crate::term::Term<U_>,
+            o: &'a $crate::term::Term<V_>
+        ) -> $crate::graph::GResult<'a, Self, bool>
+        where
             T_: $crate::term::TermData,
             U_: $crate::term::TermData,
             V_: $crate::term::TermData,
