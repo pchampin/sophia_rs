@@ -170,108 +170,108 @@ pub trait GraphWrapper<'a> {
 
 macro_rules! impl_graph_for_wrapper {
     ($wrapper: ty) => {
-        impl<'a> Graph<'a> for $wrapper {
+        impl<'a> $crate::graph::Graph<'a> for $wrapper {
             impl_graph_for_wrapper!();
         }
     };
     () => {
-        type Triple = <<Self as GraphWrapper<'a>>::Wrapped as Graph<'a>>::Triple;
-        type Error = <<Self as GraphWrapper<'a>>::Wrapped as Graph<'a>>::Error;
+        type Triple = <<Self as $crate::graph::inmem::GraphWrapper<'a>>::Wrapped as $crate::graph::Graph<'a>>::Triple;
+        type Error = <<Self as $crate::graph::inmem::GraphWrapper<'a>>::Wrapped as $crate::graph::Graph<'a>>::Error;
 
         #[inline]
-        fn triples(&'a self) -> GTripleSource<'a, Self> {
-            GraphWrapper::gw_triples(self)
+        fn triples(&'a self) -> $crate::graph::GTripleSource<'a, Self> {
+            $crate::graph::inmem::GraphWrapper::gw_triples(self)
         }
         #[inline]
-        fn triples_with_s<T_> (&'a self, s: &'a Term<T_>) -> GTripleSource<'a, Self> where
-            T_: AsRef<str> + Clone + Eq + std::hash::Hash,
+        fn triples_with_s<T_> (&'a self, s: &'a Term<T_>) -> $crate::graph::GTripleSource<'a, Self> where
+            T_: $crate::term::TermData,
         {
-            GraphWrapper::gw_triples_with_s(self, s)
+            $crate::graph::inmem::GraphWrapper::gw_triples_with_s(self, s)
         }
         #[inline]
-        fn triples_with_p<T_> (&'a self, p: &'a Term<T_>) -> GTripleSource<'a, Self> where
-            T_: AsRef<str> + Clone + Eq + std::hash::Hash,
+        fn triples_with_p<T_> (&'a self, p: &'a Term<T_>) -> $crate::graph::GTripleSource<'a, Self> where
+            T_: $crate::term::TermData,
         {
-            GraphWrapper::gw_triples_with_p(self, p)
+            $crate::graph::inmem::GraphWrapper::gw_triples_with_p(self, p)
         }
         #[inline]
-        fn triples_with_o<T_> (&'a self, o: &'a Term<T_>) -> GTripleSource<'a, Self> where
-            T_: AsRef<str> + Clone + Eq + std::hash::Hash,
+        fn triples_with_o<T_> (&'a self, o: &'a Term<T_>) -> $crate::graph::GTripleSource<'a, Self> where
+            T_: $crate::term::TermData,
         {
-            GraphWrapper::gw_triples_with_o(self, o)
+            $crate::graph::inmem::GraphWrapper::gw_triples_with_o(self, o)
         }
         #[inline]
-        fn triples_with_sp<T_, U_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>) -> GTripleSource<'a, Self> where
-            T_: AsRef<str> + Clone + Eq + std::hash::Hash,
-            U_: AsRef<str> + Clone + Eq + std::hash::Hash,
+        fn triples_with_sp<T_, U_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>) -> $crate::graph::GTripleSource<'a, Self> where
+            T_: $crate::term::TermData,
+            U_: $crate::term::TermData,
         {
-            GraphWrapper::gw_triples_with_sp(self, s, p)
+            $crate::graph::inmem::GraphWrapper::gw_triples_with_sp(self, s, p)
         }
         #[inline]
-        fn triples_with_so<T_, U_> (&'a self, s: &'a Term<T_>, o: &'a Term<U_>) -> GTripleSource<'a, Self> where
-            T_: AsRef<str> + Clone + Eq + std::hash::Hash,
-            U_: AsRef<str> + Clone + Eq + std::hash::Hash,
+        fn triples_with_so<T_, U_> (&'a self, s: &'a Term<T_>, o: &'a Term<U_>) -> $crate::graph::GTripleSource<'a, Self> where
+            T_: $crate::term::TermData,
+            U_: $crate::term::TermData,
         {
-            GraphWrapper::gw_triples_with_so(self, s, o)
+            $crate::graph::inmem::GraphWrapper::gw_triples_with_so(self, s, o)
         }
         #[inline]
-        fn triples_with_po<T_, U_> (&'a self, p: &'a Term<T_>, o: &'a Term<U_>) -> GTripleSource<'a, Self> where
-            T_: AsRef<str> + Clone + Eq + std::hash::Hash,
-            U_: AsRef<str> + Clone + Eq + std::hash::Hash,
+        fn triples_with_po<T_, U_> (&'a self, p: &'a Term<T_>, o: &'a Term<U_>) -> $crate::graph::GTripleSource<'a, Self> where
+            T_: $crate::term::TermData,
+            U_: $crate::term::TermData,
         {
-            GraphWrapper::gw_triples_with_po(self, p, o)
+            $crate::graph::inmem::GraphWrapper::gw_triples_with_po(self, p, o)
         }
         #[inline]
-        fn triples_with_spo<T_, U_, V_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>, o: &'a Term<V_>) -> GTripleSource<'a, Self> where
-            T_: AsRef<str> + Clone + Eq + std::hash::Hash,
-            U_: AsRef<str> + Clone + Eq + std::hash::Hash,
-            V_: AsRef<str> + Clone + Eq + std::hash::Hash,
+        fn triples_with_spo<T_, U_, V_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>, o: &'a Term<V_>) -> $crate::graph::GTripleSource<'a, Self> where
+            T_: $crate::term::TermData,
+            U_: $crate::term::TermData,
+            V_: $crate::term::TermData,
         {
-            GraphWrapper::gw_triples_with_spo(self, s, p, o)
+            $crate::graph::inmem::GraphWrapper::gw_triples_with_spo(self, s, p, o)
         }
 
         #[inline]
-        fn contains<T_, U_, V_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>, o: &'a Term<V_>) -> GResult<'a, Self, bool> where
-            T_: AsRef<str> + Clone + Eq + std::hash::Hash,
-            U_: AsRef<str> + Clone + Eq + std::hash::Hash,
-            V_: AsRef<str> + Clone + Eq + std::hash::Hash,
+        fn contains<T_, U_, V_> (&'a self, s: &'a Term<T_>, p: &'a Term<U_>, o: &'a Term<V_>) -> $crate::graph::GResult<'a, Self, bool> where
+            T_: $crate::term::TermData,
+            U_: $crate::term::TermData,
+            V_: $crate::term::TermData,
         {
-            GraphWrapper::gw_contains(self, s, p, o)
+            $crate::graph::inmem::GraphWrapper::gw_contains(self, s, p, o)
         }
 
         #[inline]
         fn subjects(&'a self) -> GResult<'a, Self, std::collections::HashSet<GTerm<'a, Self>>> {
-            GraphWrapper::gw_subjects(self)
+            $crate::graph::inmem::GraphWrapper::gw_subjects(self)
         }
 
         #[inline]
         fn predicates(&'a self) -> GResult<'a, Self, std::collections::HashSet<GTerm<'a, Self>>> {
-            GraphWrapper::gw_predicates(self)
+            $crate::graph::inmem::GraphWrapper::gw_predicates(self)
         }
 
         #[inline]
         fn objects(&'a self) -> GResult<'a, Self, std::collections::HashSet<GTerm<'a, Self>>> {
-            GraphWrapper::gw_objects(self)
+            $crate::graph::inmem::GraphWrapper::gw_objects(self)
         }
 
         #[inline]
         fn iris(&'a self) -> GResult<'a, Self, std::collections::HashSet<GTerm<'a, Self>>> {
-            GraphWrapper::gw_iris(self)
+            $crate::graph::inmem::GraphWrapper::gw_iris(self)
         }
 
         #[inline]
         fn bnodes(&'a self) -> GResult<'a, Self, std::collections::HashSet<GTerm<'a, Self>>> {
-            GraphWrapper::gw_bnodes(self)
+            $crate::graph::inmem::GraphWrapper::gw_bnodes(self)
         }
 
         #[inline]
         fn literals(&'a self) -> GResult<'a, Self, std::collections::HashSet<GTerm<'a, Self>>> {
-            GraphWrapper::gw_literals(self)
+            $crate::graph::inmem::GraphWrapper::gw_literals(self)
         }
 
         #[inline]
         fn variables(&'a self) -> GResult<'a, Self, std::collections::HashSet<GTerm<'a, Self>>> {
-            GraphWrapper::gw_variables(self)
+            $crate::graph::inmem::GraphWrapper::gw_variables(self)
         }
     };
 }
