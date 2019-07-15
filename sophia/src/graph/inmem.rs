@@ -59,9 +59,11 @@ pub use self::_term_index_map_u::*;
 ///
 pub type GenericGraph<I, F> = HashGraph<TermIndexMapU<I, F>>;
 
+type FastWrapper<T> = OpsWrapper<SpoWrapper<T>>;
+
 /// A heavily indexed graph.
 /// Fast to query but slow to load, with a relatively high memory footprint.
-pub type FastGraph = OpsWrapper<SpoWrapper<GenericGraph<u32, RcTermFactory>>>;
+pub type FastGraph = FastWrapper<GenericGraph<u32, RcTermFactory>>;
 
 /// A graph with no triple index.
 /// Fast to load but slow to query, with a relatively low memory footprint.
@@ -81,7 +83,7 @@ pub mod small {
 
     /// A heavily indexed graph.
     /// Fast to query but slow to load, with a relatively high memory footprint.
-    pub type FastGraph = OpsWrapper<SpoWrapper<GenericGraph<u16, RcTermFactory>>>;
+    pub type FastGraph = FastWrapper<GenericGraph<u16, RcTermFactory>>;
     /// A graph with no triple index.
     /// Fast to load but slow to query, with a relatively low memory footprint.
     pub type LightGraph = GenericGraph<u16, RcTermFactory>;
@@ -98,7 +100,7 @@ pub mod sync {
 
     /// A heavily indexed graph.
     /// Fast to query but slow to load, with a relatively high memory footprint.
-    pub type FastGraph = OpsWrapper<SpoWrapper<GenericGraph<u32, ArcTermFactory>>>;
+    pub type FastGraph = FastWrapper<GenericGraph<u32, ArcTermFactory>>;
     /// A graph with no triple index.
     /// Fast to load but slow to query, with a relatively low memory footprint.
     pub type LightGraph = GenericGraph<u32, ArcTermFactory>;
