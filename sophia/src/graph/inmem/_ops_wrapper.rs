@@ -104,76 +104,40 @@ where
         let objects: HashSet<_> = self
             .o2p
             .keys()
-            .map(|i| self.get_term(*i).unwrap().clone())
+            .map(|i| self.wrapped.get_term(*i).unwrap().clone())
             .collect();
         Ok(objects)
     }
 }
 
-impl<T> IndexedGraph for OpsWrapper<T>
+impl<T> IndexedGraphWrapper<T> for OpsWrapper<T>
 where
     T: IndexedGraph,
 {
-    type Index = T::Index;
-    type TermData = T::TermData;
-
     #[inline]
-    fn get_index<U>(&self, t: &Term<U>) -> Option<Self::Index>
-    where
-        U: TermData,
-    {
-        self.wrapped.get_index(t)
-    }
-
-    #[inline]
-    fn get_term(&'_ self, i: Self::Index) -> Option<&Term<Self::TermData>> {
-        self.wrapped.get_term(i)
-    }
-
-    fn insert_indexed<U, V, W>(
-        &mut self,
-        s: &Term<U>,
-        p: &Term<V>,
-        o: &Term<W>,
-    ) -> Option<[Self::Index; 3]>
-    where
-        U: TermData,
-        V: TermData,
-        W: TermData,
-    {
-        let modified = self.wrapped.insert_indexed(s, p, o);
-        if let Some([si, pi, oi]) = modified {
+    fn igw_hook_insert_indexed(&mut self, modified: &Option<[T::Index; 3]>) {
+        if let Some([si, pi, oi]) = *modified {
             self.o2p.entry(oi).or_insert_with(Vec::new).push(pi);
             self.po2s.entry([pi, oi]).or_insert_with(Vec::new).push(si);
         }
-        modified
     }
 
-    fn remove_indexed<U, V, W>(
-        &mut self,
-        s: &Term<U>,
-        p: &Term<V>,
-        o: &Term<W>,
-    ) -> Option<[Self::Index; 3]>
-    where
-        U: TermData,
-        V: TermData,
-        W: TermData,
-    {
-        let modified = self.wrapped.remove_indexed(s, p, o);
-        if let Some([si, pi, oi]) = modified {
+    #[inline]
+    fn igw_hook_remove_indexed(&mut self, modified: &Option<[T::Index; 3]>) {
+        if let Some([si, pi, oi]) = *modified {
             remove_one_val(&mut self.o2p, oi, pi);
             remove_one_val(&mut self.po2s, [pi, oi], si);
         }
-        modified
     }
 
-    fn shrink_to_fit(&mut self) {
-        self.wrapped.shrink_to_fit();
+    #[inline]
+    fn igw_hook_shrink_to_fit(&mut self) {
         self.o2p.shrink_to_fit();
         self.po2s.shrink_to_fit();
     }
 }
+
+
 
 impl<'a, T> Graph<'a> for OpsWrapper<T>
 where
@@ -181,6 +145,14 @@ where
 {
     impl_graph_for_wrapper!();
 }
+
+impl<T> IndexedGraph for OpsWrapper<T>
+where
+    T: IndexedGraph + for <'a> Graph<'a, Triple = [&'a Term<<T as IndexedGraph>::TermData>; 3]>,
+{
+    impl_indexed_graph_for_wrapper!();
+}
+
 
 impl<T> MutableGraph for OpsWrapper<T>
 where

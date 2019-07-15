@@ -276,6 +276,96 @@ macro_rules! impl_graph_for_wrapper {
     };
 }
 
+/// An indexed graph wrapper wraps an [`IndexedGraph`] and augments some of its methods,
+/// through hooks of the forme `before_x` and `after_x`.
+///
+/// This trait is designed to add mutability to [`GraphWrapper`],
+/// through yje `impl_indexed_graph_for_wrapper!` macro.
+///
+/// [`IndexedGraph`]: ../index/trait.IndexedGraph.html
+/// [`GraphWrapper`]: ./trait.GraphWrapper.html
+pub trait IndexedGraphWrapper<T>
+where
+    T: IndexedGraph,
+{
+    /// Hook to be executed at the end of
+    /// [`IndexedGraph::insert_indexed`](../index/trait.IndexedGraph.html#tymethod.insert_indexed).
+    fn igw_hook_insert_indexed(&mut self, modified: &Option<[T::Index; 3]>);
+
+    /// Hook to be executed at the end of
+    /// [`IndexedGraph::remove_indexed`](../index/trait.IndexedGraph.html#tymethod.remove_indexed).
+    fn igw_hook_remove_indexed(&mut self, modified: &Option<[T::Index; 3]>);
+
+    /// Hook to be executed at the end of
+    /// [`IndexedGraph::shrink_to_fit`](../index/trait.IndexedGraph.html#tymethod.shrink_to_fit).
+    fn igw_hook_shrink_to_fit(&mut self);
+}
+
+macro_rules! impl_indexed_graph_for_wrapper {
+    ($wrapper: ty) => {
+        impl $crate::graph::index::IndexedGraph for $wrapper
+        where
+            T: $crate::graph::index::IndexedGraph + for<'a> $crate::graph::Graph<'a, Triple = [&'a $crate::term::Term<<T as $crate::graph::index::IndexedGraph>::TermData>; 3]>,
+        {
+            impl_indexed_graph_for_wrapper!();
+        }
+    };
+    () => {
+        type Index = T::Index;
+        type TermData = T::TermData;
+
+        #[inline]
+        fn get_index<U>(&self, t: &Term<U>) -> Option<Self::Index>
+        where
+            U: $crate::term::TermData,
+        {
+            self.get_wrapped().get_index(t)
+        }
+
+        #[inline]
+        fn get_term(& self, i: Self::Index) -> Option<&Term<Self::TermData>> {
+            self.get_wrapped().get_term(i)
+        }
+
+        fn insert_indexed<U, V, W>(
+            &mut self,
+            s: &Term<U>,
+            p: &Term<V>,
+            o: &Term<W>,
+        ) -> Option<[Self::Index; 3]>
+        where
+            U: TermData,
+            V: TermData,
+            W: TermData,
+        {
+            let modified = self.get_wrapped_mut().insert_indexed(s, p, o);
+            self.igw_hook_insert_indexed(&modified);
+            modified
+        }
+
+        fn remove_indexed<U, V, W>(
+            &mut self,
+            s: &Term<U>,
+            p: &Term<V>,
+            o: &Term<W>,
+        ) -> Option<([Self::Index; 3])>
+        where
+            U: TermData,
+            V: TermData,
+            W: TermData,
+        {
+            let modified = self.get_wrapped_mut().remove_indexed(s, p, o);
+            self.igw_hook_remove_indexed(&modified);
+            modified
+        }
+
+        fn shrink_to_fit(&mut self) {
+            self.get_wrapped_mut().shrink_to_fit();
+            self.igw_hook_shrink_to_fit();
+        }
+    };
+}
+
 #[cfg(test)]
 mod test {
     // The code from this module is tested through its use in other modules
