@@ -4,13 +4,21 @@
 /// [`MutableGraph`]: graph/trait.MutableGraph.html
 #[macro_export]
 macro_rules! test_graph_impl {
-    ($mutable_graph_impl:ident) => {
+    ($mutable_graph_impl: ident) => {
         test_graph_impl!(test, $mutable_graph_impl);
     };
     ($module_name: ident, $mutable_graph_impl: ident) => {
         test_graph_impl!($module_name, $mutable_graph_impl, true);
     };
     ($module_name: ident, $mutable_graph_impl: ident, $is_set: expr) => {
+        test_graph_impl!(
+            $module_name,
+            $mutable_graph_impl,
+            $is_set,
+            $mutable_graph_impl::new
+        );
+    };
+    ($module_name: ident, $mutable_graph_impl: ident, $is_set: expr, $mutable_graph_factory: path) => {
         #[cfg(test)]
         mod $module_name {
             use resiter::oks::*;
@@ -42,7 +50,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_simple_mutations() -> MGResult<$mutable_graph_impl, ()> {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 assert_eq!(g.triples().count(), 0);
                 assert!(MutableGraph::insert(
                     &mut g,
@@ -68,7 +76,7 @@ macro_rules! test_graph_impl {
             #[test]
             fn test_no_duplicate() -> MGResult<$mutable_graph_impl, ()> {
                 if $is_set {
-                    let mut g = $mutable_graph_impl::new();
+                    let mut g = $mutable_graph_factory();
                     assert_eq!(g.triples().count(), 0);
                     assert!(MutableGraph::insert(
                         &mut g,
@@ -106,7 +114,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_sink_mutations() {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 assert_eq!(g.triples().count(), 0);
                 assert_eq!(make_triple_source().in_sink(&mut g.inserter()).unwrap(), 2);
                 assert_eq!(g.triples().count(), 2);
@@ -122,7 +130,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_x_all_mutations() {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 assert_eq!(g.triples().count(), 0);
                 assert_eq!(g.insert_all(&mut make_triple_source()).unwrap(), 2);
                 assert_eq!(g.triples().count(), 2);
@@ -138,7 +146,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_remove_matching() -> MGResult<$mutable_graph_impl, ()> {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 populate(&mut g)?;
 
                 let o_matcher = [C1.clone(), C2.clone()];
@@ -149,7 +157,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_retain() -> MGResult<$mutable_graph_impl, ()> {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 populate(&mut g)?;
 
                 let o_matcher = [C1.clone(), C2.clone()];
@@ -163,7 +171,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_triples() -> MGResult<$mutable_graph_impl, ()> {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 populate(&mut g)?;
 
                 let triples = g.triples();
@@ -180,7 +188,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_triples_with_s() -> MGResult<$mutable_graph_impl, ()> {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 populate(&mut g)?;
 
                 let triples = g.triples_with_s(&C2);
@@ -197,7 +205,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_triples_with_p() -> MGResult<$mutable_graph_impl, ()> {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 populate(&mut g)?;
 
                 let triples = g.triples_with_p(&rdf::type_);
@@ -219,7 +227,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_triples_with_o() -> MGResult<$mutable_graph_impl, ()> {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 populate(&mut g)?;
 
                 let triples = g.triples_with_o(&C2);
@@ -236,7 +244,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_triples_with_sp() -> MGResult<$mutable_graph_impl, ()> {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 populate(&mut g)?;
 
                 let triples = g.triples_with_sp(&C2, &rdf::type_);
@@ -253,7 +261,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_triples_with_so() -> MGResult<$mutable_graph_impl, ()> {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 populate(&mut g)?;
 
                 let triples = g.triples_with_so(&C2, &rdfs::Resource);
@@ -276,7 +284,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_triples_with_po() -> MGResult<$mutable_graph_impl, ()> {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 populate(&mut g)?;
 
                 let triples = g.triples_with_po(&rdf::type_, &rdfs::Class);
@@ -293,7 +301,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_triples_with_spo() -> MGResult<$mutable_graph_impl, ()> {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 populate(&mut g)?;
 
                 let triples = g.triples_with_spo(&C2, &rdf::type_, &rdfs::Resource);
@@ -318,7 +326,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_contains() -> MGResult<$mutable_graph_impl, ()> {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 populate(&mut g)?;
                 assert!(Graph::contains(&g, &C2, &rdfs::subClassOf, &C1)?);
                 assert!(!Graph::contains(&g, &C1, &rdfs::subClassOf, &C2)?);
@@ -327,7 +335,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_triples_matching() -> MGResult<$mutable_graph_impl, ()> {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 populate(&mut g)?;
 
                 let p_matcher: [StaticTerm; 2] = [rdf::type_.clone(), rdfs::domain.clone()];
@@ -348,7 +356,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_subjects() -> MGResult<$mutable_graph_impl, ()> {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 populate(&mut g)?;
 
                 let subjects = g.subjects().unwrap();
@@ -369,7 +377,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_predicates() -> MGResult<$mutable_graph_impl, ()> {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 populate(&mut g)?;
 
                 let predicates = g.predicates().unwrap();
@@ -388,7 +396,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_objects() -> MGResult<$mutable_graph_impl, ()> {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 populate(&mut g)?;
 
                 let objects = g.objects().unwrap();
@@ -408,7 +416,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_iris() -> MGResult<$mutable_graph_impl, ()> {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 populate_nodes_types(&mut g)?;
 
                 let iris = g.iris().unwrap();
@@ -423,7 +431,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_bnodes() -> MGResult<$mutable_graph_impl, ()> {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 populate_nodes_types(&mut g)?;
 
                 let bnodes = g.bnodes().unwrap();
@@ -438,7 +446,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_literals() -> MGResult<$mutable_graph_impl, ()> {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 populate_nodes_types(&mut g)?;
 
                 let literals = g.literals().unwrap();
@@ -454,7 +462,7 @@ macro_rules! test_graph_impl {
 
             #[test]
             fn test_variables() -> MGResult<$mutable_graph_impl, ()> {
-                let mut g = $mutable_graph_impl::new();
+                let mut g = $mutable_graph_factory();
                 populate_nodes_types(&mut g)?;
 
                 let variables = g.variables().unwrap();
