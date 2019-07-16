@@ -24,6 +24,14 @@ pub trait Quad<'a> {
     fn o(&self) -> &Term<<Self as Quad<'a>>::TermData>;
     /// The graph identifier (either a graph name or "default graph") of this quad.
     fn g(&self) -> &GraphId<<Self as Quad<'a>>::TermData>;
+
+    /// [`Triple`](../triple/trait.Triple.html) adapter owning this quad.
+    fn as_triple(self) -> QuadAsTriple<Self>
+    where
+        Self: Sized,
+    {
+        QuadAsTriple(self)
+    }
 }
 
 impl<'a, T> Quad<'a> for [Term<T>; 4]
@@ -119,9 +127,17 @@ where
     }
 }
 
-struct TripleWrapper<Q>(Q);
+/// The adapter returned by [`Qiad::as_triple`](./trait.Quad.html#method.as_triple).
+pub struct QuadAsTriple<Q>(Q);
 
-impl<'a, Q: Quad<'a>> Triple<'a> for TripleWrapper<Q> {
+impl<Q> QuadAsTriple<Q> {
+    /// Unwrap this adapter to get the original quad back.
+    pub fn unwrap(self) -> Q {
+        self.0
+    }
+}
+
+impl<'a, Q: Quad<'a>> Triple<'a> for QuadAsTriple<Q> {
     type TermData = <Q as Quad<'a>>::TermData;
     #[inline]
     fn s(&self) -> &Term<<Q as Quad<'a>>::TermData> {
@@ -135,65 +151,6 @@ impl<'a, Q: Quad<'a>> Triple<'a> for TripleWrapper<Q> {
     fn o(&self) -> &Term<<Q as Quad<'a>>::TermData> {
         self.0.o()
     }
-}
-
-/// Convert any quad into a triple
-pub fn as_triple<'a, Q: Quad<'a>>(quad: Q) -> impl Triple<'a> {
-    TripleWrapper(quad)
-}
-
-struct DGQuadWrapper<T>(T);
-
-impl<'a, T: Triple<'a>> Quad<'a> for DGQuadWrapper<T> {
-    type TermData = T::TermData;
-    #[inline]
-    fn s(&self) -> &Term<T::TermData> {
-        self.0.s()
-    }
-    #[inline]
-    fn p(&self) -> &Term<T::TermData> {
-        self.0.p()
-    }
-    #[inline]
-    fn o(&self) -> &Term<T::TermData> {
-        self.0.o()
-    }
-    #[inline]
-    fn g(&self) -> &GraphId<T::TermData> {
-        unimplemented!()
-    }
-}
-
-/// Convert any triple into a quad from the default graph.
-pub fn as_quad<'a, T: Triple<'a>>(triple: T) -> impl Quad<'a> {
-    DGQuadWrapper(triple)
-}
-
-pub struct NGQuadWrapper<'a, T: Triple<'a>>(T, Term<T::TermData>);
-
-impl<'a, T: Triple<'a>> Quad<'a> for NGQuadWrapper<'a, T> {
-    type TermData = T::TermData;
-    #[inline]
-    fn s(&self) -> &Term<T::TermData> {
-        self.0.s()
-    }
-    #[inline]
-    fn p(&self) -> &Term<T::TermData> {
-        self.0.p()
-    }
-    #[inline]
-    fn o(&self) -> &Term<T::TermData> {
-        self.0.o()
-    }
-    #[inline]
-    fn g(&self) -> &GraphId<T::TermData> {
-        self.1.as_graph_id()
-    }
-}
-
-/// Convert any triple into a quad from the default graph.
-pub fn as_quad_from<'a, T: Triple<'a>>(triple: T, graph_id: Term<T::TermData>) -> impl Quad<'a> {
-    NGQuadWrapper(triple, graph_id)
 }
 
 #[cfg(test)]
