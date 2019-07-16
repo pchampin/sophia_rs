@@ -45,6 +45,7 @@ use crate::error::*;
 
 pub mod factory;
 pub mod graph_id;
+pub mod index_map;
 pub mod iri_rfc3987;
 use self::iri_rfc3987::ParsedIri;
 pub mod matcher;

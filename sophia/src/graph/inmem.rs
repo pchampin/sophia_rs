@@ -33,7 +33,7 @@
 //! [`LightGraph`]: type.LightGraph.html
 
 use super::_traits::*;
-use super::index::*;
+use super::indexed::*;
 use crate::term::factory::*;
 use crate::term::*;
 

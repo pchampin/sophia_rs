@@ -149,7 +149,7 @@ impl<T> MutableGraph for SpoWrapper<T>
 where
     T: IndexedGraph + for<'a> Graph<'a, Triple = [&'a Term<<T as IndexedGraph>::TermData>; 3]>,
 {
-    impl_mutable_graph_for_indexed_mutable_graph!();
+    impl_mutable_graph_for_indexed_graph!();
 }
 
 impl<T> SetGraph for SpoWrapper<T> where T: IndexedGraph + SetGraph {}

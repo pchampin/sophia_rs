@@ -49,6 +49,9 @@ impl<T: TermData> Namespace<T> {
     }
 }
 
+/// Helper for creating a "namespace module"
+/// defining a set of terms within a given IRI space.
+#[macro_export]
 macro_rules! namespace {
     ($iri_prefix:expr, $($suffix:ident),*) => {
         pub static PREFIX:&'static str = $iri_prefix;

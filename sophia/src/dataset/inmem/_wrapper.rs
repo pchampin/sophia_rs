@@ -1,6 +1,7 @@
 // this module is transparently re-exported by its parent `dataset::inmem`
 
 use super::*;
+use crate::dataset::indexed::IndexedDataset;
 
 /// A dataset wrapper wraps a [`Dataset`] and overrides some of its methods.
 ///
@@ -10,10 +11,11 @@ use super::*;
 /// Implementation of this trait may however expected to override
 /// *some* of the methods.
 ///
-/// Conversely, the `impl_dataset_for_wrapper!` macro can be used to derive
+/// Conversely, the [`impl_dataset_for_wrapper!`] macro can be used to derive
 /// the Dataset implementation for any implementation of DatasetWrapper.
 ///
 /// [`Dataset`]: ../trait.Dataset.html
+/// [`impl_dataset_for_wrapper!`]: ../../macro.impl_dataset_for_wrapper.html
 pub trait DatasetWrapper<'a> {
     /// The type of the wrapped dataset.
     type Wrapped: Dataset<'a>;
@@ -285,6 +287,11 @@ pub trait DatasetWrapper<'a> {
     }
 }
 
+/// Defines the implementation of [`Dataset`] for [`DatasetWrapper`].
+///
+/// [`Dataset`]: dataset/trait.Dataset.html
+/// [`DatasetWrapper`]: dataset/inmem/trait.DatasetWrapper.html
+#[macro_export]
 macro_rules! impl_dataset_for_wrapper {
     ($wrapper: ty) => {
         impl<'a> $crate::dataset::Dataset<'a> for $wrapper {
@@ -542,10 +549,11 @@ macro_rules! impl_dataset_for_wrapper {
 /// through hooks of the forme `before_x` and `after_x`.
 ///
 /// This trait is designed to add mutability to [`DatasetWrapper`],
-/// through yje `impl_indexed_dataset_for_wrapper!` macro.
+/// through the [`impl_indexed_dataset_for_wrapper!`] macro.
 ///
 /// [`IndexedDataset`]: ../index/trait.IndexedDataset.html
 /// [`DatasetWrapper`]: ./trait.DatasetWrapper.html
+/// [`impl_indexed_dataset_for_wrapper!`]: ../../macro.impl_indexed_dataset_for_wrapper.html
 pub trait IndexedDatasetWrapper<T>
 where
     T: IndexedDataset,
@@ -563,11 +571,16 @@ where
     fn idw_hook_shrink_to_fit(&mut self);
 }
 
+/// Defines the implementation of [`IndexedDataset`] for [`DatasetWrapper`] around another [`IndexedDataset`].
+///
+/// [`IndexedDataset`]: dataset/index/trait.IndexedDataset.html
+/// [`DatasetWrapper`]: dataset/inmem/trait.DatasetWrapper.html
+#[macro_export]
 macro_rules! impl_indexed_dataset_for_wrapper {
     ($wrapper: ty) => {
-        impl $crate::dataset::index::IndexedDataset for $wrapper
+        impl $crate::dataset::indexed::IndexedDataset for $wrapper
         where
-            T: $crate::dataset::index::IndexedDataset + for<'a> $crate::dataset::Dataset<'a, Quad = [&'a $crate::term::Term<<T as $crate::dataset::index::IndexedDataset>::TermData>; 3]>,
+            T: $crate::dataset::indexed::IndexedDataset + for<'a> $crate::dataset::Dataset<'a, Quad = [&'a $crate::term::Term<<T as $crate::dataset::indexed::IndexedDataset>::TermData>; 3]>,
         {
             impl_indexed_dataset_for_wrapper!();
         }

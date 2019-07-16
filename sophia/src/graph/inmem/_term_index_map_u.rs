@@ -2,8 +2,8 @@
 use std::borrow::Borrow;
 use std::collections::HashMap;
 
-use crate::graph::index::TermIndexMap;
 use crate::term::factory::{FTerm, TermFactory};
+use crate::term::index_map::TermIndexMap;
 use crate::term::*;
 
 /// An in-memory implemention of [`TermIndexMap`](../index/trait.TermIndexMap.html)
@@ -215,13 +215,13 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::graph::index::assert_term_index_works;
     use crate::term::factory::RcTermFactory;
+    use crate::term::index_map::assert_term_index_map_works;
 
     #[test]
     fn test_term_index() {
         let mut ti = TermIndexMapU::<u16, RcTermFactory>::default();
-        assert_term_index_works(&mut ti);
+        assert_term_index_map_works(&mut ti);
     }
 
     #[test]

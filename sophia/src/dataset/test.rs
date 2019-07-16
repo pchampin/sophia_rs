@@ -1,3 +1,7 @@
+/// Generates a test suite for [`Dataset`] and [`MutableDataset`] implementations.
+///
+/// [`Dataset`]: dataset/trait.Dataset.html
+/// [`MutableDataset`]: dataset/trait.MutableDataset.html
 #[macro_export]
 macro_rules! test_dataset_impl {
     ($mutable_dataset_impl:ident) => {

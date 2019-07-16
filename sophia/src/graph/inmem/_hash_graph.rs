@@ -4,9 +4,11 @@ use std::collections::HashSet;
 use std::hash::Hash;
 
 use crate::error::*;
-use crate::graph::index::{IndexedGraph, TermIndexMap};
+use crate::graph::indexed::IndexedGraph;
 use crate::graph::*;
-use crate::term::{factory::TermFactory, RefTerm, Term, TermData};
+use crate::term::factory::TermFactory;
+use crate::term::index_map::TermIndexMap;
+use crate::term::{RefTerm, Term, TermData};
 
 /// A generic implementation of [`Graph`] and [`MutableGraph`],
 /// storing its terms in a [`TermIndexMap`],
@@ -153,7 +155,7 @@ where
     I::Index: Hash,
     <I::Factory as TermFactory>::TermData: 'static,
 {
-    impl_mutable_graph_for_indexed_mutable_graph!();
+    impl_mutable_graph_for_indexed_graph!();
 }
 
 impl<I> SetGraph for HashGraph<I>

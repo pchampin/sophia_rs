@@ -1,7 +1,7 @@
 //! In-memory implementations of RDF datasets.
 //!
 //! This module provides [building blocks](#structs)
-//! for defining implementations of [`Dattaset`] and [`MutableDataset`],
+//! for defining implementations of [`Dataset`] and [`MutableDataset`],
 //! with fine-tuned trade-offs between memory footprint and performance.
 //!
 //! It also provides two pre-defined trade-offs:
@@ -18,7 +18,7 @@
 //! [`LightDataset`]: type.LightDataset.html
 
 use super::_traits::*;
-use super::index::*;
+use super::indexed::*;
 use crate::graph::inmem::TermIndexMapU;
 use crate::term::{factory::*, graph_id::GraphId, *};
 
@@ -35,7 +35,7 @@ pub use self::_ogps_wrapper::*;
 /// A generic in-memory dataset.
 ///
 /// `I` must be a type for which [`TermIndexMapU`](../../graph/inmem/struct.TermIndexMapU.html)
-/// implements [`TermIndexMap`](../index/trait.TermIndexMap.html),
+/// implements [`TermIndexMap`](../../graph/index/trait.TermIndexMap.html),
 /// typically `u16` or `u32`.
 ///
 /// `F` must implement [`TermFactory`](../../term/factory/trait.TermFactory.html).

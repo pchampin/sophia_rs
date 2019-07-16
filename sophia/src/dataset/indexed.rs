@@ -1,4 +1,4 @@
-//! Types for indexing terms.
+//! A utility trait for building datasets using indexed terms.
 
 use std::hash::Hash;
 
@@ -8,13 +8,14 @@ use crate::term::*;
 /// A utility trait for implementing [`Dataset`] and [`MutableDataset`]
 /// based on an internal [`TermIndexMap`] for efficient storage.
 ///
-/// The `impl_mutable_dataset_for_indexed_mutable_dataset!` macro
+/// The [`impl_mutable_dataset_for_indexed_dataset!`] macro
 /// can be used to derive the `MutableDataset` implementation
 /// for any implementation of `IndexedDataset`.
 ///
 /// [`Dataset`]: ../trait.Dataset.html
 /// [`MutableDataset`]: ../trait.MutableDataset.html
 /// [`TermIndexMap`]: ../../graph/index/trait.TermIndexMap.html
+/// [`impl_mutable_dataset_for_indexed_dataset!`]: ../../macro.impl_mutable_dataset_for_indexed_dataset.html
 ///
 pub trait IndexedDataset {
     /// The type used to represent terms internally.
@@ -75,10 +76,10 @@ pub trait IndexedDataset {
 /// [`MutableDataset`]: dataset/trait.MutableDataset.html
 /// [`IndexedDataset`]: dataset/index/trait.IndexedDataset.html
 #[macro_export]
-macro_rules! impl_mutable_dataset_for_indexed_mutable_dataset {
+macro_rules! impl_mutable_dataset_for_indexed_dataset {
     ($indexed_mutable_dataset: ty) => {
         impl MutableDataset for $indexed_mutable_dataset {
-            impl_mutable_dataset_for_indexed_mutable_dataset!();
+            impl_mutable_dataset_for_indexed_dataset!();
         }
     };
     () => {

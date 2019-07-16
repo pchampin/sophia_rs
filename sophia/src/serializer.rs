@@ -21,7 +21,7 @@
 //! [`QuadWriter`]: trait.QuadWriter.html
 //! [`QuadStringifier`]: trait.QuadStringifier.html
 //! [`TripleSink`]: ../triple/stream/trait.TripleSink.html
-//! [`QuadSink`]: ../triple/stream/trait.QuadSink.html
+//! [`QuadSink`]: ../quad/stream/trait.QuadSink.html
 
 use std::io;
 
@@ -38,8 +38,10 @@ pub mod common;
 pub mod nq;
 pub mod nt;
 
-/// An extension of the [`TripleSink`] trait,
+/// An extension of the `TripleSink` trait,
 /// dedicated to serialization to IO streams.
+///
+/// See also [`TripleSink`].
 ///
 /// [`TripleSink`]: ../triple/stream/trait.TripleSink.html
 ///
@@ -77,9 +79,11 @@ pub trait TripleWriter<W: io::Write>: TripleSink<Outcome = ()> + Sized {
     }
 }
 
-/// An extension of the [`TripleSink`] trait,
+/// An extension of the `TripleSink` trait,
 /// dedicated to serialization to strings,
 /// with methods more explicitly named.
+///
+/// See also [`TripleSink`].
 ///
 /// [`TripleSink`]: ../triple/stream/trait.TripleSink.html
 ///
@@ -123,10 +127,12 @@ pub trait TripleStringifier: TripleSink<Outcome = String> + Sized {
     }
 }
 
-/// An extension of the [`QuadSink`] trait,
+/// An extension of the `QuadSink` trait,
 /// dedicated to serialization to IO streams.
 ///
-/// [`QuadSink`]: ../triple/stream/trait.QuadSink.html
+/// See also [`QuadSink`].
+///
+/// [`QuadSink`]: ../quad/stream/trait.QuadSink.html
 ///
 pub trait QuadWriter<W: io::Write>: QuadSink<Outcome = ()> + Sized {
     type Config;
@@ -167,11 +173,13 @@ pub trait QuadWriter<W: io::Write>: QuadSink<Outcome = ()> + Sized {
     }
 }
 
-/// An extension of the [`QuadSink`] trait,
+/// An extension of the `QuadSink` trait,
 /// dedicated to serialization to strings,
 /// with methods more explicitly named.
 ///
-/// [`QuadSink`]: ../triple/stream/trait.QuadSink.html
+/// See also [`QuadSink`].
+///
+/// [`QuadSink`]: ../quad/stream/trait.QuadSink.html
 ///
 pub trait QuadStringifier: QuadSink<Outcome = String> + Sized {
     type Config;

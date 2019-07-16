@@ -2,11 +2,13 @@
 use std::collections::HashSet;
 use std::hash::Hash;
 
-use crate::dataset::index::IndexedDataset;
+use crate::dataset::indexed::IndexedDataset;
 use crate::dataset::*;
 use crate::error::*;
-use crate::graph::index::TermIndexMap;
-use crate::term::{factory::TermFactory, graph_id::GraphId, RefTerm, Term, TermData};
+use crate::term::factory::TermFactory;
+use crate::term::graph_id::GraphId;
+use crate::term::index_map::TermIndexMap;
+use crate::term::{RefTerm, Term, TermData};
 
 /// A generic implementation of [`Dataset`] and [`MutableDataset`],
 /// storing its terms in a [`TermIndexMap`],
@@ -198,7 +200,7 @@ where
     I::Index: Hash,
     <I::Factory as TermFactory>::TermData: 'static,
 {
-    impl_mutable_dataset_for_indexed_mutable_dataset!();
+    impl_mutable_dataset_for_indexed_dataset!();
 }
 
 impl<I> SetDataset for HashDataset<I>

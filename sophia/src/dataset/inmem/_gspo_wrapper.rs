@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::iter::empty;
 
 use super::*;
-use crate::graph::index::*;
+use crate::graph::indexed::*;
 
 /// A [`DatasetWrapper`](trait.DatasetWrapper.html)
 /// indexing quads by graph identifier, then by subject, then by predicate, then by object.
@@ -197,7 +197,7 @@ impl<T> MutableDataset for GspoWrapper<T>
 where
     T: IndexedDataset + for<'a> Dataset<'a, Quad = MyQuad<'a, <T as IndexedDataset>::TermData>>,
 {
-    impl_mutable_dataset_for_indexed_mutable_dataset!();
+    impl_mutable_dataset_for_indexed_dataset!();
 }
 
 impl<T> SetDataset for GspoWrapper<T> where T: IndexedDataset + SetDataset {}

@@ -10,10 +10,11 @@ use super::*;
 /// Implementation of this trait may however expected to override
 /// *some* of the methods.
 ///
-/// Conversely, the `impl_graph_for_wrapper!` macro can be used to derive
+/// Conversely, the [`impl_graph_for_wrapper!`] macro can be used to derive
 /// the Graph implementation for any implementation of GraphWrapper.
 ///
 /// [`Graph`]: ../trait.Graph.html
+/// [`impl_mutable_graph_for_indexed_graph`]: ../../macro.impl_mutable_graph_for_indexed_graph.html
 pub trait GraphWrapper<'a> {
     /// The type of the wrapped graph.
     type Wrapped: Graph<'a>;
@@ -168,6 +169,11 @@ pub trait GraphWrapper<'a> {
     }
 }
 
+/// Defines the implementation of [`Graph`] for [`GraphWrapper`].
+///
+/// [`Graph`]: graph/trait.Graph.html
+/// [`GraphWrapper`]: graph/inmem/trait.GraphWrapper.html
+#[macro_export]
 macro_rules! impl_graph_for_wrapper {
     ($wrapper: ty) => {
         impl<'a> $crate::graph::Graph<'a> for $wrapper {
@@ -319,10 +325,11 @@ macro_rules! impl_graph_for_wrapper {
 /// through hooks of the forme `before_x` and `after_x`.
 ///
 /// This trait is designed to add mutability to [`GraphWrapper`],
-/// through yje `impl_indexed_graph_for_wrapper!` macro.
+/// through the [`impl_indexed_graph_for_wrapper!`] macro.
 ///
 /// [`IndexedGraph`]: ../index/trait.IndexedGraph.html
 /// [`GraphWrapper`]: ./trait.GraphWrapper.html
+/// [`impl_mutable_graph_for_indexed_graph!`]: ../../macro.impl_mutable_graph_for_indexed_graph.html
 pub trait IndexedGraphWrapper<T>
 where
     T: IndexedGraph,
@@ -340,11 +347,16 @@ where
     fn igw_hook_shrink_to_fit(&mut self);
 }
 
+/// Defines the implementation of [`IndexedGraph`] for [`GraphWrapper`] around another [`IndexedGraph`].
+///
+/// [`IndexedGraph`]: graph/index/trait.IndexedGraph.html
+/// [`GraphWrapper`]: graph/inmem/trait.GraphWrapper.html
+#[macro_export]
 macro_rules! impl_indexed_graph_for_wrapper {
     ($wrapper: ty) => {
-        impl $crate::graph::index::IndexedGraph for $wrapper
+        impl $crate::graph::indexed::IndexedGraph for $wrapper
         where
-            T: $crate::graph::index::IndexedGraph + for<'a> $crate::graph::Graph<'a, Triple = [&'a $crate::term::Term<<T as $crate::graph::index::IndexedGraph>::TermData>; 3]>,
+            T: $crate::graph::indexed::IndexedGraph + for<'a> $crate::graph::Graph<'a, Triple = [&'a $crate::term::Term<<T as $crate::graph::indexed::IndexedGraph>::TermData>; 3]>,
         {
             impl_indexed_graph_for_wrapper!();
         }

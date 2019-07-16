@@ -12,7 +12,7 @@
 mod test;
 
 #[macro_use]
-pub mod index;
+pub mod indexed;
 pub mod inmem;
 
 mod _ext_impl;

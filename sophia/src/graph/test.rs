@@ -1,3 +1,7 @@
+/// Generates a test suite for [`Graph`] and [`MutableGraph`] implementations.
+///
+/// [`Graph`]: graph/trait.Graph.html
+/// [`MutableGraph`]: graph/trait.MutableGraph.html
 #[macro_export]
 macro_rules! test_graph_impl {
     ($mutable_graph_impl:ident) => {
