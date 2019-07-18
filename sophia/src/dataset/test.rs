@@ -11,6 +11,9 @@ macro_rules! test_dataset_impl {
         test_dataset_impl!($module_name, $mutable_dataset_impl, true);
     };
     ($module_name: ident, $mutable_dataset_impl: ident, $is_set: expr) => {
+        test_dataset_impl!($module_name, $mutable_dataset_impl, $is_set, $mutable_dataset_impl::new);
+    };
+    ($module_name: ident, $mutable_dataset_impl: ident, $is_set: expr, $mutable_dataset_factory: path) => {
         #[cfg(test)]
         mod $module_name {
             use resiter::oks::*;
@@ -45,7 +48,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_simple_mutations() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 assert_eq!(d.quads().count(), 0);
                 assert!(MutableDataset::insert(
                     &mut d,
@@ -85,7 +88,7 @@ macro_rules! test_dataset_impl {
             #[test]
             fn test_no_duplicate() -> MDResult<$mutable_dataset_impl, ()> {
                 if $is_set {
-                    let mut d = $mutable_dataset_impl::new();
+                    let mut d = $mutable_dataset_factory();
                     assert_eq!(d.quads().count(), 0);
                     assert!(MutableDataset::insert(
                         &mut d,
@@ -128,7 +131,7 @@ macro_rules! test_dataset_impl {
             #[test]
             fn test_different_graphs_do_not_count_as_duplicate(
             ) -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 assert_eq!(d.quads().count(), 0);
                 assert!(MutableDataset::insert(
                     &mut d,
@@ -167,7 +170,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_sink_mutations() {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 assert_eq!(d.quads().count(), 0);
                 assert_eq!(make_quad_source().in_sink(&mut d.inserter()).unwrap(), 2);
                 assert_eq!(d.quads().count(), 2);
@@ -183,7 +186,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_x_all_mutations() {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 assert_eq!(d.quads().count(), 0);
                 assert_eq!(d.insert_all(&mut make_quad_source()).unwrap(), 2);
                 assert_eq!(d.quads().count(), 2);
@@ -199,7 +202,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_remove_matching() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let o_matcher = [C1.clone(), C2.clone()];
@@ -210,7 +213,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_retain() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let o_matcher = [C1.clone(), C2.clone()];
@@ -224,7 +227,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let quads = d.quads();
@@ -242,7 +245,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_s() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let quads = d.quads_with_s(&C2);
@@ -272,7 +275,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_p() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let quads = d.quads_with_p(&rdfs::subClassOf);
@@ -296,7 +299,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_o() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let quads = d.quads_with_o(&I2B);
@@ -314,7 +317,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_g() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let quads = d.quads_with_g(&GN1);
@@ -332,7 +335,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_sp() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let quads = d.quads_with_sp(&C2, &rdf::type_);
@@ -356,7 +359,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_so() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let quads = d.quads_with_so(&C2, &C1);
@@ -374,7 +377,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_po() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let quads = d.quads_with_po(&rdf::type_, &rdfs::Class);
@@ -407,7 +410,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_sg() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let quads = d.quads_with_sg(&C2, &GN1);
@@ -425,7 +428,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_pg() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let quads = d.quads_with_pg(&rdf::type_, &GN1);
@@ -443,7 +446,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_og() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let quads = d.quads_with_og(&C1, &GN1);
@@ -461,7 +464,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_spo() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let quads = d.quads_with_spo(&C1, &rdf::type_, &rdfs::Class);
@@ -482,7 +485,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_spg() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let quads = d.quads_with_spg(&C1, &rdf::type_, &DG);
@@ -506,7 +509,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_sog() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let quads = d.quads_with_sog(&C1, &rdfs::Class, &DG);
@@ -530,7 +533,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_pog() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let quads = d.quads_with_pog(&rdf::type_, &rdfs::Class, &DG);
@@ -557,7 +560,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_spog() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let quads = d.quads_with_spog(&C1, &rdf::type_, &rdfs::Class, &DG);
@@ -584,7 +587,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_contains() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
                 assert!(Dataset::contains(&d, &C2, &rdfs::subClassOf, &C1, &GN1)?);
                 assert!(!Dataset::contains(&d, &C1, &rdfs::subClassOf, &C2, &GN1)?);
@@ -593,7 +596,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_matching() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let p_matcher: [StaticTerm; 2] = [rdf::type_.clone(), rdfs::domain.clone()];
@@ -622,7 +625,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_subjects() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let subjects = d.subjects().unwrap();
@@ -643,7 +646,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_predicates() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let predicates = d.predicates().unwrap();
@@ -662,7 +665,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_objects() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let objects = d.objects().unwrap();
@@ -681,7 +684,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_graph_names() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let graph_names = d.graph_names().unwrap();
@@ -696,7 +699,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_iris() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate_nodes_types(&mut d)?;
 
                 let iris = d.iris().unwrap();
@@ -711,7 +714,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_bnodes() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate_nodes_types(&mut d)?;
 
                 let bnodes = d.bnodes().unwrap();
@@ -726,7 +729,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_literals() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate_nodes_types(&mut d)?;
 
                 let literals = d.literals().unwrap();
@@ -742,7 +745,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_variables() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_impl::new();
+                let mut d = $mutable_dataset_factory();
                 populate_nodes_types(&mut d)?;
 
                 let variables = d.variables().unwrap();
