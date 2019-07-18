@@ -2,11 +2,13 @@
 
 use std::collections::HashSet;
 use std::hash::Hash;
+use std::marker::PhantomData;
 
 use resiter::filter::*;
 use resiter::map::*;
 
 use crate::error::*;
+use crate::graph::adapter::GraphAsDataset;
 use crate::graph::{Inserter, Remover};
 use crate::term::matcher::TermMatcher;
 use crate::term::*;
@@ -85,7 +87,6 @@ pub type GResultTermSet<'a, G> = GResult<'a, G, HashSet<GTerm<'a, G>>>;
 /// only implementations of `Graph` who *own* their data will match this bound
 /// (fortunately, it is the case of most implementations).
 
-///
 pub trait Graph<'a> {
     /// The type of [`Triple`](../triple/trait.Triple.html)s
     /// that the methods of this graph will yield.
@@ -345,6 +346,24 @@ pub trait Graph<'a> {
             }
         }
         Ok(res)
+    }
+
+    /// [`Dataset`](../dataset/trait.Dataset.html) adapter borrowing this graph
+    fn borrow_as_dataset(&self) -> GraphAsDataset<Self, &Self> {
+        GraphAsDataset(self, PhantomData)
+    }
+
+    /// [`Dataset`](../dataset/trait.Dataset.html) adapter borrowing this graph mutably
+    fn borrow_mut_as_dataset(&mut self) -> GraphAsDataset<Self, &mut Self> {
+        GraphAsDataset(self, PhantomData)
+    }
+
+    /// [`Dataset`](../dataset/trait.Dataset.html) adapter taking ownership of this graph
+    fn as_dataset(self) -> GraphAsDataset<Self, Self>
+    where
+        Self: Sized,
+    {
+        GraphAsDataset(self, PhantomData)
     }
 }
 
