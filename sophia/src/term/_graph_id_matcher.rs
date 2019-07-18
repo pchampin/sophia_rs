@@ -116,6 +116,31 @@ where
     }
 }
 
+impl<M> GraphIdMatcher for Vec<M>
+where
+    M: GraphIdMatcher,
+{
+    type TermData = M::TermData;
+    fn constant(&self) -> Option<&GraphId<Self::TermData>> {
+        if self.len() == 1 {
+            self[0].constant()
+        } else {
+            None
+        }
+    }
+    fn matches<T>(&self, g: &GraphId<T>) -> bool
+    where
+        T: TermData,
+    {
+        for matcher in self {
+            if matcher.matches(g) {
+                return true;
+            }
+        }
+        false
+    }
+}
+
 impl<F: Fn(&GraphId<&str>) -> bool> GraphIdMatcher for F {
     type TermData = &'static str;
     fn constant(&self) -> Option<&GraphId<Self::TermData>> {
