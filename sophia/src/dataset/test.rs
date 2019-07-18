@@ -4,10 +4,10 @@ use std::fmt::Debug;
 
 use crate::dataset::*;
 use crate::ns::*;
-use crate::quad::*;
 use crate::quad::stream::*;
-use crate::term::*;
+use crate::quad::*;
 use crate::term::graph_id::*;
+use crate::term::*;
 
 pub const NS: &str = "http://example.org/";
 
@@ -136,14 +136,19 @@ macro_rules! test_dataset_impl {
         test_dataset_impl!($module_name, $mutable_dataset_impl, true);
     };
     ($module_name: ident, $mutable_dataset_impl: ident, $is_set: expr) => {
-        test_dataset_impl!($module_name, $mutable_dataset_impl, $is_set, $mutable_dataset_impl::new);
+        test_dataset_impl!(
+            $module_name,
+            $mutable_dataset_impl,
+            $is_set,
+            $mutable_dataset_impl::new
+        );
     };
     ($module_name: ident, $mutable_dataset_impl: ident, $is_set: expr, $mutable_dataset_factory: path) => {
         #[cfg(test)]
         mod $module_name {
             use resiter::oks::*;
-            use $crate::dataset::*;
             use $crate::dataset::test::*;
+            use $crate::dataset::*;
             use $crate::ns::*;
             use $crate::quad::stream::*;
             use $crate::term::{graph_id::GraphId, matcher::ANY, *};

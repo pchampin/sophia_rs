@@ -11,6 +11,7 @@
 #[macro_use]
 pub mod test;
 
+pub mod adapter;
 #[macro_use]
 pub mod indexed;
 pub mod inmem;

@@ -5,8 +5,8 @@ use std::fmt::Debug;
 use crate::graph::*;
 use crate::ns::*;
 use crate::term::*;
-use crate::triple::*;
 use crate::triple::stream::*;
+use crate::triple::*;
 
 pub const NS: &str = "http://example.org/";
 
@@ -20,7 +20,6 @@ lazy_static! {
     pub static ref I2A: StaticTerm = StaticTerm::new_iri2(NS, "I2A").unwrap();
     pub static ref I2B: StaticTerm = StaticTerm::new_iri2(NS, "I2B").unwrap();
 }
-
 
 pub fn populate<G: MutableGraph>(g: &mut G) -> MGResult<G, ()> {
     g.insert(&C1, &rdf::type_, &rdfs::Class)?;
@@ -108,7 +107,6 @@ pub fn make_triple_source() -> impl TripleSource<'static> {
     .as_triple_source()
 }
 
-
 /// Generates a test suite for [`Graph`] and [`MutableGraph`] implementations.
 ///
 /// [`Graph`]: graph/trait.Graph.html
@@ -133,8 +131,8 @@ macro_rules! test_graph_impl {
         #[cfg(test)]
         mod $module_name {
             use resiter::oks::*;
-            use $crate::graph::*;
             use $crate::graph::test::*;
+            use $crate::graph::*;
             use $crate::ns::*;
             use $crate::term::matcher::ANY;
             use $crate::term::*;

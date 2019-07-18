@@ -416,4 +416,14 @@ mod test {
         );
         assert!(ret.is_err());
     }
+
+    mod dataset {
+        // moved here from ::dataset::adapter::test,
+        // because test_graph_impl! seems to be only usable from ::graph
+        use crate::dataset::adapter::test::{
+            make_default_graph, make_named_graph, LightDatasetGraph,
+        };
+        test_graph_impl!(default_graph, LightDatasetGraph, true, make_default_graph);
+        test_graph_impl!(named_graph, LightDatasetGraph, true, make_named_graph);
+    }
 }

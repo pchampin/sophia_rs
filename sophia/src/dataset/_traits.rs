@@ -1,10 +1,12 @@
 // this module is transparently re-exported by its parent `dataset`
 
 use std::collections::HashSet;
+use std::marker::PhantomData;
 
 use resiter::filter::*;
 use resiter::map::*;
 
+use crate::dataset::adapter::DatasetGraph;
 use crate::error::*;
 use crate::quad::stream::*;
 use crate::quad::*;
@@ -477,6 +479,45 @@ pub trait Dataset<'a> {
             }
         }
         Ok(res)
+    }
+
+    /// Borrows one of the graphs of this dataset
+    fn graph<T>(&self, graph_id: &GraphId<T>) -> DatasetGraph<Self, &Self, GraphId<Box<str>>>
+    where
+        T: TermData,
+    {
+        DatasetGraph {
+            dataset: self,
+            gmatcher: graph_id.into(),
+            _phantom: PhantomData,
+        }
+    }
+
+    /// Borrows mutably one of the graphs of this dataset
+    fn graph_mut<T>(
+        &mut self,
+        graph_id: &GraphId<T>,
+    ) -> DatasetGraph<Self, &mut Self, GraphId<Box<str>>>
+    where
+        T: TermData,
+    {
+        DatasetGraph {
+            dataset: self,
+            gmatcher: graph_id.into(),
+            _phantom: PhantomData,
+        }
+    }
+
+    /// Borrows a graph containing the union of all graphs matched by `gmatcher`
+    fn union_graph<T>(&'a self, gmatcher: T) -> DatasetGraph<Self, &Self, T>
+    where
+        T: GraphIdMatcher,
+    {
+        DatasetGraph {
+            dataset: self,
+            gmatcher,
+            _phantom: PhantomData,
+        }
     }
 }
 
