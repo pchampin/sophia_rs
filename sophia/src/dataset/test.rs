@@ -1,3 +1,128 @@
+//! Contains helper functions and marocs for testing Dataset implementations
+
+use std::fmt::Debug;
+
+use crate::dataset::*;
+use crate::ns::*;
+use crate::quad::*;
+use crate::quad::stream::*;
+use crate::term::*;
+use crate::term::graph_id::*;
+
+pub const NS: &str = "http://example.org/";
+
+lazy_static! {
+    pub static ref G1: StaticTerm = StaticTerm::new_iri2(NS, "G1").unwrap();
+    pub static ref G2: StaticTerm = StaticTerm::new_iri2(NS, "G2").unwrap();
+    pub static ref C1: StaticTerm = StaticTerm::new_iri2(NS, "C1").unwrap();
+    pub static ref C2: StaticTerm = StaticTerm::new_iri2(NS, "C2").unwrap();
+    pub static ref P1: StaticTerm = StaticTerm::new_iri2(NS, "p1").unwrap();
+    pub static ref P2: StaticTerm = StaticTerm::new_iri2(NS, "p2").unwrap();
+    pub static ref I1A: StaticTerm = StaticTerm::new_iri2(NS, "I1A").unwrap();
+    pub static ref I1B: StaticTerm = StaticTerm::new_iri2(NS, "I1B").unwrap();
+    pub static ref I2A: StaticTerm = StaticTerm::new_iri2(NS, "I2A").unwrap();
+    pub static ref I2B: StaticTerm = StaticTerm::new_iri2(NS, "I2B").unwrap();
+    pub static ref DG: GraphId<&'static str> = GraphId::Default;
+    pub static ref GN1: GraphId<&'static str> = GraphId::Name(G1.clone());
+    pub static ref GN2: GraphId<&'static str> = GraphId::Name(G2.clone());
+}
+
+pub fn populate<D: MutableDataset>(d: &mut D) -> MDResult<D, ()> {
+    d.insert(&C1, &rdf::type_, &rdfs::Class, &DG)?;
+    d.insert(&C1, &rdf::type_, &rdfs::Class, &GN1)?;
+
+    d.insert(&C2, &rdf::type_, &rdfs::Class, &DG)?;
+    d.insert(&C2, &rdfs::subClassOf, &C1, &GN1)?;
+
+    d.insert(&P1, &rdf::type_, &rdf::Property, &DG)?;
+    d.insert(&P1, &rdfs::domain, &C1, &GN1)?;
+    d.insert(&P1, &rdfs::range, &C2, &GN1)?;
+
+    d.insert(&P2, &rdf::type_, &rdf::Property, &DG)?;
+    d.insert(&P2, &rdfs::domain, &C2, &GN1)?;
+    d.insert(&P2, &rdfs::range, &C2, &GN1)?;
+
+    d.insert(&I1A, &rdf::type_, &C1, &GN2)?;
+    d.insert(&I1B, &rdf::type_, &C1, &GN2)?;
+    d.insert(&I2A, &rdf::type_, &C2, &GN2)?;
+    d.insert(&I2B, &rdf::type_, &C2, &GN2)?;
+    d.insert(&I1A, &P1, &I2A, &GN2)?;
+    d.insert(&I1B, &P1, &I2B, &GN2)?;
+    d.insert(&I2A, &P2, &I2B, &GN2)?;
+
+    assert_consistent_hint(17, d.quads().size_hint());
+    Ok(())
+}
+
+pub fn populate_nodes_types<D: MutableDataset>(d: &mut D) -> MDResult<D, ()> {
+    let gn = GraphId::Name(StaticTerm::from(&rdf::type_));
+    d.insert(&rdf::type_, &rdf::type_, &rdf::Property, &gn)?;
+    let gn = GraphId::Name(StaticTerm::new_bnode("b2").unwrap());
+    d.insert(
+        &StaticTerm::new_bnode("b1").unwrap(),
+        &StaticTerm::new_bnode("b2").unwrap(),
+        &StaticTerm::new_bnode("b1").unwrap(),
+        &gn,
+    )?;
+    let gn = GraphId::Name(StaticTerm::from("lit2"));
+    d.insert(
+        &StaticTerm::from("lit2"),
+        &StaticTerm::from("lit1"),
+        &StaticTerm::from("lit1"),
+        &gn,
+    )?;
+    let gn = GraphId::Name(StaticTerm::new_variable("v3").unwrap());
+    d.insert(
+        &StaticTerm::new_variable("v1").unwrap(),
+        &StaticTerm::new_variable("v2").unwrap(),
+        &StaticTerm::new_variable("v3").unwrap(),
+        &gn,
+    )?;
+    d.insert(
+        &StaticTerm::new_bnode("b2").unwrap(),
+        &StaticTerm::new_variable("v1").unwrap(),
+        &StaticTerm::new_literal_lang("lit2", "en").unwrap(),
+        &DG,
+    )?;
+
+    assert_consistent_hint(5, d.quads().size_hint());
+    Ok(())
+}
+
+pub fn as_box_q<'a, Q: Quad<'a> + 'a>(quad: Q) -> ([BoxTerm; 3], GraphId<Box<str>>) {
+    (
+        [quad.s().into(), quad.p().into(), quad.o().into()],
+        quad.g().into(),
+    )
+}
+
+#[allow(dead_code)]
+pub fn dump_graph<'a, D: Dataset<'a>>(d: &'a D)
+where
+    <D::Quad as Quad<'a>>::TermData: Debug,
+{
+    println!("<<<<");
+    for q in d.quads() {
+        let q = q.unwrap();
+        println!("{:?}\n{:?}\n{:?}\n{:?}\n\n", q.s(), q.p(), q.o(), q.g());
+    }
+    println!(">>>>");
+}
+
+pub fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
+    assert!(hint.0 <= val);
+    assert!(val <= hint.1.or(Some(val)).unwrap())
+}
+
+pub fn make_quad_source() -> impl QuadSource<'static> {
+    vec![
+        [&*C1, &rdf::type_, &rdfs::Class, &G1],
+        [&*C1, &rdfs::subClassOf, &*C2, &G1],
+    ]
+    .into_iter()
+    .as_quad_source()
+}
+
 /// Generates a test suite for [`Dataset`] and [`MutableDataset`] implementations.
 ///
 /// [`Dataset`]: dataset/trait.Dataset.html
@@ -17,32 +142,14 @@ macro_rules! test_dataset_impl {
         #[cfg(test)]
         mod $module_name {
             use resiter::oks::*;
-            use std::fmt::Debug;
             use $crate::dataset::*;
+            use $crate::dataset::test::*;
             use $crate::ns::*;
-            use $crate::quad::{stream::*, *};
+            use $crate::quad::stream::*;
             use $crate::term::{graph_id::GraphId, matcher::ANY, *};
 
             #[allow(unused_imports)]
             use super::*;
-
-            const NS: &str = "http://example.org/";
-
-            lazy_static! {
-                static ref G1: StaticTerm = StaticTerm::new_iri2(NS, "G1").unwrap();
-                static ref G2: StaticTerm = StaticTerm::new_iri2(NS, "G2").unwrap();
-                static ref C1: StaticTerm = StaticTerm::new_iri2(NS, "C1").unwrap();
-                static ref C2: StaticTerm = StaticTerm::new_iri2(NS, "C2").unwrap();
-                static ref P1: StaticTerm = StaticTerm::new_iri2(NS, "p1").unwrap();
-                static ref P2: StaticTerm = StaticTerm::new_iri2(NS, "p2").unwrap();
-                static ref I1A: StaticTerm = StaticTerm::new_iri2(NS, "I1A").unwrap();
-                static ref I1B: StaticTerm = StaticTerm::new_iri2(NS, "I1B").unwrap();
-                static ref I2A: StaticTerm = StaticTerm::new_iri2(NS, "I2A").unwrap();
-                static ref I2B: StaticTerm = StaticTerm::new_iri2(NS, "I2B").unwrap();
-                static ref DG: GraphId<&'static str> = GraphId::Default;
-                static ref GN1: GraphId<&'static str> = GraphId::Name(G1.clone());
-                static ref GN2: GraphId<&'static str> = GraphId::Name(G2.clone());
-            }
 
             // test MutableDataset + SetGraph
 
@@ -757,104 +864,6 @@ macro_rules! test_dataset_impl {
                 assert!(rvariables.contains("v2"));
                 assert!(rvariables.contains("v3"));
                 Ok(())
-            }
-
-            // helper functions
-
-            fn populate<D: MutableDataset>(d: &mut D) -> MDResult<D, ()> {
-                d.insert(&C1, &rdf::type_, &rdfs::Class, &DG)?;
-                d.insert(&C1, &rdf::type_, &rdfs::Class, &GN1)?;
-
-                d.insert(&C2, &rdf::type_, &rdfs::Class, &DG)?;
-                d.insert(&C2, &rdfs::subClassOf, &C1, &GN1)?;
-
-                d.insert(&P1, &rdf::type_, &rdf::Property, &DG)?;
-                d.insert(&P1, &rdfs::domain, &C1, &GN1)?;
-                d.insert(&P1, &rdfs::range, &C2, &GN1)?;
-
-                d.insert(&P2, &rdf::type_, &rdf::Property, &DG)?;
-                d.insert(&P2, &rdfs::domain, &C2, &GN1)?;
-                d.insert(&P2, &rdfs::range, &C2, &GN1)?;
-
-                d.insert(&I1A, &rdf::type_, &C1, &GN2)?;
-                d.insert(&I1B, &rdf::type_, &C1, &GN2)?;
-                d.insert(&I2A, &rdf::type_, &C2, &GN2)?;
-                d.insert(&I2B, &rdf::type_, &C2, &GN2)?;
-                d.insert(&I1A, &P1, &I2A, &GN2)?;
-                d.insert(&I1B, &P1, &I2B, &GN2)?;
-                d.insert(&I2A, &P2, &I2B, &GN2)?;
-
-                assert_consistent_hint(17, d.quads().size_hint());
-                Ok(())
-            }
-
-            fn populate_nodes_types<D: MutableDataset>(d: &mut D) -> MDResult<D, ()> {
-                let gn = GraphId::Name(StaticTerm::from(&rdf::type_));
-                d.insert(&rdf::type_, &rdf::type_, &rdf::Property, &gn)?;
-                let gn = GraphId::Name(StaticTerm::new_bnode("b2").unwrap());
-                d.insert(
-                    &StaticTerm::new_bnode("b1").unwrap(),
-                    &StaticTerm::new_bnode("b2").unwrap(),
-                    &StaticTerm::new_bnode("b1").unwrap(),
-                    &gn,
-                )?;
-                let gn = GraphId::Name(StaticTerm::from("lit2"));
-                d.insert(
-                    &StaticTerm::from("lit2"),
-                    &StaticTerm::from("lit1"),
-                    &StaticTerm::from("lit1"),
-                    &gn,
-                )?;
-                let gn = GraphId::Name(StaticTerm::new_variable("v3").unwrap());
-                d.insert(
-                    &StaticTerm::new_variable("v1").unwrap(),
-                    &StaticTerm::new_variable("v2").unwrap(),
-                    &StaticTerm::new_variable("v3").unwrap(),
-                    &gn,
-                )?;
-                d.insert(
-                    &StaticTerm::new_bnode("b2").unwrap(),
-                    &StaticTerm::new_variable("v1").unwrap(),
-                    &StaticTerm::new_literal_lang("lit2", "en").unwrap(),
-                    &DG,
-                )?;
-
-                assert_consistent_hint(5, d.quads().size_hint());
-                Ok(())
-            }
-
-            fn as_box_q<'a, Q: Quad<'a> + 'a>(quad: Q) -> ([BoxTerm; 3], GraphId<Box<str>>) {
-                (
-                    [quad.s().into(), quad.p().into(), quad.o().into()],
-                    quad.g().into(),
-                )
-            }
-
-            #[allow(dead_code)]
-            fn dump_graph<'a, D: Dataset<'a>>(d: &'a D)
-            where
-                <D::Quad as Quad<'a>>::TermData: Debug,
-            {
-                println!("<<<<");
-                for q in d.quads() {
-                    let q = q.unwrap();
-                    println!("{:?}\n{:?}\n{:?}\n{:?}\n\n", q.s(), q.p(), q.o(), q.g());
-                }
-                println!(">>>>");
-            }
-
-            fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
-                assert!(hint.0 <= val);
-                assert!(val <= hint.1.or(Some(val)).unwrap())
-            }
-
-            fn make_quad_source() -> impl QuadSource<'static> {
-                vec![
-                    [&*C1, &rdf::type_, &rdfs::Class, &G1],
-                    [&*C1, &rdfs::subClassOf, &*C2, &G1],
-                ]
-                .into_iter()
-                .as_quad_source()
             }
         }
     };

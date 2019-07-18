@@ -1,3 +1,114 @@
+//! Contains helper functions and marocs for testing Graph implementations
+
+use std::fmt::Debug;
+
+use crate::graph::*;
+use crate::ns::*;
+use crate::term::*;
+use crate::triple::*;
+use crate::triple::stream::*;
+
+pub const NS: &str = "http://example.org/";
+
+lazy_static! {
+    pub static ref C1: StaticTerm = StaticTerm::new_iri2(NS, "C1").unwrap();
+    pub static ref C2: StaticTerm = StaticTerm::new_iri2(NS, "C2").unwrap();
+    pub static ref P1: StaticTerm = StaticTerm::new_iri2(NS, "p1").unwrap();
+    pub static ref P2: StaticTerm = StaticTerm::new_iri2(NS, "p2").unwrap();
+    pub static ref I1A: StaticTerm = StaticTerm::new_iri2(NS, "I1A").unwrap();
+    pub static ref I1B: StaticTerm = StaticTerm::new_iri2(NS, "I1B").unwrap();
+    pub static ref I2A: StaticTerm = StaticTerm::new_iri2(NS, "I2A").unwrap();
+    pub static ref I2B: StaticTerm = StaticTerm::new_iri2(NS, "I2B").unwrap();
+}
+
+
+pub fn populate<G: MutableGraph>(g: &mut G) -> MGResult<G, ()> {
+    g.insert(&C1, &rdf::type_, &rdfs::Class)?;
+
+    g.insert(&C2, &rdf::type_, &rdfs::Class)?;
+    g.insert(&C2, &rdf::type_, &rdfs::Resource)?;
+    g.insert(&C2, &rdfs::subClassOf, &C1)?;
+    g.insert(&C2, &rdfs::subClassOf, &rdfs::Resource)?;
+
+    g.insert(&P1, &rdf::type_, &rdf::Property)?;
+    g.insert(&P1, &rdfs::domain, &C1)?;
+    g.insert(&P1, &rdfs::range, &C2)?;
+
+    g.insert(&P2, &rdf::type_, &rdf::Property)?;
+    g.insert(&P2, &rdfs::domain, &C2)?;
+    g.insert(&P2, &rdfs::range, &C2)?;
+
+    g.insert(&I1A, &rdf::type_, &C1)?;
+    g.insert(&I1B, &rdf::type_, &C1)?;
+    g.insert(&I2A, &rdf::type_, &C2)?;
+    g.insert(&I2B, &rdf::type_, &C2)?;
+    g.insert(&I1A, &P1, &I2A)?;
+    g.insert(&I1B, &P1, &I2B)?;
+    g.insert(&I2A, &P2, &I2B)?;
+
+    assert_consistent_hint(18, g.triples().size_hint());
+    Ok(())
+}
+
+pub fn populate_nodes_types<G: MutableGraph>(g: &mut G) -> MGResult<G, ()> {
+    g.insert(&rdf::type_, &rdf::type_, &rdf::Property)?;
+    g.insert(
+        &StaticTerm::new_bnode("b1").unwrap(),
+        &StaticTerm::new_bnode("b2").unwrap(),
+        &StaticTerm::new_bnode("b1").unwrap(),
+    )?;
+    g.insert(
+        &StaticTerm::from("lit2"),
+        &StaticTerm::from("lit1"),
+        &StaticTerm::from("lit1"),
+    )?;
+    g.insert(
+        &StaticTerm::new_variable("v1").unwrap(),
+        &StaticTerm::new_variable("v2").unwrap(),
+        &StaticTerm::new_variable("v3").unwrap(),
+    )?;
+    g.insert(
+        &StaticTerm::new_bnode("b2").unwrap(),
+        &StaticTerm::new_variable("v1").unwrap(),
+        &StaticTerm::new_literal_lang("lit2", "en").unwrap(),
+    )?;
+
+    assert_consistent_hint(5, g.triples().size_hint());
+    Ok(())
+}
+
+pub fn as_box_t<'a, T: Triple<'a> + 'a>(triple: T) -> [BoxTerm; 3] {
+    [triple.s().into(), triple.p().into(), triple.o().into()]
+}
+
+#[allow(dead_code)]
+pub fn dump_graph<'a, G: Graph<'a>>(g: &'a G)
+where
+    <G::Triple as Triple<'a>>::TermData: Debug,
+{
+    println!("<<<<");
+    for t in g.triples() {
+        let t = t.unwrap();
+        println!("{:?}\n{:?}\n{:?}\n\n", t.s(), t.p(), t.o());
+    }
+    println!(">>>>");
+}
+
+pub fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
+    assert!(hint.0 <= val);
+    assert!(val <= hint.1.or(Some(val)).unwrap())
+}
+
+pub fn make_triple_source() -> impl TripleSource<'static> {
+    vec![
+        [&*C1, &rdf::type_, &rdfs::Class],
+        [&*C1, &rdfs::subClassOf, &*C2],
+    ]
+    .into_iter()
+    .as_triple_source()
+}
+
+
 /// Generates a test suite for [`Graph`] and [`MutableGraph`] implementations.
 ///
 /// [`Graph`]: graph/trait.Graph.html
@@ -22,29 +133,15 @@ macro_rules! test_graph_impl {
         #[cfg(test)]
         mod $module_name {
             use resiter::oks::*;
-            use std::fmt::Debug;
             use $crate::graph::*;
+            use $crate::graph::test::*;
             use $crate::ns::*;
             use $crate::term::matcher::ANY;
             use $crate::term::*;
             use $crate::triple::stream::*;
-            use $crate::triple::*;
 
             #[allow(unused_imports)]
             use super::*;
-
-            const NS: &str = "http://example.org/";
-
-            lazy_static! {
-                static ref C1: StaticTerm = StaticTerm::new_iri2(NS, "C1").unwrap();
-                static ref C2: StaticTerm = StaticTerm::new_iri2(NS, "C2").unwrap();
-                static ref P1: StaticTerm = StaticTerm::new_iri2(NS, "p1").unwrap();
-                static ref P2: StaticTerm = StaticTerm::new_iri2(NS, "p2").unwrap();
-                static ref I1A: StaticTerm = StaticTerm::new_iri2(NS, "I1A").unwrap();
-                static ref I1B: StaticTerm = StaticTerm::new_iri2(NS, "I1B").unwrap();
-                static ref I2A: StaticTerm = StaticTerm::new_iri2(NS, "I2A").unwrap();
-                static ref I2B: StaticTerm = StaticTerm::new_iri2(NS, "I2B").unwrap();
-            }
 
             // test MutableGraph + SetGraph
 
@@ -474,94 +571,6 @@ macro_rules! test_graph_impl {
                 assert!(rvariables.contains("v2"));
                 assert!(rvariables.contains("v3"));
                 Ok(())
-            }
-
-            // helper functions
-
-            fn populate<G: MutableGraph>(g: &mut G) -> MGResult<G, ()> {
-                g.insert(&C1, &rdf::type_, &rdfs::Class)?;
-
-                g.insert(&C2, &rdf::type_, &rdfs::Class)?;
-                g.insert(&C2, &rdf::type_, &rdfs::Resource)?;
-                g.insert(&C2, &rdfs::subClassOf, &C1)?;
-                g.insert(&C2, &rdfs::subClassOf, &rdfs::Resource)?;
-
-                g.insert(&P1, &rdf::type_, &rdf::Property)?;
-                g.insert(&P1, &rdfs::domain, &C1)?;
-                g.insert(&P1, &rdfs::range, &C2)?;
-
-                g.insert(&P2, &rdf::type_, &rdf::Property)?;
-                g.insert(&P2, &rdfs::domain, &C2)?;
-                g.insert(&P2, &rdfs::range, &C2)?;
-
-                g.insert(&I1A, &rdf::type_, &C1)?;
-                g.insert(&I1B, &rdf::type_, &C1)?;
-                g.insert(&I2A, &rdf::type_, &C2)?;
-                g.insert(&I2B, &rdf::type_, &C2)?;
-                g.insert(&I1A, &P1, &I2A)?;
-                g.insert(&I1B, &P1, &I2B)?;
-                g.insert(&I2A, &P2, &I2B)?;
-
-                assert_consistent_hint(18, g.triples().size_hint());
-                Ok(())
-            }
-
-            fn populate_nodes_types<G: MutableGraph>(g: &mut G) -> MGResult<G, ()> {
-                g.insert(&rdf::type_, &rdf::type_, &rdf::Property)?;
-                g.insert(
-                    &StaticTerm::new_bnode("b1").unwrap(),
-                    &StaticTerm::new_bnode("b2").unwrap(),
-                    &StaticTerm::new_bnode("b1").unwrap(),
-                )?;
-                g.insert(
-                    &StaticTerm::from("lit2"),
-                    &StaticTerm::from("lit1"),
-                    &StaticTerm::from("lit1"),
-                )?;
-                g.insert(
-                    &StaticTerm::new_variable("v1").unwrap(),
-                    &StaticTerm::new_variable("v2").unwrap(),
-                    &StaticTerm::new_variable("v3").unwrap(),
-                )?;
-                g.insert(
-                    &StaticTerm::new_bnode("b2").unwrap(),
-                    &StaticTerm::new_variable("v1").unwrap(),
-                    &StaticTerm::new_literal_lang("lit2", "en").unwrap(),
-                )?;
-
-                assert_consistent_hint(5, g.triples().size_hint());
-                Ok(())
-            }
-
-            fn as_box_t<'a, T: Triple<'a> + 'a>(triple: T) -> [BoxTerm; 3] {
-                [triple.s().into(), triple.p().into(), triple.o().into()]
-            }
-
-            #[allow(dead_code)]
-            fn dump_graph<'a, G: Graph<'a>>(g: &'a G)
-            where
-                <G::Triple as Triple<'a>>::TermData: Debug,
-            {
-                println!("<<<<");
-                for t in g.triples() {
-                    let t = t.unwrap();
-                    println!("{:?}\n{:?}\n{:?}\n\n", t.s(), t.p(), t.o());
-                }
-                println!(">>>>");
-            }
-
-            fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
-                assert!(hint.0 <= val);
-                assert!(val <= hint.1.or(Some(val)).unwrap())
-            }
-
-            fn make_triple_source() -> impl TripleSource<'static> {
-                vec![
-                    [&*C1, &rdf::type_, &rdfs::Class],
-                    [&*C1, &rdfs::subClassOf, &*C2],
-                ]
-                .into_iter()
-                .as_triple_source()
             }
         }
     };

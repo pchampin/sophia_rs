@@ -7,7 +7,7 @@
 
 #[cfg(test)]
 #[macro_use]
-mod test;
+pub mod test;
 
 #[macro_use]
 pub mod indexed;
