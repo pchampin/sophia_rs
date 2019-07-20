@@ -8,7 +8,7 @@ use crate::error::*;
 use crate::term::factory::TermFactory;
 use crate::term::graph_id::GraphId;
 use crate::term::index_map::TermIndexMap;
-use crate::term::{RefTerm, Term, TermData};
+use crate::term::{Term, TermData};
 
 /// A generic implementation of [`Dataset`] and [`MutableDataset`],
 /// storing its terms in a [`TermIndexMap`],
@@ -41,23 +41,14 @@ where
         }
     }
 
+    #[inline]
     pub fn len(&self) -> usize {
         self.quads.len()
     }
 
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.quads.is_empty()
-    }
-
-    #[inline]
-    fn make_index_for_graph_id<T>(&mut self, g: &GraphId<T>) -> I::Index
-    where
-        T: TermData,
-    {
-        match g {
-            GraphId::Default => I::NULL_INDEX,
-            GraphId::Name(g) => self.terms.make_index(&RefTerm::from(g)),
-        }
     }
 }
 
@@ -75,7 +66,7 @@ where
     where
         T: TermData,
     {
-        self.terms.get_index(&RefTerm::from(t))
+        self.terms.get_index(&t.into())
     }
 
     #[inline]
@@ -83,10 +74,7 @@ where
     where
         T: TermData,
     {
-        match g {
-            GraphId::Default => Some(I::NULL_INDEX),
-            GraphId::Name(g) => self.get_index(&RefTerm::from(g)),
-        }
+        self.terms.get_index_for_graph_id(&g.into())
     }
 
     #[inline]
@@ -96,11 +84,7 @@ where
 
     #[inline]
     fn get_graph_id(&self, i: Self::Index) -> Option<&GraphId<Self::TermData>> {
-        if i == I::NULL_INDEX {
-            Some(&GraphId::Default)
-        } else {
-            self.get_term(i).map(Term::as_graph_id)
-        }
+        self.terms.get_graph_id(i)
     }
 
     fn insert_indexed<T, U, V, W>(
@@ -116,10 +100,10 @@ where
         V: TermData,
         W: TermData,
     {
-        let si = self.terms.make_index(&RefTerm::from(s));
-        let pi = self.terms.make_index(&RefTerm::from(p));
-        let oi = self.terms.make_index(&RefTerm::from(o));
-        let gi = self.make_index_for_graph_id(&g);
+        let si = self.terms.make_index(&s.into());
+        let pi = self.terms.make_index(&p.into());
+        let oi = self.terms.make_index(&o.into());
+        let gi = self.terms.make_index_for_graph_id(&g.into());
         let modified = self.quads.insert([si, pi, oi, gi]);
         if modified {
             Some([si, pi, oi, gi])
@@ -145,10 +129,10 @@ where
         V: TermData,
         W: TermData,
     {
-        let si = self.terms.get_index(&RefTerm::from(s));
-        let pi = self.terms.get_index(&RefTerm::from(p));
-        let oi = self.terms.get_index(&RefTerm::from(o));
-        let gi = self.get_index_for_graph_id(&g);
+        let si = self.get_index(s);
+        let pi = self.get_index(p);
+        let oi = self.get_index(o);
+        let gi = self.get_index_for_graph_id(g);
         if let (Some(si), Some(pi), Some(oi), Some(gi)) = (si, pi, oi, gi) {
             let modified = self.quads.remove(&[si, pi, oi, gi]);
             if modified {
@@ -162,6 +146,7 @@ where
         None
     }
 
+    #[inline]
     fn shrink_to_fit(&mut self) {
         self.terms.shrink_to_fit();
         self.quads.shrink_to_fit();
