@@ -133,11 +133,17 @@ where
     }
 
     fn inc_ref(&mut self, i: T) {
+        if i == Self::NULL_INDEX {
+            return;
+        }
         let i = i.as_usize();
         self.i2c[i].inc();
     }
 
     fn dec_ref(&mut self, i: T) {
+        if i == Self::NULL_INDEX {
+            return;
+        }
         let i = i.as_usize();
         self.i2c[i].dec();
         if self.i2c[i] == T::ZERO {

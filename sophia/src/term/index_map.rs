@@ -27,9 +27,9 @@ pub trait TermIndexMap: Default {
     fn make_index(&mut self, t: &RefTerm) -> Self::Index;
     /// Return the term associated to the given index, if it exists.
     fn get_term(&self, i: Self::Index) -> Option<&FTerm<Self::Factory>>;
-    /// Increase the reference count of a given (non-null) index.
+    /// Increase the reference count of a given index (or do nothing if i is the null index).
     fn inc_ref(&mut self, i: Self::Index);
-    /// Decrease the reference count of a given (non-null) index.
+    /// Decrease the reference count of a given index (or do nothing if i is the null index).
     fn dec_ref(&mut self, i: Self::Index);
     /// Shrinks the capacity of the TermIndexMap as much as possible.
     fn shrink_to_fit(&mut self);
