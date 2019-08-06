@@ -24,6 +24,27 @@ pub trait TermMatcher {
         T: TermData;
 }
 
+/// A universal matcher: it matches any term or graph name (even the default graph).
+pub const ANY: AnyTerm = AnyTerm{};
+
+
+pub struct AnyTerm{}
+
+impl TermMatcher for AnyTerm
+{
+    type TermData = &'static str;
+    fn constant(&self) -> Option<&Term<Self::TermData>> {
+        None
+    }
+    fn matches<T>(&self, _t: &Term<T>) -> bool
+    where
+        T: TermData,
+    {
+        true
+    }
+}
+
+
 impl<U> TermMatcher for Term<U>
 where
     U: TermData,
@@ -37,44 +58,6 @@ where
         T: TermData,
     {
         t == self
-    }
-}
-
-impl<U> TermMatcher for Option<Term<U>>
-where
-    U: TermData,
-{
-    type TermData = U;
-    fn constant(&self) -> Option<&Term<Self::TermData>> {
-        self.as_ref()
-    }
-    fn matches<T>(&self, t: &Term<T>) -> bool
-    where
-        T: TermData,
-    {
-        match self {
-            Some(term) => t == term,
-            None => true,
-        }
-    }
-}
-
-impl<'a, U> TermMatcher for Option<&'a Term<U>>
-where
-    U: TermData,
-{
-    type TermData = U;
-    fn constant(&self) -> Option<&Term<Self::TermData>> {
-        *self
-    }
-    fn matches<T>(&self, t: &Term<T>) -> bool
-    where
-        T: TermData,
-    {
-        match self {
-            Some(term) => t == *term,
-            None => true,
-        }
     }
 }
 
@@ -116,12 +99,6 @@ impl<F: Fn(&RefTerm) -> bool> TermMatcher for F {
     }
 }
 
-/// A matcher matching any term.
-///
-/// It is actually the `None` variant from `Option<StaticTerm>`,
-/// but the name "None" may be confusing
-/// when one wants to actually match *any* term.
-pub const ANY: Option<StaticTerm> = None;
 
 #[cfg(test)]
 mod test {
@@ -143,23 +120,8 @@ mod test {
     }
 
     #[test]
-    fn test_some_as_matcher() {
-        let m = Some(BoxTerm::new_iri("http://champin.net/#pa").unwrap());
-        // comparing to a term using a different term data, and differently cut,
-        // to make the test less obvious
-        let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
-        let t2 = RcTerm::new_iri("http://example.org/").unwrap();
-
-        let mc = TermMatcher::constant(&m);
-        assert!(mc.is_some());
-        assert_eq!(mc.unwrap(), &t1);
-        assert!(TermMatcher::matches(&m, &t1));
-        assert!(!TermMatcher::matches(&m, &t2));
-    }
-
-    #[test]
-    fn test_none_as_matcher() {
-        let m: Option<BoxTerm> = None;
+    fn test_any_as_matcher() {
+        let m = ANY;
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();

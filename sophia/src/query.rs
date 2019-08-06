@@ -7,16 +7,59 @@ use resiter::map::*;
 
 use crate::graph::*;
 use crate::term::*;
+use crate::term::matcher::*;
 use crate::triple::*;
 
-pub type Binding = HashMap<String, RcTerm>;
+pub type BindingMap = HashMap<String, RcTerm>;
+
+pub enum Binding {
+    Bound(RcTerm),
+    Free,
+}
+
+impl Binding {
+    pub fn is_free(&self) -> bool {
+        match self {
+            Binding::Free => true,
+            _ => false
+        }
+    }
+}
+
+impl From<Option<RcTerm>> for Binding {
+    fn from(src: Option<RcTerm>) -> Binding {
+        match src {
+            Some(t) => Binding::Bound(t),
+            None => Binding::Free,
+        }
+    }
+}
+
+impl TermMatcher for Binding {
+    type TermData = std::rc::Rc<str>;
+    fn constant(&self) -> Option<&Term<Self::TermData>> {
+        match self {
+            Binding::Bound(t) => Some(t),
+            Binding::Free => None,
+        }
+    }
+    fn matches<T>(&self, t: &Term<T>) -> bool
+    where
+        T: TermData,
+    {
+        match self {
+            Binding::Bound(tself) => tself == t,
+            Binding::Free => true,
+        }
+    }
+}
 
 pub enum Query {
     Triples(Vec<[RcTerm; 3]>),
 }
 
 impl Query {
-    fn prepare<'a, G: Graph<'a>>(&mut self, graph: &'a G, initial_binding: &Binding) {
+    fn prepare<'a, G: Graph<'a>>(&mut self, graph: &'a G, initial_binding: &BindingMap) {
         match self {
             Query::Triples(triples) => {
                 // sorts triple from q according to how many results they may give
@@ -31,7 +74,7 @@ impl Query {
                         // NB: the unsafe code below is used to cheat about tm's lifetime.
                         // Because G is bound to 'a, triples_matching() requires tm to live as long as 'a.
                         // But in fact, that is not necessary, because we are consuming the iterator immediately.
-                        let tm_ref = unsafe { &*(&tm[..] as *const [Option<RcTerm>]) };
+                        let tm_ref = unsafe { &*(&tm[..] as *const [Binding]) };
                         let hint = triples_matching(graph, tm_ref).size_hint();
                         (hint.1.unwrap_or(std::usize::MAX), hint.0)
                     })
@@ -48,25 +91,25 @@ impl Query {
         }
     }
 
-    /// Process this query against the given graph, and return an fallible iterator of Bindings.
+    /// Process this query against the given graph, and return an fallible iterator of BindingMaps.
     ///
     /// The iterator may fail (i.e. yield `Err`) if an operation on the graph fails.
     pub fn process<'a, G: Graph<'a>>(
         &'a mut self,
         graph: &'a G,
-    ) -> Box<dyn Iterator<Item = GResult<'a, G, Binding>> + 'a> {
-        self.process_with(graph, Binding::new())
+    ) -> Box<dyn Iterator<Item = GResult<'a, G, BindingMap>> + 'a> {
+        self.process_with(graph, BindingMap::new())
     }
 
-    /// Process this query against the given graph, and return an fallible iterator of Bindings,
+    /// Process this query against the given graph, and return an fallible iterator of BindingMaps,
     /// starting with the given binding.
     ///
     /// The iterator may fail (i.e. yield `Err`) if an operation on the graph fails.
     pub fn process_with<'a, G: Graph<'a>>(
         &'a mut self,
         graph: &'a G,
-        initial_binding: Binding,
-    ) -> Box<dyn Iterator<Item = GResult<'a, G, Binding>> + 'a> {
+        initial_binding: BindingMap,
+    ) -> Box<dyn Iterator<Item = GResult<'a, G, BindingMap>> + 'a> {
         self.prepare(graph, &initial_binding);
         match self {
             Query::Triples(triples) => bindings_for_triples(graph, triples, initial_binding),
@@ -78,8 +121,8 @@ impl Query {
 fn bindings_for_triples<'a, G>(
     g: &'a G,
     q: &'a [[RcTerm; 3]],
-    b: Binding,
-) -> Box<dyn Iterator<Item = GResult<'a, G, Binding>> + 'a>
+    b: BindingMap,
+) -> Box<dyn Iterator<Item = GResult<'a, G, BindingMap>> + 'a>
 where
     G: Graph<'a>,
 {
@@ -99,8 +142,8 @@ where
 fn bindings_for_triple<'a, G>(
     g: &'a G,
     tq: &'a [RcTerm; 3],
-    b: Binding,
-) -> impl Iterator<Item = GResult<'a, G, Binding>> + 'a
+    b: BindingMap,
+) -> impl Iterator<Item = GResult<'a, G, BindingMap>> + 'a
 where
     G: Graph<'a>,
 {
@@ -112,15 +155,15 @@ where
     // NB: the unsafe code below is used to convince the compiler that &tm has lifetime 'a .
     // We can guarantee that because the closure below takes ownership of tm,
     // and it will live as long as the returned iterator.
-    triples_matching(g, unsafe { &*(&tm[..] as *const [Option<RcTerm>]) }).map_ok(move |tr| {
+    triples_matching(g, unsafe { &*(&tm[..] as *const [Binding]) }).map_ok(move |tr| {
         let mut b2 = b.clone();
-        if tm[0].is_none() {
+        if tm[0].is_free() {
             b2.insert(tq.s().value(), tr.s().into());
         }
-        if tm[1].is_none() {
+        if tm[1].is_free() {
             b2.insert(tq.p().value(), tr.p().into());
         }
-        if tm[2].is_none() {
+        if tm[2].is_free() {
             b2.insert(tq.o().value(), tr.o().into());
         }
         b2
@@ -128,17 +171,17 @@ where
 }
 
 /// Make a matcher corresponding to term `t`, given binding `b`.
-fn matcher(t: &RcTerm, b: &Binding) -> Option<RcTerm> {
+fn matcher(t: &RcTerm, b: &BindingMap) -> Binding {
     if let Variable(vname) = t {
         let vname: &str = &vname;
-        b.get(vname).cloned()
+        b.get(vname).cloned().into()
     } else {
-        Some(t.clone())
+        Binding::Bound(t.clone())
     }
 }
 
 /// A wrapper around Graph::triples_matchings, with more convenient parameters.
-fn triples_matching<'a, G>(g: &'a G, tm: &'a [Option<RcTerm>]) -> GTripleSource<'a, G>
+fn triples_matching<'a, G>(g: &'a G, tm: &'a [Binding]) -> GTripleSource<'a, G>
 where
     G: Graph<'a>,
 {
@@ -171,7 +214,7 @@ mod test {
             RcTerm::from(&s_event),
         ];
 
-        let results: Result<Vec<_>, _> = bindings_for_triple(&g, &tq, Binding::new()).collect();
+        let results: Result<Vec<_>, _> = bindings_for_triple(&g, &tq, BindingMap::new()).collect();
         let results = results.unwrap();
         assert_eq!(results.len(), 0);
     }
@@ -190,8 +233,8 @@ mod test {
             RcTerm::from(&s_person),
         ];
 
-        let results: Result<Vec<Binding>, _> =
-            bindings_for_triple(&g, &tq, Binding::new()).collect();
+        let results: Result<Vec<BindingMap>, _> =
+            bindings_for_triple(&g, &tq, BindingMap::new()).collect();
         let results = results.unwrap();
         assert_eq!(results.len(), 1);
         for r in results.iter() {
@@ -214,8 +257,8 @@ mod test {
             RcTerm::from(&s_event),
         ];
 
-        let results: Result<Vec<Binding>, _> =
-            bindings_for_triple(&g, &tq, Binding::new()).collect();
+        let results: Result<Vec<BindingMap>, _> =
+            bindings_for_triple(&g, &tq, BindingMap::new()).collect();
         let results = results.unwrap();
         assert_eq!(results.len(), 0);
     }
@@ -235,8 +278,8 @@ mod test {
             RcTerm::from(&s_person),
         ];
 
-        let results: Result<Vec<Binding>, _> =
-            bindings_for_triple(&g, &tq, Binding::new()).collect();
+        let results: Result<Vec<BindingMap>, _> =
+            bindings_for_triple(&g, &tq, BindingMap::new()).collect();
         let results = results.unwrap();
         assert_eq!(results.len(), 3);
         for r in results.iter() {
@@ -265,8 +308,8 @@ mod test {
 
         let tq: [RcTerm; 3] = [v1.clone(), RcTerm::from(&s_name), v2.clone()];
 
-        let results: Result<Vec<Binding>, _> =
-            bindings_for_triple(&g, &tq, Binding::new()).collect();
+        let results: Result<Vec<BindingMap>, _> =
+            bindings_for_triple(&g, &tq, BindingMap::new()).collect();
         let results = results.unwrap();
         assert_eq!(results.len(), 5);
         for r in results.iter() {
@@ -312,7 +355,7 @@ mod test {
             ],
         ]);
 
-        let results: Result<Vec<Binding>, _> = q.process(&g).collect();
+        let results: Result<Vec<BindingMap>, _> = q.process(&g).collect();
         let results = results.unwrap();
         assert_eq!(results.len(), 3);
         for r in results.iter() {

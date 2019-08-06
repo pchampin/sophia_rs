@@ -21,6 +21,20 @@ pub trait GraphIdMatcher {
         T: TermData;
 }
 
+impl GraphIdMatcher for crate::term::matcher::AnyTerm
+{
+    type TermData = &'static str;
+    fn constant(&self) -> Option<&GraphId<Self::TermData>> {
+        None
+    }
+    fn matches<T>(&self, _g: &GraphId<T>) -> bool
+    where
+        T: TermData,
+    {
+        true
+    }
+}
+
 impl<U> GraphIdMatcher for GraphId<U>
 where
     U: TermData,
@@ -53,44 +67,6 @@ where
     }
 }
 
-impl<U> GraphIdMatcher for Option<GraphId<U>>
-where
-    U: TermData,
-{
-    type TermData = U;
-    fn constant(&self) -> Option<&GraphId<Self::TermData>> {
-        self.as_ref()
-    }
-    fn matches<T>(&self, g: &GraphId<T>) -> bool
-    where
-        T: TermData,
-    {
-        match self {
-            Some(graph_id) => g == graph_id,
-            None => true,
-        }
-    }
-}
-
-impl<U> GraphIdMatcher for Option<Term<U>>
-where
-    U: TermData,
-{
-    type TermData = U;
-    fn constant(&self) -> Option<&GraphId<Self::TermData>> {
-        self.as_ref().map(Term::as_graph_id)
-    }
-    fn matches<T>(&self, g: &GraphId<T>) -> bool
-    where
-        T: TermData,
-    {
-        match self {
-            Some(term) => g == term,
-            None => true,
-        }
-    }
-}
-
 impl<M> GraphIdMatcher for [M]
 where
     M: GraphIdMatcher,
@@ -116,6 +92,9 @@ where
     }
 }
 
+/// This is somewhat redundant with [M],
+/// but it is useful with `Dataset::union_graph`,
+/// were a matcher must be *moved* rather than borrowed.
 impl<M> GraphIdMatcher for Vec<M>
 where
     M: GraphIdMatcher,
@@ -199,60 +178,8 @@ mod test {
     }
 
     #[test]
-    fn test_some_graph_id_as_matcher() {
-        let m = Some(GraphId::Name(
-            BoxTerm::new_iri("http://champin.net/#pa").unwrap(),
-        ));
-        // comparing to a term using a different term data, and differently cut,
-        // to make the test less obvious
-        let n0: GraphId<&str> = GraphId::Default;
-        let n1 = GraphId::Name(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
-        let n2 = GraphId::Name(RcTerm::new_iri("http://example.org/").unwrap());
-
-        let mc = GraphIdMatcher::constant(&m);
-        assert!(mc.is_some());
-        assert_eq!(mc.unwrap(), &n1);
-        assert!(!m.matches(&n0));
-        assert!(m.matches(&n1));
-        assert!(!m.matches(&n2));
-    }
-
-    #[test]
-    fn test_none_graph_id_as_matcher() {
-        let m: Option<GraphId<Box<str>>> = None;
-        // comparing to a term using a different term data, and differently cut,
-        // to make the test less obvious
-        let n0: GraphId<&str> = GraphId::Default;
-        let n1 = GraphId::Name(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
-        let n2 = GraphId::Name(RcTerm::new_iri("http://example.org/").unwrap());
-
-        let mc = GraphIdMatcher::constant(&m);
-        assert!(mc.is_none());
-        assert!(m.matches(&n0));
-        assert!(m.matches(&n1));
-        assert!(m.matches(&n2));
-    }
-
-    #[test]
-    fn test_some_term_as_matcher() {
-        let m = Some(BoxTerm::new_iri("http://champin.net/#pa").unwrap());
-        // comparing to a term using a different term data, and differently cut,
-        // to make the test less obvious
-        let n0: GraphId<&str> = GraphId::Default;
-        let n1 = GraphId::Name(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
-        let n2 = GraphId::Name(RcTerm::new_iri("http://example.org/").unwrap());
-
-        let mc = GraphIdMatcher::constant(&m);
-        assert!(mc.is_some());
-        assert_eq!(mc.unwrap(), &n1);
-        assert!(!m.matches(&n0));
-        assert!(m.matches(&n1));
-        assert!(!m.matches(&n2));
-    }
-
-    #[test]
-    fn test_none_term_as_matcher() {
-        let m: Option<BoxTerm> = None;
+    fn test_any_as_matcher() {
+        let m = crate::term::matcher::ANY;
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: GraphId<&str> = GraphId::Default;
