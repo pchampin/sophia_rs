@@ -20,7 +20,7 @@
 use super::_traits::*;
 use super::indexed::*;
 use crate::graph::inmem::TermIndexMapU;
-use crate::term::{factory::*, graph_id::GraphId, *};
+use crate::term::{factory::*, *};
 
 #[macro_use]
 mod _wrapper;
@@ -35,7 +35,7 @@ pub use self::_ogps_wrapper::*;
 /// A generic in-memory dataset.
 ///
 /// `I` must be a type for which [`TermIndexMapU`](../../graph/inmem/struct.TermIndexMapU.html)
-/// implements [`TermIndexMap`](../../graph/index/trait.TermIndexMap.html),
+/// implements [`TermIndexMap`](../../term/index_map/trait.TermIndexMap.html),
 /// typically `u16` or `u32`.
 ///
 /// `F` must implement [`TermFactory`](../../term/factory/trait.TermFactory.html).

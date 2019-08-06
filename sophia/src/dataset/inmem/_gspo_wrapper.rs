@@ -7,13 +7,13 @@ use super::*;
 use crate::graph::indexed::*;
 
 /// A [`DatasetWrapper`](trait.DatasetWrapper.html)
-/// indexing quads by graph identifier, then by subject, then by predicate, then by object.
+/// indexing quads by graph name, then by subject, then by predicate, then by object.
 ///
 /// Compared to its wrapped dataset,
 /// it overrides the methods that can efficiently be implemented using this index.
 ///
 /// Since it must be able to produce quads instead of the underlying datasets,
-/// it is limited to wrapping datasets whose quads are `([&Term<H>;3], &GraphId<H>)`.
+/// it is limited to wrapping datasets whose quads are `([&Term<H>;3], Option<&Term<H>>)`.
 ///
 #[derive(Default)]
 pub struct GspoWrapper<T>
@@ -36,7 +36,7 @@ where
     }
 }
 
-type MyQuad<'a, T> = ([&'a Term<T>; 3], &'a GraphId<T>);
+type MyQuad<'a, T> = ([&'a Term<T>; 3], Option<&'a Term<T>>);
 
 impl<'a, T> DatasetWrapper<'a> for GspoWrapper<T>
 where
@@ -52,13 +52,13 @@ where
         &mut self.wrapped
     }
 
-    fn dw_quads_with_g<U>(&'a self, g: &'a GraphId<U>) -> DQuadSource<'a, Self::Wrapped>
+    fn dw_quads_with_g<U>(&'a self, g: Option<&'a Term<U>>) -> DQuadSource<'a, Self::Wrapped>
     where
         U: TermData,
     {
-        if let Some(gi) = self.wrapped.get_index_for_graph_id(g) {
+        if let Some(gi) = self.wrapped.get_index_for_graph_name(g) {
             if let Some(sis) = self.g2s.get(&gi) {
-                let g = self.wrapped.get_graph_id(gi).unwrap();
+                let g = self.wrapped.get_graph_name(gi).unwrap();
                 return Box::new(sis.iter().flat_map(move |si| {
                     let s = self.wrapped.get_term(*si).unwrap();
                     let pis = self.gs2p.get(&[gi, *si]).unwrap();
@@ -79,16 +79,16 @@ where
     fn dw_quads_with_sg<U, V>(
         &'a self,
         s: &'a Term<U>,
-        g: &'a GraphId<V>,
+        g: Option<&'a Term<V>>,
     ) -> DQuadSource<'a, Self::Wrapped>
     where
         U: TermData,
         V: TermData,
     {
-        if let Some(gi) = self.wrapped.get_index_for_graph_id(g) {
+        if let Some(gi) = self.wrapped.get_index_for_graph_name(g) {
             if let Some(si) = self.wrapped.get_index(s) {
                 if let Some(pis) = self.gs2p.get(&[gi, si]) {
-                    let g = self.wrapped.get_graph_id(gi).unwrap();
+                    let g = self.wrapped.get_graph_name(gi).unwrap();
                     let s = self.wrapped.get_term(si).unwrap();
                     return Box::new(pis.iter().flat_map(move |pi| {
                         let p = self.wrapped.get_term(*pi).unwrap();
@@ -108,17 +108,17 @@ where
         &'a self,
         s: &'a Term<U>,
         p: &'a Term<V>,
-        g: &'a GraphId<W>,
+        g: Option<&'a Term<W>>,
     ) -> DQuadSource<'a, Self::Wrapped>
     where
         U: TermData,
         V: TermData,
         W: TermData,
     {
-        if let Some(gi) = self.wrapped.get_index_for_graph_id(g) {
+        if let Some(gi) = self.wrapped.get_index_for_graph_name(g) {
             if let Some(si) = self.wrapped.get_index(s) {
                 if let Some(pi) = self.wrapped.get_index(p) {
-                    let g = self.wrapped.get_graph_id(gi).unwrap();
+                    let g = self.wrapped.get_graph_name(gi).unwrap();
                     let s = self.wrapped.get_term(si).unwrap();
                     let p = self.wrapped.get_term(pi).unwrap();
                     let ois = self.gsp2o.get(&[gi, si, pi]).unwrap();
@@ -136,7 +136,7 @@ where
         let graph_names: HashSet<_> = self
             .g2s
             .keys()
-            .filter_map(|i| self.wrapped.get_term(*i)) // NB: filters out GraphId::Default
+            .filter_map(|i| self.wrapped.get_term(*i)) // NB: filters out None
             .cloned()
             .collect();
         Ok(graph_names)

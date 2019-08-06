@@ -1,8 +1,7 @@
 //! A trait for bidirectional mappings between terms and *indexes* of a smaller type.
 
-use crate::term::factory::{FGraphId, FTerm, TermFactory};
-use crate::term::graph_id::GraphId;
-use crate::term::{RefTerm, Term};
+use crate::term::factory::{FTerm, TermFactory};
+use crate::term::RefTerm;
 
 /// A bidirectionnal mapping between [`Term`]s and *indexes* of a smaller type.
 ///
@@ -10,10 +9,10 @@ use crate::term::{RefTerm, Term};
 /// to automatically free them whenever they are not used.
 ///
 /// One special index (called the *null index*) is never mapped to any [`Term`],
-/// and is used to represent [`GraphId::Default`].
+/// and is used to represent `None` (the absence of graph name in a [`Quad`]).
 ///
 /// [`Term`]: ../../term/enum.Term.html
-/// [`GraphId::Default`]: ../../term/graph_id/enum.GraphId.html#variant.Default
+/// [`Quad`]: ../../quad/trait.Quad.html
 ///
 pub trait TermIndexMap: Default {
     /// The type used to represent terms
@@ -39,26 +38,28 @@ pub trait TermIndexMap: Default {
 
     // The following methods have a default impl, and would generally not be overriden
 
-    /// Return the index associated to the given graph identifier, if it exists.
-    fn get_index_for_graph_id(&self, g: &GraphId<&str>) -> Option<Self::Index> {
+    /// Return the index associated to the given graph name, if it exists.
+    fn get_index_for_graph_name(&self, g: Option<&RefTerm>) -> Option<Self::Index> {
         match g {
-            GraphId::Default => Some(Self::NULL_INDEX),
-            GraphId::Name(t) => self.get_index(t),
+            None => Some(Self::NULL_INDEX),
+            Some(t) => self.get_index(t),
         }
     }
-    /// Return the index associated to the given graph identifier, creating it if required, and increasing its ref count.
-    fn make_index_for_graph_id(&mut self, g: &GraphId<&str>) -> Self::Index {
+    /// Return the index associated to the given graph name, creating it if required, and increasing its ref count.
+    fn make_index_for_graph_name(&mut self, g: Option<&RefTerm>) -> Self::Index {
         match g {
-            GraphId::Default => Self::NULL_INDEX,
-            GraphId::Name(t) => self.make_index(t),
+            None => Self::NULL_INDEX,
+            Some(t) => self.make_index(t),
         }
     }
-    /// Return the graph identifier associated to the given index, if it exists.
-    fn get_graph_id(&self, i: Self::Index) -> Option<&FGraphId<Self::Factory>> {
+    /// Return the graph name (possibly None for the default graph)
+    /// associated to the given index, if it exists.
+    #[allow(clippy::option_option)]
+    fn get_graph_name(&self, i: Self::Index) -> Option<Option<&FTerm<Self::Factory>>> {
         if i == Self::NULL_INDEX {
-            Some(&GraphId::Default)
+            Some(None)
         } else {
-            self.get_term(i).map(Term::as_graph_id)
+            self.get_term(i).map(Some)
         }
     }
 }

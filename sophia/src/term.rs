@@ -44,7 +44,6 @@ use regex::Regex;
 use crate::error::*;
 
 pub mod factory;
-pub mod graph_id;
 pub mod index_map;
 pub mod iri_rfc3987;
 use self::iri_rfc3987::ParsedIri;
@@ -56,7 +55,7 @@ mod _convert;
 pub use self::_convert::*;
 mod _iri_data;
 pub use self::_iri_data::*;
-mod _graph_id_matcher; // is 'pub use'd by module 'matcher'
+mod _graph_name_matcher; // is 'pub use'd by module 'matcher'
 mod _literal_kind;
 pub use self::_literal_kind::*;
 
@@ -131,13 +130,6 @@ where
     ///
     pub fn n3(&self) -> String {
         crate::serializer::nt::stringify_term(self)
-    }
-
-    /// Converts a `&Term` to a `&GraphId`.
-    ///
-    /// This conversion has 0 cost, since both types actually have the same size.
-    pub fn as_graph_id(&self) -> &self::graph_id::GraphId<T> {
-        unsafe { &*(self as *const Term<T> as *const self::graph_id::GraphId<T>) }
     }
 }
 
@@ -448,6 +440,20 @@ where
 {
     fn from(other: &'a Term<U>) -> Term<T> {
         Self::from_with(other, T::from)
+    }
+}
+
+/// Check the equality of two graph names (`Option<&Term>`)
+/// using possibly different `TermData`.
+pub fn same_graph_name<T, U>(g1: Option<&Term<T>>, g2: Option<&Term<U>>) -> bool
+where
+    T: TermData,
+    U: TermData,
+{
+    match (g1, g2) {
+        (Some(n1), Some(n2)) => n1 == n2,
+        (None, None) => true,
+        _ => false,
     }
 }
 

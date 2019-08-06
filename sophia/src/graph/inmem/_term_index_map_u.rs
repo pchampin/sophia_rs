@@ -6,7 +6,7 @@ use crate::term::factory::{FTerm, TermFactory};
 use crate::term::index_map::TermIndexMap;
 use crate::term::*;
 
-/// An in-memory implemention of [`TermIndexMap`](../index/trait.TermIndexMap.html)
+/// An in-memory implemention of [`TermIndexMap`](../../term/index_map/trait.TermIndexMap.html)
 /// with unsigned integers as indices.
 pub struct TermIndexMapU<I, F>
 where

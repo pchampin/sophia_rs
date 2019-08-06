@@ -58,7 +58,7 @@ pub trait DatasetWrapper<'a> {
     }
     #[inline]
     /// Mimmic the [`quads_with_g`](../trait.Dataset.html#method.quads_with_g) method.
-    fn dw_quads_with_g<T>(&'a self, g: &'a GraphId<T>) -> DQuadSource<'a, Self::Wrapped>
+    fn dw_quads_with_g<T>(&'a self, g: Option<&'a Term<T>>) -> DQuadSource<'a, Self::Wrapped>
     where
         T: TermData,
     {
@@ -95,7 +95,7 @@ pub trait DatasetWrapper<'a> {
     fn dw_quads_with_sg<T, U>(
         &'a self,
         s: &'a Term<T>,
-        g: &'a GraphId<U>,
+        g: Option<&'a Term<U>>,
     ) -> DQuadSource<'a, Self::Wrapped>
     where
         T: TermData,
@@ -121,7 +121,7 @@ pub trait DatasetWrapper<'a> {
     fn dw_quads_with_pg<T, U>(
         &'a self,
         p: &'a Term<T>,
-        g: &'a GraphId<U>,
+        g: Option<&'a Term<U>>,
     ) -> DQuadSource<'a, Self::Wrapped>
     where
         T: TermData,
@@ -134,7 +134,7 @@ pub trait DatasetWrapper<'a> {
     fn dw_quads_with_og<T, U>(
         &'a self,
         o: &'a Term<T>,
-        g: &'a GraphId<U>,
+        g: Option<&'a Term<U>>,
     ) -> DQuadSource<'a, Self::Wrapped>
     where
         T: TermData,
@@ -163,7 +163,7 @@ pub trait DatasetWrapper<'a> {
         &'a self,
         s: &'a Term<T>,
         p: &'a Term<U>,
-        g: &'a GraphId<V>,
+        g: Option<&'a Term<V>>,
     ) -> DQuadSource<'a, Self::Wrapped>
     where
         T: TermData,
@@ -178,7 +178,7 @@ pub trait DatasetWrapper<'a> {
         &'a self,
         s: &'a Term<T>,
         o: &'a Term<U>,
-        g: &'a GraphId<V>,
+        g: Option<&'a Term<V>>,
     ) -> DQuadSource<'a, Self::Wrapped>
     where
         T: TermData,
@@ -193,7 +193,7 @@ pub trait DatasetWrapper<'a> {
         &'a self,
         p: &'a Term<T>,
         o: &'a Term<U>,
-        g: &'a GraphId<V>,
+        g: Option<&'a Term<V>>,
     ) -> DQuadSource<'a, Self::Wrapped>
     where
         T: TermData,
@@ -209,7 +209,7 @@ pub trait DatasetWrapper<'a> {
         s: &'a Term<T>,
         p: &'a Term<U>,
         o: &'a Term<V>,
-        g: &'a GraphId<W>,
+        g: Option<&'a Term<W>>,
     ) -> DQuadSource<'a, Self::Wrapped>
     where
         T: TermData,
@@ -227,7 +227,7 @@ pub trait DatasetWrapper<'a> {
         s: &'a Term<T>,
         p: &'a Term<U>,
         o: &'a Term<V>,
-        g: &'a GraphId<W>,
+        g: Option<&'a Term<W>>,
     ) -> DResult<'a, Self::Wrapped, bool>
     where
         T: TermData,
@@ -334,12 +334,13 @@ macro_rules! impl_dataset_for_wrapper {
         where
             T_: $crate::term::TermData,
         {
+
             DatasetWrapper::dw_quads_with_o(self, o)
         }
         #[inline]
         fn quads_with_g<T_>(
             &'a self,
-            g: &'a  $crate::term::graph_id::GraphId<T_>
+            g: std::option::Option<&'a $crate::term::Term<T_>>
         ) -> $crate::dataset::DQuadSource<'a, Self>
         where
             T_: $crate::term::TermData,
@@ -374,7 +375,7 @@ macro_rules! impl_dataset_for_wrapper {
         fn quads_with_sg<T_, U_>(
             &'a self,
             s: &'a $crate::term::Term<T_>,
-            g: &'a  $crate::term::graph_id::GraphId<U_>
+            g: std::option::Option<&'a $crate::term::Term<U_>>
         ) -> $crate::dataset::DQuadSource<'a, Self>
         where
             T_: $crate::term::TermData,
@@ -398,7 +399,7 @@ macro_rules! impl_dataset_for_wrapper {
         fn quads_with_pg<T_, U_>(
             &'a self,
             p: &'a $crate::term::Term<T_>,
-            g: &'a  $crate::term::graph_id::GraphId<U_>
+            g: std::option::Option<&'a $crate::term::Term<U_>>
         ) -> $crate::dataset::DQuadSource<'a, Self>
         where
             T_: $crate::term::TermData,
@@ -410,7 +411,7 @@ macro_rules! impl_dataset_for_wrapper {
         fn quads_with_og<T_, U_>(
             &'a self,
             o: &'a $crate::term::Term<T_>,
-            g: &'a  $crate::term::graph_id::GraphId<U_>
+            g: std::option::Option<&'a $crate::term::Term<U_>>
         ) -> $crate::dataset::DQuadSource<'a, Self>
         where
             T_: $crate::term::TermData,
@@ -437,7 +438,7 @@ macro_rules! impl_dataset_for_wrapper {
             &'a self,
             s: &'a $crate::term::Term<T_>,
             p: &'a $crate::term::Term<U_>,
-            g: &'a  $crate::term::graph_id::GraphId<V_>
+            g: std::option::Option<&'a $crate::term::Term<V_>>
         ) -> $crate::dataset::DQuadSource<'a, Self>
         where
             T_: $crate::term::TermData,
@@ -451,7 +452,7 @@ macro_rules! impl_dataset_for_wrapper {
             &'a self,
             s: &'a $crate::term::Term<T_>,
             o: &'a $crate::term::Term<U_>,
-            g: &'a $crate::term::graph_id::GraphId<V_>
+            g: std::option::Option<&'a $crate::term::Term<V_>>
         ) -> $crate::dataset::DQuadSource<'a, Self>
         where
             T_: $crate::term::TermData,
@@ -465,7 +466,7 @@ macro_rules! impl_dataset_for_wrapper {
             &'a self,
             p: &'a $crate::term::Term<T_>,
             o: &'a $crate::term::Term<U_>,
-            g: &'a $crate::term::graph_id::GraphId<V_>
+            g: std::option::Option<&'a $crate::term::Term<V_>>
         ) -> $crate::dataset::DQuadSource<'a, Self>
         where
             T_: $crate::term::TermData,
@@ -480,7 +481,7 @@ macro_rules! impl_dataset_for_wrapper {
             s: &'a $crate::term::Term<T_>,
             p: &'a $crate::term::Term<U_>,
             o: &'a $crate::term::Term<V_>,
-            g: &'a  $crate::term::graph_id::GraphId<W_>
+            g: std::option::Option<&'a $crate::term::Term<W_>>
         ) -> $crate::dataset::DQuadSource<'a, Self>
         where
             T_: $crate::term::TermData,
@@ -497,7 +498,7 @@ macro_rules! impl_dataset_for_wrapper {
             s: &'a $crate::term::Term<T_>,
             p: &'a $crate::term::Term<U_>,
             o: &'a $crate::term::Term<V_>,
-            g: &'a  $crate::term::graph_id::GraphId<W_>
+            g: std::option::Option<&'a $crate::term::Term<W_>>
         ) -> $crate::dataset::DResult<'a, Self, bool>
         where
             T_: $crate::term::TermData,
@@ -551,7 +552,7 @@ macro_rules! impl_dataset_for_wrapper {
 /// This trait is designed to add mutability to [`DatasetWrapper`],
 /// through the [`impl_indexed_dataset_for_wrapper!`] macro.
 ///
-/// [`IndexedDataset`]: ../index/trait.IndexedDataset.html
+/// [`IndexedDataset`]: ../indexed/trait.IndexedDataset.html
 /// [`DatasetWrapper`]: ./trait.DatasetWrapper.html
 /// [`impl_indexed_dataset_for_wrapper!`]: ../../macro.impl_indexed_dataset_for_wrapper.html
 pub trait IndexedDatasetWrapper<T>
@@ -559,21 +560,21 @@ where
     T: IndexedDataset,
 {
     /// Hook to be executed at the end of
-    /// [`IndexedDataset::insert_indexed`](../index/trait.IndexedDataset.html#tymethod.insert_indexed).
+    /// [`IndexedDataset::insert_indexed`](../indexed/trait.IndexedDataset.html#tymethod.insert_indexed).
     fn idw_hook_insert_indexed(&mut self, modified: &Option<[T::Index; 4]>);
 
     /// Hook to be executed at the end of
-    /// [`IndexedDataset::remove_indexed`](../index/trait.IndexedDataset.html#tymethod.remove_indexed).
+    /// [`IndexedDataset::remove_indexed`](../indexed/trait.IndexedDataset.html#tymethod.remove_indexed).
     fn idw_hook_remove_indexed(&mut self, modified: &Option<[T::Index; 4]>);
 
     /// Hook to be executed at the end of
-    /// [`IndexedDataset::shrink_to_fit`](../index/trait.IndexedDataset.html#tymethod.shrink_to_fit).
+    /// [`IndexedDataset::shrink_to_fit`](../indexed/trait.IndexedDataset.html#tymethod.shrink_to_fit).
     fn idw_hook_shrink_to_fit(&mut self);
 }
 
 /// Defines the implementation of [`IndexedDataset`] for [`DatasetWrapper`] around another [`IndexedDataset`].
 ///
-/// [`IndexedDataset`]: dataset/index/trait.IndexedDataset.html
+/// [`IndexedDataset`]: dataset/indexed/trait.IndexedDataset.html
 /// [`DatasetWrapper`]: dataset/inmem/trait.DatasetWrapper.html
 #[macro_export]
 macro_rules! impl_indexed_dataset_for_wrapper {
@@ -598,14 +599,14 @@ macro_rules! impl_indexed_dataset_for_wrapper {
         }
 
         #[inline]
-        fn get_index_for_graph_id<U>(
+        fn get_index_for_graph_name<U>(
             &self,
-            g: & $crate::term::graph_id::GraphId<U>
+            g: std::option::Option<&'_ $crate::term::Term<U>>
         ) -> Option<Self::Index>
         where
             U: $crate::term::TermData,
         {
-            self.get_wrapped().get_index_for_graph_id(g)
+            self.get_wrapped().get_index_for_graph_name(g)
         }
 
         #[inline]
@@ -614,8 +615,8 @@ macro_rules! impl_indexed_dataset_for_wrapper {
         }
 
         #[inline]
-        fn get_graph_id(&self, i: Self::Index) -> Option<&GraphId<Self::TermData>> {
-            self.get_wrapped().get_graph_id(i)
+        fn get_graph_name(&self, i: Self::Index) -> Option<Option<&Term<Self::TermData>>> {
+            self.get_wrapped().get_graph_name(i)
         }
 
         fn insert_indexed<U, V, W, X>(
@@ -623,7 +624,7 @@ macro_rules! impl_indexed_dataset_for_wrapper {
             s: &$crate::term::Term<U>,
             p: &$crate::term::Term<V>,
             o: &$crate::term::Term<W>,
-            g: &$crate::term::graph_id::GraphId<X>,
+            g: std::option::Option<&'_ $crate::term::Term<X>>,
         ) -> Option<[Self::Index; 4]>
         where
             U: $crate::term::TermData,
@@ -641,7 +642,7 @@ macro_rules! impl_indexed_dataset_for_wrapper {
             s: &$crate::term::Term<U>,
             p: &$crate::term::Term<V>,
             o: &$crate::term::Term<W>,
-            g: &$crate::term::graph_id::GraphId<X>,
+            g: std::option::Option<&'_ $crate::term::Term<X>>
         ) -> Option<([Self::Index; 4])>
         where
             U: $crate::term::TermData,
