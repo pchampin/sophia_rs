@@ -8,8 +8,10 @@ documentation = "https://docs.rs/sophia"
 readme = "../README.md"
 license = "CECILL-C"
 keywords = ["rdf", "linked-data", "semantic-web"]
-
 edition = "2018"
+
+[package.metadata.docs.rs]
+all-features = true
 
 [features]
 default = []
