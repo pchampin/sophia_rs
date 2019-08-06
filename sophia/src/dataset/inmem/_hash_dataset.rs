@@ -6,7 +6,7 @@ use crate::dataset::indexed::IndexedDataset;
 use crate::dataset::*;
 use crate::error::*;
 use crate::term::factory::TermFactory;
-use crate::term::graph_id::GraphId;
+use crate::term::graph_id::*;
 use crate::term::index_map::TermIndexMap;
 use crate::term::{Term, TermData};
 
@@ -74,7 +74,7 @@ where
     where
         T: TermData,
     {
-        self.terms.get_index_for_graph_id(&g.into())
+        self.terms.get_index_for_graph_id(&g.convert_graph_name())
     }
 
     #[inline]
@@ -103,7 +103,7 @@ where
         let si = self.terms.make_index(&s.into());
         let pi = self.terms.make_index(&p.into());
         let oi = self.terms.make_index(&o.into());
-        let gi = self.terms.make_index_for_graph_id(&g.into());
+        let gi = self.terms.make_index_for_graph_id(&g.convert_graph_name());
         let modified = self.quads.insert([si, pi, oi, gi]);
         if modified {
             Some([si, pi, oi, gi])

@@ -2,7 +2,7 @@
 
 use crate::term::*;
 
-use super::graph_id::GraphId;
+use super::graph_id::*;
 
 /// A graph-key-matcher is something that can be used
 /// to discriminate members of a set of graph identifiers.
@@ -47,7 +47,7 @@ where
     where
         T: TermData,
     {
-        g == self
+        g.same_graph_name(self)
     }
 }
 
@@ -63,7 +63,7 @@ where
     where
         T: TermData,
     {
-        g == self
+        g.same_graph_name(self.as_graph_id())
     }
 }
 
@@ -130,8 +130,8 @@ impl<F: Fn(&GraphId<&str>) -> bool> GraphIdMatcher for F {
         T: TermData,
     {
         match t {
-            GraphId::Default => (self)(&GraphId::Default),
-            GraphId::Name(n) => {
+            None => (self)(&None),
+            Some(n) => {
                 let n = RefTerm::from(n);
                 (self)(n.as_graph_id())
             }
@@ -145,16 +145,16 @@ mod test {
 
     #[test]
     fn test_graph_id_as_matcher() {
-        let m = GraphId::Name(BoxTerm::new_iri("http://champin.net/#pa").unwrap());
+        let m = Some(BoxTerm::new_iri("http://champin.net/#pa").unwrap());
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
-        let n0: GraphId<&str> = GraphId::Default;
-        let n1 = GraphId::Name(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
-        let n2 = GraphId::Name(RcTerm::new_iri("http://example.org/").unwrap());
+        let n0: GraphId<&str> = None;
+        let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
+        let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphIdMatcher::constant(&m);
         assert!(mc.is_some());
-        assert_eq!(mc.unwrap(), &n1);
+        assert!(mc.unwrap().same_graph_name(&n1));
         assert!(!m.matches(&n0));
         assert!(m.matches(&n1));
         assert!(!m.matches(&n2));
@@ -165,13 +165,13 @@ mod test {
         let m = BoxTerm::new_iri("http://champin.net/#pa").unwrap();
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
-        let n0: GraphId<&str> = GraphId::Default;
-        let n1 = GraphId::Name(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
-        let n2 = GraphId::Name(RcTerm::new_iri("http://example.org/").unwrap());
+        let n0: GraphId<&str> = None;
+        let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
+        let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphIdMatcher::constant(&m);
         assert!(mc.is_some());
-        assert_eq!(mc.unwrap(), &n1);
+        assert!(mc.unwrap().same_graph_name(&n1));
         assert!(!m.matches(&n0));
         assert!(m.matches(&n1));
         assert!(!m.matches(&n2));
@@ -182,9 +182,9 @@ mod test {
         let m = crate::term::matcher::ANY;
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
-        let n0: GraphId<&str> = GraphId::Default;
-        let n1 = GraphId::Name(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
-        let n2 = GraphId::Name(RcTerm::new_iri("http://example.org/").unwrap());
+        let n0: GraphId<&str> = None;
+        let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
+        let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphIdMatcher::constant(&m);
         assert!(mc.is_none());
@@ -195,18 +195,18 @@ mod test {
 
     #[test]
     fn test_vec1_as_matcher() {
-        let m = vec![GraphId::Name(
+        let m = vec![Some(
             BoxTerm::new_iri("http://champin.net/#pa").unwrap(),
         )];
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
-        let n0: GraphId<&str> = GraphId::Default;
-        let n1 = GraphId::Name(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
-        let n2 = GraphId::Name(RcTerm::new_iri("http://example.org/").unwrap());
+        let n0: GraphId<&str> = None;
+        let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
+        let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphIdMatcher::constant(&m[..]);
         assert!(mc.is_some());
-        assert_eq!(mc.unwrap(), &n1);
+        assert!(mc.unwrap().same_graph_name(&n1));
         assert!(!m.matches(&n0));
         assert!(m.matches(&n1));
         assert!(!m.matches(&n2));
@@ -215,14 +215,14 @@ mod test {
     #[test]
     fn test_vec2_as_matcher() {
         let m = vec![
-            GraphId::Name(BoxTerm::new_iri("http://champin.net/#pa").unwrap()),
-            GraphId::Default,
+            Some(BoxTerm::new_iri("http://champin.net/#pa").unwrap()),
+            None,
         ];
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
-        let n0: GraphId<&str> = GraphId::Default;
-        let n1 = GraphId::Name(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
-        let n2 = GraphId::Name(RcTerm::new_iri("http://example.org/").unwrap());
+        let n0: GraphId<&str> = None;
+        let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
+        let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphIdMatcher::constant(&m[..]);
         assert!(mc.is_none());
@@ -236,9 +236,9 @@ mod test {
         let m: Vec<GraphId<Box<str>>> = vec![];
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
-        let n0: GraphId<&str> = GraphId::Default;
-        let n1 = GraphId::Name(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
-        let n2 = GraphId::Name(RcTerm::new_iri("http://example.org/").unwrap());
+        let n0: GraphId<&str> = None;
+        let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
+        let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphIdMatcher::constant(&m[..]);
         assert!(mc.is_none());
@@ -249,14 +249,14 @@ mod test {
 
     #[test]
     fn test_func_as_matcher() {
-        let m = |t: &GraphId<&str>| match t.name() {
+        let m = |t: &GraphId<&str>| match t {
             None => false,
             Some(t) => t.value().starts_with("http://champin"),
         };
 
-        let n0: GraphId<&str> = GraphId::Default;
-        let n1 = GraphId::Name(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
-        let n2 = GraphId::Name(RcTerm::new_iri("http://example.org/").unwrap());
+        let n0: GraphId<&str> = None;
+        let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
+        let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphIdMatcher::constant(&m);
         assert!(mc.is_none());

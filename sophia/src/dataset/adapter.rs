@@ -171,13 +171,14 @@ pub(crate) mod test {
     use crate::dataset::test::*;
     use crate::dataset::MDResult;
     use crate::ns::rdfs;
+    use crate::term::graph_id::*;
 
     pub type LightDatasetGraph = DatasetGraph<LightDataset, LightDataset, GraphId<Box<str>>>;
 
     pub fn make_default_graph() -> LightDatasetGraph {
         DatasetGraph {
             dataset: LightDataset::new(),
-            gmatcher: GraphId::Default,
+            gmatcher: None,
             _phantom: PhantomData,
         }
     }
@@ -185,7 +186,7 @@ pub(crate) mod test {
     pub fn make_named_graph() -> LightDatasetGraph {
         DatasetGraph {
             dataset: LightDataset::new(),
-            gmatcher: rdfs::Resource.as_graph_id().into(),
+            gmatcher: Some(rdfs::Resource).convert_graph_name(),
             _phantom: PhantomData,
         }
     }

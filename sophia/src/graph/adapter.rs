@@ -66,7 +66,7 @@ where
     where
         T: TermData,
     {
-        if let GraphId::Name(_) = g {
+        if let Some(_) = g {
             return Box::new(empty());
         }
         self.quads()
@@ -103,7 +103,7 @@ where
         T: TermData,
         U: TermData,
     {
-        if let GraphId::Name(_) = g {
+        if let Some(_) = g {
             return Box::new(empty());
         }
         self.quads_with_s(s)
@@ -127,7 +127,7 @@ where
         T: TermData,
         U: TermData,
     {
-        if let GraphId::Name(_) = g {
+        if let Some(_) = g {
             return Box::new(empty());
         }
         self.quads_with_p(p)
@@ -138,7 +138,7 @@ where
         T: TermData,
         U: TermData,
     {
-        if let GraphId::Name(_) = g {
+        if let Some(_) = g {
             return Box::new(empty());
         }
         self.quads_with_o(o)
@@ -174,7 +174,7 @@ where
         U: TermData,
         V: TermData,
     {
-        if let GraphId::Name(_) = g {
+        if let Some(_) = g {
             return Box::new(empty());
         }
         self.quads_with_sp(s, p)
@@ -191,7 +191,7 @@ where
         U: TermData,
         V: TermData,
     {
-        if let GraphId::Name(_) = g {
+        if let Some(_) = g {
             return Box::new(empty());
         }
         self.quads_with_so(s, o)
@@ -208,7 +208,7 @@ where
         U: TermData,
         V: TermData,
     {
-        if let GraphId::Name(_) = g {
+        if let Some(_) = g {
             return Box::new(empty());
         }
         self.quads_with_po(p, o)
@@ -227,7 +227,7 @@ where
         V: TermData,
         W: TermData,
     {
-        if let GraphId::Name(_) = g {
+        if let Some(_) = g {
             return Box::new(empty());
         }
         self.quads_with_spo(s, p, o)
@@ -247,7 +247,7 @@ where
         V: TermData,
         W: TermData,
     {
-        if let GraphId::Name(_) = g {
+        if let Some(_) = g {
             return Ok(false);
         }
         self.0.borrow().contains(s, p, o)
@@ -307,7 +307,7 @@ where
         V: TermData,
         W: TermData,
     {
-        if let GraphId::Name(graph_name) = g {
+        if let Some(graph_name) = g {
             return Err(ErrorKind::UnsupportedGraphId(graph_name.n3()).into());
         };
         Ok(self.0.borrow_mut().insert(s, p, o)?)
@@ -326,7 +326,7 @@ where
         V: TermData,
         W: TermData,
     {
-        if let GraphId::Name(_) = g {
+        if let Some(_) = g {
             return Ok(false);
         };
         Ok(self.0.borrow_mut().remove(s, p, o)?)
@@ -349,7 +349,7 @@ mod test {
     use crate::ns::{rdf, rdfs};
     use crate::term::graph_id::GraphId;
 
-    const DG: GraphId<&'static str> = GraphId::Default;
+    const DG: GraphId<&'static str> = None;
 
     #[test]
     fn test_borrow() -> Result<()> {

@@ -127,7 +127,7 @@ impl<'a, T: Triple<'a>> Quad<'a> for TripleAsQuad<T> {
     }
     #[inline]
     fn g(&self) -> &GraphId<T::TermData> {
-        &GraphId::Default
+        &None
     }
 }
 

@@ -136,7 +136,7 @@ where
         let graph_names: HashSet<_> = self
             .g2s
             .keys()
-            .filter_map(|i| self.wrapped.get_term(*i)) // NB: filters out GraphId::Default
+            .filter_map(|i| self.wrapped.get_term(*i)) // NB: filters out None
             .cloned()
             .collect();
         Ok(graph_names)

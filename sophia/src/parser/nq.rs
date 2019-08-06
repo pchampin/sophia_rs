@@ -156,8 +156,8 @@ fn pairs_to_quad<'a>(config: &Config, mut pairs: Pairs<'a, Rule>) -> ResultQuad<
     let p = pair_to_term(pairs.next().unwrap(), config.strict)?;
     let o = pair_to_term(pairs.next().unwrap(), config.strict)?;
     let g = match pairs.next() {
-        None => GraphId::Default,
-        Some(gn) => GraphId::Name(pair_to_term(gn, config.strict)?),
+        None => None,
+        Some(gn) => Some(pair_to_term(gn, config.strict)?),
     };
     Ok(([s, p, o], g))
 }

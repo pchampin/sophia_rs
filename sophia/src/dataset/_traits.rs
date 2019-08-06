@@ -10,7 +10,7 @@ use crate::dataset::adapter::DatasetGraph;
 use crate::error::*;
 use crate::quad::stream::*;
 use crate::quad::*;
-use crate::term::graph_id::GraphId;
+use crate::term::graph_id::*;
 use crate::term::matcher::*;
 use crate::term::*;
 
@@ -90,7 +90,7 @@ pub trait Dataset<'a> {
     where
         T: TermData,
     {
-        Box::new(self.quads().filter_ok(move |q| q.g() == g))
+        Box::new(self.quads().filter_ok(move |q| q.g().same_graph_name(g)))
     }
     /// An iterator visiting add quads with the given subject and predicate.
     ///
@@ -377,7 +377,7 @@ pub trait Dataset<'a> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             let q = q?;
-            let name = q.g().name();
+            let name = q.g();
             if let Some(name) = name {
                 insert_if_absent(&mut res, name);
             }
@@ -400,7 +400,7 @@ pub trait Dataset<'a> {
             if let Iri(_) = o {
                 insert_if_absent(&mut res, o)
             }
-            if let Some(gn) = q.g().name() {
+            if let Some(gn) = q.g() {
                 if let Iri(_) = gn {
                     insert_if_absent(&mut res, &gn)
                 }
@@ -424,7 +424,7 @@ pub trait Dataset<'a> {
             if let BNode(_) = o {
                 insert_if_absent(&mut res, o)
             }
-            if let Some(gn) = q.g().name() {
+            if let Some(gn) = q.g() {
                 if let BNode(_) = gn {
                     insert_if_absent(&mut res, &gn)
                 }
@@ -448,7 +448,7 @@ pub trait Dataset<'a> {
             if let Literal(_, _) = o {
                 insert_if_absent(&mut res, o)
             }
-            if let Some(gn) = q.g().name() {
+            if let Some(gn) = q.g() {
                 if let Literal(_, _) = gn {
                     insert_if_absent(&mut res, &gn)
                 }
@@ -472,7 +472,7 @@ pub trait Dataset<'a> {
             if let Variable(_) = o {
                 insert_if_absent(&mut res, o)
             }
-            if let Some(gn) = q.g().name() {
+            if let Some(gn) = q.g() {
                 if let Variable(_) = gn {
                     insert_if_absent(&mut res, &gn)
                 }
@@ -488,7 +488,7 @@ pub trait Dataset<'a> {
     {
         DatasetGraph {
             dataset: self,
-            gmatcher: graph_id.into(),
+            gmatcher: graph_id.convert_graph_name(),
             _phantom: PhantomData,
         }
     }
@@ -503,7 +503,7 @@ pub trait Dataset<'a> {
     {
         DatasetGraph {
             dataset: self,
-            gmatcher: graph_id.into(),
+            gmatcher: graph_id.convert_graph_name(),
             _phantom: PhantomData,
         }
     }
@@ -655,7 +655,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
                         BoxTerm::from(q.p()),
                         BoxTerm::from(q.o()),
                     ],
-                    GraphId::<Box<str>>::from(q.g()),
+                    q.g().convert_graph_name(),
                 )
             })
             .collect::<std::result::Result<_, _>>()
@@ -699,7 +699,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
                         BoxTerm::from(q.p()),
                         BoxTerm::from(q.o()),
                     ],
-                    GraphId::<Box<str>>::from(q.g()),
+                    q.g().convert_graph_name()
                 )
             })
             .collect::<std::result::Result<_, _>>()

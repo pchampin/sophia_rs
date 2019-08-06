@@ -56,10 +56,10 @@ impl MutableDataset for Vec<([BoxTerm; 3], GraphId<Box<str>>)> where {
         V: TermData,
         W: TermData,
     {
-        let s = BoxTerm::from(s);
-        let p = BoxTerm::from(p);
-        let o = BoxTerm::from(o);
-        let g = GraphId::from(g);
+        let s = s.into();
+        let p = p.into();
+        let o = o.into();
+        let g = g.convert_graph_name();
         self.push(([s, p, o], g));
         Ok(true)
     }
@@ -79,7 +79,7 @@ impl MutableDataset for Vec<([BoxTerm; 3], GraphId<Box<str>>)> where {
         let item = self
             .quads()
             .oks()
-            .position(|q| s == q.s() && p == q.p() && o == q.o() && g == q.g());
+            .position(|q| s == q.s() && p == q.p() && o == q.o() && g.same_graph_name(q.g()));
         if let Some(i) = item {
             self.swap_remove(i);
             Ok(true)
@@ -118,10 +118,10 @@ impl<S: ::std::hash::BuildHasher> MutableDataset for HashSet<([BoxTerm; 3], Grap
         V: TermData,
         W: TermData,
     {
-        let s = BoxTerm::from(s);
-        let p = BoxTerm::from(p);
-        let o = BoxTerm::from(o);
-        let g = GraphId::from(g);
+        let s = s.into();
+        let p = p.into();
+        let o = o.into();
+        let g = g.convert_graph_name();
         Ok(HashSet::insert(self, ([s, p, o], g)))
     }
     fn remove<T, U, V, W>(
@@ -137,10 +137,10 @@ impl<S: ::std::hash::BuildHasher> MutableDataset for HashSet<([BoxTerm; 3], Grap
         V: TermData,
         W: TermData,
     {
-        let s = BoxTerm::from(s);
-        let p = BoxTerm::from(p);
-        let o = BoxTerm::from(o);
-        let g = GraphId::from(g);
+        let s = s.into();
+        let p = p.into();
+        let o = o.into();
+        let g = g.convert_graph_name();
         Ok(HashSet::remove(self, &([s, p, o], g)))
     }
 }
@@ -161,11 +161,10 @@ mod test {
 
     #[test]
     fn test_slice() {
-        let gn = StaticTerm::new_bnode("x").unwrap();
-        let gn = GraphId::<&str>::from(&gn);
+        let gn = Some(StaticTerm::new_bnode("x").unwrap());
         let d = [
-            ([rdf::type_, rdf::type_, rdf::Property], GraphId::Default),
-            ([rdf::Property, rdf::type_, rdfs::Class], GraphId::Default),
+            ([rdf::type_, rdf::type_, rdf::Property], None),
+            ([rdf::Property, rdf::type_, rdfs::Class], None),
             ([rdfs::Class, rdf::type_, rdfs::Class], gn.clone()),
         ];
         let len = d.quads().oks().count();
