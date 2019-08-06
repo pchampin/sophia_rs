@@ -6,8 +6,8 @@ use std::iter::once;
 use resiter::map::*;
 
 use crate::graph::*;
-use crate::term::*;
 use crate::term::matcher::*;
+use crate::term::*;
 use crate::triple::*;
 
 pub type BindingMap = HashMap<String, RcTerm>;
@@ -21,7 +21,7 @@ impl Binding {
     pub fn is_free(&self) -> bool {
         match self {
             Binding::Free => true,
-            _ => false
+            _ => false,
         }
     }
 }

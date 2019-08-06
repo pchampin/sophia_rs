@@ -58,7 +58,7 @@ pub fn populate_nodes_types<D: MutableDataset>(d: &mut D) -> MDResult<D, ()> {
         &rdf::type_,
         &rdf::type_,
         &rdf::Property,
-        Some(StaticTerm::from(&rdf::type_)).as_ref()
+        Some(StaticTerm::from(&rdf::type_)).as_ref(),
     )?;
     d.insert(
         &StaticTerm::new_bnode("b1").unwrap(),
@@ -92,7 +92,7 @@ pub fn populate_nodes_types<D: MutableDataset>(d: &mut D) -> MDResult<D, ()> {
 pub fn as_box_q<'a, Q: Quad<'a> + 'a>(quad: Q) -> ([BoxTerm; 3], Option<BoxTerm>) {
     (
         [quad.s().into(), quad.p().into(), quad.o().into()],
-        quad.g().map(|n| n.into())
+        quad.g().map(|n| n.into()),
     )
 }
 

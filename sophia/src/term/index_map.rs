@@ -52,12 +52,14 @@ pub trait TermIndexMap: Default {
             Some(t) => self.make_index(t),
         }
     }
-    /// Return the graph name associated to the given index, if it exists.
+    /// Return the graph name (possibly None for the default graph)
+    /// associated to the given index, if it exists.
+    #[allow(clippy::option_option)]
     fn get_graph_name(&self, i: Self::Index) -> Option<Option<&FTerm<Self::Factory>>> {
         if i == Self::NULL_INDEX {
             Some(None)
         } else {
-            self.get_term(i).map(|t| Some(t))
+            self.get_term(i).map(Some)
         }
     }
 }

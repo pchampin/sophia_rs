@@ -66,7 +66,7 @@ where
     where
         T: TermData,
     {
-        if let Some(_) = g {
+        if g.is_some() {
             return Box::new(empty());
         }
         self.quads()
@@ -98,12 +98,16 @@ where
         )
     }
     #[inline]
-    fn quads_with_sg<T, U>(&'a self, s: &'a Term<T>, g: Option<&'a Term<U>>) -> DQuadSource<'a, Self>
+    fn quads_with_sg<T, U>(
+        &'a self,
+        s: &'a Term<T>,
+        g: Option<&'a Term<U>>,
+    ) -> DQuadSource<'a, Self>
     where
         T: TermData,
         U: TermData,
     {
-        if let Some(_) = g {
+        if g.is_some() {
             return Box::new(empty());
         }
         self.quads_with_s(s)
@@ -122,23 +126,31 @@ where
         )
     }
     #[inline]
-    fn quads_with_pg<T, U>(&'a self, p: &'a Term<T>, g: Option<&'a Term<U>>) -> DQuadSource<'a, Self>
+    fn quads_with_pg<T, U>(
+        &'a self,
+        p: &'a Term<T>,
+        g: Option<&'a Term<U>>,
+    ) -> DQuadSource<'a, Self>
     where
         T: TermData,
         U: TermData,
     {
-        if let Some(_) = g {
+        if g.is_some() {
             return Box::new(empty());
         }
         self.quads_with_p(p)
     }
     #[inline]
-    fn quads_with_og<T, U>(&'a self, o: &'a Term<T>, g: Option<&'a Term<U>>) -> DQuadSource<'a, Self>
+    fn quads_with_og<T, U>(
+        &'a self,
+        o: &'a Term<T>,
+        g: Option<&'a Term<U>>,
+    ) -> DQuadSource<'a, Self>
     where
         T: TermData,
         U: TermData,
     {
-        if let Some(_) = g {
+        if g.is_some() {
             return Box::new(empty());
         }
         self.quads_with_o(o)
@@ -174,7 +186,7 @@ where
         U: TermData,
         V: TermData,
     {
-        if let Some(_) = g {
+        if g.is_some() {
             return Box::new(empty());
         }
         self.quads_with_sp(s, p)
@@ -191,7 +203,7 @@ where
         U: TermData,
         V: TermData,
     {
-        if let Some(_) = g {
+        if g.is_some() {
             return Box::new(empty());
         }
         self.quads_with_so(s, o)
@@ -208,7 +220,7 @@ where
         U: TermData,
         V: TermData,
     {
-        if let Some(_) = g {
+        if g.is_some() {
             return Box::new(empty());
         }
         self.quads_with_po(p, o)
@@ -227,7 +239,7 @@ where
         V: TermData,
         W: TermData,
     {
-        if let Some(_) = g {
+        if g.is_some() {
             return Box::new(empty());
         }
         self.quads_with_spo(s, p, o)
@@ -247,7 +259,7 @@ where
         V: TermData,
         W: TermData,
     {
-        if let Some(_) = g {
+        if g.is_some() {
             return Ok(false);
         }
         self.0.borrow().contains(s, p, o)
@@ -326,7 +338,7 @@ where
         V: TermData,
         W: TermData,
     {
-        if let Some(_) = g {
+        if g.is_some() {
             return Ok(false);
         };
         Ok(self.0.borrow_mut().remove(s, p, o)?)

@@ -25,13 +25,11 @@ pub trait TermMatcher {
 }
 
 /// A universal matcher: it matches any term or graph name (even the default graph).
-pub const ANY: AnyTerm = AnyTerm{};
+pub const ANY: AnyTerm = AnyTerm {};
 
+pub struct AnyTerm {}
 
-pub struct AnyTerm{}
-
-impl TermMatcher for AnyTerm
-{
+impl TermMatcher for AnyTerm {
     type TermData = &'static str;
     fn constant(&self) -> Option<&Term<Self::TermData>> {
         None
@@ -43,7 +41,6 @@ impl TermMatcher for AnyTerm
         true
     }
 }
-
 
 impl<U> TermMatcher for Term<U>
 where
@@ -98,7 +95,6 @@ impl<F: Fn(&RefTerm) -> bool> TermMatcher for F {
         self(&RefTerm::from(t))
     }
 }
-
 
 #[cfg(test)]
 mod test {

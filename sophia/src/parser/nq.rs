@@ -144,7 +144,8 @@ impl<'a> Quad<'a> for NqQuad {
     // so I use transmute() to force the cast.
 }
 
-type ResultQuad<'a> = StdResult<([Term<Cow<'a, str>>; 3], Option<Term<Cow<'a, str>>>), PestError<Rule>>;
+type ResultQuad<'a> =
+    StdResult<([Term<Cow<'a, str>>; 3], Option<Term<Cow<'a, str>>>), PestError<Rule>>;
 
 fn parse_rule_from_line<'a>(config: &Config, rule: Rule, txt: &'a str) -> ResultQuad<'a> {
     let quad_pair = PestNtqParser::parse(rule, txt)?.next().unwrap();

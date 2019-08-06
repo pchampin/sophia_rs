@@ -34,7 +34,9 @@ pub trait IndexedDataset {
     /// Return the term for the given index, if it exists.
     fn get_term(&self, i: Self::Index) -> Option<&Term<Self::TermData>>;
 
-    /// Return the graph name for the given index, if it exists
+    /// Return the graph name (possibly None for the default graph)
+    /// for the given index, if it exists
+    #[allow(clippy::option_option)]
     fn get_graph_name(&self, i: Self::Index) -> Option<Option<&Term<Self::TermData>>>;
 
     /// Insert a triple in this Dataset,

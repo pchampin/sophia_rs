@@ -11,7 +11,9 @@ use crate::term::*;
 /// [`MutableDataset::retain`](../../dataset/trait.MutableDataset.html#method.retain).
 pub trait GraphNameMatcher {
     type TermData: TermData;
-    /// If this matcher matches only one graph name, return it, else `None`.
+    /// If this matcher matches only one graph name (possibly None for the default graph),
+    /// return it, else `None`.
+    #[allow(clippy::option_option)]
     fn constant(&self) -> Option<Option<&Term<Self::TermData>>>;
 
     /// Check whether this matcher matches `t`.
@@ -20,8 +22,7 @@ pub trait GraphNameMatcher {
         T: TermData;
 }
 
-impl GraphNameMatcher for crate::term::matcher::AnyTerm
-{
+impl GraphNameMatcher for crate::term::matcher::AnyTerm {
     type TermData = &'static str;
     fn constant(&self) -> Option<Option<&Term<Self::TermData>>> {
         None
@@ -144,7 +145,7 @@ impl<F: Fn(Option<&Term<&str>>) -> bool> GraphNameMatcher for F {
     where
         T: TermData,
     {
-        (self)(g.map(|n| RefTerm::from(n)).as_ref())
+        (self)(g.map(RefTerm::from).as_ref())
     }
 }
 
@@ -168,7 +169,6 @@ mod test {
         assert!(m.matches(n1.as_ref()));
         assert!(!m.matches(n2.as_ref()));
     }
-
 
     #[test]
     fn test_option_term_as_matcher() {
@@ -222,9 +222,7 @@ mod test {
 
     #[test]
     fn test_vec1_as_matcher() {
-        let m = vec![Some(
-            BoxTerm::new_iri("http://champin.net/#pa").unwrap(),
-        )];
+        let m = vec![Some(BoxTerm::new_iri("http://champin.net/#pa").unwrap())];
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: Option<RcTerm> = None;

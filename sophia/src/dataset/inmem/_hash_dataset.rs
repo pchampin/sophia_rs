@@ -73,7 +73,8 @@ where
     where
         T: TermData,
     {
-        self.terms.get_index_for_graph_name(g.map(|n| RefTerm::from(n)).as_ref())
+        self.terms
+            .get_index_for_graph_name(g.map(RefTerm::from).as_ref())
     }
 
     #[inline]
@@ -102,7 +103,9 @@ where
         let si = self.terms.make_index(&s.into());
         let pi = self.terms.make_index(&p.into());
         let oi = self.terms.make_index(&o.into());
-        let gi = self.terms.make_index_for_graph_name(g.map(|n| RefTerm::from(n)).as_ref());
+        let gi = self
+            .terms
+            .make_index_for_graph_name(g.map(RefTerm::from).as_ref());
         let modified = self.quads.insert([si, pi, oi, gi]);
         if modified {
             Some([si, pi, oi, gi])
@@ -158,6 +161,7 @@ where
     I::Index: Hash,
     <I::Factory as TermFactory>::TermData: 'static,
 {
+    #[allow(clippy::type_complexity)]
     type Quad = (
         [&'a Term<<Self as IndexedDataset>::TermData>; 3],
         Option<&'a Term<<Self as IndexedDataset>::TermData>>,

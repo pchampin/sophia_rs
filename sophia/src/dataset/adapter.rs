@@ -139,7 +139,9 @@ where
         U: TermData,
         V: TermData,
     {
-        self.dataset.borrow_mut().insert(s, p, o, self.gmatcher.as_ref())
+        self.dataset
+            .borrow_mut()
+            .insert(s, p, o, self.gmatcher.as_ref())
     }
 
     fn remove<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
@@ -148,7 +150,9 @@ where
         U: TermData,
         V: TermData,
     {
-        self.dataset.borrow_mut().remove(s, p, o, self.gmatcher.as_ref())
+        self.dataset
+            .borrow_mut()
+            .remove(s, p, o, self.gmatcher.as_ref())
     }
 }
 

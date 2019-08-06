@@ -114,7 +114,11 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given subject and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_sg<T, U>(&'a self, s: &'a Term<T>, g: Option<&'a Term<U>>) -> DQuadSource<'a, Self>
+    fn quads_with_sg<T, U>(
+        &'a self,
+        s: &'a Term<T>,
+        g: Option<&'a Term<U>>,
+    ) -> DQuadSource<'a, Self>
     where
         T: TermData,
         U: TermData,
@@ -134,7 +138,11 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given predicate and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_pg<T, U>(&'a self, p: &'a Term<T>, g: Option<&'a Term<U>>) -> DQuadSource<'a, Self>
+    fn quads_with_pg<T, U>(
+        &'a self,
+        p: &'a Term<T>,
+        g: Option<&'a Term<U>>,
+    ) -> DQuadSource<'a, Self>
     where
         T: TermData,
         U: TermData,
@@ -144,7 +152,11 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given object and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_og<T, U>(&'a self, o: &'a Term<T>, g: Option<&'a Term<U>>) -> DQuadSource<'a, Self>
+    fn quads_with_og<T, U>(
+        &'a self,
+        o: &'a Term<T>,
+        g: Option<&'a Term<U>>,
+    ) -> DQuadSource<'a, Self>
     where
         T: TermData,
         U: TermData,
@@ -654,7 +666,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
                         BoxTerm::from(q.p()),
                         BoxTerm::from(q.o()),
                     ],
-                    q.g().map(|n| BoxTerm::from(n))
+                    q.g().map(BoxTerm::from),
                 )
             })
             .collect::<std::result::Result<_, _>>()
@@ -698,7 +710,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
                         BoxTerm::from(q.p()),
                         BoxTerm::from(q.o()),
                     ],
-                    q.g().map(|n| BoxTerm::from(n))
+                    q.g().map(BoxTerm::from),
                 )
             })
             .collect::<std::result::Result<_, _>>()
