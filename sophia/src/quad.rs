@@ -10,7 +10,7 @@ use crate::triple::*;
 pub mod stream;
 
 /// This trait represents an abstract RDF quad,
-/// and provide convenient methods for working with quads.
+/// and provides convenient methods for working with quads.
 pub trait Quad<'a> {
     type TermData: TermData + 'a;
     /// The subject of this quad.
@@ -146,7 +146,7 @@ where
     }
 }
 
-/// The adapter returned by [`Qiad::as_triple`](./trait.Quad.html#method.as_triple).
+/// The adapter returned by [`Quad::as_triple`](./trait.Quad.html#method.as_triple).
 pub struct QuadAsTriple<Q>(Q);
 
 impl<Q> QuadAsTriple<Q> {

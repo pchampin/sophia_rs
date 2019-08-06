@@ -2,21 +2,23 @@
 
 use crate::term::*;
 
-/// A graph name matcher is something that can be used
-/// to discriminate members of a set of graph names
-/// (including the absence thereof, *i.e.* the default graph).
+/// Generic trait for matching graph names, *i.e.* optional [term]s.
 ///
-/// See [`Dataset::quads_matching`](../../dataset/trait.Dataset.html#method.quads_matching),
-/// [`MutableDataset::remove_matching`](../../dataset/trait.MutableDataset.html#method.remove_matching),
-/// [`MutableDataset::retain`](../../dataset/trait.MutableDataset.html#method.retain).
+/// [term]: ../enum.Term.html
+///
 pub trait GraphNameMatcher {
     type TermData: TermData;
-    /// If this matcher matches only one graph name (possibly None for the default graph),
-    /// return it, else `None`.
+    /// If this matcher matches only one graph name, return it, else `None`.
+    ///
+    /// NB: a graph name is already an `Option`, `None` meaning the (unnamed) default graph.
+    /// As a consequence, this methods returns *an option of option* :
+    /// * `None` means that the matcher does *not* match a single graph name,
+    /// * `Some(None)` means that the matcher matches only the default graph,
+    /// * `Some(Some(term))` means that the matcher matches a single proper graph name.
     #[allow(clippy::option_option)]
     fn constant(&self) -> Option<Option<&Term<Self::TermData>>>;
 
-    /// Check whether this matcher matches `t`.
+    /// Check whether this matcher matches `g`.
     fn matches<T>(&self, g: Option<&Term<T>>) -> bool
     where
         T: TermData;

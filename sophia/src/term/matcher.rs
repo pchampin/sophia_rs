@@ -1,15 +1,19 @@
-//! A term-matcher is something that can be used
-//! to discriminate members of a set of terms.
+//! This crate defines generic traits and default implementations for *matchers*,
+//! objects that can be used to match zero, one or several terms.
 //!
-//! See [`Graph::triples_matching`](../../graph/trait.Graph.html#method.triples_matching),
+//! For usage of matchers, see for example
+//! [`Graph::triples_matching`](../../graph/trait.Graph.html#method.triples_matching),
 //! [`MutableGraph::remove_matching`](../../graph/trait.MutableGraph.html#method.remove_matching),
-//! [`MutableGraph::retain`](../../graph/trait.MutableGraph.html#method.retain).
+//! [`MutableGraph::retain`](../../graph/trait.MutableGraph.html#method.retain),
+//! [`Dataset::quads_matching`](../../dataset/trait.Dataset.html#method.quads_matching),
+//! [`MutableDataset::remove_matching`](../../dataset/trait.MutableDataset.html#method.remove_matching),
+//! [`MutableDataset::retain`](../../dataset/trait.MutableDataset.html#method.retain).
 
 use super::*;
 
 pub use super::_graph_name_matcher::*;
 
-/// Anything that matches a [term] or a set of [term]s.
+/// Generic trait for matching [term]s.
 ///
 /// [term]: ../enum.Term.html
 ///
@@ -27,6 +31,7 @@ pub trait TermMatcher {
 /// A universal matcher: it matches any term or graph name (even the default graph).
 pub const ANY: AnyTerm = AnyTerm {};
 
+/// The type of the [`ANY`](constant.ANY.html) singleton matcher.
 pub struct AnyTerm {}
 
 impl TermMatcher for AnyTerm {

@@ -34,8 +34,13 @@ pub trait IndexedDataset {
     /// Return the term for the given index, if it exists.
     fn get_term(&self, i: Self::Index) -> Option<&Term<Self::TermData>>;
 
-    /// Return the graph name (possibly None for the default graph)
-    /// for the given index, if it exists
+    /// Return the graph name for the given index, if it exists
+    ///
+    /// NB: a graph name is already an `Option`, `None` meaning the (unnamed) default graph.
+    /// As a consequence, this methods returns *an option of option* :
+    /// * `None` means that given index is *not* associated to any graph name,
+    /// * `Some(None)` means that the given index is associated to the default graph,
+    /// * `Some(Some(term))` means that given index is associetd to a proper graph name.
     #[allow(clippy::option_option)]
     fn get_graph_name(&self, i: Self::Index) -> Option<Option<&Term<Self::TermData>>>;
 
