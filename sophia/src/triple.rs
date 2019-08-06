@@ -125,8 +125,8 @@ impl<'a, T: Triple<'a>> Quad<'a> for TripleAsQuad<T> {
         self.0.o()
     }
     #[inline]
-    fn g(&self) -> &GraphName<T::TermData> {
-        &None
+    fn g(&self) -> Option<&Term<T::TermData>> {
+        None
     }
 }
 
@@ -155,8 +155,8 @@ impl<'a, T: Triple<'a>> Quad<'a> for TripleAsQuadFrom<'a, T> {
         self.0.o()
     }
     #[inline]
-    fn g(&self) -> &GraphName<T::TermData> {
-        self.1.as_graph_id()
+    fn g(&self) -> Option<&Term<T::TermData>> {
+        Some(&self.1)
     }
 }
 

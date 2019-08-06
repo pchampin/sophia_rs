@@ -448,16 +448,6 @@ fn term_similar_but_not_eq() {
 }
 
 #[test]
-fn test_as_graph_id() {
-    use crate::term::GraphName;
-    assert_eq!(
-        std::mem::size_of::<BoxTerm>(),
-        std::mem::size_of::<GraphName<Box<str>>>(),
-    );
-    // this guarantees that the implementation of as_graph_id() is indeed safe
-}
-
-#[test]
 fn convert() {
     let t1 = StaticTerm::new_iri("http://champin.net/#pa").unwrap();
     let t2 = BoxTerm::from(&t1);

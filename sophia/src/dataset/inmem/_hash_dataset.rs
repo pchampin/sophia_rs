@@ -69,11 +69,11 @@ where
     }
 
     #[inline]
-    fn get_index_for_graph_id<T>(&self, g: &GraphName<T>) -> Option<Self::Index>
+    fn get_index_for_graph_id<T>(&self, g: Option<&Term<T>>) -> Option<Self::Index>
     where
         T: TermData,
     {
-        self.terms.get_index_for_graph_id(&g.convert_graph_name())
+        self.terms.get_index_for_graph_id(g.map(|n| RefTerm::from(n)).as_ref())
     }
 
     #[inline]
@@ -82,7 +82,7 @@ where
     }
 
     #[inline]
-    fn get_graph_id(&self, i: Self::Index) -> Option<&GraphName<Self::TermData>> {
+    fn get_graph_id(&self, i: Self::Index) -> Option<Option<&Term<Self::TermData>>> {
         self.terms.get_graph_id(i)
     }
 
@@ -91,7 +91,7 @@ where
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphName<W>,
+        g: Option<&Term<W>>,
     ) -> Option<[I::Index; 4]>
     where
         T: TermData,
@@ -102,7 +102,7 @@ where
         let si = self.terms.make_index(&s.into());
         let pi = self.terms.make_index(&p.into());
         let oi = self.terms.make_index(&o.into());
-        let gi = self.terms.make_index_for_graph_id(&g.convert_graph_name());
+        let gi = self.terms.make_index_for_graph_id(g.map(|n| RefTerm::from(n)).as_ref());
         let modified = self.quads.insert([si, pi, oi, gi]);
         if modified {
             Some([si, pi, oi, gi])
@@ -120,7 +120,7 @@ where
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphName<W>,
+        g: Option<&Term<W>>,
     ) -> Option<[I::Index; 4]>
     where
         T: TermData,
@@ -160,7 +160,7 @@ where
 {
     type Quad = (
         [&'a Term<<Self as IndexedDataset>::TermData>; 3],
-        &'a GraphName<<Self as IndexedDataset>::TermData>,
+        Option<&'a Term<<Self as IndexedDataset>::TermData>>,
     );
     type Error = Never;
 

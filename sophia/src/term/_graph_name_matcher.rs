@@ -11,10 +11,10 @@ use crate::term::*;
 pub trait GraphNameMatcher {
     type TermData: TermData;
     /// If this matcher matches only one graph identifier, return it, else `None`.
-    fn constant(&self) -> Option<&GraphName<Self::TermData>>;
+    fn constant(&self) -> Option<Option<&Term<Self::TermData>>>;
 
     /// Check whether this matcher matches `t`.
-    fn matches<T>(&self, g: &GraphName<T>) -> bool
+    fn matches<T>(&self, g: Option<&Term<T>>) -> bool
     where
         T: TermData;
 }
@@ -22,10 +22,10 @@ pub trait GraphNameMatcher {
 impl GraphNameMatcher for crate::term::matcher::AnyTerm
 {
     type TermData = &'static str;
-    fn constant(&self) -> Option<&GraphName<Self::TermData>> {
+    fn constant(&self) -> Option<Option<&Term<Self::TermData>>> {
         None
     }
-    fn matches<T>(&self, _g: &GraphName<T>) -> bool
+    fn matches<T>(&self, _g: Option<&Term<T>>) -> bool
     where
         T: TermData,
     {
@@ -33,19 +33,35 @@ impl GraphNameMatcher for crate::term::matcher::AnyTerm
     }
 }
 
-impl<U> GraphNameMatcher for GraphName<U>
+impl<U> GraphNameMatcher for Option<&'_ Term<U>>
 where
     U: TermData,
 {
     type TermData = U;
-    fn constant(&self) -> Option<&GraphName<Self::TermData>> {
-        Some(self)
+    fn constant(&self) -> Option<Option<&Term<Self::TermData>>> {
+        Some(*self)
     }
-    fn matches<T>(&self, g: &GraphName<T>) -> bool
+    fn matches<T>(&self, g: Option<&Term<T>>) -> bool
     where
         T: TermData,
     {
-        g.same_graph_name(self)
+        same_graph_name(*self, g)
+    }
+}
+
+impl<U> GraphNameMatcher for Option<Term<U>>
+where
+    U: TermData,
+{
+    type TermData = U;
+    fn constant(&self) -> Option<Option<&Term<Self::TermData>>> {
+        Some(self.as_ref())
+    }
+    fn matches<T>(&self, g: Option<&Term<T>>) -> bool
+    where
+        T: TermData,
+    {
+        same_graph_name(self.as_ref(), g)
     }
 }
 
@@ -54,14 +70,14 @@ where
     U: TermData,
 {
     type TermData = U;
-    fn constant(&self) -> Option<&GraphName<Self::TermData>> {
-        Some(self.as_graph_id())
+    fn constant(&self) -> Option<Option<&Term<Self::TermData>>> {
+        Some(Some(self))
     }
-    fn matches<T>(&self, g: &GraphName<T>) -> bool
+    fn matches<T>(&self, g: Option<&Term<T>>) -> bool
     where
         T: TermData,
     {
-        g.same_graph_name(self.as_graph_id())
+        same_graph_name(Some(self), g)
     }
 }
 
@@ -70,14 +86,14 @@ where
     M: GraphNameMatcher,
 {
     type TermData = M::TermData;
-    fn constant(&self) -> Option<&GraphName<Self::TermData>> {
+    fn constant(&self) -> Option<Option<&Term<Self::TermData>>> {
         if self.len() == 1 {
             self[0].constant()
         } else {
             None
         }
     }
-    fn matches<T>(&self, g: &GraphName<T>) -> bool
+    fn matches<T>(&self, g: Option<&Term<T>>) -> bool
     where
         T: TermData,
     {
@@ -98,14 +114,14 @@ where
     M: GraphNameMatcher,
 {
     type TermData = M::TermData;
-    fn constant(&self) -> Option<&GraphName<Self::TermData>> {
+    fn constant(&self) -> Option<Option<&Term<Self::TermData>>> {
         if self.len() == 1 {
             self[0].constant()
         } else {
             None
         }
     }
-    fn matches<T>(&self, g: &GraphName<T>) -> bool
+    fn matches<T>(&self, g: Option<&Term<T>>) -> bool
     where
         T: TermData,
     {
@@ -118,44 +134,56 @@ where
     }
 }
 
-impl<F: Fn(&GraphName<&str>) -> bool> GraphNameMatcher for F {
+impl<F: Fn(Option<&Term<&str>>) -> bool> GraphNameMatcher for F {
     type TermData = &'static str;
-    fn constant(&self) -> Option<&GraphName<Self::TermData>> {
+    fn constant(&self) -> Option<Option<&Term<Self::TermData>>> {
         None
     }
-    fn matches<T>(&self, t: &GraphName<T>) -> bool
+    fn matches<T>(&self, g: Option<&Term<T>>) -> bool
     where
         T: TermData,
     {
-        match t {
-            None => (self)(&None),
-            Some(n) => {
-                let n = RefTerm::from(n);
-                (self)(n.as_graph_id())
-            }
-        }
+        (self)(g.map(|n| RefTerm::from(n)).as_ref())
     }
 }
 
 #[cfg(test)]
 mod test {
-    use super::*;
 
+    use super::*;
     #[test]
-    fn test_graph_id_as_matcher() {
+    fn test_option_ref_term_as_matcher() {
         let m = Some(BoxTerm::new_iri("http://champin.net/#pa").unwrap());
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
-        let n0: GraphName<&str> = None;
+        let n0: Option<RcTerm> = None;
         let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
         let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphNameMatcher::constant(&m);
         assert!(mc.is_some());
-        assert!(mc.unwrap().same_graph_name(&n1));
-        assert!(!m.matches(&n0));
-        assert!(m.matches(&n1));
-        assert!(!m.matches(&n2));
+        assert!(same_graph_name(mc.unwrap(), n1.as_ref()));
+        assert!(!m.matches(n0.as_ref()));
+        assert!(m.matches(n1.as_ref()));
+        assert!(!m.matches(n2.as_ref()));
+    }
+
+
+    #[test]
+    fn test_option_term_as_matcher() {
+        let m = Some(BoxTerm::new_iri("http://champin.net/#pa").unwrap());
+        // comparing to a term using a different term data, and differently cut,
+        // to make the test less obvious
+        let n0: Option<RcTerm> = None;
+        let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
+        let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
+
+        let mc = GraphNameMatcher::constant(&m);
+        assert!(mc.is_some());
+        assert!(same_graph_name(mc.unwrap(), n1.as_ref()));
+        assert!(!m.matches(n0.as_ref()));
+        assert!(m.matches(n1.as_ref()));
+        assert!(!m.matches(n2.as_ref()));
     }
 
     #[test]
@@ -163,16 +191,16 @@ mod test {
         let m = BoxTerm::new_iri("http://champin.net/#pa").unwrap();
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
-        let n0: GraphName<&str> = None;
+        let n0: Option<RcTerm> = None;
         let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
         let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphNameMatcher::constant(&m);
         assert!(mc.is_some());
-        assert!(mc.unwrap().same_graph_name(&n1));
-        assert!(!m.matches(&n0));
-        assert!(m.matches(&n1));
-        assert!(!m.matches(&n2));
+        assert!(same_graph_name(mc.unwrap(), n1.as_ref()));
+        assert!(!m.matches(n0.as_ref()));
+        assert!(m.matches(n1.as_ref()));
+        assert!(!m.matches(n2.as_ref()));
     }
 
     #[test]
@@ -180,15 +208,15 @@ mod test {
         let m = crate::term::matcher::ANY;
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
-        let n0: GraphName<&str> = None;
+        let n0: Option<RcTerm> = None;
         let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
         let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphNameMatcher::constant(&m);
         assert!(mc.is_none());
-        assert!(m.matches(&n0));
-        assert!(m.matches(&n1));
-        assert!(m.matches(&n2));
+        assert!(m.matches(n0.as_ref()));
+        assert!(m.matches(n1.as_ref()));
+        assert!(m.matches(n2.as_ref()));
     }
 
     #[test]
@@ -198,16 +226,16 @@ mod test {
         )];
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
-        let n0: GraphName<&str> = None;
+        let n0: Option<RcTerm> = None;
         let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
         let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphNameMatcher::constant(&m[..]);
         assert!(mc.is_some());
-        assert!(mc.unwrap().same_graph_name(&n1));
-        assert!(!m.matches(&n0));
-        assert!(m.matches(&n1));
-        assert!(!m.matches(&n2));
+        assert!(same_graph_name(mc.unwrap(), n1.as_ref()));
+        assert!(!m.matches(n0.as_ref()));
+        assert!(m.matches(n1.as_ref()));
+        assert!(!m.matches(n2.as_ref()));
     }
 
     #[test]
@@ -218,48 +246,48 @@ mod test {
         ];
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
-        let n0: GraphName<&str> = None;
+        let n0: Option<RcTerm> = None;
         let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
         let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphNameMatcher::constant(&m[..]);
         assert!(mc.is_none());
-        assert!(m.matches(&n0));
-        assert!(m.matches(&n1));
-        assert!(!m.matches(&n2));
+        assert!(m.matches(n0.as_ref()));
+        assert!(m.matches(n1.as_ref()));
+        assert!(!m.matches(n2.as_ref()));
     }
 
     #[test]
     fn test_vec0_as_matcher() {
-        let m: Vec<GraphName<Box<str>>> = vec![];
+        let m: Vec<Option<BoxTerm>> = vec![];
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
-        let n0: GraphName<&str> = None;
+        let n0: Option<RcTerm> = None;
         let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
         let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphNameMatcher::constant(&m[..]);
         assert!(mc.is_none());
-        assert!(!m.matches(&n0));
-        assert!(!m.matches(&n1));
-        assert!(!m.matches(&n2));
+        assert!(!m.matches(n0.as_ref()));
+        assert!(!m.matches(n1.as_ref()));
+        assert!(!m.matches(n2.as_ref()));
     }
 
     #[test]
     fn test_func_as_matcher() {
-        let m = |t: &GraphName<&str>| match t {
+        let m = |t: Option<&Term<&str>>| match t {
             None => false,
             Some(t) => t.value().starts_with("http://champin"),
         };
 
-        let n0: GraphName<&str> = None;
+        let n0: Option<RcTerm> = None;
         let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
         let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphNameMatcher::constant(&m);
         assert!(mc.is_none());
-        assert!(!m.matches(&n0));
-        assert!(m.matches(&n1));
-        assert!(!m.matches(&n2));
+        assert!(!m.matches(n0.as_ref()));
+        assert!(m.matches(n1.as_ref()));
+        assert!(!m.matches(n2.as_ref()));
     }
 }

@@ -4,8 +4,6 @@
 //!
 //! They are the individual statements of an RDF `dataset`(../dataset/index.html).
 
-use std::borrow::Borrow;
-
 use crate::term::*;
 use crate::triple::*;
 
@@ -22,7 +20,7 @@ pub trait Quad<'a> {
     /// The object of this quad.
     fn o(&self) -> &Term<<Self as Quad<'a>>::TermData>;
     /// The graph identifier (either a graph name or "default graph") of this quad.
-    fn g(&self) -> &GraphName<<Self as Quad<'a>>::TermData>;
+    fn g(&self) -> Option<&Term<<Self as Quad<'a>>::TermData>>;
 
     /// [`Triple`](../triple/trait.Triple.html) adapter owning this quad.
     fn as_triple(self) -> QuadAsTriple<Self>
@@ -51,8 +49,8 @@ where
         &self[2]
     }
     #[inline]
-    fn g(&self) -> &GraphName<T> {
-        self[3].as_graph_id()
+    fn g(&self) -> Option<&Term<T>> {
+        Some(&self[3])
     }
 }
 
@@ -74,15 +72,14 @@ where
         self[2]
     }
     #[inline]
-    fn g(&self) -> &GraphName<T> {
-        self[3].as_graph_id()
+    fn g(&self) -> Option<&Term<T>> {
+        Some(self[3])
     }
 }
 
-impl<'a, T, G> Quad<'a> for (T, G)
+impl<'a, T> Quad<'a> for (T, Option<Term<T::TermData>>)
 where
     T: Triple<'a>,
-    G: Borrow<GraphName<T::TermData>>,
 {
     type TermData = T::TermData;
     #[inline]
@@ -98,8 +95,31 @@ where
         &self.0.o()
     }
     #[inline]
-    fn g(&self) -> &GraphName<T::TermData> {
-        self.1.borrow()
+    fn g(&self) -> Option<&Term<T::TermData>> {
+        self.1.as_ref()
+    }
+}
+
+impl<'a, T> Quad<'a> for (T, Option<&'a Term<T::TermData>>)
+where
+    T: Triple<'a>,
+{
+    type TermData = T::TermData;
+    #[inline]
+    fn s(&self) -> &Term<T::TermData> {
+        &self.0.s()
+    }
+    #[inline]
+    fn p(&self) -> &Term<T::TermData> {
+        &self.0.p()
+    }
+    #[inline]
+    fn o(&self) -> &Term<T::TermData> {
+        &self.0.o()
+    }
+    #[inline]
+    fn g(&self) -> Option<&Term<T::TermData>> {
+        self.1
     }
 }
 
@@ -121,7 +141,7 @@ where
         (*self).o()
     }
     #[inline]
-    fn g(&self) -> &GraphName<<Q as Quad<'a>>::TermData> {
+    fn g(&self) -> Option<&Term<<Q as Quad<'a>>::TermData>> {
         (*self).g()
     }
 }

@@ -27,7 +27,7 @@ pub trait IndexedDataset {
         T: TermData;
 
     /// Return the index for the given graph identifier, if it exists.
-    fn get_index_for_graph_id<T>(&self, g: &GraphName<T>) -> Option<Self::Index>
+    fn get_index_for_graph_id<T>(&self, g: Option<&Term<T>>) -> Option<Self::Index>
     where
         T: TermData;
 
@@ -35,7 +35,7 @@ pub trait IndexedDataset {
     fn get_term(&self, i: Self::Index) -> Option<&Term<Self::TermData>>;
 
     /// Return the graph identifier for the given index, if it exists
-    fn get_graph_id(&self, i: Self::Index) -> Option<&GraphName<Self::TermData>>;
+    fn get_graph_id(&self, i: Self::Index) -> Option<Option<&Term<Self::TermData>>>;
 
     /// Insert a triple in this Dataset,
     /// and return the corresponding tuple of indices.
@@ -44,7 +44,7 @@ pub trait IndexedDataset {
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphName<W>,
+        g: Option<&Term<W>>,
     ) -> Option<[Self::Index; 4]>
     where
         T: TermData,
@@ -59,7 +59,7 @@ pub trait IndexedDataset {
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphName<W>,
+        g: Option<&Term<W>>,
     ) -> Option<[Self::Index; 4]>
     where
         T: TermData,
@@ -84,7 +84,7 @@ macro_rules! impl_mutable_dataset_for_indexed_dataset {
     () => {
         type MutationError = coercible_errors::Never;
 
-        fn insert<T_, U_, V_, W_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>, g: &GraphName<W_>) -> MDResult< Self, bool> where
+        fn insert<T_, U_, V_, W_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>, g: Option<&Term<W_>>) -> MDResult< Self, bool> where
             T_: $crate::term::TermData,
             U_: $crate::term::TermData,
             V_: $crate::term::TermData,
@@ -92,7 +92,7 @@ macro_rules! impl_mutable_dataset_for_indexed_dataset {
         {
             Ok(self.insert_indexed(s, p, o, g).is_some())
         }
-        fn remove<T_, U_, V_, W_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>, g: &GraphName<W_>) -> MDResult< Self, bool> where
+        fn remove<T_, U_, V_, W_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>, g: Option<&Term<W_>>) -> MDResult< Self, bool> where
             T_: $crate::term::TermData,
             U_: $crate::term::TermData,
             V_: $crate::term::TermData,

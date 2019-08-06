@@ -85,11 +85,11 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given graph identifier.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_g<T>(&'a self, g: &'a GraphName<T>) -> DQuadSource<'a, Self>
+    fn quads_with_g<T>(&'a self, g: Option<&'a Term<T>>) -> DQuadSource<'a, Self>
     where
         T: TermData,
     {
-        Box::new(self.quads().filter_ok(move |q| q.g().same_graph_name(g)))
+        Box::new(self.quads().filter_ok(move |q| same_graph_name(q.g(), g)))
     }
     /// An iterator visiting add quads with the given subject and predicate.
     ///
@@ -114,7 +114,7 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given subject and graph identifier.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_sg<T, U>(&'a self, s: &'a Term<T>, g: &'a GraphName<U>) -> DQuadSource<'a, Self>
+    fn quads_with_sg<T, U>(&'a self, s: &'a Term<T>, g: Option<&'a Term<U>>) -> DQuadSource<'a, Self>
     where
         T: TermData,
         U: TermData,
@@ -134,7 +134,7 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given predicate and graph identifier.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_pg<T, U>(&'a self, p: &'a Term<T>, g: &'a GraphName<U>) -> DQuadSource<'a, Self>
+    fn quads_with_pg<T, U>(&'a self, p: &'a Term<T>, g: Option<&'a Term<U>>) -> DQuadSource<'a, Self>
     where
         T: TermData,
         U: TermData,
@@ -144,7 +144,7 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given object and graph identifier.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_og<T, U>(&'a self, o: &'a Term<T>, g: &'a GraphName<U>) -> DQuadSource<'a, Self>
+    fn quads_with_og<T, U>(&'a self, o: &'a Term<T>, g: Option<&'a Term<U>>) -> DQuadSource<'a, Self>
     where
         T: TermData,
         U: TermData,
@@ -174,7 +174,7 @@ pub trait Dataset<'a> {
         &'a self,
         s: &'a Term<T>,
         p: &'a Term<U>,
-        g: &'a GraphName<V>,
+        g: Option<&'a Term<V>>,
     ) -> DQuadSource<'a, Self>
     where
         T: TermData,
@@ -190,7 +190,7 @@ pub trait Dataset<'a> {
         &'a self,
         s: &'a Term<T>,
         o: &'a Term<U>,
-        g: &'a GraphName<V>,
+        g: Option<&'a Term<V>>,
     ) -> DQuadSource<'a, Self>
     where
         T: TermData,
@@ -206,7 +206,7 @@ pub trait Dataset<'a> {
         &'a self,
         p: &'a Term<T>,
         o: &'a Term<U>,
-        g: &'a GraphName<V>,
+        g: Option<&'a Term<V>>,
     ) -> DQuadSource<'a, Self>
     where
         T: TermData,
@@ -223,7 +223,7 @@ pub trait Dataset<'a> {
         s: &'a Term<T>,
         p: &'a Term<U>,
         o: &'a Term<V>,
-        g: &'a GraphName<W>,
+        g: Option<&'a Term<W>>,
     ) -> DQuadSource<'a, Self>
     where
         T: TermData,
@@ -240,7 +240,7 @@ pub trait Dataset<'a> {
         s: &'a Term<T>,
         p: &'a Term<U>,
         o: &'a Term<V>,
-        g: &'a GraphName<W>,
+        g: Option<&'a Term<W>>,
     ) -> DResult<'a, Self, bool>
     where
         T: TermData,
@@ -481,13 +481,13 @@ pub trait Dataset<'a> {
     }
 
     /// Borrows one of the graphs of this dataset
-    fn graph<T>(&self, graph_id: &GraphName<T>) -> DatasetGraph<Self, &Self, GraphName<Box<str>>>
+    fn graph<T>(&self, graph_id: Option<&Term<T>>) -> DatasetGraph<Self, &Self, Option<BoxTerm>>
     where
         T: TermData,
     {
         DatasetGraph {
             dataset: self,
-            gmatcher: graph_id.convert_graph_name(),
+            gmatcher: graph_id.map(|n| n.into()),
             _phantom: PhantomData,
         }
     }
@@ -495,14 +495,14 @@ pub trait Dataset<'a> {
     /// Borrows mutably one of the graphs of this dataset
     fn graph_mut<T>(
         &mut self,
-        graph_id: &GraphName<T>,
-    ) -> DatasetGraph<Self, &mut Self, GraphName<Box<str>>>
+        graph_id: Option<&Term<T>>,
+    ) -> DatasetGraph<Self, &mut Self, Option<BoxTerm>>
     where
         T: TermData,
     {
         DatasetGraph {
             dataset: self,
-            gmatcher: graph_id.convert_graph_name(),
+            gmatcher: graph_id.map(|n| n.into()),
             _phantom: PhantomData,
         }
     }
@@ -548,7 +548,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphName<W>,
+        g: Option<&Term<W>>,
     ) -> MDResult<Self, bool>
     where
         T: TermData,
@@ -569,7 +569,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphName<W>,
+        g: Option<&Term<W>>,
     ) -> MDResult<Self, bool>
     where
         T: TermData,
@@ -654,7 +654,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
                         BoxTerm::from(q.p()),
                         BoxTerm::from(q.o()),
                     ],
-                    q.g().convert_graph_name(),
+                    q.g().map(|n| BoxTerm::from(n))
                 )
             })
             .collect::<std::result::Result<_, _>>()
@@ -698,7 +698,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
                         BoxTerm::from(q.p()),
                         BoxTerm::from(q.o()),
                     ],
-                    q.g().convert_graph_name()
+                    q.g().map(|n| BoxTerm::from(n))
                 )
             })
             .collect::<std::result::Result<_, _>>()

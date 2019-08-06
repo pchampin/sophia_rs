@@ -13,7 +13,7 @@ use crate::graph::indexed::*;
 /// it overrides the methods that can efficiently be implemented using this index.
 ///
 /// Since it must be able to produce quads instead of the underlying datasets,
-/// it is limited to wrapping datasets whose quads are `([&Term<H>;3], &GraphName<H>)`.
+/// it is limited to wrapping datasets whose quads are `([&Term<H>;3], Option<&Term<H>>)`.
 ///
 #[derive(Default)]
 pub struct GspoWrapper<T>
@@ -36,7 +36,7 @@ where
     }
 }
 
-type MyQuad<'a, T> = ([&'a Term<T>; 3], &'a GraphName<T>);
+type MyQuad<'a, T> = ([&'a Term<T>; 3], Option<&'a Term<T>>);
 
 impl<'a, T> DatasetWrapper<'a> for GspoWrapper<T>
 where
@@ -52,7 +52,7 @@ where
         &mut self.wrapped
     }
 
-    fn dw_quads_with_g<U>(&'a self, g: &'a GraphName<U>) -> DQuadSource<'a, Self::Wrapped>
+    fn dw_quads_with_g<U>(&'a self, g: Option<&'a Term<U>>) -> DQuadSource<'a, Self::Wrapped>
     where
         U: TermData,
     {
@@ -79,7 +79,7 @@ where
     fn dw_quads_with_sg<U, V>(
         &'a self,
         s: &'a Term<U>,
-        g: &'a GraphName<V>,
+        g: Option<&'a Term<V>>,
     ) -> DQuadSource<'a, Self::Wrapped>
     where
         U: TermData,
@@ -108,7 +108,7 @@ where
         &'a self,
         s: &'a Term<U>,
         p: &'a Term<V>,
-        g: &'a GraphName<W>,
+        g: Option<&'a Term<W>>,
     ) -> DQuadSource<'a, Self::Wrapped>
     where
         U: TermData,

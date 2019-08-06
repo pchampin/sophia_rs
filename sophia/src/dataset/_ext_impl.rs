@@ -47,7 +47,7 @@ impl MutableDataset for Vec<([BoxTerm; 3], Option<BoxTerm>)> where {
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphName<W>,
+        g: Option<&Term<W>>,
     ) -> MDResult<Self, bool>
     where
         T: TermData,
@@ -58,7 +58,7 @@ impl MutableDataset for Vec<([BoxTerm; 3], Option<BoxTerm>)> where {
         let s = s.into();
         let p = p.into();
         let o = o.into();
-        let g = g.convert_graph_name();
+        let g = g.map(|n| n.into());
         self.push(([s, p, o], g));
         Ok(true)
     }
@@ -67,7 +67,7 @@ impl MutableDataset for Vec<([BoxTerm; 3], Option<BoxTerm>)> where {
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphName<W>,
+        g: Option<&Term<W>>,
     ) -> MDResult<Self, bool>
     where
         T: TermData,
@@ -78,7 +78,7 @@ impl MutableDataset for Vec<([BoxTerm; 3], Option<BoxTerm>)> where {
         let item = self
             .quads()
             .oks()
-            .position(|q| s == q.s() && p == q.p() && o == q.o() && g.same_graph_name(q.g()));
+            .position(|q| s == q.s() && p == q.p() && o == q.o() && same_graph_name(g, q.g()));
         if let Some(i) = item {
             self.swap_remove(i);
             Ok(true)
@@ -109,7 +109,7 @@ impl<S: ::std::hash::BuildHasher> MutableDataset for HashSet<([BoxTerm; 3], Opti
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphName<W>,
+        g: Option<&Term<W>>,
     ) -> MDResult<Self, bool>
     where
         T: TermData,
@@ -120,7 +120,7 @@ impl<S: ::std::hash::BuildHasher> MutableDataset for HashSet<([BoxTerm; 3], Opti
         let s = s.into();
         let p = p.into();
         let o = o.into();
-        let g = g.convert_graph_name();
+        let g = g.map(|n| n.into());
         Ok(HashSet::insert(self, ([s, p, o], g)))
     }
     fn remove<T, U, V, W>(
@@ -128,7 +128,7 @@ impl<S: ::std::hash::BuildHasher> MutableDataset for HashSet<([BoxTerm; 3], Opti
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphName<W>,
+        g: Option<&Term<W>>,
     ) -> MDResult<Self, bool>
     where
         T: TermData,
@@ -139,7 +139,7 @@ impl<S: ::std::hash::BuildHasher> MutableDataset for HashSet<([BoxTerm; 3], Opti
         let s = s.into();
         let p = p.into();
         let o = o.into();
-        let g = g.convert_graph_name();
+        let g = g.map(|n| n.into());
         Ok(HashSet::remove(self, &([s, p, o], g)))
     }
 }
@@ -164,19 +164,19 @@ mod test {
         let d = [
             ([rdf::type_, rdf::type_, rdf::Property], None),
             ([rdf::Property, rdf::type_, rdfs::Class], None),
-            ([rdfs::Class, rdf::type_, rdfs::Class], gn.clone()),
+            ([rdfs::Class, rdf::type_, rdfs::Class], gn.as_ref()),
         ];
         let len = d.quads().oks().count();
         assert_eq!(len, 3);
         let len = d.quads_with_o(&rdfs::Class).oks().count();
         assert_eq!(len, 2);
-        let len = d.quads_with_g(&gn).oks().count();
+        let len = d.quads_with_g(gn.as_ref()).oks().count();
         assert_eq!(len, 1);
     }
 
-    type VecAsDataset = Vec<([BoxTerm; 3], GraphName<Box<str>>)>;
+    type VecAsDataset = Vec<([BoxTerm; 3], Option<BoxTerm>)>;
     test_dataset_impl!(vec, VecAsDataset, false);
 
-    type HashSetAsDataset = HashSet<([BoxTerm; 3], GraphName<Box<str>>)>;
+    type HashSetAsDataset = HashSet<([BoxTerm; 3], Option<BoxTerm>)>;
     test_dataset_impl!(hashset, HashSetAsDataset);
 }

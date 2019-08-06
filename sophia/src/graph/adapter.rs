@@ -62,7 +62,7 @@ where
         Box::new(self.0.borrow().triples_with_o(o).map_ok(Triple::as_quad))
     }
     #[inline]
-    fn quads_with_g<T>(&'a self, g: &'a GraphName<T>) -> DQuadSource<'a, Self>
+    fn quads_with_g<T>(&'a self, g: Option<&'a Term<T>>) -> DQuadSource<'a, Self>
     where
         T: TermData,
     {
@@ -98,7 +98,7 @@ where
         )
     }
     #[inline]
-    fn quads_with_sg<T, U>(&'a self, s: &'a Term<T>, g: &'a GraphName<U>) -> DQuadSource<'a, Self>
+    fn quads_with_sg<T, U>(&'a self, s: &'a Term<T>, g: Option<&'a Term<U>>) -> DQuadSource<'a, Self>
     where
         T: TermData,
         U: TermData,
@@ -122,7 +122,7 @@ where
         )
     }
     #[inline]
-    fn quads_with_pg<T, U>(&'a self, p: &'a Term<T>, g: &'a GraphName<U>) -> DQuadSource<'a, Self>
+    fn quads_with_pg<T, U>(&'a self, p: &'a Term<T>, g: Option<&'a Term<U>>) -> DQuadSource<'a, Self>
     where
         T: TermData,
         U: TermData,
@@ -133,7 +133,7 @@ where
         self.quads_with_p(p)
     }
     #[inline]
-    fn quads_with_og<T, U>(&'a self, o: &'a Term<T>, g: &'a GraphName<U>) -> DQuadSource<'a, Self>
+    fn quads_with_og<T, U>(&'a self, o: &'a Term<T>, g: Option<&'a Term<U>>) -> DQuadSource<'a, Self>
     where
         T: TermData,
         U: TermData,
@@ -167,7 +167,7 @@ where
         &'a self,
         s: &'a Term<T>,
         p: &'a Term<U>,
-        g: &'a GraphName<V>,
+        g: Option<&'a Term<V>>,
     ) -> DQuadSource<'a, Self>
     where
         T: TermData,
@@ -184,7 +184,7 @@ where
         &'a self,
         s: &'a Term<T>,
         o: &'a Term<U>,
-        g: &'a GraphName<V>,
+        g: Option<&'a Term<V>>,
     ) -> DQuadSource<'a, Self>
     where
         T: TermData,
@@ -201,7 +201,7 @@ where
         &'a self,
         p: &'a Term<T>,
         o: &'a Term<U>,
-        g: &'a GraphName<V>,
+        g: Option<&'a Term<V>>,
     ) -> DQuadSource<'a, Self>
     where
         T: TermData,
@@ -219,7 +219,7 @@ where
         s: &'a Term<T>,
         p: &'a Term<U>,
         o: &'a Term<V>,
-        g: &'a GraphName<W>,
+        g: Option<&'a Term<W>>,
     ) -> DQuadSource<'a, Self>
     where
         T: TermData,
@@ -239,7 +239,7 @@ where
         s: &'a Term<T>,
         p: &'a Term<U>,
         o: &'a Term<V>,
-        g: &'a GraphName<W>,
+        g: Option<&'a Term<W>>,
     ) -> DResult<'a, Self, bool>
     where
         T: TermData,
@@ -299,7 +299,7 @@ where
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphName<W>,
+        g: Option<&Term<W>>,
     ) -> MDResult<Self, bool>
     where
         T: TermData,
@@ -318,7 +318,7 @@ where
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphName<W>,
+        g: Option<&Term<W>>,
     ) -> MDResult<Self, bool>
     where
         T: TermData,
@@ -347,9 +347,9 @@ mod test {
     use crate::graph::inmem::LightGraph;
     use crate::graph::{Graph, MutableGraph};
     use crate::ns::{rdf, rdfs};
-    use crate::term::GraphName;
+    use crate::term::StaticTerm;
 
-    const DG: GraphName<&'static str> = None;
+    const DG: Option<&'static StaticTerm> = None;
 
     #[test]
     fn test_borrow() -> Result<()> {
@@ -367,14 +367,14 @@ mod test {
 
         let mut d = g.borrow_mut_as_dataset();
         assert_eq!(d.quads().count(), 0);
-        d.insert(&rdfs::Resource, &rdf::type_, &rdfs::Class, &DG)?;
+        d.insert(&rdfs::Resource, &rdf::type_, &rdfs::Class, DG)?;
         assert_eq!(d.quads().count(), 1);
         // borrow stops here
         assert_eq!(g.len(), 1);
 
         let mut d = g.borrow_mut_as_dataset();
         assert_eq!(d.quads().count(), 1);
-        d.remove(&rdfs::Resource, &rdf::type_, &rdfs::Class, &DG)?;
+        d.remove(&rdfs::Resource, &rdf::type_, &rdfs::Class, DG)?;
         assert_eq!(d.quads().count(), 0);
         // borrow stops here
         assert_eq!(g.len(), 0);
@@ -387,7 +387,7 @@ mod test {
 
         let mut d = g.as_dataset();
         assert_eq!(d.quads().count(), 0);
-        d.insert(&rdfs::Resource, &rdf::type_, &rdfs::Class, &DG)?;
+        d.insert(&rdfs::Resource, &rdf::type_, &rdfs::Class, DG)?;
         assert_eq!(d.quads().count(), 1);
 
         let g = d.unwrap();
@@ -395,7 +395,7 @@ mod test {
 
         let mut d = g.as_dataset();
         assert_eq!(d.quads().count(), 1);
-        d.remove(&rdfs::Resource, &rdf::type_, &rdfs::Class, &DG)?;
+        d.remove(&rdfs::Resource, &rdf::type_, &rdfs::Class, DG)?;
         assert_eq!(d.quads().count(), 0);
 
         let g = d.unwrap();
@@ -412,7 +412,7 @@ mod test {
             &rdfs::Class,
             &rdfs::subClassOf,
             &rdfs::Resource,
-            &rdfs::Class.as_graph_id(),
+            Some(&rdfs::Class),
         );
         assert!(ret.is_err());
     }

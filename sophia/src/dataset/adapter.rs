@@ -9,7 +9,7 @@ use crate::dataset::{Dataset, MutableDataset, SetDataset};
 use crate::graph::*;
 use crate::quad::{Quad, QuadAsTriple};
 use crate::term::matcher::{GraphNameMatcher, ANY};
-use crate::term::{GraphName, Term, TermData};
+use crate::term::{Term, TermData};
 
 /// The adapter returned by
 /// [`Dataset::union_graph`](../trait.Dataset.html#method.union_graph)
@@ -125,7 +125,7 @@ where
     }
 }
 
-impl<D, E, F> MutableGraph for DatasetGraph<D, E, GraphName<F>>
+impl<D, E, F> MutableGraph for DatasetGraph<D, E, Option<Term<F>>>
 where
     D: MutableDataset,
     E: BorrowMut<D>,
@@ -139,7 +139,7 @@ where
         U: TermData,
         V: TermData,
     {
-        self.dataset.borrow_mut().insert(s, p, o, &self.gmatcher)
+        self.dataset.borrow_mut().insert(s, p, o, self.gmatcher.as_ref())
     }
 
     fn remove<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
@@ -148,11 +148,11 @@ where
         U: TermData,
         V: TermData,
     {
-        self.dataset.borrow_mut().remove(s, p, o, &self.gmatcher)
+        self.dataset.borrow_mut().remove(s, p, o, self.gmatcher.as_ref())
     }
 }
 
-impl<D, E, F> SetGraph for DatasetGraph<D, E, GraphName<F>>
+impl<D, E, F> SetGraph for DatasetGraph<D, E, Option<Term<F>>>
 where
     D: SetDataset,
     E: Borrow<D>,
@@ -171,9 +171,9 @@ pub(crate) mod test {
     use crate::dataset::test::*;
     use crate::dataset::MDResult;
     use crate::ns::rdfs;
-    use crate::term::GraphNameExt;
+    use crate::term::BoxTerm;
 
-    pub type LightDatasetGraph = DatasetGraph<LightDataset, LightDataset, GraphName<Box<str>>>;
+    pub type LightDatasetGraph = DatasetGraph<LightDataset, LightDataset, Option<BoxTerm>>;
 
     pub fn make_default_graph() -> LightDatasetGraph {
         DatasetGraph {
@@ -186,7 +186,7 @@ pub(crate) mod test {
     pub fn make_named_graph() -> LightDatasetGraph {
         DatasetGraph {
             dataset: LightDataset::new(),
-            gmatcher: Some(rdfs::Resource).convert_graph_name(),
+            gmatcher: Some(BoxTerm::from(&rdfs::Resource)),
             _phantom: PhantomData,
         }
     }
@@ -198,9 +198,9 @@ pub(crate) mod test {
     fn test_graph_default() -> MDResult<LightDataset, ()> {
         let mut d = LightDataset::new();
         populate(&mut d)?;
-        assert_eq!(d.graph(&DG).triples().count(), 4);
-        assert_eq!(d.graph(&GN1).triples().count(), 6);
-        assert_eq!(d.graph(&GN2).triples().count(), 7);
+        assert_eq!(d.graph(*DG).triples().count(), 4);
+        assert_eq!(d.graph(*GN1).triples().count(), 6);
+        assert_eq!(d.graph(*GN2).triples().count(), 7);
         assert_eq!(d.union_graph(ANY).triples().count(), 17);
         assert_eq!(
             d.union_graph(vec![DG.clone(), GN1.clone()])
@@ -209,7 +209,7 @@ pub(crate) mod test {
             10
         );
         assert_eq!(
-            d.union_graph(|x: &GraphName<&str>| (x == &*DG || x == &*GN2))
+            d.union_graph(|x: Option<&Term<&str>>| (x == *DG || x == *GN2))
                 .triples()
                 .count(),
             11
