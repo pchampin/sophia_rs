@@ -18,7 +18,7 @@ use super::common::*;
 use super::nt::{pair_to_term, PestNtqParser, Rule};
 use crate::error::*;
 use crate::quad::Quad;
-use crate::term::{graph_id::GraphId, Term};
+use crate::term::{GraphName, Term};
 
 /// N-Quads parser configuration.
 ///
@@ -36,7 +36,7 @@ pub struct Config {
 }
 
 type ParseStrResult<'a> =
-    Box<dyn Iterator<Item = Result<([Term<Cow<'a, str>>; 3], GraphId<Cow<'a, str>>)>> + 'a>;
+    Box<dyn Iterator<Item = Result<([Term<Cow<'a, str>>; 3], GraphName<Cow<'a, str>>)>> + 'a>;
 
 impl Config {
     #[inline]
@@ -121,7 +121,7 @@ rental! {
         #[rental(covariant)]
         pub struct NqQuad {
             line: String,
-            quad: ([Term<Cow<'line, str>>;3], GraphId<Cow<'line, str>>),
+            quad: ([Term<Cow<'line, str>>;3], GraphName<Cow<'line, str>>),
         }
     }
 }
@@ -137,14 +137,14 @@ impl<'a> Quad<'a> for NqQuad {
     fn o(&self) -> &Term<Cow<'a, str>> {
         unsafe { std::mem::transmute(self.suffix().o()) }
     }
-    fn g(&self) -> &GraphId<Cow<'a, str>> {
+    fn g(&self) -> &GraphName<Cow<'a, str>> {
         unsafe { std::mem::transmute(self.suffix().g()) }
     }
     // The compiler can not figure out the correct lifetime for self in the methods above,
     // so I use transmute() to force the cast.
 }
 
-type ResultQuad<'a> = StdResult<([Term<Cow<'a, str>>; 3], GraphId<Cow<'a, str>>), PestError<Rule>>;
+type ResultQuad<'a> = StdResult<([Term<Cow<'a, str>>; 3], GraphName<Cow<'a, str>>), PestError<Rule>>;
 
 fn parse_rule_from_line<'a>(config: &Config, rule: Rule, txt: &'a str) -> ResultQuad<'a> {
     let quad_pair = PestNtqParser::parse(rule, txt)?.next().unwrap();
@@ -177,7 +177,7 @@ mod test {
     use std::io;
     use std::path::Path;
 
-    type HashSetDataset = HashSet<([BoxTerm; 3], GraphId<Box<str>>)>;
+    type HashSetDataset = HashSet<([BoxTerm; 3], GraphName<Box<str>>)>;
 
     static STRICT: Config = Config { strict: true };
 

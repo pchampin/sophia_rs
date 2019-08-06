@@ -44,7 +44,6 @@ use regex::Regex;
 use crate::error::*;
 
 pub mod factory;
-pub mod graph_id;
 pub mod index_map;
 pub mod iri_rfc3987;
 use self::iri_rfc3987::ParsedIri;
@@ -56,7 +55,9 @@ mod _convert;
 pub use self::_convert::*;
 mod _iri_data;
 pub use self::_iri_data::*;
-mod _graph_id_matcher; // is 'pub use'd by module 'matcher'
+mod _graph_name;
+pub use _graph_name::*;
+mod _graph_name_matcher; // is 'pub use'd by module 'matcher'
 mod _literal_kind;
 pub use self::_literal_kind::*;
 
@@ -133,11 +134,11 @@ where
         crate::serializer::nt::stringify_term(self)
     }
 
-    /// Converts a `&Term` to a `&GraphId`.
+    /// Converts a `&Term` to a `&GraphName`.
     ///
     /// This conversion has 0 cost, since both types actually have the same size.
-    pub fn as_graph_id(&self) -> &self::graph_id::GraphId<T> {
-        unsafe { &*(self as *const Term<T> as *const self::graph_id::GraphId<T>) }
+    pub fn as_graph_id(&self) -> &GraphName<T> {
+        unsafe { &*(self as *const Term<T> as *const GraphName<T>) }
     }
 }
 

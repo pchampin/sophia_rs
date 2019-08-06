@@ -6,9 +6,8 @@ use crate::dataset::indexed::IndexedDataset;
 use crate::dataset::*;
 use crate::error::*;
 use crate::term::factory::TermFactory;
-use crate::term::graph_id::*;
 use crate::term::index_map::TermIndexMap;
-use crate::term::{Term, TermData};
+use crate::term::*;
 
 /// A generic implementation of [`Dataset`] and [`MutableDataset`],
 /// storing its terms in a [`TermIndexMap`],
@@ -70,7 +69,7 @@ where
     }
 
     #[inline]
-    fn get_index_for_graph_id<T>(&self, g: &GraphId<T>) -> Option<Self::Index>
+    fn get_index_for_graph_id<T>(&self, g: &GraphName<T>) -> Option<Self::Index>
     where
         T: TermData,
     {
@@ -83,7 +82,7 @@ where
     }
 
     #[inline]
-    fn get_graph_id(&self, i: Self::Index) -> Option<&GraphId<Self::TermData>> {
+    fn get_graph_id(&self, i: Self::Index) -> Option<&GraphName<Self::TermData>> {
         self.terms.get_graph_id(i)
     }
 
@@ -92,7 +91,7 @@ where
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphId<W>,
+        g: &GraphName<W>,
     ) -> Option<[I::Index; 4]>
     where
         T: TermData,
@@ -121,7 +120,7 @@ where
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphId<W>,
+        g: &GraphName<W>,
     ) -> Option<[I::Index; 4]>
     where
         T: TermData,
@@ -161,7 +160,7 @@ where
 {
     type Quad = (
         [&'a Term<<Self as IndexedDataset>::TermData>; 3],
-        &'a GraphId<<Self as IndexedDataset>::TermData>,
+        &'a GraphName<<Self as IndexedDataset>::TermData>,
     );
     type Error = Never;
 

@@ -7,7 +7,7 @@
 
 use super::*;
 
-pub use super::_graph_id_matcher::*;
+pub use super::_graph_name_matcher::*;
 
 /// Anything that matches a [term] or a set of [term]s.
 ///

@@ -20,7 +20,7 @@
 use super::_traits::*;
 use super::indexed::*;
 use crate::graph::inmem::TermIndexMapU;
-use crate::term::{factory::*, graph_id::GraphId, *};
+use crate::term::{factory::*, *};
 
 #[macro_use]
 mod _wrapper;

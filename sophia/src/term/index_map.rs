@@ -1,8 +1,7 @@
 //! A trait for bidirectional mappings between terms and *indexes* of a smaller type.
 
-use crate::term::factory::{FGraphId, FTerm, TermFactory};
-use crate::term::graph_id::GraphId;
-use crate::term::{RefTerm, Term};
+use crate::term::factory::{FGraphName, FTerm, TermFactory};
+use crate::term::{GraphName, RefTerm, Term};
 
 /// A bidirectionnal mapping between [`Term`]s and *indexes* of a smaller type.
 ///
@@ -13,7 +12,7 @@ use crate::term::{RefTerm, Term};
 /// and is used to represent [`None`].
 ///
 /// [`Term`]: ../../term/enum.Term.html
-/// [`None`]: ../../term/graph_id/enum.GraphId.html#variant.Default
+/// [`None`]: ../../term/graph_id/enum.GraphName.html#variant.Default
 ///
 pub trait TermIndexMap: Default {
     /// The type used to represent terms
@@ -40,21 +39,21 @@ pub trait TermIndexMap: Default {
     // The following methods have a default impl, and would generally not be overriden
 
     /// Return the index associated to the given graph identifier, if it exists.
-    fn get_index_for_graph_id(&self, g: &GraphId<&str>) -> Option<Self::Index> {
+    fn get_index_for_graph_id(&self, g: &GraphName<&str>) -> Option<Self::Index> {
         match g {
             None => Some(Self::NULL_INDEX),
             Some(t) => self.get_index(t),
         }
     }
     /// Return the index associated to the given graph identifier, creating it if required, and increasing its ref count.
-    fn make_index_for_graph_id(&mut self, g: &GraphId<&str>) -> Self::Index {
+    fn make_index_for_graph_id(&mut self, g: &GraphName<&str>) -> Self::Index {
         match g {
             None => Self::NULL_INDEX,
             Some(t) => self.make_index(t),
         }
     }
     /// Return the graph identifier associated to the given index, if it exists.
-    fn get_graph_id(&self, i: Self::Index) -> Option<&FGraphId<Self::Factory>> {
+    fn get_graph_id(&self, i: Self::Index) -> Option<&FGraphName<Self::Factory>> {
         if i == Self::NULL_INDEX {
             Some(&None)
         } else {

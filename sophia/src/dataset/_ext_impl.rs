@@ -10,7 +10,6 @@ use super::*;
 use crate::error::*;
 use crate::quad::stream::AsQuadSource;
 use crate::quad::*;
-use crate::term::graph_id::*;
 use crate::term::*;
 use crate::triple::*;
 
@@ -40,7 +39,7 @@ where
     }
 }
 
-impl MutableDataset for Vec<([BoxTerm; 3], GraphId<Box<str>>)> where {
+impl MutableDataset for Vec<([BoxTerm; 3], Option<BoxTerm>)> where {
     type MutationError = Never;
 
     fn insert<T, U, V, W>(
@@ -48,7 +47,7 @@ impl MutableDataset for Vec<([BoxTerm; 3], GraphId<Box<str>>)> where {
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphId<W>,
+        g: &GraphName<W>,
     ) -> MDResult<Self, bool>
     where
         T: TermData,
@@ -68,7 +67,7 @@ impl MutableDataset for Vec<([BoxTerm; 3], GraphId<Box<str>>)> where {
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphId<W>,
+        g: &GraphName<W>,
     ) -> MDResult<Self, bool>
     where
         T: TermData,
@@ -102,7 +101,7 @@ where
     }
 }
 
-impl<S: ::std::hash::BuildHasher> MutableDataset for HashSet<([BoxTerm; 3], GraphId<Box<str>>), S> {
+impl<S: ::std::hash::BuildHasher> MutableDataset for HashSet<([BoxTerm; 3], Option<BoxTerm>), S> {
     type MutationError = Never;
 
     fn insert<T, U, V, W>(
@@ -110,7 +109,7 @@ impl<S: ::std::hash::BuildHasher> MutableDataset for HashSet<([BoxTerm; 3], Grap
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphId<W>,
+        g: &GraphName<W>,
     ) -> MDResult<Self, bool>
     where
         T: TermData,
@@ -129,7 +128,7 @@ impl<S: ::std::hash::BuildHasher> MutableDataset for HashSet<([BoxTerm; 3], Grap
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphId<W>,
+        g: &GraphName<W>,
     ) -> MDResult<Self, bool>
     where
         T: TermData,
@@ -157,7 +156,7 @@ mod test {
 
     use crate::dataset::*;
     use crate::ns::*;
-    use crate::term::{graph_id::*, *};
+    use crate::term::*;
 
     #[test]
     fn test_slice() {
@@ -175,9 +174,9 @@ mod test {
         assert_eq!(len, 1);
     }
 
-    type VecAsDataset = Vec<([BoxTerm; 3], GraphId<Box<str>>)>;
+    type VecAsDataset = Vec<([BoxTerm; 3], GraphName<Box<str>>)>;
     test_dataset_impl!(vec, VecAsDataset, false);
 
-    type HashSetAsDataset = HashSet<([BoxTerm; 3], GraphId<Box<str>>)>;
+    type HashSetAsDataset = HashSet<([BoxTerm; 3], GraphName<Box<str>>)>;
     test_dataset_impl!(hashset, HashSetAsDataset);
 }

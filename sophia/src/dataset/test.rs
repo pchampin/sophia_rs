@@ -6,7 +6,6 @@ use crate::dataset::*;
 use crate::ns::*;
 use crate::quad::stream::*;
 use crate::quad::*;
-use crate::term::graph_id::*;
 use crate::term::*;
 
 pub const NS: &str = "http://example.org/";
@@ -22,9 +21,9 @@ lazy_static! {
     pub static ref I1B: StaticTerm = StaticTerm::new_iri2(NS, "I1B").unwrap();
     pub static ref I2A: StaticTerm = StaticTerm::new_iri2(NS, "I2A").unwrap();
     pub static ref I2B: StaticTerm = StaticTerm::new_iri2(NS, "I2B").unwrap();
-    pub static ref DG: GraphId<&'static str> = None;
-    pub static ref GN1: GraphId<&'static str> = Some(G1.clone());
-    pub static ref GN2: GraphId<&'static str> = Some(G2.clone());
+    pub static ref DG: GraphName<&'static str> = None;
+    pub static ref GN1: GraphName<&'static str> = Some(G1.clone());
+    pub static ref GN2: GraphName<&'static str> = Some(G2.clone());
 }
 
 pub fn populate<D: MutableDataset>(d: &mut D) -> MDResult<D, ()> {
@@ -89,7 +88,7 @@ pub fn populate_nodes_types<D: MutableDataset>(d: &mut D) -> MDResult<D, ()> {
     Ok(())
 }
 
-pub fn as_box_q<'a, Q: Quad<'a> + 'a>(quad: Q) -> ([BoxTerm; 3], GraphId<Box<str>>) {
+pub fn as_box_q<'a, Q: Quad<'a> + 'a>(quad: Q) -> ([BoxTerm; 3], GraphName<Box<str>>) {
     (
         [quad.s().into(), quad.p().into(), quad.o().into()],
         quad.g().convert_graph_name(),
@@ -151,7 +150,7 @@ macro_rules! test_dataset_impl {
             use $crate::dataset::*;
             use $crate::ns::*;
             use $crate::quad::stream::*;
-            use $crate::term::{graph_id::GraphId, matcher::ANY, *};
+            use $crate::term::{GraphName, matcher::ANY, *};
 
             #[allow(unused_imports)]
             use super::*;
@@ -713,7 +712,7 @@ macro_rules! test_dataset_impl {
 
                 let p_matcher: [StaticTerm; 2] = [rdf::type_.clone(), rdfs::domain.clone()];
                 let o_matcher: [StaticTerm; 2] = [C1.clone(), C2.clone()];
-                let g_matcher = |g: &GraphId<&str>| g.is_some();
+                let g_matcher = |g: &GraphName<&str>| g.is_some();
                 let v: Vec<_> = d
                     .quads_matching(&ANY, &p_matcher[..], &o_matcher[..], &g_matcher)
                     .oks()

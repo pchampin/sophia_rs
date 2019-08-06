@@ -13,7 +13,6 @@
 //!
 
 use crate::quad::Quad;
-use crate::term::graph_id::GraphId;
 use crate::term::*;
 
 pub mod stream;
@@ -126,7 +125,7 @@ impl<'a, T: Triple<'a>> Quad<'a> for TripleAsQuad<T> {
         self.0.o()
     }
     #[inline]
-    fn g(&self) -> &GraphId<T::TermData> {
+    fn g(&self) -> &GraphName<T::TermData> {
         &None
     }
 }
@@ -156,7 +155,7 @@ impl<'a, T: Triple<'a>> Quad<'a> for TripleAsQuadFrom<'a, T> {
         self.0.o()
     }
     #[inline]
-    fn g(&self) -> &GraphId<T::TermData> {
+    fn g(&self) -> &GraphName<T::TermData> {
         self.1.as_graph_id()
     }
 }

@@ -6,7 +6,6 @@
 
 use std::borrow::Borrow;
 
-use crate::term::graph_id::*;
 use crate::term::*;
 use crate::triple::*;
 
@@ -23,7 +22,7 @@ pub trait Quad<'a> {
     /// The object of this quad.
     fn o(&self) -> &Term<<Self as Quad<'a>>::TermData>;
     /// The graph identifier (either a graph name or "default graph") of this quad.
-    fn g(&self) -> &GraphId<<Self as Quad<'a>>::TermData>;
+    fn g(&self) -> &GraphName<<Self as Quad<'a>>::TermData>;
 
     /// [`Triple`](../triple/trait.Triple.html) adapter owning this quad.
     fn as_triple(self) -> QuadAsTriple<Self>
@@ -52,7 +51,7 @@ where
         &self[2]
     }
     #[inline]
-    fn g(&self) -> &GraphId<T> {
+    fn g(&self) -> &GraphName<T> {
         self[3].as_graph_id()
     }
 }
@@ -75,7 +74,7 @@ where
         self[2]
     }
     #[inline]
-    fn g(&self) -> &GraphId<T> {
+    fn g(&self) -> &GraphName<T> {
         self[3].as_graph_id()
     }
 }
@@ -83,7 +82,7 @@ where
 impl<'a, T, G> Quad<'a> for (T, G)
 where
     T: Triple<'a>,
-    G: Borrow<GraphId<T::TermData>>,
+    G: Borrow<GraphName<T::TermData>>,
 {
     type TermData = T::TermData;
     #[inline]
@@ -99,7 +98,7 @@ where
         &self.0.o()
     }
     #[inline]
-    fn g(&self) -> &GraphId<T::TermData> {
+    fn g(&self) -> &GraphName<T::TermData> {
         self.1.borrow()
     }
 }
@@ -122,7 +121,7 @@ where
         (*self).o()
     }
     #[inline]
-    fn g(&self) -> &GraphId<<Q as Quad<'a>>::TermData> {
+    fn g(&self) -> &GraphName<<Q as Quad<'a>>::TermData> {
         (*self).g()
     }
 }

@@ -8,12 +8,12 @@ use resiter::Map;
 use crate::dataset::{Dataset, MutableDataset, SetDataset};
 use crate::graph::*;
 use crate::quad::{Quad, QuadAsTriple};
-use crate::term::matcher::{GraphIdMatcher, ANY};
-use crate::term::{graph_id::GraphId, Term, TermData};
+use crate::term::matcher::{GraphNameMatcher, ANY};
+use crate::term::{GraphName, Term, TermData};
 
 /// The adapter returned by
 /// [`Dataset::union_graph`](../trait.Dataset.html#method.union_graph)
-pub struct DatasetGraph<D: ?Sized, E, M: GraphIdMatcher> {
+pub struct DatasetGraph<D: ?Sized, E, M: GraphNameMatcher> {
     pub(in crate::dataset) dataset: E,
     pub(in crate::dataset) gmatcher: M,
     pub(in crate::dataset) _phantom: PhantomData<D>,
@@ -23,7 +23,7 @@ impl<'a, D, E, M> Graph<'a> for DatasetGraph<D, E, M>
 where
     D: Dataset<'a> + ?Sized,
     E: Borrow<D>,
-    M: GraphIdMatcher,
+    M: GraphNameMatcher,
 {
     type Triple = QuadAsTriple<D::Quad>;
     type Error = D::Error;
@@ -125,7 +125,7 @@ where
     }
 }
 
-impl<D, E, F> MutableGraph for DatasetGraph<D, E, GraphId<F>>
+impl<D, E, F> MutableGraph for DatasetGraph<D, E, GraphName<F>>
 where
     D: MutableDataset,
     E: BorrowMut<D>,
@@ -152,7 +152,7 @@ where
     }
 }
 
-impl<D, E, F> SetGraph for DatasetGraph<D, E, GraphId<F>>
+impl<D, E, F> SetGraph for DatasetGraph<D, E, GraphName<F>>
 where
     D: SetDataset,
     E: Borrow<D>,
@@ -171,9 +171,9 @@ pub(crate) mod test {
     use crate::dataset::test::*;
     use crate::dataset::MDResult;
     use crate::ns::rdfs;
-    use crate::term::graph_id::*;
+    use crate::term::GraphNameExt;
 
-    pub type LightDatasetGraph = DatasetGraph<LightDataset, LightDataset, GraphId<Box<str>>>;
+    pub type LightDatasetGraph = DatasetGraph<LightDataset, LightDataset, GraphName<Box<str>>>;
 
     pub fn make_default_graph() -> LightDatasetGraph {
         DatasetGraph {
@@ -209,7 +209,7 @@ pub(crate) mod test {
             10
         );
         assert_eq!(
-            d.union_graph(|x: &GraphId<&str>| (x == &*DG || x == &*GN2))
+            d.union_graph(|x: &GraphName<&str>| (x == &*DG || x == &*GN2))
                 .triples()
                 .count(),
             11

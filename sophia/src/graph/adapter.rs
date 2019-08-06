@@ -9,7 +9,7 @@ use resiter::Map;
 use crate::dataset::*;
 use crate::error::*;
 use crate::graph::{Graph, MutableGraph, SetGraph};
-use crate::term::{graph_id::GraphId, Term, TermData};
+use crate::term::*;
 use crate::triple::{Triple, TripleAsQuad};
 
 /// The adapter returned by
@@ -62,7 +62,7 @@ where
         Box::new(self.0.borrow().triples_with_o(o).map_ok(Triple::as_quad))
     }
     #[inline]
-    fn quads_with_g<T>(&'a self, g: &'a GraphId<T>) -> DQuadSource<'a, Self>
+    fn quads_with_g<T>(&'a self, g: &'a GraphName<T>) -> DQuadSource<'a, Self>
     where
         T: TermData,
     {
@@ -98,7 +98,7 @@ where
         )
     }
     #[inline]
-    fn quads_with_sg<T, U>(&'a self, s: &'a Term<T>, g: &'a GraphId<U>) -> DQuadSource<'a, Self>
+    fn quads_with_sg<T, U>(&'a self, s: &'a Term<T>, g: &'a GraphName<U>) -> DQuadSource<'a, Self>
     where
         T: TermData,
         U: TermData,
@@ -122,7 +122,7 @@ where
         )
     }
     #[inline]
-    fn quads_with_pg<T, U>(&'a self, p: &'a Term<T>, g: &'a GraphId<U>) -> DQuadSource<'a, Self>
+    fn quads_with_pg<T, U>(&'a self, p: &'a Term<T>, g: &'a GraphName<U>) -> DQuadSource<'a, Self>
     where
         T: TermData,
         U: TermData,
@@ -133,7 +133,7 @@ where
         self.quads_with_p(p)
     }
     #[inline]
-    fn quads_with_og<T, U>(&'a self, o: &'a Term<T>, g: &'a GraphId<U>) -> DQuadSource<'a, Self>
+    fn quads_with_og<T, U>(&'a self, o: &'a Term<T>, g: &'a GraphName<U>) -> DQuadSource<'a, Self>
     where
         T: TermData,
         U: TermData,
@@ -167,7 +167,7 @@ where
         &'a self,
         s: &'a Term<T>,
         p: &'a Term<U>,
-        g: &'a GraphId<V>,
+        g: &'a GraphName<V>,
     ) -> DQuadSource<'a, Self>
     where
         T: TermData,
@@ -184,7 +184,7 @@ where
         &'a self,
         s: &'a Term<T>,
         o: &'a Term<U>,
-        g: &'a GraphId<V>,
+        g: &'a GraphName<V>,
     ) -> DQuadSource<'a, Self>
     where
         T: TermData,
@@ -201,7 +201,7 @@ where
         &'a self,
         p: &'a Term<T>,
         o: &'a Term<U>,
-        g: &'a GraphId<V>,
+        g: &'a GraphName<V>,
     ) -> DQuadSource<'a, Self>
     where
         T: TermData,
@@ -219,7 +219,7 @@ where
         s: &'a Term<T>,
         p: &'a Term<U>,
         o: &'a Term<V>,
-        g: &'a GraphId<W>,
+        g: &'a GraphName<W>,
     ) -> DQuadSource<'a, Self>
     where
         T: TermData,
@@ -239,7 +239,7 @@ where
         s: &'a Term<T>,
         p: &'a Term<U>,
         o: &'a Term<V>,
-        g: &'a GraphId<W>,
+        g: &'a GraphName<W>,
     ) -> DResult<'a, Self, bool>
     where
         T: TermData,
@@ -299,7 +299,7 @@ where
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphId<W>,
+        g: &GraphName<W>,
     ) -> MDResult<Self, bool>
     where
         T: TermData,
@@ -308,7 +308,7 @@ where
         W: TermData,
     {
         if let Some(graph_name) = g {
-            return Err(ErrorKind::UnsupportedGraphId(graph_name.n3()).into());
+            return Err(ErrorKind::UnsupportedGraphName(graph_name.n3()).into());
         };
         Ok(self.0.borrow_mut().insert(s, p, o)?)
     }
@@ -318,7 +318,7 @@ where
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphId<W>,
+        g: &GraphName<W>,
     ) -> MDResult<Self, bool>
     where
         T: TermData,
@@ -347,9 +347,9 @@ mod test {
     use crate::graph::inmem::LightGraph;
     use crate::graph::{Graph, MutableGraph};
     use crate::ns::{rdf, rdfs};
-    use crate::term::graph_id::GraphId;
+    use crate::term::GraphName;
 
-    const DG: GraphId<&'static str> = None;
+    const DG: GraphName<&'static str> = None;
 
     #[test]
     fn test_borrow() -> Result<()> {

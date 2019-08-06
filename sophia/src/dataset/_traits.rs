@@ -10,7 +10,6 @@ use crate::dataset::adapter::DatasetGraph;
 use crate::error::*;
 use crate::quad::stream::*;
 use crate::quad::*;
-use crate::term::graph_id::*;
 use crate::term::matcher::*;
 use crate::term::*;
 
@@ -86,7 +85,7 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given graph identifier.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_g<T>(&'a self, g: &'a GraphId<T>) -> DQuadSource<'a, Self>
+    fn quads_with_g<T>(&'a self, g: &'a GraphName<T>) -> DQuadSource<'a, Self>
     where
         T: TermData,
     {
@@ -115,7 +114,7 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given subject and graph identifier.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_sg<T, U>(&'a self, s: &'a Term<T>, g: &'a GraphId<U>) -> DQuadSource<'a, Self>
+    fn quads_with_sg<T, U>(&'a self, s: &'a Term<T>, g: &'a GraphName<U>) -> DQuadSource<'a, Self>
     where
         T: TermData,
         U: TermData,
@@ -135,7 +134,7 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given predicate and graph identifier.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_pg<T, U>(&'a self, p: &'a Term<T>, g: &'a GraphId<U>) -> DQuadSource<'a, Self>
+    fn quads_with_pg<T, U>(&'a self, p: &'a Term<T>, g: &'a GraphName<U>) -> DQuadSource<'a, Self>
     where
         T: TermData,
         U: TermData,
@@ -145,7 +144,7 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given object and graph identifier.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_og<T, U>(&'a self, o: &'a Term<T>, g: &'a GraphId<U>) -> DQuadSource<'a, Self>
+    fn quads_with_og<T, U>(&'a self, o: &'a Term<T>, g: &'a GraphName<U>) -> DQuadSource<'a, Self>
     where
         T: TermData,
         U: TermData,
@@ -175,7 +174,7 @@ pub trait Dataset<'a> {
         &'a self,
         s: &'a Term<T>,
         p: &'a Term<U>,
-        g: &'a GraphId<V>,
+        g: &'a GraphName<V>,
     ) -> DQuadSource<'a, Self>
     where
         T: TermData,
@@ -191,7 +190,7 @@ pub trait Dataset<'a> {
         &'a self,
         s: &'a Term<T>,
         o: &'a Term<U>,
-        g: &'a GraphId<V>,
+        g: &'a GraphName<V>,
     ) -> DQuadSource<'a, Self>
     where
         T: TermData,
@@ -207,7 +206,7 @@ pub trait Dataset<'a> {
         &'a self,
         p: &'a Term<T>,
         o: &'a Term<U>,
-        g: &'a GraphId<V>,
+        g: &'a GraphName<V>,
     ) -> DQuadSource<'a, Self>
     where
         T: TermData,
@@ -224,7 +223,7 @@ pub trait Dataset<'a> {
         s: &'a Term<T>,
         p: &'a Term<U>,
         o: &'a Term<V>,
-        g: &'a GraphId<W>,
+        g: &'a GraphName<W>,
     ) -> DQuadSource<'a, Self>
     where
         T: TermData,
@@ -241,7 +240,7 @@ pub trait Dataset<'a> {
         s: &'a Term<T>,
         p: &'a Term<U>,
         o: &'a Term<V>,
-        g: &'a GraphId<W>,
+        g: &'a GraphName<W>,
     ) -> DResult<'a, Self, bool>
     where
         T: TermData,
@@ -270,7 +269,7 @@ pub trait Dataset<'a> {
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
-        G: GraphIdMatcher + ?Sized,
+        G: GraphNameMatcher + ?Sized,
     {
         match (
             &ms.constant(),
@@ -482,7 +481,7 @@ pub trait Dataset<'a> {
     }
 
     /// Borrows one of the graphs of this dataset
-    fn graph<T>(&self, graph_id: &GraphId<T>) -> DatasetGraph<Self, &Self, GraphId<Box<str>>>
+    fn graph<T>(&self, graph_id: &GraphName<T>) -> DatasetGraph<Self, &Self, GraphName<Box<str>>>
     where
         T: TermData,
     {
@@ -496,8 +495,8 @@ pub trait Dataset<'a> {
     /// Borrows mutably one of the graphs of this dataset
     fn graph_mut<T>(
         &mut self,
-        graph_id: &GraphId<T>,
-    ) -> DatasetGraph<Self, &mut Self, GraphId<Box<str>>>
+        graph_id: &GraphName<T>,
+    ) -> DatasetGraph<Self, &mut Self, GraphName<Box<str>>>
     where
         T: TermData,
     {
@@ -511,7 +510,7 @@ pub trait Dataset<'a> {
     /// Borrows a graph containing the union of all graphs matched by `gmatcher`
     fn union_graph<T>(&'a self, gmatcher: T) -> DatasetGraph<Self, &Self, T>
     where
-        T: GraphIdMatcher,
+        T: GraphNameMatcher,
     {
         DatasetGraph {
             dataset: self,
@@ -549,7 +548,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphId<W>,
+        g: &GraphName<W>,
     ) -> MDResult<Self, bool>
     where
         T: TermData,
@@ -570,7 +569,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
         s: &Term<T>,
         p: &Term<U>,
         o: &Term<V>,
-        g: &GraphId<W>,
+        g: &GraphName<W>,
     ) -> MDResult<Self, bool>
     where
         T: TermData,
@@ -633,7 +632,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
-        G: GraphIdMatcher + ?Sized,
+        G: GraphNameMatcher + ?Sized,
         // The following trait bound means that Self::Error must convert to Self::MutationError;
         // it is always satisfied when both of them are either Error or Never;
         // it is required to raise an error when building to_remove
@@ -674,7 +673,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
-        G: GraphIdMatcher + ?Sized,
+        G: GraphNameMatcher + ?Sized,
         // The following trait bound means that Self::Error must convert to Self::MutationError;
         // it is always satisfied when both of them are either Error or Never;
         // it is required to raise an error when building to_remove

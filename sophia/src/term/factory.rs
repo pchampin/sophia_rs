@@ -8,14 +8,13 @@ use std::sync;
 
 use weak_table::WeakHashSet;
 
-use super::graph_id::GraphId;
 use super::*;
 
 /// Type alias for the terms produced by a term factory.
 pub type FTerm<F> = Term<<F as TermFactory>::TermData>;
 
 /// Type alias for the terms produced by a term factory.
-pub type FGraphId<F> = GraphId<<F as TermFactory>::TermData>;
+pub type FGraphName<F> = GraphName<<F as TermFactory>::TermData>;
 
 pub trait TermFactory {
     type TermData: TermData;

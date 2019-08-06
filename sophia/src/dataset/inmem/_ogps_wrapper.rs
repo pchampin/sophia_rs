@@ -13,7 +13,7 @@ use crate::graph::indexed::*;
 /// it overrides the methods that can efficiently be implemented using this index.
 ///
 /// Since it must be able to produce quads instead of the underlying datasets,
-/// it is limited to wrapping datasets whose quads are `([&Term<H>;3], &GraphId<H>)`.
+/// it is limited to wrapping datasets whose quads are `([&Term<H>;3], &GraphName<H>)`.
 ///
 #[derive(Default)]
 pub struct OgpsWrapper<T>
@@ -36,7 +36,7 @@ where
     }
 }
 
-type MyQuad<'a, T> = ([&'a Term<T>; 3], &'a GraphId<T>);
+type MyQuad<'a, T> = ([&'a Term<T>; 3], &'a GraphName<T>);
 
 impl<'a, T> DatasetWrapper<'a> for OgpsWrapper<T>
 where
@@ -79,7 +79,7 @@ where
     fn dw_quads_with_og<U, V>(
         &'a self,
         o: &'a Term<U>,
-        g: &'a GraphId<V>,
+        g: &'a GraphName<V>,
     ) -> DQuadSource<'a, Self::Wrapped>
     where
         U: TermData,
@@ -108,7 +108,7 @@ where
         &'a self,
         p: &'a Term<U>,
         o: &'a Term<V>,
-        g: &'a GraphId<W>,
+        g: &'a GraphName<W>,
     ) -> DQuadSource<'a, Self::Wrapped>
     where
         U: TermData,
