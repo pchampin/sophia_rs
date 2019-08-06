@@ -19,7 +19,7 @@ pub trait Quad<'a> {
     fn p(&self) -> &Term<<Self as Quad<'a>>::TermData>;
     /// The object of this quad.
     fn o(&self) -> &Term<<Self as Quad<'a>>::TermData>;
-    /// The graph identifier (either a graph name or "default graph") of this quad.
+    /// The (optional) graph name
     fn g(&self) -> Option<&Term<<Self as Quad<'a>>::TermData>>;
 
     /// [`Triple`](../triple/trait.Triple.html) adapter owning this quad.

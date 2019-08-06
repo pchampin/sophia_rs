@@ -7,7 +7,7 @@ use super::*;
 use crate::graph::indexed::*;
 
 /// A [`DatasetWrapper`](trait.DatasetWrapper.html)
-/// indexing quads by graph identifier, then by subject, then by predicate, then by object.
+/// indexing quads by graph name, then by subject, then by predicate, then by object.
 ///
 /// Compared to its wrapped dataset,
 /// it overrides the methods that can efficiently be implemented using this index.
@@ -56,9 +56,9 @@ where
     where
         U: TermData,
     {
-        if let Some(gi) = self.wrapped.get_index_for_graph_id(g) {
+        if let Some(gi) = self.wrapped.get_index_for_graph_name(g) {
             if let Some(sis) = self.g2s.get(&gi) {
-                let g = self.wrapped.get_graph_id(gi).unwrap();
+                let g = self.wrapped.get_graph_name(gi).unwrap();
                 return Box::new(sis.iter().flat_map(move |si| {
                     let s = self.wrapped.get_term(*si).unwrap();
                     let pis = self.gs2p.get(&[gi, *si]).unwrap();
@@ -85,10 +85,10 @@ where
         U: TermData,
         V: TermData,
     {
-        if let Some(gi) = self.wrapped.get_index_for_graph_id(g) {
+        if let Some(gi) = self.wrapped.get_index_for_graph_name(g) {
             if let Some(si) = self.wrapped.get_index(s) {
                 if let Some(pis) = self.gs2p.get(&[gi, si]) {
-                    let g = self.wrapped.get_graph_id(gi).unwrap();
+                    let g = self.wrapped.get_graph_name(gi).unwrap();
                     let s = self.wrapped.get_term(si).unwrap();
                     return Box::new(pis.iter().flat_map(move |pi| {
                         let p = self.wrapped.get_term(*pi).unwrap();
@@ -115,10 +115,10 @@ where
         V: TermData,
         W: TermData,
     {
-        if let Some(gi) = self.wrapped.get_index_for_graph_id(g) {
+        if let Some(gi) = self.wrapped.get_index_for_graph_name(g) {
             if let Some(si) = self.wrapped.get_index(s) {
                 if let Some(pi) = self.wrapped.get_index(p) {
-                    let g = self.wrapped.get_graph_id(gi).unwrap();
+                    let g = self.wrapped.get_graph_name(gi).unwrap();
                     let s = self.wrapped.get_term(si).unwrap();
                     let p = self.wrapped.get_term(pi).unwrap();
                     let ois = self.gsp2o.get(&[gi, si, pi]).unwrap();

@@ -3,14 +3,15 @@
 use crate::term::*;
 
 /// A graph name matcher is something that can be used
-/// to discriminate members of a set of graph identifiers.
+/// to discriminate members of a set of graph names
+/// (including the absence thereof, *i.e.* the default graph).
 ///
 /// See [`Dataset::quads_matching`](../../dataset/trait.Dataset.html#method.quads_matching),
 /// [`MutableDataset::remove_matching`](../../dataset/trait.MutableDataset.html#method.remove_matching),
 /// [`MutableDataset::retain`](../../dataset/trait.MutableDataset.html#method.retain).
 pub trait GraphNameMatcher {
     type TermData: TermData;
-    /// If this matcher matches only one graph identifier, return it, else `None`.
+    /// If this matcher matches only one graph name, return it, else `None`.
     fn constant(&self) -> Option<Option<&Term<Self::TermData>>>;
 
     /// Check whether this matcher matches `t`.

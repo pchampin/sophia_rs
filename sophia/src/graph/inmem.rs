@@ -52,7 +52,7 @@ pub use self::_term_index_map_u::*;
 /// A generic in-memory graph.
 ///
 /// `I` must be a type for which [`TermIndexMapU`](struct.TermIndexMapU.html)
-/// implements [`TermIndexMap`](../index/trait.TermIndexMap.html),
+/// implements [`TermIndexMap`](../../term/index_map/trait.TermIndexMap.html),
 /// typically `u16` or `u32`.
 ///
 /// `F` must implement [`TermFactory`](../../term/factory/trait.TermFactory.html).

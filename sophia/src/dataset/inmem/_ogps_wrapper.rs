@@ -7,7 +7,7 @@ use super::*;
 use crate::graph::indexed::*;
 
 /// A [`DatasetWrapper`](trait.DatasetWrapper.html)
-/// indexing quads by object, then by graph identifier, then by predicate, then by subject.
+/// indexing quads by object, then by graph name, then by predicate, then by subject.
 ///
 /// Compared to its wrapped dataset,
 /// it overrides the methods that can efficiently be implemented using this index.
@@ -60,7 +60,7 @@ where
             if let Some(gis) = self.o2g.get(&oi) {
                 let o = self.wrapped.get_term(oi).unwrap();
                 return Box::new(gis.iter().flat_map(move |gi| {
-                    let g = self.wrapped.get_graph_id(*gi).unwrap();
+                    let g = self.wrapped.get_graph_name(*gi).unwrap();
                     let pis = self.og2p.get(&[oi, *gi]).unwrap();
                     pis.iter().flat_map(move |pi| {
                         let p = self.wrapped.get_term(*pi).unwrap();
@@ -86,10 +86,10 @@ where
         V: TermData,
     {
         if let Some(oi) = self.wrapped.get_index(o) {
-            if let Some(gi) = self.wrapped.get_index_for_graph_id(g) {
+            if let Some(gi) = self.wrapped.get_index_for_graph_name(g) {
                 if let Some(pis) = self.og2p.get(&[oi, gi]) {
                     let o = self.wrapped.get_term(oi).unwrap();
-                    let g = self.wrapped.get_graph_id(gi).unwrap();
+                    let g = self.wrapped.get_graph_name(gi).unwrap();
                     return Box::new(pis.iter().flat_map(move |pi| {
                         let p = self.wrapped.get_term(*pi).unwrap();
                         let sis = self.ogp2s.get(&[oi, gi, *pi]).unwrap();
@@ -117,11 +117,11 @@ where
     {
         if let Some(pi) = self.wrapped.get_index(p) {
             if let Some(oi) = self.wrapped.get_index(o) {
-                if let Some(gi) = self.wrapped.get_index_for_graph_id(g) {
+                if let Some(gi) = self.wrapped.get_index_for_graph_name(g) {
                     if let Some(sis) = self.ogp2s.get(&[oi, gi, pi]) {
                         let p = self.wrapped.get_term(pi).unwrap();
                         let o = self.wrapped.get_term(oi).unwrap();
-                        let g = self.wrapped.get_graph_id(gi).unwrap();
+                        let g = self.wrapped.get_graph_name(gi).unwrap();
                         return Box::new(sis.iter().map(move |si| {
                             let s = self.wrapped.get_term(*si).unwrap();
                             Ok(([s, p, o], g))

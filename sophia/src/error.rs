@@ -45,8 +45,8 @@ error_chain! {
             display("error while serializing: {}", message)
         }
         /// Raised by some mutable dataset
-        UnsupportedGraphName(graph_id: String) {
-            display("unsupported graph_id: {}", graph_id)
+        UnsupportedGraphName(graph_name: String) {
+            display("unsupported graph_name: {}", graph_name)
         }
     }
 }

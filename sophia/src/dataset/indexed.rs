@@ -13,7 +13,7 @@ use crate::term::*;
 ///
 /// [`Dataset`]: ../trait.Dataset.html
 /// [`MutableDataset`]: ../trait.MutableDataset.html
-/// [`TermIndexMap`]: ../../graph/index/trait.TermIndexMap.html
+/// [`TermIndexMap`]: ../../term/index_map/trait.TermIndexMap.html
 /// [`impl_mutable_dataset_for_indexed_dataset!`]: ../../macro.impl_mutable_dataset_for_indexed_dataset.html
 ///
 pub trait IndexedDataset {
@@ -26,16 +26,16 @@ pub trait IndexedDataset {
     where
         T: TermData;
 
-    /// Return the index for the given graph identifier, if it exists.
-    fn get_index_for_graph_id<T>(&self, g: Option<&Term<T>>) -> Option<Self::Index>
+    /// Return the index for the given graph name, if it exists.
+    fn get_index_for_graph_name<T>(&self, g: Option<&Term<T>>) -> Option<Self::Index>
     where
         T: TermData;
 
     /// Return the term for the given index, if it exists.
     fn get_term(&self, i: Self::Index) -> Option<&Term<Self::TermData>>;
 
-    /// Return the graph identifier for the given index, if it exists
-    fn get_graph_id(&self, i: Self::Index) -> Option<Option<&Term<Self::TermData>>>;
+    /// Return the graph name for the given index, if it exists
+    fn get_graph_name(&self, i: Self::Index) -> Option<Option<&Term<Self::TermData>>>;
 
     /// Insert a triple in this Dataset,
     /// and return the corresponding tuple of indices.
@@ -73,7 +73,7 @@ pub trait IndexedDataset {
 /// Defines the implementation of [`MutableDataset`] for [`IndexedDataset`].
 ///
 /// [`MutableDataset`]: dataset/trait.MutableDataset.html
-/// [`IndexedDataset`]: dataset/index/trait.IndexedDataset.html
+/// [`IndexedDataset`]: dataset/indexed/trait.IndexedDataset.html
 #[macro_export]
 macro_rules! impl_mutable_dataset_for_indexed_dataset {
     ($indexed_mutable_dataset: ty) => {

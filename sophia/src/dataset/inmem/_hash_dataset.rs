@@ -15,7 +15,7 @@ use crate::term::*;
 ///
 /// [`Dataset`]: ../trait.Dataset.html
 /// [`MutableDataset`]: ../trait.MutableDataset.html
-/// [`TermIndexMap`]: ../../graph/index/trait.TermIndexMap.html
+/// [`TermIndexMap`]: ../../term/index_map/trait.TermIndexMap.html
 /// [`HashSet`]: https://doc.rust-lang.org/std/collections/struct.HashSet.html
 #[derive(Default)]
 pub struct HashDataset<I>
@@ -69,11 +69,11 @@ where
     }
 
     #[inline]
-    fn get_index_for_graph_id<T>(&self, g: Option<&Term<T>>) -> Option<Self::Index>
+    fn get_index_for_graph_name<T>(&self, g: Option<&Term<T>>) -> Option<Self::Index>
     where
         T: TermData,
     {
-        self.terms.get_index_for_graph_id(g.map(|n| RefTerm::from(n)).as_ref())
+        self.terms.get_index_for_graph_name(g.map(|n| RefTerm::from(n)).as_ref())
     }
 
     #[inline]
@@ -82,8 +82,8 @@ where
     }
 
     #[inline]
-    fn get_graph_id(&self, i: Self::Index) -> Option<Option<&Term<Self::TermData>>> {
-        self.terms.get_graph_id(i)
+    fn get_graph_name(&self, i: Self::Index) -> Option<Option<&Term<Self::TermData>>> {
+        self.terms.get_graph_name(i)
     }
 
     fn insert_indexed<T, U, V, W>(
@@ -102,7 +102,7 @@ where
         let si = self.terms.make_index(&s.into());
         let pi = self.terms.make_index(&p.into());
         let oi = self.terms.make_index(&o.into());
-        let gi = self.terms.make_index_for_graph_id(g.map(|n| RefTerm::from(n)).as_ref());
+        let gi = self.terms.make_index_for_graph_name(g.map(|n| RefTerm::from(n)).as_ref());
         let modified = self.quads.insert([si, pi, oi, gi]);
         if modified {
             Some([si, pi, oi, gi])
@@ -131,7 +131,7 @@ where
         let si = self.get_index(s);
         let pi = self.get_index(p);
         let oi = self.get_index(o);
-        let gi = self.get_index_for_graph_id(g);
+        let gi = self.get_index_for_graph_name(g);
         if let (Some(si), Some(pi), Some(oi), Some(gi)) = (si, pi, oi, gi) {
             let modified = self.quads.remove(&[si, pi, oi, gi]);
             if modified {
@@ -172,7 +172,7 @@ where
                     self.terms.get_term(*pi).unwrap(),
                     self.terms.get_term(*oi).unwrap(),
                 ],
-                self.get_graph_id(*gi).unwrap(),
+                self.get_graph_name(*gi).unwrap(),
             ))
         }))
     }

@@ -38,22 +38,22 @@ pub trait TermIndexMap: Default {
 
     // The following methods have a default impl, and would generally not be overriden
 
-    /// Return the index associated to the given graph identifier, if it exists.
-    fn get_index_for_graph_id(&self, g: Option<&RefTerm>) -> Option<Self::Index> {
+    /// Return the index associated to the given graph name, if it exists.
+    fn get_index_for_graph_name(&self, g: Option<&RefTerm>) -> Option<Self::Index> {
         match g {
             None => Some(Self::NULL_INDEX),
             Some(t) => self.get_index(t),
         }
     }
-    /// Return the index associated to the given graph identifier, creating it if required, and increasing its ref count.
-    fn make_index_for_graph_id(&mut self, g: Option<&RefTerm>) -> Self::Index {
+    /// Return the index associated to the given graph name, creating it if required, and increasing its ref count.
+    fn make_index_for_graph_name(&mut self, g: Option<&RefTerm>) -> Self::Index {
         match g {
             None => Self::NULL_INDEX,
             Some(t) => self.make_index(t),
         }
     }
-    /// Return the graph identifier associated to the given index, if it exists.
-    fn get_graph_id(&self, i: Self::Index) -> Option<Option<&FTerm<Self::Factory>>> {
+    /// Return the graph name associated to the given index, if it exists.
+    fn get_graph_name(&self, i: Self::Index) -> Option<Option<&FTerm<Self::Factory>>> {
         if i == Self::NULL_INDEX {
             Some(None)
         } else {

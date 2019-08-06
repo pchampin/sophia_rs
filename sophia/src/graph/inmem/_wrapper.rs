@@ -327,7 +327,7 @@ macro_rules! impl_graph_for_wrapper {
 /// This trait is designed to add mutability to [`GraphWrapper`],
 /// through the [`impl_indexed_graph_for_wrapper!`] macro.
 ///
-/// [`IndexedGraph`]: ../index/trait.IndexedGraph.html
+/// [`IndexedGraph`]: ../indexed/trait.IndexedGraph.html
 /// [`GraphWrapper`]: ./trait.GraphWrapper.html
 /// [`impl_mutable_graph_for_indexed_graph!`]: ../../macro.impl_mutable_graph_for_indexed_graph.html
 pub trait IndexedGraphWrapper<T>
@@ -335,21 +335,21 @@ where
     T: IndexedGraph,
 {
     /// Hook to be executed at the end of
-    /// [`IndexedGraph::insert_indexed`](../index/trait.IndexedGraph.html#tymethod.insert_indexed).
+    /// [`IndexedGraph::insert_indexed`](../indexed/trait.IndexedGraph.html#tymethod.insert_indexed).
     fn igw_hook_insert_indexed(&mut self, modified: &Option<[T::Index; 3]>);
 
     /// Hook to be executed at the end of
-    /// [`IndexedGraph::remove_indexed`](../index/trait.IndexedGraph.html#tymethod.remove_indexed).
+    /// [`IndexedGraph::remove_indexed`](../indexed/trait.IndexedGraph.html#tymethod.remove_indexed).
     fn igw_hook_remove_indexed(&mut self, modified: &Option<[T::Index; 3]>);
 
     /// Hook to be executed at the end of
-    /// [`IndexedGraph::shrink_to_fit`](../index/trait.IndexedGraph.html#tymethod.shrink_to_fit).
+    /// [`IndexedGraph::shrink_to_fit`](../indexed/trait.IndexedGraph.html#tymethod.shrink_to_fit).
     fn igw_hook_shrink_to_fit(&mut self);
 }
 
 /// Defines the implementation of [`IndexedGraph`] for [`GraphWrapper`] around another [`IndexedGraph`].
 ///
-/// [`IndexedGraph`]: graph/index/trait.IndexedGraph.html
+/// [`IndexedGraph`]: graph/indexed/trait.IndexedGraph.html
 /// [`GraphWrapper`]: graph/inmem/trait.GraphWrapper.html
 #[macro_export]
 macro_rules! impl_indexed_graph_for_wrapper {

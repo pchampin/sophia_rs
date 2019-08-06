@@ -82,7 +82,7 @@ pub trait Dataset<'a> {
     {
         Box::new(self.quads().filter_ok(move |q| q.o() == o))
     }
-    /// An iterator visiting add quads with the given graph identifier.
+    /// An iterator visiting add quads with the given graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
     fn quads_with_g<T>(&'a self, g: Option<&'a Term<T>>) -> DQuadSource<'a, Self>
@@ -111,7 +111,7 @@ pub trait Dataset<'a> {
     {
         Box::new(self.quads_with_s(s).filter_ok(move |q| q.o() == o))
     }
-    /// An iterator visiting add quads with the given subject and graph identifier.
+    /// An iterator visiting add quads with the given subject and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
     fn quads_with_sg<T, U>(&'a self, s: &'a Term<T>, g: Option<&'a Term<U>>) -> DQuadSource<'a, Self>
@@ -131,7 +131,7 @@ pub trait Dataset<'a> {
     {
         Box::new(self.quads_with_p(p).filter_ok(move |q| q.o() == o))
     }
-    /// An iterator visiting add quads with the given predicate and graph identifier.
+    /// An iterator visiting add quads with the given predicate and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
     fn quads_with_pg<T, U>(&'a self, p: &'a Term<T>, g: Option<&'a Term<U>>) -> DQuadSource<'a, Self>
@@ -141,7 +141,7 @@ pub trait Dataset<'a> {
     {
         Box::new(self.quads_with_g(g).filter_ok(move |q| q.p() == p))
     }
-    /// An iterator visiting add quads with the given object and graph identifier.
+    /// An iterator visiting add quads with the given object and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
     fn quads_with_og<T, U>(&'a self, o: &'a Term<T>, g: Option<&'a Term<U>>) -> DQuadSource<'a, Self>
@@ -167,7 +167,7 @@ pub trait Dataset<'a> {
     {
         Box::new(self.quads_with_sp(s, p).filter_ok(move |q| q.o() == o))
     }
-    /// An iterator visiting add quads with the given subject, predicate and graph identifier.
+    /// An iterator visiting add quads with the given subject, predicate and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
     fn quads_with_spg<T, U, V>(
@@ -183,7 +183,7 @@ pub trait Dataset<'a> {
     {
         Box::new(self.quads_with_sg(s, g).filter_ok(move |q| q.p() == p))
     }
-    /// An iterator visiting add quads with the given subject, object and graph identifier.
+    /// An iterator visiting add quads with the given subject, object and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
     fn quads_with_sog<T, U, V>(
@@ -199,7 +199,7 @@ pub trait Dataset<'a> {
     {
         Box::new(self.quads_with_sg(s, g).filter_ok(move |q| q.o() == o))
     }
-    /// An iterator visiting add quads with the given predicate, object and graph identifier.
+    /// An iterator visiting add quads with the given predicate, object and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
     fn quads_with_pog<T, U, V>(
@@ -215,7 +215,7 @@ pub trait Dataset<'a> {
     {
         Box::new(self.quads_with_pg(p, g).filter_ok(move |q| q.o() == o))
     }
-    /// An iterator visiting add quads with the given subject, predicate, object and graph identifier.
+    /// An iterator visiting add quads with the given subject, predicate, object and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
     fn quads_with_spog<T, U, V, W>(
@@ -255,7 +255,7 @@ pub trait Dataset<'a> {
         }
     }
 
-    /// An iterator visiting add quads matching the given subject, predicate, object and graph identifier.
+    /// An iterator visiting add quads matching the given subject, predicate, object and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
     fn quads_matching<S, P, O, G>(
@@ -481,13 +481,13 @@ pub trait Dataset<'a> {
     }
 
     /// Borrows one of the graphs of this dataset
-    fn graph<T>(&self, graph_id: Option<&Term<T>>) -> DatasetGraph<Self, &Self, Option<BoxTerm>>
+    fn graph<T>(&self, graph_name: Option<&Term<T>>) -> DatasetGraph<Self, &Self, Option<BoxTerm>>
     where
         T: TermData,
     {
         DatasetGraph {
             dataset: self,
-            gmatcher: graph_id.map(|n| n.into()),
+            gmatcher: graph_name.map(|n| n.into()),
             _phantom: PhantomData,
         }
     }
@@ -495,14 +495,14 @@ pub trait Dataset<'a> {
     /// Borrows mutably one of the graphs of this dataset
     fn graph_mut<T>(
         &mut self,
-        graph_id: Option<&Term<T>>,
+        graph_name: Option<&Term<T>>,
     ) -> DatasetGraph<Self, &mut Self, Option<BoxTerm>>
     where
         T: TermData,
     {
         DatasetGraph {
             dataset: self,
-            gmatcher: graph_id.map(|n| n.into()),
+            gmatcher: graph_name.map(|n| n.into()),
             _phantom: PhantomData,
         }
     }
