@@ -1,3 +1,17 @@
+0.3.0
+    New features
+    - support for quads and datasets
+    - N-Quads parser and serializer
+    - RDF/XML parser (thanks to @althonos)
+    - preliminary query processor
+    Improved API
+    - better naming of modules and methods
+    Fixed bugs
+    - language tags are now case-insensitive (thanks to @althonos)
+    - #10 percent-encoded IRIs are now accepted
+    Dev
+    - CI configuration (thanks to @MarcAntoine-Arnaud)
+
 0.2.1
     Updated dependencies
     Committed CHANGELOG.txt

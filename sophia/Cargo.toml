@@ -1,6 +1,6 @@
 [package]
 name = "sophia"
-version = "0.2.1"
+version = "0.3.0"
 authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
 description = "A Rust toolkit for RDF and Linked Data"
 repository = "https://github.com/pchampin/sophia_rs"
