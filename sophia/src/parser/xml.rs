@@ -491,7 +491,7 @@ impl<F: TermFactory> Scope<F> {
             let ascii = iri.chars().all(|c| c.is_ascii());
 
             fn decode(s: &str) -> std::borrow::Cow<str> {
-                url::percent_encoding::percent_decode(s.as_bytes())
+                percent_encoding::percent_decode(s.as_bytes())
                     .decode_utf8()
                     .expect("always OK since validated with `is_relative_iri`")
             }
