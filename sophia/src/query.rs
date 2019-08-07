@@ -1,4 +1,7 @@
-//! Early attempt at coding a query processor
+//! Query processing over RDF graphs and datasets.
+//!
+//! **Important**: this is a preliminary and incomplete implementation.
+//! The API of this module is likely to change heavily in the future.
 
 use std::collections::HashMap;
 use std::iter::once;
@@ -10,56 +13,17 @@ use crate::term::matcher::*;
 use crate::term::*;
 use crate::triple::*;
 
+/// A map associating variable names to [`term`](../term/enum.Term.html)s.
 pub type BindingMap = HashMap<String, RcTerm>;
 
-pub enum Binding {
-    Bound(RcTerm),
-    Free,
-}
-
-impl Binding {
-    pub fn is_free(&self) -> bool {
-        match self {
-            Binding::Free => true,
-            _ => false,
-        }
-    }
-}
-
-impl From<Option<RcTerm>> for Binding {
-    fn from(src: Option<RcTerm>) -> Binding {
-        match src {
-            Some(t) => Binding::Bound(t),
-            None => Binding::Free,
-        }
-    }
-}
-
-impl TermMatcher for Binding {
-    type TermData = std::rc::Rc<str>;
-    fn constant(&self) -> Option<&Term<Self::TermData>> {
-        match self {
-            Binding::Bound(t) => Some(t),
-            Binding::Free => None,
-        }
-    }
-    fn matches<T>(&self, t: &Term<T>) -> bool
-    where
-        T: TermData,
-    {
-        match self {
-            Binding::Bound(tself) => tself == t,
-            Binding::Free => true,
-        }
-    }
-}
-
+/// A query can be processed against a graph, producing a sequence of binding maps.
 pub enum Query {
+    /// [Basic graph pattern](https://www.w3.org/TR/sparql11-query/#BasicGraphPatterns)
     Triples(Vec<[RcTerm; 3]>),
 }
 
 impl Query {
-    fn prepare<'a, G: Graph<'a>>(&mut self, graph: &'a G, initial_binding: &BindingMap) {
+    fn prepare<'a, G: Graph<'a>>(&mut self, graph: &'a G, initial_bindings: &BindingMap) {
         match self {
             Query::Triples(triples) => {
                 // sorts triple from q according to how many results they may give
@@ -67,9 +31,9 @@ impl Query {
                     .iter()
                     .map(|t| {
                         let tm = vec![
-                            matcher(t.s(), &initial_binding),
-                            matcher(t.p(), &initial_binding),
-                            matcher(t.o(), &initial_binding),
+                            matcher(t.s(), &initial_bindings),
+                            matcher(t.p(), &initial_bindings),
+                            matcher(t.o(), &initial_bindings),
                         ];
                         // NB: the unsafe code below is used to cheat about tm's lifetime.
                         // Because G is bound to 'a, triples_matching() requires tm to live as long as 'a.
@@ -102,17 +66,17 @@ impl Query {
     }
 
     /// Process this query against the given graph, and return an fallible iterator of BindingMaps,
-    /// starting with the given binding.
+    /// starting with the given bindings.
     ///
     /// The iterator may fail (i.e. yield `Err`) if an operation on the graph fails.
     pub fn process_with<'a, G: Graph<'a>>(
         &'a mut self,
         graph: &'a G,
-        initial_binding: BindingMap,
+        initial_bindings: BindingMap,
     ) -> Box<dyn Iterator<Item = GResult<'a, G, BindingMap>> + 'a> {
-        self.prepare(graph, &initial_binding);
+        self.prepare(graph, &initial_bindings);
         match self {
-            Query::Triples(triples) => bindings_for_triples(graph, triples, initial_binding),
+            Query::Triples(triples) => bindings_for_triples(graph, triples, initial_bindings),
         }
     }
 }
@@ -190,6 +154,51 @@ where
     let p = &tm[1];
     let o = &tm[2];
     g.triples_matching(s, p, o)
+}
+
+/// An enum capturing the different states of variable during query processing.
+enum Binding {
+    /// The variable is bound to the given term.
+    Bound(RcTerm),
+    /// The variable is free.
+    Free,
+}
+
+impl Binding {
+    pub fn is_free(&self) -> bool {
+        match self {
+            Binding::Free => true,
+            _ => false,
+        }
+    }
+}
+
+impl From<Option<RcTerm>> for Binding {
+    fn from(src: Option<RcTerm>) -> Binding {
+        match src {
+            Some(t) => Binding::Bound(t),
+            None => Binding::Free,
+        }
+    }
+}
+
+impl TermMatcher for Binding {
+    type TermData = std::rc::Rc<str>;
+    fn constant(&self) -> Option<&Term<Self::TermData>> {
+        match self {
+            Binding::Bound(t) => Some(t),
+            Binding::Free => None,
+        }
+    }
+    fn matches<T>(&self, t: &Term<T>) -> bool
+    where
+        T: TermData,
+    {
+        match self {
+            Binding::Bound(tself) => tself == t,
+            Binding::Free => true,
+        }
+    }
 }
 
 #[cfg(test)]
