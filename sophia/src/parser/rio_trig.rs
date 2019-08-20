@@ -1,67 +1,44 @@
 //! Adapter for the TriG parser from [RIO](https://github.com/Tpt/rio/blob/master/turtle/src/turtle.rs)
 
-/// RIO parser configuration.
+use std::io::{BufRead, BufReader, Cursor, Read};
+
+use rio_turtle::TriGParser;
+
+use crate::error::*;
+use crate::parser::rio_common::*;
+use crate::quad::stream::QuadSource;
+
+/// RIO TriG parser configuration.
 ///
 /// For more information,
 /// see the [uniform interface] of parsers.
 ///
 /// [uniform interface]: ../index.html#uniform-interface
-use std::io::{BufRead, BufReader, Cursor, Read};
-use std::iter::once;
-
-use rio_api::parser::QuadParser;
-use rio_turtle::TriGParser;
-
-use crate::error::Result;
-use crate::parser::rio_turtle::rio2sophia;
-use crate::quad::Quad;
-use crate::term::BoxTerm;
-
 #[derive(Clone, Debug, Default)]
 pub struct Config {
     pub base: Option<String>,
 }
 
-type MyQuad = ([BoxTerm; 3], Option<BoxTerm>);
-
 impl Config {
+    #[inline]
     pub fn parse_bufread<'a, B: BufRead + 'a>(
         &self,
         bufread: B,
-    ) -> Box<dyn Iterator<Item = Result<MyQuad>> + 'a> {
+    ) -> impl QuadSource<Error = Error> + 'a {
         let base: &str = match &self.base {
             Some(base) => &base,
             None => "x-no-base:///",
         };
-        match TriGParser::new(bufread, base) {
-            Ok(parser) => Box::new(parser.into_iter(move |q| {
-                Ok((
-                    [
-                        rio2sophia(q.subject.into())?,
-                        rio2sophia(q.predicate.into())?,
-                        rio2sophia(q.object)?,
-                    ],
-                    if let Some(n) = q.graph_name {
-                        Some(rio2sophia(n.into())?)
-                    } else {
-                        None
-                    },
-                ))
-            })),
-            Err(err) => Box::new(once(Err(err.into()))),
-        }
+        RioSource::from(TriGParser::new(bufread, base))
     }
 
     #[inline]
-    pub fn parse_read<'a, R: Read + 'a>(
-        &self,
-        read: R,
-    ) -> impl Iterator<Item = Result<MyQuad>> + 'a {
+    pub fn parse_read<'a, R: Read + 'a>(&self, read: R) -> impl QuadSource<Error = Error> + 'a {
         self.parse_bufread(BufReader::new(read))
     }
 
     #[inline]
-    pub fn parse_str<'a>(&self, txt: &'a str) -> impl Iterator<Item = Result<MyQuad>> + 'a {
+    pub fn parse_str<'a>(&self, txt: &'a str) -> impl QuadSource<Error = Error> + 'a {
         self.parse_bufread(Cursor::new(txt.as_bytes()))
     }
 }
@@ -76,12 +53,16 @@ def_default_quad_parser_api! {}
 mod test {
     use super::*;
     use crate::dataset::inmem::FastDataset;
+    use crate::dataset::Dataset;
+    use crate::ns::{rdf, xsd};
     use crate::quad::stream::QuadSource;
+    use crate::term::matcher::ANY;
+    use crate::term::StaticTerm;
 
     #[test]
     fn test_simple_trig_string() -> Result<()> {
         let turtle = r#"
-            @prefix : <http://example.org/ns> .
+            @prefix : <http://example.org/ns/> .
 
             <#g1> {
                 <#me> :knows _:alice.
@@ -97,6 +78,33 @@ mod test {
         };
         let c = cfg.parse_str(&turtle).in_dataset(&mut d)?;
         assert_eq!(c, 3);
+        assert!(d
+            .quads_matching(
+                &StaticTerm::new_iri("http://localhost/ex#me").unwrap(),
+                &StaticTerm::new_iri("http://example.org/ns/knows").unwrap(),
+                &ANY,
+                &StaticTerm::new_iri("http://localhost/ex#g1").unwrap(),
+            )
+            .next()
+            .is_some());
+        assert!(d
+            .quads_matching(
+                &ANY,
+                &rdf::type_,
+                &StaticTerm::new_iri("http://example.org/ns/Person").unwrap(),
+                &StaticTerm::new_iri("http://localhost/ex#g2").unwrap(),
+            )
+            .next()
+            .is_some());
+        assert!(d
+            .quads_matching(
+                &ANY,
+                &StaticTerm::new_iri("http://example.org/ns/name").unwrap(),
+                &StaticTerm::new_literal_dt("Alice", xsd::string).unwrap(),
+                &StaticTerm::new_iri("http://localhost/ex#g2").unwrap(),
+            )
+            .next()
+            .is_some());
         Ok(())
     }
 }
