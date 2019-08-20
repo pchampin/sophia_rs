@@ -51,9 +51,9 @@ pub trait TripleWriter<W: io::Write>: TripleSink<Outcome = ()> + Sized {
     fn new(write: W, config: Self::Config) -> Self;
 
     /// Serialize the triples from the given source.
-    fn write<'a, TS, T>(&mut self, mut source: TS) -> CoercedResult<(), TS::Error, Self::Error>
+    fn write<TS, T>(&mut self, mut source: TS) -> CoercedResult<(), TS::Error, Self::Error>
     where
-        TS: TripleSource<'a>,
+        TS: TripleSource,
         TS::Error: CoercibleWith<Self::Error>,
     {
         source.in_sink(self)
@@ -93,12 +93,9 @@ pub trait TripleStringifier: TripleSink<Outcome = String> + Sized {
     fn new(config: Self::Config) -> Self;
 
     /// Stringify the triples from the given source.
-    fn stringify<'a, TS, T>(
-        &mut self,
-        mut source: TS,
-    ) -> CoercedResult<String, TS::Error, Self::Error>
+    fn stringify<TS, T>(&mut self, mut source: TS) -> CoercedResult<String, TS::Error, Self::Error>
     where
-        TS: TripleSource<'a>,
+        TS: TripleSource,
         TS::Error: CoercibleWith<Self::Error>,
     {
         source.in_sink(self)
@@ -140,9 +137,9 @@ pub trait QuadWriter<W: io::Write>: QuadSink<Outcome = ()> + Sized {
     fn new(write: W, config: Self::Config) -> Self;
 
     /// Serialize the triples from the given source.
-    fn write<'a, QS, T>(&mut self, mut source: QS) -> CoercedResult<(), QS::Error, Self::Error>
+    fn write<QS, T>(&mut self, mut source: QS) -> CoercedResult<(), QS::Error, Self::Error>
     where
-        QS: QuadSource<'a>,
+        QS: QuadSource,
         QS::Error: CoercibleWith<Self::Error>,
     {
         source.in_sink(self)
@@ -187,12 +184,9 @@ pub trait QuadStringifier: QuadSink<Outcome = String> + Sized {
     fn new(config: Self::Config) -> Self;
 
     /// Stringify the triples from the given source.
-    fn stringify<'a, QS, T>(
-        &mut self,
-        mut source: QS,
-    ) -> CoercedResult<String, QS::Error, Self::Error>
+    fn stringify<QS, T>(&mut self, mut source: QS) -> CoercedResult<String, QS::Error, Self::Error>
     where
-        QS: QuadSource<'a>,
+        QS: QuadSource,
         QS::Error: CoercibleWith<Self::Error>,
     {
         source.in_sink(self)

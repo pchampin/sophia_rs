@@ -16,7 +16,7 @@ use crate::term::Term;
 #[macro_export]
 macro_rules! def_default_triple_parser_api {
     () => {
-        def_default_parser_api! {Triple}
+        def_default_parser_api! {$crate::triple::stream::TripleSource}
     };
 }
 
@@ -25,29 +25,25 @@ macro_rules! def_default_triple_parser_api {
 #[macro_export]
 macro_rules! def_default_quad_parser_api {
     () => {
-        def_default_parser_api! {Quad}
+        def_default_parser_api! {$crate::quad::stream::QuadSource}
     };
 }
 
 macro_rules! def_default_parser_api {
-    ($item: ident) => {
+    ($item: path) => {
         /// Shortcut for `Config::default().parse_bufread(bufread)`
         #[inline]
-        pub fn parse_bufread<'a, B: ::std::io::BufRead + 'a>(
-            bufread: B,
-        ) -> impl Iterator<Item = Result<impl $item<'a>>> + 'a {
+        pub fn parse_bufread<'a, B: ::std::io::BufRead + 'a>(bufread: B) -> impl $item + 'a {
             Config::default().parse_bufread(bufread)
         }
         /// Shortcut for `Config::default().parse_read(read)`
         #[inline]
-        pub fn parse_read<'a, R: ::std::io::Read + 'a>(
-            read: R,
-        ) -> impl Iterator<Item = Result<impl $item<'a>>> + 'a {
+        pub fn parse_read<'a, R: ::std::io::Read + 'a>(read: R) -> impl $item + 'a {
             Config::default().parse_read(read)
         }
         /// Shortcut for `Config::default().parse_str(txt)`
         #[inline]
-        pub fn parse_str<'a>(txt: &'a str) -> impl Iterator<Item = Result<impl $item<'a>>> + 'a {
+        pub fn parse_str<'a>(txt: &'a str) -> impl $item + 'a {
             Config::default().parse_str(txt)
         }
     };

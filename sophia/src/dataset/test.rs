@@ -114,7 +114,7 @@ pub fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
     assert!(val <= hint.1.or(Some(val)).unwrap())
 }
 
-pub fn make_quad_source() -> impl QuadSource<'static> {
+pub fn make_quad_source() -> impl QuadSource {
     vec![
         [&*C1, &rdf::type_, &rdfs::Class, &G1],
         [&*C1, &rdfs::subClassOf, &*C2, &G1],

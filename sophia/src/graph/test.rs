@@ -98,7 +98,7 @@ pub fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
     assert!(val <= hint.1.or(Some(val)).unwrap())
 }
 
-pub fn make_triple_source() -> impl TripleSource<'static> {
+pub fn make_triple_source() -> impl TripleSource {
     vec![
         [&*C1, &rdf::type_, &rdfs::Class],
         [&*C1, &rdfs::subClassOf, &*C2],

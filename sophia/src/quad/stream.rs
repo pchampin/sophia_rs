@@ -18,27 +18,17 @@ use std::result::Result; // override ::error::Result
 
 /// A quad source produces [quads], and may also fail in the process.
 ///
-/// A quad source is castable, with the `as_iter` method,
-/// to an iterator yielding [quads] wrapped in [results],
-/// and any such iterator implements the `QuadSource` trait.
-/// It also has additional methods dedicated to interacting with [`QuadSink`]s.
+/// It provides additional methods dedicated to interacting with [`QuadSink`]s.
+/// Any iterator yielding [quads] wrapped in [results]
+/// implements the `QuadSource` trait.
 ///
 /// [quads]: ../trait.Quad.html
 /// [results]: ../../error/type.Result.html
 /// [`QuadSink`]: trait.QuadSink.html
 ///
-pub trait QuadSource<'a> {
-    /// The type of quads produced by this source.
-    type Quad: Quad<'a>;
-
+pub trait QuadSource {
     /// The type of errors produced by this source.
     type Error: CoercibleWith<Error> + CoercibleWith<Never>;
-
-    /// The type of iterator this quad source casts to.
-    type Iter: Iterator<Item = Result<Self::Quad, Self::Error>>;
-
-    /// Cast to iterator.
-    fn as_iter(&mut self) -> &mut Self::Iter;
 
     /// Feed all quads from this source into the given [sink](trait.QuadSink.html).
     ///
@@ -48,14 +38,7 @@ pub trait QuadSource<'a> {
         sink: &mut TS,
     ) -> CoercedResult<TS::Outcome, Self::Error, TS::Error>
     where
-        Self::Error: CoercibleWith<TS::Error>,
-    {
-        for tr in self.as_iter() {
-            let t = tr?;
-            sink.feed(&t)?;
-        }
-        Ok(sink.finish()?)
-    }
+        Self::Error: CoercibleWith<TS::Error>;
 
     /// Insert all quads from this source into the given [dataset](../../dataset/trait.MutableDataset.html).
     ///
@@ -71,18 +54,26 @@ pub trait QuadSource<'a> {
     }
 }
 
-impl<'a, I, T, E> QuadSource<'a> for I
+impl<'a, I, T, E> QuadSource for I
 where
-    I: Iterator<Item = Result<T, E>> + 'a,
+    I: Iterator<Item = Result<T, E>>,
     T: Quad<'a>,
     E: CoercibleWith<Error> + CoercibleWith<Never>,
 {
-    type Quad = T;
     type Error = E;
-    type Iter = Self;
 
-    fn as_iter(&mut self) -> &mut Self::Iter {
-        self
+    fn in_sink<TS: QuadSink>(
+        &mut self,
+        sink: &mut TS,
+    ) -> CoercedResult<TS::Outcome, Self::Error, TS::Error>
+    where
+        Self::Error: CoercibleWith<TS::Error>,
+    {
+        for tr in self {
+            let t = tr?;
+            sink.feed(&t)?;
+        }
+        Ok(sink.finish()?)
     }
 }
 

@@ -599,12 +599,12 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
 
     /// Insert into this dataset all quads from the given source.
     #[inline]
-    fn insert_all<'a, TS>(
+    fn insert_all<TS>(
         &mut self,
         src: &mut TS,
     ) -> CoercedResult<usize, TS::Error, <Self as MutableDataset>::MutationError>
     where
-        TS: QuadSource<'a>,
+        TS: QuadSource,
         TS::Error: CoercibleWith<<Self as MutableDataset>::MutationError>,
     {
         src.in_sink(&mut self.inserter())
@@ -619,12 +619,12 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
 
     /// Remove from this dataset all quads from the given source.
     #[inline]
-    fn remove_all<'a, TS>(
+    fn remove_all<TS>(
         &mut self,
         src: &mut TS,
     ) -> CoercedResult<usize, TS::Error, <Self as MutableDataset>::MutationError>
     where
-        TS: QuadSource<'a>,
+        TS: QuadSource,
         TS::Error: CoercibleWith<<Self as MutableDataset>::MutationError>,
     {
         src.in_sink(&mut self.remover())

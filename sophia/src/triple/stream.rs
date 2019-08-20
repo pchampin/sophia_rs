@@ -18,27 +18,17 @@ use std::result::Result; // override ::error::Result
 
 /// A triple source produces [triples], and may also fail in the process.
 ///
-/// A triple source is castable, with the `as_iter` method,
-/// to an iterator yielding [triples] wrapped in [results],
-/// and any such iterator implements the `TripleSource` trait.
-/// It also has additional methods dedicated to interacting with [`TripleSink`]s.
+/// It provides methods dedicated to interacting with [`TripleSink`]s.
+/// Any iterator yielding  [triples] wrapped in [results]
+/// implements the `TripleSource` trait.
 ///
 /// [triples]: ../trait.Triple.html
 /// [results]: ../../error/type.Result.html
 /// [`TripleSink`]: trait.TripleSink.html
 ///
-pub trait TripleSource<'a> {
-    /// The type of triples produced by this source.
-    type Triple: Triple<'a>;
-
+pub trait TripleSource {
     /// The type of errors produced by this source.
     type Error: CoercibleWith<Error> + CoercibleWith<Never>;
-
-    /// The type of iterator this triple source casts to.
-    type Iter: Iterator<Item = Result<Self::Triple, Self::Error>>;
-
-    /// Cast to iterator.
-    fn as_iter(&mut self) -> &mut Self::Iter;
 
     /// Feed all triples from this source into the given [sink](trait.TripleSink.html).
     ///
@@ -48,14 +38,7 @@ pub trait TripleSource<'a> {
         sink: &mut TS,
     ) -> CoercedResult<TS::Outcome, Self::Error, TS::Error>
     where
-        Self::Error: CoercibleWith<TS::Error>,
-    {
-        for tr in self.as_iter() {
-            let t = tr?;
-            sink.feed(&t)?;
-        }
-        Ok(sink.finish()?)
-    }
+        Self::Error: CoercibleWith<TS::Error>;
 
     /// Insert all triples from this source into the given [graph](../../graph/trait.MutableGraph.html).
     ///
@@ -71,18 +54,26 @@ pub trait TripleSource<'a> {
     }
 }
 
-impl<'a, I, T, E> TripleSource<'a> for I
+impl<'a, I, T, E> TripleSource for I
 where
-    I: Iterator<Item = Result<T, E>> + 'a,
+    I: Iterator<Item = Result<T, E>>,
     T: Triple<'a>,
     E: CoercibleWith<Error> + CoercibleWith<Never>,
 {
-    type Triple = T;
     type Error = E;
-    type Iter = Self;
 
-    fn as_iter(&mut self) -> &mut Self::Iter {
-        self
+    fn in_sink<TS: TripleSink>(
+        &mut self,
+        sink: &mut TS,
+    ) -> CoercedResult<TS::Outcome, Self::Error, TS::Error>
+    where
+        Self::Error: CoercibleWith<TS::Error>,
+    {
+        for tr in self {
+            let t = tr?;
+            sink.feed(&t)?;
+        }
+        Ok(sink.finish()?)
     }
 }
 

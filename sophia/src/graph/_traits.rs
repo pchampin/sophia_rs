@@ -420,12 +420,12 @@ pub trait MutableGraph: for<'x> Graph<'x> {
 
     /// Insert into this graph all triples from the given source.
     #[inline]
-    fn insert_all<'a, TS>(
+    fn insert_all<TS>(
         &mut self,
         src: &mut TS,
     ) -> CoercedResult<usize, TS::Error, <Self as MutableGraph>::MutationError>
     where
-        TS: TripleSource<'a>,
+        TS: TripleSource,
         TS::Error: CoercibleWith<<Self as MutableGraph>::MutationError>,
     {
         src.in_sink(&mut self.inserter())
@@ -440,12 +440,12 @@ pub trait MutableGraph: for<'x> Graph<'x> {
 
     /// Remove from this graph all triples from the given source.
     #[inline]
-    fn remove_all<'a, TS>(
+    fn remove_all<TS>(
         &mut self,
         src: &mut TS,
     ) -> CoercedResult<usize, TS::Error, <Self as MutableGraph>::MutationError>
     where
-        TS: TripleSource<'a>,
+        TS: TripleSource,
         TS::Error: CoercibleWith<<Self as MutableGraph>::MutationError>,
     {
         src.in_sink(&mut self.remover())
