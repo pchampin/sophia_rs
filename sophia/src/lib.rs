@@ -48,6 +48,10 @@ extern crate rental;
 #[cfg(feature = "xml")]
 extern crate quick_xml;
 extern crate resiter;
+#[cfg(feature = "rio")]
+extern crate rio_api;
+#[cfg(feature = "rio")]
+extern crate rio_turtle;
 extern crate url;
 extern crate weak_table;
 

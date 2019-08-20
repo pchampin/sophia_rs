@@ -24,5 +24,9 @@
 pub mod common;
 pub mod nq;
 pub mod nt;
+#[cfg(feature = "rio")]
+pub mod rio_trig;
+#[cfg(feature = "rio")]
+pub mod rio_turtle;
 #[cfg(feature = "xml")]
 pub mod xml;
