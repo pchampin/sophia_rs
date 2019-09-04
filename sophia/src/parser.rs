@@ -27,6 +27,8 @@ pub mod nt;
 #[cfg(feature = "rio")]
 pub mod rio_common;
 #[cfg(feature = "rio")]
+pub mod rio_nt;
+#[cfg(feature = "rio")]
 pub mod rio_trig;
 #[cfg(feature = "rio")]
 pub mod rio_turtle;
