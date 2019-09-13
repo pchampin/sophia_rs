@@ -29,7 +29,7 @@ impl<T, E> From<StdResult<T, E>> for RioSource<T, E> {
 
 impl<T, E> TripleSource for RioSource<T, E>
 where
-    T: TripleParser,
+    T: TriplesParser,
     Error: From<T::Error>,
     Error: From<E>,
 {
@@ -54,15 +54,14 @@ where
                 }),
             RioSource::Parser(parser) => {
                 parser
-                    .parse_all(&mut |t| {
+                    .parse_all(&mut |t| -> Result<()> {
                         sink.feed(&[
-                            rio2refterm(t.subject.into()).unwrap(),   // TODO
-                            rio2refterm(t.predicate.into()).unwrap(), // TODO
-                            rio2refterm(t.object).unwrap(),           // TODO
+                            rio2refterm(t.subject.into()).unwrap(),   // TODO handle error properly
+                            rio2refterm(t.predicate.into()).unwrap(), // TODO handle error properly
+                            rio2refterm(t.object).unwrap(),           // TODO handle error properly
                         ])
-                        .unwrap(); // TODO
-                    })
-                    .map_err(Error::from)?;
+                        .map_err(TS::Error::into)
+                    })?;
                 Ok(sink.finish()?)
             }
         }
@@ -71,7 +70,7 @@ where
 
 impl<T, E> QuadSource for RioSource<T, E>
 where
-    T: QuadParser,
+    T: QuadsParser,
     Error: From<T::Error>,
     Error: From<E>,
 {
@@ -96,22 +95,21 @@ where
                 }),
             RioSource::Parser(parser) => {
                 parser
-                    .parse_all(&mut |q| {
+                    .parse_all(&mut |q| -> Result<()> {
                         sink.feed(&(
                             [
-                                rio2refterm(q.subject.into()).unwrap(),   // TODO
-                                rio2refterm(q.predicate.into()).unwrap(), // TODO
-                                rio2refterm(q.object).unwrap(),           // TODO
+                                rio2refterm(q.subject.into()).unwrap(),   // TODO handle error properly
+                                rio2refterm(q.predicate.into()).unwrap(), // TODO handle error properly
+                                rio2refterm(q.object).unwrap(),           // TODO handle error properly
                             ],
                             if let Some(n) = q.graph_name {
-                                Some(rio2refterm(n.into()).unwrap()) // TODO
+                                Some(rio2refterm(n.into()).unwrap()) // TODO handle error properly
                             } else {
                                 None
                             },
                         ))
-                        .unwrap(); // TODO
-                    })
-                    .map_err(Error::from)?;
+                        .map_err(TS::Error::into)
+                    })?;
                 Ok(sink.finish()?)
             }
         }
