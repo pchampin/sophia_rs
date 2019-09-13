@@ -324,12 +324,12 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_retain() -> MDResult<$mutable_dataset_impl, ()> {
+            fn test_retain_matching() -> MDResult<$mutable_dataset_impl, ()> {
                 let mut d = $mutable_dataset_factory();
                 populate(&mut d)?;
 
                 let o_matcher = [C1.clone(), C2.clone()];
-                MutableDataset::retain(&mut d, &ANY, &rdf::type_, &o_matcher[..], &ANY)?;
+                d.retain_matching(&ANY, &rdf::type_, &o_matcher[..], &ANY)?;
                 print!("{:?}", d.quads().size_hint());
                 assert_consistent_hint(4, d.quads().size_hint());
                 Ok(())

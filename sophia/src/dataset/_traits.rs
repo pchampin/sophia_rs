@@ -681,7 +681,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
     /// Note that the default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
     ///
-    fn retain<S, P, O, G>(&mut self, ms: &S, mp: &P, mo: &O, mg: &G) -> MDResult<Self, ()>
+    fn retain_matching<S, P, O, G>(&mut self, ms: &S, mp: &P, mo: &O, mg: &G) -> MDResult<Self, ()>
     where
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,

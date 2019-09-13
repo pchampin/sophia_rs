@@ -492,7 +492,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
     /// Note that the default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
     ///
-    fn retain<S, P, O>(&mut self, ms: &S, mp: &P, mo: &O) -> MGResult<Self, ()>
+    fn retain_matching<S, P, O>(&mut self, ms: &S, mp: &P, mo: &O) -> MGResult<Self, ()>
     where
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
