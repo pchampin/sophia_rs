@@ -96,7 +96,7 @@ pub trait Graph<'a> {
     ///
     /// Must be either [`Never`](../error/enum.Never.html) (for infallible graphs)
     /// or [`Error`](../error/struct.Error.html).
-    type Error: CoercibleWith<Error> + CoercibleWith<Never>;
+    type Error: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>;
 
     /// An iterator visiting all triples of this graph in arbitrary order.
     ///
@@ -381,7 +381,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
     ///
     /// Must be either [`Never`](../error/enum.Never.html) (for infallible graphs)
     /// or [`Error`](../error/struct.Error.html).
-    type MutationError: CoercibleWith<Error> + CoercibleWith<Never>;
+    type MutationError: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>;
 
     /// Insert the given triple in this graph.
     ///

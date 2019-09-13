@@ -47,7 +47,7 @@ pub trait Dataset<'a> {
     ///
     /// Must be either [`Never`](../error/enum.Never.html) (for infallible datasets)
     /// or [`Error`](../error/struct.Error.html).
-    type Error: CoercibleWith<Error> + CoercibleWith<Never>;
+    type Error: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>;
 
     /// An iterator visiting all quads of this dataset in arbitrary order.
     ///
@@ -546,7 +546,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
     ///
     /// Must be either [`Never`](../error/enum.Never.html) (for infallible datasets)
     /// or [`Error`](../error/struct.Error.html).
-    type MutationError: CoercibleWith<Error> + CoercibleWith<Never>;
+    type MutationError: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>;
 
     /// Insert the given quad in this dataset.
     ///

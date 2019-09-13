@@ -28,7 +28,7 @@ use std::result::Result; // override ::error::Result
 ///
 pub trait QuadSource {
     /// The type of errors produced by this source.
-    type Error: CoercibleWith<Error> + CoercibleWith<Never>;
+    type Error: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>;
 
     /// Feed all quads from this source into the given [sink](trait.QuadSink.html).
     ///
@@ -58,7 +58,7 @@ impl<'a, I, T, E> QuadSource for I
 where
     I: Iterator<Item = Result<T, E>>,
     T: Quad<'a>,
-    E: CoercibleWith<Error> + CoercibleWith<Never>,
+    E: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>,
 {
     type Error = E;
 
@@ -117,7 +117,7 @@ pub trait QuadSink {
     type Outcome;
 
     /// The type of error raised by this quad sink.
-    type Error: CoercibleWith<Error> + CoercibleWith<Never>;
+    type Error: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>;
 
     /// Feed one quad in this sink.
     fn feed<'a, T: Quad<'a>>(&mut self, t: &T) -> Result<(), Self::Error>;
