@@ -2,7 +2,6 @@
 
 use std::io::{BufRead, BufReader, Cursor, Read};
 
-use pest::error::{InputLocation, LineColLocation};
 use rio_turtle::{TurtleError, TurtleParser};
 
 use crate::error::*;
@@ -50,9 +49,8 @@ def_default_triple_parser_api! {}
 impl From<TurtleError> for Error {
     fn from(err: TurtleError) -> Error {
         let message = format!("{:?}", err);
-        let location = InputLocation::Pos(1); // TODO
-        let line_col = LineColLocation::Pos((1, 1)); // TODO
-        Error::with_chain(err, ErrorKind::ParserError(message, location, line_col))
+        let location = Location::Unknown; // TODO improve once Rio exposes this info
+        Error::with_chain(err, ErrorKind::ParserError(message, location))
     }
 }
 

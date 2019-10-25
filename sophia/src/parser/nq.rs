@@ -263,13 +263,13 @@ mod test {
         let mut d = HashSetDataset::new();
         let reader = io::Cursor::new(GENERALIZED_DOC);
         let res = STRICT.parse_read(reader).in_dataset(&mut d);
-        if let Err(Error(ParserError(_, _, line_pos), _)) = res {
-            use ::pest::error::LineColLocation::*;
-            let lineno = match line_pos {
-                Pos((lineno, _)) => lineno,
-                Span((lineno, _), _) => lineno,
+        if let Err(Error(ParserError(_, location), _)) = res {
+            let line_no = match location {
+                Location::Pos(Position::LiCo(line_no, _)) => line_no,
+                Location::Span(Position::LiCo(line_no, _), _) => line_no,
+                _ => 0,
             };
-            assert_eq!(lineno, 5);
+            assert_eq!(line_no, 5);
         } else {
             assert!(false, "res should be an error");
         }

@@ -135,13 +135,12 @@ pub fn convert_pest_err<R: pest::RuleType>(err: PestError<R>, lineoffset: usize)
         } => format!("expected: {:?}\nunexpected: {:?}", positives, negatives),
         ErrorVariant::CustomError { message } => message,
     };
-    let location = err.location.clone();
     use ::pest::error::LineColLocation::*;
-    let line_col = match err.line_col.clone() {
-        Pos((l, c)) => Pos((l + lineoffset, c)),
-        Span((l1, c1), (l2, c2)) => Span((l1 + lineoffset, c1), (l2 + lineoffset, c2)),
+    let location = match err.line_col.clone() {
+        Pos((l, c)) => Location::from_lico(l + lineoffset, c),
+        Span((l1, c1), (l2, c2)) => Location::from_licos(l1 + lineoffset, c1, l2 + lineoffset, c2),
     };
-    ErrorKind::ParserError(message, location, line_col).into()
+    ErrorKind::ParserError(message, location).into()
 }
 
 // ---------------------------------------------------------------------------------

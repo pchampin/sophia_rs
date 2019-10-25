@@ -156,8 +156,7 @@ pub mod error {
                 error,
                 crate::error::ErrorKind::ParserError(
                     message,
-                    pest::error::InputLocation::Pos(0),
-                    pest::error::LineColLocation::Pos((0, 0)),
+                    crate::error::Location::Unknown,
                 ),
             )
         }
@@ -172,8 +171,8 @@ pub mod error {
 
     /// Patch the `location` field of the error kind if the error is a `ParserError`.
     pub fn with_position(mut e: crate::error::Error, n: usize) -> crate::error::Error {
-        if let crate::error::ErrorKind::ParserError(_, ref mut location, _) = e.0 {
-            *location = pest::error::InputLocation::Pos(n);
+        if let crate::error::ErrorKind::ParserError(_, ref mut location) = e.0 {
+            *location = crate::error::Location::from_offset(n);
         }
         e
     }

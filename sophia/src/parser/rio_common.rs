@@ -2,7 +2,6 @@
 
 use std::result::Result as StdResult;
 
-use pest::error::{InputLocation, LineColLocation};
 use rio_api::model::*;
 use rio_api::parser::*;
 
@@ -48,9 +47,8 @@ where
                 .map(|e| Err(Error::from(e).into()))
                 .unwrap_or_else(|| {
                     let message = "This parser has already failed".to_string();
-                    let location = InputLocation::Pos(0);
-                    let line_col = LineColLocation::Pos((0, 0));
-                    Err(Error::from(ErrorKind::ParserError(message, location, line_col)).into())
+                    let location = Location::Unknown;
+                    Err(Error::from(ErrorKind::ParserError(message, location)).into())
                 }),
             RioSource::Parser(parser) => {
                 parser
@@ -89,9 +87,8 @@ where
                 .map(|e| Err(Error::from(e).into()))
                 .unwrap_or_else(|| {
                     let message = "This parser has already failed".to_string();
-                    let location = InputLocation::Pos(0);
-                    let line_col = LineColLocation::Pos((0, 0));
-                    Err(Error::from(ErrorKind::ParserError(message, location, line_col)).into())
+                    let location = Location::Unknown;
+                    Err(Error::from(ErrorKind::ParserError(message, location)).into())
                 }),
             RioSource::Parser(parser) => {
                 parser
