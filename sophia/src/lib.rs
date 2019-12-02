@@ -25,9 +25,36 @@
 //! they will be called, respectively,
 //! the *generalized* RDF model, and the *strict* RDF model.
 //!
-//! # Examples
+//! # Getting Started
 //!
-// TODO: flesh out one or several example(s) of code
+//! Following a short example how to build a graph, mutate it and serialize it
+//! back.
+//!
+//! ```
+//! use sophia::graph::{*, inmem::LightGraph};
+//! use sophia::parser::nt;
+//! use sophia::term::Term;
+//! use sophia::triple::stream::TripleSink;
+//!
+//! let example = r#"
+//!     <http://example.org/alice> <http://xmlns.com/foaf/0.1/name> "Alice" .
+//!     <http://example.org/alice> <http://xmlns.com/foaf/0.1/mbox> <mailto:alice@work.example> .
+//!
+//!     <http://example.org/bob> <http://xmlns.com/foaf/0.1/name> "Bob" .
+//! "#;
+//! let mut graph = LightGraph::new();
+//! graph.insert_all(&mut nt::parse_str(example)).unwrap();
+//!
+//! let s = Term::<&'static str>::new_iri("http://example.org/bob").unwrap();
+//! let p = Term::<&'static str>::new_iri("http://xmlns.com/foaf/0.1/knows").unwrap();
+//! let o = Term::<&'static str>::new_iri("http://example.org/alice").unwrap();
+//! graph.insert(&s, &p, &o).unwrap();
+//!
+//! let mut nt_serializer = sophia::serializer::nt::stringifier();
+//! graph.triples().map(|res_triple| res_triple.unwrap()).for_each(|triple| nt_serializer.feed(&triple).unwrap());
+//! println!("The resulting graph\n{}", nt_serializer.finish().unwrap());
+//! ```
+
 
 // error_chain is recursing a lot
 #![recursion_limit = "256"]
