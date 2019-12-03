@@ -25,9 +25,40 @@
 //! they will be called, respectively,
 //! the *generalized* RDF model, and the *strict* RDF model.
 //!
-//! # Examples
+//! # Getting Started
 //!
-// TODO: flesh out one or several example(s) of code
+//! Following a short example how to build a graph, mutate it and serialize it
+//! back.
+//!
+//! ```
+//! use sophia::graph::{*, inmem::LightGraph};
+//! use sophia::ns::Namespace;
+//! use sophia::parser;
+//! use sophia::serializer;
+//! use sophia::serializer::TripleStringifier;
+//! use sophia::triple::stream::{TripleSink, TripleSource};
+//!
+//! let example = r#"
+//!     <http://example.org/alice> <http://xmlns.com/foaf/0.1/name> "Alice" .
+//!     <http://example.org/alice> <http://xmlns.com/foaf/0.1/mbox> <mailto:alice@work.example> .
+//!
+//!     <http://example.org/bob> <http://xmlns.com/foaf/0.1/name> "Bob" .
+//! "#;
+//! let mut graph = LightGraph::new();
+//! parser::nt::parse_str(example).in_graph(&mut graph);
+//!
+//! let ex = Namespace::new("http://example.org/").unwrap();
+//! let foaf = Namespace::new("http://xmlns.com/foaf/0.1/").unwrap();
+//! let bob = ex.get("bob").unwrap();
+//! let knows = foaf.get("known").unwrap();
+//! let alice = ex.get("alice").unwrap();
+//! graph.insert(&bob, &knows, &alice).unwrap();
+//!
+//! let mut nt_stringifier = serializer::nt::stringifier();
+//! let example2 = nt_stringifier.stringify_graph(&mut graph).unwrap();
+//! println!("The resulting graph\n{}", example2);
+//! ```
+
 
 // error_chain is recursing a lot
 #![recursion_limit = "256"]
