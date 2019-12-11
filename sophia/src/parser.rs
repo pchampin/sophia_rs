@@ -7,7 +7,7 @@
 //! - implements [`Default`],
 //! - has three methods `parse_bufread`, `parse_read` and `parse_str`,
 //!   accepting [`io::BufRead`], [`io::Read`] and [`&str`] respectively,
-//!   and all returning a [`TripleSource`] or [`QuadSource`] iterator.
+//!   and all returning a [`TripleSource`] or [`QuadSource`].
 //!
 //! Each parser module also has three functions
 //! `parse_bufread`, `parse_read` and `parse_str`,

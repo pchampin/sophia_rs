@@ -3,10 +3,15 @@
 //!
 //! See [`QuadSource`]'s and [`QuadSink`]'s documentation for more detail.
 //!
+//! # Rationale (or Why not simply use `Iterator`?)
+//!
+//! See the documentation of module [`triple::stream`].
+//!
 //! [`QuadSource`]: trait.QuadSource.html
 //! [`QuadSink`]: trait.QuadSink.html
 //! [`Quad`]: ../trait.Quad.html
 //! [`Iterator`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html
+//! [`triple::stream`]: ../../triple/stream/index.html
 
 use std::iter::Map;
 

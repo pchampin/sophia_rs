@@ -3,6 +3,25 @@
 //!
 //! See [`TripleSource`]'s and [`TripleSink`]'s documentation for more detail.
 //!
+//! # Rationale (or Why not simply use `Iterator`?)
+//!
+//! [`TripleSource`]s are conceptually very similar to iterators,
+//! so why introduce a new trait?
+//! The answer is that Rust iterators are limited,
+//! when it comes to yielding *references*,
+//! and [`TripleSource`] is designed to overcome this limitation.
+//!
+//! More precisely, when `Iterator::Item` is a reference type
+//! (or contains some reference, such as `[&RcTerm;3]` for example),
+//! its lifetime must be known in advance,
+//! and will typically be the lifetime of the iterator itself
+//! (what we shall call *long-lived* references).
+//! But triple sources (parsers in particular)
+//! may need to yield *short-lived* references,
+//! *i.e.* references that will be valid during the time need to process them,
+//! but may be outlived by the triple source itself.
+//!
+//!
 //! [`TripleSource`]: trait.TripleSource.html
 //! [`TripleSink`]: trait.TripleSink.html
 //! [`Triple`]: ../trait.Triple.html
