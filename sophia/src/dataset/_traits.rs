@@ -21,7 +21,8 @@ pub type DTerm<'a, D> = Term<<<D as Dataset<'a>>::Quad as Quad<'a>>::TermData>;
 /// Type alias for results iterators produced by a dataset.
 pub type DResult<'a, D, T> = std::result::Result<T, <D as Dataset<'a>>::Error>;
 /// Type alias for fallible quad iterators produced by a dataset.
-pub type DQuadSource<'a, D> = Box<Iterator<Item = DResult<'a, D, <D as Dataset<'a>>::Quad>> + 'a>;
+pub type DQuadSource<'a, D> =
+    Box<dyn Iterator<Item = DResult<'a, D, <D as Dataset<'a>>::Quad>> + 'a>;
 /// Type alias for fallible hashets of terms produced by a dataset.
 pub type DResultTermSet<'a, D> = DResult<'a, D, HashSet<DTerm<'a, D>>>;
 

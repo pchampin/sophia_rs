@@ -20,7 +20,8 @@ pub type GTerm<'a, G> = Term<<<G as Graph<'a>>::Triple as Triple<'a>>::TermData>
 /// Type alias for results produced by a graph.
 pub type GResult<'a, G, T> = std::result::Result<T, <G as Graph<'a>>::Error>;
 /// Type alias for fallible triple iterators produced by a graph.
-pub type GTripleSource<'a, G> = Box<Iterator<Item = GResult<'a, G, <G as Graph<'a>>::Triple>> + 'a>;
+pub type GTripleSource<'a, G> =
+    Box<dyn Iterator<Item = GResult<'a, G, <G as Graph<'a>>::Triple>> + 'a>;
 /// Type alias for fallible hashets of terms produced by a graph.
 pub type GResultTermSet<'a, G> = GResult<'a, G, HashSet<GTerm<'a, G>>>;
 

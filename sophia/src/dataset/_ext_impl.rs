@@ -39,7 +39,7 @@ where
     }
 }
 
-impl MutableDataset for Vec<([BoxTerm; 3], Option<BoxTerm>)> where {
+impl MutableDataset for Vec<([BoxTerm; 3], Option<BoxTerm>)> {
     type MutationError = Never;
 
     fn insert<T, U, V, W>(

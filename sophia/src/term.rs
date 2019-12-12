@@ -370,7 +370,7 @@ where
     ///
     pub fn batch_join<F, U>(&self, task: F)
     where
-        F: FnOnce(&Fn(&Term<U>) -> Term<U>) -> (),
+        F: FnOnce(&dyn Fn(&Term<U>) -> Term<U>) -> (),
         U: TermData + From<String>,
     {
         match self {

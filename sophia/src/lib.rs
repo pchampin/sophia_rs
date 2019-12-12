@@ -59,7 +59,6 @@
 //! println!("The resulting graph\n{}", example2);
 //! ```
 
-
 // error_chain is recursing a lot
 #![recursion_limit = "256"]
 
