@@ -20,7 +20,7 @@
 //! ```
 
 use crate::error::*;
-use crate::term::{iri_rfc3987::is_valid_iri, Term, TermData};
+use crate::term::{iri_rfc3987::is_valid_iri_ref, Term, TermData};
 
 /// A custom namespace.
 #[derive(Clone, Debug)]
@@ -31,7 +31,7 @@ impl<T: TermData> Namespace<T> {
     ///
     /// `iri` must be a valid IRI, othewise this constructor returns an error.
     pub fn new(iri: T) -> Result<Namespace<T>> {
-        if is_valid_iri(iri.as_ref()) {
+        if is_valid_iri_ref(iri.as_ref()) {
             Ok(Namespace(iri))
         } else {
             Err(ErrorKind::InvalidIri("IRI is invalid".to_string()).into())

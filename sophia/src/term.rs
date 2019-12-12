@@ -46,7 +46,7 @@ use crate::error::*;
 pub mod factory;
 pub mod index_map;
 pub mod iri_rfc3987;
-use self::iri_rfc3987::ParsedIri;
+use self::iri_rfc3987::IriRefStructure;
 pub mod matcher;
 
 mod _bnode_id;
@@ -376,7 +376,7 @@ where
         match self {
             Iri(iri) if iri.is_absolute() => {
                 let iri_txt = iri.to_string();
-                let base = ParsedIri::new(&iri_txt).unwrap();
+                let base = IriRefStructure::new(&iri_txt).unwrap();
                 task(&|t| match t {
                     Iri(ref iri) => Iri(base.join_iri(iri)),
                     Literal(ref txt, Datatype(ref iri)) => {

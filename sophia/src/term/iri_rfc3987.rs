@@ -1,41 +1,44 @@
 //! Implementation of IRIs as per [\[RFC 3987\]](https://tools.ietf.org/html/rfc3987).
 
-use pest::{error::Error, iterators::Pair, Parser};
 use regex::Regex;
+use std::fmt;
 
-#[cfg(debug_assertions)]
-const _GRAMMAR: &str = include_str!("iri_rfc3987.pest");
+/// Error caused by IRI parsing
+#[derive(Clone, Copy, Debug)]
+pub struct IriError<'a>(&'a str);
 
+impl std::error::Error for IriError<'_> {}
+
+impl fmt::Display for IriError<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "Error while parsing IRI <{}>", self.0)
+    }
+}
+
+/// Check whether txt is a valid (absolute or relative) IRI reference.
 #[inline]
-/// Check whether txt is a valid (absolute or relative) IRI.
-pub fn is_valid_iri(txt: &str) -> bool {
+pub fn is_valid_iri_ref(txt: &str) -> bool {
     IRI_REGEX.is_match(txt) || IRELATIVE_REF_REGEX.is_match(txt)
 }
 
-/// Check whether txt is an absolute IRI.
+/// Check whether txt is an absolute IRI reference.
 #[inline]
-pub fn is_absolute_iri(txt: &str) -> bool {
+pub fn is_absolute_iri_ref(txt: &str) -> bool {
     IRI_REGEX.is_match(txt)
 }
 
-/// Check whether txt is a relative IRI.
+/// Check whether txt is a relative IRI reference.
 #[inline]
-pub fn is_relative_iri(txt: &str) -> bool {
+pub fn is_relative_iri_ref(txt: &str) -> bool {
     IRELATIVE_REF_REGEX.is_match(txt)
 }
 
-// TODO replace Pest by a pure Regex parsing?
-// NB: once the IRI has been validated with
-// IRI_REGEX or IRELATIVE_REF_REGEX,
-// spliting it into its different part is relatively trivial
-// (rsplit by #, then rsplit by ?, then split by /)
-
-#[derive(Parser)]
-#[grammar = "term/iri_rfc3987.pest"]
-pub struct IriParser;
-
+/// Keeps track of the different components of an IRI reference.
+///
+/// NB: this type does not store the actual text of the IRI reference,
+/// it borrows it from one (or possibly several) external `str`s.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct ParsedIri<'a> {
+pub struct IriRefStructure<'a> {
     scheme: Option<&'a str>,
     authority: Option<&'a str>,
     path: Vec<&'a str>,
@@ -45,71 +48,51 @@ pub struct ParsedIri<'a> {
 
 // NB: path complies with the following rules:
 // - does not contain the seperators ('/')
-// - its first element is '' if the path starts with '/'
+// - its first element is "" if the path starts with '/'
 // - its last element is "" if the path ends with a '/'
 
-impl<'a> ParsedIri<'a> {
-    pub fn new(txt: &'a str) -> Result<ParsedIri<'a>, Error<Rule>> {
-        let mut pi = ParsedIri::default();
-        pi.fill_with(IriParser::parse(Rule::main, txt)?.next().unwrap());
+impl<'a> IriRefStructure<'a> {
+    /// Parse the given `str` as an IRI reference,
+    /// and return its inner structure (or fail with an `IriError`).
+    pub fn new(txt: &'a str) -> Result<IriRefStructure<'a>, IriError<'a>> {
+        let mut pi = IriRefStructure::default();
+        let path: Option<&str>;
+        if let Some(cap) = IRI_REGEX.captures(txt) {
+            pi.scheme = cap.get(1).map(|m| m.as_str());
+            pi.authority = cap.get(2).map(|m| m.as_str());
+            pi.query = cap.get(6).map(|m| m.as_str());
+            pi.fragment = cap.get(7).map(|m| m.as_str());
+            path = cap
+                .get(3)
+                .or_else(|| cap.get(4))
+                .or_else(|| cap.get(5))
+                .map(|m| m.as_str())
+                .filter(|s| !s.is_empty());
+        } else if let Some(cap) = IRELATIVE_REF_REGEX.captures(txt) {
+            pi.authority = cap.get(1).map(|m| m.as_str());
+            pi.query = cap.get(5).map(|m| m.as_str());
+            pi.fragment = cap.get(6).map(|m| m.as_str());
+            path = cap
+                .get(2)
+                .or_else(|| cap.get(3))
+                .or_else(|| cap.get(4))
+                .map(|m| m.as_str())
+                .filter(|s| !s.is_empty());
+        } else {
+            return Err(IriError(txt));
+        }
+        if let Some(path) = path {
+            path.split('/').for_each(|i| pi.path.push(i))
+        }
         Ok(pi)
     }
 
-    fn fill_with(&mut self, pair: Pair<'a, Rule>) {
-        for subpair in pair.into_inner() {
-            match subpair.as_rule() {
-                Rule::iri => {
-                    self.fill_with(subpair);
-                }
-                Rule::irelative_ref => {
-                    self.fill_with(subpair);
-                }
-                Rule::scheme => {
-                    debug_assert!(self.scheme.is_none());
-                    self.scheme = Some(subpair.as_str());
-                }
-                Rule::ihier_part | Rule::irelative_part => {
-                    self.fill_with(subpair);
-                }
-                Rule::iquery => {
-                    debug_assert!(self.query.is_none());
-                    self.query = Some(subpair.as_str());
-                }
-                Rule::ifragment => {
-                    debug_assert!(self.fragment.is_none());
-                    self.fragment = Some(subpair.as_str());
-                }
-                Rule::iauthority => {
-                    debug_assert!(self.authority.is_none());
-                    self.authority = Some(subpair.as_str());
-                }
-                Rule::ipath_abempty => {
-                    if !subpair.as_str().is_empty() {
-                        self.path.push("");
-                        self.fill_with(subpair);
-                    }
-                }
-                Rule::ipath_absolute => {
-                    self.path.push("");
-                    self.fill_with(subpair);
-                }
-                Rule::ipath_noscheme | Rule::ipath_rootless => {
-                    self.fill_with(subpair);
-                }
-                Rule::ipath_empty => {}
-                Rule::isegment | Rule::isegment_nz | Rule::isegment_nz_nc => {
-                    self.path.push(subpair.as_str());
-                }
-                Rule::EOI => {}
-                _ => panic!(format!("Can't handle rule {:?}", subpair.as_rule())),
-            }
-        }
-    }
-
+    /// Return `true` if this IRI reference is absolute.
     pub fn is_absolute(&self) -> bool {
         self.scheme.is_some()
     }
 
+    /// Make a `String` version of this IRI reference.
     pub fn to_string(&self) -> String {
         let mut ret = String::new();
         if let Some(scheme) = self.scheme {
@@ -132,7 +115,11 @@ impl<'a> ParsedIri<'a> {
         ret
     }
 
-    pub fn join(&self, iri_ref: &ParsedIri<'a>) -> ParsedIri<'a> {
+    /// Resolve `iri_ref` using this IRI reference as the base.
+    ///
+    /// NB: the resulting `IriRefStructure`
+    /// may borrow parts from both parts.
+    pub fn join(&self, iri_ref: &IriRefStructure<'a>) -> IriRefStructure<'a> {
         let (scheme, authority, query, fragment);
         let mut path;
         if iri_ref.scheme.is_some() {
@@ -166,7 +153,7 @@ impl<'a> ParsedIri<'a> {
             }
         }
         fragment = iri_ref.fragment;
-        ParsedIri {
+        IriRefStructure {
             scheme,
             authority,
             path,
@@ -176,7 +163,7 @@ impl<'a> ParsedIri<'a> {
     }
 }
 
-fn merge<'a>(base: &ParsedIri<'a>, path: &[&'a str]) -> Vec<&'a str> {
+fn merge<'a>(base: &IriRefStructure<'a>, path: &[&'a str]) -> Vec<&'a str> {
     let mut v = Vec::new();
     if base.authority.is_some() && base.path.is_empty() {
         v.push(""); // resulting path must have a leading '/'
@@ -213,59 +200,62 @@ fn remove_dot_segments(path: &mut Vec<&str>) {
 lazy_static! {
     static ref IRI_REGEX: Regex = Regex::new(r"(?x)^
         #scheme
+       ( # CAPTURE scheme
         [A-Za-z] [-A-Za-z0-9+.]*
+       )
         :
         #ihier_part
-        ( #iauthority + ipath_abempty
+        (?: #iauthority + ipath_abempty
           //
-          ( # iuserinfo
-            ( [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:]
+         ( # CAPTURE iauthority
+          (?: # iuserinfo
+            (?: [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:]
           |
             %[0-9a-fA-F]{2}
           )*
           @
           )?
           # ihost
-          ( # ip_literal
+          (?: # ip_literal
              \[
-            ( # ipv6address
-              (
-                ([0-9a-fA-F]{1,4}:){6}
-                ([0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))(\.([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))){3})
+            (?: # ipv6address
+              (?:
+                (?:[0-9a-fA-F]{1,4}:){6}
+                (?:[0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))(?:\.(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))){3})
               |
                 ::
-                ([0-9a-fA-F]{1,4}:){5}
-                ([0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))(\.([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))){3})
+                (?:[0-9a-fA-F]{1,4}:){5}
+                (?:[0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))(?:\.(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))){3})
               |
-                ([0-9a-fA-F]{1,4})?
+                (?:[0-9a-fA-F]{1,4})?
                 ::
-                ([0-9a-fA-F]{1,4}:){4}
-                ([0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))(\.([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))){3})
+                (?:[0-9a-fA-F]{1,4}:){4}
+                (?:[0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))(?:\.(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))){3})
               |
-                (([0-9a-fA-F]{1,4}:){0,1}:[0-9a-fA-F]{1,4})?
+                (?:(?:[0-9a-fA-F]{1,4}:){0,1}:[0-9a-fA-F]{1,4})?
                 ::
-                ([0-9a-fA-F]{1,4}:){3}
-                ([0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))(\.([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))){3})
+                (?:[0-9a-fA-F]{1,4}:){3}
+                (?:[0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))(?:\.(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))){3})
               |
-                (([0-9a-fA-F]{1,4}:){0,2}:[0-9a-fA-F]{1,4})?
+                (?:(?:[0-9a-fA-F]{1,4}:){0,2}:[0-9a-fA-F]{1,4})?
                 ::
-                ([0-9a-fA-F]{1,4}:){2}
-                ([0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))(\.([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))){3})
+                (?:[0-9a-fA-F]{1,4}:){2}
+                (?:[0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))(?:\.(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))){3})
               |
-                (([0-9a-fA-F]{1,4}:){0,3}:[0-9a-fA-F]{1,4})?
+                (?:(?:[0-9a-fA-F]{1,4}:){0,3}:[0-9a-fA-F]{1,4})?
                 ::
                 [0-9a-fA-F]{1,4}:
-                ([0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))(\.([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))){3})
+                (?:[0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))(?:\.(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))){3})
               |
-                (([0-9a-fA-F]{1,4}:){0,4}:[0-9a-fA-F]{1,4})?
+                (?:(?:[0-9a-fA-F]{1,4}:){0,4}:[0-9a-fA-F]{1,4})?
                 ::
-                ([0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))(\.([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))){3})
+                (?:[0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))(?:\.(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))){3})
               |
-                (([0-9a-fA-F]{1,4}:){0,5}:[0-9a-fA-F]{1,4})?
+                (?:(?:[0-9a-fA-F]{1,4}:){0,5}:[0-9a-fA-F]{1,4})?
                 ::
                 [0-9a-fA-F]{1,4}
               |
-                (([0-9a-fA-F]{1,4}:){0,6}:[0-9a-fA-F]{1,4})?
+                (?:(?:[0-9a-fA-F]{1,4}:){0,6}:[0-9a-fA-F]{1,4})?
                 ::
               )
             | # ipvfuture
@@ -273,115 +263,127 @@ lazy_static! {
             )
              \]
           | # ipv4address
-            ([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5])) (\.([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))){3}
+            (?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5])) (?:\.(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))){3}
           | # ireg_name
-              ( [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=]
+              (?: [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=]
               | %[0-9a-fA-F]{2}
               )*
           )
-          (
+          (?:
             :
             [0-9]* # port
           )?
+         )
           #ipath_abempty
-          (
+         ( # CAPTURE ipath_abempty
+          (?:
             /
-            ( [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@]
+            (?: [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@]
             | %[0-9a-fA-F]{2}
             )*
           )*
+         )
         | #ipath_absolute
+         ( # CAPTURE ipath_absolute
           /
-          (
-            ( [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@]
+          (?:
+            (?: [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@]
             | %[0-9a-fA-F]{2}
             )*
-            (
+            (?:
               /
-              ( [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@]
+              (?: [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@]
               | %[0-9a-fA-F]{2}
               )*
             )*
           )?
+         )
         | #ipath_rootless
-          ( [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@]
+         ( # CAPTURE ipath_rootless
+          (?: [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@]
           | %[0-9a-fA-F]{2}
           )+
-          (
+          (?:
             /
-            ( [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@]
+            (?: [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@]
             | %[0-9a-fA-F]{2}
             )*
           )*
+         )
         )? # optional because of ipath_empty
-        ( # ?iquery
+        (?: # ?iquery
           \?
-          (
+         ( # CAPTURE iquery
+          (?:
             [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@'\u{E000}-\u{F8FF}\u{F0000}-\u{FFFFD}\u{100000}-\u{10FFFD}/?]
             | %[0-9a-fA-F]{2}
           )*
+         )
         )?
-        ( # #ifragment
+        (?: # #ifragment
           \#
-          (
+         ( # CAPTURE ifragment
+          (?:
             [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@/?]
             | %[0-9a-fA-F]{2}
           )*
+         )
         )?
     $").unwrap();
 
     static ref IRELATIVE_REF_REGEX: Regex = Regex::new(r"(?x)^
         #irelative_part
-        ( #iauthority + ipath_abempty
+        (?: #iauthority + ipath_abempty
           //
-          ( # iuserinfo
-            ( [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:]
+         ( # CAPTURE iauthority
+          (?: # iuserinfo
+            (?: [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:]
           |
             %[0-9a-fA-F]{2}
           )*
           @
           )?
           # ihost
-          ( # ip_literal
+          (?: # ip_literal
              \[
-            ( # ipv6address
-              (
-                ([0-9a-fA-F]{1,4}:){6}
-                ([0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))(\.([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))){3})
+            (?: # ipv6address
+              (?:
+                (?:[0-9a-fA-F]{1,4}:){6}
+                (?:[0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))(?:\.(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))){3})
               |
                 ::
-                ([0-9a-fA-F]{1,4}:){5}
-                ([0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))(\.([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))){3})
+                (?:[0-9a-fA-F]{1,4}:){5}
+                (?:[0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))(?:\.(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))){3})
               |
-                ([0-9a-fA-F]{1,4})?
+                (?:[0-9a-fA-F]{1,4})?
                 ::
-                ([0-9a-fA-F]{1,4}:){4}
-                ([0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))(\.([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))){3})
+                (?:[0-9a-fA-F]{1,4}:){4}
+                (?:[0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))(?:\.(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))){3})
               |
-                (([0-9a-fA-F]{1,4}:){0,1}:[0-9a-fA-F]{1,4})?
+                (?:(?:[0-9a-fA-F]{1,4}:){0,1}:[0-9a-fA-F]{1,4})?
                 ::
-                ([0-9a-fA-F]{1,4}:){3}
-                ([0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))(\.([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))){3})
+                (?:[0-9a-fA-F]{1,4}:){3}
+                (?:[0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))(?:\.(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))){3})
               |
-                (([0-9a-fA-F]{1,4}:){0,2}:[0-9a-fA-F]{1,4})?
+                (?:(?:[0-9a-fA-F]{1,4}:){0,2}:[0-9a-fA-F]{1,4})?
                 ::
-                ([0-9a-fA-F]{1,4}:){2}
-                ([0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))(\.([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))){3})
+                (?:[0-9a-fA-F]{1,4}:){2}
+                (?:[0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))(?:\.(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))){3})
               |
-                (([0-9a-fA-F]{1,4}:){0,3}:[0-9a-fA-F]{1,4})?
+                (?:(?:[0-9a-fA-F]{1,4}:){0,3}:[0-9a-fA-F]{1,4})?
                 ::
                 [0-9a-fA-F]{1,4}:
-                ([0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))(\.([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))){3})
+                (?:[0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))(?:\.(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))){3})
               |
-                (([0-9a-fA-F]{1,4}:){0,4}:[0-9a-fA-F]{1,4})?
+                (?:(?:[0-9a-fA-F]{1,4}:){0,4}:[0-9a-fA-F]{1,4})?
                 ::
-                ([0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))(\.([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))){3})
+                (?:[0-9a-fA-F]{1,4}:[0-9a-fA-F]{1,4}|(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))(?:\.(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))){3})
               |
-                (([0-9a-fA-F]{1,4}:){0,5}:[0-9a-fA-F]{1,4})?
+                (?:(?:[0-9a-fA-F]{1,4}:){0,5}:[0-9a-fA-F]{1,4})?
                 ::
                 [0-9a-fA-F]{1,4}
               |
-                (([0-9a-fA-F]{1,4}:){0,6}:[0-9a-fA-F]{1,4})?
+                (?:(?:[0-9a-fA-F]{1,4}:){0,6}:[0-9a-fA-F]{1,4})?
                 ::
               )
             | # ipvfuture
@@ -389,58 +391,69 @@ lazy_static! {
             )
              \]
           | # ipv4address
-            ([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5])) (\.([0-9]|([1-9][0-9])|(1[0-9]{2})|(2[0-4][0-9])|(25[0-5]))){3}
+            (?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5])) (?:\.(?:[0-9]|(?:[1-9][0-9])|(?:1[0-9]{2})|(?:2[0-4][0-9])|(?:25[0-5]))){3}
           | # ireg_name
-              ( [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=]
+              (?: [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=]
               | %[0-9a-fA-F]{2}
               )*
           )
-          (
+          (?:
             :
             [0-9]* # port
           )?
+         )
           #ipath_abempty
-          (
+         ( # CAPTURE ipath_abempty
+          (?:
             /
-            ( [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@]
+            (?: [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@]
             | %[0-9a-fA-F]{2}
             )*
           )*
+         )
         | #ipath_absolute
+         ( # CAPTURE ipath_absolute
           /
-          (
-            ( [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@]
+          (?:
+            (?: [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@]
             | %[0-9a-fA-F]{2}
             )*
-            (
+            (?:
               /
-              ( [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@]
+              (?: [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@]
               | %[0-9a-fA-F]{2}
               )*
             )*
           )?
+         )
         | #ipath_noscheme
-          ( [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=@]
+         ( # CAPTURE ipath_noscheme
+          (?: [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=@]
           | %[0-9a-fA-F]{2}
           )+
-          (
+          (?:
             /
-            ( [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@]
+            (?: [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@]
             | %[0-9a-fA-F]{2}
             )*
           )*
+         )
         )? # optional because of ipath_empty
-        ( # ?iquery
+        (?: # ?iquery
           \?
-          ( [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@'\u{E000}-\u{F8FF}\u{F0000}-\u{FFFFD}\u{100000}-\u{10FFFD}/?]
+         ( # CAPTURE iquery
+          (?: [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@'\u{E000}-\u{F8FF}\u{F0000}-\u{FFFFD}\u{100000}-\u{10FFFD}/?]
           | %[0-9a-fA-F]{2}
           )*
+         )
         )?
-        ( # #ifragment
-          \#
-          ( [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@/?]
+        (?: # #ifragment
+            \#
+         ( # CAPTURE ifragment
+          (?: [-A-Za-z0-9._~\u{A0}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFEF}\u{10000}-\u{1FFFD}\u{20000}-\u{2FFFD}\u{30000}-\u{3FFFD}\u{40000}-\u{4FFFD}\u{50000}-\u{5FFFD}\u{60000}-\u{6FFFD}\u{70000}-\u{7FFFD}\u{80000}-\u{8FFFD}\u{90000}-\u{9FFFD}\u{A0000}-\u{AFFFD}\u{B0000}-\u{BFFFD}\u{C0000}-\u{CFFFD}\u{D0000}-\u{DFFFD}\u{E1000}-\u{EFFFD}!$&'()*+,;=:@/?]
           | %[0-9a-fA-F]{2}
           )*
+         )
         )?
     $").unwrap();
 }
@@ -452,7 +465,7 @@ mod test {
     #[test]
     fn positive() {
         for (txt, parsed) in POSITIVE_IRIS {
-            let rpi = ParsedIri::new(txt);
+            let rpi = IriRefStructure::new(txt);
             assert!(rpi.is_ok(), format!("<{}> → {:?}", txt, rpi));
             let pi = rpi.unwrap();
             assert_eq!(pi.is_absolute(), parsed.0);
@@ -468,16 +481,16 @@ mod test {
     #[test]
     fn negative() {
         for txt in NEGATIVE_IRIS {
-            let rpi = ParsedIri::new(txt);
+            let rpi = IriRefStructure::new(txt);
             assert!(rpi.is_err(), format!("<{}> → {:?}", txt, rpi));
         }
     }
 
     #[test]
     fn relative() {
-        let base = ParsedIri::new("http://a/b/c/d;p?q").unwrap();
+        let base = IriRefStructure::new("http://a/b/c/d;p?q").unwrap();
         for (rel, abs) in RELATIVE_IRIS {
-            let rel = ParsedIri::new(rel).unwrap();
+            let rel = IriRefStructure::new(rel).unwrap();
             let gpt = base.join(&rel);
             assert_eq!(&gpt.to_string(), abs);
         }
@@ -772,5 +785,4 @@ mod test {
         ("g#s/./x", "http://a/b/c/g#s/./x"),
         ("g#s/../x", "http://a/b/c/g#s/../x"),
     ];
-
 }

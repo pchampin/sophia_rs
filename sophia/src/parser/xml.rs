@@ -24,8 +24,8 @@ use crate::ns::xsd;
 use crate::ns::Namespace;
 use crate::term::factory::RcTermFactory;
 use crate::term::factory::TermFactory;
-use crate::term::iri_rfc3987::is_absolute_iri;
-use crate::term::iri_rfc3987::is_relative_iri;
+use crate::term::iri_rfc3987::is_absolute_iri_ref;
+use crate::term::iri_rfc3987::is_relative_iri_ref;
 use crate::term::matcher::TermMatcher;
 use crate::term::StaticTerm;
 use crate::term::Term;
@@ -481,7 +481,7 @@ impl<F: TermFactory> Scope<F> {
     /// case the IRI is already in expanded form.
     fn expand_iri(&self, iri: &str) -> Result<Term<F::TermData>> {
         let mut factory = self.factory.borrow_mut();
-        if is_relative_iri(iri) {
+        if is_relative_iri_ref(iri) {
             // NB: We should not be percent-encoding, but `url::Url::parse`
             // does it anyway: as a fudge, we percent-decode any input that
             // contained non-ASCII characters back. This may cause strange
@@ -493,7 +493,7 @@ impl<F: TermFactory> Scope<F> {
             fn decode(s: &str) -> std::borrow::Cow<str> {
                 percent_encoding::percent_decode(s.as_bytes())
                     .decode_utf8()
-                    .expect("always OK since validated with `is_relative_iri`")
+                    .expect("always OK since validated with `is_relative_iri_ref`")
             }
 
             if let Some(url) = &self.base {
@@ -505,7 +505,7 @@ impl<F: TermFactory> Scope<F> {
             } else {
                 bail!(XmlErrorKind::NoBaseIri(iri.to_string()))
             }
-        } else if is_absolute_iri(iri) {
+        } else if is_absolute_iri_ref(iri) {
             factory.iri(iri)
         } else {
             bail!(ErrorKind::InvalidIri(String::from(iri)))

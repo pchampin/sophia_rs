@@ -3,7 +3,7 @@
 use std::hash::{Hash, Hasher};
 use std::io::{Result as IoResult, Write};
 
-use self::iri_rfc3987::{is_absolute_iri, is_relative_iri};
+use self::iri_rfc3987::{is_absolute_iri_ref, is_relative_iri_ref};
 use super::*;
 
 /// Internal representation of an IRI.
@@ -82,8 +82,8 @@ where
             absolute: false,
         };
         let val = ret.to_string();
-        ret.absolute = is_absolute_iri(&val);
-        if ret.absolute || is_relative_iri(&val) {
+        ret.absolute = is_absolute_iri_ref(&val);
+        if ret.absolute || is_relative_iri_ref(&val) {
             Ok(ret)
         } else {
             Err(ErrorKind::InvalidIri("IRI is invalid".to_string()).into())
@@ -297,12 +297,12 @@ pub enum Normalization {
     LastHashOrSlash,
 }
 
-impl<'a> ParsedIri<'a> {
+impl<'a> IriRefStructure<'a> {
     pub fn join_iri<T>(&self, iri_term: &IriData<T>) -> IriData<T>
     where
         T: AsRef<str> + Clone + From<String>,
     {
-        let parsed_ns = ParsedIri::new(iri_term.ns.as_ref()).unwrap();
+        let parsed_ns = IriRefStructure::new(iri_term.ns.as_ref()).unwrap();
         let abs_ns = T::from(self.join(&parsed_ns).to_string());
         IriData {
             ns: abs_ns,
