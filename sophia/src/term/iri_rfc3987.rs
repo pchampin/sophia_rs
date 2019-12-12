@@ -92,29 +92,6 @@ impl<'a> IriRefStructure<'a> {
         self.scheme.is_some()
     }
 
-    /// Make a `String` version of this IRI reference.
-    pub fn to_string(&self) -> String {
-        let mut ret = String::new();
-        if let Some(scheme) = self.scheme {
-            ret.push_str(scheme);
-            ret.push_str(":");
-        }
-        if let Some(authority) = self.authority {
-            ret.push_str("//");
-            ret.push_str(authority);
-        }
-        ret.push_str(&self.path.join("/"));
-        if let Some(query) = self.query {
-            ret.push_str("?");
-            ret.push_str(query)
-        }
-        if let Some(fragment) = self.fragment {
-            ret.push_str("#");
-            ret.push_str(fragment)
-        }
-        ret
-    }
-
     /// Resolve `iri_ref` using this IRI reference as the base.
     ///
     /// NB: the resulting `IriRefStructure`
@@ -160,6 +137,30 @@ impl<'a> IriRefStructure<'a> {
             query,
             fragment,
         }
+    }
+}
+
+impl fmt::Display for IriRefStructure<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if let Some(scheme) = self.scheme {
+            write!(f, "{}:", scheme)?;
+        }
+        if let Some(authority) = self.authority {
+            write!(f, "//{}", authority)?;
+        }
+        if !self.path.is_empty() {
+            write!(f, "{}", self.path[0])?;
+            for p in &self.path[1..] {
+                write!(f, "/{}", p)?;
+            }
+        }
+        if let Some(query) = self.query {
+            write!(f, "?{}", query)?;
+        }
+        if let Some(fragment) = self.fragment {
+            write!(f, "#{}", fragment)?;
+        }
+        Ok(())
     }
 }
 

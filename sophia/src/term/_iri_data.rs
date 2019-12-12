@@ -1,5 +1,6 @@
 // this module is transparently re-exported by its parent `term`
 
+use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::io::{Result as IoResult, Write};
 
@@ -14,7 +15,7 @@ use super::*;
 ///  - can be directly compared to a `&str` with the `==` operator;
 ///  - can be directly compared to a [`Term`](enum.Term.html) with the `==` operator;
 ///  - provides some identical methods to what `&str` provides (see below);
-///  - can otherwise be converted to a `String` with [`to_string`](#method.to_string);
+///  - can otherwise be converted to a `String` with `to_string`;
 ///
 /// See [module documentation](index.html)
 /// for more detail.
@@ -46,16 +47,6 @@ where
     /// Iterate over the characters representing this IRI.
     pub fn chars<'a>(&'a self) -> impl Iterator<Item = char> + 'a {
         self.ns.as_ref().chars().chain(self.suffix_borrow().chars())
-    }
-
-    /// Construct a copy of this IRI as a `String`.
-    pub fn to_string(&self) -> String {
-        let ns = self.ns.as_ref();
-        let suffix = self.suffix_borrow();
-        let mut ret = String::with_capacity(ns.len() + suffix.len());
-        ret.push_str(ns);
-        ret.push_str(suffix);
-        ret
     }
 
     /// Whether this IRI is absolute or relative.
@@ -280,6 +271,17 @@ where
         state.write(self.ns.as_ref().as_bytes());
         state.write(self.suffix_borrow().as_bytes());
         state.write_u8(0xff);
+    }
+}
+
+impl<T> fmt::Display for IriData<T>
+where
+    T: AsRef<str>,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let ns = self.ns.as_ref();
+        let suffix = self.suffix_borrow();
+        write!(f, "{}{}", ns, suffix)
     }
 }
 
