@@ -3,13 +3,8 @@
 use std;
 use std::borrow::Cow;
 use std::iter::once;
-use std::result::Result as StdResult;
-
 use pest::error::{Error as PestError, ErrorVariant};
 use pest::{iterators::Pair, RuleType};
-
-use crate::error::*;
-use crate::term::Term;
 
 /// This macro provides a straightforward implementation of the default functions
 /// of a parser module producing triples.
@@ -35,25 +30,23 @@ macro_rules! def_default_parser_api {
         #[inline]
         pub fn parse_bufread<'a, B: ::std::io::BufRead + 'a>(
             bufread: B,
-        ) -> impl Iterator<Item = Result<impl $item<'a>>> + 'a {
+        ) -> impl Iterator<Item = $crate::parser::ParserResult<impl $item<'a>>> + 'a {
             Config::default().parse_bufread(bufread)
         }
         /// Shortcut for `Config::default().parse_read(read)`
         #[inline]
         pub fn parse_read<'a, R: ::std::io::Read + 'a>(
             read: R,
-        ) -> impl Iterator<Item = Result<impl $item<'a>>> + 'a {
+        ) -> impl Iterator<Item = $crate::parser::ParserResult<impl $item<'a>>> + 'a {
             Config::default().parse_read(read)
         }
         /// Shortcut for `Config::default().parse_str(txt)`
         #[inline]
-        pub fn parse_str<'a>(txt: &'a str) -> impl Iterator<Item = Result<impl $item<'a>>> + 'a {
+        pub fn parse_str<'a>(txt: &'a str) -> impl Iterator<Item = $crate::parser::ParserResult<impl $item<'a>>> + 'a {
             Config::default().parse_str(txt)
         }
     };
 }
-
-pub(crate) type CowTerm<'a> = Term<Cow<'a, str>>;
 
 /// Return the unescaped version of `pair.to_str()`,
 /// assuming that `pair`'s inner pairs are only ECHAR or UCHAR
@@ -64,7 +57,7 @@ pub(crate) type CowTerm<'a> = Term<Cow<'a, str>>;
 pub(crate) fn unescape_str<'a, R>(
     pair: Pair<'a, R>,
     delim: usize,
-) -> StdResult<Cow<'a, str>, PestError<R>>
+) -> Result<Cow<'a, str>, PestError<R>>
 where
     R: RuleType,
 {
@@ -100,7 +93,7 @@ where
 }
 
 /// Transform the match of ECHAR or UCHAR into the corresponding character.
-pub(crate) fn unescape_char(txt: &str) -> StdResult<char, String> {
+pub(crate) fn unescape_char(txt: &str) -> Result<char, String> {
     let bytes = txt.as_bytes();
     debug_assert_eq!(bytes[0] as char, '\\');
     match bytes[1] as char {
@@ -127,27 +120,6 @@ pub(crate) fn unescape_char(txt: &str) -> StdResult<char, String> {
     }
 }
 
-/// Utility function for converting [Pest] errors into [Sophia errors](../../error/index.html).
-///
-/// [Pest]: https://docs.rs/crate/pest/
-///
-pub fn convert_pest_err<R: pest::RuleType>(err: PestError<R>, lineoffset: usize) -> Error {
-    let message = match err.variant {
-        ErrorVariant::ParsingError {
-            positives,
-            negatives,
-        } => format!("expected: {:?}\nunexpected: {:?}", positives, negatives),
-        ErrorVariant::CustomError { message } => message,
-    };
-    let location = err.location.clone();
-    use ::pest::error::LineColLocation::*;
-    let line_col = match err.line_col.clone() {
-        Pos((l, c)) => Pos((l + lineoffset, c)),
-        Span((l1, c1), (l2, c2)) => Span((l1 + lineoffset, c1), (l2 + lineoffset, c2)),
-    };
-    ErrorKind::ParserError(message, location, line_col).into()
-}
-
 // ---------------------------------------------------------------------------------
 //                               utility test function
 // ---------------------------------------------------------------------------------
@@ -158,7 +130,7 @@ use pest::iterators::Pairs;
 #[cfg(test)]
 pub(crate) fn test_rule<P, R, T>(parse: &P, rule: R, values: &[T])
 where
-    P: Fn(R, &str) -> StdResult<Pairs<R>, PestError<R>>,
+    P: Fn(R, &str) -> Result<Pairs<R>, PestError<R>>,
     R: RuleType,
     T: std::borrow::Borrow<str>,
 {
@@ -180,7 +152,7 @@ where
 #[cfg(test)]
 pub(crate) fn test_rule_partial<P, R, T>(parse: &P, rule: R, values: &[(T, usize)])
 where
-    P: Fn(R, &str) -> StdResult<Pairs<R>, PestError<R>>,
+    P: Fn(R, &str) -> Result<Pairs<R>, PestError<R>>,
     R: RuleType,
     T: std::borrow::Borrow<str>,
 {
@@ -202,7 +174,7 @@ where
 #[cfg(test)]
 pub(crate) fn test_rule_negative<P, R, T>(parse: &P, rule: R, values: &[T])
 where
-    P: Fn(R, &str) -> StdResult<Pairs<R>, PestError<R>>,
+    P: Fn(R, &str) -> Result<Pairs<R>, PestError<R>>,
     R: RuleType,
     T: std::borrow::Borrow<str>,
 {
@@ -265,7 +237,7 @@ mod test {
         use super::super::nt::{PestNtqParser, Rule};
         use pest::Parser;
 
-        fn test<'a>(txt: &'a str) -> StdResult<String, String> {
+        fn test<'a>(txt: &'a str) -> Result<String, String> {
             // parsing a triple just to test that unescape_str works with an offset > 0.
             let triple = format!("<> <> {}.", txt);
             let mut pairs = PestNtqParser::parse(Rule::triple, &triple[..]).unwrap();

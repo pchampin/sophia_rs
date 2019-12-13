@@ -2,26 +2,23 @@
 
 use std::collections::HashSet;
 use std::marker::PhantomData;
-
+use anyhow;
 use resiter::filter::*;
 use resiter::map::*;
-
 use crate::dataset::adapter::DatasetGraph;
-use crate::error::*;
 use crate::quad::stream::*;
 use crate::quad::*;
 use crate::term::matcher::*;
 use crate::term::*;
-
-use super::*;
 use crate::graph::insert_if_absent;
+use crate::error::*;
 
 /// Type alias for the terms returned by a dataset.
 pub type DTerm<'a, D> = Term<<<D as Dataset<'a>>::Quad as Quad<'a>>::TermData>;
 /// Type alias for results iterators produced by a dataset.
 pub type DResult<'a, D, T> = std::result::Result<T, <D as Dataset<'a>>::Error>;
 /// Type alias for fallible quad iterators produced by a dataset.
-pub type DQuadSource<'a, D> = Box<Iterator<Item = DResult<'a, D, <D as Dataset<'a>>::Quad>> + 'a>;
+pub type DQuadSource<'a, D> = Box<dyn Iterator<Item = DResult<'a, D, <D as Dataset<'a>>::Quad>> + 'a>;
 /// Type alias for fallible hashets of terms produced by a dataset.
 pub type DResultTermSet<'a, D> = DResult<'a, D, HashSet<DTerm<'a, D>>>;
 
@@ -43,10 +40,7 @@ pub trait Dataset<'a> {
     /// that the methods of this dataset will yield.
     type Quad: Quad<'a>;
     /// The error type that this dataset may raise.
-    ///
-    /// Must be either [`Never`](../error/enum.Never.html) (for infallible datasets)
-    /// or [`Error`](../error/struct.Error.html).
-    type Error: CoercibleWith<Error> + CoercibleWith<Never>;
+    type Error: SafeError;
 
     /// An iterator visiting all quads of this dataset in arbitrary order.
     ///
@@ -532,9 +526,6 @@ pub trait Dataset<'a> {
     }
 }
 
-/// Type alias for results produced by a mutable dataset.
-pub type MDResult<D, T> = std::result::Result<T, <D as MutableDataset>::MutationError>;
-
 /// Generic trait for mutable RDF datasets.
 ///
 /// NB: the semantics of this trait allows a dataset to contain duplicate quads;
@@ -542,10 +533,7 @@ pub type MDResult<D, T> = std::result::Result<T, <D as MutableDataset>::Mutation
 ///
 pub trait MutableDataset: for<'x> Dataset<'x> {
     /// The error type that this dataset may raise during mutations.
-    ///
-    /// Must be either [`Never`](../error/enum.Never.html) (for infallible datasets)
-    /// or [`Error`](../error/struct.Error.html).
-    type MutationError: CoercibleWith<Error> + CoercibleWith<Never>;
+    type MutationError: SafeError;
 
     /// Insert the given quad in this dataset.
     ///
@@ -561,12 +549,31 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
         p: &Term<U>,
         o: &Term<V>,
         g: Option<&Term<W>>,
-    ) -> MDResult<Self, bool>
+    ) -> Result<bool, Self::MutationError>
     where
         T: TermData,
         U: TermData,
         V: TermData,
         W: TermData;
+
+    /// Insert into this dataset all quads from the given source.
+    #[inline]
+    fn insert_all<'a, QS>(
+        &mut self,
+        src: QS,
+    ) -> Result<usize, anyhow::Error>
+    where
+        QS: QuadSource<'a>,
+    {
+        let mut src = src;
+        let mut cnt = 0;
+        for q in src.as_iter() {
+            let q = q?;
+            if self.insert(q.s(), q.p(), q.o(), q.g())? { cnt += 1; }
+        }
+
+        Ok(cnt)
+    }
 
     /// Remove the given quad in this dataset.
     ///
@@ -582,51 +589,30 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
         p: &Term<U>,
         o: &Term<V>,
         g: Option<&Term<W>>,
-    ) -> MDResult<Self, bool>
+    ) -> Result<bool, Self::MutationError>
     where
         T: TermData,
         U: TermData,
         V: TermData,
         W: TermData;
 
-    /// Return a [`QuadSink`](../quad/stream/trait.QuadSink.html)
-    /// that will insert into this dataset all the quads it receives.
-    #[inline]
-    fn inserter(&mut self) -> Inserter<Self> {
-        Inserter::new(self)
-    }
-
-    /// Insert into this dataset all quads from the given source.
-    #[inline]
-    fn insert_all<'a, TS>(
-        &mut self,
-        src: &mut TS,
-    ) -> CoercedResult<usize, TS::Error, <Self as MutableDataset>::MutationError>
-    where
-        TS: QuadSource<'a>,
-        TS::Error: CoercibleWith<<Self as MutableDataset>::MutationError>,
-    {
-        src.in_sink(&mut self.inserter())
-    }
-
-    /// Return a [`QuadSink`](../quad/stream/trait.QuadSink.html)
-    /// that will remove from this dataset all the quads it receives.
-    #[inline]
-    fn remover(&mut self) -> Remover<Self> {
-        Remover::new(self)
-    }
-
     /// Remove from this dataset all quads from the given source.
     #[inline]
-    fn remove_all<'a, TS>(
+    fn remove_all<'a, QS>(
         &mut self,
-        src: &mut TS,
-    ) -> CoercedResult<usize, TS::Error, <Self as MutableDataset>::MutationError>
+        src: QS,
+    ) -> Result<usize, anyhow::Error>
     where
-        TS: QuadSource<'a>,
-        TS::Error: CoercibleWith<<Self as MutableDataset>::MutationError>,
+        QS: QuadSource<'a>,
     {
-        src.in_sink(&mut self.remover())
+        let mut src = src;
+        let mut cnt = 0;
+        for q in src.as_iter() {
+            let q = q?;
+            if self.remove(q.s(), q.p(), q.o(), q.g())? { cnt += 1; }
+        }
+
+        Ok(cnt)
     }
 
     /// Remove all quads matching the given matchers.
@@ -639,23 +625,12 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
         mp: &P,
         mo: &O,
         mg: &G,
-    ) -> MDResult<Self, usize>
+    ) -> Result<usize, anyhow::Error>
     where
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
         G: GraphNameMatcher + ?Sized,
-        // The following trait bound means that Self::Error must convert to Self::MutationError;
-        // it is always satisfied when both of them are either Error or Never;
-        // it is required to raise an error when building to_remove
-        for<'a> <Self as Dataset<'a>>::Error: Into<Self::MutationError>,
-        // The following trait bound is required by remove_all,
-        // who coerces to_remove::Error (always Never) with self::MutationError.
-        Never: CoercibleWith<Self::MutationError>,
-        // The following trait is trivially verified in all cases,
-        // (acatually T is always EQUAL to CoercedError<Never, T>)
-        // but unfortunetaly the compiler can not see that.
-        Self::MutationError: From<CoercedError<Never, Self::MutationError>>,
     {
         let to_remove: Vec<_> = self
             .quads_matching(ms, mp, mo, mg)
@@ -669,10 +644,9 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
                     q.g().map(BoxTerm::from),
                 )
             })
-            .collect::<std::result::Result<_, _>>()
-            .map_err(Into::into)?;
-        let mut to_remove = to_remove.into_iter().as_quad_source();
-        Ok(self.remove_all(&mut to_remove)?)
+            .collect::<std::result::Result<_, _>>()?;
+        let to_remove = to_remove.into_iter().as_quad_source();
+        Ok(self.remove_all(to_remove)?)
     }
 
     /// Keep only the quads matching the given matchers.
@@ -680,23 +654,12 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
     /// Note that the default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
     ///
-    fn retain<S, P, O, G>(&mut self, ms: &S, mp: &P, mo: &O, mg: &G) -> MDResult<Self, ()>
+    fn retain<S, P, O, G>(&mut self, ms: &S, mp: &P, mo: &O, mg: &G) -> Result<(), anyhow::Error>
     where
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
         G: GraphNameMatcher + ?Sized,
-        // The following trait bound means that Self::Error must convert to Self::MutationError;
-        // it is always satisfied when both of them are either Error or Never;
-        // it is required to raise an error when building to_remove
-        for<'a> <Self as Dataset<'a>>::Error: Into<Self::MutationError>,
-        // The following trait bound is required by remove_all,
-        // who coerces to_remove::Error (always Never) with self::MutationError.
-        Never: CoercibleWith<Self::MutationError>,
-        // The following trait is trivially verified in all cases,
-        // (acatually T is always EQUAL to CoercedError<Never, T>)
-        // but unfortunetaly the compiler can not see that.
-        Self::MutationError: From<CoercedError<Never, Self::MutationError>>,
     {
         let to_remove: Vec<_> = self
             .quads()
@@ -713,11 +676,37 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
                     q.g().map(BoxTerm::from),
                 )
             })
-            .collect::<std::result::Result<_, _>>()
-            .map_err(Into::into)?;
-        let mut to_remove = to_remove.into_iter().as_quad_source();
-        self.remove_all(&mut to_remove)?;
+            .collect::<std::result::Result<_, _>>()?;
+        let to_remove = to_remove.into_iter().as_quad_source();
+        self.remove_all(to_remove)?;
         Ok(())
+    }
+}
+
+/// Extension trait for fallible iterators of quads, i.e. `QuadSource`s.
+/// Porvides the same semantics as `Iterator::collect` but propagates errors
+/// while iterating the source or populating the dataset.
+pub trait CollectToDataset {
+    fn collect_to_dataset<MD>(self) -> Result<MD, anyhow::Error> 
+    where
+        MD: MutableDataset + Default,
+        MD::MutationError: SafeError;
+}
+
+impl<'a, I, Q, E> CollectToDataset for I
+where
+    I: Iterator<Item = Result<Q, E>> + 'a,
+    Q: Quad<'a>,
+    E: SafeError,
+{
+    fn collect_to_dataset<MD>(self) -> Result<MD, anyhow::Error> 
+    where
+        MD: MutableDataset + Default,
+        MD::MutationError: SafeError,
+    {
+        let mut md = MD::default();
+        md.insert_all(self)?;
+        Ok(md)
     }
 }
 

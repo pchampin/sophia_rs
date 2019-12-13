@@ -44,8 +44,7 @@
 //!
 //!     <http://example.org/bob> <http://xmlns.com/foaf/0.1/name> "Bob" .
 //! "#;
-//! let mut graph = LightGraph::new();
-//! parser::nt::parse_str(example).in_graph(&mut graph);
+//! let mut graph = parser::nt::parse_str(example).collect_to_graph::<LightGraph>().unwrap();
 //!
 //! let ex = Namespace::new("http://example.org/").unwrap();
 //! let foaf = Namespace::new("http://xmlns.com/foaf/0.1/").unwrap();
@@ -63,10 +62,6 @@
 // error_chain is recursing a lot
 #![recursion_limit = "256"]
 
-#[macro_use]
-extern crate coercible_errors;
-#[macro_use]
-extern crate error_chain;
 extern crate language_tag;
 #[macro_use]
 extern crate lazy_static;
@@ -78,7 +73,6 @@ extern crate regex;
 extern crate rental;
 #[cfg(feature = "xml")]
 extern crate quick_xml;
-extern crate resiter;
 #[cfg(feature = "rio")]
 extern crate rio_api;
 #[cfg(feature = "rio")]

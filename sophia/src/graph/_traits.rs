@@ -3,13 +3,11 @@
 use std::collections::HashSet;
 use std::hash::Hash;
 use std::marker::PhantomData;
-
 use resiter::filter::*;
 use resiter::map::*;
-
+use anyhow;
 use crate::error::*;
 use crate::graph::adapter::GraphAsDataset;
-use crate::graph::{Inserter, Remover};
 use crate::term::matcher::TermMatcher;
 use crate::term::*;
 use crate::triple::stream::*;
@@ -18,9 +16,9 @@ use crate::triple::*;
 /// Type alias for the terms returned by a graph.
 pub type GTerm<'a, G> = Term<<<G as Graph<'a>>::Triple as Triple<'a>>::TermData>;
 /// Type alias for results produced by a graph.
-pub type GResult<'a, G, T> = std::result::Result<T, <G as Graph<'a>>::Error>;
+pub type GResult<'a, G, T> = Result<T, <G as Graph<'a>>::Error>;
 /// Type alias for fallible triple iterators produced by a graph.
-pub type GTripleSource<'a, G> = Box<Iterator<Item = GResult<'a, G, <G as Graph<'a>>::Triple>> + 'a>;
+pub type GTripleSource<'a, G> = Box<dyn Iterator<Item = GResult<'a, G, <G as Graph<'a>>::Triple>> + 'a>;
 /// Type alias for fallible hashets of terms produced by a graph.
 pub type GResultTermSet<'a, G> = GResult<'a, G, HashSet<GTerm<'a, G>>>;
 
@@ -68,12 +66,12 @@ pub type GResultTermSet<'a, G> = GResult<'a, G, HashSet<GTerm<'a, G>>>;
 /// [Higher-Rank Trait Bound](https://doc.rust-lang.org/nomicon/hrtb.html)
 /// for `G`:
 /// ```
-/// use sophia::error::Never;
+/// use std::convert::Infallible;
 /// use sophia::graph::Graph;
 /// use sophia::term::*;
 ///
 /// fn count_str_mentions<G>(g: &G, txt: &str) -> usize where
-///   G: for<'x> Graph<'x, Error=Never>  // <-- higher-rank trait bound
+///   G: for<'x> Graph<'x, Error=Infallible>  // <-- higher-rank trait bound
 /// {
 ///   let literal = RefTerm::from(txt);
 ///   g.triples_with_o(&literal).count()
@@ -92,10 +90,7 @@ pub trait Graph<'a> {
     /// that the methods of this graph will yield.
     type Triple: Triple<'a>;
     /// The error type that this graph may raise.
-    ///
-    /// Must be either [`Never`](../error/enum.Never.html) (for infallible graphs)
-    /// or [`Error`](../error/struct.Error.html).
-    type Error: CoercibleWith<Error> + CoercibleWith<Never>;
+    type Error: SafeError;
 
     /// An iterator visiting all triples of this graph in arbitrary order.
     ///
@@ -367,9 +362,6 @@ pub trait Graph<'a> {
     }
 }
 
-/// Type alias for results produced by a mutable graph.
-pub type MGResult<G, T> = std::result::Result<T, <G as MutableGraph>::MutationError>;
-
 /// Generic trait for mutable RDF graphs.
 ///
 /// NB: the semantics of this trait allows a graph to contain duplicate triples;
@@ -377,10 +369,7 @@ pub type MGResult<G, T> = std::result::Result<T, <G as MutableGraph>::MutationEr
 ///
 pub trait MutableGraph: for<'x> Graph<'x> {
     /// The error type that this graph may raise during mutations.
-    ///
-    /// Must be either [`Never`](../error/enum.Never.html) (for infallible graphs)
-    /// or [`Error`](../error/struct.Error.html).
-    type MutationError: CoercibleWith<Error> + CoercibleWith<Never>;
+    type MutationError: SafeError;
 
     /// Insert the given triple in this graph.
     ///
@@ -390,11 +379,30 @@ pub trait MutableGraph: for<'x> Graph<'x> {
     /// a return value of `true` does *not* mean that the triple was not already in the graph,
     /// only that the graph now has one more occurence of it.
     ///
-    fn insert<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
+    fn insert<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool, Self::MutationError>
     where
         T: TermData,
         U: TermData,
         V: TermData;
+
+    /// Insert into this graph all triples from the given source.
+    #[inline]
+    fn insert_all<'a, TS>(
+        &mut self,
+        src: TS,
+    ) -> Result<usize, anyhow::Error>
+    where
+        TS: TripleSource<'a>,
+    {
+        let mut src = src;
+        let mut cnt = 0;
+        for t in src.as_iter() {
+            let t = t?;
+            if self.insert(t.s(), t.p(), t.o())? { cnt += 1; }
+        }
+
+        Ok(cnt)
+    }
 
     /// Insert the given triple in this graph.
     ///
@@ -404,74 +412,42 @@ pub trait MutableGraph: for<'x> Graph<'x> {
     /// a return value of `true` does *not* mean that the triple is not still contained in the graph,
     /// only that the graph now has one less occurence of it.
     ///
-    fn remove<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
+    fn remove<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool, Self::MutationError>
     where
         T: TermData,
         U: TermData,
         V: TermData;
 
-    /// Return a [`TripleSink`](../triple/stream/trait.TripleSink.html)
-    /// that will insert into this graph all the triples it receives.
-    #[inline]
-    fn inserter(&mut self) -> Inserter<Self> {
-        Inserter::new(self)
-    }
-
-    /// Insert into this graph all triples from the given source.
-    #[inline]
-    fn insert_all<'a, TS>(
-        &mut self,
-        src: &mut TS,
-    ) -> CoercedResult<usize, TS::Error, <Self as MutableGraph>::MutationError>
-    where
-        TS: TripleSource<'a>,
-        TS::Error: CoercibleWith<<Self as MutableGraph>::MutationError>,
-    {
-        src.in_sink(&mut self.inserter())
-    }
-
-    /// Return a [`TripleSink`](../triple/stream/trait.TripleSink.html)
-    /// that will remove from this graph all the triples it receives.
-    #[inline]
-    fn remover(&mut self) -> Remover<Self> {
-        Remover::new(self)
-    }
-
     /// Remove from this graph all triples from the given source.
     #[inline]
     fn remove_all<'a, TS>(
         &mut self,
-        src: &mut TS,
-    ) -> CoercedResult<usize, TS::Error, <Self as MutableGraph>::MutationError>
+        src: TS,
+    ) -> Result<usize, anyhow::Error>
     where
         TS: TripleSource<'a>,
-        TS::Error: CoercibleWith<<Self as MutableGraph>::MutationError>,
     {
-        src.in_sink(&mut self.remover())
+        let mut src = src;
+        let mut cnt = 0;
+        for t in src.as_iter() {
+            let t = t?;
+            if self.remove(t.s(), t.p(), t.o())? { cnt += 1; }
+        }
+
+        Ok(cnt)
     }
 
     /// Remove all triples matching the given matchers.
     ///
     /// Note that the default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
-    fn remove_matching<S, P, O>(&mut self, ms: &S, mp: &P, mo: &O) -> MGResult<Self, usize>
+    fn remove_matching<S, P, O>(&mut self, ms: &S, mp: &P, mo: &O) -> Result<usize, anyhow::Error>
     where
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
-        // The following trait bound means that Self::Error must convert to Self::MutationError;
-        // it is always satisfied when both of them are either Error or Never;
-        // it is required to raise an error when building to_remove
-        for<'a> <Self as Graph<'a>>::Error: Into<Self::MutationError>,
-        // The following trait bound is required by remove_all,
-        // who coerces to_remove::Error (always Never) with self::MutationError.
-        Never: CoercibleWith<Self::MutationError>,
-        // The following trait is trivially verified in all cases,
-        // (acatually T is always EQUAL to CoercedError<Never, T>)
-        // but unfortunetaly the compiler can not see that.
-        Self::MutationError: From<CoercedError<Never, Self::MutationError>>,
     {
-        let to_remove: Vec<_> = self
+        let to_remove = self
             .triples_matching(ms, mp, mo)
             .map_ok(|t| {
                 [
@@ -480,10 +456,9 @@ pub trait MutableGraph: for<'x> Graph<'x> {
                     BoxTerm::from(t.o()),
                 ]
             })
-            .collect::<std::result::Result<_, _>>()
-            .map_err(Into::into)?;
-        let mut to_remove = to_remove.into_iter().as_triple_source();
-        Ok(self.remove_all(&mut to_remove)?)
+            .collect::<Result<Vec<_>, _>>()?;
+        let to_remove = to_remove.into_iter().as_triple_source();
+        Ok(self.remove_all(to_remove)?)
     }
 
     /// Keep only the triples matching the given matchers.
@@ -491,24 +466,13 @@ pub trait MutableGraph: for<'x> Graph<'x> {
     /// Note that the default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
     ///
-    fn retain<S, P, O>(&mut self, ms: &S, mp: &P, mo: &O) -> MGResult<Self, ()>
+    fn retain<S, P, O>(&mut self, ms: &S, mp: &P, mo: &O) -> Result<(), anyhow::Error>
     where
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
-        // The following trait bound means that Self::Error must convert to Self::MutationError;
-        // it is always satisfied when both of them are either Error or Never;
-        // it is required to raise an error when building to_remove
-        for<'a> <Self as Graph<'a>>::Error: Into<Self::MutationError>,
-        // The following trait bound is required by remove_all,
-        // who coerces to_remove::Error (always Never) with self::MutationError.
-        Never: CoercibleWith<Self::MutationError>,
-        // The following trait is trivially verified in all cases,
-        // (acatually T is always EQUAL to CoercedError<Never, T>)
-        // but unfortunetaly the compiler can not see that.
-        Self::MutationError: From<CoercedError<Never, Self::MutationError>>,
     {
-        let to_remove: Vec<_> = self
+        let to_remove = self
             .triples()
             .filter_ok(|t| !(ms.matches(t.s()) && mp.matches(t.p()) && mo.matches(t.o())))
             .map_ok(|t| {
@@ -518,11 +482,37 @@ pub trait MutableGraph: for<'x> Graph<'x> {
                     BoxTerm::from(t.o()),
                 ]
             })
-            .collect::<std::result::Result<_, _>>()
-            .map_err(Into::into)?;
-        let mut to_remove = to_remove.into_iter().as_triple_source();
-        self.remove_all(&mut to_remove)?;
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        let to_remove = to_remove.into_iter().as_triple_source();
+        self.remove_all(to_remove)?;
         Ok(())
+    }
+}
+
+/// Extension trait for fallible iterators of triples, i.e. `TripleSource`s.
+/// Porvides the same semantics as `Iterator::collect` but propagates errors
+/// while iterating the source or populating the graph.
+pub trait CollectToGraph {
+    fn collect_to_graph<MG>(self) -> Result<MG, anyhow::Error> 
+    where
+        MG: MutableGraph + Default,
+        MG::MutationError: SafeError;
+}
+
+impl<'a, I, T, E> CollectToGraph for I
+where
+    I: Iterator<Item = Result<T, E>> + 'a,
+    T: Triple<'a>,
+    E: SafeError,
+{
+    fn collect_to_graph<MG>(self) -> Result<MG, anyhow::Error> 
+    where
+        MG: MutableGraph + Default,
+        MG::MutationError: SafeError,
+    {
+        let mut mg = MG::default();
+        mg.insert_all(self)?;
+        Ok(mg)
     }
 }
 

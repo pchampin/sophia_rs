@@ -3,11 +3,11 @@
 
 use std::collections::HashSet;
 use std::hash::Hash;
+use crate::error::*;
 
 use resiter::oks::*;
 
 use super::*;
-use crate::error::*;
 use crate::quad::stream::AsQuadSource;
 use crate::quad::*;
 use crate::term::*;
@@ -18,7 +18,7 @@ where
     Q: Quad<'a> + 'a,
 {
     type Quad = &'a Q;
-    type Error = Never;
+    type Error = Infallible;
 
     #[inline]
     fn quads(&'a self) -> DQuadSource<Self> {
@@ -31,7 +31,7 @@ where
     Q: Quad<'a> + 'a,
 {
     type Quad = &'a Q;
-    type Error = Never;
+    type Error = Infallible;
 
     #[inline]
     fn quads(&'a self) -> DQuadSource<Self> {
@@ -40,7 +40,7 @@ where
 }
 
 impl MutableDataset for Vec<([BoxTerm; 3], Option<BoxTerm>)> where {
-    type MutationError = Never;
+    type MutationError = Infallible;
 
     fn insert<T, U, V, W>(
         &mut self,
@@ -48,7 +48,7 @@ impl MutableDataset for Vec<([BoxTerm; 3], Option<BoxTerm>)> where {
         p: &Term<U>,
         o: &Term<V>,
         g: Option<&Term<W>>,
-    ) -> MDResult<Self, bool>
+    ) -> Result<bool, Self::MutationError>
     where
         T: TermData,
         U: TermData,
@@ -68,7 +68,7 @@ impl MutableDataset for Vec<([BoxTerm; 3], Option<BoxTerm>)> where {
         p: &Term<U>,
         o: &Term<V>,
         g: Option<&Term<W>>,
-    ) -> MDResult<Self, bool>
+    ) -> Result<bool, Self::MutationError>
     where
         T: TermData,
         U: TermData,
@@ -93,7 +93,7 @@ where
     Q: Eq + Hash + Quad<'a> + 'a,
 {
     type Quad = &'a Q;
-    type Error = Never;
+    type Error = Infallible;
 
     #[inline]
     fn quads(&'a self) -> DQuadSource<Self> {
@@ -102,7 +102,7 @@ where
 }
 
 impl<S: ::std::hash::BuildHasher> MutableDataset for HashSet<([BoxTerm; 3], Option<BoxTerm>), S> {
-    type MutationError = Never;
+    type MutationError = Infallible;
 
     fn insert<T, U, V, W>(
         &mut self,
@@ -110,7 +110,7 @@ impl<S: ::std::hash::BuildHasher> MutableDataset for HashSet<([BoxTerm; 3], Opti
         p: &Term<U>,
         o: &Term<V>,
         g: Option<&Term<W>>,
-    ) -> MDResult<Self, bool>
+    ) -> Result<bool, Self::MutationError>
     where
         T: TermData,
         U: TermData,
@@ -129,7 +129,7 @@ impl<S: ::std::hash::BuildHasher> MutableDataset for HashSet<([BoxTerm; 3], Opti
         p: &Term<U>,
         o: &Term<V>,
         g: Option<&Term<W>>,
-    ) -> MDResult<Self, bool>
+    ) -> Result<bool, Self::MutationError>
     where
         T: TermData,
         U: TermData,

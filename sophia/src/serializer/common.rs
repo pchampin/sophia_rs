@@ -47,7 +47,7 @@ macro_rules! def_triple_stringifier {
 
         impl $crate::triple::stream::TripleSink for $stringifier {
             type Outcome = String;
-            type Error = $crate::error::Error;
+            type Error = $crate::serializer::SerializationError;
 
             fn feed<'a, T>(&mut self, t: &T) -> std::result::Result<(), Self::Error>
             where
@@ -93,7 +93,7 @@ macro_rules! def_quad_stringifier {
 
         impl $crate::quad::stream::QuadSink for $stringifier {
             type Outcome = String;
-            type Error = $crate::error::Error;
+            type Error = $crate::serializer::SerializationError;
 
             fn feed<'a, T>(&mut self, t: &T) -> std::result::Result<(), Self::Error>
             where

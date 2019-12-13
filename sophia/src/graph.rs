@@ -20,3 +20,6 @@ mod _sinks;
 pub use self::_sinks::*;
 mod _traits;
 pub use self::_traits::*;
+
+mod _error;
+pub use self::_error::*;

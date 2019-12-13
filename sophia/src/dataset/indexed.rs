@@ -89,9 +89,9 @@ macro_rules! impl_mutable_dataset_for_indexed_dataset {
         }
     };
     () => {
-        type MutationError = coercible_errors::Never;
+        type MutationError = $crate::error::Infallible;
 
-        fn insert<T_, U_, V_, W_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>, g: Option<&Term<W_>>) -> MDResult< Self, bool> where
+        fn insert<T_, U_, V_, W_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>, g: Option<&Term<W_>>) -> Result<bool, Self::MutationError> where
             T_: $crate::term::TermData,
             U_: $crate::term::TermData,
             V_: $crate::term::TermData,
@@ -99,7 +99,7 @@ macro_rules! impl_mutable_dataset_for_indexed_dataset {
         {
             Ok(self.insert_indexed(s, p, o, g).is_some())
         }
-        fn remove<T_, U_, V_, W_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>, g: Option<&Term<W_>>) -> MDResult< Self, bool> where
+        fn remove<T_, U_, V_, W_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>, g: Option<&Term<W_>>) -> Result<bool, Self::MutationError> where
             T_: $crate::term::TermData,
             U_: $crate::term::TermData,
             V_: $crate::term::TermData,

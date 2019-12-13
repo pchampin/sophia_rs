@@ -72,16 +72,16 @@ macro_rules! impl_mutable_graph_for_indexed_graph {
         }
     };
     () => {
-        type MutationError = coercible_errors::Never;
+        type MutationError = $crate::error::Infallible;
 
-        fn insert<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> MGResult< Self, bool> where
+        fn insert<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> Result<bool, Self::MutationError> where
             T_: $crate::term::TermData,
             U_: $crate::term::TermData,
             V_: $crate::term::TermData,
         {
             Ok(self.insert_indexed(s, p, o).is_some())
         }
-        fn remove<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> MGResult< Self, bool> where
+        fn remove<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> Result<bool, Self::MutationError> where
             T_: $crate::term::TermData,
             U_: $crate::term::TermData,
             V_: $crate::term::TermData,

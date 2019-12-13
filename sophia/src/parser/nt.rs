@@ -4,7 +4,7 @@
 //!
 //! # Example
 //! ```
-//! use sophia::graph::inmem::FastGraph;
+//! use sophia::graph::{Graph, CollectToGraph, inmem::FastGraph};
 //! use sophia::parser::nt;
 //! use sophia::triple::stream::*;
 //!
@@ -12,26 +12,22 @@
 //!   <http://champin.net/#pa> <http://schema.org/name> "Pierre-Antoine Champin".
 //! "#;
 //!
-//! let mut g = FastGraph::new();
-//! let inserted = nt::parse_str(NT_DOC).in_graph(&mut g);
+//! let g = nt::parse_str(NT_DOC).collect_to_graph::<FastGraph>().unwrap();
 //!
-//! assert_eq!(inserted.unwrap(), 1);
+//! assert_eq!(g.triples().count(), 1);
 //! ```
 
 use std::borrow::Cow;
 use std::io::{BufRead, BufReader, Read};
-use std::result::Result as StdResult;
-
 use pest::error::{Error as PestError, ErrorVariant};
 use pest::{
     iterators::{Pair, Pairs},
     Parser,
 };
 
-use super::common::*;
-use crate::error::*;
+use super::{*, common::*};
 use crate::ns::xsd;
-use crate::term::Term;
+use crate::term::{Term, CowTerm, TermError};
 use crate::triple::Triple;
 
 #[cfg(debug_assertions)]
@@ -61,7 +57,7 @@ impl Config {
     pub fn parse_bufread<'a, B: BufRead + 'a>(
         &self,
         bufread: B,
-    ) -> impl Iterator<Item = Result<NtTriple>> + 'a {
+    ) -> impl Iterator<Item = ParserResult<NtTriple>> + 'a {
         let config = self.clone();
         let rule = if config.strict {
             Rule::ntriples_line
@@ -75,11 +71,8 @@ impl Config {
                 let line = match line {
                     Ok(line) => line,
                     Err(ioerr) => {
-                        let msg = format!("{}", ioerr);
-                        return Some(Err(Error::with_chain(
-                            ioerr,
-                            make_parser_error(msg, lineidx),
-                        )));
+                        return Some(Err(ParserError::from_io_at(ioerr, lineidx)
+                        ));
                     }
                 };
                 {
@@ -92,7 +85,7 @@ impl Config {
                     NtTriple::try_new(line, |line| {
                         parse_rule_from_line(&config, rule, line.trim_start())
                     })
-                    .map_err(|err| convert_pest_err(err.0, lineidx)),
+                    .map_err(|err| ParserError::from_pest_err(err.0, lineidx)),
                 )
             })
     }
@@ -101,7 +94,7 @@ impl Config {
     pub fn parse_read<'a, R: Read + 'a>(
         &self,
         read: R,
-    ) -> impl Iterator<Item = Result<NtTriple>> + 'a {
+    ) -> impl Iterator<Item = ParserResult<NtTriple>> + 'a {
         self.parse_bufread(BufReader::new(read))
     }
 
@@ -109,7 +102,7 @@ impl Config {
     pub fn parse_str<'a>(
         &self,
         txt: &'a str,
-    ) -> Box<dyn Iterator<Item = Result<[Term<Cow<'a, str>>; 3]>> + 'a> {
+    ) -> Box<dyn Iterator<Item = ParserResult<[Term<Cow<'a, str>>; 3]>> + 'a> {
         let config = self.clone();
         let rule = if config.strict {
             Rule::ntriples_doc
@@ -119,7 +112,7 @@ impl Config {
         let triple_pairs = match PestNtqParser::parse(rule, txt) {
             Ok(pairs) => pairs,
             Err(err) => {
-                return Box::new(std::iter::once(Err(convert_pest_err(err, 0))));
+                return Box::new(std::iter::once(Err(ParserError::from_pest_err(err, 0))));
             }
         };
         Box::new(
@@ -127,7 +120,7 @@ impl Config {
                 .take_while(|triple_pair| triple_pair.as_rule() != Rule::EOI)
                 .map(move |triple_pair| {
                     pairs_to_triple(&config, triple_pair.into_inner())
-                        .map_err(|err| convert_pest_err(err, 0))
+                        .map_err(|err| ParserError::from_pest_err(err, 0))
                 }),
         )
     }
@@ -166,7 +159,7 @@ fn parse_rule_from_line<'a>(
     config: &Config,
     rule: Rule,
     txt: &'a str,
-) -> StdResult<[CowTerm<'a>; 3], PestError<Rule>> {
+) -> Result<[CowTerm<'a>; 3], PestError<Rule>> {
     let triple_pair = PestNtqParser::parse(rule, txt)?.next().unwrap();
     pairs_to_triple(config, triple_pair.into_inner())
 }
@@ -174,7 +167,7 @@ fn parse_rule_from_line<'a>(
 fn pairs_to_triple<'a>(
     config: &Config,
     mut pairs: Pairs<'a, Rule>,
-) -> StdResult<[CowTerm<'a>; 3], PestError<Rule>> {
+) -> Result<[CowTerm<'a>; 3], PestError<Rule>> {
     let s = pair_to_term(pairs.next().unwrap(), config.strict)?;
     let p = pair_to_term(pairs.next().unwrap(), config.strict)?;
     let o = pair_to_term(pairs.next().unwrap(), config.strict)?;
@@ -184,7 +177,7 @@ fn pairs_to_triple<'a>(
 pub(crate) fn pair_to_term<'a>(
     pair: Pair<'a, Rule>,
     strict: bool,
-) -> StdResult<CowTerm<'a>, PestError<Rule>> {
+) -> Result<CowTerm<'a>, PestError<Rule>> {
     match pair.as_rule() {
         Rule::iriref => {
             let cow = unescape_str(pair.clone(), 1)?;
@@ -222,7 +215,7 @@ pub(crate) fn pair_to_term<'a>(
         if !strict || t.is_absolute() {
             Ok(t)
         } else {
-            Err(ErrorKind::IriMustBeAbsolute(format!("{:?}", t)).into())
+            Err(TermError::IriMustBeAbsolute { iri: format!("{:?}", t) }.into())
         }
     })
     .map_err(|err| {
@@ -243,7 +236,7 @@ pub(crate) fn pair_to_term<'a>(
 mod test {
     use super::*;
     use crate::term::BoxTerm;
-    use crate::triple::stream::*;
+    use crate::graph::MutableGraph;
     use pest::{error::Error as PestError, iterators::Pairs, Parser};
     use std::collections::HashSet;
     use std::ffi::OsStr;
@@ -255,7 +248,7 @@ mod test {
 
     static STRICT: Config = Config { strict: true };
 
-    fn parse(rule: Rule, txt: &str) -> StdResult<Pairs<Rule>, PestError<Rule>> {
+    fn parse(rule: Rule, txt: &str) -> Result<Pairs<Rule>, PestError<Rule>> {
         PestNtqParser::parse(rule, txt)
     }
 
@@ -503,7 +496,7 @@ mod test {
     #[test]
     fn strict_parse_str() {
         let mut g = HashSetGraph::new();
-        let res = STRICT.parse_str(DOC).in_graph(&mut g);
+        let res = g.insert_all(STRICT.parse_str(DOC));
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), 5);
         assert_eq!(g.len(), 5);
@@ -525,7 +518,7 @@ mod test {
     #[test]
     fn default_parse_str() {
         let mut g = HashSetGraph::new();
-        let res = parse_str(GENERALIZED_DOC).in_graph(&mut g);
+        let res = g.insert_all(parse_str(GENERALIZED_DOC));
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), 7);
         assert_eq!(g.len(), 7);
@@ -534,7 +527,7 @@ mod test {
     #[test]
     fn strict_parse_str_refuses_generalized() {
         let mut g = HashSetGraph::new();
-        let res = STRICT.parse_str(GENERALIZED_DOC).in_graph(&mut g);
+        let res = g.insert_all(STRICT.parse_str(GENERALIZED_DOC));
         assert!(res.is_err());
         assert!(g.len() < 7);
     }
@@ -543,7 +536,7 @@ mod test {
     fn strict_parse_read() {
         let mut g = HashSetGraph::new();
         let reader = io::Cursor::new(DOC);
-        let res = STRICT.parse_read(reader).in_graph(&mut g);
+        let res = g.insert_all(STRICT.parse_read(reader));
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), 5);
         assert_eq!(g.len(), 5);
@@ -553,7 +546,7 @@ mod test {
     fn default_parse_read() {
         let mut g = HashSetGraph::new();
         let reader = io::Cursor::new(GENERALIZED_DOC);
-        let res = parse_read(reader).in_graph(&mut g);
+        let res = g.insert_all(parse_read(reader));
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), 7);
         assert_eq!(g.len(), 7);
@@ -561,18 +554,18 @@ mod test {
 
     #[test]
     fn strict_parse_read_refuses_generalized() {
-        use crate::error::ErrorKind::*;
 
         let mut g = HashSetGraph::new();
         let reader = io::Cursor::new(GENERALIZED_DOC);
-        let res = STRICT.parse_read(reader).in_graph(&mut g);
-        if let Err(Error(ParserError(_, _, line_pos), _)) = res {
+        let res = g.insert_all(STRICT.parse_read(reader)).unwrap_err();
+        let res = res.downcast_ref::<ParserError>().unwrap();
+        if let ParserError::Located { line_col, .. } = res {
             use ::pest::error::LineColLocation::*;
-            let lineno = match line_pos {
+            let lineno = match line_col {
                 Pos((lineno, _)) => lineno,
                 Span((lineno, _), _) => lineno,
             };
-            assert_eq!(lineno, 5);
+            assert_eq!(*lineno, 5);
         } else {
             assert!(false, "res should be an error");
         }
@@ -585,7 +578,7 @@ mod test {
         let txt = r#"
           <tag:foo> <tag:bar> <tag:baz> . bla bla bla
         "#;
-        let res = parse_str(txt).in_graph(&mut g);
+        let res = g.insert_all(parse_str(txt));
         assert!(res.is_err());
         assert_eq!(g.len(), 0);
     }
@@ -611,7 +604,7 @@ mod test {
                 let f = File::open(&path)?;
                 let f = io::BufReader::new(f);
                 let mut g = HashSetGraph::new();
-                let res = STRICT.parse_read(f).in_graph(&mut g);
+                let res = g.insert_all(STRICT.parse_read(f));
                 let path = path.to_str().unwrap();
                 if path.contains("-bad-") {
                     assert!(
@@ -657,7 +650,7 @@ mod test {
                 let f = File::open(&path)?;
                 let f = io::BufReader::new(f);
                 let mut g = HashSetGraph::new();
-                let res = parse_read(f).in_graph(&mut g);
+                let res = g.insert_all(parse_read(f));
                 assert!(
                     res.is_ok(),
                     format!("{} should parse without error", path.to_str().unwrap())

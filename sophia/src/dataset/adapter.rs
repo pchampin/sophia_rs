@@ -133,7 +133,7 @@ where
 {
     type MutationError = D::MutationError;
 
-    fn insert<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
+    fn insert<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool, Self::MutationError>
     where
         T: TermData,
         U: TermData,
@@ -144,7 +144,7 @@ where
             .insert(s, p, o, self.gmatcher.as_ref())
     }
 
-    fn remove<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
+    fn remove<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool, Self::MutationError>
     where
         T: TermData,
         U: TermData,
@@ -173,9 +173,9 @@ pub(crate) mod test {
     use super::*;
     use crate::dataset::inmem::LightDataset;
     use crate::dataset::test::*;
-    use crate::dataset::MDResult;
     use crate::ns::rdfs;
     use crate::term::BoxTerm;
+    use anyhow::Result;
 
     pub type LightDatasetGraph = DatasetGraph<LightDataset, LightDataset, Option<BoxTerm>>;
 
@@ -199,7 +199,7 @@ pub(crate) mod test {
     // because I couldn't call it from this module...
 
     #[test]
-    fn test_graph_default() -> MDResult<LightDataset, ()> {
+    fn test_graph_default() -> Result<()> {
         let mut d = LightDataset::new();
         populate(&mut d)?;
         assert_eq!(d.graph(*DG).triples().count(), 4);

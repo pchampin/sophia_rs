@@ -75,7 +75,7 @@ where
         Ok(())
     }
 
-    pub(crate) fn new(ns: T, suffix: Option<T>) -> Result<IriData<T>> {
+    pub(crate) fn new(ns: T, suffix: Option<T>) -> TermResult<IriData<T>> {
         let mut ret = IriData {
             ns,
             suffix,
@@ -86,7 +86,7 @@ where
         if ret.absolute || is_relative_iri(&val) {
             Ok(ret)
         } else {
-            Err(ErrorKind::InvalidIri("IRI is invalid".to_string()).into())
+            Err(TermError::InvalidIri { iri: "IRI is invalid".to_string() })
         }
     }
 

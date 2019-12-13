@@ -3,11 +3,11 @@
 
 use std::collections::HashSet;
 use std::hash::{BuildHasher, Hash};
+use crate::error::Infallible;
 
 use resiter::oks::*;
 
 use super::*;
-use crate::error::*;
 use crate::term::*;
 use crate::triple::stream::AsTripleSource;
 use crate::triple::*;
@@ -17,7 +17,7 @@ where
     T: Triple<'a> + 'a,
 {
     type Triple = &'a T;
-    type Error = Never;
+    type Error = Infallible;
 
     #[inline]
     fn triples(&'a self) -> GTripleSource<Self> {
@@ -30,7 +30,7 @@ where
     T: Triple<'a> + 'a,
 {
     type Triple = &'a T;
-    type Error = Never;
+    type Error = Infallible;
 
     #[inline]
     fn triples(&'a self) -> GTripleSource<Self> {
@@ -39,9 +39,9 @@ where
 }
 
 impl MutableGraph for Vec<[BoxTerm; 3]> {
-    type MutationError = Never;
+    type MutationError = Infallible;
 
-    fn insert<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
+    fn insert<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool, Self::MutationError>
     where
         T: TermData,
         U: TermData,
@@ -53,7 +53,7 @@ impl MutableGraph for Vec<[BoxTerm; 3]> {
         self.push([s, p, o]);
         Ok(true)
     }
-    fn remove<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
+    fn remove<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool, Self::MutationError>
     where
         T: TermData,
         U: TermData,
@@ -78,7 +78,7 @@ where
     BH: BuildHasher,
 {
     type Triple = &'a T;
-    type Error = Never;
+    type Error = Infallible;
 
     #[inline]
     fn triples(&'a self) -> GTripleSource<Self> {
@@ -90,9 +90,9 @@ impl<BH> MutableGraph for HashSet<[BoxTerm; 3], BH>
 where
     BH: BuildHasher,
 {
-    type MutationError = Never;
+    type MutationError = Infallible;
 
-    fn insert<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
+    fn insert<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool, Self::MutationError>
     where
         T: TermData,
         U: TermData,
@@ -103,7 +103,7 @@ where
         let o = BoxTerm::from(o);
         Ok(HashSet::insert(self, [s, p, o]))
     }
-    fn remove<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
+    fn remove<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> Result<bool, Self::MutationError>
     where
         T: TermData,
         U: TermData,

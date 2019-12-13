@@ -65,20 +65,18 @@ impl<W: io::Write> TripleWriter<W> for Writer<W> {
 
 impl<W: io::Write> TripleSink for Writer<W> {
     type Outcome = ();
-    type Error = Error;
+    type Error = SerializationError;
 
     fn feed<'a, T: Triple<'a>>(&mut self, t: &T) -> Result<(), Self::Error> {
         let w = &mut self.write;
 
-        (|| {
-            write_term(w, t.s())?;
-            w.write_all(b" ")?;
-            write_term(w, t.p())?;
-            w.write_all(b" ")?;
-            write_term(w, t.o())?;
-            w.write_all(b" .\n")
-        })()
-        .chain_err(|| ErrorKind::SerializerError("N-Triples serializer".into()))
+        write_term(w, t.s())?;
+        w.write_all(b" ")?;
+        write_term(w, t.p())?;
+        w.write_all(b" ")?;
+        write_term(w, t.o())?;
+        w.write_all(b" .\n")?;
+        Ok(())
     }
 
     fn finish(&mut self) -> Result<(), Self::Error> {
@@ -277,8 +275,8 @@ pub(crate) mod test {
                 StaticTerm::new_literal_dt("Pierre-Antoine", xsd::string).unwrap(),
             ],
         ];
-        let mut triples = triples.into_iter().as_triple_source();
-        let s = triples.in_sink(&mut stringifier()).unwrap();
+        let triples = triples.into_iter().as_triple_source();
+        let s = stringifier().feed_all_and_finish(triples).unwrap();
         assert_eq!(s, r#"<http://champin.net/#pa> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person> .
 <http://champin.net/#pa> <http://schema.org/name> "Pierre-Antoine" .
 "#);

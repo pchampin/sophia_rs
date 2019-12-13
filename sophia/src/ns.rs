@@ -19,8 +19,7 @@
 //! g.insert(&s_name, &rdfs::range, &xsd::string);
 //! ```
 
-use crate::error::*;
-use crate::term::{iri_rfc3987::is_valid_iri, Term, TermData};
+use crate::term::{iri_rfc3987::is_valid_iri, Term, TermData, TermError, TermResult};
 
 /// A custom namespace.
 #[derive(Clone, Debug)]
@@ -30,18 +29,18 @@ impl<T: TermData> Namespace<T> {
     /// Build a custom namespace based on the given IRI.
     ///
     /// `iri` must be a valid IRI, othewise this constructor returns an error.
-    pub fn new(iri: T) -> Result<Namespace<T>> {
+    pub fn new(iri: T) -> TermResult<Namespace<T>> {
         if is_valid_iri(iri.as_ref()) {
             Ok(Namespace(iri))
         } else {
-            Err(ErrorKind::InvalidIri("IRI is invalid".to_string()).into())
+            Err(TermError::InvalidIri { iri: "IRI is invalid".to_string() })
         }
     }
 
     /// Build an IRI term by appending `suffix` to this namespace.
     ///
     /// Return an error if the concatenation produces an invalid IRI.
-    pub fn get<U>(&self, suffix: U) -> Result<Term<T>>
+    pub fn get<U>(&self, suffix: U) -> TermResult<Term<T>>
     where
         T: From<U>,
     {

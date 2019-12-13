@@ -24,19 +24,19 @@
 //! [`QuadSink`]: ../quad/stream/trait.QuadSink.html
 
 use std::io;
-
 use crate::dataset::*;
-use crate::error::*;
 use crate::graph::*;
 use crate::quad::{stream::*, *};
 use crate::triple::{stream::*, *};
-
-use std::result::Result; // override ::error::Result
+use anyhow;
 
 #[macro_use]
 pub mod common;
 pub mod nq;
 pub mod nt;
+
+mod _error;
+pub use self::_error::*;
 
 /// An extension of the `TripleSink` trait,
 /// dedicated to serialization to IO streams.
@@ -51,31 +51,28 @@ pub trait TripleWriter<W: io::Write>: TripleSink<Outcome = ()> + Sized {
     fn new(write: W, config: Self::Config) -> Self;
 
     /// Serialize the triples from the given source.
-    fn write<'a, TS, T>(&mut self, mut source: TS) -> CoercedResult<(), TS::Error, Self::Error>
+    fn write<'a, TS, T>(&mut self, source: TS) -> Result<(), anyhow::Error>
     where
         TS: TripleSource<'a>,
-        TS::Error: CoercibleWith<Self::Error>,
     {
-        source.in_sink(self)
+        self.feed_all_and_finish(source)
     }
 
     /// Serialize the given graph.
-    fn write_graph<'a, G>(&mut self, graph: &'a mut G) -> CoercedResult<(), G::Error, Self::Error>
+    fn write_graph<'a, G>(&mut self, graph: &'a mut G) -> Result<(), anyhow::Error>
     where
         G: Graph<'a>,
-        G::Error: CoercibleWith<Self::Error>,
     {
-        graph.triples().in_sink(self)
+        self.feed_all_and_finish(graph.triples())
     }
 
     /// Serialize the given triple.
-    fn write_triple<'a, T>(&mut self, t: &T) -> CoercedResult<(), Never, Self::Error>
+    fn write_triple<'a, T>(&mut self, t: &T) -> Result<(), Self::Error>
     where
         T: Triple<'a>,
-        Never: CoercibleWith<Self::Error>,
     {
-        let mut source = vec![[t.s(), t.p(), t.o()]].into_iter().as_triple_source();
-        source.in_sink(self)
+        self.feed(t)?;
+        Ok(self.finish()?)
     }
 }
 
@@ -95,35 +92,32 @@ pub trait TripleStringifier: TripleSink<Outcome = String> + Sized {
     /// Stringify the triples from the given source.
     fn stringify<'a, TS, T>(
         &mut self,
-        mut source: TS,
-    ) -> CoercedResult<String, TS::Error, Self::Error>
+        source: TS,
+    ) -> Result<String, anyhow::Error>
     where
         TS: TripleSource<'a>,
-        TS::Error: CoercibleWith<Self::Error>,
     {
-        source.in_sink(self)
+        self.feed_all_and_finish(source)
     }
 
     /// Stringify the given graph.
     fn stringify_graph<'a, G>(
         &mut self,
         graph: &'a mut G,
-    ) -> CoercedResult<String, G::Error, Self::Error>
+    ) -> Result<String, anyhow::Error>
     where
         G: Graph<'a>,
-        G::Error: CoercibleWith<Self::Error>,
     {
-        graph.triples().in_sink(self)
+        self.feed_all_and_finish(graph.triples())
     }
 
     /// Stringify the given triple.
-    fn stringify_triple<'a, T>(&mut self, t: &T) -> CoercedResult<String, Never, Self::Error>
+    fn stringify_triple<'a, T>(&mut self, t: &T) -> Result<String, Self::Error>
     where
         T: Triple<'a>,
-        Never: CoercibleWith<Self::Error>,
     {
-        let mut source = vec![[t.s(), t.p(), t.o()]].into_iter().as_triple_source();
-        source.in_sink(self)
+        self.feed(t)?;
+        Ok(self.finish()?)
     }
 }
 
@@ -140,36 +134,31 @@ pub trait QuadWriter<W: io::Write>: QuadSink<Outcome = ()> + Sized {
     fn new(write: W, config: Self::Config) -> Self;
 
     /// Serialize the triples from the given source.
-    fn write<'a, QS, T>(&mut self, mut source: QS) -> CoercedResult<(), QS::Error, Self::Error>
+    fn write<'a, QS, T>(&mut self, source: QS) -> Result<(), anyhow::Error>
     where
         QS: QuadSource<'a>,
-        QS::Error: CoercibleWith<Self::Error>,
     {
-        source.in_sink(self)
+        Ok(self.feed_all_and_finish(source)?)
     }
 
     /// Serialize the given dataset.
     fn write_dataset<'a, D>(
         &mut self,
         dataset: &'a mut D,
-    ) -> CoercedResult<(), D::Error, Self::Error>
+    ) -> Result<(), anyhow::Error>
     where
         D: Dataset<'a>,
-        D::Error: CoercibleWith<Self::Error>,
     {
-        dataset.quads().in_sink(self)
+        Ok(self.feed_all_and_finish(dataset.quads())?)
     }
 
     /// Serialize the given triple.
-    fn write_quad<'a, Q>(&mut self, q: &Q) -> CoercedResult<(), Never, Self::Error>
+    fn write_quad<'a, Q>(&mut self, q: &Q) -> Result<(), Self::Error>
     where
         Q: Quad<'a>,
-        Never: CoercibleWith<Self::Error>,
     {
-        let mut source = vec![([q.s(), q.p(), q.o()], q.g())]
-            .into_iter()
-            .as_quad_source();
-        source.in_sink(self)
+        self.feed(q)?;
+        self.finish()
     }
 }
 
@@ -189,37 +178,32 @@ pub trait QuadStringifier: QuadSink<Outcome = String> + Sized {
     /// Stringify the triples from the given source.
     fn stringify<'a, QS, T>(
         &mut self,
-        mut source: QS,
-    ) -> CoercedResult<String, QS::Error, Self::Error>
+        source: QS,
+    ) -> Result<String, anyhow::Error>
     where
         QS: QuadSource<'a>,
-        QS::Error: CoercibleWith<Self::Error>,
     {
-        source.in_sink(self)
+        Ok(self.feed_all_and_finish(source)?)
     }
 
     /// Stringify the given dataset.
     fn stringify_dataset<'a, D>(
         &mut self,
         dataset: &'a mut D,
-    ) -> CoercedResult<String, D::Error, Self::Error>
+    ) -> Result<String, anyhow::Error>
     where
         D: Dataset<'a>,
-        D::Error: CoercibleWith<Self::Error>,
     {
-        dataset.quads().in_sink(self)
+        Ok(self.feed_all_and_finish(dataset.quads())?)
     }
 
     /// Stringify the given triple.
-    fn stringify_quad<'a, Q>(&mut self, q: &Q) -> CoercedResult<String, Never, Self::Error>
+    fn stringify_quad<'a, Q>(&mut self, q: &Q) -> Result<String, Self::Error>
     where
         Q: Quad<'a>,
-        Never: CoercibleWith<Self::Error>,
     {
-        let mut source = vec![([q.s(), q.p(), q.o()], q.g())]
-            .into_iter()
-            .as_quad_source();
-        source.in_sink(self)
+        self.feed(q)?;
+        Ok(self.finish()?)
     }
 }
 

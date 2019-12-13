@@ -41,8 +41,6 @@ use std::sync::Arc;
 use language_tag::LangTag;
 use regex::Regex;
 
-use crate::error::*;
-
 pub mod factory;
 pub mod index_map;
 pub mod iri_rfc3987;
@@ -58,6 +56,9 @@ pub use self::_iri_data::*;
 mod _graph_name_matcher; // is 'pub use'd by module 'matcher'
 mod _literal_kind;
 pub use self::_literal_kind::*;
+
+mod _error;
+pub use self::_error::*;
 
 /// Generic type for RDF terms.
 ///
@@ -104,6 +105,11 @@ pub type RefTerm<'a> = Term<&'a str>;
 /// See [module documentation](index.html)
 /// for more detail on when to use it.
 pub type StaticTerm = RefTerm<'static>;
+/// Convenient alias for a specialization of `Term<T>`.
+///
+/// See [module documentation](index.html)
+/// for more detail on when to use it.
+pub type CowTerm<'a> = Term<std::borrow::Cow<'a, str>>;
 
 impl<T> Term<T>
 where
@@ -141,7 +147,7 @@ where
     ///
     /// May fail if `txt` is not a valid IRI.
     ///
-    pub fn new_iri<U>(iri: U) -> Result<Term<T>>
+    pub fn new_iri<U>(iri: U) -> TermResult<Term<T>>
     where
         T: From<U>,
     {
@@ -153,7 +159,7 @@ where
     /// May fail if the concatenation of `ns` and `suffix`
     /// does not produce a valid IRI.
     ///
-    pub fn new_iri2<U, V>(ns: U, suffix: V) -> Result<Term<T>>
+    pub fn new_iri2<U, V>(ns: U, suffix: V) -> TermResult<Term<T>>
     where
         T: From<U> + From<V>,
     {
@@ -165,7 +171,7 @@ where
     /// Currently, this may never fail;
     /// however it returns a result for homogeneity with other constructor methods,
     /// and because future versions may be more picky regarding bnode IDs.
-    pub fn new_bnode<U>(id: U) -> Result<Term<T>>
+    pub fn new_bnode<U>(id: U) -> TermResult<Term<T>>
     where
         T: From<U>,
     {
@@ -175,13 +181,13 @@ where
     /// Return a new literal term with the given value and language tag.
     ///
     /// May fail if the language tag is not valid.
-    pub fn new_literal_lang<U, V>(txt: U, lang: V) -> Result<Term<T>>
+    pub fn new_literal_lang<U, V>(txt: U, lang: V) -> TermResult<Term<T>>
     where
         T: From<U> + From<V>,
     {
         let tag = T::from(lang);
         match LangTag::from_str(tag.as_ref()) {
-            Err(msg) => Err(ErrorKind::InvalidLanguageTag(tag.as_ref().to_string(), msg).into()),
+            Err(msg) => Err(TermError::InvalidLanguageTag { lang: tag.as_ref().to_string(), msg }),
             Ok(_) => Ok(Literal(T::from(txt), Lang(tag))),
         }
     }
@@ -189,20 +195,20 @@ where
     /// Return a new literal term with the given value and datatype.
     ///
     /// May fail if `dt` is not a valid datatype.
-    pub fn new_literal_dt<U>(txt: U, dt: Term<T>) -> Result<Term<T>>
+    pub fn new_literal_dt<U>(txt: U, dt: Term<T>) -> TermResult<Term<T>>
     where
         T: From<U>,
     {
         match dt {
             Iri(iri) => Ok(Literal(T::from(txt), Datatype(iri))),
-            _ => Err(ErrorKind::InvalidDatatype(dt.n3()).into()),
+            _ => Err(TermError::InvalidDatatype { dt: dt.n3() }),
         }
     }
 
     /// Return a new variable term with the given name.
     ///
     /// May fail if `name` is not a valid variable name.
-    pub fn new_variable<U>(name: U) -> Result<Term<T>>
+    pub fn new_variable<U>(name: U) -> TermResult<Term<T>>
     where
         T: From<U>,
     {
@@ -210,7 +216,7 @@ where
         if N3_VARIABLE_NAME.is_match(name.as_ref()) {
             Ok(Variable(name))
         } else {
-            Err(ErrorKind::InvalidVariableName(name.as_ref().to_string()).into())
+            Err(TermError::InvalidVariableName{ var: name.as_ref().to_string() })
         }
     }
 
@@ -370,7 +376,7 @@ where
     ///
     pub fn batch_join<F, U>(&self, task: F)
     where
-        F: FnOnce(&Fn(&Term<U>) -> Term<U>) -> (),
+        F: FnOnce(&dyn Fn(&Term<U>) -> Term<U>) -> (),
         U: TermData + From<String>,
     {
         match self {

@@ -7,7 +7,6 @@ use std::marker::PhantomData;
 use resiter::Map;
 
 use crate::dataset::*;
-use crate::error::*;
 use crate::graph::{Graph, MutableGraph, SetGraph};
 use crate::term::*;
 use crate::triple::{Triple, TripleAsQuad};
@@ -302,9 +301,9 @@ impl<G, H> MutableDataset for GraphAsDataset<G, H>
 where
     G: MutableGraph,
     H: BorrowMut<G>,
-    Error: From<G::MutationError>,
+    DatasetError: From<G::MutationError>,
 {
-    type MutationError = Error;
+    type MutationError = DatasetError;
 
     fn insert<T, U, V, W>(
         &mut self,
@@ -312,7 +311,7 @@ where
         p: &Term<U>,
         o: &Term<V>,
         g: Option<&Term<W>>,
-    ) -> MDResult<Self, bool>
+    ) -> Result<bool, Self::MutationError>
     where
         T: TermData,
         U: TermData,
@@ -320,7 +319,7 @@ where
         W: TermData,
     {
         if let Some(graph_name) = g {
-            return Err(ErrorKind::UnsupportedGraphName(graph_name.n3()).into());
+            return Err(DatasetError::UnsupportedGraphName { name: graph_name.n3() });
         };
         Ok(self.0.borrow_mut().insert(s, p, o)?)
     }
@@ -331,7 +330,7 @@ where
         p: &Term<U>,
         o: &Term<V>,
         g: Option<&Term<W>>,
-    ) -> MDResult<Self, bool>
+    ) -> Result<bool, Self::MutationError>
     where
         T: TermData,
         U: TermData,
@@ -355,16 +354,16 @@ where
 #[cfg(test)]
 mod test {
     use crate::dataset::{Dataset, MutableDataset};
-    use crate::error::Result;
     use crate::graph::inmem::LightGraph;
     use crate::graph::{Graph, MutableGraph};
     use crate::ns::{rdf, rdfs};
     use crate::term::StaticTerm;
+    use anyhow;
 
     const DG: Option<&'static StaticTerm> = None;
 
     #[test]
-    fn test_borrow() -> Result<()> {
+    fn test_borrow() -> anyhow::Result<()> {
         let mut g = LightGraph::new();
         g.insert(&rdfs::Resource, &rdf::type_, &rdfs::Class)?;
 
@@ -374,7 +373,7 @@ mod test {
     }
 
     #[test]
-    fn test_borrow_mut() -> Result<()> {
+    fn test_borrow_mut() -> anyhow::Result<()> {
         let mut g = LightGraph::new();
 
         let mut d = g.borrow_mut_as_dataset();
@@ -394,7 +393,7 @@ mod test {
     }
 
     #[test]
-    fn test_owned() -> Result<()> {
+    fn test_owned() -> anyhow::Result<()> {
         let g = LightGraph::new();
 
         let mut d = g.as_dataset();
@@ -433,7 +432,7 @@ mod test {
         // moved here from ::dataset::adapter::test,
         // because test_graph_impl! seems to be only usable from ::graph
         use crate::dataset::adapter::test::{
-            make_default_graph, make_named_graph, LightDatasetGraph,
+            make_default_graph, make_named_graph,
         };
         test_graph_impl!(default_graph, LightDatasetGraph, true, make_default_graph);
         test_graph_impl!(named_graph, LightDatasetGraph, true, make_named_graph);

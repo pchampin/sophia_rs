@@ -18,14 +18,14 @@ pub trait TermFactory {
 
     fn get_term_data(&mut self, txt: &str) -> Self::TermData;
 
-    fn iri<T>(&mut self, iri: T) -> Result<FTerm<Self>>
+    fn iri<T>(&mut self, iri: T) -> TermResult<FTerm<Self>>
     where
         T: TermData,
     {
         Term::new_iri(self.get_term_data(iri.as_ref()))
     }
 
-    fn iri2<T, U>(&mut self, ns: T, suffix: U) -> Result<FTerm<Self>>
+    fn iri2<T, U>(&mut self, ns: T, suffix: U) -> TermResult<FTerm<Self>>
     where
         T: TermData,
         U: TermData,
@@ -36,14 +36,14 @@ pub trait TermFactory {
         )
     }
 
-    fn bnode<T>(&mut self, id: T) -> Result<FTerm<Self>>
+    fn bnode<T>(&mut self, id: T) -> TermResult<FTerm<Self>>
     where
         T: TermData,
     {
         Term::new_bnode(self.get_term_data(id.as_ref()))
     }
 
-    fn literal_lang<T, U>(&mut self, txt: T, lang: U) -> Result<FTerm<Self>>
+    fn literal_lang<T, U>(&mut self, txt: T, lang: U) -> TermResult<FTerm<Self>>
     where
         T: TermData,
         U: TermData,
@@ -54,7 +54,7 @@ pub trait TermFactory {
         )
     }
 
-    fn literal_dt<T, U>(&mut self, txt: T, dt: Term<U>) -> Result<FTerm<Self>>
+    fn literal_dt<T, U>(&mut self, txt: T, dt: Term<U>) -> TermResult<FTerm<Self>>
     where
         T: TermData,
         U: TermData,
@@ -63,7 +63,7 @@ pub trait TermFactory {
         Term::new_literal_dt(self.get_term_data(txt.as_ref()), self.copy(&dt))
     }
 
-    fn variable<T>(&mut self, name: T) -> Result<FTerm<Self>>
+    fn variable<T>(&mut self, name: T) -> TermResult<FTerm<Self>>
     where
         T: TermData,
     {

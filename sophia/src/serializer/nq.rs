@@ -65,24 +65,22 @@ impl<W: io::Write> QuadWriter<W> for Writer<W> {
 
 impl<W: io::Write> QuadSink for Writer<W> {
     type Outcome = ();
-    type Error = Error;
+    type Error = SerializationError;
 
     fn feed<'a, T: Quad<'a>>(&mut self, t: &T) -> Result<(), Self::Error> {
         let w = &mut self.write;
 
-        (|| {
-            write_term(w, t.s())?;
+        write_term(w, t.s())?;
+        w.write_all(b" ")?;
+        write_term(w, t.p())?;
+        w.write_all(b" ")?;
+        write_term(w, t.o())?;
+        if let Some(g) = t.g() {
             w.write_all(b" ")?;
-            write_term(w, t.p())?;
-            w.write_all(b" ")?;
-            write_term(w, t.o())?;
-            if let Some(g) = t.g() {
-                w.write_all(b" ")?;
-                write_term(w, g)?;
-            }
-            w.write_all(b" .\n")
-        })()
-        .chain_err(|| ErrorKind::SerializerError("N-Quads serializer".into()))
+            write_term(w, g)?;
+        }
+        w.write_all(b" .\n")?;
+        Ok(())
     }
 
     fn finish(&mut self) -> Result<(), Self::Error> {
@@ -238,8 +236,8 @@ mod test {
                 Some(StaticTerm::new_iri("http://example.org/graph").unwrap()),
             ),
         ];
-        let mut quads = quads.into_iter().as_quad_source();
-        let s = quads.in_sink(&mut stringifier()).unwrap();
+        let quads = quads.into_iter().as_quad_source();
+        let s = stringifier().feed_all_and_finish(quads).unwrap();
         assert_eq!(s, r#"<http://champin.net/#pa> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person> .
 <http://champin.net/#pa> <http://schema.org/name> "Pierre-Antoine" <http://example.org/graph> .
 "#);

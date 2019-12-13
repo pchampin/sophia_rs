@@ -1,10 +1,10 @@
 // this module is transparently re-exported by its parent `dataset::inmem`
 use std::collections::HashSet;
 use std::hash::Hash;
+use crate::error::Infallible;
 
 use crate::dataset::indexed::IndexedDataset;
 use crate::dataset::*;
-use crate::error::*;
 use crate::term::factory::TermFactory;
 use crate::term::index_map::TermIndexMap;
 use crate::term::*;
@@ -166,7 +166,7 @@ where
         [&'a Term<<Self as IndexedDataset>::TermData>; 3],
         Option<&'a Term<<Self as IndexedDataset>::TermData>>,
     );
-    type Error = Never;
+    type Error = Infallible;
 
     fn quads(&'a self) -> DQuadSource<'a, Self> {
         Box::from(self.quads.iter().map(move |[si, pi, oi, gi]| {

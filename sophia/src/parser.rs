@@ -30,3 +30,6 @@ pub mod rio_trig;
 pub mod rio_turtle;
 #[cfg(feature = "xml")]
 pub mod xml;
+
+mod _error;
+pub use self::_error::*;
