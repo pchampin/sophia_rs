@@ -4,7 +4,7 @@
 
 use std::io::{BufRead, BufReader, Cursor, Read};
 
-use rio_turtle::{NTriplesParser};
+use rio_turtle::NTriplesParser;
 
 use crate::error::*;
 use crate::parser::rio_common::*;
@@ -17,8 +17,7 @@ use crate::triple::stream::TripleSource;
 ///
 /// [uniform interface]: ../index.html#uniform-interface
 #[derive(Clone, Debug, Default)]
-pub struct Config {
-}
+pub struct Config {}
 
 impl Config {
     #[inline]
@@ -65,8 +64,7 @@ mod test {
         "#;
 
         let mut g = FastGraph::new();
-        let cfg = Config {
-        };
+        let cfg = Config {};
         let c = cfg.parse_str(&turtle).in_graph(&mut g)?;
         assert_eq!(c, 3);
         assert!(g

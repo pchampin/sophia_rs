@@ -62,8 +62,8 @@ pub enum Position {
 impl fmt::Display for Position {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Position::Offset(offset) => { write!(f, "{}", offset) }
-            Position::LiCo(li, co) => { write!(f, "{}:{}", li, co) }
+            Position::Offset(offset) => write!(f, "{}", offset),
+            Position::LiCo(li, co) => write!(f, "{}:{}", li, co),
         }
     }
 }
@@ -79,9 +79,9 @@ pub enum Location {
 impl fmt::Display for Location {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Location::Unknown => { write!(f, "?") }
-            Location::Pos(pos) => { write!(f, "{}", pos) }
-            Location::Span(s, e) => { write!(f, "{}-{}", s, e) }
+            Location::Unknown => write!(f, "?"),
+            Location::Pos(pos) => write!(f, "{}", pos),
+            Location::Span(s, e) => write!(f, "{}-{}", s, e),
         }
     }
 }
@@ -94,10 +94,7 @@ impl Location {
         Location::Pos(Position::LiCo(line, column))
     }
     pub fn from_offsets(offset1: usize, offset2: usize) -> Location {
-        Location::Span(
-            Position::Offset(offset1),
-            Position::Offset(offset2),
-        )
+        Location::Span(Position::Offset(offset1), Position::Offset(offset2))
     }
     pub fn from_licos(line1: usize, column1: usize, line2: usize, column2: usize) -> Location {
         Location::Span(
@@ -106,7 +103,6 @@ impl Location {
         )
     }
 }
-
 
 /// Make a Parser Error with minimal information
 pub fn make_parser_error(message: String, line_offset: usize) -> ErrorKind {

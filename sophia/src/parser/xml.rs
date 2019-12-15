@@ -154,10 +154,7 @@ pub mod error {
             let message = error.0.to_string();
             crate::error::Error::with_chain(
                 error,
-                crate::error::ErrorKind::ParserError(
-                    message,
-                    crate::error::Location::Unknown,
-                ),
+                crate::error::ErrorKind::ParserError(message, crate::error::Location::Unknown),
             )
         }
     }

@@ -51,15 +51,14 @@ where
                     Err(Error::from(ErrorKind::ParserError(message, location)).into())
                 }),
             RioSource::Parser(parser) => {
-                parser
-                    .parse_all(&mut |t| -> Result<()> {
-                        sink.feed(&[
-                            rio2refterm(t.subject.into()).unwrap(),   // TODO handle error properly
-                            rio2refterm(t.predicate.into()).unwrap(), // TODO handle error properly
-                            rio2refterm(t.object).unwrap(),           // TODO handle error properly
-                        ])
-                        .map_err(TS::Error::into)
-                    })?;
+                parser.parse_all(&mut |t| -> Result<()> {
+                    sink.feed(&[
+                        rio2refterm(t.subject.into()).unwrap(), // TODO handle error properly
+                        rio2refterm(t.predicate.into()).unwrap(), // TODO handle error properly
+                        rio2refterm(t.object).unwrap(),         // TODO handle error properly
+                    ])
+                    .map_err(TS::Error::into)
+                })?;
                 Ok(sink.finish()?)
             }
         }
@@ -91,22 +90,21 @@ where
                     Err(Error::from(ErrorKind::ParserError(message, location)).into())
                 }),
             RioSource::Parser(parser) => {
-                parser
-                    .parse_all(&mut |q| -> Result<()> {
-                        sink.feed(&(
-                            [
-                                rio2refterm(q.subject.into()).unwrap(),   // TODO handle error properly
-                                rio2refterm(q.predicate.into()).unwrap(), // TODO handle error properly
-                                rio2refterm(q.object).unwrap(),           // TODO handle error properly
-                            ],
-                            if let Some(n) = q.graph_name {
-                                Some(rio2refterm(n.into()).unwrap()) // TODO handle error properly
-                            } else {
-                                None
-                            },
-                        ))
-                        .map_err(TS::Error::into)
-                    })?;
+                parser.parse_all(&mut |q| -> Result<()> {
+                    sink.feed(&(
+                        [
+                            rio2refterm(q.subject.into()).unwrap(), // TODO handle error properly
+                            rio2refterm(q.predicate.into()).unwrap(), // TODO handle error properly
+                            rio2refterm(q.object).unwrap(),         // TODO handle error properly
+                        ],
+                        if let Some(n) = q.graph_name {
+                            Some(rio2refterm(n.into()).unwrap()) // TODO handle error properly
+                        } else {
+                            None
+                        },
+                    ))
+                    .map_err(TS::Error::into)
+                })?;
                 Ok(sink.finish()?)
             }
         }
