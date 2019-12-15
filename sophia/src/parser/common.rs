@@ -16,7 +16,7 @@ use crate::term::Term;
 #[macro_export]
 macro_rules! def_default_triple_parser_api {
     () => {
-        def_default_parser_api! {Triple}
+        def_default_parser_api! {$crate::triple::stream::TripleSource}
     };
 }
 
@@ -25,29 +25,25 @@ macro_rules! def_default_triple_parser_api {
 #[macro_export]
 macro_rules! def_default_quad_parser_api {
     () => {
-        def_default_parser_api! {Quad}
+        def_default_parser_api! {$crate::quad::stream::QuadSource}
     };
 }
 
 macro_rules! def_default_parser_api {
-    ($item: ident) => {
+    ($item: path) => {
         /// Shortcut for `Config::default().parse_bufread(bufread)`
         #[inline]
-        pub fn parse_bufread<'a, B: ::std::io::BufRead + 'a>(
-            bufread: B,
-        ) -> impl Iterator<Item = Result<impl $item<'a>>> + 'a {
+        pub fn parse_bufread<'a, B: ::std::io::BufRead + 'a>(bufread: B) -> impl $item + 'a {
             Config::default().parse_bufread(bufread)
         }
         /// Shortcut for `Config::default().parse_read(read)`
         #[inline]
-        pub fn parse_read<'a, R: ::std::io::Read + 'a>(
-            read: R,
-        ) -> impl Iterator<Item = Result<impl $item<'a>>> + 'a {
+        pub fn parse_read<'a, R: ::std::io::Read + 'a>(read: R) -> impl $item + 'a {
             Config::default().parse_read(read)
         }
         /// Shortcut for `Config::default().parse_str(txt)`
         #[inline]
-        pub fn parse_str<'a>(txt: &'a str) -> impl Iterator<Item = Result<impl $item<'a>>> + 'a {
+        pub fn parse_str<'a>(txt: &'a str) -> impl $item + 'a {
             Config::default().parse_str(txt)
         }
     };
@@ -139,13 +135,12 @@ pub fn convert_pest_err<R: pest::RuleType>(err: PestError<R>, lineoffset: usize)
         } => format!("expected: {:?}\nunexpected: {:?}", positives, negatives),
         ErrorVariant::CustomError { message } => message,
     };
-    let location = err.location.clone();
     use ::pest::error::LineColLocation::*;
-    let line_col = match err.line_col.clone() {
-        Pos((l, c)) => Pos((l + lineoffset, c)),
-        Span((l1, c1), (l2, c2)) => Span((l1 + lineoffset, c1), (l2 + lineoffset, c2)),
+    let location = match err.line_col.clone() {
+        Pos((l, c)) => Location::from_lico(l + lineoffset, c),
+        Span((l1, c1), (l2, c2)) => Location::from_licos(l1 + lineoffset, c1, l2 + lineoffset, c2),
     };
-    ErrorKind::ParserError(message, location, line_col).into()
+    ErrorKind::ParserError(message, location).into()
 }
 
 // ---------------------------------------------------------------------------------

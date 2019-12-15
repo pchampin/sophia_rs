@@ -1,60 +1,44 @@
 //! Adapter for the Turtle parser from [RIO](https://github.com/Tpt/rio/blob/master/turtle/src/turtle.rs)
 
-/// RIO parser configuration.
+use std::io::{BufRead, BufReader, Cursor, Read};
+
+use rio_turtle::{TurtleError, TurtleParser};
+
+use crate::error::*;
+use crate::parser::rio_common::*;
+use crate::triple::stream::TripleSource;
+
+/// RIO Turtle parser configuration.
 ///
 /// For more information,
 /// see the [uniform interface] of parsers.
 ///
 /// [uniform interface]: ../index.html#uniform-interface
-use std::io::{BufRead, BufReader, Cursor, Read};
-use std::iter::once;
-
-use pest::error::{InputLocation, LineColLocation};
-use rio_api::model::*;
-use rio_api::parser::TripleParser;
-use rio_turtle::{TurtleError, TurtleParser};
-
-use crate::error::{Error, ErrorKind, Result};
-use crate::ns::xsd;
-use crate::term::{BoxTerm, RefTerm};
-use crate::triple::Triple;
-
 #[derive(Clone, Debug, Default)]
 pub struct Config {
     pub base: Option<String>,
 }
 
 impl Config {
+    #[inline]
     pub fn parse_bufread<'a, B: BufRead + 'a>(
         &self,
         bufread: B,
-    ) -> Box<dyn Iterator<Item = Result<[BoxTerm; 3]>> + 'a> {
+    ) -> impl TripleSource<Error = Error> + 'a {
         let base: &str = match &self.base {
             Some(base) => &base,
             None => "x-no-base:///",
         };
-        match TurtleParser::new(bufread, base) {
-            Ok(parser) => Box::new(parser.into_iter(move |t| {
-                Ok([
-                    rio2sophia(t.subject.into())?,
-                    rio2sophia(t.predicate.into())?,
-                    rio2sophia(t.object)?,
-                ])
-            })),
-            Err(err) => Box::new(once(Err(err.into()))),
-        }
+        RioSource::from(TurtleParser::new(bufread, base))
     }
 
     #[inline]
-    pub fn parse_read<'a, R: Read + 'a>(
-        &self,
-        read: R,
-    ) -> impl Iterator<Item = Result<[BoxTerm; 3]>> + 'a {
+    pub fn parse_read<'a, R: Read + 'a>(&self, read: R) -> impl TripleSource<Error = Error> + 'a {
         self.parse_bufread(BufReader::new(read))
     }
 
     #[inline]
-    pub fn parse_str<'a>(&self, txt: &'a str) -> impl Iterator<Item = Result<[BoxTerm; 3]>> + 'a {
+    pub fn parse_str<'a>(&self, txt: &'a str) -> impl TripleSource<Error = Error> + 'a {
         self.parse_bufread(Cursor::new(txt.as_bytes()))
     }
 }
@@ -65,27 +49,9 @@ def_default_triple_parser_api! {}
 impl From<TurtleError> for Error {
     fn from(err: TurtleError) -> Error {
         let message = format!("{:?}", err);
-        let location = InputLocation::Pos(1); // TODO
-        let line_col = LineColLocation::Pos((1, 1)); // TODO
-        Error::with_chain(err, ErrorKind::ParserError(message, location, line_col))
+        let location = Location::Unknown; // TODO improve once Rio exposes this info
+        Error::with_chain(err, ErrorKind::ParserError(message, location))
     }
-}
-
-/// Convert RIO term to Sophia term
-pub fn rio2sophia(t: Term) -> Result<BoxTerm> {
-    use Literal::*;
-    let refterm = match t {
-        Term::BlankNode(b) => RefTerm::new_bnode(b.id),
-        Term::NamedNode(n) => RefTerm::new_iri(n.iri),
-        Term::Literal(Simple { value }) => RefTerm::new_literal_dt(value, xsd::string),
-        Term::Literal(LanguageTaggedString { value, language }) => {
-            RefTerm::new_literal_lang(value, language)
-        }
-        Term::Literal(Typed { value, datatype }) => {
-            RefTerm::new_literal_dt(value, RefTerm::new_iri(datatype.iri)?)
-        }
-    }?;
-    Ok(BoxTerm::from_with(&refterm, Box::from))
 }
 
 // ---------------------------------------------------------------------------------
@@ -96,12 +62,16 @@ pub fn rio2sophia(t: Term) -> Result<BoxTerm> {
 mod test {
     use super::*;
     use crate::graph::inmem::FastGraph;
+    use crate::graph::Graph;
+    use crate::ns::{rdf, xsd};
+    use crate::term::matcher::ANY;
+    use crate::term::StaticTerm;
     use crate::triple::stream::TripleSource;
 
     #[test]
     fn test_simple_turtle_string() -> Result<()> {
         let turtle = r#"
-            @prefix : <http://example.org/ns> .
+            @prefix : <http://example.org/ns/> .
 
             <#me> :knows [ a :Person ; :name "Alice" ].
         "#;
@@ -112,6 +82,30 @@ mod test {
         };
         let c = cfg.parse_str(&turtle).in_graph(&mut g)?;
         assert_eq!(c, 3);
+        assert!(g
+            .triples_matching(
+                &StaticTerm::new_iri("http://localhost/ex#me").unwrap(),
+                &StaticTerm::new_iri("http://example.org/ns/knows").unwrap(),
+                &ANY,
+            )
+            .next()
+            .is_some());
+        assert!(g
+            .triples_matching(
+                &ANY,
+                &rdf::type_,
+                &StaticTerm::new_iri("http://example.org/ns/Person").unwrap(),
+            )
+            .next()
+            .is_some());
+        assert!(g
+            .triples_matching(
+                &ANY,
+                &StaticTerm::new_iri("http://example.org/ns/name").unwrap(),
+                &StaticTerm::new_literal_dt("Alice", xsd::string).unwrap(),
+            )
+            .next()
+            .is_some());
         Ok(())
     }
 }

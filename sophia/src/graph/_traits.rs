@@ -96,7 +96,7 @@ pub trait Graph<'a> {
     ///
     /// Must be either [`Never`](../error/enum.Never.html) (for infallible graphs)
     /// or [`Error`](../error/struct.Error.html).
-    type Error: CoercibleWith<Error> + CoercibleWith<Never>;
+    type Error: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>;
 
     /// An iterator visiting all triples of this graph in arbitrary order.
     ///
@@ -381,7 +381,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
     ///
     /// Must be either [`Never`](../error/enum.Never.html) (for infallible graphs)
     /// or [`Error`](../error/struct.Error.html).
-    type MutationError: CoercibleWith<Error> + CoercibleWith<Never>;
+    type MutationError: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>;
 
     /// Insert the given triple in this graph.
     ///
@@ -420,12 +420,12 @@ pub trait MutableGraph: for<'x> Graph<'x> {
 
     /// Insert into this graph all triples from the given source.
     #[inline]
-    fn insert_all<'a, TS>(
+    fn insert_all<TS>(
         &mut self,
         src: &mut TS,
     ) -> CoercedResult<usize, TS::Error, <Self as MutableGraph>::MutationError>
     where
-        TS: TripleSource<'a>,
+        TS: TripleSource,
         TS::Error: CoercibleWith<<Self as MutableGraph>::MutationError>,
     {
         src.in_sink(&mut self.inserter())
@@ -440,12 +440,12 @@ pub trait MutableGraph: for<'x> Graph<'x> {
 
     /// Remove from this graph all triples from the given source.
     #[inline]
-    fn remove_all<'a, TS>(
+    fn remove_all<TS>(
         &mut self,
         src: &mut TS,
     ) -> CoercedResult<usize, TS::Error, <Self as MutableGraph>::MutationError>
     where
-        TS: TripleSource<'a>,
+        TS: TripleSource,
         TS::Error: CoercibleWith<<Self as MutableGraph>::MutationError>,
     {
         src.in_sink(&mut self.remover())
@@ -492,7 +492,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
     /// Note that the default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
     ///
-    fn retain<S, P, O>(&mut self, ms: &S, mp: &P, mo: &O) -> MGResult<Self, ()>
+    fn retain_matching<S, P, O>(&mut self, ms: &S, mp: &P, mo: &O) -> MGResult<Self, ()>
     where
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,

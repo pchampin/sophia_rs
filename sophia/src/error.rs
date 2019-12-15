@@ -1,6 +1,5 @@
 //! Types for handling errors.
-
-use pest::error::{InputLocation, LineColLocation};
+use std::fmt;
 
 error_chain! {
     errors {
@@ -37,8 +36,8 @@ error_chain! {
             display("IRI must be absolute <{}>", iri)
         }
         /// Raised by parsers when they encounter a problem.
-        ParserError(message: String, location: InputLocation, line_col: LineColLocation) {
-            display("parse error at {}: {}", display_location(location, line_col), message)
+        ParserError(message: String, location: Location) {
+            display("parse error at {}: {}", location, message)
         }
         /// Raised by serializers when they encounter a problem.
         SerializerError(message: String) {
@@ -51,29 +50,63 @@ error_chain! {
     }
 }
 
-fn display_location(il: &InputLocation, lcl: &LineColLocation) -> String {
-    let line = *match lcl {
-        LineColLocation::Pos((line, _)) => line,
-        LineColLocation::Span((line, _), _) => line,
-    };
-    if line == 0 {
-        match il {
-            InputLocation::Pos(pos) => format!("{}", pos),
-            InputLocation::Span((s, e)) => format!("{}-{}", s, e),
+/// A position in a parsed stream.
+#[derive(Clone, Debug)]
+pub enum Position {
+    // Byte offset (starting at 0)
+    Offset(usize),
+    // Line-Column position (both starting at 1)
+    LiCo(usize, usize),
+}
+
+impl fmt::Display for Position {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Position::Offset(offset) => write!(f, "{}", offset),
+            Position::LiCo(li, co) => write!(f, "{}:{}", li, co),
         }
-    } else {
-        match lcl {
-            LineColLocation::Pos((l, c)) => format!("{}:{}", l, c),
-            LineColLocation::Span((l1, c1), (l2, c2)) => format!("{}:{}-{}:{}", l1, c1, l2, c2),
+    }
+}
+
+/// The location of a ParseError
+#[derive(Clone, Debug)]
+pub enum Location {
+    Unknown,
+    Pos(Position),
+    Span(Position, Position),
+}
+
+impl fmt::Display for Location {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Location::Unknown => write!(f, "?"),
+            Location::Pos(pos) => write!(f, "{}", pos),
+            Location::Span(s, e) => write!(f, "{}-{}", s, e),
         }
+    }
+}
+
+impl Location {
+    pub fn from_offset(offset: usize) -> Location {
+        Location::Pos(Position::Offset(offset))
+    }
+    pub fn from_lico(line: usize, column: usize) -> Location {
+        Location::Pos(Position::LiCo(line, column))
+    }
+    pub fn from_offsets(offset1: usize, offset2: usize) -> Location {
+        Location::Span(Position::Offset(offset1), Position::Offset(offset2))
+    }
+    pub fn from_licos(line1: usize, column1: usize, line2: usize, column2: usize) -> Location {
+        Location::Span(
+            Position::LiCo(line1, column1),
+            Position::LiCo(line2, column2),
+        )
     }
 }
 
 /// Make a Parser Error with minimal information
 pub fn make_parser_error(message: String, line_offset: usize) -> ErrorKind {
-    let il = InputLocation::Pos(0);
-    let lcl = LineColLocation::Pos((line_offset, 0));
-    ErrorKind::ParserError(message, il, lcl)
+    ErrorKind::ParserError(message, Location::from_lico(line_offset, 0))
 }
 
 coercible_errors!();

@@ -98,7 +98,7 @@ pub fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
     assert!(val <= hint.1.or(Some(val)).unwrap())
 }
 
-pub fn make_triple_source() -> impl TripleSource<'static> {
+pub fn make_triple_source() -> impl TripleSource {
     vec![
         [&*C1, &rdf::type_, &rdfs::Class],
         [&*C1, &rdfs::subClassOf, &*C2],
@@ -251,13 +251,12 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_retain() -> MGResult<$mutable_graph_impl, ()> {
+            fn test_retain_matching() -> MGResult<$mutable_graph_impl, ()> {
                 let mut g = $mutable_graph_factory();
                 populate(&mut g)?;
 
                 let o_matcher = [C1.clone(), C2.clone()];
-                MutableGraph::retain(&mut g, &ANY, &rdf::type_, &o_matcher[..])?;
-                print!("{:?}", g.triples().size_hint());
+                g.retain_matching(&ANY, &rdf::type_, &o_matcher[..])?;
                 assert_consistent_hint(4, g.triples().size_hint());
                 Ok(())
             }

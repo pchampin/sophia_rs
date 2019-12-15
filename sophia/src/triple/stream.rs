@@ -3,6 +3,25 @@
 //!
 //! See [`TripleSource`]'s and [`TripleSink`]'s documentation for more detail.
 //!
+//! # Rationale (or Why not simply use `Iterator`?)
+//!
+//! [`TripleSource`]s are conceptually very similar to iterators,
+//! so why introduce a new trait?
+//! The answer is that Rust iterators are limited,
+//! when it comes to yielding *references*,
+//! and [`TripleSource`] is designed to overcome this limitation.
+//!
+//! More precisely, when `Iterator::Item` is a reference type
+//! (or contains some reference, such as `[&RcTerm;3]` for example),
+//! its lifetime must be known in advance,
+//! and will typically be the lifetime of the iterator itself
+//! (what we shall call *long-lived* references).
+//! But triple sources (parsers in particular)
+//! may need to yield *short-lived* references,
+//! *i.e.* references that will be valid during the time need to process them,
+//! but may be outlived by the triple source itself.
+//!
+//!
 //! [`TripleSource`]: trait.TripleSource.html
 //! [`TripleSink`]: trait.TripleSink.html
 //! [`Triple`]: ../trait.Triple.html
@@ -18,27 +37,17 @@ use std::result::Result; // override ::error::Result
 
 /// A triple source produces [triples], and may also fail in the process.
 ///
-/// A triple source is castable, with the `as_iter` method,
-/// to an iterator yielding [triples] wrapped in [results],
-/// and any such iterator implements the `TripleSource` trait.
-/// It also has additional methods dedicated to interacting with [`TripleSink`]s.
+/// It provides methods dedicated to interacting with [`TripleSink`]s.
+/// Any iterator yielding  [triples] wrapped in [results]
+/// implements the `TripleSource` trait.
 ///
 /// [triples]: ../trait.Triple.html
 /// [results]: ../../error/type.Result.html
 /// [`TripleSink`]: trait.TripleSink.html
 ///
-pub trait TripleSource<'a> {
-    /// The type of triples produced by this source.
-    type Triple: Triple<'a>;
-
+pub trait TripleSource {
     /// The type of errors produced by this source.
-    type Error: CoercibleWith<Error> + CoercibleWith<Never>;
-
-    /// The type of iterator this triple source casts to.
-    type Iter: Iterator<Item = Result<Self::Triple, Self::Error>>;
-
-    /// Cast to iterator.
-    fn as_iter(&mut self) -> &mut Self::Iter;
+    type Error: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>;
 
     /// Feed all triples from this source into the given [sink](trait.TripleSink.html).
     ///
@@ -48,14 +57,7 @@ pub trait TripleSource<'a> {
         sink: &mut TS,
     ) -> CoercedResult<TS::Outcome, Self::Error, TS::Error>
     where
-        Self::Error: CoercibleWith<TS::Error>,
-    {
-        for tr in self.as_iter() {
-            let t = tr?;
-            sink.feed(&t)?;
-        }
-        Ok(sink.finish()?)
-    }
+        Self::Error: CoercibleWith<TS::Error>;
 
     /// Insert all triples from this source into the given [graph](../../graph/trait.MutableGraph.html).
     ///
@@ -71,18 +73,26 @@ pub trait TripleSource<'a> {
     }
 }
 
-impl<'a, I, T, E> TripleSource<'a> for I
+impl<'a, I, T, E> TripleSource for I
 where
-    I: Iterator<Item = Result<T, E>> + 'a,
+    I: Iterator<Item = Result<T, E>>,
     T: Triple<'a>,
-    E: CoercibleWith<Error> + CoercibleWith<Never>,
+    E: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>,
 {
-    type Triple = T;
     type Error = E;
-    type Iter = Self;
 
-    fn as_iter(&mut self) -> &mut Self::Iter {
-        self
+    fn in_sink<TS: TripleSink>(
+        &mut self,
+        sink: &mut TS,
+    ) -> CoercedResult<TS::Outcome, Self::Error, TS::Error>
+    where
+        Self::Error: CoercibleWith<TS::Error>,
+    {
+        for tr in self {
+            let t = tr?;
+            sink.feed(&t)?;
+        }
+        Ok(sink.finish()?)
     }
 }
 
@@ -126,7 +136,7 @@ pub trait TripleSink {
     type Outcome;
 
     /// The type of error raised by this triple sink.
-    type Error: CoercibleWith<Error> + CoercibleWith<Never>;
+    type Error: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>;
 
     /// Feed one triple in this sink.
     fn feed<'a, T: Triple<'a>>(&mut self, t: &T) -> Result<(), Self::Error>;

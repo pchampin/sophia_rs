@@ -4,10 +4,10 @@
 //! For usage of matchers, see for example
 //! [`Graph::triples_matching`](../../graph/trait.Graph.html#method.triples_matching),
 //! [`MutableGraph::remove_matching`](../../graph/trait.MutableGraph.html#method.remove_matching),
-//! [`MutableGraph::retain`](../../graph/trait.MutableGraph.html#method.retain),
+//! [`MutableGraph::retain_matching`](../../graph/trait.MutableGraph.html#method.retain_matching),
 //! [`Dataset::quads_matching`](../../dataset/trait.Dataset.html#method.quads_matching),
 //! [`MutableDataset::remove_matching`](../../dataset/trait.MutableDataset.html#method.remove_matching),
-//! [`MutableDataset::retain`](../../dataset/trait.MutableDataset.html#method.retain).
+//! [`MutableDataset::retain_matching`](../../dataset/trait.MutableDataset.html#method.retain_matching).
 
 use super::*;
 
