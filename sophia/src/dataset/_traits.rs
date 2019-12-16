@@ -1,17 +1,20 @@
 // this module is transparently re-exported by its parent `dataset`
 
 use std::collections::HashSet;
+use std::convert::Infallible;
+use std::error::Error;
 use std::marker::PhantomData;
 
 use resiter::filter::*;
 use resiter::map::*;
 
 use crate::dataset::adapter::DatasetGraph;
-use crate::error::*;
+use crate::error::Error as SophiaError;
 use crate::quad::stream::*;
 use crate::quad::*;
 use crate::term::matcher::*;
 use crate::term::*;
+use crate::triple::stream::StreamError;
 
 use super::*;
 use crate::graph::insert_if_absent;
@@ -19,7 +22,7 @@ use crate::graph::insert_if_absent;
 /// Type alias for the terms returned by a dataset.
 pub type DTerm<'a, D> = Term<<<D as Dataset<'a>>::Quad as Quad<'a>>::TermData>;
 /// Type alias for results iterators produced by a dataset.
-pub type DResult<'a, D, T> = std::result::Result<T, <D as Dataset<'a>>::Error>;
+pub type DResult<'a, D, T> = Result<T, <D as Dataset<'a>>::Error>;
 /// Type alias for fallible quad iterators produced by a dataset.
 pub type DQuadSource<'a, D> =
     Box<dyn Iterator<Item = DResult<'a, D, <D as Dataset<'a>>::Quad>> + 'a>;
@@ -47,7 +50,7 @@ pub trait Dataset<'a> {
     ///
     /// Must be either [`Never`](../error/enum.Never.html) (for infallible datasets)
     /// or [`Error`](../error/struct.Error.html).
-    type Error: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>;
+    type Error: 'static + Error + Into<SophiaError>;
 
     /// An iterator visiting all quads of this dataset in arbitrary order.
     ///
@@ -546,7 +549,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
     ///
     /// Must be either [`Never`](../error/enum.Never.html) (for infallible datasets)
     /// or [`Error`](../error/struct.Error.html).
-    type MutationError: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>;
+    type MutationError: 'static + Error + Into<SophiaError> + From<Infallible>;
 
     /// Insert the given quad in this dataset.
     ///
@@ -602,10 +605,9 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
     fn insert_all<TS>(
         &mut self,
         src: &mut TS,
-    ) -> CoercedResult<usize, TS::Error, <Self as MutableDataset>::MutationError>
+    ) -> Result<usize, StreamError<TS::Error, <Self as MutableDataset>::MutationError>>
     where
         TS: QuadSource,
-        TS::Error: CoercibleWith<<Self as MutableDataset>::MutationError>,
     {
         src.in_sink(&mut self.inserter())
     }
@@ -622,10 +624,9 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
     fn remove_all<TS>(
         &mut self,
         src: &mut TS,
-    ) -> CoercedResult<usize, TS::Error, <Self as MutableDataset>::MutationError>
+    ) -> Result<usize, StreamError<TS::Error, <Self as MutableDataset>::MutationError>>
     where
         TS: QuadSource,
-        TS::Error: CoercibleWith<<Self as MutableDataset>::MutationError>,
     {
         src.in_sink(&mut self.remover())
     }
@@ -646,19 +647,10 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
         G: GraphNameMatcher + ?Sized,
-        // The following trait bound means that Self::Error must convert to Self::MutationError;
-        // it is always satisfied when both of them are either Error or Never;
-        // it is required to raise an error when building to_remove
-        for<'a> <Self as Dataset<'a>>::Error: Into<Self::MutationError>,
-        // The following trait bound is required by remove_all,
-        // who coerces to_remove::Error (always Never) with self::MutationError.
-        Never: CoercibleWith<Self::MutationError>,
-        // The following trait is trivially verified in all cases,
-        // (acatually T is always EQUAL to CoercedError<Never, T>)
-        // but unfortunetaly the compiler can not see that.
-        Self::MutationError: From<CoercedError<Never, Self::MutationError>>,
+        for<'x> <Self as Dataset<'x>>::Error: Into<Self::MutationError>,
+        Infallible: Into<Self::MutationError>,
     {
-        let to_remove: Vec<_> = self
+        let to_remove = self
             .quads_matching(ms, mp, mo, mg)
             .map_ok(|q| {
                 (
@@ -670,10 +662,12 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
                     q.g().map(BoxTerm::from),
                 )
             })
-            .collect::<std::result::Result<_, _>>()
+            .collect::<std::result::Result<Vec<_>, _>>()
             .map_err(Into::into)?;
         let mut to_remove = to_remove.into_iter().as_quad_source();
-        Ok(self.remove_all(&mut to_remove)?)
+        Ok(self
+            .remove_all(&mut to_remove)
+            .map_err(|err| err.into_sink_err())?)
     }
 
     /// Keep only the quads matching the given matchers.
@@ -687,19 +681,10 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
         G: GraphNameMatcher + ?Sized,
-        // The following trait bound means that Self::Error must convert to Self::MutationError;
-        // it is always satisfied when both of them are either Error or Never;
-        // it is required to raise an error when building to_remove
-        for<'a> <Self as Dataset<'a>>::Error: Into<Self::MutationError>,
-        // The following trait bound is required by remove_all,
-        // who coerces to_remove::Error (always Never) with self::MutationError.
-        Never: CoercibleWith<Self::MutationError>,
-        // The following trait is trivially verified in all cases,
-        // (acatually T is always EQUAL to CoercedError<Never, T>)
-        // but unfortunetaly the compiler can not see that.
-        Self::MutationError: From<CoercedError<Never, Self::MutationError>>,
+        for<'x> <Self as Dataset<'x>>::Error: Into<Self::MutationError>,
+        Infallible: Into<Self::MutationError>,
     {
-        let to_remove: Vec<_> = self
+        let to_remove = self
             .quads()
             .filter_ok(|q| {
                 !(ms.matches(q.s()) && mp.matches(q.p()) && mo.matches(q.o()) && mg.matches(q.g()))
@@ -714,10 +699,11 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
                     q.g().map(BoxTerm::from),
                 )
             })
-            .collect::<std::result::Result<_, _>>()
+            .collect::<std::result::Result<Vec<_>, _>>()
             .map_err(Into::into)?;
         let mut to_remove = to_remove.into_iter().as_quad_source();
-        self.remove_all(&mut to_remove)?;
+        self.remove_all(&mut to_remove)
+            .map_err(|err| err.into_sink_err())?;
         Ok(())
     }
 }

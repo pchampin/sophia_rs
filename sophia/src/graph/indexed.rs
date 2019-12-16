@@ -72,7 +72,7 @@ macro_rules! impl_mutable_graph_for_indexed_graph {
         }
     };
     () => {
-        type MutationError = coercible_errors::Never;
+        type MutationError = std::convert::Infallible;
 
         fn insert<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> MGResult< Self, bool> where
             T_: $crate::term::TermData,

@@ -566,7 +566,7 @@ mod test {
         let mut g = HashSetGraph::new();
         let reader = io::Cursor::new(GENERALIZED_DOC);
         let res = STRICT.parse_read(reader).in_graph(&mut g);
-        if let Err(Error(ParserError(_, location), _)) = res {
+        if let Err(StreamError::Source(Error(ParserError(_, location), _))) = res {
             let line_no = match location {
                 Location::Pos(Position::LiCo(line_no, _)) => line_no,
                 Location::Span(Position::LiCo(line_no, _), _) => line_no,

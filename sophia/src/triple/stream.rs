@@ -34,11 +34,9 @@ use std::convert::Infallible;
 use std::error::Error;
 use std::iter::Map;
 
-use crate::error::*;
+use crate::error::Error as SophiaError;
 use crate::graph::*;
 use crate::triple::*;
-
-use std::result::Result; // override ::error::Result
 
 /// A triple source produces [triples], and may also fail in the process.
 ///
@@ -52,7 +50,7 @@ use std::result::Result; // override ::error::Result
 ///
 pub trait TripleSource {
     /// The type of errors produced by this source.
-    type Error: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>;
+    type Error: 'static + Error + Into<SophiaError>;
 
     /// Feed all triples from this source into the given [sink](trait.TripleSink.html).
     ///
@@ -60,9 +58,7 @@ pub trait TripleSource {
     fn in_sink<TS: TripleSink>(
         &mut self,
         sink: &mut TS,
-    ) -> CoercedResult<TS::Outcome, Self::Error, TS::Error>
-    where
-        Self::Error: CoercibleWith<TS::Error>;
+    ) -> Result<TS::Outcome, StreamError<Self::Error, TS::Error>>;
 
     /// Insert all triples from this source into the given [graph](../../graph/trait.MutableGraph.html).
     ///
@@ -70,10 +66,7 @@ pub trait TripleSource {
     fn in_graph<G: MutableGraph>(
         &mut self,
         graph: &mut G,
-    ) -> CoercedResult<usize, Self::Error, <G as MutableGraph>::MutationError>
-    where
-        Self::Error: CoercibleWith<<G as MutableGraph>::MutationError>,
-    {
+    ) -> Result<usize, StreamError<Self::Error, <G as MutableGraph>::MutationError>> {
         self.in_sink(&mut graph.inserter())
     }
 }
@@ -82,22 +75,19 @@ impl<'a, I, T, E> TripleSource for I
 where
     I: Iterator<Item = Result<T, E>>,
     T: Triple<'a>,
-    E: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>,
+    E: 'static + Error + Into<SophiaError>,
 {
     type Error = E;
 
     fn in_sink<TS: TripleSink>(
         &mut self,
         sink: &mut TS,
-    ) -> CoercedResult<TS::Outcome, Self::Error, TS::Error>
-    where
-        Self::Error: CoercibleWith<TS::Error>,
-    {
+    ) -> Result<TS::Outcome, StreamError<Self::Error, TS::Error>> {
         for tr in self {
-            let t = tr?;
-            sink.feed(&t)?;
+            let t = tr.map_source_err()?;
+            sink.feed(&t).map_sink_err()?;
         }
-        Ok(sink.finish()?)
+        Ok(sink.finish().map_sink_err()?)
     }
 }
 
@@ -108,7 +98,7 @@ where
 /// [`Triple`]: ../trait.Triple.html
 pub trait AsTripleSource<T>: Sized {
     /// Map all items of this iterator into an Ok result.
-    fn as_triple_source(self) -> Map<Self, fn(T) -> OkResult<T>>;
+    fn as_triple_source(self) -> Map<Self, fn(T) -> Result<T, Infallible>>;
 }
 
 impl<'a, T, I> AsTripleSource<T> for I
@@ -116,7 +106,7 @@ where
     I: Iterator<Item = T> + 'a + Sized,
     T: Triple<'a>,
 {
-    fn as_triple_source(self) -> Map<Self, fn(T) -> OkResult<T>> {
+    fn as_triple_source(self) -> Map<Self, fn(T) -> Result<T, Infallible>> {
         self.map(Ok)
     }
 }
@@ -141,7 +131,7 @@ pub trait TripleSink {
     type Outcome;
 
     /// The type of error raised by this triple sink.
-    type Error: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>;
+    type Error: 'static + Error + Into<SophiaError>;
 
     /// Feed one triple in this sink.
     fn feed<'a, T: Triple<'a>>(&mut self, t: &T) -> Result<(), Self::Error>;
@@ -158,12 +148,12 @@ pub trait TripleSink {
 /// Useful for benchmarking triple sources.
 impl TripleSink for () {
     type Outcome = ();
-    type Error = Never;
+    type Error = Infallible;
 
-    fn feed<'a, T: Triple<'a>>(&mut self, _: &T) -> OkResult<()> {
+    fn feed<'a, T: Triple<'a>>(&mut self, _: &T) -> Result<(), Self::Error> {
         Ok(())
     }
-    fn finish(&mut self) -> OkResult<Self::Outcome> {
+    fn finish(&mut self) -> Result<Self::Outcome, Self::Error> {
         Ok(())
     }
 }

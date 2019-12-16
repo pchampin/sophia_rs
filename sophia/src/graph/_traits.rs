@@ -7,7 +7,7 @@ use std::marker::PhantomData;
 use resiter::filter::*;
 use resiter::map::*;
 
-use crate::error::*;
+use crate::error::Error as SophiaError;
 use crate::graph::adapter::GraphAsDataset;
 use crate::graph::{Inserter, Remover};
 use crate::term::matcher::TermMatcher;
@@ -15,10 +15,13 @@ use crate::term::*;
 use crate::triple::stream::*;
 use crate::triple::*;
 
+use std::convert::Infallible;
+use std::error::Error;
+
 /// Type alias for the terms returned by a graph.
 pub type GTerm<'a, G> = Term<<<G as Graph<'a>>::Triple as Triple<'a>>::TermData>;
 /// Type alias for results produced by a graph.
-pub type GResult<'a, G, T> = std::result::Result<T, <G as Graph<'a>>::Error>;
+pub type GResult<'a, G, T> = Result<T, <G as Graph<'a>>::Error>;
 /// Type alias for fallible triple iterators produced by a graph.
 pub type GTripleSource<'a, G> =
     Box<dyn Iterator<Item = GResult<'a, G, <G as Graph<'a>>::Triple>> + 'a>;
@@ -69,12 +72,12 @@ pub type GResultTermSet<'a, G> = GResult<'a, G, HashSet<GTerm<'a, G>>>;
 /// [Higher-Rank Trait Bound](https://doc.rust-lang.org/nomicon/hrtb.html)
 /// for `G`:
 /// ```
-/// use sophia::error::Never;
+/// use std::convert::Infallible;
 /// use sophia::graph::Graph;
 /// use sophia::term::*;
 ///
 /// fn count_str_mentions<G>(g: &G, txt: &str) -> usize where
-///   G: for<'x> Graph<'x, Error=Never>  // <-- higher-rank trait bound
+///   G: for<'x> Graph<'x, Error=Infallible>  // <-- higher-rank trait bound
 /// {
 ///   let literal = RefTerm::from(txt);
 ///   g.triples_with_o(&literal).count()
@@ -93,10 +96,7 @@ pub trait Graph<'a> {
     /// that the methods of this graph will yield.
     type Triple: Triple<'a>;
     /// The error type that this graph may raise.
-    ///
-    /// Must be either [`Never`](../error/enum.Never.html) (for infallible graphs)
-    /// or [`Error`](../error/struct.Error.html).
-    type Error: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>;
+    type Error: 'static + Error + Into<SophiaError>;
 
     /// An iterator visiting all triples of this graph in arbitrary order.
     ///
@@ -378,10 +378,7 @@ pub type MGResult<G, T> = std::result::Result<T, <G as MutableGraph>::MutationEr
 ///
 pub trait MutableGraph: for<'x> Graph<'x> {
     /// The error type that this graph may raise during mutations.
-    ///
-    /// Must be either [`Never`](../error/enum.Never.html) (for infallible graphs)
-    /// or [`Error`](../error/struct.Error.html).
-    type MutationError: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>;
+    type MutationError: 'static + Error + Into<SophiaError>;
 
     /// Insert the given triple in this graph.
     ///
@@ -423,10 +420,9 @@ pub trait MutableGraph: for<'x> Graph<'x> {
     fn insert_all<TS>(
         &mut self,
         src: &mut TS,
-    ) -> CoercedResult<usize, TS::Error, <Self as MutableGraph>::MutationError>
+    ) -> Result<usize, StreamError<TS::Error, <Self as MutableGraph>::MutationError>>
     where
         TS: TripleSource,
-        TS::Error: CoercibleWith<<Self as MutableGraph>::MutationError>,
     {
         src.in_sink(&mut self.inserter())
     }
@@ -443,10 +439,9 @@ pub trait MutableGraph: for<'x> Graph<'x> {
     fn remove_all<TS>(
         &mut self,
         src: &mut TS,
-    ) -> CoercedResult<usize, TS::Error, <Self as MutableGraph>::MutationError>
+    ) -> Result<usize, StreamError<TS::Error, <Self as MutableGraph>::MutationError>>
     where
         TS: TripleSource,
-        TS::Error: CoercibleWith<<Self as MutableGraph>::MutationError>,
     {
         src.in_sink(&mut self.remover())
     }
@@ -455,24 +450,20 @@ pub trait MutableGraph: for<'x> Graph<'x> {
     ///
     /// Note that the default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
-    fn remove_matching<S, P, O>(&mut self, ms: &S, mp: &P, mo: &O) -> MGResult<Self, usize>
+    fn remove_matching<S, P, O>(
+        &mut self,
+        ms: &S,
+        mp: &P,
+        mo: &O,
+    ) -> Result<usize, Self::MutationError>
     where
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
-        // The following trait bound means that Self::Error must convert to Self::MutationError;
-        // it is always satisfied when both of them are either Error or Never;
-        // it is required to raise an error when building to_remove
-        for<'a> <Self as Graph<'a>>::Error: Into<Self::MutationError>,
-        // The following trait bound is required by remove_all,
-        // who coerces to_remove::Error (always Never) with self::MutationError.
-        Never: CoercibleWith<Self::MutationError>,
-        // The following trait is trivially verified in all cases,
-        // (acatually T is always EQUAL to CoercedError<Never, T>)
-        // but unfortunetaly the compiler can not see that.
-        Self::MutationError: From<CoercedError<Never, Self::MutationError>>,
+        for<'x> <Self as Graph<'x>>::Error: Into<Self::MutationError>,
+        Infallible: Into<Self::MutationError>,
     {
-        let to_remove: Vec<_> = self
+        let to_remove = self
             .triples_matching(ms, mp, mo)
             .map_ok(|t| {
                 [
@@ -481,10 +472,12 @@ pub trait MutableGraph: for<'x> Graph<'x> {
                     BoxTerm::from(t.o()),
                 ]
             })
-            .collect::<std::result::Result<_, _>>()
+            .collect::<std::result::Result<Vec<_>, _>>()
             .map_err(Into::into)?;
         let mut to_remove = to_remove.into_iter().as_triple_source();
-        Ok(self.remove_all(&mut to_remove)?)
+        Ok(self
+            .remove_all(&mut to_remove)
+            .map_err(|err| err.into_sink_err())?)
     }
 
     /// Keep only the triples matching the given matchers.
@@ -492,24 +485,20 @@ pub trait MutableGraph: for<'x> Graph<'x> {
     /// Note that the default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
     ///
-    fn retain_matching<S, P, O>(&mut self, ms: &S, mp: &P, mo: &O) -> MGResult<Self, ()>
+    fn retain_matching<S, P, O>(
+        &mut self,
+        ms: &S,
+        mp: &P,
+        mo: &O,
+    ) -> Result<(), Self::MutationError>
     where
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
-        // The following trait bound means that Self::Error must convert to Self::MutationError;
-        // it is always satisfied when both of them are either Error or Never;
-        // it is required to raise an error when building to_remove
-        for<'a> <Self as Graph<'a>>::Error: Into<Self::MutationError>,
-        // The following trait bound is required by remove_all,
-        // who coerces to_remove::Error (always Never) with self::MutationError.
-        Never: CoercibleWith<Self::MutationError>,
-        // The following trait is trivially verified in all cases,
-        // (acatually T is always EQUAL to CoercedError<Never, T>)
-        // but unfortunetaly the compiler can not see that.
-        Self::MutationError: From<CoercedError<Never, Self::MutationError>>,
+        for<'x> <Self as Graph<'x>>::Error: Into<Self::MutationError>,
+        Infallible: Into<Self::MutationError>,
     {
-        let to_remove: Vec<_> = self
+        let to_remove = self
             .triples()
             .filter_ok(|t| !(ms.matches(t.s()) && mp.matches(t.p()) && mo.matches(t.o())))
             .map_ok(|t| {
@@ -519,10 +508,11 @@ pub trait MutableGraph: for<'x> Graph<'x> {
                     BoxTerm::from(t.o()),
                 ]
             })
-            .collect::<std::result::Result<_, _>>()
+            .collect::<std::result::Result<Vec<_>, _>>()
             .map_err(Into::into)?;
         let mut to_remove = to_remove.into_iter().as_triple_source();
-        self.remove_all(&mut to_remove)?;
+        self.remove_all(&mut to_remove)
+            .map_err(|err| err.into_sink_err())?;
         Ok(())
     }
 }

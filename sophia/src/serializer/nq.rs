@@ -11,7 +11,9 @@
 
 use std::io;
 use std::mem::swap;
+use std::result::Result as StdResult;
 
+use crate::error::*;
 use crate::quad::stream::*;
 use crate::quad::Quad;
 use crate::term::{LiteralKind, Term, TermData};
@@ -67,7 +69,7 @@ impl<W: io::Write> QuadSink for Writer<W> {
     type Outcome = ();
     type Error = Error;
 
-    fn feed<'a, T: Quad<'a>>(&mut self, t: &T) -> Result<(), Self::Error> {
+    fn feed<'a, T: Quad<'a>>(&mut self, t: &T) -> StdResult<(), Self::Error> {
         let w = &mut self.write;
 
         (|| {
@@ -85,7 +87,7 @@ impl<W: io::Write> QuadSink for Writer<W> {
         .chain_err(|| ErrorKind::SerializerError("N-Quads serializer".into()))
     }
 
-    fn finish(&mut self) -> Result<(), Self::Error> {
+    fn finish(&mut self) -> StdResult<(), Self::Error> {
         Ok(())
     }
 }

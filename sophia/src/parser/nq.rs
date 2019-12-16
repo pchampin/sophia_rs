@@ -172,6 +172,7 @@ mod test {
     use super::*;
     use crate::quad::stream::*;
     use crate::term::BoxTerm;
+    use crate::triple::stream::StreamError;
     use std::collections::HashSet;
     use std::ffi::OsStr;
     use std::fs::{read_dir, File};
@@ -263,7 +264,7 @@ mod test {
         let mut d = HashSetDataset::new();
         let reader = io::Cursor::new(GENERALIZED_DOC);
         let res = STRICT.parse_read(reader).in_dataset(&mut d);
-        if let Err(Error(ParserError(_, location), _)) = res {
+        if let Err(StreamError::Source(Error(ParserError(_, location), _))) = res {
             let line_no = match location {
                 Location::Pos(Position::LiCo(line_no, _)) => line_no,
                 Location::Span(Position::LiCo(line_no, _), _) => line_no,

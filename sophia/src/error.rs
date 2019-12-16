@@ -1,4 +1,5 @@
 //! Types for handling errors.
+use std::convert::Infallible;
 use std::fmt;
 
 error_chain! {
@@ -47,6 +48,13 @@ error_chain! {
         UnsupportedGraphName(graph_name: String) {
             display("unsupported graph_name: {}", graph_name)
         }
+    }
+}
+
+/// Only implemented to satisfy the type system.
+impl From<Infallible> for Error {
+    fn from(_: Infallible) -> Self {
+        unreachable!()
     }
 }
 
@@ -108,8 +116,6 @@ impl Location {
 pub fn make_parser_error(message: String, line_offset: usize) -> ErrorKind {
     ErrorKind::ParserError(message, Location::from_lico(line_offset, 0))
 }
-
-coercible_errors!();
 
 #[cfg(test)]
 mod test {

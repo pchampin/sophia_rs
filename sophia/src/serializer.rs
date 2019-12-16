@@ -23,10 +23,10 @@
 //! [`TripleSink`]: ../triple/stream/trait.TripleSink.html
 //! [`QuadSink`]: ../quad/stream/trait.QuadSink.html
 
+use std::convert::Infallible;
 use std::io;
 
 use crate::dataset::*;
-use crate::error::*;
 use crate::graph::*;
 use crate::quad::{stream::*, *};
 use crate::triple::{stream::*, *};
@@ -51,28 +51,28 @@ pub trait TripleWriter<W: io::Write>: TripleSink<Outcome = ()> + Sized {
     fn new(write: W, config: Self::Config) -> Self;
 
     /// Serialize the triples from the given source.
-    fn write<TS, T>(&mut self, mut source: TS) -> CoercedResult<(), TS::Error, Self::Error>
+    fn write<TS, T>(&mut self, mut source: TS) -> Result<(), StreamError<TS::Error, Self::Error>>
     where
         TS: TripleSource,
-        TS::Error: CoercibleWith<Self::Error>,
     {
         source.in_sink(self)
     }
 
     /// Serialize the given graph.
-    fn write_graph<'a, G>(&mut self, graph: &'a mut G) -> CoercedResult<(), G::Error, Self::Error>
+    fn write_graph<'a, G>(
+        &mut self,
+        graph: &'a mut G,
+    ) -> Result<(), StreamError<G::Error, Self::Error>>
     where
         G: Graph<'a>,
-        G::Error: CoercibleWith<Self::Error>,
     {
         graph.triples().in_sink(self)
     }
 
     /// Serialize the given triple.
-    fn write_triple<'a, T>(&mut self, t: &T) -> CoercedResult<(), Never, Self::Error>
+    fn write_triple<'a, T>(&mut self, t: &T) -> Result<(), StreamError<Infallible, Self::Error>>
     where
         T: Triple<'a>,
-        Never: CoercibleWith<Self::Error>,
     {
         let mut source = vec![[t.s(), t.p(), t.o()]].into_iter().as_triple_source();
         source.in_sink(self)
@@ -93,10 +93,12 @@ pub trait TripleStringifier: TripleSink<Outcome = String> + Sized {
     fn new(config: Self::Config) -> Self;
 
     /// Stringify the triples from the given source.
-    fn stringify<TS, T>(&mut self, mut source: TS) -> CoercedResult<String, TS::Error, Self::Error>
+    fn stringify<TS, T>(
+        &mut self,
+        mut source: TS,
+    ) -> Result<String, StreamError<TS::Error, Self::Error>>
     where
         TS: TripleSource,
-        TS::Error: CoercibleWith<Self::Error>,
     {
         source.in_sink(self)
     }
@@ -105,19 +107,20 @@ pub trait TripleStringifier: TripleSink<Outcome = String> + Sized {
     fn stringify_graph<'a, G>(
         &mut self,
         graph: &'a mut G,
-    ) -> CoercedResult<String, G::Error, Self::Error>
+    ) -> Result<String, StreamError<G::Error, Self::Error>>
     where
         G: Graph<'a>,
-        G::Error: CoercibleWith<Self::Error>,
     {
         graph.triples().in_sink(self)
     }
 
     /// Stringify the given triple.
-    fn stringify_triple<'a, T>(&mut self, t: &T) -> CoercedResult<String, Never, Self::Error>
+    fn stringify_triple<'a, T>(
+        &mut self,
+        t: &T,
+    ) -> Result<String, StreamError<Infallible, Self::Error>>
     where
         T: Triple<'a>,
-        Never: CoercibleWith<Self::Error>,
     {
         let mut source = vec![[t.s(), t.p(), t.o()]].into_iter().as_triple_source();
         source.in_sink(self)
@@ -137,10 +140,9 @@ pub trait QuadWriter<W: io::Write>: QuadSink<Outcome = ()> + Sized {
     fn new(write: W, config: Self::Config) -> Self;
 
     /// Serialize the triples from the given source.
-    fn write<QS, T>(&mut self, mut source: QS) -> CoercedResult<(), QS::Error, Self::Error>
+    fn write<QS, T>(&mut self, mut source: QS) -> Result<(), StreamError<QS::Error, Self::Error>>
     where
         QS: QuadSource,
-        QS::Error: CoercibleWith<Self::Error>,
     {
         source.in_sink(self)
     }
@@ -149,19 +151,17 @@ pub trait QuadWriter<W: io::Write>: QuadSink<Outcome = ()> + Sized {
     fn write_dataset<'a, D>(
         &mut self,
         dataset: &'a mut D,
-    ) -> CoercedResult<(), D::Error, Self::Error>
+    ) -> Result<(), StreamError<D::Error, Self::Error>>
     where
         D: Dataset<'a>,
-        D::Error: CoercibleWith<Self::Error>,
     {
         dataset.quads().in_sink(self)
     }
 
     /// Serialize the given triple.
-    fn write_quad<'a, Q>(&mut self, q: &Q) -> CoercedResult<(), Never, Self::Error>
+    fn write_quad<'a, Q>(&mut self, q: &Q) -> Result<(), StreamError<Infallible, Self::Error>>
     where
         Q: Quad<'a>,
-        Never: CoercibleWith<Self::Error>,
     {
         let mut source = vec![([q.s(), q.p(), q.o()], q.g())]
             .into_iter()
@@ -184,10 +184,12 @@ pub trait QuadStringifier: QuadSink<Outcome = String> + Sized {
     fn new(config: Self::Config) -> Self;
 
     /// Stringify the triples from the given source.
-    fn stringify<QS, T>(&mut self, mut source: QS) -> CoercedResult<String, QS::Error, Self::Error>
+    fn stringify<QS, T>(
+        &mut self,
+        mut source: QS,
+    ) -> Result<String, StreamError<QS::Error, Self::Error>>
     where
         QS: QuadSource,
-        QS::Error: CoercibleWith<Self::Error>,
     {
         source.in_sink(self)
     }
@@ -196,19 +198,20 @@ pub trait QuadStringifier: QuadSink<Outcome = String> + Sized {
     fn stringify_dataset<'a, D>(
         &mut self,
         dataset: &'a mut D,
-    ) -> CoercedResult<String, D::Error, Self::Error>
+    ) -> Result<String, StreamError<D::Error, Self::Error>>
     where
         D: Dataset<'a>,
-        D::Error: CoercibleWith<Self::Error>,
     {
         dataset.quads().in_sink(self)
     }
 
     /// Stringify the given triple.
-    fn stringify_quad<'a, Q>(&mut self, q: &Q) -> CoercedResult<String, Never, Self::Error>
+    fn stringify_quad<'a, Q>(
+        &mut self,
+        q: &Q,
+    ) -> Result<String, StreamError<Infallible, Self::Error>>
     where
         Q: Quad<'a>,
-        Never: CoercibleWith<Self::Error>,
     {
         let mut source = vec![([q.s(), q.p(), q.o()], q.g())]
             .into_iter()

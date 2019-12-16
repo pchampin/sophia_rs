@@ -13,11 +13,14 @@
 //! [`Iterator`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html
 //! [`triple::stream`]: ../../triple/stream/index.html
 
+use std::convert::Infallible;
+use std::error::Error;
 use std::iter::Map;
 
 use crate::dataset::*;
-use crate::error::*;
+use crate::error::Error as SophiaError;
 use crate::quad::*;
+use crate::triple::stream::*;
 
 use std::result::Result; // override ::error::Result
 
@@ -33,7 +36,7 @@ use std::result::Result; // override ::error::Result
 ///
 pub trait QuadSource {
     /// The type of errors produced by this source.
-    type Error: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>;
+    type Error: 'static + Error + Into<SophiaError>;
 
     /// Feed all quads from this source into the given [sink](trait.QuadSink.html).
     ///
@@ -41,9 +44,7 @@ pub trait QuadSource {
     fn in_sink<TS: QuadSink>(
         &mut self,
         sink: &mut TS,
-    ) -> CoercedResult<TS::Outcome, Self::Error, TS::Error>
-    where
-        Self::Error: CoercibleWith<TS::Error>;
+    ) -> Result<TS::Outcome, StreamError<Self::Error, TS::Error>>;
 
     /// Insert all quads from this source into the given [dataset](../../dataset/trait.MutableDataset.html).
     ///
@@ -51,10 +52,7 @@ pub trait QuadSource {
     fn in_dataset<D: MutableDataset>(
         &mut self,
         dataset: &mut D,
-    ) -> CoercedResult<usize, Self::Error, <D as MutableDataset>::MutationError>
-    where
-        Self::Error: CoercibleWith<<D as MutableDataset>::MutationError>,
-    {
+    ) -> Result<usize, StreamError<Self::Error, <D as MutableDataset>::MutationError>> {
         self.in_sink(&mut dataset.inserter())
     }
 }
@@ -63,22 +61,19 @@ impl<'a, I, T, E> QuadSource for I
 where
     I: Iterator<Item = Result<T, E>>,
     T: Quad<'a>,
-    E: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>,
+    E: 'static + Error + Into<SophiaError>,
 {
     type Error = E;
 
     fn in_sink<TS: QuadSink>(
         &mut self,
         sink: &mut TS,
-    ) -> CoercedResult<TS::Outcome, Self::Error, TS::Error>
-    where
-        Self::Error: CoercibleWith<TS::Error>,
-    {
+    ) -> Result<TS::Outcome, StreamError<Self::Error, TS::Error>> {
         for tr in self {
-            let t = tr?;
-            sink.feed(&t)?;
+            let t = tr.map_source_err()?;
+            sink.feed(&t).map_sink_err()?;
         }
-        Ok(sink.finish()?)
+        Ok(sink.finish().map_sink_err()?)
     }
 }
 
@@ -89,7 +84,7 @@ where
 /// [`Quad`]: ../trait.Quad.html
 pub trait AsQuadSource<T>: Sized {
     /// Map all items of this iterator into an Ok result.
-    fn as_quad_source(self) -> Map<Self, fn(T) -> OkResult<T>>;
+    fn as_quad_source(self) -> Map<Self, fn(T) -> Result<T, Infallible>>;
 }
 
 impl<'a, T, I> AsQuadSource<T> for I
@@ -97,7 +92,7 @@ where
     I: Iterator<Item = T> + 'a + Sized,
     T: Quad<'a>,
 {
-    fn as_quad_source(self) -> Map<Self, fn(T) -> OkResult<T>> {
+    fn as_quad_source(self) -> Map<Self, fn(T) -> Result<T, Infallible>> {
         self.map(Ok)
     }
 }
@@ -122,7 +117,7 @@ pub trait QuadSink {
     type Outcome;
 
     /// The type of error raised by this quad sink.
-    type Error: CoercibleWith<Error> + CoercibleWith<Never> + Into<Error>;
+    type Error: 'static + Error + Into<SophiaError>;
 
     /// Feed one quad in this sink.
     fn feed<'a, T: Quad<'a>>(&mut self, t: &T) -> Result<(), Self::Error>;
@@ -139,12 +134,12 @@ pub trait QuadSink {
 /// Useful for benchmarking quad sources.
 impl QuadSink for () {
     type Outcome = ();
-    type Error = Never;
+    type Error = Infallible;
 
-    fn feed<'a, T: Quad<'a>>(&mut self, _: &T) -> OkResult<()> {
+    fn feed<'a, T: Quad<'a>>(&mut self, _: &T) -> Result<(), Self::Error> {
         Ok(())
     }
-    fn finish(&mut self) -> OkResult<Self::Outcome> {
+    fn finish(&mut self) -> Result<Self::Outcome, Self::Error> {
         Ok(())
     }
 }
