@@ -72,11 +72,9 @@ extern crate lazy_static;
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
-extern crate regex;
-#[macro_use]
-extern crate rental;
 #[cfg(feature = "xml")]
 extern crate quick_xml;
+extern crate regex;
 extern crate resiter;
 #[cfg(feature = "rio")]
 extern crate rio_api;

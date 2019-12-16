@@ -17,7 +17,7 @@ use pest::{iterators::Pairs, Parser};
 use super::common::*;
 use super::nt::{pair_to_term, PestNtqParser, Rule};
 use crate::error::*;
-use crate::quad::Quad;
+use crate::quad::stream::*;
 use crate::term::Term;
 
 /// N-Quads parser configuration.
@@ -40,50 +40,22 @@ type ParseStrResult<'a> =
 
 impl Config {
     #[inline]
-    pub fn parse_bufread<'a, B: BufRead + 'a>(
-        &self,
-        bufread: B,
-    ) -> impl Iterator<Item = Result<NqQuad>> + 'a {
+    pub fn parse_bufread<'a, B: BufRead + 'a>(&self, bufread: B) -> impl QuadSource<Error = Error> {
         let config = self.clone();
         let rule = if config.strict {
             Rule::nquads_line
         } else {
             Rule::generalized_nq_line
         };
-        bufread
-            .lines()
-            .enumerate()
-            .filter_map(move |(lineidx, line)| {
-                let line = match line {
-                    Ok(line) => line,
-                    Err(ioerr) => {
-                        let msg = format!("{}", ioerr);
-                        return Some(Err(Error::with_chain(
-                            ioerr,
-                            make_parser_error(msg, lineidx),
-                        )));
-                    }
-                };
-                {
-                    let trimmed = line.trim_start();
-                    if trimmed.is_empty() || trimmed.as_bytes()[0] == b'#' {
-                        return None;
-                    }
-                }
-                Some(
-                    NqQuad::try_new(line, |line| {
-                        parse_rule_from_line(&config, rule, line.trim_start())
-                    })
-                    .map_err(|err| convert_pest_err(err.0, lineidx)),
-                )
-            })
+        BufReadParser {
+            config,
+            rule,
+            bufread,
+        }
     }
 
     #[inline]
-    pub fn parse_read<'a, R: Read + 'a>(
-        &self,
-        read: R,
-    ) -> impl Iterator<Item = Result<NqQuad>> + 'a {
+    pub fn parse_read<'a, R: Read + 'a>(&self, read: R) -> impl QuadSource<Error = Error> {
         self.parse_bufread(BufReader::new(read))
     }
 
@@ -112,37 +84,46 @@ impl Config {
     }
 }
 
-def_default_quad_parser_api! {}
+struct BufReadParser<B> {
+    config: Config,
+    rule: Rule,
+    bufread: B,
+}
 
-rental! {
-    pub mod nq_quad {
-        use super::*;
+impl<B> QuadSource for BufReadParser<B>
+where
+    B: BufRead,
+{
+    type Error = Error;
 
-        #[rental(covariant)]
-        pub struct NqQuad {
-            line: String,
-            quad: ([Term<Cow<'line, str>>;3], Option<Term<Cow<'line, str>>>),
+    fn in_sink<TS: QuadSink>(
+        &mut self,
+        sink: &mut TS,
+    ) -> CoercedResult<TS::Outcome, Self::Error, TS::Error>
+    where
+        Self::Error: CoercibleWith<TS::Error>,
+    {
+        for (lineidx, line) in (&mut self.bufread).lines().enumerate() {
+            let line = match line {
+                Ok(line) => line,
+                Err(ioerr) => {
+                    let msg = format!("{}", ioerr);
+                    return Err(Error::with_chain(ioerr, make_parser_error(msg, lineidx)).into());
+                }
+            };
+            let trimmed = line.trim_start();
+            if trimmed.is_empty() || trimmed.as_bytes()[0] == b'#' {
+                continue;
+            }
+            let quad = parse_rule_from_line(&self.config, self.rule, line.trim_start())
+                .map_err(|err| convert_pest_err(err, lineidx))?;
+            sink.feed(&quad)?;
         }
+        Ok(sink.finish()?)
     }
 }
-pub use self::nq_quad::NqQuad;
-impl<'a> Quad<'a> for NqQuad {
-    type TermData = Cow<'a, str>;
-    fn s(&self) -> &Term<Cow<'a, str>> {
-        unsafe { std::mem::transmute(self.suffix().s()) }
-    }
-    fn p(&self) -> &Term<Cow<'a, str>> {
-        unsafe { std::mem::transmute(self.suffix().p()) }
-    }
-    fn o(&self) -> &Term<Cow<'a, str>> {
-        unsafe { std::mem::transmute(self.suffix().o()) }
-    }
-    fn g(&self) -> Option<&Term<Cow<'a, str>>> {
-        unsafe { std::mem::transmute(self.suffix().g()) }
-    }
-    // The compiler can not figure out the correct lifetime for self in the methods above,
-    // so I use transmute() to force the cast.
-}
+
+def_default_quad_parser_api! {}
 
 type ResultQuad<'a> =
     StdResult<([Term<Cow<'a, str>>; 3], Option<Term<Cow<'a, str>>>), PestError<Rule>>;
@@ -170,7 +151,6 @@ fn pairs_to_quad<'a>(config: &Config, mut pairs: Pairs<'a, Rule>) -> ResultQuad<
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::quad::stream::*;
     use crate::term::BoxTerm;
     use std::collections::HashSet;
     use std::ffi::OsStr;
