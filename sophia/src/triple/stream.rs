@@ -27,6 +27,11 @@
 //! [`Triple`]: ../trait.Triple.html
 //! [`Iterator`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html
 
+mod _error;
+pub use self::_error::*;
+
+use std::convert::Infallible;
+use std::error::Error;
 use std::iter::Map;
 
 use crate::error::*;
