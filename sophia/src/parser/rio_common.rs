@@ -37,18 +37,16 @@ where
     fn in_sink<TS: TripleSink>(
         &mut self,
         sink: &mut TS,
-    ) -> CoercedResult<TS::Outcome, Error, TS::Error>
-    where
-        Error: CoercibleWith<TS::Error>,
+    ) -> StdResult<TS::Outcome, StreamError<Error, TS::Error>>
     {
         match self {
             RioSource::Error(opt) => opt
                 .take()
-                .map(|e| Err(Error::from(e).into()))
+                .map(|e| Err(SourceError(Error::from(e).into())))
                 .unwrap_or_else(|| {
                     let message = "This parser has already failed".to_string();
                     let location = Location::Unknown;
-                    Err(Error::from(ErrorKind::ParserError(message, location)).into())
+                    Err(SourceError(Error::from(ErrorKind::ParserError(message, location)).into()))
                 }),
             RioSource::Parser(parser) => {
                 parser.parse_all(&mut |t| -> Result<()> {
@@ -58,8 +56,8 @@ where
                         rio2refterm(t.object).unwrap(),         // TODO handle error properly
                     ])
                     .map_err(TS::Error::into)
-                })?;
-                Ok(sink.finish()?)
+                }).map_err(SourceError)?;
+                Ok(sink.finish().map_err(SinkError)?)
             }
         }
     }
@@ -76,18 +74,16 @@ where
     fn in_sink<TS: QuadSink>(
         &mut self,
         sink: &mut TS,
-    ) -> CoercedResult<TS::Outcome, Error, TS::Error>
-    where
-        Error: CoercibleWith<TS::Error>,
+    ) -> StdResult<TS::Outcome, StreamError<Error, TS::Error>>
     {
         match self {
             RioSource::Error(opt) => opt
                 .take()
-                .map(|e| Err(Error::from(e).into()))
+                .map(|e| Err(SourceError(Error::from(e).into())))
                 .unwrap_or_else(|| {
                     let message = "This parser has already failed".to_string();
                     let location = Location::Unknown;
-                    Err(Error::from(ErrorKind::ParserError(message, location)).into())
+                    Err(SourceError(Error::from(ErrorKind::ParserError(message, location)).into()))
                 }),
             RioSource::Parser(parser) => {
                 parser.parse_all(&mut |q| -> Result<()> {
@@ -104,8 +100,8 @@ where
                         },
                     ))
                     .map_err(TS::Error::into)
-                })?;
-                Ok(sink.finish()?)
+                }).map_err(SourceError)?;
+                Ok(sink.finish().map_err(SinkError)?)
             }
         }
     }

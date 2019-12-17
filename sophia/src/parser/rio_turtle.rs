@@ -69,7 +69,7 @@ mod test {
     use crate::triple::stream::TripleSource;
 
     #[test]
-    fn test_simple_turtle_string() -> Result<()> {
+    fn test_simple_turtle_string() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let turtle = r#"
             @prefix : <http://example.org/ns/> .
 

@@ -56,7 +56,7 @@ mod test {
     use crate::triple::stream::TripleSource;
 
     #[test]
-    fn test_simple_nt_string() -> Result<()> {
+    fn test_simple_nt_string() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let turtle = r#"
             <http://localhost/ex#me> <http://example.org/ns/knows> _:b1.
             _:b1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/ns/Person>.
