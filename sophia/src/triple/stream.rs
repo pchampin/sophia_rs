@@ -84,10 +84,10 @@ where
         sink: &mut TS,
     ) -> Result<TS::Outcome, StreamError<Self::Error, TS::Error>> {
         for tr in self {
-            let t = tr.map_source_err()?;
-            sink.feed(&t).map_sink_err()?;
+            let t = tr.map_err(SourceError)?;
+            sink.feed(&t).map_err(SinkError)?;
         }
-        Ok(sink.finish().map_sink_err()?)
+        Ok(sink.finish().map_err(SinkError)?)
     }
 }
 
