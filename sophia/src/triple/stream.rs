@@ -91,6 +91,8 @@ where
     }
 }
 
+pub type AsInfallibleSource<I, T> = Map<I, fn(T) -> Result<T, Infallible>>;
+
 /// A utility extension trait for converting any iterator of [`Triple`]s
 /// into [`TripleSource`], by wrapping its items in `Ok` results.
 ///
@@ -98,7 +100,7 @@ where
 /// [`Triple`]: ../trait.Triple.html
 pub trait AsTripleSource<T>: Sized {
     /// Map all items of this iterator into an Ok result.
-    fn as_triple_source(self) -> Map<Self, fn(T) -> Result<T, Infallible>>;
+    fn as_triple_source(self) -> AsInfallibleSource<Self, T>;
 }
 
 impl<'a, T, I> AsTripleSource<T> for I
@@ -106,7 +108,7 @@ where
     I: Iterator<Item = T> + 'a + Sized,
     T: Triple<'a>,
 {
-    fn as_triple_source(self) -> Map<Self, fn(T) -> Result<T, Infallible>> {
+    fn as_triple_source(self) -> AsInfallibleSource<Self, T> {
         self.map(Ok)
     }
 }

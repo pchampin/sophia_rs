@@ -185,7 +185,7 @@ where
     where
         SinkErr: 'static + Error,
     {
-        self.map_err(|err| Source(err))
+        self.map_err(Source)
     }
 }
 
@@ -209,6 +209,6 @@ where
     where
         SourceErr: 'static + Error,
     {
-        self.map_err(|err| Sink(err))
+        self.map_err(Sink)
     }
 }

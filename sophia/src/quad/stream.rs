@@ -15,7 +15,6 @@
 
 use std::convert::Infallible;
 use std::error::Error;
-use std::iter::Map;
 
 use crate::dataset::*;
 use crate::error::Error as SophiaError;
@@ -82,17 +81,17 @@ where
 ///
 /// [`QuadSource`]: trait.QuadSource.html
 /// [`Quad`]: ../trait.Quad.html
-pub trait AsQuadSource<T>: Sized {
+pub trait AsQuadSource<Q>: Sized {
     /// Map all items of this iterator into an Ok result.
-    fn as_quad_source(self) -> Map<Self, fn(T) -> Result<T, Infallible>>;
+    fn as_quad_source(self) -> AsInfallibleSource<Self, Q>;
 }
 
-impl<'a, T, I> AsQuadSource<T> for I
+impl<'a, Q, I> AsQuadSource<Q> for I
 where
-    I: Iterator<Item = T> + 'a + Sized,
-    T: Quad<'a>,
+    I: Iterator<Item = Q> + 'a + Sized,
+    Q: Quad<'a>,
 {
-    fn as_quad_source(self) -> Map<Self, fn(T) -> Result<T, Infallible>> {
+    fn as_quad_source(self) -> AsInfallibleSource<Self, Q> {
         self.map(Ok)
     }
 }
