@@ -72,7 +72,6 @@ extern crate pest;
 extern crate pest_derive;
 #[cfg(feature = "xml")]
 extern crate quick_xml;
-extern crate regex;
 extern crate resiter;
 #[cfg(feature = "rio")]
 extern crate rio_api;
