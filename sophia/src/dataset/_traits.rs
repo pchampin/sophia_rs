@@ -667,7 +667,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
         let mut to_remove = to_remove.into_iter().as_quad_source();
         Ok(self
             .remove_all(&mut to_remove)
-            .map_err(|err| err.into_inner())?)
+            .map_err(|err| err.inner_into())?)
     }
 
     /// Keep only the quads matching the given matchers.
@@ -703,7 +703,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
             .map_err(Into::into)?;
         let mut to_remove = to_remove.into_iter().as_quad_source();
         self.remove_all(&mut to_remove)
-            .map_err(|err| err.into_inner())?;
+            .map_err(|err| err.inner_into())?;
         Ok(())
     }
 }

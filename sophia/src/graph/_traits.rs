@@ -477,7 +477,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
         let mut to_remove = to_remove.into_iter().as_triple_source();
         Ok(self
             .remove_all(&mut to_remove)
-            .map_err(|err| err.into_inner())?)
+            .map_err(|err| err.inner_into())?)
     }
 
     /// Keep only the triples matching the given matchers.
@@ -512,7 +512,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
             .map_err(Into::into)?;
         let mut to_remove = to_remove.into_iter().as_triple_source();
         self.remove_all(&mut to_remove)
-            .map_err(|err| err.into_inner())?;
+            .map_err(|err| err.inner_into())?;
         Ok(())
     }
 }

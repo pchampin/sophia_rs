@@ -55,7 +55,7 @@ where
         }
     }
     /// Converts `StreamError` into an inner error.
-    pub fn into_inner<Err>(self) -> Err 
+    pub fn inner_into<Err>(self) -> Err 
     where
         SourceErr: 'static + Error + Into<Err>,
         SinkErr: 'static + Error + Into<Err>,
