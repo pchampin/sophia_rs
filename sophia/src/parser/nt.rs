@@ -32,7 +32,7 @@ use super::common::*;
 use crate::error::*;
 use crate::ns::xsd;
 use crate::term::Term;
-use crate::triple::Triple;
+use crate::triple::stream::*;
 
 #[cfg(debug_assertions)]
 const _GRAMMAR: &str = include_str!("ntq.pest");
@@ -61,47 +61,22 @@ impl Config {
     pub fn parse_bufread<'a, B: BufRead + 'a>(
         &self,
         bufread: B,
-    ) -> impl Iterator<Item = Result<NtTriple>> + 'a {
+    ) -> impl TripleSource<Error = Error> {
         let config = self.clone();
         let rule = if config.strict {
             Rule::ntriples_line
         } else {
             Rule::generalized_nt_line
         };
-        bufread
-            .lines()
-            .enumerate()
-            .filter_map(move |(lineidx, line)| {
-                let line = match line {
-                    Ok(line) => line,
-                    Err(ioerr) => {
-                        let msg = format!("{}", ioerr);
-                        return Some(Err(Error::with_chain(
-                            ioerr,
-                            make_parser_error(msg, lineidx),
-                        )));
-                    }
-                };
-                {
-                    let trimmed = line.trim_start();
-                    if trimmed.is_empty() || trimmed.as_bytes()[0] == b'#' {
-                        return None;
-                    }
-                }
-                Some(
-                    NtTriple::try_new(line, |line| {
-                        parse_rule_from_line(&config, rule, line.trim_start())
-                    })
-                    .map_err(|err| convert_pest_err(err.0, lineidx)),
-                )
-            })
+        BufReadParser {
+            config,
+            rule,
+            bufread,
+        }
     }
 
     #[inline]
-    pub fn parse_read<'a, R: Read + 'a>(
-        &self,
-        read: R,
-    ) -> impl Iterator<Item = Result<NtTriple>> + 'a {
+    pub fn parse_read<'a, R: Read + 'a>(&self, read: R) -> impl TripleSource<Error = Error> {
         self.parse_bufread(BufReader::new(read))
     }
 
@@ -133,34 +108,46 @@ impl Config {
     }
 }
 
-def_default_triple_parser_api! {}
+struct BufReadParser<B> {
+    config: Config,
+    rule: Rule,
+    bufread: B,
+}
 
-rental! {
-    pub mod nt_triple {
-        use super::*;
+impl<B> TripleSource for BufReadParser<B>
+where
+    B: BufRead,
+{
+    type Error = Error;
 
-        #[rental(covariant)]
-        pub struct NtTriple {
-            line: String,
-            triple: [Term<Cow<'line, str>>;3],
+    fn in_sink<TS: TripleSink>(
+        &mut self,
+        sink: &mut TS,
+    ) -> CoercedResult<TS::Outcome, Self::Error, TS::Error>
+    where
+        Self::Error: CoercibleWith<TS::Error>,
+    {
+        for (lineidx, line) in (&mut self.bufread).lines().enumerate() {
+            let line = match line {
+                Ok(line) => line,
+                Err(ioerr) => {
+                    let msg = format!("{}", ioerr);
+                    return Err(Error::with_chain(ioerr, make_parser_error(msg, lineidx)).into());
+                }
+            };
+            let trimmed = line.trim_start();
+            if trimmed.is_empty() || trimmed.as_bytes()[0] == b'#' {
+                continue;
+            }
+            let triple = parse_rule_from_line(&self.config, self.rule, line.trim_start())
+                .map_err(|err| convert_pest_err(err, lineidx))?;
+            sink.feed(&triple)?;
         }
+        Ok(sink.finish()?)
     }
 }
-pub use self::nt_triple::NtTriple;
-impl<'a> Triple<'a> for NtTriple {
-    type TermData = Cow<'a, str>;
-    fn s(&self) -> &Term<Self::TermData> {
-        unsafe { std::mem::transmute(self.suffix().s()) }
-    }
-    fn p(&self) -> &Term<Self::TermData> {
-        unsafe { std::mem::transmute(self.suffix().p()) }
-    }
-    fn o(&self) -> &Term<Self::TermData> {
-        unsafe { std::mem::transmute(self.suffix().o()) }
-    }
-    // The compiler can not figure out the correct lifetime for self in the methods above,
-    // so I use transmute() to force the cast.
-}
+
+def_default_triple_parser_api! {}
 
 fn parse_rule_from_line<'a>(
     config: &Config,
@@ -243,7 +230,6 @@ pub(crate) fn pair_to_term<'a>(
 mod test {
     use super::*;
     use crate::term::BoxTerm;
-    use crate::triple::stream::*;
     use pest::{error::Error as PestError, iterators::Pairs, Parser};
     use std::collections::HashSet;
     use std::ffi::OsStr;
