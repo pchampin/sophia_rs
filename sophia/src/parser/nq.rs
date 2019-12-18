@@ -18,8 +18,8 @@ use super::common::*;
 use super::nt::{pair_to_term, PestNtqParser, Rule};
 use crate::error::*;
 use crate::quad::stream::*;
-use crate::triple::stream::*;
 use crate::term::Term;
+use crate::triple::stream::*;
 
 /// N-Quads parser configuration.
 ///
@@ -100,14 +100,16 @@ where
     fn in_sink<TS: QuadSink>(
         &mut self,
         sink: &mut TS,
-    ) -> StdResult<TS::Outcome, StreamError<Self::Error, TS::Error>>
-    {
+    ) -> StdResult<TS::Outcome, StreamError<Self::Error, TS::Error>> {
         for (lineidx, line) in (&mut self.bufread).lines().enumerate() {
             let line = match line {
                 Ok(line) => line,
                 Err(ioerr) => {
                     let msg = format!("{}", ioerr);
-                    return Err(SourceError(Error::with_chain(ioerr, make_parser_error(msg, lineidx)).into()));
+                    return Err(SourceError(Error::with_chain(
+                        ioerr,
+                        make_parser_error(msg, lineidx),
+                    )));
                 }
             };
             let trimmed = line.trim_start();

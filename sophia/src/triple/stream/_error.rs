@@ -7,7 +7,7 @@ use std::error::Error;
 /// or `Sink` failed.
 ///
 /// # Conversion
-/// 
+///
 /// Both variants `SourceError` and `SinkError` are public exported.
 /// Consequently, `StreamError` can be constructed with `.map_err(SourceError)`
 /// and `.map_err(SinkError)`.
@@ -26,9 +26,9 @@ where
     SinkErr: 'static + Error,
 {
     #[error("Source failed: {0}")]
-    SourceError( #[source] SourceErr),
+    SourceError(#[source] SourceErr),
     #[error("Sink failed: {0}")]
-    SinkError( #[source] SinkErr),
+    SinkError(#[source] SinkErr),
 }
 
 pub use self::StreamError::*;
@@ -55,7 +55,7 @@ where
         }
     }
     /// Converts `StreamError` into an inner error.
-    pub fn inner_into<Err>(self) -> Err 
+    pub fn inner_into<Err>(self) -> Err
     where
         SourceErr: 'static + Error + Into<Err>,
         SinkErr: 'static + Error + Into<Err>,
@@ -65,7 +65,4 @@ where
             SinkError(err) => err.into(),
         }
     }
-
 }
-
-
