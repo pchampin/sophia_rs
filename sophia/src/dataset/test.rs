@@ -5,6 +5,7 @@ use std::fmt::Debug;
 use crate::dataset::*;
 use crate::ns::*;
 use crate::quad::stream::*;
+use crate::quad::streaming_mode::{QuadStreamingMode, UnsafeQuad};
 use crate::quad::*;
 use crate::term::*;
 
@@ -97,9 +98,9 @@ pub fn as_box_q<Q: Quad>(quad: Q) -> ([BoxTerm; 3], Option<BoxTerm>) {
 }
 
 #[allow(dead_code)]
-pub fn dump_graph<'a, D: Dataset<'a>>(d: &'a D)
+pub fn dump_dataset<D: Dataset>(d: &D)
 where
-    <D::Quad as Quad>::TermData: Debug,
+    <<D::Quad as QuadStreamingMode>::UnsafeQuad as UnsafeQuad>::TermData: Debug,
 {
     println!("<<<<");
     for q in d.quads() {

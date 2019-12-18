@@ -59,12 +59,9 @@ pub trait TripleWriter<W: io::Write>: TripleSink<Outcome = ()> + Sized {
     }
 
     /// Serialize the given graph.
-    fn write_graph<'a, G>(
-        &mut self,
-        graph: &'a mut G,
-    ) -> Result<(), StreamError<G::Error, Self::Error>>
+    fn write_graph<G>(&mut self, graph: &mut G) -> Result<(), StreamError<G::Error, Self::Error>>
     where
-        G: Graph<'a>,
+        G: Graph,
     {
         graph.triples().in_sink(self)
     }
@@ -104,21 +101,18 @@ pub trait TripleStringifier: TripleSink<Outcome = String> + Sized {
     }
 
     /// Stringify the given graph.
-    fn stringify_graph<'a, G>(
+    fn stringify_graph<G>(
         &mut self,
-        graph: &'a mut G,
+        graph: &mut G,
     ) -> Result<String, StreamError<G::Error, Self::Error>>
     where
-        G: Graph<'a>,
+        G: Graph,
     {
         graph.triples().in_sink(self)
     }
 
     /// Stringify the given triple.
-    fn stringify_triple<T>(
-        &mut self,
-        t: &T,
-    ) -> Result<String, StreamError<Infallible, Self::Error>>
+    fn stringify_triple<T>(&mut self, t: &T) -> Result<String, StreamError<Infallible, Self::Error>>
     where
         T: Triple,
     {
@@ -148,12 +142,12 @@ pub trait QuadWriter<W: io::Write>: QuadSink<Outcome = ()> + Sized {
     }
 
     /// Serialize the given dataset.
-    fn write_dataset<'a, D>(
+    fn write_dataset<D>(
         &mut self,
-        dataset: &'a mut D,
+        dataset: &mut D,
     ) -> Result<(), StreamError<D::Error, Self::Error>>
     where
-        D: Dataset<'a>,
+        D: Dataset,
     {
         dataset.quads().in_sink(self)
     }
@@ -195,21 +189,18 @@ pub trait QuadStringifier: QuadSink<Outcome = String> + Sized {
     }
 
     /// Stringify the given dataset.
-    fn stringify_dataset<'a, D>(
+    fn stringify_dataset<D>(
         &mut self,
-        dataset: &'a mut D,
+        dataset: &mut D,
     ) -> Result<String, StreamError<D::Error, Self::Error>>
     where
-        D: Dataset<'a>,
+        D: Dataset,
     {
         dataset.quads().in_sink(self)
     }
 
     /// Stringify the given triple.
-    fn stringify_quad<Q>(
-        &mut self,
-        q: &Q,
-    ) -> Result<String, StreamError<Infallible, Self::Error>>
+    fn stringify_quad<Q>(&mut self, q: &Q) -> Result<String, StreamError<Infallible, Self::Error>>
     where
         Q: Quad,
     {

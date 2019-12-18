@@ -16,6 +16,7 @@ use crate::quad::Quad;
 use crate::term::*;
 
 pub mod stream;
+pub mod streaming_mode;
 
 /// This trait represents an abstract RDF triple,
 /// and provide convenient methods for working with triples.

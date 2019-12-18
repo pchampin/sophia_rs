@@ -12,20 +12,23 @@ use crate::graph::{Inserter, Remover};
 use crate::term::matcher::TermMatcher;
 use crate::term::*;
 use crate::triple::stream::*;
+use crate::triple::streaming_mode::*;
 use crate::triple::*;
 
 use std::convert::Infallible;
 use std::error::Error;
 
 /// Type alias for the terms returned by a graph.
-pub type GTerm<'a, G> = Term<<<G as Graph<'a>>::Triple as Triple>::TermData>;
+pub type GTerm<G> =
+    Term<<<<G as Graph>::Triple as TripleStreamingMode>::UnsafeTriple as UnsafeTriple>::TermData>;
+/// Type alias for the triples returned by a graph.
+pub type GTriple<'a, G> = StreamedTriple<'a, <G as Graph>::Triple>;
 /// Type alias for results produced by a graph.
-pub type GResult<'a, G, T> = Result<T, <G as Graph<'a>>::Error>;
+pub type GResult<G, T> = Result<T, <G as Graph>::Error>;
 /// Type alias for fallible triple iterators produced by a graph.
-pub type GTripleSource<'a, G> =
-    Box<dyn Iterator<Item = GResult<'a, G, <G as Graph<'a>>::Triple>> + 'a>;
+pub type GTripleSource<'a, G> = Box<dyn Iterator<Item = GResult<G, GTriple<'a, G>>> + 'a>;
 /// Type alias for fallible hashets of terms produced by a graph.
-pub type GResultTermSet<'a, G> = GResult<'a, G, HashSet<GTerm<'a, G>>>;
+pub type GResultTermSet<G> = GResult<G, HashSet<GTerm<G>>>;
 
 /// Generic trait for RDF graphs.
 ///
@@ -35,65 +38,11 @@ pub type GResultTermSet<'a, G> = GResult<'a, G, HashSet<GTerm<'a, G>>>;
 /// NB: the semantics of this trait allows a graph to contain duplicate triples;
 /// see also [`SetGraph`](trait.SetGraph.html).
 ///
-/// # How to use `Graph` in a trait bound?
-///
-/// TL;DR: If the compiler complains about lifetimes,
-/// replace `G: Graph<'a>` with `G: for<'x> Graph<'x>`.
-///
-/// The lifetime parameter of `Graph` has a very specific semantics:
-/// it is the lifetime for which the graph can be borrowed when iterating over its triples.
-/// Since lifetime parameters in traits are
-/// [invariant](https://doc.rust-lang.org/nightly/nomicon/subtyping.html),
-/// an instance of `Graph<'a>` will only be usable with the *exact* lifetime `'a`,
-/// but not with shorter lifetimes, which is counter-intuitive.
-///
-/// In many situations, when you write a function accepting a graph,
-/// you can not define the appropriate lifetime in the function's signature.
-/// For example, you may need to borrow the graph for the lifetime of a *local* variable of the function:
-/// ```compile_fail
-/// use sophia::error::Never;
-/// use sophia::graph::Graph;
-/// use sophia::term::*;
-///
-/// fn count_str_mentions<'a, G>(g: &G, txt: &str) -> usize where
-///   G: Graph<'a, Error=Never>
-/// {
-///   let literal = RefTerm::from(txt);
-///   g.triples_with_o(&literal).count()
-///   // fails to compile because `literal` does not live as long as 'a .
-/// }
-/// ```
-/// NB: the compilers's error messages are not very helpful here;
-/// they suggest to add lifetime `'a` to the function parameters,
-/// but that does not solve the problem.
-///
-/// In this kind of situation, the solution consists in using a
-/// [Higher-Rank Trait Bound](https://doc.rust-lang.org/nomicon/hrtb.html)
-/// for `G`:
-/// ```
-/// use std::convert::Infallible;
-/// use sophia::graph::Graph;
-/// use sophia::term::*;
-///
-/// fn count_str_mentions<G>(g: &G, txt: &str) -> usize where
-///   G: for<'x> Graph<'x, Error=Infallible>  // <-- higher-rank trait bound
-/// {
-///   let literal = RefTerm::from(txt);
-///   g.triples_with_o(&literal).count()
-/// }
-/// ```
-/// NB:
-/// The Higher-Ranked Type Bound above states
-/// "`G` implements `Graph<'x>` for *every* lifetime `'x`",
-/// which allows us to *not* define the lifetime in the function's signature.
-/// This has its own drawback, though:
-/// only implementations of `Graph` who *own* their data will match this bound
-/// (fortunately, it is the case of most implementations).
-
-pub trait Graph<'a> {
-    /// The type of [`Triple`](../triple/trait.Triple.html)s
-    /// that the methods of this graph will yield.
-    type Triple: Triple;
+pub trait Graph {
+    /// Determine the type of [`Triple`](../triple/trait.Triple.html)s
+    /// that the methods of this graph will yield
+    /// (see [`streaming_mode`](../triple/streaming_mode/index.html)
+    type Triple: TripleStreamingMode;
     /// The error type that this graph may raise.
     type Error: 'static + Error;
 
@@ -102,12 +51,12 @@ pub trait Graph<'a> {
     /// This iterator is fallible:
     /// its items are `Result`s,
     /// an error may occur at any time during the iteration.
-    fn triples(&'a self) -> GTripleSource<'a, Self>;
+    fn triples(&self) -> GTripleSource<Self>;
 
     /// An iterator visiting all triples with the given subject.
     ///
     /// See also [`triples`](#tymethod.triples).
-    fn triples_with_s<T>(&'a self, s: &'a Term<T>) -> GTripleSource<'a, Self>
+    fn triples_with_s<'s, T>(&'s self, s: &'s Term<T>) -> GTripleSource<'s, Self>
     where
         T: TermData,
     {
@@ -116,7 +65,7 @@ pub trait Graph<'a> {
     /// An iterator visiting all triples with the given predicate.
     ///
     /// See also [`triples`](#tymethod.triples).
-    fn triples_with_p<T>(&'a self, p: &'a Term<T>) -> GTripleSource<'a, Self>
+    fn triples_with_p<'s, T>(&'s self, p: &'s Term<T>) -> GTripleSource<'s, Self>
     where
         T: TermData,
     {
@@ -125,7 +74,7 @@ pub trait Graph<'a> {
     /// An iterator visiting all triples with the given object.
     ///
     /// See also [`triples`](#tymethod.triples).
-    fn triples_with_o<T>(&'a self, o: &'a Term<T>) -> GTripleSource<'a, Self>
+    fn triples_with_o<'s, T>(&'s self, o: &'s Term<T>) -> GTripleSource<'s, Self>
     where
         T: TermData,
     {
@@ -134,7 +83,11 @@ pub trait Graph<'a> {
     /// An iterator visiting all triples with the given subject and predicate.
     ///
     /// See also [`triples`](#tymethod.triples).
-    fn triples_with_sp<T, U>(&'a self, s: &'a Term<T>, p: &'a Term<U>) -> GTripleSource<'a, Self>
+    fn triples_with_sp<'s, T, U>(
+        &'s self,
+        s: &'s Term<T>,
+        p: &'s Term<U>,
+    ) -> GTripleSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -144,7 +97,11 @@ pub trait Graph<'a> {
     /// An iterator visiting all triples with the given subject and object.
     ///
     /// See also [`triples`](#tymethod.triples).
-    fn triples_with_so<T, U>(&'a self, s: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self>
+    fn triples_with_so<'s, T, U>(
+        &'s self,
+        s: &'s Term<T>,
+        o: &'s Term<U>,
+    ) -> GTripleSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -154,7 +111,11 @@ pub trait Graph<'a> {
     /// An iterator visiting all triples with the given predicate and object.
     ///
     /// See also [`triples`](#tymethod.triples).
-    fn triples_with_po<T, U>(&'a self, p: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self>
+    fn triples_with_po<'s, T, U>(
+        &'s self,
+        p: &'s Term<T>,
+        o: &'s Term<U>,
+    ) -> GTripleSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -164,12 +125,12 @@ pub trait Graph<'a> {
     /// An iterator visiting all triples with the given subject, predicate and object.
     ///
     /// See also [`triples`](#tymethod.triples).
-    fn triples_with_spo<T, U, V>(
-        &'a self,
-        s: &'a Term<T>,
-        p: &'a Term<U>,
-        o: &'a Term<V>,
-    ) -> GTripleSource<'a, Self>
+    fn triples_with_spo<'s, T, U, V>(
+        &'s self,
+        s: &'s Term<T>,
+        p: &'s Term<U>,
+        o: &'s Term<V>,
+    ) -> GTripleSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -179,12 +140,7 @@ pub trait Graph<'a> {
     }
 
     /// Return `true` if this graph contains the given triple.
-    fn contains<T, U, V>(
-        &'a self,
-        s: &'a Term<T>,
-        p: &'a Term<U>,
-        o: &'a Term<V>,
-    ) -> GResult<'a, Self, bool>
+    fn contains<T, U, V>(&self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> GResult<Self, bool>
     where
         T: TermData,
         U: TermData,
@@ -200,12 +156,12 @@ pub trait Graph<'a> {
     /// An iterator visiting all triples matching the given subject, predicate and object.
     ///
     /// See also [`triples`](#tymethod.triples).
-    fn triples_matching<S, P, O>(
-        &'a self,
-        ms: &'a S,
-        mp: &'a P,
-        mo: &'a O,
-    ) -> GTripleSource<'a, Self>
+    fn triples_matching<'s, S, P, O>(
+        &'s self,
+        ms: &'s S,
+        mp: &'s P,
+        mo: &'s O,
+    ) -> GTripleSource<'s, Self>
     where
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
@@ -246,7 +202,7 @@ pub trait Graph<'a> {
     }
 
     /// Build a Hashset of all the terms used as subject in this Graph.
-    fn subjects(&'a self) -> GResultTermSet<'a, Self> {
+    fn subjects(&self) -> GResultTermSet<Self> {
         let mut res = std::collections::HashSet::new();
         for t in self.triples() {
             insert_if_absent(&mut res, t?.s());
@@ -255,7 +211,7 @@ pub trait Graph<'a> {
     }
 
     /// Build a Hashset of all the terms used as predicate in this Graph.
-    fn predicates(&'a self) -> GResultTermSet<'a, Self> {
+    fn predicates(&self) -> GResultTermSet<Self> {
         let mut res = std::collections::HashSet::new();
         for t in self.triples() {
             insert_if_absent(&mut res, t?.p());
@@ -264,7 +220,7 @@ pub trait Graph<'a> {
     }
 
     /// Build a Hashset of all the terms used as object in this Graph.
-    fn objects(&'a self) -> GResultTermSet<'a, Self> {
+    fn objects(&self) -> GResultTermSet<Self> {
         let mut res = std::collections::HashSet::new();
         for t in self.triples() {
             insert_if_absent(&mut res, t?.o());
@@ -273,7 +229,7 @@ pub trait Graph<'a> {
     }
 
     /// Build a Hashset of all the IRIs used in this Graph.
-    fn iris(&'a self) -> GResultTermSet<'a, Self> {
+    fn iris(&self) -> GResultTermSet<Self> {
         let mut res = std::collections::HashSet::new();
         for t in self.triples() {
             let t = t?;
@@ -292,7 +248,7 @@ pub trait Graph<'a> {
     }
 
     /// Build a Hashset of all the BNodes used in this Graph.
-    fn bnodes(&'a self) -> GResultTermSet<'a, Self> {
+    fn bnodes(&self) -> GResultTermSet<Self> {
         let mut res = std::collections::HashSet::new();
         for t in self.triples() {
             let t = t?;
@@ -311,7 +267,7 @@ pub trait Graph<'a> {
     }
 
     /// Build a Hashset of all the Literals used in this Graph.
-    fn literals(&'a self) -> GResultTermSet<'a, Self> {
+    fn literals(&self) -> GResultTermSet<Self> {
         let mut res = std::collections::HashSet::new();
         for t in self.triples() {
             let t = t?;
@@ -330,7 +286,7 @@ pub trait Graph<'a> {
     }
 
     /// Build a Hashset of all the variables used in this Graph.
-    fn variables(&'a self) -> GResultTermSet<'a, Self> {
+    fn variables(&self) -> GResultTermSet<Self> {
         let mut res = std::collections::HashSet::new();
         for t in self.triples() {
             let t = t?;
@@ -375,7 +331,7 @@ pub type MGResult<G, T> = std::result::Result<T, <G as MutableGraph>::MutationEr
 /// NB: the semantics of this trait allows a graph to contain duplicate triples;
 /// see also [`SetGraph`](trait.SetGraph.html).
 ///
-pub trait MutableGraph: for<'x> Graph<'x> {
+pub trait MutableGraph: Graph {
     /// The error type that this graph may raise during mutations.
     type MutationError: 'static + Error;
 
@@ -459,7 +415,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
-        for<'x> <Self as Graph<'x>>::Error: Into<Self::MutationError>,
+        <Self as Graph>::Error: Into<Self::MutationError>,
         Infallible: Into<Self::MutationError>,
     {
         let to_remove = self
@@ -494,7 +450,7 @@ pub trait MutableGraph: for<'x> Graph<'x> {
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
-        for<'x> <Self as Graph<'x>>::Error: Into<Self::MutationError>,
+        <Self as Graph>::Error: Into<Self::MutationError>,
         Infallible: Into<Self::MutationError>,
     {
         let to_remove = self

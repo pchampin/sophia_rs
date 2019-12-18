@@ -3,6 +3,8 @@
 use std::collections::{HashMap, HashSet};
 use std::iter::empty;
 
+use crate::triple::streaming_mode::{ByTermRefs, StreamedTriple};
+
 use super::*;
 
 /// A [`GraphWrapper`](trait.GraphWrapper.html)
@@ -34,21 +36,21 @@ where
     }
 }
 
-impl<'a, T> GraphWrapper<'a> for OpsWrapper<T>
+impl<T> GraphWrapper for OpsWrapper<T>
 where
-    T: IndexedGraph + Graph<'a, Triple = [&'a Term<<T as IndexedGraph>::TermData>; 3]>,
+    T: IndexedGraph + Graph<Triple = ByTermRefs<<T as IndexedGraph>::TermData>>,
 {
     type Wrapped = T;
 
-    fn get_wrapped(&'a self) -> &'a T {
+    fn get_wrapped(&self) -> &T {
         &self.wrapped
     }
 
-    fn get_wrapped_mut(&'a mut self) -> &'a mut T {
+    fn get_wrapped_mut(&mut self) -> &mut T {
         &mut self.wrapped
     }
 
-    fn gw_triples_with_o<U>(&'a self, o: &'a Term<U>) -> GTripleSource<'a, Self::Wrapped>
+    fn gw_triples_with_o<'s, U>(&'s self, o: &'s Term<U>) -> GTripleSource<'s, Self::Wrapped>
     where
         U: TermData,
     {
@@ -60,7 +62,7 @@ where
                     let sis = &self.po2s[&[*pi, oi]];
                     sis.iter().map(move |si| {
                         let s = self.wrapped.get_term(*si).unwrap();
-                        Ok([s, p, o])
+                        Ok(StreamedTriple::by_term_refs(s, p, o))
                     })
                 }));
             }
@@ -68,11 +70,11 @@ where
         Box::new(empty())
     }
 
-    fn gw_triples_with_po<U, V>(
-        &'a self,
-        p: &'a Term<U>,
-        o: &'a Term<V>,
-    ) -> GTripleSource<'a, Self::Wrapped>
+    fn gw_triples_with_po<'s, U, V>(
+        &'s self,
+        p: &'s Term<U>,
+        o: &'s Term<V>,
+    ) -> GTripleSource<'s, Self::Wrapped>
     where
         U: TermData,
         V: TermData,
@@ -84,7 +86,7 @@ where
                     let o = self.wrapped.get_term(oi).unwrap();
                     return Box::new(sis.iter().map(move |si| {
                         let s = self.wrapped.get_term(*si).unwrap();
-                        Ok([s, p, o])
+                        Ok(StreamedTriple::by_term_refs(s, p, o))
                     }));
                 }
             }
@@ -92,7 +94,7 @@ where
         Box::new(empty())
     }
 
-    fn gw_objects(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
+    fn gw_objects(&self) -> GResultTermSet<Self::Wrapped> {
         let objects: HashSet<_> = self
             .o2p
             .keys()
@@ -131,23 +133,23 @@ where
     }
 }
 
-impl<'a, T> Graph<'a> for OpsWrapper<T>
+impl<T> Graph for OpsWrapper<T>
 where
-    T: IndexedGraph + Graph<'a, Triple = [&'a Term<<T as IndexedGraph>::TermData>; 3]>,
+    T: IndexedGraph + Graph<Triple = ByTermRefs<<T as IndexedGraph>::TermData>>,
 {
     impl_graph_for_wrapper!();
 }
 
 impl<T> IndexedGraph for OpsWrapper<T>
 where
-    T: IndexedGraph + for<'a> Graph<'a, Triple = [&'a Term<<T as IndexedGraph>::TermData>; 3]>,
+    T: IndexedGraph + Graph<Triple = ByTermRefs<<T as IndexedGraph>::TermData>>,
 {
     impl_indexed_graph_for_wrapper!();
 }
 
 impl<T> MutableGraph for OpsWrapper<T>
 where
-    T: IndexedGraph + for<'a> Graph<'a, Triple = [&'a Term<<T as IndexedGraph>::TermData>; 3]>,
+    T: IndexedGraph + Graph<Triple = ByTermRefs<<T as IndexedGraph>::TermData>>,
 {
     impl_mutable_graph_for_indexed_graph!();
 }

@@ -6,6 +6,7 @@ use crate::graph::*;
 use crate::ns::*;
 use crate::term::*;
 use crate::triple::stream::*;
+use crate::triple::streaming_mode::{TripleStreamingMode, UnsafeTriple};
 use crate::triple::*;
 
 pub const NS: &str = "http://example.org/";
@@ -81,9 +82,9 @@ pub fn as_box_t<T: Triple>(triple: T) -> [BoxTerm; 3] {
 }
 
 #[allow(dead_code)]
-pub fn dump_graph<'a, G: Graph<'a>>(g: &'a G)
+pub fn dump_graph<G: Graph>(g: &G)
 where
-    <G::Triple as Triple>::TermData: Debug,
+    <<G::Triple as TripleStreamingMode>::UnsafeTriple as UnsafeTriple>::TermData: Debug,
 {
     println!("<<<<");
     for t in g.triples() {

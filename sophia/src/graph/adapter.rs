@@ -9,8 +9,8 @@ use resiter::Map;
 use crate::dataset::*;
 use crate::error::*;
 use crate::graph::{Graph, MutableGraph, SetGraph};
-use crate::term::*;
-use crate::triple::{Triple, TripleAsQuad};
+use crate::quad::streaming_mode::{FromTriple, StreamedQuad};
+use crate::term::{Term, TermData};
 
 /// The adapter returned by
 /// * [`Graph::borrow_as_dataset`](../trait.Graph.html#method.borrow_as_dataset)
@@ -28,41 +28,56 @@ impl<G: ?Sized, H> GraphAsDataset<G, H> {
     }
 }
 
-impl<'a, G, H> Dataset<'a> for GraphAsDataset<G, H>
+impl<G, H> Dataset for GraphAsDataset<G, H>
 where
-    G: Graph<'a>,
+    G: Graph,
     H: Borrow<G>,
 {
-    type Quad = TripleAsQuad<G::Triple>;
+    type Quad = FromTriple<G::Triple>;
     type Error = G::Error;
 
     #[inline]
-    fn quads(&'a self) -> DQuadSource<'a, Self> {
-        Box::new(self.0.borrow().triples().map_ok(Triple::as_quad))
+    fn quads(&self) -> DQuadSource<Self> {
+        Box::new(self.0.borrow().triples().map_ok(StreamedQuad::from_triple))
     }
     #[inline]
-    fn quads_with_s<T>(&'a self, s: &'a Term<T>) -> DQuadSource<'a, Self>
+    fn quads_with_s<'s, T>(&'s self, s: &'s Term<T>) -> DQuadSource<'s, Self>
     where
         T: TermData,
     {
-        Box::new(self.0.borrow().triples_with_s(s).map_ok(Triple::as_quad))
+        Box::new(
+            self.0
+                .borrow()
+                .triples_with_s(s)
+                .map_ok(StreamedQuad::from_triple),
+        )
     }
     #[inline]
-    fn quads_with_p<T>(&'a self, p: &'a Term<T>) -> DQuadSource<'a, Self>
+    fn quads_with_p<'s, T>(&'s self, p: &'s Term<T>) -> DQuadSource<'s, Self>
     where
         T: TermData,
     {
-        Box::new(self.0.borrow().triples_with_p(p).map_ok(Triple::as_quad))
+        Box::new(
+            self.0
+                .borrow()
+                .triples_with_p(p)
+                .map_ok(StreamedQuad::from_triple),
+        )
     }
     #[inline]
-    fn quads_with_o<T>(&'a self, o: &'a Term<T>) -> DQuadSource<'a, Self>
+    fn quads_with_o<'s, T>(&'s self, o: &'s Term<T>) -> DQuadSource<'s, Self>
     where
         T: TermData,
     {
-        Box::new(self.0.borrow().triples_with_o(o).map_ok(Triple::as_quad))
+        Box::new(
+            self.0
+                .borrow()
+                .triples_with_o(o)
+                .map_ok(StreamedQuad::from_triple),
+        )
     }
     #[inline]
-    fn quads_with_g<T>(&'a self, g: Option<&'a Term<T>>) -> DQuadSource<'a, Self>
+    fn quads_with_g<'s, T>(&'s self, g: Option<&'s Term<T>>) -> DQuadSource<'s, Self>
     where
         T: TermData,
     {
@@ -72,7 +87,7 @@ where
         self.quads()
     }
     #[inline]
-    fn quads_with_sp<T, U>(&'a self, s: &'a Term<T>, p: &'a Term<U>) -> DQuadSource<'a, Self>
+    fn quads_with_sp<'s, T, U>(&'s self, s: &'s Term<T>, p: &'s Term<U>) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -81,11 +96,11 @@ where
             self.0
                 .borrow()
                 .triples_with_sp(s, p)
-                .map_ok(Triple::as_quad),
+                .map_ok(StreamedQuad::from_triple),
         )
     }
     #[inline]
-    fn quads_with_so<T, U>(&'a self, s: &'a Term<T>, o: &'a Term<U>) -> DQuadSource<'a, Self>
+    fn quads_with_so<'s, T, U>(&'s self, s: &'s Term<T>, o: &'s Term<U>) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -94,15 +109,15 @@ where
             self.0
                 .borrow()
                 .triples_with_so(s, o)
-                .map_ok(Triple::as_quad),
+                .map_ok(StreamedQuad::from_triple),
         )
     }
     #[inline]
-    fn quads_with_sg<T, U>(
-        &'a self,
-        s: &'a Term<T>,
-        g: Option<&'a Term<U>>,
-    ) -> DQuadSource<'a, Self>
+    fn quads_with_sg<'s, T, U>(
+        &'s self,
+        s: &'s Term<T>,
+        g: Option<&'s Term<U>>,
+    ) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -113,7 +128,7 @@ where
         self.quads_with_s(s)
     }
     #[inline]
-    fn quads_with_po<T, U>(&'a self, p: &'a Term<T>, o: &'a Term<U>) -> DQuadSource<'a, Self>
+    fn quads_with_po<'s, T, U>(&'s self, p: &'s Term<T>, o: &'s Term<U>) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -122,15 +137,15 @@ where
             self.0
                 .borrow()
                 .triples_with_po(p, o)
-                .map_ok(Triple::as_quad),
+                .map_ok(StreamedQuad::from_triple),
         )
     }
     #[inline]
-    fn quads_with_pg<T, U>(
-        &'a self,
-        p: &'a Term<T>,
-        g: Option<&'a Term<U>>,
-    ) -> DQuadSource<'a, Self>
+    fn quads_with_pg<'s, T, U>(
+        &'s self,
+        p: &'s Term<T>,
+        g: Option<&'s Term<U>>,
+    ) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -141,11 +156,11 @@ where
         self.quads_with_p(p)
     }
     #[inline]
-    fn quads_with_og<T, U>(
-        &'a self,
-        o: &'a Term<T>,
-        g: Option<&'a Term<U>>,
-    ) -> DQuadSource<'a, Self>
+    fn quads_with_og<'s, T, U>(
+        &'s self,
+        o: &'s Term<T>,
+        g: Option<&'s Term<U>>,
+    ) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -156,12 +171,12 @@ where
         self.quads_with_o(o)
     }
     #[inline]
-    fn quads_with_spo<T, U, V>(
-        &'a self,
-        s: &'a Term<T>,
-        p: &'a Term<U>,
-        o: &'a Term<V>,
-    ) -> DQuadSource<'a, Self>
+    fn quads_with_spo<'s, T, U, V>(
+        &'s self,
+        s: &'s Term<T>,
+        p: &'s Term<U>,
+        o: &'s Term<V>,
+    ) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -171,16 +186,16 @@ where
             self.0
                 .borrow()
                 .triples_with_spo(s, p, o)
-                .map_ok(Triple::as_quad),
+                .map_ok(StreamedQuad::from_triple),
         )
     }
     #[inline]
-    fn quads_with_spg<T, U, V>(
-        &'a self,
-        s: &'a Term<T>,
-        p: &'a Term<U>,
-        g: Option<&'a Term<V>>,
-    ) -> DQuadSource<'a, Self>
+    fn quads_with_spg<'s, T, U, V>(
+        &'s self,
+        s: &'s Term<T>,
+        p: &'s Term<U>,
+        g: Option<&'s Term<V>>,
+    ) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -192,12 +207,12 @@ where
         self.quads_with_sp(s, p)
     }
     #[inline]
-    fn quads_with_sog<T, U, V>(
-        &'a self,
-        s: &'a Term<T>,
-        o: &'a Term<U>,
-        g: Option<&'a Term<V>>,
-    ) -> DQuadSource<'a, Self>
+    fn quads_with_sog<'s, T, U, V>(
+        &'s self,
+        s: &'s Term<T>,
+        o: &'s Term<U>,
+        g: Option<&'s Term<V>>,
+    ) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -209,12 +224,12 @@ where
         self.quads_with_so(s, o)
     }
     #[inline]
-    fn quads_with_pog<T, U, V>(
-        &'a self,
-        p: &'a Term<T>,
-        o: &'a Term<U>,
-        g: Option<&'a Term<V>>,
-    ) -> DQuadSource<'a, Self>
+    fn quads_with_pog<'s, T, U, V>(
+        &'s self,
+        p: &'s Term<T>,
+        o: &'s Term<U>,
+        g: Option<&'s Term<V>>,
+    ) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -226,13 +241,13 @@ where
         self.quads_with_po(p, o)
     }
     #[inline]
-    fn quads_with_spog<T, U, V, W>(
-        &'a self,
-        s: &'a Term<T>,
-        p: &'a Term<U>,
-        o: &'a Term<V>,
-        g: Option<&'a Term<W>>,
-    ) -> DQuadSource<'a, Self>
+    fn quads_with_spog<'s, T, U, V, W>(
+        &'s self,
+        s: &'s Term<T>,
+        p: &'s Term<U>,
+        o: &'s Term<V>,
+        g: Option<&'s Term<W>>,
+    ) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -247,12 +262,12 @@ where
 
     #[inline]
     fn contains<T, U, V, W>(
-        &'a self,
-        s: &'a Term<T>,
-        p: &'a Term<U>,
-        o: &'a Term<V>,
-        g: Option<&'a Term<W>>,
-    ) -> DResult<'a, Self, bool>
+        &self,
+        s: &Term<T>,
+        p: &Term<U>,
+        o: &Term<V>,
+        g: Option<&Term<W>>,
+    ) -> DResult<Self, bool>
     where
         T: TermData,
         U: TermData,
@@ -265,35 +280,35 @@ where
         self.0.borrow().contains(s, p, o)
     }
     #[inline]
-    fn subjects(&'a self) -> DResultTermSet<'a, Self> {
+    fn subjects(&self) -> DResultTermSet<Self> {
         self.0.borrow().subjects()
     }
     #[inline]
-    fn predicates(&'a self) -> DResultTermSet<'a, Self> {
+    fn predicates(&self) -> DResultTermSet<Self> {
         self.0.borrow().predicates()
     }
     #[inline]
-    fn objects(&'a self) -> DResultTermSet<'a, Self> {
+    fn objects(&self) -> DResultTermSet<Self> {
         self.0.borrow().objects()
     }
     #[inline]
-    fn graph_names(&'a self) -> DResultTermSet<'a, Self> {
+    fn graph_names(&self) -> DResultTermSet<Self> {
         Ok(std::collections::HashSet::new())
     }
     #[inline]
-    fn iris(&'a self) -> DResultTermSet<'a, Self> {
+    fn iris(&self) -> DResultTermSet<Self> {
         self.0.borrow().iris()
     }
     #[inline]
-    fn bnodes(&'a self) -> DResultTermSet<'a, Self> {
+    fn bnodes(&self) -> DResultTermSet<Self> {
         self.0.borrow().bnodes()
     }
     #[inline]
-    fn literals(&'a self) -> DResultTermSet<'a, Self> {
+    fn literals(&self) -> DResultTermSet<Self> {
         self.0.borrow().literals()
     }
     #[inline]
-    fn variables(&'a self) -> DResultTermSet<'a, Self> {
+    fn variables(&self) -> DResultTermSet<Self> {
         self.0.borrow().variables()
     }
 }
@@ -356,17 +371,19 @@ where
 mod test {
     use crate::dataset::{Dataset, MutableDataset};
     use crate::error::Result;
-    use crate::graph::inmem::LightGraph;
-    use crate::graph::{Graph, MutableGraph};
+    use crate::graph::*;
     use crate::ns::{rdf, rdfs};
-    use crate::term::StaticTerm;
+    use crate::term::{BoxTerm, StaticTerm};
+    use std::collections::HashSet;
 
     const DG: Option<&'static StaticTerm> = None;
 
+    type MyGraph = HashSet<[BoxTerm; 3]>;
+
     #[test]
     fn test_borrow() -> Result<()> {
-        let mut g = LightGraph::new();
-        g.insert(&rdfs::Resource, &rdf::type_, &rdfs::Class)?;
+        let mut g = MyGraph::new();
+        <MyGraph as MutableGraph>::insert(&mut g, &rdfs::Resource, &rdf::type_, &rdfs::Class)?;
 
         let d = g.borrow_as_dataset();
         assert_eq!(d.quads().count(), 1);
@@ -375,7 +392,7 @@ mod test {
 
     #[test]
     fn test_borrow_mut() -> Result<()> {
-        let mut g = LightGraph::new();
+        let mut g = MyGraph::new();
 
         let mut d = g.borrow_mut_as_dataset();
         assert_eq!(d.quads().count(), 0);
@@ -395,7 +412,7 @@ mod test {
 
     #[test]
     fn test_owned() -> Result<()> {
-        let g = LightGraph::new();
+        let g = MyGraph::new();
 
         let mut d = g.as_dataset();
         assert_eq!(d.quads().count(), 0);
@@ -417,7 +434,7 @@ mod test {
 
     #[test]
     fn test_invalid_graph_name() {
-        let mut g = LightGraph::new();
+        let mut g = MyGraph::new();
 
         let mut d = g.borrow_mut_as_dataset();
         let ret = d.insert(
@@ -432,10 +449,8 @@ mod test {
     mod dataset {
         // moved here from ::dataset::adapter::test,
         // because test_graph_impl! seems to be only usable from ::graph
-        use crate::dataset::adapter::test::{
-            make_default_graph, make_named_graph, LightDatasetGraph,
-        };
-        test_graph_impl!(default_graph, LightDatasetGraph, true, make_default_graph);
-        test_graph_impl!(named_graph, LightDatasetGraph, true, make_named_graph);
+        use crate::dataset::adapter::test::{make_default_graph, make_named_graph, MyDatasetGraph};
+        test_graph_impl!(default_graph, MyDatasetGraph, true, make_default_graph);
+        test_graph_impl!(named_graph, MyDatasetGraph, true, make_named_graph);
     }
 }

@@ -9,33 +9,34 @@ use resiter::oks::*;
 
 use super::*;
 use crate::quad::stream::AsQuadSource;
+use crate::quad::streaming_mode::*;
 use crate::quad::*;
 use crate::term::*;
 use crate::triple::*;
 
-impl<'a, Q> Dataset<'a> for [Q]
+impl<Q> Dataset for [Q]
 where
-    Q: Quad + 'a,
+    Q: Quad,
 {
-    type Quad = &'a Q;
+    type Quad = ByRef<Q>;
     type Error = Infallible;
 
     #[inline]
-    fn quads(&'a self) -> DQuadSource<Self> {
-        Box::new(<[Q]>::iter(self).as_quad_source())
+    fn quads(&self) -> DQuadSource<Self> {
+        Box::new(<[Q]>::iter(self).map(StreamedQuad::by_ref).as_quad_source())
     }
 }
 
-impl<'a, Q> Dataset<'a> for Vec<Q>
+impl<Q> Dataset for Vec<Q>
 where
-    Q: Quad + 'a,
+    Q: Quad,
 {
-    type Quad = &'a Q;
+    type Quad = ByRef<Q>;
     type Error = Infallible;
 
     #[inline]
-    fn quads(&'a self) -> DQuadSource<Self> {
-        Box::new(<[Q]>::iter(self).as_quad_source())
+    fn quads(&self) -> DQuadSource<Self> {
+        Box::new(<[Q]>::iter(self).map(StreamedQuad::by_ref).as_quad_source())
     }
 }
 
@@ -88,16 +89,16 @@ impl MutableDataset for Vec<([BoxTerm; 3], Option<BoxTerm>)> {
     }
 }
 
-impl<'a, Q, S: ::std::hash::BuildHasher> Dataset<'a> for HashSet<Q, S>
+impl<Q, S: ::std::hash::BuildHasher> Dataset for HashSet<Q, S>
 where
-    Q: Eq + Hash + Quad + 'a,
+    Q: Eq + Hash + Quad,
 {
-    type Quad = &'a Q;
+    type Quad = ByRef<Q>;
     type Error = Infallible;
 
     #[inline]
-    fn quads(&'a self) -> DQuadSource<Self> {
-        Box::from(self.iter().as_quad_source())
+    fn quads(&self) -> DQuadSource<Self> {
+        Box::from(self.iter().map(StreamedQuad::by_ref).as_quad_source())
     }
 }
 

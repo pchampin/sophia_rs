@@ -15,25 +15,25 @@ use super::*;
 ///
 /// [`Graph`]: ../trait.Graph.html
 /// [`impl_mutable_graph_for_indexed_graph`]: ../../macro.impl_mutable_graph_for_indexed_graph.html
-pub trait GraphWrapper<'a> {
+pub trait GraphWrapper {
     /// The type of the wrapped graph.
-    type Wrapped: Graph<'a>;
+    type Wrapped: Graph;
 
     /// Borrow the wrapped graph.
-    fn get_wrapped(&'a self) -> &'a Self::Wrapped;
+    fn get_wrapped(&self) -> &Self::Wrapped;
 
     /// Borrow the wrapped graph mutably.
-    fn get_wrapped_mut(&'a mut self) -> &'a mut Self::Wrapped;
+    fn get_wrapped_mut(&mut self) -> &mut Self::Wrapped;
 
     #[inline]
     /// Mimmic the [`iter`](../trait.Graph.html#tymethod.iter) method.
-    fn gw_triples(&'a self) -> GTripleSource<'a, Self::Wrapped> {
+    fn gw_triples(&self) -> GTripleSource<Self::Wrapped> {
         self.get_wrapped().triples()
     }
 
     #[inline]
     /// Mimmic the [`triples_with_s`](../trait.Graph.html#method.triples_with_s) method.
-    fn gw_triples_with_s<T>(&'a self, s: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped>
+    fn gw_triples_with_s<'s, T>(&'s self, s: &'s Term<T>) -> GTripleSource<'s, Self::Wrapped>
     where
         T: TermData,
     {
@@ -41,7 +41,7 @@ pub trait GraphWrapper<'a> {
     }
     #[inline]
     /// Mimmic the [`triples_with_p`](../trait.Graph.html#method.triples_with_p) method.
-    fn gw_triples_with_p<T>(&'a self, p: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped>
+    fn gw_triples_with_p<'s, T>(&'s self, p: &'s Term<T>) -> GTripleSource<'s, Self::Wrapped>
     where
         T: TermData,
     {
@@ -49,7 +49,7 @@ pub trait GraphWrapper<'a> {
     }
     #[inline]
     /// Mimmic the [`triples_with_o`](../trait.Graph.html#method.triples_with_o) method.
-    fn gw_triples_with_o<T>(&'a self, o: &'a Term<T>) -> GTripleSource<'a, Self::Wrapped>
+    fn gw_triples_with_o<'s, T>(&'s self, o: &'s Term<T>) -> GTripleSource<'s, Self::Wrapped>
     where
         T: TermData,
     {
@@ -57,11 +57,11 @@ pub trait GraphWrapper<'a> {
     }
     #[inline]
     /// Mimmic the [`triples_with_sp`](../trait.Graph.html#method.triples_with_sp) method.
-    fn gw_triples_with_sp<T, U>(
-        &'a self,
-        s: &'a Term<T>,
-        p: &'a Term<U>,
-    ) -> GTripleSource<'a, Self::Wrapped>
+    fn gw_triples_with_sp<'s, T, U>(
+        &'s self,
+        s: &'s Term<T>,
+        p: &'s Term<U>,
+    ) -> GTripleSource<'s, Self::Wrapped>
     where
         T: TermData,
         U: TermData,
@@ -70,11 +70,11 @@ pub trait GraphWrapper<'a> {
     }
     #[inline]
     /// Mimmic the [`triples_with_so`](../trait.Graph.html#method.triples_with_so) method.
-    fn gw_triples_with_so<T, U>(
-        &'a self,
-        s: &'a Term<T>,
-        o: &'a Term<U>,
-    ) -> GTripleSource<'a, Self::Wrapped>
+    fn gw_triples_with_so<'s, T, U>(
+        &'s self,
+        s: &'s Term<T>,
+        o: &'s Term<U>,
+    ) -> GTripleSource<'s, Self::Wrapped>
     where
         T: TermData,
         U: TermData,
@@ -83,11 +83,11 @@ pub trait GraphWrapper<'a> {
     }
     #[inline]
     /// Mimmic the [`triples_with_po`](../trait.Graph.html#method.triples_with_po) method.
-    fn gw_triples_with_po<T, U>(
-        &'a self,
-        p: &'a Term<T>,
-        o: &'a Term<U>,
-    ) -> GTripleSource<'a, Self::Wrapped>
+    fn gw_triples_with_po<'s, T, U>(
+        &'s self,
+        p: &'s Term<T>,
+        o: &'s Term<U>,
+    ) -> GTripleSource<'s, Self::Wrapped>
     where
         T: TermData,
         U: TermData,
@@ -96,12 +96,12 @@ pub trait GraphWrapper<'a> {
     }
     #[inline]
     /// Mimmic the [`triples_with_spo`](../trait.Graph.html#method.triples_with_spo) method.
-    fn gw_triples_with_spo<T, U, V>(
-        &'a self,
-        s: &'a Term<T>,
-        p: &'a Term<U>,
-        o: &'a Term<V>,
-    ) -> GTripleSource<'a, Self::Wrapped>
+    fn gw_triples_with_spo<'s, T, U, V>(
+        &'s self,
+        s: &'s Term<T>,
+        p: &'s Term<U>,
+        o: &'s Term<V>,
+    ) -> GTripleSource<'s, Self::Wrapped>
     where
         T: TermData,
         U: TermData,
@@ -113,11 +113,11 @@ pub trait GraphWrapper<'a> {
     #[inline]
     /// Mimmic the [`contains`](../trait.Graph.html#method.contains) method.
     fn gw_contains<T, U, V>(
-        &'a self,
-        s: &'a Term<T>,
-        p: &'a Term<U>,
-        o: &'a Term<V>,
-    ) -> GResult<'a, Self::Wrapped, bool>
+        &self,
+        s: &Term<T>,
+        p: &Term<U>,
+        o: &Term<V>,
+    ) -> GResult<Self::Wrapped, bool>
     where
         T: TermData,
         U: TermData,
@@ -128,43 +128,43 @@ pub trait GraphWrapper<'a> {
 
     #[inline]
     /// Mimmic the [`subjects`](../trait.Graph.html#method.subjects) method.
-    fn gw_subjects(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
+    fn gw_subjects(&self) -> GResultTermSet<Self::Wrapped> {
         self.get_wrapped().subjects()
     }
 
     #[inline]
     /// Mimmic the [`predicates`](../trait.Graph.html#method.predicates) method.
-    fn gw_predicates(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
+    fn gw_predicates(&self) -> GResultTermSet<Self::Wrapped> {
         self.get_wrapped().predicates()
     }
 
     #[inline]
     /// Mimmic the [`objects`](../trait.Graph.html#method.objects) method.
-    fn gw_objects(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
+    fn gw_objects(&self) -> GResultTermSet<Self::Wrapped> {
         self.get_wrapped().objects()
     }
 
     #[inline]
     /// Mimmic the [`iris`](../trait.Graph.html#method.iris) method.
-    fn gw_iris(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
+    fn gw_iris(&self) -> GResultTermSet<Self::Wrapped> {
         self.get_wrapped().iris()
     }
 
     #[inline]
     /// Mimmic the [`bnodes`](../trait.Graph.html#method.bnodes) method.
-    fn gw_bnodes(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
+    fn gw_bnodes(&self) -> GResultTermSet<Self::Wrapped> {
         self.get_wrapped().bnodes()
     }
 
     #[inline]
     /// Mimmic the [`literals`](../trait.Graph.html#method.literals) method.
-    fn gw_literals(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
+    fn gw_literals(&self) -> GResultTermSet<Self::Wrapped> {
         self.get_wrapped().literals()
     }
 
     #[inline]
     /// Mimmic the [`variables`](../trait.Graph.html#method.variables) method.
-    fn gw_variables(&'a self) -> GResultTermSet<'a, Self::Wrapped> {
+    fn gw_variables(&self) -> GResultTermSet<Self::Wrapped> {
         self.get_wrapped().variables()
     }
 }
@@ -176,54 +176,54 @@ pub trait GraphWrapper<'a> {
 #[macro_export]
 macro_rules! impl_graph_for_wrapper {
     ($wrapper: ty) => {
-        impl<'a> $crate::graph::Graph<'a> for $wrapper {
+        impl $crate::graph::Graph for $wrapper {
             impl_graph_for_wrapper!();
         }
     };
     () => {
-        type Triple = <<Self as $crate::graph::inmem::GraphWrapper<'a>>::Wrapped as $crate::graph::Graph<'a>>::Triple;
-        type Error = <<Self as $crate::graph::inmem::GraphWrapper<'a>>::Wrapped as $crate::graph::Graph<'a>>::Error;
+        type Triple = <<Self as $crate::graph::inmem::GraphWrapper>::Wrapped as $crate::graph::Graph>::Triple;
+        type Error = <<Self as $crate::graph::inmem::GraphWrapper>::Wrapped as $crate::graph::Graph>::Error;
 
         #[inline]
-        fn triples(&'a self) -> $crate::graph::GTripleSource<'a, Self> {
+        fn triples(&self) -> $crate::graph::GTripleSource<Self> {
             $crate::graph::inmem::GraphWrapper::gw_triples(self)
         }
         #[inline]
-        fn triples_with_s<T_>(
-            &'a self,
-            s: &'a $crate::term::Term<T_>
-        )-> $crate::graph::GTripleSource<'a, Self>
+        fn triples_with_s<'s_, T_>(
+            &'s_ self,
+            s: &'s_ $crate::term::Term<T_>
+        )-> $crate::graph::GTripleSource<'s_, Self>
         where
             T_: $crate::term::TermData,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_s(self, s)
         }
         #[inline]
-        fn triples_with_p<T_>(
-            &'a self,
-            p: &'a $crate::term::Term<T_>
-        ) -> $crate::graph::GTripleSource<'a, Self>
+        fn triples_with_p<'s_, T_>(
+            &'s_ self,
+            p: &'s_ $crate::term::Term<T_>
+        ) -> $crate::graph::GTripleSource<'s_, Self>
         where
             T_: $crate::term::TermData,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_p(self, p)
         }
         #[inline]
-        fn triples_with_o<T_>(
-            &'a self,
-            o: &'a $crate::term::Term<T_>
-        ) -> $crate::graph::GTripleSource<'a, Self>
+        fn triples_with_o<'s_, T_>(
+            &'s_ self,
+            o: &'s_ $crate::term::Term<T_>
+        ) -> $crate::graph::GTripleSource<'s_, Self>
         where
             T_: $crate::term::TermData,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_o(self, o)
         }
         #[inline]
-        fn triples_with_sp<T_, U_>(
-            &'a self,
-            s: &'a $crate::term::Term<T_>,
-            p: &'a $crate::term::Term<U_>
-        ) -> $crate::graph::GTripleSource<'a, Self>
+        fn triples_with_sp<'s_, T_, U_>(
+            &'s_ self,
+            s: &'s_ $crate::term::Term<T_>,
+            p: &'s_ $crate::term::Term<U_>
+        ) -> $crate::graph::GTripleSource<'s_, Self>
         where
             T_: $crate::term::TermData,
             U_: $crate::term::TermData,
@@ -231,11 +231,11 @@ macro_rules! impl_graph_for_wrapper {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_sp(self, s, p)
         }
         #[inline]
-        fn triples_with_so<T_, U_>(
-            &'a self,
-            s: &'a $crate::term::Term<T_>,
-            o: &'a $crate::term::Term<U_>
-        ) -> $crate::graph::GTripleSource<'a, Self>
+        fn triples_with_so<'s_, T_, U_>(
+            &'s_ self,
+            s: &'s_ $crate::term::Term<T_>,
+            o: &'s_ $crate::term::Term<U_>
+        ) -> $crate::graph::GTripleSource<'s_, Self>
         where
             T_: $crate::term::TermData,
             U_: $crate::term::TermData,
@@ -243,11 +243,11 @@ macro_rules! impl_graph_for_wrapper {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_so(self, s, o)
         }
         #[inline]
-        fn triples_with_po<T_, U_>(
-            &'a self,
-            p: &'a $crate::term::Term<T_>,
-            o: &'a $crate::term::Term<U_>
-        ) -> $crate::graph::GTripleSource<'a, Self>
+        fn triples_with_po<'s_, T_, U_>(
+            &'s_ self,
+            p: &'s_ $crate::term::Term<T_>,
+            o: &'s_ $crate::term::Term<U_>
+        ) -> $crate::graph::GTripleSource<'s_, Self>
         where
             T_: $crate::term::TermData,
             U_: $crate::term::TermData,
@@ -255,12 +255,12 @@ macro_rules! impl_graph_for_wrapper {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_po(self, p, o)
         }
         #[inline]
-        fn triples_with_spo<T_, U_, V_>(
-            &'a self,
-            s: &'a $crate::term::Term<T_>,
-            p: &'a $crate::term::Term<U_>,
-            o: &'a $crate::term::Term<V_>
-        ) -> $crate::graph::GTripleSource<'a, Self>
+        fn triples_with_spo<'s_, T_, U_, V_>(
+            &'s_ self,
+            s: &'s_ $crate::term::Term<T_>,
+            p: &'s_ $crate::term::Term<U_>,
+            o: &'s_ $crate::term::Term<V_>
+        ) -> $crate::graph::GTripleSource<'s_, Self>
         where
             T_: $crate::term::TermData,
             U_: $crate::term::TermData,
@@ -271,11 +271,11 @@ macro_rules! impl_graph_for_wrapper {
 
         #[inline]
         fn contains<T_, U_, V_>(
-            &'a self,
-            s: &'a $crate::term::Term<T_>,
-            p: &'a $crate::term::Term<U_>,
-            o: &'a $crate::term::Term<V_>
-        ) -> $crate::graph::GResult<'a, Self, bool>
+            &self,
+            s: &$crate::term::Term<T_>,
+            p: &$crate::term::Term<U_>,
+            o: &$crate::term::Term<V_>
+        ) -> $crate::graph::GResult<Self, bool>
         where
             T_: $crate::term::TermData,
             U_: $crate::term::TermData,
@@ -285,37 +285,37 @@ macro_rules! impl_graph_for_wrapper {
         }
 
         #[inline]
-        fn subjects(&'a self) -> GResult<'a, Self, std::collections::HashSet<$crate::graph::GTerm<'a, Self>>> {
+        fn subjects(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>> {
             $crate::graph::inmem::GraphWrapper::gw_subjects(self)
         }
 
         #[inline]
-        fn predicates(&'a self) -> GResult<'a, Self, std::collections::HashSet<$crate::graph::GTerm<'a, Self>>> {
+        fn predicates(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>> {
             $crate::graph::inmem::GraphWrapper::gw_predicates(self)
         }
 
         #[inline]
-        fn objects(&'a self) -> GResult<'a, Self, std::collections::HashSet<$crate::graph::GTerm<'a, Self>>> {
+        fn objects(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>> {
             $crate::graph::inmem::GraphWrapper::gw_objects(self)
         }
 
         #[inline]
-        fn iris(&'a self) -> GResult<'a, Self, std::collections::HashSet<$crate::graph::GTerm<'a, Self>>> {
+        fn iris(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>> {
             $crate::graph::inmem::GraphWrapper::gw_iris(self)
         }
 
         #[inline]
-        fn bnodes(&'a self) -> GResult<'a, Self, std::collections::HashSet<$crate::graph::GTerm<'a, Self>>> {
+        fn bnodes(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>> {
             $crate::graph::inmem::GraphWrapper::gw_bnodes(self)
         }
 
         #[inline]
-        fn literals(&'a self) -> GResult<'a, Self, std::collections::HashSet<$crate::graph::GTerm<'a, Self>>> {
+        fn literals(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>> {
             $crate::graph::inmem::GraphWrapper::gw_literals(self)
         }
 
         #[inline]
-        fn variables(&'a self) -> GResult<'a, Self, std::collections::HashSet<$crate::graph::GTerm<'a, Self>>> {
+        fn variables(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>> {
             $crate::graph::inmem::GraphWrapper::gw_variables(self)
         }
     };
@@ -353,14 +353,6 @@ where
 /// [`GraphWrapper`]: graph/inmem/trait.GraphWrapper.html
 #[macro_export]
 macro_rules! impl_indexed_graph_for_wrapper {
-    ($wrapper: ty) => {
-        impl $crate::graph::indexed::IndexedGraph for $wrapper
-        where
-            T: $crate::graph::indexed::IndexedGraph + for<'a> $crate::graph::Graph<'a, Triple = [&'a $crate::term::Term<<T as $crate::graph::indexed::IndexedGraph>::TermData>; 3]>,
-        {
-            impl_indexed_graph_for_wrapper!();
-        }
-    };
     () => {
         type Index = T::Index;
         type TermData = T::TermData;
