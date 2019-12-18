@@ -69,7 +69,7 @@ impl<W: io::Write> QuadSink for Writer<W> {
     type Outcome = ();
     type Error = Error;
 
-    fn feed<'a, T: Quad<'a>>(&mut self, t: &T) -> StdResult<(), Self::Error> {
+    fn feed<T: Quad>(&mut self, t: &T) -> StdResult<(), Self::Error> {
         let w = &mut self.write;
 
         (|| {

@@ -55,10 +55,10 @@ pub trait QuadSource {
     }
 }
 
-impl<'a, I, T, E> QuadSource for I
+impl<I, T, E> QuadSource for I
 where
     I: Iterator<Item = Result<T, E>>,
-    T: Quad<'a>,
+    T: Quad,
     E: 'static + Error,
 {
     type Error = E;
@@ -85,10 +85,10 @@ pub trait AsQuadSource<Q>: Sized {
     fn as_quad_source(self) -> AsInfallibleSource<Self, Q>;
 }
 
-impl<'a, Q, I> AsQuadSource<Q> for I
+impl<Q, I> AsQuadSource<Q> for I
 where
-    I: Iterator<Item = Q> + 'a + Sized,
-    Q: Quad<'a>,
+    I: Iterator<Item = Q> + Sized,
+    Q: Quad,
 {
     fn as_quad_source(self) -> AsInfallibleSource<Self, Q> {
         self.map(Ok)
@@ -118,7 +118,7 @@ pub trait QuadSink {
     type Error: 'static + Error;
 
     /// Feed one quad in this sink.
-    fn feed<'a, T: Quad<'a>>(&mut self, t: &T) -> Result<(), Self::Error>;
+    fn feed<Q: Quad>(&mut self, t: &Q) -> Result<(), Self::Error>;
 
     /// Produce the result once all quads were fed.
     ///
@@ -134,7 +134,7 @@ impl QuadSink for () {
     type Outcome = ();
     type Error = Infallible;
 
-    fn feed<'a, T: Quad<'a>>(&mut self, _: &T) -> Result<(), Self::Error> {
+    fn feed<Q: Quad>(&mut self, _: &Q) -> Result<(), Self::Error> {
         Ok(())
     }
     fn finish(&mut self) -> Result<Self::Outcome, Self::Error> {

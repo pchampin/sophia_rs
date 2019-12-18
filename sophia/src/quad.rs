@@ -11,16 +11,16 @@ pub mod stream;
 
 /// This trait represents an abstract RDF quad,
 /// and provides convenient methods for working with quads.
-pub trait Quad<'a> {
-    type TermData: TermData + 'a;
+pub trait Quad {
+    type TermData: TermData;
     /// The subject of this quad.
-    fn s(&self) -> &Term<<Self as Quad<'a>>::TermData>;
+    fn s(&self) -> &Term<<Self as Quad>::TermData>;
     /// The predicate of this quad.
-    fn p(&self) -> &Term<<Self as Quad<'a>>::TermData>;
+    fn p(&self) -> &Term<<Self as Quad>::TermData>;
     /// The object of this quad.
-    fn o(&self) -> &Term<<Self as Quad<'a>>::TermData>;
+    fn o(&self) -> &Term<<Self as Quad>::TermData>;
     /// The (optional) graph name
-    fn g(&self) -> Option<&Term<<Self as Quad<'a>>::TermData>>;
+    fn g(&self) -> Option<&Term<<Self as Quad>::TermData>>;
 
     /// [`Triple`](../triple/trait.Triple.html) adapter owning this quad.
     fn as_triple(self) -> QuadAsTriple<Self>
@@ -31,9 +31,9 @@ pub trait Quad<'a> {
     }
 }
 
-impl<'a, T> Quad<'a> for [Term<T>; 4]
+impl<T> Quad for [Term<T>; 4]
 where
-    T: TermData + 'a,
+    T: TermData,
 {
     type TermData = T;
     #[inline]
@@ -54,9 +54,9 @@ where
     }
 }
 
-impl<'a, T> Quad<'a> for [&'a Term<T>; 4]
+impl<'a, T> Quad for [&'a Term<T>; 4]
 where
-    T: TermData + 'a,
+    T: TermData,
 {
     type TermData = T;
     #[inline]
@@ -77,9 +77,9 @@ where
     }
 }
 
-impl<'a, T> Quad<'a> for (T, Option<Term<T::TermData>>)
+impl<T> Quad for (T, Option<Term<T::TermData>>)
 where
-    T: Triple<'a>,
+    T: Triple,
 {
     type TermData = T::TermData;
     #[inline]
@@ -100,9 +100,9 @@ where
     }
 }
 
-impl<'a, T> Quad<'a> for (T, Option<&'a Term<T::TermData>>)
+impl<'a, T> Quad for (T, Option<&'a Term<T::TermData>>)
 where
-    T: Triple<'a>,
+    T: Triple,
 {
     type TermData = T::TermData;
     #[inline]
@@ -123,25 +123,25 @@ where
     }
 }
 
-impl<'a, Q: Quad<'a>> Quad<'a> for &'a Q
+impl<'a, Q: Quad> Quad for &'a Q
 where
-    Q: Quad<'a>,
+    Q: Quad,
 {
-    type TermData = <Q as Quad<'a>>::TermData;
+    type TermData = <Q as Quad>::TermData;
     #[inline]
-    fn s(&self) -> &Term<<Q as Quad<'a>>::TermData> {
+    fn s(&self) -> &Term<<Q as Quad>::TermData> {
         (*self).s()
     }
     #[inline]
-    fn p(&self) -> &Term<<Q as Quad<'a>>::TermData> {
+    fn p(&self) -> &Term<<Q as Quad>::TermData> {
         (*self).p()
     }
     #[inline]
-    fn o(&self) -> &Term<<Q as Quad<'a>>::TermData> {
+    fn o(&self) -> &Term<<Q as Quad>::TermData> {
         (*self).o()
     }
     #[inline]
-    fn g(&self) -> Option<&Term<<Q as Quad<'a>>::TermData>> {
+    fn g(&self) -> Option<&Term<<Q as Quad>::TermData>> {
         (*self).g()
     }
 }
@@ -156,18 +156,18 @@ impl<Q> QuadAsTriple<Q> {
     }
 }
 
-impl<'a, Q: Quad<'a>> Triple<'a> for QuadAsTriple<Q> {
-    type TermData = <Q as Quad<'a>>::TermData;
+impl<Q: Quad> Triple for QuadAsTriple<Q> {
+    type TermData = <Q as Quad>::TermData;
     #[inline]
-    fn s(&self) -> &Term<<Q as Quad<'a>>::TermData> {
+    fn s(&self) -> &Term<<Q as Quad>::TermData> {
         self.0.s()
     }
     #[inline]
-    fn p(&self) -> &Term<<Q as Quad<'a>>::TermData> {
+    fn p(&self) -> &Term<<Q as Quad>::TermData> {
         self.0.p()
     }
     #[inline]
-    fn o(&self) -> &Term<<Q as Quad<'a>>::TermData> {
+    fn o(&self) -> &Term<<Q as Quad>::TermData> {
         self.0.o()
     }
 }

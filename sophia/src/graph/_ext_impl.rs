@@ -14,7 +14,7 @@ use crate::triple::*;
 
 impl<'a, T> Graph<'a> for [T]
 where
-    T: Triple<'a> + 'a,
+    T: Triple + 'a,
 {
     type Triple = &'a T;
     type Error = Infallible;
@@ -27,7 +27,7 @@ where
 
 impl<'a, T> Graph<'a> for Vec<T>
 where
-    T: Triple<'a> + 'a,
+    T: Triple + 'a,
 {
     type Triple = &'a T;
     type Error = Infallible;
@@ -74,7 +74,7 @@ impl MutableGraph for Vec<[BoxTerm; 3]> {
 
 impl<'a, T, BH> Graph<'a> for HashSet<T, BH>
 where
-    T: Eq + Hash + Triple<'a> + 'a,
+    T: Eq + Hash + Triple + 'a,
     BH: BuildHasher,
 {
     type Triple = &'a T;
@@ -116,10 +116,7 @@ where
     }
 }
 
-impl<'a, T, S: ::std::hash::BuildHasher> SetGraph for HashSet<T, S> where
-    T: Eq + Hash + Triple<'a> + 'a
-{
-}
+impl<'a, T, S: ::std::hash::BuildHasher> SetGraph for HashSet<T, S> where T: Eq + Hash + Triple {}
 
 #[cfg(test)]
 mod test {

@@ -70,9 +70,9 @@ pub trait TripleWriter<W: io::Write>: TripleSink<Outcome = ()> + Sized {
     }
 
     /// Serialize the given triple.
-    fn write_triple<'a, T>(&mut self, t: &T) -> Result<(), StreamError<Infallible, Self::Error>>
+    fn write_triple<T>(&mut self, t: &T) -> Result<(), StreamError<Infallible, Self::Error>>
     where
-        T: Triple<'a>,
+        T: Triple,
     {
         let mut source = vec![[t.s(), t.p(), t.o()]].into_iter().as_triple_source();
         source.in_sink(self)
@@ -115,12 +115,12 @@ pub trait TripleStringifier: TripleSink<Outcome = String> + Sized {
     }
 
     /// Stringify the given triple.
-    fn stringify_triple<'a, T>(
+    fn stringify_triple<T>(
         &mut self,
         t: &T,
     ) -> Result<String, StreamError<Infallible, Self::Error>>
     where
-        T: Triple<'a>,
+        T: Triple,
     {
         let mut source = vec![[t.s(), t.p(), t.o()]].into_iter().as_triple_source();
         source.in_sink(self)
@@ -159,9 +159,9 @@ pub trait QuadWriter<W: io::Write>: QuadSink<Outcome = ()> + Sized {
     }
 
     /// Serialize the given triple.
-    fn write_quad<'a, Q>(&mut self, q: &Q) -> Result<(), StreamError<Infallible, Self::Error>>
+    fn write_quad<Q>(&mut self, q: &Q) -> Result<(), StreamError<Infallible, Self::Error>>
     where
-        Q: Quad<'a>,
+        Q: Quad,
     {
         let mut source = vec![([q.s(), q.p(), q.o()], q.g())]
             .into_iter()
@@ -206,12 +206,12 @@ pub trait QuadStringifier: QuadSink<Outcome = String> + Sized {
     }
 
     /// Stringify the given triple.
-    fn stringify_quad<'a, Q>(
+    fn stringify_quad<Q>(
         &mut self,
         q: &Q,
     ) -> Result<String, StreamError<Infallible, Self::Error>>
     where
-        Q: Quad<'a>,
+        Q: Quad,
     {
         let mut source = vec![([q.s(), q.p(), q.o()], q.g())]
             .into_iter()

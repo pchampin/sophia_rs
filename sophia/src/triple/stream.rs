@@ -70,10 +70,10 @@ pub trait TripleSource {
     }
 }
 
-impl<'a, I, T, E> TripleSource for I
+impl<I, T, E> TripleSource for I
 where
     I: Iterator<Item = Result<T, E>>,
-    T: Triple<'a>,
+    T: Triple,
     E: 'static + Error,
 {
     type Error = E;
@@ -102,10 +102,10 @@ pub trait AsTripleSource<T>: Sized {
     fn as_triple_source(self) -> AsInfallibleSource<Self, T>;
 }
 
-impl<'a, T, I> AsTripleSource<T> for I
+impl<T, I> AsTripleSource<T> for I
 where
-    I: Iterator<Item = T> + 'a + Sized,
-    T: Triple<'a>,
+    I: Iterator<Item = T> + Sized,
+    T: Triple,
 {
     fn as_triple_source(self) -> AsInfallibleSource<Self, T> {
         self.map(Ok)
@@ -135,7 +135,7 @@ pub trait TripleSink {
     type Error: 'static + Error;
 
     /// Feed one triple in this sink.
-    fn feed<'a, T: Triple<'a>>(&mut self, t: &T) -> Result<(), Self::Error>;
+    fn feed<T: Triple>(&mut self, t: &T) -> Result<(), Self::Error>;
 
     /// Produce the result once all triples were fed.
     ///
@@ -151,7 +151,7 @@ impl TripleSink for () {
     type Outcome = ();
     type Error = Infallible;
 
-    fn feed<'a, T: Triple<'a>>(&mut self, _: &T) -> Result<(), Self::Error> {
+    fn feed<T: Triple>(&mut self, _: &T) -> Result<(), Self::Error> {
         Ok(())
     }
     fn finish(&mut self) -> Result<Self::Outcome, Self::Error> {

@@ -76,14 +76,14 @@ pub fn populate_nodes_types<G: MutableGraph>(g: &mut G) -> MGResult<G, ()> {
     Ok(())
 }
 
-pub fn as_box_t<'a, T: Triple<'a> + 'a>(triple: T) -> [BoxTerm; 3] {
+pub fn as_box_t<T: Triple>(triple: T) -> [BoxTerm; 3] {
     [triple.s().into(), triple.p().into(), triple.o().into()]
 }
 
 #[allow(dead_code)]
 pub fn dump_graph<'a, G: Graph<'a>>(g: &'a G)
 where
-    <G::Triple as Triple<'a>>::TermData: Debug,
+    <G::Triple as Triple>::TermData: Debug,
 {
     println!("<<<<");
     for t in g.triples() {

@@ -19,7 +19,7 @@ use super::*;
 use crate::graph::insert_if_absent;
 
 /// Type alias for the terms returned by a dataset.
-pub type DTerm<'a, D> = Term<<<D as Dataset<'a>>::Quad as Quad<'a>>::TermData>;
+pub type DTerm<'a, D> = Term<<<D as Dataset<'a>>::Quad as Quad>::TermData>;
 /// Type alias for results iterators produced by a dataset.
 pub type DResult<'a, D, T> = Result<T, <D as Dataset<'a>>::Error>;
 /// Type alias for fallible quad iterators produced by a dataset.
@@ -44,7 +44,7 @@ pub type DResultTermSet<'a, D> = DResult<'a, D, HashSet<DTerm<'a, D>>>;
 pub trait Dataset<'a> {
     /// The type of [`Quad`](../quad/trait.Quad.html)s
     /// that the methods of this dataset will yield.
-    type Quad: Quad<'a>;
+    type Quad: Quad;
     /// The error type that this dataset may raise.
     ///
     /// Must be either [`Never`](../error/enum.Never.html) (for infallible datasets)

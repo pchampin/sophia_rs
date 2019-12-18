@@ -16,7 +16,6 @@ use std::result::Result as StdResult;
 use crate::error::*;
 use crate::term::{LiteralKind, Term, TermData};
 use crate::triple::stream::*;
-use crate::triple::Triple;
 
 use super::*;
 
@@ -69,7 +68,7 @@ impl<W: io::Write> TripleSink for Writer<W> {
     type Outcome = ();
     type Error = Error;
 
-    fn feed<'a, T: Triple<'a>>(&mut self, t: &T) -> StdResult<(), Self::Error> {
+    fn feed<T: Triple>(&mut self, t: &T) -> StdResult<(), Self::Error> {
         let w = &mut self.write;
 
         (|| {

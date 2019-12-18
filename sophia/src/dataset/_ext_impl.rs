@@ -15,7 +15,7 @@ use crate::triple::*;
 
 impl<'a, Q> Dataset<'a> for [Q]
 where
-    Q: Quad<'a> + 'a,
+    Q: Quad + 'a,
 {
     type Quad = &'a Q;
     type Error = Infallible;
@@ -28,7 +28,7 @@ where
 
 impl<'a, Q> Dataset<'a> for Vec<Q>
 where
-    Q: Quad<'a> + 'a,
+    Q: Quad + 'a,
 {
     type Quad = &'a Q;
     type Error = Infallible;
@@ -90,7 +90,7 @@ impl MutableDataset for Vec<([BoxTerm; 3], Option<BoxTerm>)> {
 
 impl<'a, Q, S: ::std::hash::BuildHasher> Dataset<'a> for HashSet<Q, S>
 where
-    Q: Eq + Hash + Quad<'a> + 'a,
+    Q: Eq + Hash + Quad + 'a,
 {
     type Quad = &'a Q;
     type Error = Infallible;
@@ -144,10 +144,7 @@ impl<S: ::std::hash::BuildHasher> MutableDataset for HashSet<([BoxTerm; 3], Opti
     }
 }
 
-impl<'a, T, S: ::std::hash::BuildHasher> SetDataset for HashSet<T, S> where
-    T: Eq + Hash + Triple<'a> + 'a
-{
-}
+impl<T, S: ::std::hash::BuildHasher> SetDataset for HashSet<T, S> where T: Eq + Hash + Triple {}
 
 #[cfg(test)]
 mod test {

@@ -18,7 +18,7 @@ use std::convert::Infallible;
 use std::error::Error;
 
 /// Type alias for the terms returned by a graph.
-pub type GTerm<'a, G> = Term<<<G as Graph<'a>>::Triple as Triple<'a>>::TermData>;
+pub type GTerm<'a, G> = Term<<<G as Graph<'a>>::Triple as Triple>::TermData>;
 /// Type alias for results produced by a graph.
 pub type GResult<'a, G, T> = Result<T, <G as Graph<'a>>::Error>;
 /// Type alias for fallible triple iterators produced by a graph.
@@ -93,7 +93,7 @@ pub type GResultTermSet<'a, G> = GResult<'a, G, HashSet<GTerm<'a, G>>>;
 pub trait Graph<'a> {
     /// The type of [`Triple`](../triple/trait.Triple.html)s
     /// that the methods of this graph will yield.
-    type Triple: Triple<'a>;
+    type Triple: Triple;
     /// The error type that this graph may raise.
     type Error: 'static + Error;
 

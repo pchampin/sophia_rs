@@ -24,7 +24,7 @@ impl<'a, G: MutableGraph + ?Sized + 'a> TripleSink for Inserter<'a, G> {
     type Outcome = usize;
     type Error = <G as MutableGraph>::MutationError;
 
-    fn feed<'b, T: Triple<'b>>(&mut self, t: &T) -> Result<(), Self::Error> {
+    fn feed<T: Triple>(&mut self, t: &T) -> Result<(), Self::Error> {
         self.graph.insert(t.s(), t.p(), t.o()).map(|inserted| {
             if inserted {
                 self.count += 1;
@@ -56,7 +56,7 @@ impl<'a, G: MutableGraph + ?Sized + 'a> TripleSink for Remover<'a, G> {
     type Outcome = usize;
     type Error = <G as MutableGraph>::MutationError;
 
-    fn feed<'b, T: Triple<'b>>(&mut self, t: &T) -> Result<(), Self::Error> {
+    fn feed<T: Triple>(&mut self, t: &T) -> Result<(), Self::Error> {
         self.graph.remove(t.s(), t.p(), t.o()).map(|removed| {
             if removed {
                 self.count += 1;
