@@ -17,7 +17,6 @@ use std::convert::Infallible;
 use std::error::Error;
 
 use crate::dataset::*;
-use crate::error::Error as SophiaError;
 use crate::quad::*;
 use crate::triple::stream::*;
 
@@ -35,7 +34,7 @@ use std::result::Result; // override ::error::Result
 ///
 pub trait QuadSource {
     /// The type of errors produced by this source.
-    type Error: 'static + Error + Into<SophiaError>;
+    type Error: 'static + Error;
 
     /// Feed all quads from this source into the given [sink](trait.QuadSink.html).
     ///
@@ -60,7 +59,7 @@ impl<'a, I, T, E> QuadSource for I
 where
     I: Iterator<Item = Result<T, E>>,
     T: Quad<'a>,
-    E: 'static + Error + Into<SophiaError>,
+    E: 'static + Error,
 {
     type Error = E;
 
@@ -116,7 +115,7 @@ pub trait QuadSink {
     type Outcome;
 
     /// The type of error raised by this quad sink.
-    type Error: 'static + Error + Into<SophiaError>;
+    type Error: 'static + Error;
 
     /// Feed one quad in this sink.
     fn feed<'a, T: Quad<'a>>(&mut self, t: &T) -> Result<(), Self::Error>;

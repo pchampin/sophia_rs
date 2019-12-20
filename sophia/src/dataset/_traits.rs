@@ -9,7 +9,6 @@ use resiter::filter::*;
 use resiter::map::*;
 
 use crate::dataset::adapter::DatasetGraph;
-use crate::error::Error as SophiaError;
 use crate::quad::stream::*;
 use crate::quad::*;
 use crate::term::matcher::*;
@@ -50,7 +49,7 @@ pub trait Dataset<'a> {
     ///
     /// Must be either [`Never`](../error/enum.Never.html) (for infallible datasets)
     /// or [`Error`](../error/struct.Error.html).
-    type Error: 'static + Error + Into<SophiaError>;
+    type Error: 'static + Error;
 
     /// An iterator visiting all quads of this dataset in arbitrary order.
     ///
@@ -549,7 +548,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
     ///
     /// Must be either [`Never`](../error/enum.Never.html) (for infallible datasets)
     /// or [`Error`](../error/struct.Error.html).
-    type MutationError: 'static + Error + Into<SophiaError> + From<Infallible>;
+    type MutationError: 'static + Error;
 
     /// Insert the given quad in this dataset.
     ///

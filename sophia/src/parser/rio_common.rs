@@ -26,9 +26,47 @@ impl<T, E> From<StdResult<T, E>> for RioSource<T, E> {
     }
 }
 
+enum MyError<E1, E2> {
+    Rio(E1),
+    Sophia(Error),
+    Sink(E2),
+}
+impl<E1, E2> MyError<E1, E2>
+where
+    E1: std::error::Error + 'static,
+    E2: std::error::Error + 'static,
+{
+    fn from_sophia_error(err: Error) -> Self {
+        MyError::Sophia(err)
+    }
+    fn from_sink_error(err: E2) -> Self {
+        MyError::Sink(err)
+    }
+    fn into_stream_error(self) -> StreamError<Error, E2>
+    where
+        Error: From<E1>,
+    {
+        match self {
+            MyError::Rio(err) => SourceError(err.into()),
+            MyError::Sophia(err) => SourceError(err),
+            MyError::Sink(err) => SinkError(err),
+        }
+    }
+}
+impl<E1, E2> From<E1> for MyError<E1, E2>
+where
+    E1: std::error::Error + 'static,
+    E2: std::error::Error + 'static,
+{
+    fn from(other: E1) -> Self {
+        MyError::Rio(other)
+    }
+}
+
 impl<T, E> TripleSource for RioSource<T, E>
 where
     T: TriplesParser,
+    T::Error: 'static,
     Error: From<T::Error>,
     Error: From<E>,
 {
@@ -41,7 +79,7 @@ where
         match self {
             RioSource::Error(opt) => opt
                 .take()
-                .map(|e| Err(SourceError(Error::from(e).into())))
+                .map(|e| Err(SourceError(e.into())))
                 .unwrap_or_else(|| {
                     let message = "This parser has already failed".to_string();
                     let location = Location::Unknown;
@@ -51,15 +89,15 @@ where
                 }),
             RioSource::Parser(parser) => {
                 parser
-                    .parse_all(&mut |t| -> Result<()> {
+                    .parse_all(&mut |t| -> StdResult<(), MyError<T::Error, TS::Error>> {
                         sink.feed(&[
-                            rio2refterm(t.subject.into()).unwrap(), // TODO handle error properly
-                            rio2refterm(t.predicate.into()).unwrap(), // TODO handle error properly
-                            rio2refterm(t.object).unwrap(),         // TODO handle error properly
+                            rio2refterm(t.subject.into()).map_err(MyError::from_sophia_error)?,
+                            rio2refterm(t.predicate.into()).map_err(MyError::from_sophia_error)?,
+                            rio2refterm(t.object).map_err(MyError::from_sophia_error)?,
                         ])
-                        .map_err(TS::Error::into)
+                        .map_err(MyError::from_sink_error)
                     })
-                    .map_err(SourceError)?;
+                    .map_err(|e| e.into_stream_error())?;
                 Ok(sink.finish().map_err(SinkError)?)
             }
         }
@@ -69,6 +107,7 @@ where
 impl<T, E> QuadSource for RioSource<T, E>
 where
     T: QuadsParser,
+    T::Error: 'static,
     Error: From<T::Error>,
     Error: From<E>,
 {
@@ -81,7 +120,7 @@ where
         match self {
             RioSource::Error(opt) => opt
                 .take()
-                .map(|e| Err(SourceError(Error::from(e).into())))
+                .map(|e| Err(SourceError(e.into())))
                 .unwrap_or_else(|| {
                     let message = "This parser has already failed".to_string();
                     let location = Location::Unknown;
@@ -91,22 +130,24 @@ where
                 }),
             RioSource::Parser(parser) => {
                 parser
-                    .parse_all(&mut |q| -> Result<()> {
+                    .parse_all(&mut |q| -> StdResult<(), MyError<T::Error, TS::Error>> {
                         sink.feed(&(
                             [
-                                rio2refterm(q.subject.into()).unwrap(), // TODO handle error properly
-                                rio2refterm(q.predicate.into()).unwrap(), // TODO handle error properly
-                                rio2refterm(q.object).unwrap(), // TODO handle error properly
+                                rio2refterm(q.subject.into())
+                                    .map_err(MyError::from_sophia_error)?,
+                                rio2refterm(q.predicate.into())
+                                    .map_err(MyError::from_sophia_error)?,
+                                rio2refterm(q.object).map_err(MyError::from_sophia_error)?,
                             ],
                             if let Some(n) = q.graph_name {
-                                Some(rio2refterm(n.into()).unwrap()) // TODO handle error properly
+                                Some(rio2refterm(n.into()).map_err(MyError::from_sophia_error)?)
                             } else {
                                 None
                             },
                         ))
-                        .map_err(TS::Error::into)
+                        .map_err(MyError::from_sink_error)
                     })
-                    .map_err(SourceError)?;
+                    .map_err(|e| e.into_stream_error())?;
                 Ok(sink.finish().map_err(SinkError)?)
             }
         }

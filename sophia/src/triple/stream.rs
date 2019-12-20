@@ -34,7 +34,6 @@ use std::convert::Infallible;
 use std::error::Error;
 use std::iter::Map;
 
-use crate::error::Error as SophiaError;
 use crate::graph::*;
 use crate::triple::*;
 
@@ -50,7 +49,7 @@ use crate::triple::*;
 ///
 pub trait TripleSource {
     /// The type of errors produced by this source.
-    type Error: 'static + Error + Into<SophiaError>;
+    type Error: 'static + Error;
 
     /// Feed all triples from this source into the given [sink](trait.TripleSink.html).
     ///
@@ -75,7 +74,7 @@ impl<'a, I, T, E> TripleSource for I
 where
     I: Iterator<Item = Result<T, E>>,
     T: Triple<'a>,
-    E: 'static + Error + Into<SophiaError>,
+    E: 'static + Error,
 {
     type Error = E;
 
@@ -133,7 +132,7 @@ pub trait TripleSink {
     type Outcome;
 
     /// The type of error raised by this triple sink.
-    type Error: 'static + Error + Into<SophiaError>;
+    type Error: 'static + Error;
 
     /// Feed one triple in this sink.
     fn feed<'a, T: Triple<'a>>(&mut self, t: &T) -> Result<(), Self::Error>;

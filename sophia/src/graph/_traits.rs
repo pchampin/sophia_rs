@@ -7,7 +7,6 @@ use std::marker::PhantomData;
 use resiter::filter::*;
 use resiter::map::*;
 
-use crate::error::Error as SophiaError;
 use crate::graph::adapter::GraphAsDataset;
 use crate::graph::{Inserter, Remover};
 use crate::term::matcher::TermMatcher;
@@ -96,7 +95,7 @@ pub trait Graph<'a> {
     /// that the methods of this graph will yield.
     type Triple: Triple<'a>;
     /// The error type that this graph may raise.
-    type Error: 'static + Error + Into<SophiaError>;
+    type Error: 'static + Error;
 
     /// An iterator visiting all triples of this graph in arbitrary order.
     ///
@@ -378,7 +377,7 @@ pub type MGResult<G, T> = std::result::Result<T, <G as MutableGraph>::MutationEr
 ///
 pub trait MutableGraph: for<'x> Graph<'x> {
     /// The error type that this graph may raise during mutations.
-    type MutationError: 'static + Error + Into<SophiaError>;
+    type MutationError: 'static + Error;
 
     /// Insert the given triple in this graph.
     ///
