@@ -89,7 +89,7 @@ macro_rules! impl_mutable_dataset_for_indexed_dataset {
         }
     };
     () => {
-        type MutationError = coercible_errors::Never;
+        type MutationError = std::convert::Infallible;
 
         fn insert<T_, U_, V_, W_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>, g: Option<&Term<W_>>) -> MDResult< Self, bool> where
             T_: $crate::term::TermData,

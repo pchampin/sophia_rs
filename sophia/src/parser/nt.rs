@@ -123,16 +123,16 @@ where
     fn in_sink<TS: TripleSink>(
         &mut self,
         sink: &mut TS,
-    ) -> CoercedResult<TS::Outcome, Self::Error, TS::Error>
-    where
-        Self::Error: CoercibleWith<TS::Error>,
-    {
+    ) -> StdResult<TS::Outcome, StreamError<Self::Error, TS::Error>> {
         for (lineidx, line) in (&mut self.bufread).lines().enumerate() {
             let line = match line {
                 Ok(line) => line,
                 Err(ioerr) => {
                     let msg = format!("{}", ioerr);
-                    return Err(Error::with_chain(ioerr, make_parser_error(msg, lineidx)).into());
+                    return Err(SourceError(Error::with_chain(
+                        ioerr,
+                        make_parser_error(msg, lineidx),
+                    )));
                 }
             };
             let trimmed = line.trim_start();
@@ -140,10 +140,10 @@ where
                 continue;
             }
             let triple = parse_rule_from_line(&self.config, self.rule, line.trim_start())
-                .map_err(|err| convert_pest_err(err, lineidx))?;
-            sink.feed(&triple)?;
+                .map_err(|err| SourceError(convert_pest_err(err, lineidx)))?;
+            sink.feed(&triple).map_err(SinkError)?;
         }
-        Ok(sink.finish()?)
+        Ok(sink.finish().map_err(SinkError)?)
     }
 }
 
@@ -552,7 +552,7 @@ mod test {
         let mut g = HashSetGraph::new();
         let reader = io::Cursor::new(GENERALIZED_DOC);
         let res = STRICT.parse_read(reader).in_graph(&mut g);
-        if let Err(Error(ParserError(_, location), _)) = res {
+        if let Err(SourceError(Error(ParserError(_, location), _))) = res {
             let line_no = match location {
                 Location::Pos(Position::LiCo(line_no, _)) => line_no,
                 Location::Span(Position::LiCo(line_no, _), _) => line_no,

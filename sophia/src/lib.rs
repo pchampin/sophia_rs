@@ -63,8 +63,6 @@
 #![recursion_limit = "256"]
 
 #[macro_use]
-extern crate coercible_errors;
-#[macro_use]
 extern crate error_chain;
 extern crate language_tag;
 #[macro_use]
@@ -74,7 +72,6 @@ extern crate pest;
 extern crate pest_derive;
 #[cfg(feature = "xml")]
 extern crate quick_xml;
-extern crate regex;
 extern crate resiter;
 #[cfg(feature = "rio")]
 extern crate rio_api;

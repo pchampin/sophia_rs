@@ -60,7 +60,7 @@ mod test {
     use crate::term::StaticTerm;
 
     #[test]
-    fn test_simple_trig_string() -> Result<()> {
+    fn test_simple_trig_string() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let turtle = r#"
             @prefix : <http://example.org/ns/> .
 

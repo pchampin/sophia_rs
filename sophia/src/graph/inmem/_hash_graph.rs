@@ -1,9 +1,9 @@
 // this module is transparently re-exported by its parent `graph::inmem`
 
 use std::collections::HashSet;
+use std::convert::Infallible;
 use std::hash::Hash;
 
-use crate::error::*;
 use crate::graph::indexed::IndexedGraph;
 use crate::graph::*;
 use crate::term::factory::TermFactory;
@@ -136,7 +136,7 @@ where
     <I::Factory as TermFactory>::TermData: 'static,
 {
     type Triple = [&'a Term<<Self as IndexedGraph>::TermData>; 3];
-    type Error = Never;
+    type Error = Infallible;
 
     fn triples(&'a self) -> GTripleSource<'a, Self> {
         Box::from(self.triples.iter().map(move |[si, pi, oi]| {
