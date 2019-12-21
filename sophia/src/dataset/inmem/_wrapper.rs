@@ -643,7 +643,7 @@ macro_rules! impl_indexed_dataset_for_wrapper {
             p: &$crate::term::Term<V>,
             o: &$crate::term::Term<W>,
             g: std::option::Option<&'_ $crate::term::Term<X>>
-        ) -> Option<([Self::Index; 4])>
+        ) -> Option<[Self::Index; 4]>
         where
             U: $crate::term::TermData,
             V: $crate::term::TermData,

@@ -32,7 +32,7 @@ use crate::term::Term;
 
 const DEFAULT_BUFFER_SIZE: usize = 8 * 1024;
 
-static RESERVED_NODE_NAMES: &'static [StaticTerm] = &[
+static RESERVED_NODE_NAMES: &[StaticTerm] = &[
     rdf::RDF,
     rdf::ID,
     rdf::about,
@@ -45,7 +45,7 @@ static RESERVED_NODE_NAMES: &'static [StaticTerm] = &[
     rdf::aboutEachPrefix,
 ];
 
-static RESERVED_PROPERTY_NAMES: &'static [StaticTerm] = &[
+static RESERVED_PROPERTY_NAMES: &[StaticTerm] = &[
     rdf::Description,
     rdf::RDF,
     rdf::ID,
@@ -58,7 +58,7 @@ static RESERVED_PROPERTY_NAMES: &'static [StaticTerm] = &[
     rdf::aboutEachPrefix,
 ];
 
-static RESERVED_ATTRIBUTES_NAMES: &'static [StaticTerm] =
+static RESERVED_ATTRIBUTES_NAMES: &[StaticTerm] =
     &[rdf::li, rdf::aboutEach, rdf::aboutEachPrefix, rdf::bagID];
 
 mod xmlname {
@@ -1248,7 +1248,7 @@ where
         self.triples.push_back(Ok([id.clone(), ty, stmt]));
         self.triples.push_back(Ok([id.clone(), subject, sbj]));
         self.triples.push_back(Ok([id.clone(), predicate, pred]));
-        self.triples.push_back(Ok([id.clone(), object, obj]));
+        self.triples.push_back(Ok([id, object, obj]));
     }
 }
 

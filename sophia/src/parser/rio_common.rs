@@ -83,9 +83,9 @@ where
                 .unwrap_or_else(|| {
                     let message = "This parser has already failed".to_string();
                     let location = Location::Unknown;
-                    Err(SourceError(
-                        Error::from(ErrorKind::ParserError(message, location)).into(),
-                    ))
+                    Err(SourceError(Error::from(ErrorKind::ParserError(
+                        message, location,
+                    ))))
                 }),
             RioSource::Parser(parser) => {
                 parser
@@ -124,9 +124,9 @@ where
                 .unwrap_or_else(|| {
                     let message = "This parser has already failed".to_string();
                     let location = Location::Unknown;
-                    Err(SourceError(
-                        Error::from(ErrorKind::ParserError(message, location)).into(),
-                    ))
+                    Err(SourceError(Error::from(ErrorKind::ParserError(
+                        message, location,
+                    ))))
                 }),
             RioSource::Parser(parser) => {
                 parser

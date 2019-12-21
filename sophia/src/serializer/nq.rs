@@ -242,8 +242,11 @@ mod test {
         ];
         let mut quads = quads.into_iter().as_quad_source();
         let s = quads.in_sink(&mut stringifier()).unwrap();
-        assert_eq!(s, r#"<http://champin.net/#pa> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person> .
+        assert_eq!(
+            s,
+            r#"<http://champin.net/#pa> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person> .
 <http://champin.net/#pa> <http://schema.org/name> "Pierre-Antoine" <http://example.org/graph> .
-"#);
+"#
+        );
     }
 }

@@ -174,7 +174,7 @@ where
 
     /// Return a new literal term with the given value and language tag.
     ///
-    /// May fail if the language tag is not valid.
+    /// May fail if the language tag is not a valid BCP47 language tag.
     pub fn new_literal_lang<U, V>(txt: U, lang: V) -> Result<Term<T>>
     where
         T: From<U> + From<V>,
@@ -248,8 +248,10 @@ where
         }
     }
 
-    /// Return a new IRI term,
-    /// assuming that `iri` is a valid IRI,
+    /// Return a new IRI term.
+    ///
+    /// # Safety
+    /// This function requires that `iri` is a valid IRI reference,
     /// and that `abs` correctly indicates whether it is absolute or relative.
     pub unsafe fn new_iri_unchecked<U>(iri: U, abs: Option<bool>) -> Term<T>
     where
@@ -259,7 +261,10 @@ where
     }
 
     /// Return a new IRI term,
-    /// assuming that `ns` and `suffix` concatenate to a valid IRI,
+    ///
+    /// # Safety
+    /// This function requires that that
+    /// `ns` and `suffix` concatenate to a valid IRI reference,
     /// and that `abs` correctly indicates whether it is absolute or relative.
     pub unsafe fn new_iri2_unchecked<U, V>(ns: U, suffix: V, abs: Option<bool>) -> Term<T>
     where
@@ -272,8 +277,10 @@ where
         ))
     }
 
-    /// Return a new blank node term,
-    /// assuming that `id` is a valid bnode ID.
+    /// Return a new blank node term.
+    ///
+    /// # Safety
+    /// This function requires that `id` is a valid bnode ID.
     pub unsafe fn new_bnode_unchecked<U>(id: U) -> Term<T>
     where
         T: From<U>,
@@ -281,8 +288,10 @@ where
         BNode(BNodeId::new(T::from(id)))
     }
 
-    /// Return a literal term,
-    /// assuming that `lang` is a valid language tag.
+    /// Return a literal term.
+    ///
+    /// # Safety
+    /// This function that `lang` is a valid language tag.
     pub unsafe fn new_literal_lang_unchecked<U, V>(txt: U, lang: V) -> Term<T>
     where
         T: From<U> + From<V>,
@@ -294,7 +303,7 @@ where
     ///
     /// # Panics
     /// Panics if `dt` is not an IRI.
-    pub unsafe fn new_literal_dt_unchecked<U>(txt: U, dt: Term<T>) -> Term<T>
+    pub fn new_literal_dt_unchecked<U>(txt: U, dt: Term<T>) -> Term<T>
     where
         T: From<U> + Debug,
     {

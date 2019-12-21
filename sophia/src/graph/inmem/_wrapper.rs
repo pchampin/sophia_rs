@@ -399,7 +399,7 @@ macro_rules! impl_indexed_graph_for_wrapper {
             s: &$crate::term::Term<U>,
             p: &$crate::term::Term<V>,
             o: &$crate::term::Term<W>,
-        ) -> Option<([Self::Index; 3])>
+        ) -> Option<[Self::Index; 3]>
         where
             U: $crate::term::TermData,
             V: $crate::term::TermData,

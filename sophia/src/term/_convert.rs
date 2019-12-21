@@ -8,14 +8,14 @@ use crate::ns::xsd;
 impl From<String> for BoxTerm {
     fn from(val: String) -> BoxTerm {
         let dt = BoxTerm::from(&xsd::string);
-        unsafe { BoxTerm::new_literal_dt_unchecked(val, dt) }
+        BoxTerm::new_literal_dt_unchecked(val, dt)
     }
 }
 
 impl<'a> From<&'a str> for RefTerm<'a> {
     fn from(val: &'a str) -> RefTerm<'a> {
         let dt = xsd::string;
-        unsafe { RefTerm::new_literal_dt_unchecked(val, dt) }
+        RefTerm::new_literal_dt_unchecked(val, dt)
     }
 }
 
@@ -23,7 +23,7 @@ impl From<bool> for BoxTerm {
     fn from(val: bool) -> BoxTerm {
         let txt = val.to_string().into_boxed_str();
         let dt = BoxTerm::from(&xsd::boolean);
-        unsafe { BoxTerm::new_literal_dt_unchecked(txt, dt) }
+        BoxTerm::new_literal_dt_unchecked(txt, dt)
     }
 }
 
@@ -31,7 +31,7 @@ impl From<f64> for BoxTerm {
     fn from(val: f64) -> BoxTerm {
         let txt = val.to_string();
         let dt = BoxTerm::from(&xsd::double);
-        unsafe { BoxTerm::new_literal_dt_unchecked(txt, dt) }
+        BoxTerm::new_literal_dt_unchecked(txt, dt)
     }
 }
 
@@ -39,7 +39,7 @@ impl From<i32> for BoxTerm {
     fn from(val: i32) -> BoxTerm {
         let txt = val.to_string();
         let dt = BoxTerm::from(&xsd::integer);
-        unsafe { BoxTerm::new_literal_dt_unchecked(txt, dt) }
+        BoxTerm::new_literal_dt_unchecked(txt, dt)
     }
 }
 
@@ -47,7 +47,7 @@ impl From<u32> for BoxTerm {
     fn from(val: u32) -> BoxTerm {
         let txt = val.to_string();
         let dt = BoxTerm::from(&xsd::nonNegativeInteger);
-        unsafe { BoxTerm::new_literal_dt_unchecked(txt, dt) }
+        BoxTerm::new_literal_dt_unchecked(txt, dt)
     }
 }
 
