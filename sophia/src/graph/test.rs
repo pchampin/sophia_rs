@@ -6,6 +6,7 @@ use crate::graph::*;
 use crate::ns::*;
 use crate::term::*;
 use crate::triple::stream::*;
+use crate::triple::streaming_mode::{TripleStreamingMode, UnsafeTriple};
 use crate::triple::*;
 
 pub const NS: &str = "http://example.org/";
@@ -76,14 +77,14 @@ pub fn populate_nodes_types<G: MutableGraph>(g: &mut G) -> MGResult<G, ()> {
     Ok(())
 }
 
-pub fn as_box_t<'a, T: Triple<'a> + 'a>(triple: T) -> [BoxTerm; 3] {
+pub fn as_box_t<T: Triple>(triple: T) -> [BoxTerm; 3] {
     [triple.s().into(), triple.p().into(), triple.o().into()]
 }
 
 #[allow(dead_code)]
-pub fn dump_graph<'a, G: Graph<'a>>(g: &'a G)
+pub fn dump_graph<G: Graph>(g: &G)
 where
-    <G::Triple as Triple<'a>>::TermData: Debug,
+    <<G::Triple as TripleStreamingMode>::UnsafeTriple as UnsafeTriple>::TermData: Debug,
 {
     println!("<<<<");
     for t in g.triples() {

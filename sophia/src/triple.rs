@@ -16,11 +16,12 @@ use crate::quad::Quad;
 use crate::term::*;
 
 pub mod stream;
+pub mod streaming_mode;
 
 /// This trait represents an abstract RDF triple,
 /// and provide convenient methods for working with triples.
-pub trait Triple<'a> {
-    type TermData: TermData + 'a;
+pub trait Triple {
+    type TermData: TermData;
     /// The subject of this triple.
     fn s(&self) -> &Term<Self::TermData>;
     /// The predicate of this triple.
@@ -38,7 +39,7 @@ pub trait Triple<'a> {
     }
     /// [`Quad`](../quad/trait.Quad.html) adapter owning this triple,
     /// pretending to belong to a named graph with the given name.
-    fn as_quad_from(self, name: Term<Self::TermData>) -> TripleAsQuadFrom<'a, Self>
+    fn as_quad_from(self, name: Term<Self::TermData>) -> TripleAsQuadFrom<Self>
     where
         Self: Sized,
     {
@@ -46,9 +47,9 @@ pub trait Triple<'a> {
     }
 }
 
-impl<'a, T> Triple<'a> for [Term<T>; 3]
+impl<T> Triple for [Term<T>; 3]
 where
-    T: TermData + 'a,
+    T: TermData,
 {
     type TermData = T;
     #[inline]
@@ -65,9 +66,9 @@ where
     }
 }
 
-impl<'a, T> Triple<'a> for [&'a Term<T>; 3]
+impl<'a, T> Triple for [&'a Term<T>; 3]
 where
-    T: TermData + 'a,
+    T: TermData,
 {
     type TermData = T;
     #[inline]
@@ -84,7 +85,7 @@ where
     }
 }
 
-impl<'a, T: Triple<'a>> Triple<'a> for &'a T {
+impl<'a, T: Triple> Triple for &'a T {
     type TermData = T::TermData;
     #[inline]
     fn s(&self) -> &Term<T::TermData> {
@@ -110,7 +111,7 @@ impl<T> TripleAsQuad<T> {
     }
 }
 
-impl<'a, T: Triple<'a>> Quad<'a> for TripleAsQuad<T> {
+impl<T: Triple> Quad for TripleAsQuad<T> {
     type TermData = T::TermData;
     #[inline]
     fn s(&self) -> &Term<T::TermData> {
@@ -131,16 +132,16 @@ impl<'a, T: Triple<'a>> Quad<'a> for TripleAsQuad<T> {
 }
 
 /// The adapter returned by [`Triple::as_quad_from`](./trait.Triple.html#method.as_quad_from).
-pub struct TripleAsQuadFrom<'a, T: Triple<'a>>(T, Term<T::TermData>);
+pub struct TripleAsQuadFrom<T: Triple>(T, Term<T::TermData>);
 
-impl<'a, T: Triple<'a>> TripleAsQuadFrom<'a, T> {
+impl<T: Triple> TripleAsQuadFrom<T> {
     /// Unwrap this adapter to get the original triple back.
     pub fn unwrap(self) -> T {
         self.0
     }
 }
 
-impl<'a, T: Triple<'a>> Quad<'a> for TripleAsQuadFrom<'a, T> {
+impl<T: Triple> Quad for TripleAsQuadFrom<T> {
     type TermData = T::TermData;
     #[inline]
     fn s(&self) -> &Term<T::TermData> {

@@ -7,9 +7,9 @@ use resiter::Map;
 
 use crate::dataset::{Dataset, MutableDataset, SetDataset};
 use crate::graph::*;
-use crate::quad::{Quad, QuadAsTriple};
 use crate::term::matcher::{GraphNameMatcher, ANY};
 use crate::term::{Term, TermData};
+use crate::triple::streaming_mode::{FromQuad, StreamedTriple};
 
 /// The adapter returned by
 /// [`Dataset::union_graph`](../trait.Dataset.html#method.union_graph)
@@ -19,24 +19,24 @@ pub struct DatasetGraph<D: ?Sized, E, M: GraphNameMatcher> {
     pub(in crate::dataset) _phantom: PhantomData<D>,
 }
 
-impl<'a, D, E, M> Graph<'a> for DatasetGraph<D, E, M>
+impl<D, E, M> Graph for DatasetGraph<D, E, M>
 where
-    D: Dataset<'a> + ?Sized,
+    D: Dataset + ?Sized,
     E: Borrow<D>,
     M: GraphNameMatcher,
 {
-    type Triple = QuadAsTriple<D::Quad>;
+    type Triple = FromQuad<D::Quad>;
     type Error = D::Error;
 
-    fn triples(&'a self) -> GTripleSource<'a, Self> {
+    fn triples(&self) -> GTripleSource<Self> {
         Box::new(
             self.dataset
                 .borrow()
                 .quads_matching(&ANY, &ANY, &ANY, &self.gmatcher)
-                .map_ok(Quad::as_triple),
+                .map_ok(StreamedTriple::from_quad),
         )
     }
-    fn triples_with_s<T>(&'a self, s: &'a Term<T>) -> GTripleSource<'a, Self>
+    fn triples_with_s<'s, T>(&'s self, s: &'s Term<T>) -> GTripleSource<'s, Self>
     where
         T: TermData,
     {
@@ -44,10 +44,10 @@ where
             self.dataset
                 .borrow()
                 .quads_matching(s, &ANY, &ANY, &self.gmatcher)
-                .map_ok(Quad::as_triple),
+                .map_ok(StreamedTriple::from_quad),
         )
     }
-    fn triples_with_p<T>(&'a self, p: &'a Term<T>) -> GTripleSource<'a, Self>
+    fn triples_with_p<'s, T>(&'s self, p: &'s Term<T>) -> GTripleSource<'s, Self>
     where
         T: TermData,
     {
@@ -55,10 +55,10 @@ where
             self.dataset
                 .borrow()
                 .quads_matching(&ANY, p, &ANY, &self.gmatcher)
-                .map_ok(Quad::as_triple),
+                .map_ok(StreamedTriple::from_quad),
         )
     }
-    fn triples_with_o<T>(&'a self, o: &'a Term<T>) -> GTripleSource<'a, Self>
+    fn triples_with_o<'s, T>(&'s self, o: &'s Term<T>) -> GTripleSource<'s, Self>
     where
         T: TermData,
     {
@@ -66,10 +66,14 @@ where
             self.dataset
                 .borrow()
                 .quads_matching(&ANY, &ANY, o, &self.gmatcher)
-                .map_ok(Quad::as_triple),
+                .map_ok(StreamedTriple::from_quad),
         )
     }
-    fn triples_with_sp<T, U>(&'a self, s: &'a Term<T>, p: &'a Term<U>) -> GTripleSource<'a, Self>
+    fn triples_with_sp<'s, T, U>(
+        &'s self,
+        s: &'s Term<T>,
+        p: &'s Term<U>,
+    ) -> GTripleSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -78,10 +82,14 @@ where
             self.dataset
                 .borrow()
                 .quads_matching(s, p, &ANY, &self.gmatcher)
-                .map_ok(Quad::as_triple),
+                .map_ok(StreamedTriple::from_quad),
         )
     }
-    fn triples_with_so<T, U>(&'a self, s: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self>
+    fn triples_with_so<'s, T, U>(
+        &'s self,
+        s: &'s Term<T>,
+        o: &'s Term<U>,
+    ) -> GTripleSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -90,10 +98,14 @@ where
             self.dataset
                 .borrow()
                 .quads_matching(s, &ANY, o, &self.gmatcher)
-                .map_ok(Quad::as_triple),
+                .map_ok(StreamedTriple::from_quad),
         )
     }
-    fn triples_with_po<T, U>(&'a self, p: &'a Term<T>, o: &'a Term<U>) -> GTripleSource<'a, Self>
+    fn triples_with_po<'s, T, U>(
+        &'s self,
+        p: &'s Term<T>,
+        o: &'s Term<U>,
+    ) -> GTripleSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -102,15 +114,15 @@ where
             self.dataset
                 .borrow()
                 .quads_matching(&ANY, p, o, &self.gmatcher)
-                .map_ok(Quad::as_triple),
+                .map_ok(StreamedTriple::from_quad),
         )
     }
-    fn triples_with_spo<T, U, V>(
-        &'a self,
-        s: &'a Term<T>,
-        p: &'a Term<U>,
-        o: &'a Term<V>,
-    ) -> GTripleSource<'a, Self>
+    fn triples_with_spo<'s, T, U, V>(
+        &'s self,
+        s: &'s Term<T>,
+        p: &'s Term<U>,
+        o: &'s Term<V>,
+    ) -> GTripleSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -120,7 +132,7 @@ where
             self.dataset
                 .borrow()
                 .quads_matching(s, p, o, &self.gmatcher)
-                .map_ok(Quad::as_triple),
+                .map_ok(StreamedTriple::from_quad),
         )
     }
 }
@@ -171,25 +183,28 @@ pub(crate) mod test {
     //
     // the boiler plate code is still defined here, and made visible for that module.
     use super::*;
-    use crate::dataset::inmem::LightDataset;
     use crate::dataset::test::*;
     use crate::dataset::MDResult;
+    use crate::dataset::*;
     use crate::ns::rdfs;
     use crate::term::BoxTerm;
+    use std::collections::HashSet;
 
-    pub type LightDatasetGraph = DatasetGraph<LightDataset, LightDataset, Option<BoxTerm>>;
+    pub type MyQuad = ([BoxTerm; 3], Option<BoxTerm>);
+    pub type MyDataset = HashSet<MyQuad>;
+    pub type MyDatasetGraph = DatasetGraph<MyDataset, MyDataset, Option<BoxTerm>>;
 
-    pub fn make_default_graph() -> LightDatasetGraph {
+    pub fn make_default_graph() -> MyDatasetGraph {
         DatasetGraph {
-            dataset: LightDataset::new(),
+            dataset: MyDataset::new(),
             gmatcher: None,
             _phantom: PhantomData,
         }
     }
 
-    pub fn make_named_graph() -> LightDatasetGraph {
+    pub fn make_named_graph() -> MyDatasetGraph {
         DatasetGraph {
-            dataset: LightDataset::new(),
+            dataset: MyDataset::new(),
             gmatcher: Some(BoxTerm::from(&rdfs::Resource)),
             _phantom: PhantomData,
         }
@@ -199,8 +214,8 @@ pub(crate) mod test {
     // because I couldn't call it from this module...
 
     #[test]
-    fn test_graph_default() -> MDResult<LightDataset, ()> {
-        let mut d = LightDataset::new();
+    fn test_graph_default() -> MDResult<MyDataset, ()> {
+        let mut d = MyDataset::new();
         populate(&mut d)?;
         assert_eq!(d.graph(*DG).triples().count(), 4);
         assert_eq!(d.graph(*GN1).triples().count(), 6);

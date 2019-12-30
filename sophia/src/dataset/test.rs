@@ -5,6 +5,7 @@ use std::fmt::Debug;
 use crate::dataset::*;
 use crate::ns::*;
 use crate::quad::stream::*;
+use crate::quad::streaming_mode::{QuadStreamingMode, UnsafeQuad};
 use crate::quad::*;
 use crate::term::*;
 
@@ -89,7 +90,7 @@ pub fn populate_nodes_types<D: MutableDataset>(d: &mut D) -> MDResult<D, ()> {
     Ok(())
 }
 
-pub fn as_box_q<'a, Q: Quad<'a> + 'a>(quad: Q) -> ([BoxTerm; 3], Option<BoxTerm>) {
+pub fn as_box_q<Q: Quad>(quad: Q) -> ([BoxTerm; 3], Option<BoxTerm>) {
     (
         [quad.s().into(), quad.p().into(), quad.o().into()],
         quad.g().map(|n| n.into()),
@@ -97,9 +98,9 @@ pub fn as_box_q<'a, Q: Quad<'a> + 'a>(quad: Q) -> ([BoxTerm; 3], Option<BoxTerm>
 }
 
 #[allow(dead_code)]
-pub fn dump_graph<'a, D: Dataset<'a>>(d: &'a D)
+pub fn dump_dataset<D: Dataset>(d: &D)
 where
-    <D::Quad as Quad<'a>>::TermData: Debug,
+    <<D::Quad as QuadStreamingMode>::UnsafeQuad as UnsafeQuad>::TermData: Debug,
 {
     println!("<<<<");
     for q in d.quads() {

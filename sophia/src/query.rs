@@ -23,7 +23,7 @@ pub enum Query {
 }
 
 impl Query {
-    fn prepare<'a, G: Graph<'a>>(&mut self, graph: &'a G, initial_bindings: &BindingMap) {
+    fn prepare<G: Graph>(&mut self, graph: &G, initial_bindings: &BindingMap) {
         match self {
             Query::Triples(triples) => {
                 // sorts triple from q according to how many results they may give
@@ -58,10 +58,10 @@ impl Query {
     /// Process this query against the given graph, and return an fallible iterator of BindingMaps.
     ///
     /// The iterator may fail (i.e. yield `Err`) if an operation on the graph fails.
-    pub fn process<'a, G: Graph<'a>>(
-        &'a mut self,
-        graph: &'a G,
-    ) -> Box<dyn Iterator<Item = GResult<'a, G, BindingMap>> + 'a> {
+    pub fn process<'s, G: Graph>(
+        &'s mut self,
+        graph: &'s G,
+    ) -> Box<dyn Iterator<Item = GResult<G, BindingMap>> + 's> {
         self.process_with(graph, BindingMap::new())
     }
 
@@ -69,11 +69,11 @@ impl Query {
     /// starting with the given bindings.
     ///
     /// The iterator may fail (i.e. yield `Err`) if an operation on the graph fails.
-    pub fn process_with<'a, G: Graph<'a>>(
-        &'a mut self,
-        graph: &'a G,
+    pub fn process_with<'s, G: Graph>(
+        &'s mut self,
+        graph: &'s G,
         initial_bindings: BindingMap,
-    ) -> Box<dyn Iterator<Item = GResult<'a, G, BindingMap>> + 'a> {
+    ) -> Box<dyn Iterator<Item = GResult<G, BindingMap>> + 's> {
         self.prepare(graph, &initial_bindings);
         match self {
             Query::Triples(triples) => bindings_for_triples(graph, triples, initial_bindings),
@@ -86,9 +86,9 @@ fn bindings_for_triples<'a, G>(
     g: &'a G,
     q: &'a [[RcTerm; 3]],
     b: BindingMap,
-) -> Box<dyn Iterator<Item = GResult<'a, G, BindingMap>> + 'a>
+) -> Box<dyn Iterator<Item = GResult<G, BindingMap>> + 'a>
 where
-    G: Graph<'a>,
+    G: Graph,
 {
     if q.is_empty() {
         Box::new(once(Ok(b)))
@@ -107,9 +107,9 @@ fn bindings_for_triple<'a, G>(
     g: &'a G,
     tq: &'a [RcTerm; 3],
     b: BindingMap,
-) -> impl Iterator<Item = GResult<'a, G, BindingMap>> + 'a
+) -> impl Iterator<Item = GResult<G, BindingMap>> + 'a
 where
-    G: Graph<'a>,
+    G: Graph,
 {
     let tm = vec![
         matcher(tq.s(), &b),
@@ -147,7 +147,7 @@ fn matcher(t: &RcTerm, b: &BindingMap) -> Binding {
 /// A wrapper around Graph::triples_matchings, with more convenient parameters.
 fn triples_matching<'a, G>(g: &'a G, tm: &'a [Binding]) -> GTripleSource<'a, G>
 where
-    G: Graph<'a>,
+    G: Graph,
 {
     debug_assert_eq!(tm.len(), 3);
     let s = &tm[0];

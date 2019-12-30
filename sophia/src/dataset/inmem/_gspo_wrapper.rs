@@ -4,7 +4,9 @@ use std::collections::{HashMap, HashSet};
 use std::iter::empty;
 
 use super::*;
+
 use crate::graph::indexed::*;
+use crate::quad::streaming_mode::{ByTermRefs, StreamedQuad};
 
 /// A [`DatasetWrapper`](trait.DatasetWrapper.html)
 /// indexing quads by graph name, then by subject, then by predicate, then by object.
@@ -36,23 +38,21 @@ where
     }
 }
 
-type MyQuad<'a, T> = ([&'a Term<T>; 3], Option<&'a Term<T>>);
-
-impl<'a, T> DatasetWrapper<'a> for GspoWrapper<T>
+impl<T> DatasetWrapper for GspoWrapper<T>
 where
-    T: IndexedDataset + Dataset<'a, Quad = MyQuad<'a, <T as IndexedDataset>::TermData>>,
+    T: IndexedDataset + Dataset<Quad = ByTermRefs<<T as IndexedDataset>::TermData>>,
 {
     type Wrapped = T;
 
-    fn get_wrapped(&'a self) -> &'a T {
+    fn get_wrapped(&self) -> &T {
         &self.wrapped
     }
 
-    fn get_wrapped_mut(&'a mut self) -> &'a mut T {
+    fn get_wrapped_mut(&mut self) -> &mut T {
         &mut self.wrapped
     }
 
-    fn dw_quads_with_g<U>(&'a self, g: Option<&'a Term<U>>) -> DQuadSource<'a, Self::Wrapped>
+    fn dw_quads_with_g<'s, U>(&'s self, g: Option<&'s Term<U>>) -> DQuadSource<'s, Self::Wrapped>
     where
         U: TermData,
     {
@@ -67,7 +67,7 @@ where
                         let ois = self.gsp2o.get(&[gi, *si, *pi]).unwrap();
                         ois.iter().map(move |oi| {
                             let o = self.wrapped.get_term(*oi).unwrap();
-                            Ok(([s, p, o], g))
+                            Ok(StreamedQuad::by_term_refs(s, p, o, g))
                         })
                     })
                 }));
@@ -76,11 +76,11 @@ where
         Box::new(empty())
     }
 
-    fn dw_quads_with_sg<U, V>(
-        &'a self,
-        s: &'a Term<U>,
-        g: Option<&'a Term<V>>,
-    ) -> DQuadSource<'a, Self::Wrapped>
+    fn dw_quads_with_sg<'s, U, V>(
+        &'s self,
+        s: &'s Term<U>,
+        g: Option<&'s Term<V>>,
+    ) -> DQuadSource<'s, Self::Wrapped>
     where
         U: TermData,
         V: TermData,
@@ -95,7 +95,7 @@ where
                         let ois = self.gsp2o.get(&[gi, si, *pi]).unwrap();
                         ois.iter().map(move |oi| {
                             let o = self.wrapped.get_term(*oi).unwrap();
-                            Ok(([s, p, o], g))
+                            Ok(StreamedQuad::by_term_refs(s, p, o, g))
                         })
                     }));
                 }
@@ -104,12 +104,12 @@ where
         Box::new(empty())
     }
 
-    fn dw_quads_with_spg<U, V, W>(
-        &'a self,
-        s: &'a Term<U>,
-        p: &'a Term<V>,
-        g: Option<&'a Term<W>>,
-    ) -> DQuadSource<'a, Self::Wrapped>
+    fn dw_quads_with_spg<'s, U, V, W>(
+        &'s self,
+        s: &'s Term<U>,
+        p: &'s Term<V>,
+        g: Option<&'s Term<W>>,
+    ) -> DQuadSource<'s, Self::Wrapped>
     where
         U: TermData,
         V: TermData,
@@ -124,7 +124,7 @@ where
                     let ois = self.gsp2o.get(&[gi, si, pi]).unwrap();
                     return Box::new(ois.iter().map(move |oi| {
                         let o = self.wrapped.get_term(*oi).unwrap();
-                        Ok(([s, p, o], g))
+                        Ok(StreamedQuad::by_term_refs(s, p, o, g))
                     }));
                 }
             }
@@ -132,7 +132,7 @@ where
         Box::new(empty())
     }
 
-    fn dw_graph_names(&'a self) -> DResultTermSet<'a, Self::Wrapped> {
+    fn dw_graph_names(&self) -> DResultTermSet<Self::Wrapped> {
         let graph_names: HashSet<_> = self
             .g2s
             .keys()
@@ -179,23 +179,23 @@ where
     }
 }
 
-impl<'a, T> Dataset<'a> for GspoWrapper<T>
+impl<T> Dataset for GspoWrapper<T>
 where
-    T: IndexedDataset + Dataset<'a, Quad = MyQuad<'a, <T as IndexedDataset>::TermData>>,
+    T: IndexedDataset + Dataset<Quad = ByTermRefs<<T as IndexedDataset>::TermData>>,
 {
     impl_dataset_for_wrapper!();
 }
 
 impl<T> IndexedDataset for GspoWrapper<T>
 where
-    T: IndexedDataset + for<'a> Dataset<'a, Quad = MyQuad<'a, <T as IndexedDataset>::TermData>>,
+    T: IndexedDataset + Dataset<Quad = ByTermRefs<<T as IndexedDataset>::TermData>>,
 {
     impl_indexed_dataset_for_wrapper!();
 }
 
 impl<T> MutableDataset for GspoWrapper<T>
 where
-    T: IndexedDataset + for<'a> Dataset<'a, Quad = MyQuad<'a, <T as IndexedDataset>::TermData>>,
+    T: IndexedDataset + Dataset<Quad = ByTermRefs<<T as IndexedDataset>::TermData>>,
 {
     impl_mutable_dataset_for_indexed_dataset!();
 }

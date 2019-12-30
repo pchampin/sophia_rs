@@ -40,12 +40,12 @@ where
     }
 
     /// Iterate over the bytes representing this IRI.
-    pub fn bytes<'a>(&'a self) -> impl Iterator<Item = u8> + 'a {
+    pub fn bytes<'s>(&'s self) -> impl Iterator<Item = u8> + 's {
         self.ns.as_ref().bytes().chain(self.suffix_borrow().bytes())
     }
 
     /// Iterate over the characters representing this IRI.
-    pub fn chars<'a>(&'a self) -> impl Iterator<Item = char> + 'a {
+    pub fn chars<'s>(&'s self) -> impl Iterator<Item = char> + 's {
         self.ns.as_ref().chars().chain(self.suffix_borrow().chars())
     }
 

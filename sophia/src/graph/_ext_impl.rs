@@ -10,31 +10,40 @@ use resiter::oks::*;
 use super::*;
 use crate::term::*;
 use crate::triple::stream::AsTripleSource;
+use crate::triple::streaming_mode::*;
 use crate::triple::*;
 
-impl<'a, T> Graph<'a> for [T]
+impl<T> Graph for [T]
 where
-    T: Triple<'a> + 'a,
+    T: Triple,
 {
-    type Triple = &'a T;
+    type Triple = ByRef<T>;
     type Error = Infallible;
 
     #[inline]
-    fn triples(&'a self) -> GTripleSource<Self> {
-        Box::new(<[T]>::iter(self).as_triple_source())
+    fn triples(&self) -> GTripleSource<Self> {
+        Box::new(
+            <[T]>::iter(self)
+                .map(StreamedTriple::by_ref)
+                .as_triple_source(),
+        )
     }
 }
 
-impl<'a, T> Graph<'a> for Vec<T>
+impl<T> Graph for Vec<T>
 where
-    T: Triple<'a> + 'a,
+    T: Triple,
 {
-    type Triple = &'a T;
+    type Triple = ByRef<T>;
     type Error = Infallible;
 
     #[inline]
-    fn triples(&'a self) -> GTripleSource<Self> {
-        Box::new(<[T]>::iter(self).as_triple_source())
+    fn triples(&self) -> GTripleSource<Self> {
+        Box::new(
+            <[T]>::iter(self)
+                .map(StreamedTriple::by_ref)
+                .as_triple_source(),
+        )
     }
 }
 
@@ -72,17 +81,17 @@ impl MutableGraph for Vec<[BoxTerm; 3]> {
     }
 }
 
-impl<'a, T, BH> Graph<'a> for HashSet<T, BH>
+impl<T, BH> Graph for HashSet<T, BH>
 where
-    T: Eq + Hash + Triple<'a> + 'a,
+    T: Eq + Hash + Triple,
     BH: BuildHasher,
 {
-    type Triple = &'a T;
+    type Triple = ByRef<T>;
     type Error = Infallible;
 
     #[inline]
-    fn triples(&'a self) -> GTripleSource<Self> {
-        Box::from(self.iter().as_triple_source())
+    fn triples(&self) -> GTripleSource<Self> {
+        Box::from(self.iter().map(StreamedTriple::by_ref).as_triple_source())
     }
 }
 
@@ -116,10 +125,7 @@ where
     }
 }
 
-impl<'a, T, S: ::std::hash::BuildHasher> SetGraph for HashSet<T, S> where
-    T: Eq + Hash + Triple<'a> + 'a
-{
-}
+impl<'a, T, S: ::std::hash::BuildHasher> SetGraph for HashSet<T, S> where T: Eq + Hash + Triple {}
 
 #[cfg(test)]
 mod test {

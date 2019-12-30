@@ -49,9 +49,9 @@ macro_rules! def_triple_stringifier {
             type Outcome = String;
             type Error = $crate::error::Error;
 
-            fn feed<'a, T>(&mut self, t: &T) -> std::result::Result<(), Self::Error>
+            fn feed<T>(&mut self, t: &T) -> std::result::Result<(), Self::Error>
             where
-                T: $crate::triple::Triple<'a>,
+                T: $crate::triple::Triple,
             {
                 self.writer.feed(t).map_err(|_| unreachable!())
             }
@@ -95,9 +95,9 @@ macro_rules! def_quad_stringifier {
             type Outcome = String;
             type Error = $crate::error::Error;
 
-            fn feed<'a, T>(&mut self, t: &T) -> std::result::Result<(), Self::Error>
+            fn feed<T>(&mut self, t: &T) -> std::result::Result<(), Self::Error>
             where
-                T: $crate::quad::Quad<'a>,
+                T: $crate::quad::Quad,
             {
                 self.writer.feed(t).map_err(|_| unreachable!())
             }

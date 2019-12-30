@@ -23,7 +23,7 @@ impl<'a, D: MutableDataset + ?Sized + 'a> QuadSink for Inserter<'a, D> {
     type Outcome = usize;
     type Error = <D as MutableDataset>::MutationError;
 
-    fn feed<'b, Q: Quad<'b>>(&mut self, q: &Q) -> Result<(), Self::Error> {
+    fn feed<Q: Quad>(&mut self, q: &Q) -> Result<(), Self::Error> {
         self.dataset
             .insert(q.s(), q.p(), q.o(), q.g())
             .map(|inserted| {
@@ -57,7 +57,7 @@ impl<'a, D: MutableDataset + ?Sized + 'a> QuadSink for Remover<'a, D> {
     type Outcome = usize;
     type Error = <D as MutableDataset>::MutationError;
 
-    fn feed<'b, Q: Quad<'b>>(&mut self, q: &Q) -> Result<(), Self::Error> {
+    fn feed<Q: Quad>(&mut self, q: &Q) -> Result<(), Self::Error> {
         self.dataset
             .remove(q.s(), q.p(), q.o(), q.g())
             .map(|removed| {

@@ -5,6 +5,7 @@ use std::hash::Hash;
 
 use crate::dataset::indexed::IndexedDataset;
 use crate::dataset::*;
+use crate::quad::streaming_mode::{ByTermRefs, StreamedQuad};
 use crate::term::factory::TermFactory;
 use crate::term::index_map::TermIndexMap;
 use crate::term::*;
@@ -155,27 +156,22 @@ where
     }
 }
 
-impl<'a, I> Dataset<'a> for HashDataset<I>
+impl<I> Dataset for HashDataset<I>
 where
     I: TermIndexMap,
     I::Index: Hash,
     <I::Factory as TermFactory>::TermData: 'static,
 {
     #[allow(clippy::type_complexity)]
-    type Quad = (
-        [&'a Term<<Self as IndexedDataset>::TermData>; 3],
-        Option<&'a Term<<Self as IndexedDataset>::TermData>>,
-    );
+    type Quad = ByTermRefs<<Self as IndexedDataset>::TermData>;
     type Error = Infallible;
 
-    fn quads(&'a self) -> DQuadSource<'a, Self> {
+    fn quads(&self) -> DQuadSource<Self> {
         Box::from(self.quads.iter().map(move |[si, pi, oi, gi]| {
-            Ok((
-                [
-                    self.terms.get_term(*si).unwrap(),
-                    self.terms.get_term(*pi).unwrap(),
-                    self.terms.get_term(*oi).unwrap(),
-                ],
+            Ok(StreamedQuad::by_term_refs(
+                self.terms.get_term(*si).unwrap(),
+                self.terms.get_term(*pi).unwrap(),
+                self.terms.get_term(*oi).unwrap(),
                 self.get_graph_name(*gi).unwrap(),
             ))
         }))

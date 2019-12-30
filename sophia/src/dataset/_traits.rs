@@ -10,6 +10,7 @@ use resiter::map::*;
 
 use crate::dataset::adapter::DatasetGraph;
 use crate::quad::stream::*;
+use crate::quad::streaming_mode::*;
 use crate::quad::*;
 use crate::term::matcher::*;
 use crate::term::*;
@@ -19,14 +20,16 @@ use super::*;
 use crate::graph::insert_if_absent;
 
 /// Type alias for the terms returned by a dataset.
-pub type DTerm<'a, D> = Term<<<D as Dataset<'a>>::Quad as Quad<'a>>::TermData>;
+pub type DTerm<D> =
+    Term<<<<D as Dataset>::Quad as QuadStreamingMode>::UnsafeQuad as UnsafeQuad>::TermData>;
+/// Type alias for the quads returned by a dataset.
+pub type DQuad<'a, D> = StreamedQuad<'a, <D as Dataset>::Quad>;
 /// Type alias for results iterators produced by a dataset.
-pub type DResult<'a, D, T> = Result<T, <D as Dataset<'a>>::Error>;
+pub type DResult<D, T> = Result<T, <D as Dataset>::Error>;
 /// Type alias for fallible quad iterators produced by a dataset.
-pub type DQuadSource<'a, D> =
-    Box<dyn Iterator<Item = DResult<'a, D, <D as Dataset<'a>>::Quad>> + 'a>;
+pub type DQuadSource<'a, D> = Box<dyn Iterator<Item = DResult<D, DQuad<'a, D>>> + 'a>;
 /// Type alias for fallible hashets of terms produced by a dataset.
-pub type DResultTermSet<'a, D> = DResult<'a, D, HashSet<DTerm<'a, D>>>;
+pub type DResultTermSet<D> = DResult<D, HashSet<DTerm<D>>>;
 
 /// Generic trait for RDF datasets.
 ///
@@ -35,16 +38,10 @@ pub type DResultTermSet<'a, D> = DResult<'a, D, HashSet<DTerm<'a, D>>>;
 ///
 /// NB: the semantics of this trait allows a dataset to contain duplicate quads;
 /// see also [`SetDataset`](trait.SetDataset.html).
-///
-/// # How to use `Dataset` in a trait bound?
-///
-/// The same rules as for [`Graph`](../graph/trait.Graph.html#how-to-use-graph-in-a-trait-bound)
-/// apply.
-///
-pub trait Dataset<'a> {
+pub trait Dataset {
     /// The type of [`Quad`](../quad/trait.Quad.html)s
     /// that the methods of this dataset will yield.
-    type Quad: Quad<'a>;
+    type Quad: QuadStreamingMode;
     /// The error type that this dataset may raise.
     ///
     /// Must be either [`Never`](../error/enum.Never.html) (for infallible datasets)
@@ -56,12 +53,12 @@ pub trait Dataset<'a> {
     /// This iterator is fallible:
     /// its items are `Result`s,
     /// an error may occur at any time during the iteration.
-    fn quads(&'a self) -> DQuadSource<'a, Self>;
+    fn quads(&self) -> DQuadSource<Self>;
 
     /// An iterator visiting all quads with the given subject.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_s<T>(&'a self, s: &'a Term<T>) -> DQuadSource<'a, Self>
+    fn quads_with_s<'s, T>(&'s self, s: &'s Term<T>) -> DQuadSource<'s, Self>
     where
         T: TermData,
     {
@@ -70,7 +67,7 @@ pub trait Dataset<'a> {
     /// An iterator visiting all quads with the given predicate.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_p<T>(&'a self, p: &'a Term<T>) -> DQuadSource<'a, Self>
+    fn quads_with_p<'s, T>(&'s self, p: &'s Term<T>) -> DQuadSource<'s, Self>
     where
         T: TermData,
     {
@@ -79,7 +76,7 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given object.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_o<T>(&'a self, o: &'a Term<T>) -> DQuadSource<'a, Self>
+    fn quads_with_o<'s, T>(&'s self, o: &'s Term<T>) -> DQuadSource<'s, Self>
     where
         T: TermData,
     {
@@ -88,7 +85,7 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_g<T>(&'a self, g: Option<&'a Term<T>>) -> DQuadSource<'a, Self>
+    fn quads_with_g<'s, T>(&'s self, g: Option<&'s Term<T>>) -> DQuadSource<'s, Self>
     where
         T: TermData,
     {
@@ -97,7 +94,7 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given subject and predicate.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_sp<T, U>(&'a self, s: &'a Term<T>, p: &'a Term<U>) -> DQuadSource<'a, Self>
+    fn quads_with_sp<'s, T, U>(&'s self, s: &'s Term<T>, p: &'s Term<U>) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -107,7 +104,7 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given subject and object.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_so<T, U>(&'a self, s: &'a Term<T>, o: &'a Term<U>) -> DQuadSource<'a, Self>
+    fn quads_with_so<'s, T, U>(&'s self, s: &'s Term<T>, o: &'s Term<U>) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -117,11 +114,11 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given subject and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_sg<T, U>(
-        &'a self,
-        s: &'a Term<T>,
-        g: Option<&'a Term<U>>,
-    ) -> DQuadSource<'a, Self>
+    fn quads_with_sg<'s, T, U>(
+        &'s self,
+        s: &'s Term<T>,
+        g: Option<&'s Term<U>>,
+    ) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -131,7 +128,7 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given predicate and object.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_po<T, U>(&'a self, p: &'a Term<T>, o: &'a Term<U>) -> DQuadSource<'a, Self>
+    fn quads_with_po<'s, T, U>(&'s self, p: &'s Term<T>, o: &'s Term<U>) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -141,11 +138,11 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given predicate and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_pg<T, U>(
-        &'a self,
-        p: &'a Term<T>,
-        g: Option<&'a Term<U>>,
-    ) -> DQuadSource<'a, Self>
+    fn quads_with_pg<'s, T, U>(
+        &'s self,
+        p: &'s Term<T>,
+        g: Option<&'s Term<U>>,
+    ) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -155,11 +152,11 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given object and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_og<T, U>(
-        &'a self,
-        o: &'a Term<T>,
-        g: Option<&'a Term<U>>,
-    ) -> DQuadSource<'a, Self>
+    fn quads_with_og<'s, T, U>(
+        &'s self,
+        o: &'s Term<T>,
+        g: Option<&'s Term<U>>,
+    ) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -169,12 +166,12 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given subject, predicate and object.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_spo<T, U, V>(
-        &'a self,
-        s: &'a Term<T>,
-        p: &'a Term<U>,
-        o: &'a Term<V>,
-    ) -> DQuadSource<'a, Self>
+    fn quads_with_spo<'s, T, U, V>(
+        &'s self,
+        s: &'s Term<T>,
+        p: &'s Term<U>,
+        o: &'s Term<V>,
+    ) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -185,12 +182,12 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given subject, predicate and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_spg<T, U, V>(
-        &'a self,
-        s: &'a Term<T>,
-        p: &'a Term<U>,
-        g: Option<&'a Term<V>>,
-    ) -> DQuadSource<'a, Self>
+    fn quads_with_spg<'s, T, U, V>(
+        &'s self,
+        s: &'s Term<T>,
+        p: &'s Term<U>,
+        g: Option<&'s Term<V>>,
+    ) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -201,12 +198,12 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given subject, object and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_sog<T, U, V>(
-        &'a self,
-        s: &'a Term<T>,
-        o: &'a Term<U>,
-        g: Option<&'a Term<V>>,
-    ) -> DQuadSource<'a, Self>
+    fn quads_with_sog<'s, T, U, V>(
+        &'s self,
+        s: &'s Term<T>,
+        o: &'s Term<U>,
+        g: Option<&'s Term<V>>,
+    ) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -217,12 +214,12 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given predicate, object and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_pog<T, U, V>(
-        &'a self,
-        p: &'a Term<T>,
-        o: &'a Term<U>,
-        g: Option<&'a Term<V>>,
-    ) -> DQuadSource<'a, Self>
+    fn quads_with_pog<'s, T, U, V>(
+        &'s self,
+        p: &'s Term<T>,
+        o: &'s Term<U>,
+        g: Option<&'s Term<V>>,
+    ) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -233,13 +230,13 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads with the given subject, predicate, object and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_spog<T, U, V, W>(
-        &'a self,
-        s: &'a Term<T>,
-        p: &'a Term<U>,
-        o: &'a Term<V>,
-        g: Option<&'a Term<W>>,
-    ) -> DQuadSource<'a, Self>
+    fn quads_with_spog<'s, T, U, V, W>(
+        &'s self,
+        s: &'s Term<T>,
+        p: &'s Term<U>,
+        o: &'s Term<V>,
+        g: Option<&'s Term<W>>,
+    ) -> DQuadSource<'s, Self>
     where
         T: TermData,
         U: TermData,
@@ -251,12 +248,12 @@ pub trait Dataset<'a> {
 
     /// Return `true` if this dataset contains the given quad.
     fn contains<T, U, V, W>(
-        &'a self,
-        s: &'a Term<T>,
-        p: &'a Term<U>,
-        o: &'a Term<V>,
-        g: Option<&'a Term<W>>,
-    ) -> DResult<'a, Self, bool>
+        &self,
+        s: &Term<T>,
+        p: &Term<U>,
+        o: &Term<V>,
+        g: Option<&Term<W>>,
+    ) -> DResult<Self, bool>
     where
         T: TermData,
         U: TermData,
@@ -273,13 +270,13 @@ pub trait Dataset<'a> {
     /// An iterator visiting add quads matching the given subject, predicate, object and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_matching<S, P, O, G>(
-        &'a self,
-        ms: &'a S,
-        mp: &'a P,
-        mo: &'a O,
-        mg: &'a G,
-    ) -> DQuadSource<'a, Self>
+    fn quads_matching<'s, S, P, O, G>(
+        &'s self,
+        ms: &'s S,
+        mp: &'s P,
+        mo: &'s O,
+        mg: &'s G,
+    ) -> DQuadSource<'s, Self>
     where
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
@@ -360,7 +357,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the terms used as subject in this Dataset.
-    fn subjects(&'a self) -> DResultTermSet<'a, Self> {
+    fn subjects(&self) -> DResultTermSet<Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             insert_if_absent(&mut res, q?.s());
@@ -369,7 +366,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the terms used as predicate in this Dataset.
-    fn predicates(&'a self) -> DResultTermSet<'a, Self> {
+    fn predicates(&self) -> DResultTermSet<Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             insert_if_absent(&mut res, q?.p());
@@ -378,7 +375,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the terms used as object in this Dataset.
-    fn objects(&'a self) -> DResultTermSet<'a, Self> {
+    fn objects(&self) -> DResultTermSet<Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             insert_if_absent(&mut res, q?.o());
@@ -387,7 +384,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the terms used as graph names in this Dataset.
-    fn graph_names(&'a self) -> DResultTermSet<'a, Self> {
+    fn graph_names(&self) -> DResultTermSet<Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             let q = q?;
@@ -400,7 +397,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the IRIs used in this Dataset.
-    fn iris(&'a self) -> DResultTermSet<'a, Self> {
+    fn iris(&self) -> DResultTermSet<Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             let q = q?;
@@ -424,7 +421,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the BNodes used in this Dataset.
-    fn bnodes(&'a self) -> DResultTermSet<'a, Self> {
+    fn bnodes(&self) -> DResultTermSet<Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             let q = q?;
@@ -448,7 +445,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the Literals used in this Dataset.
-    fn literals(&'a self) -> DResultTermSet<'a, Self> {
+    fn literals(&self) -> DResultTermSet<Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             let q = q?;
@@ -472,7 +469,7 @@ pub trait Dataset<'a> {
     }
 
     /// Build a Hashset of all the variables used in this Dataset.
-    fn variables(&'a self) -> DResultTermSet<'a, Self> {
+    fn variables(&self) -> DResultTermSet<Self> {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             let q = q?;
@@ -523,7 +520,7 @@ pub trait Dataset<'a> {
     }
 
     /// Borrows a graph containing the union of all graphs matched by `gmatcher`
-    fn union_graph<T>(&'a self, gmatcher: T) -> DatasetGraph<Self, &Self, T>
+    fn union_graph<T>(&self, gmatcher: T) -> DatasetGraph<Self, &Self, T>
     where
         T: GraphNameMatcher,
     {
@@ -543,7 +540,7 @@ pub type MDResult<D, T> = std::result::Result<T, <D as MutableDataset>::Mutation
 /// NB: the semantics of this trait allows a dataset to contain duplicate quads;
 /// see also [`SetDataset`](trait.SetDataset.html).
 ///
-pub trait MutableDataset: for<'x> Dataset<'x> {
+pub trait MutableDataset: Dataset {
     /// The error type that this dataset may raise during mutations.
     ///
     /// Must be either [`Never`](../error/enum.Never.html) (for infallible datasets)
@@ -646,7 +643,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
         G: GraphNameMatcher + ?Sized,
-        for<'x> <Self as Dataset<'x>>::Error: Into<Self::MutationError>,
+        <Self as Dataset>::Error: Into<Self::MutationError>,
         Infallible: Into<Self::MutationError>,
     {
         let to_remove = self
@@ -680,7 +677,7 @@ pub trait MutableDataset: for<'x> Dataset<'x> {
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
         G: GraphNameMatcher + ?Sized,
-        for<'x> <Self as Dataset<'x>>::Error: Into<Self::MutationError>,
+        <Self as Dataset>::Error: Into<Self::MutationError>,
         Infallible: Into<Self::MutationError>,
     {
         let to_remove = self

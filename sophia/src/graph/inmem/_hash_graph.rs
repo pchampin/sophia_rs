@@ -9,6 +9,7 @@ use crate::graph::*;
 use crate::term::factory::TermFactory;
 use crate::term::index_map::TermIndexMap;
 use crate::term::{RefTerm, Term, TermData};
+use crate::triple::streaming_mode::{ByTermRefs, StreamedTriple};
 
 /// A generic implementation of [`Graph`] and [`MutableGraph`],
 /// storing its terms in a [`TermIndexMap`],
@@ -129,22 +130,22 @@ where
     }
 }
 
-impl<'a, I> Graph<'a> for HashGraph<I>
+impl<I> Graph for HashGraph<I>
 where
     I: TermIndexMap,
     I::Index: Hash,
     <I::Factory as TermFactory>::TermData: 'static,
 {
-    type Triple = [&'a Term<<Self as IndexedGraph>::TermData>; 3];
+    type Triple = ByTermRefs<<Self as IndexedGraph>::TermData>;
     type Error = Infallible;
 
-    fn triples(&'a self) -> GTripleSource<'a, Self> {
+    fn triples(&self) -> GTripleSource<Self> {
         Box::from(self.triples.iter().map(move |[si, pi, oi]| {
-            Ok([
+            Ok(StreamedTriple::by_term_refs(
                 self.terms.get_term(*si).unwrap(),
                 self.terms.get_term(*pi).unwrap(),
                 self.terms.get_term(*oi).unwrap(),
-            ])
+            ))
         }))
     }
 }
