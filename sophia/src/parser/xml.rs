@@ -461,12 +461,14 @@ impl<F: TermFactory> Scope<F> {
             let prefix = &attr[..separator_idx];
             let reference = &attr[separator_idx + 1..];
             if let Some(ns) = self.ns.get(prefix) {
-                ns.get(self.factory.borrow_mut().get_term_data(reference)).map_err(Into::into)
+                ns.get(self.factory.borrow_mut().get_term_data(reference))
+                    .map_err(Into::into)
             } else {
                 bail!(XmlErrorKind::UnknownNamespace(prefix.to_string()))
             }
         } else if let Some(ns) = &self.default {
-            ns.get(self.factory.borrow_mut().get_term_data(attr)).map_err(Into::into)
+            ns.get(self.factory.borrow_mut().get_term_data(attr))
+                .map_err(Into::into)
         } else {
             bail!(XmlErrorKind::UnknownNamespace("_".to_string()))
         }
@@ -526,9 +528,21 @@ impl<F: TermFactory> Scope<F> {
     /// Create a new literal with the `rdf:type` and `xml:lang` in scope.
     fn new_literal(&self, text: String) -> Result<Term<F::TermData>> {
         match (&self.datatype, &self.lang) {
-            (Some(dt), _) => self.factory.borrow_mut().literal_dt(text, dt.clone()).map_err(Into::into),
-            (None, Some(l)) => self.factory.borrow_mut().literal_lang(text, l.clone()).map_err(Into::into),
-            _ => self.factory.borrow_mut().literal_dt(text, xsd::string).map_err(Into::into),
+            (Some(dt), _) => self
+                .factory
+                .borrow_mut()
+                .literal_dt(text, dt.clone())
+                .map_err(Into::into),
+            (None, Some(l)) => self
+                .factory
+                .borrow_mut()
+                .literal_lang(text, l.clone())
+                .map_err(Into::into),
+            _ => self
+                .factory
+                .borrow_mut()
+                .literal_dt(text, xsd::string)
+                .map_err(Into::into),
         }
     }
 
@@ -536,7 +550,8 @@ impl<F: TermFactory> Scope<F> {
     fn new_li(&self) -> Result<Term<F::TermData>> {
         if let Some(ns) = self.ns.get("rdf") {
             let mut f = self.factory.borrow_mut();
-            ns.get(f.get_term_data(&format!("_{}", self.li.fetch_add(1, Ordering::Relaxed)))).map_err(Into::into)
+            ns.get(f.get_term_data(&format!("_{}", self.li.fetch_add(1, Ordering::Relaxed))))
+                .map_err(Into::into)
         } else {
             bail!(XmlErrorKind::UnknownNamespace("rdf".to_string()))
         }
@@ -546,7 +561,8 @@ impl<F: TermFactory> Scope<F> {
     fn current_li(&self) -> Result<Term<F::TermData>> {
         if let Some(ns) = self.ns.get("rdf") {
             let mut f = self.factory.borrow_mut();
-            ns.get(f.get_term_data(&format!("_{}", self.li.load(Ordering::Relaxed) - 1))).map_err(Into::into)
+            ns.get(f.get_term_data(&format!("_{}", self.li.load(Ordering::Relaxed) - 1)))
+                .map_err(Into::into)
         } else {
             bail!(XmlErrorKind::UnknownNamespace("rdf".to_string()))
         }
@@ -703,7 +719,10 @@ where
     /// Rename a bnode using the `nodeID` in the document (using `o` prefix)
     fn rename_bnode(&self, id: &str) -> Result<Term<F::TermData>> {
         if xmlname::is_valid_xmlname(id) {
-            self.factory.borrow_mut().bnode(&format!("o{}", id)).map_err(Into::into)
+            self.factory
+                .borrow_mut()
+                .bnode(&format!("o{}", id))
+                .map_err(Into::into)
         } else {
             bail!(XmlErrorKind::InvalidXmlName(id.to_string()))
         }
