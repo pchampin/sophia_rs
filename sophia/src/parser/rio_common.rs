@@ -157,17 +157,18 @@ where
 /// Convert RIO term to Sophia term
 pub fn rio2refterm(t: Term) -> Result<RefTerm> {
     use Literal::*;
-    match t {
-        Term::BlankNode(b) => RefTerm::new_bnode(b.id),
-        Term::NamedNode(n) => RefTerm::new_iri(n.iri),
-        Term::Literal(Simple { value }) => RefTerm::new_literal_dt(value, xsd::string),
+    let rt = match t {
+        Term::BlankNode(b) => RefTerm::new_bnode(b.id)?,
+        Term::NamedNode(n) => RefTerm::new_iri(n.iri)?,
+        Term::Literal(Simple { value }) => RefTerm::new_literal_dt(value, xsd::string)?,
         Term::Literal(LanguageTaggedString { value, language }) => {
-            RefTerm::new_literal_lang(value, language)
+            RefTerm::new_literal_lang(value, language)?
         }
         Term::Literal(Typed { value, datatype }) => {
-            RefTerm::new_literal_dt(value, RefTerm::new_iri(datatype.iri)?)
+            RefTerm::new_literal_dt(value, RefTerm::new_iri(datatype.iri)?)?
         }
-    }
+    };
+    Ok(rt)
 }
 
 /// Convert RIO term to Sophia term
