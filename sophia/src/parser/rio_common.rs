@@ -11,7 +11,7 @@ use crate::quad::stream::*;
 use crate::term::{BoxTerm, RefTerm};
 use crate::triple::stream::*;
 
-/// TripleSource / QuadSource adapter for RIO TripleParser
+/// TripleSource / QuadSource adapter for RIO TripleParser / QuadParser
 pub enum RioSource<T, E> {
     Parser(T),
     Error(Option<E>),
@@ -93,7 +93,7 @@ where
                         sink.feed(&[
                             rio2refterm(t.subject.into()).map_err(MyError::from_sophia_error)?,
                             rio2refterm(t.predicate.into()).map_err(MyError::from_sophia_error)?,
-                            rio2refterm(t.object).map_err(MyError::from_sophia_error)?,
+                            rio2refterm(t.object.into()).map_err(MyError::from_sophia_error)?,
                         ])
                         .map_err(MyError::from_sink_error)
                     })
@@ -137,7 +137,7 @@ where
                                     .map_err(MyError::from_sophia_error)?,
                                 rio2refterm(q.predicate.into())
                                     .map_err(MyError::from_sophia_error)?,
-                                rio2refterm(q.object).map_err(MyError::from_sophia_error)?,
+                                rio2refterm(q.object.into()).map_err(MyError::from_sophia_error)?,
                             ],
                             if let Some(n) = q.graph_name {
                                 Some(rio2refterm(n.into()).map_err(MyError::from_sophia_error)?)
@@ -154,23 +154,87 @@ where
     }
 }
 
-/// Convert RIO term to Sophia term
-pub fn rio2refterm(t: Term) -> Result<RefTerm> {
-    use Literal::*;
-    match t {
-        Term::BlankNode(b) => RefTerm::new_bnode(b.id),
-        Term::NamedNode(n) => RefTerm::new_iri(n.iri),
-        Term::Literal(Simple { value }) => RefTerm::new_literal_dt(value, xsd::string),
-        Term::Literal(LanguageTaggedString { value, language }) => {
-            RefTerm::new_literal_lang(value, language)
+/// QuadSource adapter for RIO GeneralizedQuadParser
+pub enum GRioSource<T, E> {
+    Parser(T),
+    Error(Option<E>),
+}
+
+impl<T, E> From<StdResult<T, E>> for GRioSource<T, E> {
+    fn from(res: StdResult<T, E>) -> Self {
+        match res {
+            Ok(parser) => GRioSource::Parser(parser),
+            Err(error) => GRioSource::Error(Some(error)),
         }
-        Term::Literal(Typed { value, datatype }) => {
-            RefTerm::new_literal_dt(value, RefTerm::new_iri(datatype.iri)?)
+    }
+}
+
+impl<T, E> QuadSource for GRioSource<T, E>
+where
+    T: GeneralizedQuadsParser,
+    T::Error: 'static,
+    Error: From<T::Error>,
+    Error: From<E>,
+{
+    type Error = Error;
+
+    fn in_sink<TS: QuadSink>(
+        &mut self,
+        sink: &mut TS,
+    ) -> StdResult<TS::Outcome, StreamError<Error, TS::Error>> {
+        match self {
+            GRioSource::Error(opt) => opt
+                .take()
+                .map(|e| Err(SourceError(e.into())))
+                .unwrap_or_else(|| {
+                    let message = "This parser has already failed".to_string();
+                    let location = Location::Unknown;
+                    Err(SourceError(Error::from(ErrorKind::ParserError(
+                        message, location,
+                    ))))
+                }),
+            GRioSource::Parser(parser) => {
+                parser
+                    .parse_all(&mut |q| -> StdResult<(), MyError<T::Error, TS::Error>> {
+                        sink.feed(&(
+                            [
+                                rio2refterm(q.subject).map_err(MyError::from_sophia_error)?,
+                                rio2refterm(q.predicate).map_err(MyError::from_sophia_error)?,
+                                rio2refterm(q.object).map_err(MyError::from_sophia_error)?,
+                            ],
+                            if let Some(n) = q.graph_name {
+                                Some(rio2refterm(n).map_err(MyError::from_sophia_error)?)
+                            } else {
+                                None
+                            },
+                        ))
+                        .map_err(MyError::from_sink_error)
+                    })
+                    .map_err(|e| e.into_stream_error())?;
+                Ok(sink.finish().map_err(SinkError)?)
+            }
         }
     }
 }
 
 /// Convert RIO term to Sophia term
-pub fn rio2boxterm(t: Term) -> Result<BoxTerm> {
+pub fn rio2refterm(t: GeneralizedTerm) -> Result<RefTerm> {
+    use Literal::*;
+    match t {
+        GeneralizedTerm::BlankNode(b) => RefTerm::new_bnode(b.id),
+        GeneralizedTerm::NamedNode(n) => RefTerm::new_iri(n.iri),
+        GeneralizedTerm::Literal(Simple { value }) => RefTerm::new_literal_dt(value, xsd::string),
+        GeneralizedTerm::Literal(LanguageTaggedString { value, language }) => {
+            RefTerm::new_literal_lang(value, language)
+        }
+        GeneralizedTerm::Literal(Typed { value, datatype }) => {
+            RefTerm::new_literal_dt(value, RefTerm::new_iri(datatype.iri)?)
+        }
+        GeneralizedTerm::Variable(v) => RefTerm::new_variable(v.name),
+    }
+}
+
+/// Convert RIO term to Sophia term
+pub fn rio2boxterm(t: GeneralizedTerm) -> Result<BoxTerm> {
     Ok(BoxTerm::from_with(&rio2refterm(t)?, Box::from))
 }

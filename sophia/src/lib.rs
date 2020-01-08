@@ -39,13 +39,16 @@
 //! use sophia::triple::stream::{TripleSink, TripleSource};
 //!
 //! let example = r#"
-//!     <http://example.org/alice> <http://xmlns.com/foaf/0.1/name> "Alice" .
-//!     <http://example.org/alice> <http://xmlns.com/foaf/0.1/mbox> <mailto:alice@work.example> .
+//!     @prefix : <http://example.org/>.
+//!     @prefix foaf: <http://xmlns.com/foaf/0.1/>.
 //!
-//!     <http://example.org/bob> <http://xmlns.com/foaf/0.1/name> "Bob" .
+//!     :alice foaf:name "Alice";
+//!            foaf:mbox <mailto:alice@work.example> .
+//!
+//!     :bob foaf:name "Bob".
 //! "#;
 //! let mut graph = LightGraph::new();
-//! parser::nt::parse_str(example).in_graph(&mut graph);
+//! parser::turtle::parse_str(example).in_graph(&mut graph);
 //!
 //! let ex = Namespace::new("http://example.org/").unwrap();
 //! let foaf = Namespace::new("http://xmlns.com/foaf/0.1/").unwrap();
@@ -67,9 +70,6 @@ extern crate error_chain;
 extern crate language_tag;
 #[macro_use]
 extern crate lazy_static;
-extern crate pest;
-#[macro_use]
-extern crate pest_derive;
 #[cfg(feature = "xml")]
 extern crate quick_xml;
 extern crate resiter;
