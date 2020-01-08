@@ -1,4 +1,5 @@
 //! Types for handling errors.
+use crate::term::TermError;
 use std::convert::Infallible;
 use std::fmt;
 
@@ -11,22 +12,6 @@ error_chain! {
         /// Raised by the methods of the [`MutableGraph`](../graph/trait.MutableGraph.html) trait.
         GraphMutationError(msg: String) {
             display("error while modifying Graph: {}", msg)
-        }
-        /// Raised whenever a literal is built with an invalid datatype.
-        InvalidDatatype(datatype: String) {
-            display("invalid datatype {}", datatype)
-        }
-        /// Raised whenever an invalid IRI is used as a term.
-        InvalidIri(iri: String) {
-            display("invalid IRI <{}>", iri)
-        }
-        /// Raised whenever a literal is built with an invalid language tag.
-        InvalidLanguageTag(tag: String, message: String) {
-            display("invalid language tag '{}':\n{}", tag, message)
-        }
-        /// Raised whenever a variable is built with an invalid name.
-        InvalidVariableName(name: String) {
-            display("invalid variable name '{}'", name)
         }
         /// Raised whenever an invalid prefix is used in a PName.
         InvalidPrefix(prefix: String) {
@@ -48,6 +33,10 @@ error_chain! {
         UnsupportedGraphName(graph_name: String) {
             display("unsupported graph_name: {}", graph_name)
         }
+        /// Raised by some mutable dataset
+        TermError(te: TermError) {
+            display("From term: {}", te)
+        }
     }
 }
 
@@ -55,6 +44,13 @@ error_chain! {
 impl From<Infallible> for Error {
     fn from(_: Infallible) -> Self {
         unreachable!()
+    }
+}
+
+/// Required until `NtPatserError` is introduced.
+impl From<TermError> for Error {
+    fn from(te: TermError) -> Self {
+        ErrorKind::TermError(te).into()
     }
 }
 

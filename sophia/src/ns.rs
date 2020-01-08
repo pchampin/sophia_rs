@@ -19,8 +19,7 @@
 //! g.insert(&s_name, &rdfs::range, &xsd::string);
 //! ```
 
-use crate::error::*;
-use crate::term::{iri_rfc3987::is_valid_iri_ref, Term, TermData};
+use crate::term::{iri_rfc3987::is_valid_iri_ref, Result, Term, TermData, TermError};
 
 /// A custom namespace.
 #[derive(Clone, Debug)]
@@ -34,7 +33,7 @@ impl<T: TermData> Namespace<T> {
         if is_valid_iri_ref(iri.as_ref()) {
             Ok(Namespace(iri))
         } else {
-            Err(ErrorKind::InvalidIri("IRI is invalid".to_string()).into())
+            Err(TermError::InvalidIri(iri.as_ref().to_string()))
         }
     }
 

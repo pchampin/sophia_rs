@@ -77,7 +77,7 @@ where
         if ret.absolute || is_relative_iri_ref(&val) {
             Ok(ret)
         } else {
-            Err(ErrorKind::InvalidIri("IRI is invalid".to_string()).into())
+            Err(TermError::InvalidIri(val))
         }
     }
 

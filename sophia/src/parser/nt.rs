@@ -205,6 +205,7 @@ pub(crate) fn pair_to_term<'a>(
         }
         _ => panic!(format!("Unsupported rule {:?}", pair.as_rule())),
     }
+    .map_err(Error::from)
     .and_then(|t| {
         if !strict || t.is_absolute() {
             Ok(t)
