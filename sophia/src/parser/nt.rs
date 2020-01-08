@@ -26,7 +26,7 @@ impl Config {
         &self,
         bufread: B,
     ) -> impl TripleSource<Error = Error> + 'a {
-        RioSource::from(NTriplesParser::new(bufread))
+        StrictRioSource::from(NTriplesParser::new(bufread))
     }
 
     #[inline]

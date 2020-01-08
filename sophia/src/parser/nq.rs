@@ -26,7 +26,7 @@ impl Config {
         &self,
         bufread: B,
     ) -> impl QuadSource<Error = Error> + 'a {
-        RioSource::from(NQuadsParser::new(bufread))
+        StrictRioSource::from(NQuadsParser::new(bufread))
     }
 
     #[inline]

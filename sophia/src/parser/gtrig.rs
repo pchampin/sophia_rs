@@ -30,7 +30,7 @@ impl Config {
             Some(base) => &base,
             None => "",
         };
-        GRioSource::from(GTriGParser::new(bufread, base))
+        GeneralizedRioSource::from(GTriGParser::new(bufread, base))
     }
 
     #[inline]

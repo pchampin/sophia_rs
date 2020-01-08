@@ -30,7 +30,7 @@ impl Config {
             Some(base) => &base,
             None => "x-no-base:///",
         };
-        RioSource::from(TriGParser::new(bufread, base))
+        StrictRioSource::from(TriGParser::new(bufread, base))
     }
 
     #[inline]
