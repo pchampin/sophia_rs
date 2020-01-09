@@ -5,14 +5,6 @@ use std::fmt;
 
 error_chain! {
     errors {
-        /// Raised by the methods of the [`Graph`](../graph/trait.Graph.html) trait.
-        GraphError(message: String) {
-            display("error while querying Graph: {}", message)
-        }
-        /// Raised by the methods of the [`MutableGraph`](../graph/trait.MutableGraph.html) trait.
-        GraphMutationError(msg: String) {
-            display("error while modifying Graph: {}", msg)
-        }
         /// Raised whenever an invalid prefix is used in a PName.
         InvalidPrefix(prefix: String) {
             display("invalid prefix <{}>", prefix)
@@ -28,10 +20,6 @@ error_chain! {
         /// Raised by serializers when they encounter a problem.
         SerializerError(message: String) {
             display("error while serializing: {}", message)
-        }
-        /// Raised by some mutable dataset
-        UnsupportedGraphName(graph_name: String) {
-            display("unsupported graph_name: {}", graph_name)
         }
         /// Raised by some mutable dataset
         TermError(te: TermError) {

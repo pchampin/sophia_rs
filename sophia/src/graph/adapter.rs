@@ -7,10 +7,12 @@ use std::marker::PhantomData;
 use resiter::Map;
 
 use crate::dataset::*;
-use crate::error::*;
 use crate::graph::{Graph, MutableGraph, SetGraph};
 use crate::quad::streaming_mode::{FromTriple, StreamedQuad};
 use crate::term::{Term, TermData};
+
+mod _error;
+pub use self::_error::*;
 
 /// The adapter returned by
 /// * [`Graph::borrow_as_dataset`](../trait.Graph.html#method.borrow_as_dataset)
@@ -317,9 +319,9 @@ impl<G, H> MutableDataset for GraphAsDataset<G, H>
 where
     G: MutableGraph,
     H: BorrowMut<G>,
-    Error: From<G::MutationError>,
+    GraphAsDatasetError<G::MutationError>: From<G::MutationError>,
 {
-    type MutationError = Error;
+    type MutationError = GraphAsDatasetError<G::MutationError>;
 
     fn insert<T, U, V, W>(
         &mut self,
@@ -334,8 +336,8 @@ where
         V: TermData,
         W: TermData,
     {
-        if let Some(graph_name) = g {
-            return Err(ErrorKind::UnsupportedGraphName(graph_name.n3()).into());
+        if g.is_some() {
+            return Err(GraphAsDatasetError::GraphNamesNotSupported);
         };
         Ok(self.0.borrow_mut().insert(s, p, o)?)
     }
@@ -370,18 +372,18 @@ where
 #[cfg(test)]
 mod test {
     use crate::dataset::{Dataset, MutableDataset};
-    use crate::error::Result;
     use crate::graph::*;
     use crate::ns::{rdf, rdfs};
     use crate::term::{BoxTerm, StaticTerm};
     use std::collections::HashSet;
+    use std::error::Error;
 
     const DG: Option<&'static StaticTerm> = None;
 
     type MyGraph = HashSet<[BoxTerm; 3]>;
 
     #[test]
-    fn test_borrow() -> Result<()> {
+    fn test_borrow() -> Result<(), Box<dyn Error>> {
         let mut g = MyGraph::new();
         <MyGraph as MutableGraph>::insert(&mut g, &rdfs::Resource, &rdf::type_, &rdfs::Class)?;
 
@@ -391,7 +393,7 @@ mod test {
     }
 
     #[test]
-    fn test_borrow_mut() -> Result<()> {
+    fn test_borrow_mut() -> Result<(), Box<dyn Error>> {
         let mut g = MyGraph::new();
 
         let mut d = g.borrow_mut_as_dataset();
@@ -411,7 +413,7 @@ mod test {
     }
 
     #[test]
-    fn test_owned() -> Result<()> {
+    fn test_owned() -> Result<(), Box<dyn Error>> {
         let g = MyGraph::new();
 
         let mut d = g.as_dataset();
