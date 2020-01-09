@@ -319,7 +319,6 @@ impl<G, H> MutableDataset for GraphAsDataset<G, H>
 where
     G: MutableGraph,
     H: BorrowMut<G>,
-    GraphAsDatasetError<G::MutationError>: From<G::MutationError>,
 {
     type MutationError = GraphAsDatasetError<G::MutationError>;
 
