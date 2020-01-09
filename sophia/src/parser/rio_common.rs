@@ -218,8 +218,7 @@ pub fn rio2refterm(t: GeneralizedTerm) -> RefTerm {
             }
             GeneralizedTerm::Variable(v) => RefTerm::new_variable_unchecked(v.name),
         }
-    };
-    Ok(rt)
+    }
 }
 
 /// Convert RIO term to Sophia term
