@@ -1,7 +1,7 @@
 //! Types for handling errors.
+use crate::parser::Location;
 use crate::term::TermError;
 use std::convert::Infallible;
-use std::fmt;
 
 error_chain! {
     errors {
@@ -35,64 +35,20 @@ impl From<Infallible> for Error {
     }
 }
 
-/// Required until `NtPatserError` is introduced.
+/// Required by parser::xml
 impl From<TermError> for Error {
     fn from(te: TermError) -> Self {
         ErrorKind::TermError(te).into()
     }
 }
 
-/// A position in a parsed stream.
-#[derive(Clone, Debug)]
-pub enum Position {
-    // Byte offset (starting at 0)
-    Offset(usize),
-    // Line-Column position (both starting at 1)
-    LiCo(usize, usize),
-}
-
-impl fmt::Display for Position {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> fmt::Result {
+/// Required by parser::xml
+impl crate::parser::WithLocation for Error {
+    fn location(&self) -> Location {
         match self {
-            Position::Offset(offset) => write!(f, "{}", offset),
-            Position::LiCo(li, co) => write!(f, "{}:{}", li, co),
+            Error(ErrorKind::ParserError(_, location), ..) => location.clone(),
+            _ => Location::Unknown,
         }
-    }
-}
-
-/// The location of a ParseError
-#[derive(Clone, Debug)]
-pub enum Location {
-    Unknown,
-    Pos(Position),
-    Span(Position, Position),
-}
-
-impl fmt::Display for Location {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Location::Unknown => write!(f, "?"),
-            Location::Pos(pos) => write!(f, "{}", pos),
-            Location::Span(s, e) => write!(f, "{}-{}", s, e),
-        }
-    }
-}
-
-impl Location {
-    pub fn from_offset(offset: usize) -> Location {
-        Location::Pos(Position::Offset(offset))
-    }
-    pub fn from_lico(line: usize, column: usize) -> Location {
-        Location::Pos(Position::LiCo(line, column))
-    }
-    pub fn from_offsets(offset1: usize, offset2: usize) -> Location {
-        Location::Span(Position::Offset(offset1), Position::Offset(offset2))
-    }
-    pub fn from_licos(line1: usize, column1: usize, line2: usize, column2: usize) -> Location {
-        Location::Span(
-            Position::LiCo(line1, column1),
-            Position::LiCo(line2, column2),
-        )
     }
 }
 

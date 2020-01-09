@@ -1,11 +1,11 @@
 //! Common implementations for adapting [RIO](https://github.com/Tpt/rio/blob/master/turtle/src/turtle.rs) parsers.
 
+use std::error::Error;
 use std::result::Result as StdResult;
 
 use rio_api::model::*;
 use rio_api::parser::*;
 
-use crate::error::*;
 use crate::ns::xsd;
 use crate::quad::stream::*;
 use crate::term::{BoxTerm, RefTerm};
@@ -34,52 +34,51 @@ impl<T, E> From<StdResult<T, E>> for StrictRioSource<T, E> {
 // because MyStreamError's internal representation is identical to StreamError,
 // so the final type conversion performed by into_stream_error is actually
 // just for pleasing the compiler.
-enum MyStreamError<E> {
-    Source(Error),
-    Sink(E),
+enum MyStreamError<E1, E2> {
+    Source(E1),
+    Sink(E2),
 }
-impl<E> MyStreamError<E>
+impl<E1, E2> MyStreamError<E1, E2>
 where
-    E: std::error::Error + 'static,
+    E1: Error + 'static,
+    E2: Error + 'static,
 {
-    fn from_sink_error(err: E) -> Self {
+    fn from_sink_error(err: E2) -> Self {
         MyStreamError::Sink(err)
     }
-    fn into_stream_error(self) -> StreamError<Error, E> {
+    fn into_stream_error(self) -> StreamError<E1, E2> {
         match self {
             MyStreamError::Source(err) => SourceError(err),
             MyStreamError::Sink(err) => SinkError(err),
         }
     }
 }
-impl<E1, E2> From<E1> for MyStreamError<E2>
+impl<E1, E2> From<E1> for MyStreamError<E1, E2>
 where
-    Error: From<E1>,
-    E2: std::error::Error + 'static,
+    E1: Error + 'static,
+    E2: Error + 'static,
 {
     fn from(other: E1) -> Self {
-        MyStreamError::Source(other.into())
+        MyStreamError::Source(other)
     }
 }
 
 impl<T, E> TripleSource for StrictRioSource<T, E>
 where
-    T: TriplesParser,
-    T::Error: 'static,
-    Error: From<T::Error>,
-    Error: From<E>,
+    T: TriplesParser<Error = E>,
+    E: Error + 'static,
 {
-    type Error = Error;
+    type Error = E;
 
     fn in_sink<TS: TripleSink>(
         &mut self,
         sink: &mut TS,
-    ) -> StdResult<TS::Outcome, StreamError<Error, TS::Error>> {
+    ) -> StdResult<TS::Outcome, StreamError<E, TS::Error>> {
         match self {
             StrictRioSource::Error(opt) => Err(SourceError(consume_err(opt))),
             StrictRioSource::Parser(parser) => {
                 parser
-                    .parse_all(&mut |t| -> StdResult<(), MyStreamError<TS::Error>> {
+                    .parse_all(&mut |t| -> StdResult<(), MyStreamError<E, TS::Error>> {
                         sink.feed(&[
                             rio2refterm(t.subject.into()),
                             rio2refterm(t.predicate.into()),
@@ -96,22 +95,20 @@ where
 
 impl<T, E> QuadSource for StrictRioSource<T, E>
 where
-    T: QuadsParser,
-    T::Error: 'static,
-    Error: From<T::Error>,
-    Error: From<E>,
+    T: QuadsParser<Error = E>,
+    E: Error + 'static,
 {
-    type Error = Error;
+    type Error = E;
 
     fn in_sink<TS: QuadSink>(
         &mut self,
         sink: &mut TS,
-    ) -> StdResult<TS::Outcome, StreamError<Error, TS::Error>> {
+    ) -> StdResult<TS::Outcome, StreamError<E, TS::Error>> {
         match self {
             StrictRioSource::Error(opt) => Err(SourceError(consume_err(opt))),
             StrictRioSource::Parser(parser) => {
                 parser
-                    .parse_all(&mut |q| -> StdResult<(), MyStreamError<TS::Error>> {
+                    .parse_all(&mut |q| -> StdResult<(), MyStreamError<E, TS::Error>> {
                         sink.feed(&(
                             [
                                 rio2refterm(q.subject.into()),
@@ -150,22 +147,20 @@ impl<T, E> From<StdResult<T, E>> for GeneralizedRioSource<T, E> {
 
 impl<T, E> QuadSource for GeneralizedRioSource<T, E>
 where
-    T: GeneralizedQuadsParser,
-    T::Error: 'static,
-    Error: From<T::Error>,
-    Error: From<E>,
+    T: GeneralizedQuadsParser<Error = E>,
+    E: Error + 'static,
 {
-    type Error = Error;
+    type Error = E;
 
     fn in_sink<TS: QuadSink>(
         &mut self,
         sink: &mut TS,
-    ) -> StdResult<TS::Outcome, StreamError<Error, TS::Error>> {
+    ) -> StdResult<TS::Outcome, StreamError<E, TS::Error>> {
         match self {
             GeneralizedRioSource::Error(opt) => Err(SourceError(consume_err(opt))),
             GeneralizedRioSource::Parser(parser) => {
                 parser
-                    .parse_all(&mut |q| -> StdResult<(), MyStreamError<TS::Error>> {
+                    .parse_all(&mut |q| -> StdResult<(), MyStreamError<E, TS::Error>> {
                         sink.feed(&(
                             [
                                 rio2refterm(q.subject),
@@ -188,11 +183,9 @@ where
 }
 
 /// Consume inner error and convert it to Error
-fn consume_err<E: Into<Error>>(opt: &mut Option<E>) -> Error {
-    opt.take().map(|e| e.into()).unwrap_or_else(|| {
-        let message = "This parser has already failed".to_string();
-        let location = Location::Unknown;
-        Error::from(ErrorKind::ParserError(message, location))
+fn consume_err<E>(opt: &mut Option<E>) -> E {
+    opt.take().unwrap_or_else(|| {
+        panic!("This parser has failed previously, and can not be used anymore");
     })
 }
 
