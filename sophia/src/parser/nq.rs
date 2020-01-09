@@ -2,45 +2,25 @@
 //!
 //! [N-Quads]: https://www.w3.org/TR/n-quads/
 
-use std::io::{BufRead, BufReader, Cursor, Read};
+use std::io::BufRead;
 
-use rio_turtle::NQuadsParser;
+use rio_turtle::{NQuadsParser as RioNQParser, TurtleError};
 
-use crate::def_default_quad_parser_api;
-use crate::error::*;
 use crate::parser::rio_common::*;
-use crate::quad::stream::QuadSource;
+use crate::parser::Parser;
 
-/// RIO Turtle parser configuration.
-///
-/// For more information,
-/// see the [uniform interface] of parsers.
-///
-/// [uniform interface]: ../index.html#uniform-interface
+/// N-Quads parser based on RIO.
 #[derive(Clone, Debug, Default)]
-pub struct Config {}
+pub struct NQuadsParser {}
 
-impl Config {
-    #[inline]
-    pub fn parse_bufread<'a, B: BufRead + 'a>(
-        &self,
-        bufread: B,
-    ) -> impl QuadSource<Error = Error> + 'a {
-        StrictRioSource::from(NQuadsParser::new(bufread))
-    }
-
-    #[inline]
-    pub fn parse_read<'a, R: Read + 'a>(&self, read: R) -> impl QuadSource<Error = Error> + 'a {
-        self.parse_bufread(BufReader::new(read))
-    }
-
-    #[inline]
-    pub fn parse_str<'a>(&self, txt: &'a str) -> impl QuadSource<Error = Error> + 'a {
-        self.parse_bufread(Cursor::new(txt.as_bytes()))
+impl<B: BufRead> Parser<B> for NQuadsParser {
+    type Source = StrictRioSource<RioNQParser<B>, TurtleError>;
+    fn parse(&self, data: B) -> Self::Source {
+        StrictRioSource::from(RioNQParser::new(data))
     }
 }
 
-def_default_quad_parser_api! {}
+def_mod_functions_for_bufread_parser!(NQuadsParser);
 
 // ---------------------------------------------------------------------------------
 //                                      tests
@@ -57,6 +37,16 @@ mod test {
     use crate::term::StaticTerm;
 
     #[test]
+    fn test_is_triple_parser() {
+        // check that NQuadsParser implements QuadParser;
+        // actually, if this test compiles, it passes
+        fn check_trait<P: crate::parser::QuadParser<&'static [u8]>>(_: &P) {
+            assert!(true)
+        }
+        check_trait(&NQuadsParser::default());
+    }
+
+    #[test]
     fn test_simple_nq_string() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let turtle = r#"
             <http://localhost/ex#me> <http://example.org/ns/knows> _:b1.
@@ -65,8 +55,8 @@ mod test {
         "#;
 
         let mut d = FastDataset::new();
-        let cfg = Config {};
-        let c = cfg.parse_str(&turtle).in_dataset(&mut d)?;
+        let p = NQuadsParser {};
+        let c = p.parse_str(&turtle).in_dataset(&mut d)?;
         assert_eq!(c, 3);
         assert!(d
             .quads_matching(

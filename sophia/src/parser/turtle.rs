@@ -1,59 +1,40 @@
 //! Adapter for the Turtle parser from [RIO](https://github.com/Tpt/rio/blob/master/turtle/src/turtle.rs)
 
-use std::io::{BufRead, BufReader, Cursor, Read};
+use std::io::BufRead;
 
-use rio_turtle::{TurtleError, TurtleParser};
+use rio_api::parser::ParseError;
+use rio_turtle::{TurtleError, TurtleParser as RioTurtleParser};
 
-use crate::def_default_triple_parser_api;
-use crate::error::*;
 use crate::parser::rio_common::*;
-use crate::triple::stream::TripleSource;
+use crate::parser::{Location, Parser, WithLocation};
 
-/// RIO Turtle parser configuration.
-///
-/// For more information,
-/// see the [uniform interface] of parsers.
-///
-/// [uniform interface]: ../index.html#uniform-interface
+/// Turtle parser based on RIO.
 #[derive(Clone, Debug, Default)]
-pub struct Config {
+pub struct TurtleParser {
     pub base: Option<String>,
 }
 
-impl Config {
-    #[inline]
-    pub fn parse_bufread<'a, B: BufRead + 'a>(
-        &self,
-        bufread: B,
-    ) -> impl TripleSource<Error = Error> + 'a {
+impl<B: BufRead> Parser<B> for TurtleParser {
+    type Source = StrictRioSource<RioTurtleParser<B>, TurtleError>;
+    fn parse(&self, data: B) -> Self::Source {
         let base: &str = match &self.base {
             Some(base) => &base,
             None => "x-no-base:///",
         };
-        StrictRioSource::from(TurtleParser::new(bufread, base))
-    }
-
-    #[inline]
-    pub fn parse_read<'a, R: Read + 'a>(&self, read: R) -> impl TripleSource<Error = Error> + 'a {
-        self.parse_bufread(BufReader::new(read))
-    }
-
-    #[inline]
-    pub fn parse_str<'a>(&self, txt: &'a str) -> impl TripleSource<Error = Error> + 'a {
-        self.parse_bufread(Cursor::new(txt.as_bytes()))
+        StrictRioSource::from(RioTurtleParser::new(data, base))
     }
 }
 
-def_default_triple_parser_api! {}
-
-// Convert RIO error to Sophia Error
-impl From<TurtleError> for Error {
-    fn from(err: TurtleError) -> Error {
-        let message = format!("{:?}", err);
-        let location = Location::Unknown; // TODO improve once Rio exposes this info
-        Error::with_chain(err, ErrorKind::ParserError(message, location))
+impl WithLocation for TurtleError {
+    fn location(&self) -> Location {
+        match self.textual_position() {
+            None => Location::Unknown,
+            Some(pos) => Location::from_lico(pos.line_number() + 1, pos.byte_number() + 1),
+        }
     }
 }
+
+def_mod_functions_for_bufread_parser!(TurtleParser);
 
 // ---------------------------------------------------------------------------------
 //                                      tests
@@ -70,6 +51,16 @@ mod test {
     use crate::triple::stream::TripleSource;
 
     #[test]
+    fn test_is_triple_parser() {
+        // check that TurtleParser implements TripleParser;
+        // actually, if this test compiles, it passes
+        fn check_trait<P: crate::parser::TripleParser<&'static [u8]>>(_: &P) {
+            assert!(true)
+        }
+        check_trait(&TurtleParser::default());
+    }
+
+    #[test]
     fn test_simple_turtle_string() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let turtle = r#"
             @prefix : <http://example.org/ns/> .
@@ -78,10 +69,10 @@ mod test {
         "#;
 
         let mut g = FastGraph::new();
-        let cfg = Config {
+        let p = TurtleParser {
             base: Some("http://localhost/ex".into()),
         };
-        let c = cfg.parse_str(&turtle).in_graph(&mut g)?;
+        let c = p.parse_str(&turtle).in_graph(&mut g)?;
         assert_eq!(c, 3);
         assert!(g
             .triples_matching(

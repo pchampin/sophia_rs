@@ -4,7 +4,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::LinkedList;
-use std::io::{BufRead, BufReader, Read};
+use std::io::BufRead;
 use std::ops::Deref;
 use std::rc::Rc;
 use std::sync::atomic::AtomicUsize;
@@ -22,6 +22,7 @@ use crate::error::*;
 use crate::ns::rdf;
 use crate::ns::xsd;
 use crate::ns::Namespace;
+use crate::parser::Parser;
 use crate::term::factory::RcTermFactory;
 use crate::term::factory::TermFactory;
 use crate::term::iri_rfc3987::is_absolute_iri_ref;
@@ -155,7 +156,7 @@ pub mod error {
             let message = error.0.to_string();
             crate::error::Error::with_chain(
                 error,
-                crate::error::ErrorKind::ParserError(message, crate::error::Location::Unknown),
+                crate::error::ErrorKind::ParserError(message, crate::parser::Location::Unknown),
             )
         }
     }
@@ -167,10 +168,12 @@ pub mod error {
         }
     }
 
+    use crate::parser::Location;
+
     /// Patch the `location` field of the error kind if the error is a `ParserError`.
     pub fn with_position(mut e: crate::error::Error, n: usize) -> crate::error::Error {
         if let crate::error::ErrorKind::ParserError(_, ref mut location) = e.0 {
-            *location = crate::error::Location::from_offset(n);
+            *location = Location::from_offset(n);
         }
         e
     }
@@ -178,19 +181,13 @@ pub mod error {
 
 use self::error::ErrorKind as XmlErrorKind;
 
-/// RDF/XML parser configuration.
-///
-/// For more information,
-/// see the [uniform interface] of parsers.
-///
-/// [uniform interface]: ../index.html#uniform-interface
-///
+/// RDF/XML parser.
 #[derive(Clone, Debug, Default)]
-pub struct Config {
+pub struct RdfXmlParser {
     base: Option<Url>,
 }
 
-impl Config {
+impl RdfXmlParser {
     pub fn with_base(base: &str) -> Result<Self> {
         match Url::parse(base) {
             Ok(url) => Ok(Self { base: Some(url) }),
@@ -199,39 +196,17 @@ impl Config {
     }
 }
 
-impl Config {
-    #[inline]
-    pub fn parse_bufread<'a, B: BufRead + 'a>(
-        &self,
-        bufread: B,
-    ) -> impl Iterator<Item = Result<[Term<Rc<str>>; 3]>> + 'a {
-        type Parser<B> = XmlParser<B, RcTermFactory>;
+impl<B: BufRead> Parser<B> for RdfXmlParser {
+    type Source = RdfXmlSource<B, RcTermFactory>;
+    fn parse(&self, data: B) -> Self::Source {
         match &self.base {
-            Some(base) => Parser::with_base(Reader::from_reader(bufread), base.clone()),
-            None => Parser::new(Reader::from_reader(bufread)),
-        }
-    }
-
-    #[inline]
-    pub fn parse_read<'a, R: Read + 'a>(
-        &self,
-        read: R,
-    ) -> impl Iterator<Item = Result<[Term<Rc<str>>; 3]>> + 'a {
-        self.parse_bufread(BufReader::new(read))
-    }
-
-    #[inline]
-    pub fn parse_str<'a>(
-        &self,
-        txt: &'a str,
-    ) -> impl Iterator<Item = Result<[Term<Rc<str>>; 3]>> + 'a {
-        type Parser<B> = XmlParser<B, RcTermFactory>;
-        match &self.base {
-            Some(base) => Parser::with_base(Reader::from_str(txt), base.clone()),
-            None => Parser::new(Reader::from_str(txt)),
+            Some(base) => RdfXmlSource::with_base(Reader::from_reader(data), base.clone()),
+            None => RdfXmlSource::new(Reader::from_reader(data)),
         }
     }
 }
+
+def_mod_functions_for_bufread_parser!(RdfXmlParser);
 
 // ---
 
@@ -577,17 +552,18 @@ impl<F: TermFactory + Default> Default for Scope<F> {
 
 // ---
 
-struct XmlParser<B: BufRead, F: TermFactory> {
+/// The triple source returned by RdfXmlParser.
+pub struct RdfXmlSource<B: BufRead, F: TermFactory> {
     handler: XmlHandler<B, F>,
     buffer: Vec<u8>,
 }
 
-impl<B, F> XmlParser<B, F>
+impl<B, F> RdfXmlSource<B, F>
 where
     B: BufRead,
     F: TermFactory + Clone + Default,
 {
-    /// Create a new `XmlParser` from the given `quick_xml::Reader`.
+    /// Create a new `RdfXmlSource` from the given `quick_xml::Reader`.
     fn new(reader: Reader<B>) -> Self {
         Self {
             handler: XmlHandler::new(reader),
@@ -595,7 +571,7 @@ where
         }
     }
 
-    /// Create a new `XmlParser` using the given URL as the top-level `xml:base`.
+    /// Create a new `RdfXmlSource` using the given URL as the top-level `xml:base`.
     fn with_base(reader: Reader<B>, base: Url) -> Self {
         Self {
             handler: XmlHandler::with_base(reader, base),
@@ -1272,7 +1248,7 @@ where
     }
 }
 
-impl<B, F> Iterator for XmlParser<B, F>
+impl<B, F> Iterator for RdfXmlSource<B, F>
 where
     B: BufRead,
     F: TermFactory + Clone + Default,
@@ -1318,6 +1294,7 @@ mod test {
     use crate::graph::inmem::HashGraph;
     use crate::graph::inmem::TermIndexMapU;
     use crate::graph::Graph;
+    use crate::parser::Parser;
     use crate::term::factory::RcTermFactory;
     use crate::term::Term;
     use crate::triple::stream::TripleSource;
@@ -1334,6 +1311,16 @@ mod test {
             v.sort_by_key(|t| (t.s().value(), t.p().value(), t.o().value()));
             v.fmt(f)
         }
+    }
+
+    #[test]
+    fn test_is_triple_parser() {
+        // check that RdfXmlParser implements TripleParser;
+        // actually, if this test compiles, it passes
+        fn check_trait<P: crate::parser::TripleParser<&'static [u8]>>(_: &P) {
+            assert!(true)
+        }
+        check_trait(&super::RdfXmlParser::default());
     }
 
     macro_rules! assert_graph_eq {
@@ -1372,19 +1359,18 @@ mod test {
                 let xmlfile = std::fs::File::open(path.with_extension("rdf")).unwrap();
 
                 let mut xml = TestGraph::new();
-                $crate::parser::xml::Config::with_base(&format!(
+                $crate::parser::xml::RdfXmlParser::with_base(&format!(
                         "http://www.w3.org/2013/RDFXMLTests/{}/{}.rdf",
                         stringify!($suite).replace('_', "-"),
                         stringify!($case).replace('_', "-"),
                     ))
                     .unwrap()
-                    .parse_read(xmlfile)
+                    .parse(std::io::BufReader::new(xmlfile))
                     .in_graph(&mut xml)
                     .expect("failed parsing XML file");
 
                 let mut nt = TestGraph::new();
-                $crate::parser::nt::Config::default()
-                    .parse_read(ntfile)
+                $crate::parser::nt::parse_bufread(std::io::BufReader::new(ntfile))
                     .in_graph(&mut nt)
                     .expect("failed parsing N-Triples file");
 
@@ -1435,13 +1421,13 @@ mod test {
                 let xmlfile = std::fs::File::open(path.with_extension("rdf")).unwrap();
                 let mut xml = TestGraph::new();
                 assert!(
-                    $crate::parser::xml::Config::with_base(&format!(
+                    $crate::parser::xml::RdfXmlParser::with_base(&format!(
                         "http://www.w3.org/2013/RDFXMLTests/{}/{}.rdf",
                         stringify!($suite).replace('_', "-"),
                         stringify!($case).replace('_', "-"),
                     ))
                     .unwrap()
-                    .parse_read(xmlfile)
+                    .parse(std::io::BufReader::new(xmlfile))
                     .in_graph(&mut xml)
                     .is_err()
                 );
@@ -1454,14 +1440,12 @@ mod test {
             #[test]
             fn $name() {
                 let mut xml = TestGraph::new();
-                $crate::parser::xml::Config::default()
-                    .parse_str($xml)
+                $crate::parser::xml::parse_str($xml)
                     .in_graph(&mut xml)
                     .expect("failed parsing XML file");
 
                 let mut nt = TestGraph::new();
-                $crate::parser::nt::Config::default()
-                    .parse_str($nt)
+                $crate::parser::nt::parse_str($nt)
                     .in_graph(&mut nt)
                     .expect("failed parsing N-Triples file");
 

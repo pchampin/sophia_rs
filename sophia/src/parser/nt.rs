@@ -2,45 +2,25 @@
 //!
 //! [N-Triples]: https://www.w3.org/TR/n-triples/
 
-use std::io::{BufRead, BufReader, Cursor, Read};
+use std::io::BufRead;
 
-use rio_turtle::NTriplesParser;
+use rio_turtle::{NTriplesParser as RioNTParser, TurtleError};
 
-use crate::def_default_triple_parser_api;
-use crate::error::*;
 use crate::parser::rio_common::*;
-use crate::triple::stream::TripleSource;
+use crate::parser::Parser;
 
-/// RIO Turtle parser configuration.
-///
-/// For more information,
-/// see the [uniform interface] of parsers.
-///
-/// [uniform interface]: ../index.html#uniform-interface
+/// N-Triples parser based on RIO.
 #[derive(Clone, Debug, Default)]
-pub struct Config {}
+pub struct NTriplesParser {}
 
-impl Config {
-    #[inline]
-    pub fn parse_bufread<'a, B: BufRead + 'a>(
-        &self,
-        bufread: B,
-    ) -> impl TripleSource<Error = Error> + 'a {
-        StrictRioSource::from(NTriplesParser::new(bufread))
-    }
-
-    #[inline]
-    pub fn parse_read<'a, R: Read + 'a>(&self, read: R) -> impl TripleSource<Error = Error> + 'a {
-        self.parse_bufread(BufReader::new(read))
-    }
-
-    #[inline]
-    pub fn parse_str<'a>(&self, txt: &'a str) -> impl TripleSource<Error = Error> + 'a {
-        self.parse_bufread(Cursor::new(txt.as_bytes()))
+impl<B: BufRead> Parser<B> for NTriplesParser {
+    type Source = StrictRioSource<RioNTParser<B>, TurtleError>;
+    fn parse(&self, data: B) -> Self::Source {
+        StrictRioSource::from(RioNTParser::new(data))
     }
 }
 
-def_default_triple_parser_api! {}
+def_mod_functions_for_bufread_parser!(NTriplesParser);
 
 // ---------------------------------------------------------------------------------
 //                                      tests
@@ -57,6 +37,16 @@ mod test {
     use crate::triple::stream::TripleSource;
 
     #[test]
+    fn test_is_triple_parser() {
+        // check that NTriplesParser implements TripleParser;
+        // actually, if this test compiles, it passes
+        fn check_trait<P: crate::parser::TripleParser<&'static [u8]>>(_: &P) {
+            assert!(true)
+        }
+        check_trait(&NTriplesParser::default());
+    }
+
+    #[test]
     fn test_simple_nt_string() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let turtle = r#"
             <http://localhost/ex#me> <http://example.org/ns/knows> _:b1.
@@ -65,8 +55,8 @@ mod test {
         "#;
 
         let mut g = FastGraph::new();
-        let cfg = Config {};
-        let c = cfg.parse_str(&turtle).in_graph(&mut g)?;
+        let p = NTriplesParser {};
+        let c = p.parse_str(&turtle).in_graph(&mut g)?;
         assert_eq!(c, 3);
         assert!(g
             .triples_matching(

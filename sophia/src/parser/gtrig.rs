@@ -1,50 +1,30 @@
 //! Adapter for the Generalized TriG parser from [RIO](https://github.com/Tpt/rio/blob/master/turtle/src/gtrig.rs)
 
-use std::io::{BufRead, BufReader, Cursor, Read};
+use std::io::BufRead;
 
-use rio_turtle::GTriGParser;
+use rio_turtle::{GTriGParser as RioGTriGParser, TurtleError};
 
-use crate::def_default_quad_parser_api;
-use crate::error::*;
 use crate::parser::rio_common::*;
-use crate::quad::stream::QuadSource;
+use crate::parser::Parser;
 
-/// RIO TriG parser configuration.
-///
-/// For more information,
-/// see the [uniform interface] of parsers.
-///
-/// [uniform interface]: ../index.html#uniform-interface
+/// TriG parser based on RIO.
 #[derive(Clone, Debug, Default)]
-pub struct Config {
+pub struct GTriGParser {
     pub base: Option<String>,
 }
 
-impl Config {
-    #[inline]
-    pub fn parse_bufread<'a, B: BufRead + 'a>(
-        &self,
-        bufread: B,
-    ) -> impl QuadSource<Error = Error> + 'a {
+impl<B: BufRead> Parser<B> for GTriGParser {
+    type Source = GeneralizedRioSource<RioGTriGParser<B>, TurtleError>;
+    fn parse(&self, data: B) -> Self::Source {
         let base: &str = match &self.base {
             Some(base) => &base,
             None => "",
         };
-        GeneralizedRioSource::from(GTriGParser::new(bufread, base))
-    }
-
-    #[inline]
-    pub fn parse_read<'a, R: Read + 'a>(&self, read: R) -> impl QuadSource<Error = Error> + 'a {
-        self.parse_bufread(BufReader::new(read))
-    }
-
-    #[inline]
-    pub fn parse_str<'a>(&self, txt: &'a str) -> impl QuadSource<Error = Error> + 'a {
-        self.parse_bufread(Cursor::new(txt.as_bytes()))
+        GeneralizedRioSource::from(RioGTriGParser::new(data, base))
     }
 }
 
-def_default_quad_parser_api! {}
+def_mod_functions_for_bufread_parser!(GTriGParser);
 
 // ---------------------------------------------------------------------------------
 //                                      tests
@@ -61,7 +41,17 @@ mod test {
     use crate::term::StaticTerm;
 
     #[test]
-    fn test_simple_trig_string() -> std::result::Result<(), Box<dyn std::error::Error>> {
+    fn test_is_triple_parser() {
+        // check that GTriGParser implements QuadParser;
+        // actually, if this test compiles, it passes
+        fn check_trait<P: crate::parser::QuadParser<&'static [u8]>>(_: &P) {
+            assert!(true)
+        }
+        check_trait(&GTriGParser::default());
+    }
+
+    #[test]
+    fn test_simple_gtrig_string() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let turtle = r#"
             @prefix : <http://example.org/ns/> .
 
@@ -74,8 +64,8 @@ mod test {
         "#;
 
         let mut d = FastDataset::new();
-        let cfg = Config { base: None };
-        let c = cfg.parse_str(&turtle).in_dataset(&mut d)?;
+        let p = GTriGParser { base: None };
+        let c = p.parse_str(&turtle).in_dataset(&mut d)?;
         assert_eq!(c, 3);
         assert!(d
             .quads_matching(

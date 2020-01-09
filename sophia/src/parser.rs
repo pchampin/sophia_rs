@@ -1,59 +1,105 @@
-//! Parsers for standard RDF syntaxes,
-//! and tools for building new parsers.
-//!
-//! # Uniform interface
-//!
-//! Each parser module defines a `Config` type, that
-//! - implements [`Default`],
-//! - has three methods `parse_bufread`, `parse_read` and `parse_str`,
-//!   accepting [`io::BufRead`], [`io::Read`] and [`&str`] respectively,
-//!   and all returning a [`TripleSource`] or [`QuadSource`].
-//!
-//! Each parser module also has three functions
-//! `parse_bufread`, `parse_read` and `parse_str`,
-//! calling the corresponding methods from the default `Config`.
-//!
-//! [`Default`]: https://doc.rust-lang.org/std/default/trait.Default.html
-//! [`io::BufRead`]: https://doc.rust-lang.org/std/io/trait.BufRead.html
-//! [`io::Read`]: https://doc.rust-lang.org/std/io/trait.Read.html
-//! [`&str`]: https://doc.rust-lang.org/std/primitive.str.html
-//! [`TripleSource`]: ../triple/stream/trait.TripleSource.html
-//! [`QuadSource`]: ../quad/stream/trait.QuadSource.html
+//! API for parsing RDF syntaxes.
 
-/// This macro provides a straightforward implementation of the default functions
-/// of a parser module producing triples.
-#[macro_export]
-macro_rules! def_default_triple_parser_api {
-    () => {
-        def_default_parser_api!($crate::triple::stream::TripleSource);
-    };
+use crate::quad::stream::QuadSource;
+use crate::triple::stream::TripleSource;
+
+mod _location;
+pub use _location::*;
+
+/// A generic parser takes some data of type `T`,
+/// and returns a [`TripleSource`] or a [`QuadSource`].
+///
+/// See also [`TripleParser`] and [`QuadParser`].
+///
+/// [`TripleParser`]: trait.TripleParser.html
+/// [`TripleSource`]: ../triple/stream/trait.TripleSource.html
+/// [`QuadParser`]: trait.QuadParser.html
+/// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
+pub trait Parser<T> {
+    /// The source produced by this parser, generally
+    /// [`TripleSource`] or [`QuadSource`].
+    ///
+    /// [`TripleSource`]: ../triple/stream/trait.TripleSource.html
+    /// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
+    type Source;
+
+    /// The central method of `Parser`: parses data into a (triple or quad) source.
+    fn parse(&self, data: T) -> Self::Source;
+
+    /// Convenient shortcut method for parsing strings.
+    ///
+    /// It may not be available on some exotic parsers,
+    /// but will be automatically supported for parsers supporting any
+    /// [`BufRead`] or [`Read`].
+    ///
+    /// [`BufRead`]: https://doc.rust-lang.org/std/io/trait.BufRead.html
+    /// [`Read`]: https://doc.rust-lang.org/std/io/trait.Read.html
+    fn parse_str<'t>(&self, txt: &'t str) -> Self::Source
+    where
+        &'t str: IntoParsable<Target = T>,
+    {
+        self.parse(txt.into_parsable())
+    }
 }
 
-/// This macro provides a straightforward implementation of the default functions
-/// of a parser module producing quads.
-#[macro_export]
-macro_rules! def_default_quad_parser_api {
-    () => {
-        def_default_parser_api!($crate::quad::stream::QuadSource);
-    };
+/// Specialization of [`Parser`] that returns a [`QuadSource`].
+/// It also constrains the returned source's error to implement [`WithLocation`].
+///
+/// [`Parser`]: trait.Parser.html
+/// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
+/// [`WithLocation`]: trait.WithLocation.html
+pub trait QuadParser<T>: Parser<T> {}
+impl<T, P> QuadParser<T> for P
+where
+    P: Parser<T>,
+    <P as Parser<T>>::Source: QuadSource,
+    <<P as Parser<T>>::Source as QuadSource>::Error: WithLocation,
+{
 }
 
-macro_rules! def_default_parser_api {
-    ($item: path) => {
-        /// Shortcut for `Config::default().parse_bufread(bufread)`
-        #[inline]
-        pub fn parse_bufread<'a, B: ::std::io::BufRead + 'a>(bufread: B) -> impl $item + 'a {
-            Config::default().parse_bufread(bufread)
+/// Specialization of [`Parser`] that returns a [`QuadSource`].
+/// It also constrains the returned source's error to implement [`WithLocation`].
+///
+/// [`Parser`]: trait.Parser.html
+/// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
+/// [`WithLocation`]: trait.WithLocation.html
+pub trait TripleParser<T>: Parser<T> {}
+impl<T, P> TripleParser<T> for P
+where
+    P: Parser<T>,
+    <P as Parser<T>>::Source: TripleSource,
+    <<P as Parser<T>>::Source as TripleSource>::Error: WithLocation,
+{
+}
+
+/// Utility trait to support [`Parser::parse_str`].
+///
+/// [`Parser::parse_str`]: trait.Parser.html#method.parse_str
+pub trait IntoParsable {
+    type Target;
+    fn into_parsable(self) -> Self::Target;
+}
+impl<'a> IntoParsable for &'a str {
+    type Target = &'a [u8];
+    fn into_parsable(self) -> Self::Target {
+        self.as_bytes()
+    }
+}
+
+/// Define convenience module-level functions for a parser implementation supporting BufRead.
+#[macro_export]
+macro_rules! def_mod_functions_for_bufread_parser {
+    ($parser_type: ident) => {
+        /// Convenience function for parsing a BufRead with the default parser.
+        pub fn parse_bufread<B: std::io::BufRead>(
+            bufread: B,
+        ) -> <$parser_type as $crate::parser::Parser<B>>::Source {
+            $parser_type::default().parse(bufread)
         }
-        /// Shortcut for `Config::default().parse_read(read)`
-        #[inline]
-        pub fn parse_read<'a, R: ::std::io::Read + 'a>(read: R) -> impl $item + 'a {
-            Config::default().parse_read(read)
-        }
-        /// Shortcut for `Config::default().parse_str(txt)`
-        #[inline]
-        pub fn parse_str<'a>(txt: &'a str) -> impl $item + 'a {
-            Config::default().parse_str(txt)
+
+        /// Convenience function for parsing a str with the default parser.
+        pub fn parse_str(txt: &str) -> <$parser_type as $crate::parser::Parser<&[u8]>>::Source {
+            $parser_type::default().parse_str(txt)
         }
     };
 }
