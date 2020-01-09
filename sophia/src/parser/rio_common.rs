@@ -199,6 +199,7 @@ fn consume_err<E: Into<Error>>(opt: &mut Option<E>) -> Error {
 /// Convert RIO term to Sophia term
 pub fn rio2refterm(t: GeneralizedTerm) -> RefTerm {
     use Literal::*;
+
     unsafe {
         match t {
             GeneralizedTerm::BlankNode(b) => RefTerm::new_bnode(b.id).unwrap(),

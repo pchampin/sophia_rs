@@ -41,8 +41,6 @@ use std::sync::Arc;
 use language_tag::LangTag;
 use regex::Regex;
 
-use crate::error::*;
-
 pub mod factory;
 pub mod index_map;
 pub mod iri_rfc3987;
@@ -58,6 +56,8 @@ pub use self::_iri_data::*;
 mod _graph_name_matcher; // is 'pub use'd by module 'matcher'
 mod _literal_kind;
 pub use self::_literal_kind::*;
+mod _error;
+pub use self::_error::*;
 
 /// Generic type for RDF terms.
 ///
@@ -181,7 +181,10 @@ where
     {
         let tag = T::from(lang);
         match LangTag::from_str(tag.as_ref()) {
-            Err(msg) => Err(ErrorKind::InvalidLanguageTag(tag.as_ref().to_string(), msg).into()),
+            Err(err) => Err(TermError::InvalidLanguageTag {
+                tag: tag.as_ref().to_string(),
+                err,
+            }),
             Ok(_) => Ok(Literal(T::from(txt), Lang(tag))),
         }
     }
@@ -195,7 +198,7 @@ where
     {
         match dt {
             Iri(iri) => Ok(Literal(T::from(txt), Datatype(iri))),
-            _ => Err(ErrorKind::InvalidDatatype(dt.n3()).into()),
+            _ => Err(TermError::InvalidDatatype(dt.n3())),
         }
     }
 
@@ -210,7 +213,7 @@ where
         if N3_VARIABLE_NAME.is_match(name.as_ref()) {
             Ok(Variable(name))
         } else {
-            Err(ErrorKind::InvalidVariableName(name.as_ref().to_string()).into())
+            Err(TermError::InvalidVariableName(name.as_ref().to_string()))
         }
     }
 
