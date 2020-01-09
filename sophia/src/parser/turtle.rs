@@ -1,11 +1,10 @@
-//! Adapter for the [N-Triples] parser from [RIO](https://github.com/Tpt/rio/blob/master/turtle/src/turtle.rs)
-//!
-//! [N-Triples]: https://www.w3.org/TR/n-triples/
+//! Adapter for the Turtle parser from [RIO](https://github.com/Tpt/rio/blob/master/turtle/src/turtle.rs)
 
 use std::io::{BufRead, BufReader, Cursor, Read};
 
-use rio_turtle::NTriplesParser;
+use rio_turtle::{TurtleError, TurtleParser};
 
+use crate::def_default_triple_parser_api;
 use crate::error::*;
 use crate::parser::rio_common::*;
 use crate::triple::stream::TripleSource;
@@ -17,7 +16,9 @@ use crate::triple::stream::TripleSource;
 ///
 /// [uniform interface]: ../index.html#uniform-interface
 #[derive(Clone, Debug, Default)]
-pub struct Config {}
+pub struct Config {
+    pub base: Option<String>,
+}
 
 impl Config {
     #[inline]
@@ -25,7 +26,11 @@ impl Config {
         &self,
         bufread: B,
     ) -> impl TripleSource<Error = Error> + 'a {
-        RioSource::from(NTriplesParser::new(bufread))
+        let base: &str = match &self.base {
+            Some(base) => &base,
+            None => "x-no-base:///",
+        };
+        StrictRioSource::from(TurtleParser::new(bufread, base))
     }
 
     #[inline]
@@ -40,6 +45,15 @@ impl Config {
 }
 
 def_default_triple_parser_api! {}
+
+// Convert RIO error to Sophia Error
+impl From<TurtleError> for Error {
+    fn from(err: TurtleError) -> Error {
+        let message = format!("{:?}", err);
+        let location = Location::Unknown; // TODO improve once Rio exposes this info
+        Error::with_chain(err, ErrorKind::ParserError(message, location))
+    }
+}
 
 // ---------------------------------------------------------------------------------
 //                                      tests
@@ -56,15 +70,17 @@ mod test {
     use crate::triple::stream::TripleSource;
 
     #[test]
-    fn test_simple_nt_string() -> std::result::Result<(), Box<dyn std::error::Error>> {
+    fn test_simple_turtle_string() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let turtle = r#"
-            <http://localhost/ex#me> <http://example.org/ns/knows> _:b1.
-            _:b1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/ns/Person>.
-            _:b1 <http://example.org/ns/name> "Alice".
+            @prefix : <http://example.org/ns/> .
+
+            <#me> :knows [ a :Person ; :name "Alice" ].
         "#;
 
         let mut g = FastGraph::new();
-        let cfg = Config {};
+        let cfg = Config {
+            base: Some("http://localhost/ex".into()),
+        };
         let c = cfg.parse_str(&turtle).in_graph(&mut g)?;
         assert_eq!(c, 3);
         assert!(g

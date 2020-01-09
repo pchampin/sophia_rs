@@ -320,6 +320,17 @@ where
         }
     }
 
+    /// Return a new variable term.
+    ///
+    /// # Safety
+    /// This function requires that `name` is a valid variable name.
+    pub unsafe fn new_variable_unchecked<U>(name: U) -> Term<T>
+    where
+        T: From<U>,
+    {
+        Variable(T::from(name))
+    }
+
     /// If `t` is or contains a relative IRI, replace it with an absolute one,
     /// using this term as the base.
     /// Otherwise, returns `t` unchanged.

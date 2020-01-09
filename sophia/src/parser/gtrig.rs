@@ -1,9 +1,10 @@
-//! Adapter for the TriG parser from [RIO](https://github.com/Tpt/rio/blob/master/turtle/src/turtle.rs)
+//! Adapter for the Generalized TriG parser from [RIO](https://github.com/Tpt/rio/blob/master/turtle/src/gtrig.rs)
 
 use std::io::{BufRead, BufReader, Cursor, Read};
 
-use rio_turtle::TriGParser;
+use rio_turtle::GTriGParser;
 
+use crate::def_default_quad_parser_api;
 use crate::error::*;
 use crate::parser::rio_common::*;
 use crate::quad::stream::QuadSource;
@@ -27,9 +28,9 @@ impl Config {
     ) -> impl QuadSource<Error = Error> + 'a {
         let base: &str = match &self.base {
             Some(base) => &base,
-            None => "x-no-base:///",
+            None => "",
         };
-        RioSource::from(TriGParser::new(bufread, base))
+        GeneralizedRioSource::from(GTriGParser::new(bufread, base))
     }
 
     #[inline]
@@ -54,7 +55,7 @@ mod test {
     use super::*;
     use crate::dataset::inmem::FastDataset;
     use crate::dataset::Dataset;
-    use crate::ns::{rdf, xsd};
+    use crate::ns::rdf;
     use crate::quad::stream::QuadSource;
     use crate::term::matcher::ANY;
     use crate::term::StaticTerm;
@@ -68,22 +69,20 @@ mod test {
                 <#me> :knows _:alice.
             }
             <#g2> {
-                _:alice a :Person ; :name "Alice".
+                _:alice a :Person ; :name ?name.
             }
         "#;
 
         let mut d = FastDataset::new();
-        let cfg = Config {
-            base: Some("http://localhost/ex".into()),
-        };
+        let cfg = Config { base: None };
         let c = cfg.parse_str(&turtle).in_dataset(&mut d)?;
         assert_eq!(c, 3);
         assert!(d
             .quads_matching(
-                &StaticTerm::new_iri("http://localhost/ex#me").unwrap(),
+                &StaticTerm::new_iri("#me").unwrap(),
                 &StaticTerm::new_iri("http://example.org/ns/knows").unwrap(),
                 &ANY,
-                &StaticTerm::new_iri("http://localhost/ex#g1").unwrap(),
+                &StaticTerm::new_iri("#g1").unwrap(),
             )
             .next()
             .is_some());
@@ -92,7 +91,7 @@ mod test {
                 &ANY,
                 &rdf::type_,
                 &StaticTerm::new_iri("http://example.org/ns/Person").unwrap(),
-                &StaticTerm::new_iri("http://localhost/ex#g2").unwrap(),
+                &StaticTerm::new_iri("#g2").unwrap(),
             )
             .next()
             .is_some());
@@ -100,8 +99,8 @@ mod test {
             .quads_matching(
                 &ANY,
                 &StaticTerm::new_iri("http://example.org/ns/name").unwrap(),
-                &StaticTerm::new_literal_dt("Alice", xsd::string).unwrap(),
-                &StaticTerm::new_iri("http://localhost/ex#g2").unwrap(),
+                &StaticTerm::new_variable("name").unwrap(),
+                &StaticTerm::new_iri("#g2").unwrap(),
             )
             .next()
             .is_some());
