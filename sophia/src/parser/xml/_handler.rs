@@ -238,7 +238,7 @@ where
             ParsingState::Res => match self.reader.decode(e.name()) {
                 Ok(name) => Err(RdfError::UnexpectedEvent {
                     expected: format!("<{}>", name),
-                    found: "text".to_string(),
+                    found: "text".to_owned(),
                 })
                 .locate_err_with(&self.reader),
                 Err(e) => Err(e).locate_err_with(&self.reader),
@@ -613,7 +613,7 @@ where
             ParsingState::Res => match self.reader.decode(e.name()) {
                 Ok(name) => Err(RdfError::UnexpectedEvent {
                     expected: format!("<{}/>", name),
-                    found: "end".to_string(),
+                    found: "end".to_owned(),
                 })
                 .locate_err_with(&self.reader),
                 Err(e) => Err(e).locate_err_with(&self.reader),
@@ -697,7 +697,7 @@ where
                 let mut scope = self.scope_mut();
                 scope.datatype = Some(xmlliteral);
             } else {
-                return Err(RdfError::InvalidParseType("Literal".to_string()))
+                return Err(RdfError::InvalidParseType("Literal".to_owned()))
                     .locate_err_with(&self.reader);
             }
         }

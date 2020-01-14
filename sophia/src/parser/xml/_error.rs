@@ -70,7 +70,7 @@ pub enum RdfError {
     InvalidXmlName(String),
     #[error("The `parseType={0}` is not a valid in this context")]
     InvalidParseType(String),
-    #[error("Can only have one if `rdf:ID`, `rdf:nodeID` and `rdf:about` at the same time")]
+    #[error("Can only have one of `rdf:ID`, `rdf:nodeID` and `rdf:about` at the same time")]
     AmbiguousSubject,
     #[error("Unexpected XML event: expected {expected}, found {found} instead")]
     UnexpectedEvent { expected: String, found: String },
