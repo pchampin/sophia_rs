@@ -1,4 +1,5 @@
 use super::*;
+use crate::parser::LocateResult;
 
 /// The state of the parser.
 #[derive(Debug, Clone, Copy)]
@@ -87,30 +88,39 @@ where
         // * Change scope language if there is any `xml:lang` attribute
         // * Fail if there is an invalid `rdf:li` attribute
         for attr in e.attributes().with_checks(true) {
-            let a = attr.locate_err(&self.reader)?;
+            let a = attr.locate_err_with(&self.reader)?;
             if a.key.starts_with(b"xmlns:") {
-                scope.add_prefix(
-                    &self.reader.decode(&a.key[6..]).locate_err(&self.reader)?,
-                    &a.unescape_and_decode_value(&self.reader)
-                        .locate_err(&self.reader)?,
-                )?;
+                scope
+                    .add_prefix(
+                        &self
+                            .reader
+                            .decode(&a.key[6..])
+                            .locate_err_with(&self.reader)?,
+                        &a.unescape_and_decode_value(&self.reader)
+                            .locate_err_with(&self.reader)?,
+                    )
+                    .locate_err_with(&self.reader)?;
             } else if a.key == b"xmlns" {
-                scope.set_default(
-                    &a.unescape_and_decode_value(&self.reader)
-                        .locate_err(&self.reader)?,
-                )?;
+                scope
+                    .set_default(
+                        &a.unescape_and_decode_value(&self.reader)
+                            .locate_err_with(&self.reader)?,
+                    )
+                    .locate_err_with(&self.reader)?;
             } else if a.key == b"xml:base" {
-                scope.set_base(
-                    &a.unescape_and_decode_value(&self.reader)
-                        .locate_err(&self.reader)?,
-                )?;
+                scope
+                    .set_base(
+                        &a.unescape_and_decode_value(&self.reader)
+                            .locate_err_with(&self.reader)?,
+                    )
+                    .locate_err_with(&self.reader)?;
             } else if a.key == b"xml:lang" {
                 scope.lang = if a.value.is_empty() {
                     None
                 } else {
                     let v = &a
                         .unescape_and_decode_value(&self.reader)
-                        .locate_err(&self.reader)?;
+                        .locate_err_with(&self.reader)?;
                     self.factory.borrow_mut().get_term_data(v).into()
                 };
             }
@@ -142,16 +152,16 @@ where
             self.factory
                 .borrow_mut()
                 .bnode(&format!("o{}", id))
-                .map_err(|e| RdfError::from(e).at_location(&self.reader))
+                .map_err(|e| RdfError::from(e).locate_with(&self.reader))
         } else {
-            Err(RdfError::InvalidXmlName(id.to_owned())).locate_err(&self.reader)
+            Err(RdfError::InvalidXmlName(id.to_owned())).locate_err_with(&self.reader)
         }
     }
 
     /// Check the given `ID` is unique.
     fn check_unique_id(&mut self, id: Term<F::TermData>) -> Result<Term<F::TermData>> {
         if self.ids.contains(&id) {
-            Err(RdfError::DuplicateId(id.value())).locate_err(&self.reader)
+            Err(RdfError::DuplicateId(id.value())).locate_err_with(&self.reader)
         } else {
             self.ids.insert(id.clone());
             Ok(id)
@@ -160,9 +170,12 @@ where
 
     /// Create a new predicate IRI from an XML name (or a RDF metasyntactic element)
     fn predicate_iri_start(&self, name: &str) -> Result<Term<F::TermData>> {
-        let p = self.scope().expand_attribute(name)?;
+        let p = self
+            .scope()
+            .expand_attribute(name)
+            .locate_err_with(&self.reader)?;
         if p.matches(&rdf::li) {
-            self.parent_scope().new_li().locate_err(&self.reader)
+            self.parent_scope().new_li().locate_err_with(&self.reader)
         } else {
             Ok(p)
         }
@@ -170,9 +183,14 @@ where
 
     /// Retrieve a predicate IRI from an XML name
     fn predicate_iri_end(&self, name: &str) -> Result<Term<F::TermData>> {
-        let p = self.scope().expand_attribute(name)?;
+        let p = self
+            .scope()
+            .expand_attribute(name)
+            .locate_err_with(&self.reader)?;
         if p.matches(&rdf::li) {
-            self.parent_scope().current_li().locate_err(&self.reader)
+            self.parent_scope()
+                .current_li()
+                .locate_err_with(&self.reader)
         } else {
             Ok(p)
         }
@@ -222,8 +240,8 @@ where
                     expected: format!("<{}>", name),
                     found: "text".to_string(),
                 })
-                .locate_err(&self.reader),
-                Err(e) => Err(e).locate_err(&self.reader),
+                .locate_err_with(&self.reader),
+                Err(e) => Err(e).locate_err_with(&self.reader),
             },
         };
 
@@ -236,8 +254,8 @@ where
         // Get node type from the XML attribute.
         let ty = self
             .scope()
-            .expand_attribute(&self.reader.decode(e.name()).locate_err(&self.reader)?)
-            .locate_err(&self.reader)?;
+            .expand_attribute(&self.reader.decode(e.name()).locate_err_with(&self.reader)?)
+            .locate_err_with(&self.reader)?;
 
         // Return early if in a top-level rdf:RDF element
         if rdf::RDF.matches(&ty) && self.parents.is_empty() {
@@ -248,14 +266,14 @@ where
 
         // Bail out if the node has an invalid name.
         if RESERVED_NODE_NAMES.matches(&ty) {
-            Err(RdfError::InvalidNodeName(ty.value())).locate_err(&self.reader)?;
+            Err(RdfError::InvalidNodeName(ty.value())).locate_err_with(&self.reader)?;
         }
 
         // Separate node subject from other attributes
         let mut properties = HashMap::new();
         let mut subject = Vec::new();
         for attr in e.attributes().with_checks(true) {
-            let a = attr.locate_err(&self.reader)?;
+            let a = attr.locate_err_with(&self.reader)?;
 
             // ignore xml attributes (processed in element_start)
             if a.key.starts_with(b"xml") {
@@ -265,31 +283,37 @@ where
             // try to extract the subject annotation
             let k = self
                 .scope()
-                .expand_attribute(&self.reader.decode(a.key).locate_err(&self.reader)?)
-                .locate_err(&self.reader)?;
+                .expand_attribute(&self.reader.decode(a.key).locate_err_with(&self.reader)?)
+                .locate_err_with(&self.reader)?;
             let v = a
                 .unescape_and_decode_value(&self.reader)
-                .locate_err(&self.reader)?;
+                .locate_err_with(&self.reader)?;
 
             if k.matches(&rdf::about) {
-                subject.push(self.scope().expand_iri(&v).locate_err(&self.reader)?);
+                subject.push(self.scope().expand_iri(&v).locate_err_with(&self.reader)?);
             } else if k.matches(&rdf::ID) {
-                let id = self.scope().expand_id(&v).locate_err(&self.reader)?;
+                let id = self.scope().expand_id(&v).locate_err_with(&self.reader)?;
                 subject.push(self.check_unique_id(id)?);
             } else if k.matches(&rdf::nodeID) {
                 subject.push(self.rename_bnode(&v)?);
             } else if k.matches(&rdf::type_) {
-                properties.insert(k, self.scope().expand_iri(&v).locate_err(&self.reader)?);
+                properties.insert(
+                    k,
+                    self.scope().expand_iri(&v).locate_err_with(&self.reader)?,
+                );
             } else if RESERVED_ATTRIBUTES_NAMES.matches(&k) {
-                Err(RdfError::InvalidAttribute(k.value())).locate_err(&self.reader)?;
+                Err(RdfError::InvalidAttribute(k.value())).locate_err_with(&self.reader)?;
             } else {
-                properties.insert(k, self.scope().new_literal(v).locate_err(&self.reader)?);
+                properties.insert(
+                    k,
+                    self.scope().new_literal(v).locate_err_with(&self.reader)?,
+                );
             }
         }
 
         // Get subject and add it to the current nested stack
         if subject.len() > 1 {
-            return Err(RdfError::AmbiguousSubject).locate_err(&self.reader);
+            return Err(RdfError::AmbiguousSubject).locate_err_with(&self.reader);
         }
         let s: Term<_> = subject.pop().unwrap_or_else(|| self.new_bnode());
         self.parents.push(s.clone());
@@ -314,11 +338,11 @@ where
         // Get the predicate and add it to the current nested stack
         // or build a new `rdf:_n` IRI if the predicate is `rdf:li`.
         let pred =
-            self.predicate_iri_start(&self.reader.decode(e.name()).locate_err(&self.reader)?)?;
+            self.predicate_iri_start(&self.reader.decode(e.name()).locate_err_with(&self.reader)?)?;
 
         // Fail if the property is among forbidden names.
         if RESERVED_PROPERTY_NAMES.matches(&pred) {
-            Err(RdfError::InvalidPropertyName(pred.value())).locate_err(&self.reader)?;
+            Err(RdfError::InvalidPropertyName(pred.value())).locate_err_with(&self.reader)?;
         } else {
             self.parents.push(pred);
         }
@@ -328,7 +352,7 @@ where
         let mut next_state = ParsingState::Node;
         let mut object = Vec::with_capacity(1);
         for attr in e.attributes().with_checks(true) {
-            let a = attr.locate_err(&self.reader)?;
+            let a = attr.locate_err_with(&self.reader)?;
 
             // Ignore `xml` attributes
             if a.key.starts_with(b"xml") {
@@ -337,25 +361,27 @@ where
 
             let k = self
                 .scope()
-                .expand_attribute(&self.reader.decode(a.key).locate_err(&self.reader)?)
-                .locate_err(&self.reader)?;
+                .expand_attribute(&self.reader.decode(a.key).locate_err_with(&self.reader)?)
+                .locate_err_with(&self.reader)?;
             if k.matches(&rdf::datatype) {
                 let v = a
                     .unescape_and_decode_value(&self.reader)
-                    .locate_err(&self.reader)?;
-                self.scope_mut().set_datatype(&v).locate_err(&self.reader)?;
+                    .locate_err_with(&self.reader)?;
+                self.scope_mut()
+                    .set_datatype(&v)
+                    .locate_err_with(&self.reader)?;
             } else if k.matches(&rdf::ID) {
                 let v = a
                     .unescape_and_decode_value(&self.reader)
-                    .locate_err(&self.reader)?;
-                let id = self.scope().expand_id(&v).locate_err(&self.reader)?;
+                    .locate_err_with(&self.reader)?;
+                let id = self.scope().expand_id(&v).locate_err_with(&self.reader)?;
                 object.push(self.check_unique_id(id)?);
                 next_state = ParsingState::Res;
             } else if k.matches(&rdf::resource) {
                 let v = a
                     .unescape_and_decode_value(&self.reader)
-                    .locate_err(&self.reader)?;
-                object.push(self.scope().expand_iri(&v)?);
+                    .locate_err_with(&self.reader)?;
+                object.push(self.scope().expand_iri(&v).locate_err_with(&self.reader)?);
                 next_state = ParsingState::Predicate;
             } else if k.matches(&rdf::parseType) {
                 match a.value.as_ref() {
@@ -372,21 +398,24 @@ where
                     b"Literal" => {
                         self.scope_mut()
                             .set_datatype(&rdf::XMLLiteral.value())
-                            .locate_err(&self.reader)?;
+                            .locate_err_with(&self.reader)?;
                         next_state = ParsingState::Literal;
                     }
                     other => {
                         let ty = String::from_utf8_lossy(other).to_string();
-                        Err(RdfError::InvalidParseType(ty)).locate_err(&self.reader)?;
+                        Err(RdfError::InvalidParseType(ty)).locate_err_with(&self.reader)?;
                     }
                 }
             } else if RESERVED_ATTRIBUTES_NAMES.matches(&k) {
-                Err(RdfError::InvalidAttribute(k.value())).locate_err(&self.reader)?;
+                Err(RdfError::InvalidAttribute(k.value())).locate_err_with(&self.reader)?;
             } else {
                 let v = a
                     .unescape_and_decode_value(&self.reader)
-                    .locate_err(&self.reader)?;
-                attributes.insert(k, self.scope().new_literal(v).locate_err(&self.reader)?);
+                    .locate_err_with(&self.reader)?;
+                attributes.insert(
+                    k,
+                    self.scope().new_literal(v).locate_err_with(&self.reader)?,
+                );
                 next_state = ParsingState::Resource;
             }
         }
@@ -396,7 +425,7 @@ where
             0 if !attributes.is_empty() => Some(self.new_bnode()),
             0 if attributes.is_empty() => None,
             1 => Some(object.last().unwrap().clone()),
-            _ => return Err(RdfError::AmbiguousSubject).locate_err(&self.reader),
+            _ => return Err(RdfError::AmbiguousSubject).locate_err_with(&self.reader),
         };
 
         // Make the predicate a resource element if an objec tis present.
@@ -461,7 +490,8 @@ where
 
     fn predicate_end(&mut self, e: &BytesEnd) -> Result<()> {
         // Build the predicate IRI
-        let p = self.predicate_iri_end(&self.reader.decode(e.name()).locate_err(&self.reader)?)?;
+        let p =
+            self.predicate_iri_end(&self.reader.decode(e.name()).locate_err_with(&self.reader)?)?;
 
         // Get the literal value
         if self.parents.len() > 1 {
@@ -470,7 +500,7 @@ where
                 let o = self
                     .scope_mut()
                     .new_literal(text)
-                    .locate_err(&self.reader)?;
+                    .locate_err_with(&self.reader)?;
                 self.triples.push_back(Ok([s, p, o]));
             }
         }
@@ -542,7 +572,10 @@ where
         let pred = self.parents.pop().unwrap();
         let sbj = self.parents.last().unwrap().clone();
         let txt = self.scope_mut().text.take().unwrap_or_default();
-        let obj = self.scope().new_literal(txt).locate_err(&self.reader)?;
+        let obj = self
+            .scope()
+            .new_literal(txt)
+            .locate_err_with(&self.reader)?;
 
         // Add all triples
         self.triples
@@ -558,7 +591,7 @@ where
         if self.scope().text.is_some() {
             match e.unescape_and_decode(&self.reader) {
                 Ok(text) => self.scope_mut().set_text(text),
-                Err(e) => self.triples.push_back(Err(e.at_location(&self.reader))),
+                Err(e) => self.triples.push_back(Err(e.locate_with(&self.reader))),
             }
         }
     }
@@ -582,8 +615,8 @@ where
                     expected: format!("<{}/>", name),
                     found: "end".to_string(),
                 })
-                .locate_err(&self.reader),
-                Err(e) => Err(e).locate_err(&self.reader),
+                .locate_err_with(&self.reader),
+                Err(e) => Err(e).locate_err_with(&self.reader),
             },
         };
 
@@ -602,11 +635,11 @@ where
 
     fn predicate_empty(&mut self, e: &BytesStart) -> Result<()> {
         let pred =
-            self.predicate_iri_start(&self.reader.decode(e.name()).locate_err(&self.reader)?)?;
+            self.predicate_iri_start(&self.reader.decode(e.name()).locate_err_with(&self.reader)?)?;
 
         // Fail if the property is among forbidden names.
         if RESERVED_PROPERTY_NAMES.matches(&pred) {
-            return Err(RdfError::InvalidPropertyName(pred.value())).locate_err(&self.reader);
+            return Err(RdfError::InvalidPropertyName(pred.value())).locate_err_with(&self.reader);
         }
 
         let mut object = Vec::with_capacity(1);
@@ -616,7 +649,7 @@ where
 
         // Extract attributes
         for attr in e.attributes().with_checks(true) {
-            let a = attr.locate_err(&self.reader)?;
+            let a = attr.locate_err_with(&self.reader)?;
 
             // ignore XML attributes (processed when entering scope)
             if a.key.starts_with(b"xml") {
@@ -626,17 +659,17 @@ where
             // try to extract the annotation object
             let k = self
                 .scope()
-                .expand_attribute(&self.reader.decode(a.key).locate_err(&self.reader)?)
-                .locate_err(&self.reader)?;
+                .expand_attribute(&self.reader.decode(a.key).locate_err_with(&self.reader)?)
+                .locate_err_with(&self.reader)?;
             let v = a
                 .unescape_and_decode_value(&self.reader)
-                .locate_err(&self.reader)?;
+                .locate_err_with(&self.reader)?;
             if k.matches(&rdf::resource) {
-                object.push(self.scope().expand_iri(&v).locate_err(&self.reader)?);
+                object.push(self.scope().expand_iri(&v).locate_err_with(&self.reader)?);
             } else if k.matches(&rdf::nodeID) {
                 object.push(self.rename_bnode(&v)?);
             } else if k.matches(&rdf::ID) {
-                let id = self.scope().expand_id(&v).locate_err(&self.reader)?;
+                let id = self.scope().expand_id(&v).locate_err_with(&self.reader)?;
                 reification = Some(self.check_unique_id(id)?);
             } else if k.matches(&rdf::parseType) {
                 match a.value.as_ref() {
@@ -644,11 +677,11 @@ where
                     b"Literal" => parse_type = Some(&b"Literal"[..]),
                     other => {
                         let ty = String::from_utf8_lossy(other).to_string();
-                        return Err(RdfError::InvalidParseType(ty)).locate_err(&self.reader);
+                        return Err(RdfError::InvalidParseType(ty)).locate_err_with(&self.reader);
                     }
                 };
             } else if RESERVED_ATTRIBUTES_NAMES.matches(&k) {
-                return Err(RdfError::InvalidAttribute(k.value())).locate_err(&self.reader);
+                return Err(RdfError::InvalidAttribute(k.value())).locate_err_with(&self.reader);
             } else {
                 attributes.insert(k, v);
             }
@@ -665,7 +698,7 @@ where
                 scope.datatype = Some(xmlliteral);
             } else {
                 return Err(RdfError::InvalidParseType("Literal".to_string()))
-                    .locate_err(&self.reader);
+                    .locate_err_with(&self.reader);
             }
         }
 
@@ -677,15 +710,18 @@ where
             0 if attributes.is_empty() => self
                 .scope()
                 .new_literal(String::new())
-                .locate_err(&self.reader)?,
-            _ => return Err(RdfError::AmbiguousSubject).locate_err(&self.reader),
+                .locate_err_with(&self.reader)?,
+            _ => return Err(RdfError::AmbiguousSubject).locate_err_with(&self.reader),
         };
 
         // Add the triple and all subsequent triples as attributes
         self.triples
             .push_back(Ok([sbj.clone(), pred.clone(), obj.clone()]));
         for (prop, value) in attributes.into_iter() {
-            let literal = self.scope().new_literal(value).locate_err(&self.reader)?;
+            let literal = self
+                .scope()
+                .new_literal(value)
+                .locate_err_with(&self.reader)?;
             self.triples.push_back(Ok([obj.clone(), prop, literal]));
         }
 

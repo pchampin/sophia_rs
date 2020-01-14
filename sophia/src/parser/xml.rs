@@ -21,7 +21,7 @@ use url::Url;
 use crate::ns::rdf;
 use crate::ns::xsd;
 use crate::ns::Namespace;
-use crate::parser::Parser;
+use crate::parser::{LocatableError, Parser};
 use crate::term::factory::RcTermFactory;
 use crate::term::factory::TermFactory;
 use crate::term::iri_rfc3987::is_absolute_iri_ref;
@@ -246,7 +246,7 @@ where
                 Err(e) => {
                     self.handler
                         .triples
-                        .push_back(Err(e.at_location(&self.handler.reader)));
+                        .push_back(Err(e.locate_with(&self.handler.reader)));
                 }
             }
         }
