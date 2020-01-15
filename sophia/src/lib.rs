@@ -57,9 +57,8 @@
 //! let alice = ex.get("alice").unwrap();
 //! graph.insert(&bob, &knows, &alice).unwrap();
 //!
-//! let mut nt_stringifier = serializer::nt::stringifier();
-//! let example2 = nt_stringifier.stringify_graph(&mut graph).unwrap();
-//! println!("The resulting graph\n{}", example2);
+//! let example2 = serializer::nt::stringify_graph(&mut graph).unwrap();
+//! println!("The resulting graph:\n{}", example2);
 //! ```
 
 extern crate language_tag;

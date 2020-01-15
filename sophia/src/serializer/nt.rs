@@ -10,59 +10,56 @@
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
 use std::io;
-use std::mem::swap;
 
 use crate::term::{LiteralKind, Term, TermData};
 use crate::triple::stream::*;
 
 use super::*;
 
-/// N-Triples serializer configuration.
-///
-/// For more information,
-/// see the [uniform interface] of serializers.
-///
-/// [uniform interface]: ../index.html#uniform-interface
-///
+/// N-Triples serializer.
 #[derive(Clone, Debug, Default)]
-pub struct Config {
+pub struct NtSerializer {
     ascii: bool,
+    strict: bool,
 }
 
-impl Config {
-    pub fn writer<W: io::Write>(&self, write: W) -> Writer<W> {
-        Writer::new(write, self.clone())
-    }
+impl<W: io::Write> TripleSerializer<W> for NtSerializer {
+    type Sink = NtSink<W>;
 
-    pub fn stringifier(&self) -> Stringifier {
-        Stringifier::new(self.clone())
+    fn sink(&self, write: W) -> Self::Sink {
+        NtSink::new(self, write)
     }
 }
 
-def_default_serializer_api!();
+derive_triple_stringifier!(NtSerializer);
 
-/// A [`TripleSink`] returned by [`Config::writer`].
+def_mod_functions_for_write_triple_serializer!(NtSerializer);
+
+/// The [`TripleSink`] type returned by [`NtSerializer::sink`]
 ///
 /// [`TripleSink`]: ../../triple/stream/trait.TripleSink.html
-/// [`Config::writer`]: struct.Config.html#method.writer
-pub struct Writer<W: io::Write> {
+/// [`NtSerialier::sink`]: struct.Config.html#method.sink
+pub struct NtSink<W> {
     write: W,
 }
 
-impl<W: io::Write> TripleWriter<W> for Writer<W> {
-    type Config = Config;
-
-    fn new(write: W, config: Self::Config) -> Self {
-        if config.ascii {
+impl<W: io::Write> NtSink<W> {
+    fn new(serializer: &NtSerializer, write: W) -> Self {
+        if serializer.ascii {
             unimplemented!()
         }
         // TODO if ascii is true,
         // wrap write in a dedicated type that will rewrite non-ascii characters
-        Writer { write }
+        if serializer.strict {
+            unimplemented!()
+        }
+        // TODO if strict is true,
+        // ensure that non-RDF triples are rejected
+        NtSink { write }
     }
 }
 
-impl<W: io::Write> TripleSink for Writer<W> {
+impl<W: io::Write> TripleSink for NtSink<W> {
     type Outcome = ();
     type Error = io::Error;
 
@@ -81,8 +78,6 @@ impl<W: io::Write> TripleSink for Writer<W> {
         Ok(())
     }
 }
-
-def_triple_stringifier!();
 
 /// Write a single RDF term into `w` using the N-Triples syntax.
 pub fn write_term<T, W>(w: &mut W, t: &Term<T>) -> io::Result<()>
@@ -273,8 +268,7 @@ pub(crate) mod test {
                 StaticTerm::new_literal_dt("Pierre-Antoine", xsd::string).unwrap(),
             ],
         ];
-        let mut triples = triples.into_iter().as_triple_source();
-        let s = triples.in_sink(&mut stringifier()).unwrap();
+        let s = stringify_graph(&triples).unwrap();
         assert_eq!(
             s,
             r#"<http://champin.net/#pa> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person> .
