@@ -50,6 +50,10 @@ impl<T: TermData> Namespace<T> {
 
 /// Helper for creating a "namespace module"
 /// defining a set of terms within a given IRI space.
+///
+/// # Safety
+/// This macro is conceptually unsafe,
+/// as it is never checked that the prefix IRI is a valid IRI reference.
 #[macro_export]
 macro_rules! namespace {
     ($iri_prefix:expr, $($suffix:ident),*) => {
@@ -60,18 +64,22 @@ macro_rules! namespace {
     }
 }
 
+/// Helper for creating a term in a "namespace module".
+/// In general, you should use the [`namespace!`](macro.namespace.html) macro instead.
+///
+/// # Safety
+/// This macro is conceptually unsafe,
+/// as it is never checked that the prefix IRI is a valid IRI reference.
+#[macro_export]
 macro_rules! ns_term {
     ($prefix:expr, $ident:ident) => {
         ns_term!($prefix, $ident, stringify!($ident));
     };
     ($prefix:expr, $ident:ident, $suffix:expr) => {
         #[allow(non_upper_case_globals)]
-        pub static $ident: $crate::term::StaticTerm =
-            $crate::term::Term::Iri($crate::term::IriData {
-                ns: $prefix,
-                suffix: Some($suffix),
-                absolute: true,
-            });
+        pub static $ident: $crate::term::StaticTerm = $crate::term::Term::Iri(unsafe {
+            $crate::term::IriData::from_raw_parts($prefix, Some($suffix), true)
+        });
     };
 }
 

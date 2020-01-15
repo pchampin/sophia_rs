@@ -202,6 +202,26 @@ where
     }
 }
 
+impl IriData<&'static str> {
+    /// Build an `IriData` from its raw components.
+    /// This constructor is used by the [`namespace!`](../macro.namespace.html) macro,
+    /// but should not be used directly.
+    ///
+    /// # Safety
+    /// The resulting IRI may be invalid.
+    pub const unsafe fn from_raw_parts(
+        ns: &'static str,
+        suffix: Option<&'static str>,
+        absolute: bool,
+    ) -> IriData<&'static str> {
+        IriData {
+            ns,
+            suffix,
+            absolute,
+        }
+    }
+}
+
 impl<T, U> PartialEq<IriData<U>> for IriData<T>
 where
     T: AsRef<str>,
