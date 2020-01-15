@@ -21,9 +21,9 @@ use super::*;
 /// for more detail.
 #[derive(Clone, Copy, Debug, Eq)]
 pub struct IriData<T: AsRef<str>> {
-    pub(crate) ns: T,
-    pub(crate) suffix: Option<T>,
-    pub(crate) absolute: bool,
+    pub ns: T,
+    pub suffix: Option<T>,
+    pub absolute: bool,
 }
 
 impl<T> IriData<T>
