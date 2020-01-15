@@ -60,6 +60,7 @@ macro_rules! namespace {
     }
 }
 
+#[macro_export]
 macro_rules! ns_term {
     ($prefix:expr, $ident:ident) => {
         ns_term!($prefix, $ident, stringify!($ident));
