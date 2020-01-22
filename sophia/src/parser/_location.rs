@@ -1,4 +1,5 @@
 // this module is transparently re-exported by its parent `parser`
+use std::error::Error;
 use std::fmt;
 
 /// A location in a parsed stream, which can be unknown, a specific point, or a span.
@@ -63,4 +64,26 @@ impl fmt::Display for Position {
 /// This trait is meant to be implemented by errors raised by parsers.
 pub trait WithLocation {
     fn location(&self) -> Location;
+}
+
+pub trait LocateResult<T, LE, LS>
+where
+    LE: LocatableError<LS>,
+{
+    fn locate_err_with(self, ls: &LS) -> Result<T, LE::LocatedError>;
+}
+
+impl<T, LE, LS> LocateResult<T, LE, LS> for Result<T, LE>
+where
+    LE: LocatableError<LS>,
+{
+    fn locate_err_with(self, ls: &LS) -> Result<T, LE::LocatedError> {
+        self.map_err(|e| e.locate_with(ls))
+    }
+}
+
+pub trait LocatableError<LS> {
+    type LocatedError: WithLocation + Error;
+
+    fn locate_with(self, ls: &LS) -> Self::LocatedError;
 }

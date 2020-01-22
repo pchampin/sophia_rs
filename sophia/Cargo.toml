@@ -29,5 +29,5 @@ url = "2.1.0"
 weak-table = "0.2.3"
 thiserror = "1.0.9"
 
-quick-xml = { version = "0.15.0", optional = true }
+quick-xml = { version = "0.17.2", optional = true }
 percent-encoding = { version = "2.1.0", optional = true }
