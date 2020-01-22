@@ -47,7 +47,8 @@ macro_rules! def_triple_stringifier {
 
         impl $crate::triple::stream::TripleSink for $stringifier {
             type Outcome = String;
-            type Error = $crate::error::Error;
+            /// <Vec as io::Write> never returns an error
+            type Error = std::convert::Infallible;
 
             fn feed<T>(&mut self, t: &T) -> std::result::Result<(), Self::Error>
             where
@@ -93,7 +94,8 @@ macro_rules! def_quad_stringifier {
 
         impl $crate::quad::stream::QuadSink for $stringifier {
             type Outcome = String;
-            type Error = $crate::error::Error;
+            /// <Vec as io::Write> never returns an error
+            type Error = std::convert::Infallible;
 
             fn feed<T>(&mut self, t: &T) -> std::result::Result<(), Self::Error>
             where
