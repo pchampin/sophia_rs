@@ -11,9 +11,7 @@
 
 use std::io;
 use std::mem::swap;
-use std::result::Result as StdResult;
 
-use crate::error::*;
 use crate::term::{LiteralKind, Term, TermData};
 use crate::triple::stream::*;
 
@@ -66,23 +64,20 @@ impl<W: io::Write> TripleWriter<W> for Writer<W> {
 
 impl<W: io::Write> TripleSink for Writer<W> {
     type Outcome = ();
-    type Error = Error;
+    type Error = io::Error;
 
-    fn feed<T: Triple>(&mut self, t: &T) -> StdResult<(), Self::Error> {
+    fn feed<T: Triple>(&mut self, t: &T) -> Result<(), Self::Error> {
         let w = &mut self.write;
 
-        (|| {
-            write_term(w, t.s())?;
-            w.write_all(b" ")?;
-            write_term(w, t.p())?;
-            w.write_all(b" ")?;
-            write_term(w, t.o())?;
-            w.write_all(b" .\n")
-        })()
-        .chain_err(|| ErrorKind::SerializerError("N-Triples serializer".into()))
+        write_term(w, t.s())?;
+        w.write_all(b" ")?;
+        write_term(w, t.p())?;
+        w.write_all(b" ")?;
+        write_term(w, t.o())?;
+        w.write_all(b" .\n")
     }
 
-    fn finish(&mut self) -> StdResult<(), Self::Error> {
+    fn finish(&mut self) -> Result<(), Self::Error> {
         Ok(())
     }
 }

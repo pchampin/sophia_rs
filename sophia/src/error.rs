@@ -4,10 +4,6 @@ use std::convert::Infallible;
 
 error_chain! {
     errors {
-        /// Raised by serializers when they encounter a problem.
-        SerializerError(message: String) {
-            display("error while serializing: {}", message)
-        }
         /// Raised by some mutable dataset
         TermError(te: TermError) {
             display("From term: {}", te)

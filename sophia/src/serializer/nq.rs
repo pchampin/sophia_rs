@@ -11,9 +11,7 @@
 
 use std::io;
 use std::mem::swap;
-use std::result::Result as StdResult;
 
-use crate::error::*;
 use crate::quad::stream::*;
 use crate::quad::Quad;
 use crate::term::{LiteralKind, Term, TermData};
@@ -67,27 +65,24 @@ impl<W: io::Write> QuadWriter<W> for Writer<W> {
 
 impl<W: io::Write> QuadSink for Writer<W> {
     type Outcome = ();
-    type Error = Error;
+    type Error = io::Error;
 
-    fn feed<T: Quad>(&mut self, t: &T) -> StdResult<(), Self::Error> {
+    fn feed<T: Quad>(&mut self, t: &T) -> Result<(), Self::Error> {
         let w = &mut self.write;
 
-        (|| {
-            write_term(w, t.s())?;
+        write_term(w, t.s())?;
+        w.write_all(b" ")?;
+        write_term(w, t.p())?;
+        w.write_all(b" ")?;
+        write_term(w, t.o())?;
+        if let Some(g) = t.g() {
             w.write_all(b" ")?;
-            write_term(w, t.p())?;
-            w.write_all(b" ")?;
-            write_term(w, t.o())?;
-            if let Some(g) = t.g() {
-                w.write_all(b" ")?;
-                write_term(w, g)?;
-            }
-            w.write_all(b" .\n")
-        })()
-        .chain_err(|| ErrorKind::SerializerError("N-Quads serializer".into()))
+            write_term(w, g)?;
+        }
+        w.write_all(b" .\n")
     }
 
-    fn finish(&mut self) -> StdResult<(), Self::Error> {
+    fn finish(&mut self) -> Result<(), Self::Error> {
         Ok(())
     }
 }
