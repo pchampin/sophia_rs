@@ -450,17 +450,17 @@ pub trait Dataset {
         for q in self.quads() {
             let q = q?;
             let (s, p, o) = (q.s(), q.p(), q.o());
-            if let Literal(_, _) = s {
+            if let Literal(_) = s {
                 insert_if_absent(&mut res, s)
             }
-            if let Literal(_, _) = p {
+            if let Literal(_) = p {
                 insert_if_absent(&mut res, p)
             }
-            if let Literal(_, _) = o {
+            if let Literal(_) = o {
                 insert_if_absent(&mut res, o)
             }
             if let Some(gn) = q.g() {
-                if let Literal(_, _) = gn {
+                if let Literal(_) = gn {
                     insert_if_absent(&mut res, &gn)
                 }
             }

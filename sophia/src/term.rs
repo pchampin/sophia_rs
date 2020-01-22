@@ -35,10 +35,8 @@
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::rc::Rc;
-use std::str::FromStr;
 use std::sync::Arc;
 
-use language_tag::LangTag;
 use regex::Regex;
 
 pub mod factory;
@@ -53,10 +51,10 @@ mod _convert;
 pub use self::_convert::*;
 mod _iri_data;
 pub use self::_iri_data::*;
-mod _graph_name_matcher; // is 'pub use'd by module 'matcher'
-mod _literal_kind;
-pub use self::_literal_kind::*;
+mod _literal;
+pub use self::_literal::*;
 mod _error;
+mod _graph_name_matcher; // is 'pub use'd by module 'matcher'
 pub use self::_error::*;
 
 /// Generic type for RDF terms.
@@ -70,7 +68,7 @@ where
 {
     Iri(IriData<T>),
     BNode(BNodeId<T>),
-    Literal(T, LiteralKind<T>),
+    Literal(LiteralData<T>),
     Variable(T),
 }
 pub use self::Term::*;
@@ -119,7 +117,7 @@ where
         match self {
             Iri(iri) => iri.to_string(),
             BNode(id) => String::from(id.as_ref()),
-            Literal(value, _) => String::from(value.as_ref()),
+            Literal(literal) => literal.to_string(),
             Variable(name) => String::from(name.as_ref()),
         }
     }
@@ -178,15 +176,9 @@ where
     pub fn new_literal_lang<U, V>(txt: U, lang: V) -> Result<Term<T>>
     where
         T: From<U> + From<V>,
+        V: AsRef<str>,
     {
-        let tag = T::from(lang);
-        match LangTag::from_str(tag.as_ref()) {
-            Err(err) => Err(TermError::InvalidLanguageTag {
-                tag: tag.as_ref().to_string(),
-                err,
-            }),
-            Ok(_) => Ok(Literal(T::from(txt), Lang(tag))),
-        }
+        Ok(Literal(LiteralData::new_lang(txt, lang)?))
     }
 
     /// Return a new literal term with the given value and datatype.
@@ -196,10 +188,7 @@ where
     where
         T: From<U>,
     {
-        match dt {
-            Iri(iri) => Ok(Literal(T::from(txt), Datatype(iri))),
-            _ => Err(TermError::InvalidDatatype(dt.n3())),
-        }
+        Ok(Literal(LiteralData::new_dt(txt, dt)?))
     }
 
     /// Return a new variable term with the given name.
@@ -226,27 +215,21 @@ where
         match other {
             Iri(iri) => Iri(IriData::from_with(&iri, factory)),
             BNode(id) => BNode(BNodeId::from_with(&id, factory)),
-            Literal(value, kind) => Literal(
-                factory(value.as_ref()),
-                LiteralKind::from_with(kind, factory),
-            ),
+            Literal(literal) => Literal(LiteralData::from_with(&literal, factory)),
             Variable(name) => Variable(factory(name.as_ref())),
         }
     }
 
     /// Copy another term with the given factory,
     /// applying the given normalization policy.
-    pub fn normalized_with<U, F>(other: &'_ Term<U>, mut factory: F, norm: Normalization) -> Term<T>
+    pub fn normalized_with<U, F>(other: &'_ Term<U>, factory: F, norm: Normalization) -> Term<T>
     where
         U: TermData,
         F: FnMut(&str) -> T,
     {
         match other {
             Iri(iri) => Iri(IriData::normalized_with(&iri, factory, norm)),
-            Literal(value, kind) => Literal(
-                factory(value.as_ref()),
-                LiteralKind::normalized_with(kind, factory, norm),
-            ),
+            Literal(literal) => Literal(LiteralData::normalized_with(&literal, factory, norm)),
             _ => Self::from_with(other, factory),
         }
     }
@@ -294,12 +277,12 @@ where
     /// Return a literal term.
     ///
     /// # Safety
-    /// This function that `lang` is a valid language tag.
+    /// This function requires that `lang` is a valid language tag.
     pub unsafe fn new_literal_lang_unchecked<U, V>(txt: U, lang: V) -> Term<T>
     where
         T: From<U> + From<V>,
     {
-        Literal(T::from(txt), Lang(T::from(lang)))
+        Literal(LiteralData::new_lang_unchecked(txt, lang))
     }
 
     /// Return a typed literal term.
@@ -310,14 +293,7 @@ where
     where
         T: From<U> + Debug,
     {
-        if let Iri(dt) = dt {
-            Literal(T::from(txt), Datatype(dt))
-        } else {
-            panic!(format!(
-                "new_literal_dt_unchecked expects Term::Iri as dt, got {:?}",
-                dt
-            ))
-        }
+        Literal(LiteralData::new_dt_unchecked(txt, dt))
     }
 
     /// Return a new variable term.
@@ -401,10 +377,14 @@ where
                 let iri_txt = iri.to_string();
                 let base = IriRefStructure::new(&iri_txt).unwrap();
                 task(&|t| match t {
-                    Iri(ref iri) => Iri(base.join_iri(iri)),
-                    Literal(ref txt, Datatype(ref iri)) => {
-                        Literal(txt.clone(), Datatype(base.join_iri(iri)))
-                    }
+                    Iri(iri) => Iri(base.join_iri(&iri)),
+                    Literal(LiteralData {
+                        text,
+                        kind: Datatype(iri),
+                    }) => Literal(LiteralData {
+                        text: text.clone(),
+                        kind: Datatype(base.join_iri(&iri)),
+                    }),
                     _ => t.clone(),
                 });
             }
@@ -419,7 +399,11 @@ where
     /// * Any other term is always absolute.
     pub fn is_absolute(&self) -> bool {
         match self {
-            Iri(iri) | Literal(_, Datatype(iri)) => iri.is_absolute(),
+            Iri(iri)
+            | Literal(LiteralData {
+                kind: Datatype(iri),
+                ..
+            }) => iri.is_absolute(),
             _ => true,
         }
     }
@@ -434,9 +418,7 @@ where
         match (self, other) {
             (Iri(iri1), Iri(iri2)) => iri1 == iri2,
             (BNode(id1), BNode(id2)) => id1 == id2,
-            (Literal(value1, kind1), Literal(value2, kind2)) => {
-                value1.as_ref() == value2.as_ref() && kind1 == kind2
-            }
+            (Literal(literal1), Literal(literal2)) => literal1 == literal2,
             (Variable(name1), Variable(name2)) => name1.as_ref() == name2.as_ref(),
             _ => false,
         }

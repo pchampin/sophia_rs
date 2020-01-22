@@ -272,13 +272,13 @@ pub trait Graph {
         for t in self.triples() {
             let t = t?;
             let (s, p, o) = (t.s(), t.p(), t.o());
-            if let Literal(_, _) = s {
+            if let Literal(_) = s {
                 insert_if_absent(&mut res, s)
             }
-            if let Literal(_, _) = p {
+            if let Literal(_) = p {
                 insert_if_absent(&mut res, p)
             }
-            if let Literal(_, _) = o {
+            if let Literal(_) = o {
                 insert_if_absent(&mut res, o)
             }
         }

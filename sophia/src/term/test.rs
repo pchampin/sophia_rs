@@ -253,11 +253,18 @@ fn literal_lang() {
     assert_eq!(lit.value(), "hello".to_string());
     assert_eq!(lit.n3(), "\"hello\"@en".to_string());
 
-    if let Literal(val, Lang(tag)) = lit {
-        assert_eq!(val.as_ref() as &str, "hello");
+    if let Literal(LiteralData {
+        text,
+        kind: Lang(tag),
+    }) = lit
+    {
+        assert_eq!(text.as_ref() as &str, "hello");
         assert_eq!(tag.as_ref() as &str, "en");
     } else {
-        assert!(false, "Should have returned Literal(_, Lang(_))");
+        assert!(
+            false,
+            "Should have returned Literal(LiteralData {kind: Lang(_), ..})"
+        );
     }
     let res = RefTerm::new_literal_lang("hello", "");
     assert!(res.is_err());
@@ -269,11 +276,18 @@ fn literal_dt() {
     assert_eq!(lit.value(), "hello".to_string());
     assert_eq!(lit.n3(), "\"hello\"".to_string());
 
-    if let Literal(val, Datatype(iri)) = lit {
-        assert_eq!(val.as_ref() as &str, "hello");
+    if let Literal(LiteralData {
+        text,
+        kind: Datatype(iri),
+    }) = lit
+    {
+        assert_eq!(text.as_ref() as &str, "hello");
         assert_eq!(iri, xsd::string);
     } else {
-        assert!(false, "Should have returned Literal(_, Datatype(_))");
+        assert!(
+            false,
+            "Should have returned Literal(LiteralData {kind: Datatype(_), ..})"
+        );
     }
 
     let lit = RefTerm::new_literal_dt("42", xsd::integer.clone()).unwrap();
@@ -339,7 +353,10 @@ fn literal_normalized_no_suffix() {
     let l1 = BoxTerm::new_literal_dt("hello", dt).unwrap();
     let l2 = BoxTerm::normalized_with(&l1, |txt| Box::from(txt), norm);
     assert_eq!(l1, l2);
-    if let Literal(_, Datatype(i2)) = l2 {
+    if let Literal(LiteralData {
+        kind: Datatype(i2), ..
+    }) = l2
+    {
         assert!(i2.suffix.is_none());
     }
 }
@@ -368,7 +385,10 @@ fn literal_normalized_last_hash_or_slash() {
         let l1 = BoxTerm::new_literal_dt("hello", dt).unwrap();
         let l2 = BoxTerm::normalized_with(&l1, |txt| Box::from(txt), norm);
         assert_eq!(l1, l2);
-        if let Literal(_, Datatype(i2)) = l2 {
+        if let Literal(LiteralData {
+            kind: Datatype(i2), ..
+        }) = l2
+        {
             assert_eq!(&i2.ns[..], *ns2);
             let sf2 = if sf2.len() == 0 {
                 None

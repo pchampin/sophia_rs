@@ -14,7 +14,7 @@ use std::mem::swap;
 use std::result::Result as StdResult;
 
 use crate::error::*;
-use crate::term::{LiteralKind, Term, TermData};
+use crate::term::{LiteralData, LiteralKind, Term, TermData};
 use crate::triple::stream::*;
 
 use super::*;
@@ -111,15 +111,21 @@ where
                 write_non_n3_bnode_id(w, ident.as_ref())?;
             }
         }
-        Literal(value, Lang(tag)) => {
+        Literal(LiteralData {
+            text,
+            kind: Lang(tag),
+        }) => {
             w.write_all(b"\"")?;
-            write_quoted_string(w, value.as_ref())?;
+            write_quoted_string(w, text.as_ref())?;
             w.write_all(b"\"@")?;
             w.write_all(tag.as_ref().as_bytes())?;
         }
-        Literal(value, Datatype(iri)) => {
+        Literal(LiteralData {
+            text,
+            kind: Datatype(iri),
+        }) => {
             w.write_all(b"\"")?;
-            write_quoted_string(w, value.as_ref())?;
+            write_quoted_string(w, text.as_ref())?;
             w.write_all(b"\"")?;
             if iri != &"http://www.w3.org/2001/XMLSchema#string" {
                 w.write_all(b"^^<")?;
