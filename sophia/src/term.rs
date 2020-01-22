@@ -170,6 +170,13 @@ where
         Ok(BNode(BNodeId::new(T::from(id))))
     }
 
+    pub fn new_literal<'a, U>(txt: U) -> Self
+    where
+        T: From<U> + From<&'a str>,
+    {
+        Literal(LiteralData::new(txt))
+    }
+
     /// Return a new literal term with the given value and language tag.
     ///
     /// May fail if the language tag is not a valid BCP47 language tag.

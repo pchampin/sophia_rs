@@ -241,7 +241,7 @@ pub(crate) mod test {
                 r#""chat"@fr-FR"#,
             ),
             (
-                StaticTerm::new_literal_dt("chat", xsd::string).unwrap(),
+                StaticTerm::new_literal("chat"),
                 r#""chat""#,
             ),
             (
@@ -249,12 +249,12 @@ pub(crate) mod test {
                 r#""42"^^<http://www.w3.org/2001/XMLSchema#integer>"#,
             ),
             (
-                StaticTerm::new_literal_dt(" \n \r \\ \" hello world", xsd::string).unwrap(),
+                StaticTerm::new_literal(" \n \r \\ \" hello world"),
                 r#"" \n \r \\ \" hello world""#,
             ),
             (
                 // Literal with non-ascii characteres
-                StaticTerm::new_literal_dt("é \u{10000}", xsd::string).unwrap(),
+                StaticTerm::new_literal("é \u{10000}"),
                 // in canonical form, non-ascii characters are NOT escaped in literals
                 "\"é \u{10000}\"",
             )
@@ -281,7 +281,7 @@ pub(crate) mod test {
             [
                 me,
                 StaticTerm::new_iri("http://schema.org/name").unwrap(),
-                StaticTerm::new_literal_dt("Pierre-Antoine", xsd::string).unwrap(),
+                StaticTerm::new_literal("Pierre-Antoine"),
             ],
         ];
         let mut triples = triples.into_iter().as_triple_source();

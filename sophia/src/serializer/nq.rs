@@ -241,7 +241,7 @@ mod test {
                 [
                     me,
                     StaticTerm::new_iri("http://schema.org/name").unwrap(),
-                    StaticTerm::new_literal_dt("Pierre-Antoine", xsd::string).unwrap(),
+                    StaticTerm::new_literal("Pierre-Antoine"),
                 ],
                 Some(StaticTerm::new_iri("http://example.org/graph").unwrap()),
             ),

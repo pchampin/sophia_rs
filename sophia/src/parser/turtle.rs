@@ -45,7 +45,7 @@ mod test {
     use super::*;
     use crate::graph::inmem::FastGraph;
     use crate::graph::Graph;
-    use crate::ns::{rdf, xsd};
+    use crate::ns::rdf;
     use crate::term::matcher::ANY;
     use crate::term::StaticTerm;
     use crate::triple::stream::TripleSource;
@@ -94,7 +94,7 @@ mod test {
             .triples_matching(
                 &ANY,
                 &StaticTerm::new_iri("http://example.org/ns/name").unwrap(),
-                &StaticTerm::new_literal_dt("Alice", xsd::string).unwrap(),
+                &StaticTerm::new_literal("Alice"),
             )
             .next()
             .is_some());

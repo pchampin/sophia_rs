@@ -6,7 +6,6 @@ use std::result::Result as StdResult;
 use rio_api::model::*;
 use rio_api::parser::*;
 
-use crate::ns::xsd;
 use crate::quad::stream::*;
 use crate::term::{BoxTerm, RefTerm};
 use crate::triple::stream::*;
@@ -197,9 +196,7 @@ pub fn rio2refterm(t: GeneralizedTerm) -> RefTerm {
         match t {
             GeneralizedTerm::BlankNode(b) => RefTerm::new_bnode(b.id).unwrap(),
             GeneralizedTerm::NamedNode(n) => RefTerm::new_iri_unchecked(n.iri, None),
-            GeneralizedTerm::Literal(Simple { value }) => {
-                RefTerm::new_literal_dt_unchecked(value, xsd::string)
-            }
+            GeneralizedTerm::Literal(Simple { value }) => RefTerm::new_literal(value),
             GeneralizedTerm::Literal(LanguageTaggedString { value, language }) => {
                 RefTerm::new_literal_lang_unchecked(value, language)
             }

@@ -271,8 +271,8 @@ fn literal_lang() {
 }
 
 #[test]
-fn literal_dt() {
-    let lit = RefTerm::new_literal_dt("hello", xsd::string.clone()).unwrap();
+fn literal_simple() {
+    let lit = RefTerm::new_literal("hello");
     assert_eq!(lit.value(), "hello".to_string());
     assert_eq!(lit.n3(), "\"hello\"".to_string());
 
@@ -289,13 +289,30 @@ fn literal_dt() {
             "Should have returned Literal(LiteralData {kind: Datatype(_), ..})"
         );
     }
+}
 
+#[test]
+fn literal_dt() {
     let lit = RefTerm::new_literal_dt("42", xsd::integer.clone()).unwrap();
     assert_eq!(lit.value(), "42".to_string());
     assert_eq!(
         lit.n3(),
         "\"42\"^^<http://www.w3.org/2001/XMLSchema#integer>".to_string()
     );
+
+    if let Literal(LiteralData {
+        text,
+        kind: Datatype(iri),
+    }) = lit
+    {
+        assert_eq!(text.as_ref() as &str, "42");
+        assert_eq!(iri, xsd::integer);
+    } else {
+        assert!(
+            false,
+            "Should have returned Literal(LiteralData {kind: Datatype(_), ..})"
+        );
+    }
 }
 
 #[test]

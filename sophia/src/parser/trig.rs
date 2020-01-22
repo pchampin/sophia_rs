@@ -35,7 +35,7 @@ mod test {
     use super::*;
     use crate::dataset::inmem::FastDataset;
     use crate::dataset::Dataset;
-    use crate::ns::{rdf, xsd};
+    use crate::ns::rdf;
     use crate::quad::stream::QuadSource;
     use crate::term::matcher::ANY;
     use crate::term::StaticTerm;
@@ -91,7 +91,7 @@ mod test {
             .quads_matching(
                 &ANY,
                 &StaticTerm::new_iri("http://example.org/ns/name").unwrap(),
-                &StaticTerm::new_literal_dt("Alice", xsd::string).unwrap(),
+                &StaticTerm::new_literal("Alice"),
                 &StaticTerm::new_iri("http://localhost/ex#g2").unwrap(),
             )
             .next()

@@ -15,9 +15,9 @@ pub struct LiteralData<T: TermData> {
 
 impl<T: TermData> LiteralData<T> {
     /// Returns a new simple literal, i.e. with datatype `xsd:string`.
-    pub fn new<U>(text: U) -> Self
+    pub fn new<'a, U>(text: U) -> Self
     where
-        T: From<U> + From<&'static str>,
+        T: From<U> + From<&'a str>,
     {
         if let Term::Iri(xsd_string) = &crate::ns::xsd::string {
             let copy_iri = IriData::from_with(&xsd_string, T::from);

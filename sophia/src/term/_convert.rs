@@ -7,15 +7,13 @@ use crate::ns::xsd;
 
 impl From<String> for BoxTerm {
     fn from(val: String) -> BoxTerm {
-        let dt = BoxTerm::from(&xsd::string);
-        BoxTerm::new_literal_dt_unchecked(val, dt)
+        BoxTerm::new_literal(val)
     }
 }
 
 impl<'a> From<&'a str> for RefTerm<'a> {
     fn from(val: &'a str) -> RefTerm<'a> {
-        let dt = xsd::string;
-        RefTerm::new_literal_dt_unchecked(val, dt)
+        RefTerm::new_literal(val)
     }
 }
 
