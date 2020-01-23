@@ -62,28 +62,38 @@ impl fmt::Display for Position {
 }
 
 /// This trait is meant to be implemented by errors raised by parsers.
+///
+/// See also [`LocatableError`](./trait.LocatableError.html)
+/// and [`LocatableResult`](./trait.LocatableResult.html).
 pub trait WithLocation {
     fn location(&self) -> Location;
 }
 
-pub trait LocateResult<T, LE, LS>
+/// An extension for `Result`s embedding a [`LocatableError`](trait.LocatableError.html).
+pub trait LocatableResult<T, E, L>
 where
-    LE: LocatableError<LS>,
+    E: LocatableError<L>,
 {
-    fn locate_err_with(self, ls: &LS) -> Result<T, LE::LocatedError>;
+    /// Add location information to the embeded error, if any.
+    fn locate_err_with(self, ls: L) -> Result<T, E::WithLocation>;
 }
 
-impl<T, LE, LS> LocateResult<T, LE, LS> for Result<T, LE>
+impl<T, E, L> LocatableResult<T, E, L> for Result<T, E>
 where
-    LE: LocatableError<LS>,
+    E: LocatableError<L>,
 {
-    fn locate_err_with(self, ls: &LS) -> Result<T, LE::LocatedError> {
+    fn locate_err_with(self, ls: L) -> Result<T, E::WithLocation> {
         self.map_err(|e| e.locate_with(ls))
     }
 }
 
-pub trait LocatableError<LS> {
-    type LocatedError: WithLocation + Error;
+/// An error which can be enriched with location information.
+///
+/// See also [`WithLocation`](trait.WithLocation.html)
+/// and [`LocatableResult`](./trait.LocatableResult.html).
+pub trait LocatableError<L>: Error {
+    type WithLocation: WithLocation + Error;
 
-    fn locate_with(self, ls: &LS) -> Self::LocatedError;
+    /// Add location information to this error.
+    fn locate_with(self, ls: L) -> Self::WithLocation;
 }

@@ -35,13 +35,13 @@ impl WithLocation for XmlParserError {
     }
 }
 
-impl<BR> LocatableError<Reader<BR>> for quick_xml::Error
+impl<'a, BR> LocatableError<&'a Reader<BR>> for quick_xml::Error
 where
     BR: BufRead,
 {
-    type LocatedError = XmlParserError;
+    type WithLocation = XmlParserError;
 
-    fn locate_with(self, ls: &Reader<BR>) -> Self::LocatedError {
+    fn locate_with(self, ls: &'a Reader<BR>) -> Self::WithLocation {
         let location = Location::Pos(Position::Offset(ls.buffer_position()));
         XmlParserError::Xml {
             source: self,
@@ -86,13 +86,13 @@ pub enum RdfError {
     InvalidBaseIri(String),
 }
 
-impl<BR> LocatableError<Reader<BR>> for RdfError
+impl<'a, BR> LocatableError<&'a Reader<BR>> for RdfError
 where
     BR: BufRead,
 {
-    type LocatedError = XmlParserError;
+    type WithLocation = XmlParserError;
 
-    fn locate_with(self, ls: &Reader<BR>) -> Self::LocatedError {
+    fn locate_with(self, ls: &'a Reader<BR>) -> Self::WithLocation {
         let location = Location::Pos(Position::Offset(ls.buffer_position()));
         XmlParserError::InterpretRdf {
             source: self,

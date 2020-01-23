@@ -1,5 +1,5 @@
 use super::*;
-use crate::parser::LocateResult;
+use crate::parser::LocatableResult;
 
 /// The state of the parser.
 #[derive(Debug, Clone, Copy)]
