@@ -7,20 +7,20 @@ use std::io::BufRead;
 use rio_turtle::{NQuadsParser as RioNQParser, TurtleError};
 
 use crate::parser::rio_common::*;
-use crate::parser::Parser;
+use crate::parser::QuadParser;
 
 /// N-Quads parser based on RIO.
 #[derive(Clone, Debug, Default)]
 pub struct NQuadsParser {}
 
-impl<B: BufRead> Parser<B> for NQuadsParser {
+impl<B: BufRead> QuadParser<B> for NQuadsParser {
     type Source = StrictRioSource<RioNQParser<B>, TurtleError>;
     fn parse(&self, data: B) -> Self::Source {
         StrictRioSource::from(RioNQParser::new(data))
     }
 }
 
-def_mod_functions_for_bufread_parser!(NQuadsParser);
+def_mod_functions_for_bufread_parser!(NQuadsParser, QuadParser);
 
 // ---------------------------------------------------------------------------------
 //                                      tests
@@ -35,16 +35,6 @@ mod test {
     use crate::quad::stream::QuadSource;
     use crate::term::matcher::ANY;
     use crate::term::StaticTerm;
-
-    #[test]
-    fn test_is_triple_parser() {
-        // check that NQuadsParser implements QuadParser;
-        // actually, if this test compiles, it passes
-        fn check_trait<P: crate::parser::QuadParser<&'static [u8]>>(_: &P) {
-            assert!(true)
-        }
-        check_trait(&NQuadsParser::default());
-    }
 
     #[test]
     fn test_simple_nq_string() -> std::result::Result<(), Box<dyn std::error::Error>> {

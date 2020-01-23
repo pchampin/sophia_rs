@@ -21,7 +21,7 @@ use url::Url;
 use crate::ns::rdf;
 use crate::ns::xsd;
 use crate::ns::Namespace;
-use crate::parser::{LocatableError, Parser};
+use crate::parser::{LocatableError, TripleParser};
 use crate::term::factory::RcTermFactory;
 use crate::term::factory::TermFactory;
 use crate::term::iri_rfc3987::is_absolute_iri_ref;
@@ -102,7 +102,7 @@ impl RdfXmlParser {
     }
 }
 
-impl<B: BufRead> Parser<B> for RdfXmlParser {
+impl<B: BufRead> TripleParser<B> for RdfXmlParser {
     type Source = RdfXmlSource<B, RcTermFactory>;
     fn parse(&self, data: B) -> Self::Source {
         match &self.base {
@@ -112,7 +112,7 @@ impl<B: BufRead> Parser<B> for RdfXmlParser {
     }
 }
 
-def_mod_functions_for_bufread_parser!(RdfXmlParser);
+def_mod_functions_for_bufread_parser!(RdfXmlParser, TripleParser);
 
 // ---
 
@@ -266,7 +266,7 @@ mod test {
     use crate::graph::inmem::HashGraph;
     use crate::graph::inmem::TermIndexMapU;
     use crate::graph::Graph;
-    use crate::parser::Parser;
+    use crate::parser::TripleParser;
     use crate::term::factory::RcTermFactory;
     use crate::term::Term;
     use crate::triple::stream::TripleSource;
@@ -283,16 +283,6 @@ mod test {
             v.sort_by_key(|t| (t.s().value(), t.p().value(), t.o().value()));
             v.fmt(f)
         }
-    }
-
-    #[test]
-    fn test_is_triple_parser() {
-        // check that RdfXmlParser implements TripleParser;
-        // actually, if this test compiles, it passes
-        fn check_trait<P: crate::parser::TripleParser<&'static [u8]>>(_: &P) {
-            assert!(true)
-        }
-        check_trait(&super::RdfXmlParser::default());
     }
 
     macro_rules! assert_graph_eq {

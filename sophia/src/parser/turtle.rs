@@ -6,7 +6,7 @@ use rio_api::parser::ParseError;
 use rio_turtle::{TurtleError, TurtleParser as RioTurtleParser};
 
 use crate::parser::rio_common::*;
-use crate::parser::{Location, Parser, WithLocation};
+use crate::parser::{Location, TripleParser, WithLocation};
 
 /// Turtle parser based on RIO.
 #[derive(Clone, Debug, Default)]
@@ -14,7 +14,7 @@ pub struct TurtleParser {
     pub base: Option<String>,
 }
 
-impl<B: BufRead> Parser<B> for TurtleParser {
+impl<B: BufRead> TripleParser<B> for TurtleParser {
     type Source = StrictRioSource<RioTurtleParser<B>, TurtleError>;
     fn parse(&self, data: B) -> Self::Source {
         let base: &str = match &self.base {
@@ -34,7 +34,7 @@ impl WithLocation for TurtleError {
     }
 }
 
-def_mod_functions_for_bufread_parser!(TurtleParser);
+def_mod_functions_for_bufread_parser!(TurtleParser, TripleParser);
 
 // ---------------------------------------------------------------------------------
 //                                      tests
@@ -49,16 +49,6 @@ mod test {
     use crate::term::matcher::ANY;
     use crate::term::StaticTerm;
     use crate::triple::stream::TripleSource;
-
-    #[test]
-    fn test_is_triple_parser() {
-        // check that TurtleParser implements TripleParser;
-        // actually, if this test compiles, it passes
-        fn check_trait<P: crate::parser::TripleParser<&'static [u8]>>(_: &P) {
-            assert!(true)
-        }
-        check_trait(&TurtleParser::default());
-    }
 
     #[test]
     fn test_simple_turtle_string() -> std::result::Result<(), Box<dyn std::error::Error>> {

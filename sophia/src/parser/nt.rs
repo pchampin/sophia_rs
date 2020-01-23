@@ -7,20 +7,20 @@ use std::io::BufRead;
 use rio_turtle::{NTriplesParser as RioNTParser, TurtleError};
 
 use crate::parser::rio_common::*;
-use crate::parser::Parser;
+use crate::parser::TripleParser;
 
 /// N-Triples parser based on RIO.
 #[derive(Clone, Debug, Default)]
 pub struct NTriplesParser {}
 
-impl<B: BufRead> Parser<B> for NTriplesParser {
+impl<B: BufRead> TripleParser<B> for NTriplesParser {
     type Source = StrictRioSource<RioNTParser<B>, TurtleError>;
     fn parse(&self, data: B) -> Self::Source {
         StrictRioSource::from(RioNTParser::new(data))
     }
 }
 
-def_mod_functions_for_bufread_parser!(NTriplesParser);
+def_mod_functions_for_bufread_parser!(NTriplesParser, TripleParser);
 
 // ---------------------------------------------------------------------------------
 //                                      tests
@@ -35,16 +35,6 @@ mod test {
     use crate::term::matcher::ANY;
     use crate::term::StaticTerm;
     use crate::triple::stream::TripleSource;
-
-    #[test]
-    fn test_is_triple_parser() {
-        // check that NTriplesParser implements TripleParser;
-        // actually, if this test compiles, it passes
-        fn check_trait<P: crate::parser::TripleParser<&'static [u8]>>(_: &P) {
-            assert!(true)
-        }
-        check_trait(&NTriplesParser::default());
-    }
 
     #[test]
     fn test_simple_nt_string() -> std::result::Result<(), Box<dyn std::error::Error>> {

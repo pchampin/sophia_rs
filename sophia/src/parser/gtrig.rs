@@ -5,7 +5,7 @@ use std::io::BufRead;
 use rio_turtle::{GTriGParser as RioGTriGParser, TurtleError};
 
 use crate::parser::rio_common::*;
-use crate::parser::Parser;
+use crate::parser::QuadParser;
 
 /// TriG parser based on RIO.
 #[derive(Clone, Debug, Default)]
@@ -13,7 +13,7 @@ pub struct GTriGParser {
     pub base: Option<String>,
 }
 
-impl<B: BufRead> Parser<B> for GTriGParser {
+impl<B: BufRead> QuadParser<B> for GTriGParser {
     type Source = GeneralizedRioSource<RioGTriGParser<B>, TurtleError>;
     fn parse(&self, data: B) -> Self::Source {
         let base: &str = match &self.base {
@@ -24,7 +24,7 @@ impl<B: BufRead> Parser<B> for GTriGParser {
     }
 }
 
-def_mod_functions_for_bufread_parser!(GTriGParser);
+def_mod_functions_for_bufread_parser!(GTriGParser, QuadParser);
 
 // ---------------------------------------------------------------------------------
 //                                      tests
@@ -39,16 +39,6 @@ mod test {
     use crate::quad::stream::QuadSource;
     use crate::term::matcher::ANY;
     use crate::term::StaticTerm;
-
-    #[test]
-    fn test_is_triple_parser() {
-        // check that GTriGParser implements QuadParser;
-        // actually, if this test compiles, it passes
-        fn check_trait<P: crate::parser::QuadParser<&'static [u8]>>(_: &P) {
-            assert!(true)
-        }
-        check_trait(&GTriGParser::default());
-    }
 
     #[test]
     fn test_simple_gtrig_string() -> std::result::Result<(), Box<dyn std::error::Error>> {

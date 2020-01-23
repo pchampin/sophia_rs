@@ -6,24 +6,15 @@ use crate::triple::stream::TripleSource;
 mod _location;
 pub use _location::*;
 
-/// A generic parser takes some data of type `T`,
-/// and returns a [`TripleSource`] or a [`QuadSource`].
+/// A parser takes some data of type `T`,
+/// and returns a [`TripleSource`].
 ///
-/// See also [`TripleParser`] and [`QuadParser`].
-///
-/// [`TripleParser`]: trait.TripleParser.html
 /// [`TripleSource`]: ../triple/stream/trait.TripleSource.html
-/// [`QuadParser`]: trait.QuadParser.html
-/// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
-pub trait Parser<T> {
-    /// The source produced by this parser, generally
-    /// [`TripleSource`] or [`QuadSource`].
-    ///
-    /// [`TripleSource`]: ../triple/stream/trait.TripleSource.html
-    /// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
-    type Source;
+pub trait TripleParser<T> {
+    /// The source produced by this parser
+    type Source: TripleSource;
 
-    /// The central method of `Parser`: parses data into a (triple or quad) source.
+    /// Parses data into a triple source.
     fn parse(&self, data: T) -> Self::Source;
 
     /// Convenient shortcut method for parsing strings.
@@ -42,39 +33,37 @@ pub trait Parser<T> {
     }
 }
 
-/// Specialization of [`Parser`] that returns a [`QuadSource`].
-/// It also constrains the returned source's error to implement [`WithLocation`].
+/// A parser takes some data of type `T`,
+/// and returns a [`QuadSource`].
 ///
-/// [`Parser`]: trait.Parser.html
 /// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
-/// [`WithLocation`]: trait.WithLocation.html
-pub trait QuadParser<T>: Parser<T> {}
-impl<T, P> QuadParser<T> for P
-where
-    P: Parser<T>,
-    <P as Parser<T>>::Source: QuadSource,
-    <<P as Parser<T>>::Source as QuadSource>::Error: WithLocation,
-{
+pub trait QuadParser<T> {
+    /// The source produced by this parser
+    type Source: QuadSource;
+
+    /// Parses data into a quad source.
+    fn parse(&self, data: T) -> Self::Source;
+
+    /// Convenient shortcut method for parsing strings.
+    ///
+    /// It may not be available on some exotic parsers,
+    /// but will be automatically supported for parsers supporting any
+    /// [`BufRead`] or [`Read`].
+    ///
+    /// [`BufRead`]: https://doc.rust-lang.org/std/io/trait.BufRead.html
+    /// [`Read`]: https://doc.rust-lang.org/std/io/trait.Read.html
+    fn parse_str<'t>(&self, txt: &'t str) -> Self::Source
+    where
+        &'t str: IntoParsable<Target = T>,
+    {
+        self.parse(txt.into_parsable())
+    }
 }
 
-/// Specialization of [`Parser`] that returns a [`QuadSource`].
-/// It also constrains the returned source's error to implement [`WithLocation`].
+/// Utility trait to support [`TripleParser::parse_str`] and [`QuadParser::parse_str`].
 ///
-/// [`Parser`]: trait.Parser.html
-/// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
-/// [`WithLocation`]: trait.WithLocation.html
-pub trait TripleParser<T>: Parser<T> {}
-impl<T, P> TripleParser<T> for P
-where
-    P: Parser<T>,
-    <P as Parser<T>>::Source: TripleSource,
-    <<P as Parser<T>>::Source as TripleSource>::Error: WithLocation,
-{
-}
-
-/// Utility trait to support [`Parser::parse_str`].
-///
-/// [`Parser::parse_str`]: trait.Parser.html#method.parse_str
+/// [`TripleParser::parse_str`]: trait.TripleParser.html#method.parse_str
+/// [`QuadParser::parse_str`]: trait.QuadParser.html#method.parse_str
 pub trait IntoParsable {
     type Target;
     fn into_parsable(self) -> Self::Target;
@@ -89,16 +78,18 @@ impl<'a> IntoParsable for &'a str {
 /// Define convenience module-level functions for a parser implementation supporting BufRead.
 #[macro_export]
 macro_rules! def_mod_functions_for_bufread_parser {
-    ($parser_type: ident) => {
+    ($parser_type: ident, $parser_trait: ident) => {
         /// Convenience function for parsing a BufRead with the default parser.
         pub fn parse_bufread<B: std::io::BufRead>(
             bufread: B,
-        ) -> <$parser_type as $crate::parser::Parser<B>>::Source {
+        ) -> <$parser_type as $crate::parser::$parser_trait<B>>::Source {
             $parser_type::default().parse(bufread)
         }
 
         /// Convenience function for parsing a str with the default parser.
-        pub fn parse_str(txt: &str) -> <$parser_type as $crate::parser::Parser<&[u8]>>::Source {
+        pub fn parse_str(
+            txt: &str,
+        ) -> <$parser_type as $crate::parser::$parser_trait<&[u8]>>::Source {
             $parser_type::default().parse_str(txt)
         }
     };
