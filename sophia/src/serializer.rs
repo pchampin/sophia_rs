@@ -1,4 +1,5 @@
-///! API for serializing RDF syntaxes.
+//! API for serializing RDF syntaxes.
+
 use std::io;
 
 use crate::dataset::*;
@@ -8,14 +9,21 @@ use crate::triple::{stream::*, *};
 
 use std::result::Result; // override ::error::Result
 
-/// TODO doc
+/// A triple serializer formats triples in some target of type `T`.
+/// The triples may come from a [`TripleSource`] or a [`Graph`].
+///
+/// [`TripleSource`]: ../triple/stream/trait.TripleSource.html
+/// [`Graph`]: ../graph/trait.Graph.html
 pub trait TripleSerializer<T> {
     type Sink: TripleSink;
 
-    /// A sink serializing the triples fed to it.
+    /// A sink serializing into `target` the triples fed to it.
     fn sink(&self, target: T) -> Self::Sink;
 
     #[inline]
+    /// Convenient shortcut method for serializing a [`TripleSource`].
+    ///
+    /// [`TripleSource`]: ../triple/stream/trait.TripleSource.html
     fn serialize_triples_in<TS>(&self, mut source: TS, target: T) -> TSResult<Self, T, TS::Error>
     where
         TS: TripleSource,
@@ -23,6 +31,13 @@ pub trait TripleSerializer<T> {
         source.in_sink(&mut self.sink(target))
     }
 
+    /// Serialize a whole [`Graph`] into `target`.
+    ///
+    /// While this method has a default implementation relying on [`serialize_triples_in`],
+    /// some implementation may override it in order to better use the structure of the Graph.
+    ///
+    /// [`Graph`]: ../graph/trait.Graph.html
+    /// [`serialize_triples_in`]: #method.serialize_triples_in
     #[inline]
     fn serialize_graph_in<G>(&self, graph: &G, target: T) -> TSResult<Self, T, G::Error>
     where
@@ -32,7 +47,11 @@ pub trait TripleSerializer<T> {
     }
 }
 
-/// TODO doc
+/// A triple stringifier serializes triples into a string.
+/// The triples may come from a [`TripleSource`] or a [`Graph`].
+///
+/// [`TripleSource`]: ../triple/stream/trait.TripleSource.html
+/// [`Graph`]: ../graph/trait.Graph.html
 pub trait TripleStringifier {
     fn stringify_triples<TS>(
         &self,
@@ -96,7 +115,7 @@ pub type TSResult<TS, T, E> = Result<
     StreamError<E, <<TS as TripleSerializer<T>>::Sink as TripleSink>::Error>,
 >;
 
-/// Define convenience module-level functions for a serializer implementation supporting Write.
+/// Define convenience module-level functions for a serializer implementation supporting `Write`.
 #[macro_export]
 macro_rules! def_mod_functions_for_write_triple_serializer {
     ($serializer_type: ident) => {
@@ -161,14 +180,21 @@ macro_rules! def_mod_functions_for_write_triple_serializer {
     };
 }
 
-/// TODO doc
+/// A quad serializer formats quads in some target of type `T`.
+/// The quads may come from a [`QuadSource`] or a [`Dataset`].
+///
+/// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
+/// [`Dataset`]: ../dataset/trait.Dataset.html
 pub trait QuadSerializer<T> {
     type Sink: QuadSink;
 
-    /// A sink serializing the triples fed to it.
+    /// A sink serializing into `target` the quads fed to it.
     fn sink(&self, target: T) -> Self::Sink;
 
     #[inline]
+    /// Convenient shortcut method for serializing a [`QuadSource`].
+    ///
+    /// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
     fn serialize_quads_in<QS>(&self, mut source: QS, target: T) -> QSResult<Self, T, QS::Error>
     where
         QS: QuadSource,
@@ -176,6 +202,13 @@ pub trait QuadSerializer<T> {
         source.in_sink(&mut self.sink(target))
     }
 
+    /// Serialize a whole [`Dataset`] into `target`.
+    ///
+    /// While this method has a default implementation relying on [`serialize_quads_in`],
+    /// some implementation may override it in order to better use the structure of the Dataset.
+    ///
+    /// [`Dataset`]: ../dataset/trait.Dataset.html
+    /// [`serialize_quads_in`]: #method.serialize_quads_in
     #[inline]
     fn serialize_dataset_in<D>(&self, dataset: &D, target: T) -> QSResult<Self, T, D::Error>
     where
@@ -185,7 +218,11 @@ pub trait QuadSerializer<T> {
     }
 }
 
-/// TODO doc
+/// A quad stringifier serializes quads into a string.
+/// The quads may come from a [`QuadSource`] or a [`Dataset`].
+///
+/// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
+/// [`Dataset`]: ../dataset/trait.Dataset.html
 pub trait QuadStringifier {
     fn stringify_quads<QS>(
         &self,
@@ -249,6 +286,7 @@ pub type QSResult<QS, T, E> = Result<
     StreamError<E, <<QS as QuadSerializer<T>>::Sink as QuadSink>::Error>,
 >;
 
+/// Define convenience module-level functions for a serializer implementation supporting `Write`.
 #[macro_export]
 macro_rules! def_mod_functions_for_write_quad_serializer {
     ($serializer_type: ident) => {
@@ -312,8 +350,6 @@ macro_rules! def_mod_functions_for_write_quad_serializer {
         }
     };
 }
-
-// TODO macro for quads
 
 pub mod nq;
 pub mod nt;

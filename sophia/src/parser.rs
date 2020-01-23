@@ -6,7 +6,7 @@ use crate::triple::stream::TripleSource;
 mod _location;
 pub use _location::*;
 
-/// A parser takes some data of type `T`,
+/// A triple parser takes some data of type `T`,
 /// and returns a [`TripleSource`].
 ///
 /// [`TripleSource`]: ../triple/stream/trait.TripleSource.html
@@ -33,7 +33,7 @@ pub trait TripleParser<T> {
     }
 }
 
-/// A parser takes some data of type `T`,
+/// A quad parser takes some data of type `T`,
 /// and returns a [`QuadSource`].
 ///
 /// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
