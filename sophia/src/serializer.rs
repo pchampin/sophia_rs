@@ -24,10 +24,11 @@ pub trait TripleSerializer<T> {
     /// Convenient shortcut method for serializing a [`TripleSource`].
     ///
     /// [`TripleSource`]: ../triple/stream/trait.TripleSource.html
-    fn serialize_triples_in<TS>(&self, mut source: TS, target: T) -> TSResult<Self, T, TS::Error>
+    fn serialize_triples_in<TS>(&self, source: TS, target: T) -> TSResult<Self, T, TS::Error>
     where
         TS: TripleSource,
     {
+        let mut source = source;
         source.in_sink(&mut self.sink(target))
     }
 
@@ -195,10 +196,11 @@ pub trait QuadSerializer<T> {
     /// Convenient shortcut method for serializing a [`QuadSource`].
     ///
     /// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
-    fn serialize_quads_in<QS>(&self, mut source: QS, target: T) -> QSResult<Self, T, QS::Error>
+    fn serialize_quads_in<QS>(&self, source: QS, target: T) -> QSResult<Self, T, QS::Error>
     where
         QS: QuadSource,
     {
+        let mut source = source;
         source.in_sink(&mut self.sink(target))
     }
 
