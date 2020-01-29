@@ -79,8 +79,7 @@ impl<W: io::Write> TripleSink for NtSink<W> {
     }
 }
 
-impl<W: io::Write> TripleSerializingSink for NtSink<W> {
-}
+impl<W: io::Write> TripleSerializingSink for NtSink<W> {}
 
 /// Write a single RDF term into `w` using the N-Triples syntax.
 pub fn write_term<T, W>(w: &mut W, t: &Term<T>) -> io::Result<()>

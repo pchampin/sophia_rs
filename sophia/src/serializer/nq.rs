@@ -84,8 +84,7 @@ impl<W: io::Write> QuadSink for NqSink<W> {
     }
 }
 
-impl<W: io::Write> QuadSerializingSink for NqSink<W> {
-}
+impl<W: io::Write> QuadSerializingSink for NqSink<W> {}
 
 // ---------------------------------------------------------------------------------
 //                                      tests

@@ -47,12 +47,14 @@ pub trait TripleSerializer<T> {
 /// [`TripleSource`]: ../triple/stream/trait.TripleSource.html
 /// [`Graph`]: ../graph/trait.Graph.html
 pub trait TripleSerializingSink: TripleSink {
-
     /// Convenient shortcut method for serializing a [`TripleSource`].
     ///
     /// [`TripleSource`]: ../triple/stream/trait.TripleSource.html
     #[inline]
-    fn serialize_triples<TS>(&mut self, source: TS) -> StreamResult<Self::Outcome, TS::Error, Self::Error>
+    fn serialize_triples<TS>(
+        &mut self,
+        source: TS,
+    ) -> StreamResult<Self::Outcome, TS::Error, Self::Error>
     where
         TS: TripleSource,
         Self: Sized,
@@ -69,7 +71,10 @@ pub trait TripleSerializingSink: TripleSink {
     /// [`Graph`]: ../graph/trait.Graph.html
     /// [`serialize_triples`]: #method.serialize_triples
     #[inline]
-    fn serialize_graph<G>(&mut self, graph: &G) -> StreamResult<Self::Outcome, G::Error, Self::Error>
+    fn serialize_graph<G>(
+        &mut self,
+        graph: &G,
+    ) -> StreamResult<Self::Outcome, G::Error, Self::Error>
     where
         G: Graph,
         Self: Sized,
@@ -250,12 +255,14 @@ pub trait QuadSerializer<T> {
 /// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
 /// [`Dataset`]: ../dataset/trait.Dataset.html
 pub trait QuadSerializingSink: QuadSink {
-
     /// Convenient shortcut method for serializing a [`QuadSource`].
     ///
     /// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
     #[inline]
-    fn serialize_quads<QS>(&mut self, source: QS) -> StreamResult<Self::Outcome, QS::Error, Self::Error>
+    fn serialize_quads<QS>(
+        &mut self,
+        source: QS,
+    ) -> StreamResult<Self::Outcome, QS::Error, Self::Error>
     where
         QS: QuadSource,
         Self: Sized,
@@ -272,7 +279,10 @@ pub trait QuadSerializingSink: QuadSink {
     /// [`Dataset`]: ../dataset/trait.Dataset.html
     /// [`serialize_quads`]: #method.serialize_quads
     #[inline]
-    fn serialize_dataset<D>(&mut self, dataset: &D) -> StreamResult<Self::Outcome, D::Error, Self::Error>
+    fn serialize_dataset<D>(
+        &mut self,
+        dataset: &D,
+    ) -> StreamResult<Self::Outcome, D::Error, Self::Error>
     where
         D: Dataset,
         Self: Sized,
@@ -356,9 +366,7 @@ macro_rules! def_mod_functions_for_write_quad_serializer {
     ($serializer_type: ident) => {
         #[inline]
         /// Convenience function for getting a serializing sink of the default serializer
-        pub fn to<W>(
-            write: W,
-        ) -> <$serializer_type as $crate::serializer::QuadSerializer<W>>::Sink
+        pub fn to<W>(write: W) -> <$serializer_type as $crate::serializer::QuadSerializer<W>>::Sink
         where
             W: std::io::Write,
         {
