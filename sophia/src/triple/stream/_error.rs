@@ -66,3 +66,6 @@ where
         }
     }
 }
+
+/// Convenient type alias
+pub type StreamResult<T, E1, E2> = Result<T, StreamError<E1, E2>>;

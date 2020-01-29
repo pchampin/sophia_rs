@@ -26,7 +26,7 @@ pub struct NtSerializer {
 impl<W: io::Write> TripleSerializer<W> for NtSerializer {
     type Sink = NtSink<W>;
 
-    fn sink(&self, write: W) -> Self::Sink {
+    fn to(&self, write: W) -> Self::Sink {
         NtSink::new(self, write)
     }
 }
@@ -77,6 +77,9 @@ impl<W: io::Write> TripleSink for NtSink<W> {
     fn finish(&mut self) -> Result<(), Self::Error> {
         Ok(())
     }
+}
+
+impl<W: io::Write> TripleSerializingSink for NtSink<W> {
 }
 
 /// Write a single RDF term into `w` using the N-Triples syntax.

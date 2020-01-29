@@ -27,7 +27,7 @@ pub struct NqSerializer {
 impl<W: io::Write> QuadSerializer<W> for NqSerializer {
     type Sink = NqSink<W>;
 
-    fn sink(&self, write: W) -> Self::Sink {
+    fn to(&self, write: W) -> Self::Sink {
         NqSink::new(self, write)
     }
 }
@@ -82,6 +82,9 @@ impl<W: io::Write> QuadSink for NqSink<W> {
     fn finish(&mut self) -> Result<(), Self::Error> {
         Ok(())
     }
+}
+
+impl<W: io::Write> QuadSerializingSink for NqSink<W> {
 }
 
 // ---------------------------------------------------------------------------------

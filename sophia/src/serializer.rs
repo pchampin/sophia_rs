@@ -15,36 +15,66 @@ use std::result::Result; // override ::error::Result
 /// [`TripleSource`]: ../triple/stream/trait.TripleSource.html
 /// [`Graph`]: ../graph/trait.Graph.html
 pub trait TripleSerializer<T> {
-    type Sink: TripleSink;
+    type Sink: TripleSerializingSink;
 
     /// A sink serializing into `target` the triples fed to it.
-    fn sink(&self, target: T) -> Self::Sink;
+    fn to(&self, target: T) -> Self::Sink;
 
+    /// Convenient shortcut method for `self.to(target).serialize_triples(source)`.
     #[inline]
-    /// Convenient shortcut method for serializing a [`TripleSource`].
-    ///
-    /// [`TripleSource`]: ../triple/stream/trait.TripleSource.html
     fn serialize_triples_in<TS>(&self, source: TS, target: T) -> TSResult<Self, T, TS::Error>
     where
         TS: TripleSource,
     {
-        let mut source = source;
-        source.in_sink(&mut self.sink(target))
+        self.to(target).serialize_triples(source)
     }
 
-    /// Serialize a whole [`Graph`] into `target`.
-    ///
-    /// While this method has a default implementation relying on [`serialize_triples_in`],
-    /// some implementation may override it in order to better use the structure of the Graph.
-    ///
-    /// [`Graph`]: ../graph/trait.Graph.html
-    /// [`serialize_triples_in`]: #method.serialize_triples_in
+    /// Convenient shortcut method for `self.to(target).serialize_graph(graph)`.
     #[inline]
     fn serialize_graph_in<G>(&self, graph: &G, target: T) -> TSResult<Self, T, G::Error>
     where
         G: Graph,
     {
-        self.serialize_triples_in(graph.triples(), target)
+        self.to(target).serialize_graph(graph)
+    }
+}
+
+/// A triple serializing sink is produced by [`TripleSerializer::to`].
+/// It wraps a target into which it formats the triples fed to it.
+/// It also has dedicated methods to serialize a [`TripleSource`] or a [`Graph`].
+///
+/// [`TripleSerializer::to`]: ./trait.TripleSerializer.html#tymethod.to
+/// [`TripleSource`]: ../triple/stream/trait.TripleSource.html
+/// [`Graph`]: ../graph/trait.Graph.html
+pub trait TripleSerializingSink: TripleSink {
+
+    /// Convenient shortcut method for serializing a [`TripleSource`].
+    ///
+    /// [`TripleSource`]: ../triple/stream/trait.TripleSource.html
+    #[inline]
+    fn serialize_triples<TS>(&mut self, source: TS) -> StreamResult<Self::Outcome, TS::Error, Self::Error>
+    where
+        TS: TripleSource,
+        Self: Sized,
+    {
+        let mut source = source;
+        source.in_sink(self)
+    }
+
+    /// Serialize a whole [`Graph`] into `target`.
+    ///
+    /// While this method has a default implementation similar to [`serialize_triples`],
+    /// some implementations may override it in order to better use the structure of the Graph.
+    ///
+    /// [`Graph`]: ../graph/trait.Graph.html
+    /// [`serialize_triples`]: #method.serialize_triples
+    #[inline]
+    fn serialize_graph<G>(&mut self, graph: &G) -> StreamResult<Self::Outcome, G::Error, Self::Error>
+    where
+        G: Graph,
+        Self: Sized,
+    {
+        graph.triples().in_sink(self)
     }
 }
 
@@ -111,9 +141,10 @@ macro_rules! derive_triple_stringifier {
 }
 
 /// Tyoe alias for `Result`s returned by `TripleSerializer`s.
-pub type TSResult<TS, T, E> = Result<
+pub type TSResult<TS, T, E> = StreamResult<
     <<TS as TripleSerializer<T>>::Sink as TripleSink>::Outcome,
-    StreamError<E, <<TS as TripleSerializer<T>>::Sink as TripleSink>::Error>,
+    E,
+    <<TS as TripleSerializer<T>>::Sink as TripleSink>::Error,
 >;
 
 /// Define convenience module-level functions for a serializer implementation supporting `Write`.
@@ -121,14 +152,14 @@ pub type TSResult<TS, T, E> = Result<
 macro_rules! def_mod_functions_for_write_triple_serializer {
     ($serializer_type: ident) => {
         #[inline]
-        /// Convenience function for serializing a triple source with the default serializer
-        pub fn sink<W>(
+        /// Convenience function for getting a serializing sink of the default serializer
+        pub fn to<W>(
             write: W,
         ) -> <$serializer_type as $crate::serializer::TripleSerializer<W>>::Sink
         where
             W: std::io::Write,
         {
-            $serializer_type::default().sink(write)
+            $serializer_type::default().to(write)
         }
 
         #[inline]
@@ -187,36 +218,66 @@ macro_rules! def_mod_functions_for_write_triple_serializer {
 /// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
 /// [`Dataset`]: ../dataset/trait.Dataset.html
 pub trait QuadSerializer<T> {
-    type Sink: QuadSink;
+    type Sink: QuadSerializingSink;
 
     /// A sink serializing into `target` the quads fed to it.
-    fn sink(&self, target: T) -> Self::Sink;
+    fn to(&self, target: T) -> Self::Sink;
 
+    /// Convenient shortcut method for `self.to(target).serialize_quads(source)`.
     #[inline]
-    /// Convenient shortcut method for serializing a [`QuadSource`].
-    ///
-    /// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
     fn serialize_quads_in<QS>(&self, source: QS, target: T) -> QSResult<Self, T, QS::Error>
     where
         QS: QuadSource,
     {
-        let mut source = source;
-        source.in_sink(&mut self.sink(target))
+        self.to(target).serialize_quads(source)
     }
 
-    /// Serialize a whole [`Dataset`] into `target`.
-    ///
-    /// While this method has a default implementation relying on [`serialize_quads_in`],
-    /// some implementation may override it in order to better use the structure of the Dataset.
-    ///
-    /// [`Dataset`]: ../dataset/trait.Dataset.html
-    /// [`serialize_quads_in`]: #method.serialize_quads_in
+    /// Convenient shortcut method for `self.to(target).serialize_graph(graph)`.
     #[inline]
     fn serialize_dataset_in<D>(&self, dataset: &D, target: T) -> QSResult<Self, T, D::Error>
     where
         D: Dataset,
     {
-        self.serialize_quads_in(dataset.quads(), target)
+        self.to(target).serialize_dataset(dataset)
+    }
+}
+
+/// A quad serializing sink is produced by [`QuadSerializer::to`].
+/// It wraps a target into which it formats the quads fed to it.
+/// It also has dedicated methods to serialize a [`QuadSource`] or a [`Dataset`].
+///
+/// [`QuadSerializer::to`]: ./trait.QuadSerializer.html#tymethod.to
+/// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
+/// [`Dataset`]: ../dataset/trait.Dataset.html
+pub trait QuadSerializingSink: QuadSink {
+
+    /// Convenient shortcut method for serializing a [`QuadSource`].
+    ///
+    /// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
+    #[inline]
+    fn serialize_quads<QS>(&mut self, source: QS) -> StreamResult<Self::Outcome, QS::Error, Self::Error>
+    where
+        QS: QuadSource,
+        Self: Sized,
+    {
+        let mut source = source;
+        source.in_sink(self)
+    }
+
+    /// Serialize a whole [`Dataset`] into `target`.
+    ///
+    /// While this method has a default implementation similar to [`serialize_quads`],
+    /// some implementations may override it in order to better use the structure of the Dataset.
+    ///
+    /// [`Dataset`]: ../dataset/trait.Dataset.html
+    /// [`serialize_quads`]: #method.serialize_quads
+    #[inline]
+    fn serialize_dataset<D>(&mut self, dataset: &D) -> StreamResult<Self::Outcome, D::Error, Self::Error>
+    where
+        D: Dataset,
+        Self: Sized,
+    {
+        dataset.quads().in_sink(self)
     }
 }
 
@@ -283,9 +344,10 @@ macro_rules! derive_quad_stringifier {
 }
 
 /// Tyoe alias for `Result`s returned by `QuadSerializer`s.
-pub type QSResult<QS, T, E> = Result<
+pub type QSResult<QS, T, E> = StreamResult<
     <<QS as QuadSerializer<T>>::Sink as QuadSink>::Outcome,
-    StreamError<E, <<QS as QuadSerializer<T>>::Sink as QuadSink>::Error>,
+    E,
+    <<QS as QuadSerializer<T>>::Sink as QuadSink>::Error,
 >;
 
 /// Define convenience module-level functions for a serializer implementation supporting `Write`.
@@ -293,14 +355,14 @@ pub type QSResult<QS, T, E> = Result<
 macro_rules! def_mod_functions_for_write_quad_serializer {
     ($serializer_type: ident) => {
         #[inline]
-        /// Convenience function for serializing a quad source with the default serializer
-        pub fn sink<W>(
+        /// Convenience function for getting a serializing sink of the default serializer
+        pub fn to<W>(
             write: W,
         ) -> <$serializer_type as $crate::serializer::QuadSerializer<W>>::Sink
         where
             W: std::io::Write,
         {
-            $serializer_type::default().sink(write)
+            $serializer_type::default().to(write)
         }
 
         #[inline]
