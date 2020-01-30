@@ -1,7 +1,4 @@
-//! `TripleSource` and `TripleSink`,
-//! are pervasive traits for streaming triples from one object to another.
-//!
-//! See [`TripleSource`]'s and [`TripleSink`]'s documentation for more detail.
+//! A [`TripleSource`] produces [triples], and may also fail in the process.
 //!
 //! # Rationale (or Why not simply use `Iterator`?)
 //!
@@ -22,8 +19,7 @@
 //! but may be outlived by the triple source itself.
 //!
 //! [`TripleSource`]: trait.TripleSource.html
-//! [`TripleSink`]: trait.TripleSink.html
-//! [`Triple`]: ../trait.Triple.html
+//! [`triples`]: ../trait.Triple.html
 //! [`Iterator`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html
 
 mod _error;
@@ -39,14 +35,10 @@ use crate::triple::*;
 
 /// A triple source produces [triples], and may also fail in the process.
 ///
-/// It provides methods dedicated to interacting with [`TripleSink`]s.
-/// Any iterator yielding  [triples] wrapped in [results]
+/// Any iterator yielding [triples] wrapped in `Result`
 /// implements the `TripleSource` trait.
 ///
 /// [triples]: ../trait.Triple.html
-/// [results]: ../../error/type.Result.html
-/// [`TripleSink`]: trait.TripleSink.html
-///
 pub trait TripleSource {
     /// The type of errors produced by this source.
     type Error: 'static + Error;
@@ -98,16 +90,6 @@ pub trait TripleSource {
         let mut f = f;
         while self.for_some_triple(&mut f)? {}
         Ok(())
-    }
-    /// Feed all triples from this source into the given [sink](trait.TripleSink.html).
-    ///
-    /// Stop on the first error (in the source or the sink).
-    fn in_sink<TS: TripleSink>(
-        &mut self,
-        sink: &mut TS,
-    ) -> StreamResult<TS::Outcome, Self::Error, TS::Error> {
-        self.try_for_each_triple(|t| sink.feed(&t))
-            .and(sink.finish().map_err(SinkError))
     }
     /// Insert all triples from this source into the given [graph](../../graph/trait.MutableGraph.html).
     ///
@@ -169,19 +151,7 @@ where
     }
 }
 
-/// A triple sink consumes [triples](../trait.Triple.html),
-/// produces a result, and may also fail in the process.
-///
-/// Typical triple sinks are [serializer]
-/// or graphs' [inserters] and [removers].
-///
-/// See also [`TripleSource`].
-///
-/// [serializer]: ../../serializer/index.html
-/// [inserters]: ../../graph/trait.MutableGraph.html#method.inserter
-/// [removers]: ../../graph/trait.MutableGraph.html#method.remover
-/// [`TripleSource`]: trait.TripleSource.html
-///
+/// Soon to be deprecated.
 pub trait TripleSink {
     /// The type of the result produced by this triple sink.
     ///
@@ -198,22 +168,6 @@ pub trait TripleSink {
     ///
     /// NB: the behaviour of a triple sink after `finish` is called is unspecified by this trait.
     fn finish(&mut self) -> Result<Self::Outcome, Self::Error>;
-}
-
-/// [`()`](https://doc.rust-lang.org/std/primitive.unit.html) acts as a "black hole",
-/// consuming all triples without erring, and producing no result.
-///
-/// Useful for benchmarking triple sources.
-impl TripleSink for () {
-    type Outcome = ();
-    type Error = Infallible;
-
-    fn feed<T: Triple>(&mut self, _: &T) -> Result<(), Self::Error> {
-        Ok(())
-    }
-    fn finish(&mut self) -> Result<Self::Outcome, Self::Error> {
-        Ok(())
-    }
 }
 
 #[cfg(test)]

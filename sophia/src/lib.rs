@@ -36,7 +36,7 @@
 //! use sophia::parser;
 //! use sophia::serializer;
 //! use sophia::serializer::TripleStringifier;
-//! use sophia::triple::stream::{TripleSink, TripleSource};
+//! use sophia::triple::stream::TripleSource;
 //!
 //! let example = r#"
 //!     @prefix : <http://example.org/>.
