@@ -21,7 +21,6 @@
 //! *i.e.* references that will be valid during the time need to process them,
 //! but may be outlived by the triple source itself.
 //!
-//!
 //! [`TripleSource`]: trait.TripleSource.html
 //! [`TripleSink`]: trait.TripleSink.html
 //! [`Triple`]: ../trait.Triple.html
@@ -35,6 +34,7 @@ use std::error::Error;
 use std::iter::Map;
 
 use crate::graph::*;
+use crate::triple::streaming_mode::*;
 use crate::triple::*;
 
 /// A triple source produces [triples], and may also fail in the process.
@@ -51,14 +51,64 @@ pub trait TripleSource {
     /// The type of errors produced by this source.
     type Error: 'static + Error;
 
+    /// Determine the type of [`Triple`](../triple/trait.Triple.html)s
+    /// that this triple source yields.
+    /// (see [`streaming_mode`](../triple/streaming_mode/index.html)
+    type Triple: TripleStreamingMode;
+
+    /// Call f for at least one triple from this triple source, if any.
+    ///
+    /// Return false if there are no more triples in this source.
+    fn try_for_some_triple<F, E>(&mut self, f: &mut F) -> StreamResult<bool, Self::Error, E>
+    where
+        F: FnMut(StreamedTriple<Self::Triple>) -> Result<(), E>,
+        E: Error;
+
+    /// Call f for all triples from this triple source.
+    #[inline]
+    fn try_for_each_triple<F, E>(&mut self, f: F) -> StreamResult<(), Self::Error, E>
+    where
+        F: FnMut(StreamedTriple<Self::Triple>) -> Result<(), E>,
+        E: Error,
+    {
+        let mut f = f;
+        while self.try_for_some_triple(&mut f)? {}
+        Ok(())
+    }
+    /// Call f for at least one triple from this triple source.
+    ///
+    /// Return false if there are no more triples in this source.
+    #[inline]
+    fn for_some_triple<F>(&mut self, f: &mut F) -> Result<bool, Self::Error>
+    where
+        F: FnMut(StreamedTriple<Self::Triple>) -> (),
+    {
+        self.try_for_some_triple(&mut |t| -> Result<(), Self::Error> {
+            f(t);
+            Ok(())
+        })
+        .map_err(StreamError::inner_into)
+    }
+    /// Call f for all triples from this triple source.
+    #[inline]
+    fn for_each_triple<F>(&mut self, f: &mut F) -> Result<(), Self::Error>
+    where
+        F: FnMut(StreamedTriple<Self::Triple>) -> (),
+    {
+        let mut f = f;
+        while self.for_some_triple(&mut f)? {}
+        Ok(())
+    }
     /// Feed all triples from this source into the given [sink](trait.TripleSink.html).
     ///
     /// Stop on the first error (in the source or the sink).
     fn in_sink<TS: TripleSink>(
         &mut self,
         sink: &mut TS,
-    ) -> StreamResult<TS::Outcome, Self::Error, TS::Error>;
-
+    ) -> StreamResult<TS::Outcome, Self::Error, TS::Error> {
+        self.try_for_each_triple(|t| sink.feed(&t))
+            .and(sink.finish().map_err(SinkError))
+    }
     /// Insert all triples from this source into the given [graph](../../graph/trait.MutableGraph.html).
     ///
     /// Stop on the first error (in the source or in the graph).
@@ -77,16 +127,20 @@ where
     E: 'static + Error,
 {
     type Error = E;
+    type Triple = ByValue<T>;
 
-    fn in_sink<TS: TripleSink>(
-        &mut self,
-        sink: &mut TS,
-    ) -> Result<TS::Outcome, StreamError<Self::Error, TS::Error>> {
-        for tr in self {
-            let t = tr.map_err(SourceError)?;
-            sink.feed(&t).map_err(SinkError)?;
+    fn try_for_some_triple<F, EF>(&mut self, f: &mut F) -> StreamResult<bool, E, EF>
+    where
+        F: FnMut(StreamedTriple<Self::Triple>) -> Result<(), EF>,
+        EF: Error,
+    {
+        match self.next() {
+            Some(Ok(triple)) => f(StreamedTriple::by_value(triple))
+                .map_err(SinkError)
+                .and(Ok(true)),
+            Some(Err(err)) => Err(SourceError(err)),
+            None => Ok(false),
         }
-        Ok(sink.finish().map_err(SinkError)?)
     }
 }
 
