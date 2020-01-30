@@ -375,7 +375,7 @@ pub trait MutableGraph: Graph {
     fn insert_all<TS>(
         &mut self,
         src: &mut TS,
-    ) -> Result<usize, StreamError<TS::Error, <Self as MutableGraph>::MutationError>>
+    ) -> StreamResult<usize, TS::Error, <Self as MutableGraph>::MutationError>
     where
         TS: TripleSource,
     {
@@ -394,7 +394,7 @@ pub trait MutableGraph: Graph {
     fn remove_all<TS>(
         &mut self,
         src: &mut TS,
-    ) -> Result<usize, StreamError<TS::Error, <Self as MutableGraph>::MutationError>>
+    ) -> StreamResult<usize, TS::Error, <Self as MutableGraph>::MutationError>
     where
         TS: TripleSource,
     {

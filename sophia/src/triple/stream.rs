@@ -57,7 +57,7 @@ pub trait TripleSource {
     fn in_sink<TS: TripleSink>(
         &mut self,
         sink: &mut TS,
-    ) -> Result<TS::Outcome, StreamError<Self::Error, TS::Error>>;
+    ) -> StreamResult<TS::Outcome, Self::Error, TS::Error>;
 
     /// Insert all triples from this source into the given [graph](../../graph/trait.MutableGraph.html).
     ///
@@ -65,7 +65,7 @@ pub trait TripleSource {
     fn in_graph<G: MutableGraph>(
         &mut self,
         graph: &mut G,
-    ) -> Result<usize, StreamError<Self::Error, <G as MutableGraph>::MutationError>> {
+    ) -> StreamResult<usize, Self::Error, <G as MutableGraph>::MutationError> {
         self.in_sink(&mut graph.inserter())
     }
 }

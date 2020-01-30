@@ -51,7 +51,7 @@ pub trait TripleWriter<W: io::Write>: TripleSink<Outcome = ()> + Sized {
     fn new(write: W, config: Self::Config) -> Self;
 
     /// Serialize the triples from the given source.
-    fn write<TS, T>(&mut self, mut source: TS) -> Result<(), StreamError<TS::Error, Self::Error>>
+    fn write<TS, T>(&mut self, mut source: TS) -> StreamResult<(), TS::Error, Self::Error>
     where
         TS: TripleSource,
     {
@@ -59,7 +59,7 @@ pub trait TripleWriter<W: io::Write>: TripleSink<Outcome = ()> + Sized {
     }
 
     /// Serialize the given graph.
-    fn write_graph<G>(&mut self, graph: &mut G) -> Result<(), StreamError<G::Error, Self::Error>>
+    fn write_graph<G>(&mut self, graph: &mut G) -> StreamResult<(), G::Error, Self::Error>
     where
         G: Graph,
     {
@@ -67,7 +67,7 @@ pub trait TripleWriter<W: io::Write>: TripleSink<Outcome = ()> + Sized {
     }
 
     /// Serialize the given triple.
-    fn write_triple<T>(&mut self, t: &T) -> Result<(), StreamError<Infallible, Self::Error>>
+    fn write_triple<T>(&mut self, t: &T) -> StreamResult<(), Infallible, Self::Error>
     where
         T: Triple,
     {
@@ -90,10 +90,7 @@ pub trait TripleStringifier: TripleSink<Outcome = String> + Sized {
     fn new(config: Self::Config) -> Self;
 
     /// Stringify the triples from the given source.
-    fn stringify<TS, T>(
-        &mut self,
-        mut source: TS,
-    ) -> Result<String, StreamError<TS::Error, Self::Error>>
+    fn stringify<TS, T>(&mut self, mut source: TS) -> StreamResult<String, TS::Error, Self::Error>
     where
         TS: TripleSource,
     {
@@ -101,10 +98,7 @@ pub trait TripleStringifier: TripleSink<Outcome = String> + Sized {
     }
 
     /// Stringify the given graph.
-    fn stringify_graph<G>(
-        &mut self,
-        graph: &mut G,
-    ) -> Result<String, StreamError<G::Error, Self::Error>>
+    fn stringify_graph<G>(&mut self, graph: &mut G) -> StreamResult<String, G::Error, Self::Error>
     where
         G: Graph,
     {
@@ -112,7 +106,7 @@ pub trait TripleStringifier: TripleSink<Outcome = String> + Sized {
     }
 
     /// Stringify the given triple.
-    fn stringify_triple<T>(&mut self, t: &T) -> Result<String, StreamError<Infallible, Self::Error>>
+    fn stringify_triple<T>(&mut self, t: &T) -> StreamResult<String, Infallible, Self::Error>
     where
         T: Triple,
     {
@@ -134,7 +128,7 @@ pub trait QuadWriter<W: io::Write>: QuadSink<Outcome = ()> + Sized {
     fn new(write: W, config: Self::Config) -> Self;
 
     /// Serialize the triples from the given source.
-    fn write<QS, T>(&mut self, mut source: QS) -> Result<(), StreamError<QS::Error, Self::Error>>
+    fn write<QS, T>(&mut self, mut source: QS) -> StreamResult<(), QS::Error, Self::Error>
     where
         QS: QuadSource,
     {
@@ -142,10 +136,7 @@ pub trait QuadWriter<W: io::Write>: QuadSink<Outcome = ()> + Sized {
     }
 
     /// Serialize the given dataset.
-    fn write_dataset<D>(
-        &mut self,
-        dataset: &mut D,
-    ) -> Result<(), StreamError<D::Error, Self::Error>>
+    fn write_dataset<D>(&mut self, dataset: &mut D) -> StreamResult<(), D::Error, Self::Error>
     where
         D: Dataset,
     {
@@ -153,7 +144,7 @@ pub trait QuadWriter<W: io::Write>: QuadSink<Outcome = ()> + Sized {
     }
 
     /// Serialize the given triple.
-    fn write_quad<Q>(&mut self, q: &Q) -> Result<(), StreamError<Infallible, Self::Error>>
+    fn write_quad<Q>(&mut self, q: &Q) -> StreamResult<(), Infallible, Self::Error>
     where
         Q: Quad,
     {
@@ -178,10 +169,7 @@ pub trait QuadStringifier: QuadSink<Outcome = String> + Sized {
     fn new(config: Self::Config) -> Self;
 
     /// Stringify the triples from the given source.
-    fn stringify<QS, T>(
-        &mut self,
-        mut source: QS,
-    ) -> Result<String, StreamError<QS::Error, Self::Error>>
+    fn stringify<QS, T>(&mut self, mut source: QS) -> StreamResult<String, QS::Error, Self::Error>
     where
         QS: QuadSource,
     {
@@ -192,7 +180,7 @@ pub trait QuadStringifier: QuadSink<Outcome = String> + Sized {
     fn stringify_dataset<D>(
         &mut self,
         dataset: &mut D,
-    ) -> Result<String, StreamError<D::Error, Self::Error>>
+    ) -> StreamResult<String, D::Error, Self::Error>
     where
         D: Dataset,
     {
@@ -200,7 +188,7 @@ pub trait QuadStringifier: QuadSink<Outcome = String> + Sized {
     }
 
     /// Stringify the given triple.
-    fn stringify_quad<Q>(&mut self, q: &Q) -> Result<String, StreamError<Infallible, Self::Error>>
+    fn stringify_quad<Q>(&mut self, q: &Q) -> StreamResult<String, Infallible, Self::Error>
     where
         Q: Quad,
     {

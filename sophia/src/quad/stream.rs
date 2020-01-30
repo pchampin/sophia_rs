@@ -42,7 +42,7 @@ pub trait QuadSource {
     fn in_sink<TS: QuadSink>(
         &mut self,
         sink: &mut TS,
-    ) -> Result<TS::Outcome, StreamError<Self::Error, TS::Error>>;
+    ) -> StreamResult<TS::Outcome, Self::Error, TS::Error>;
 
     /// Insert all quads from this source into the given [dataset](../../dataset/trait.MutableDataset.html).
     ///
@@ -50,7 +50,7 @@ pub trait QuadSource {
     fn in_dataset<D: MutableDataset>(
         &mut self,
         dataset: &mut D,
-    ) -> Result<usize, StreamError<Self::Error, <D as MutableDataset>::MutationError>> {
+    ) -> StreamResult<usize, Self::Error, <D as MutableDataset>::MutationError> {
         self.in_sink(&mut dataset.inserter())
     }
 }
@@ -66,7 +66,7 @@ where
     fn in_sink<TS: QuadSink>(
         &mut self,
         sink: &mut TS,
-    ) -> Result<TS::Outcome, StreamError<Self::Error, TS::Error>> {
+    ) -> StreamResult<TS::Outcome, Self::Error, TS::Error> {
         for tr in self {
             let t = tr.map_err(SourceError)?;
             sink.feed(&t).map_err(SinkError)?;

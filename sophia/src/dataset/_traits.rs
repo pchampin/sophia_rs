@@ -14,7 +14,7 @@ use crate::quad::streaming_mode::*;
 use crate::quad::*;
 use crate::term::matcher::*;
 use crate::term::*;
-use crate::triple::stream::StreamError;
+use crate::triple::stream::StreamResult;
 
 use super::*;
 use crate::graph::insert_if_absent;
@@ -602,7 +602,7 @@ pub trait MutableDataset: Dataset {
     fn insert_all<TS>(
         &mut self,
         src: &mut TS,
-    ) -> Result<usize, StreamError<TS::Error, <Self as MutableDataset>::MutationError>>
+    ) -> StreamResult<usize, TS::Error, <Self as MutableDataset>::MutationError>
     where
         TS: QuadSource,
     {
@@ -621,7 +621,7 @@ pub trait MutableDataset: Dataset {
     fn remove_all<TS>(
         &mut self,
         src: &mut TS,
-    ) -> Result<usize, StreamError<TS::Error, <Self as MutableDataset>::MutationError>>
+    ) -> StreamResult<usize, TS::Error, <Self as MutableDataset>::MutationError>
     where
         TS: QuadSource,
     {
