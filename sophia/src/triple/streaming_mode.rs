@@ -29,7 +29,6 @@
 //! (see below).
 //! Then iterating methods are restricted to returning a particular version of
 //! [`StreamedTriple<'a>`], satisfying the given streaming mode.
-//!//!   it is constructed with [`StreamedTriple::by_ref`];
 
 //! The available streaming mode are:
 //!
@@ -37,15 +36,18 @@
 //!   it is constructed with [`StreamedTriple::by_value`];
 //! * [`ByRef<T>`]: [`StreamedTriple<'a>`] will wrap a reference to `T`, valid as long as `'a`;
 //!   it is constructed with [`StreamedTriple::by_ref`];
+//! * [`ByRefTerms`]: [`StreamedTriple<'a>`] will wrap an array of 3 [`Term<&'a str>`];
+//!   it is constructed with [`StreamedTriple::by_ref_terms`].
 //! * [`ByTermRefs<TD>`]: [`StreamedTriple<'a>`] will wrap an array of 3 [`Term<TD>`] references,
 //!   valid as long as `'a`;
 //!   it is constructed with [`StreamedTriple::by_term_refs`].
 //!
-//! NB: actually, a fourth mode exists,
+//! NB: actually, another mode exists,
 //! but is specifically designed for the [`graph::adapter`](../../graph/adapter/index.html) module,
 //! should never be needed in other contexts.
 //!
 //! [`ByRef<T>`]: struct.ByRef.html
+//! [`ByRefTerms`]: struct.ByRefTerms.html
 //! [`ByTermRefs<TD>`]: struct.ByTermRefs.html
 //! [`ByValue<T>`]: struct.ByValue.html
 //! [Generic Associated Types]: https://github.com/rust-lang/rust/issues/44265
@@ -56,6 +58,7 @@
 //! [`StreamedTriple::by_ref`]: struct.StreamedTriple.html#method.by_ref
 //! [`StreamedTriple::by_term_refs`]: struct.StreamedTriple.html#method.by_term_refs
 //! [`Term<TD>`]: ../../term
+//! [`Term<&'a str>`]: ../../term
 //! [`Triple`]: ../trait.Triple.html
 //! [`triples`]: ../../graph/trait.Graph.html#tymethod.triples
 //! [`TripleStreamingMode`]: trait.TripleStreamingMode.html
@@ -63,7 +66,7 @@
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 
-use crate::term::{Term, TermData};
+use crate::term::{RefTerm, Term, TermData};
 use crate::triple::Triple;
 
 mod _unsafe_triple;
@@ -86,6 +89,12 @@ impl<T: Triple> TripleStreamingMode for ByValue<T> {
 pub struct ByRef<T: Triple>(PhantomData<T>);
 impl<T: Triple> TripleStreamingMode for ByRef<T> {
     type UnsafeTriple = NonNull<T>;
+}
+/// See [module](./index.html) documentation.
+#[derive(Debug)]
+pub struct ByRefTerms {}
+impl TripleStreamingMode for ByRefTerms {
+    type UnsafeTriple = [RefTerm<'static>; 3];
 }
 /// See [module](./index.html) documentation.
 #[derive(Debug)]
@@ -137,6 +146,17 @@ where
         StreamedTriple {
             _phantom: PhantomData,
             wrapped: triple.into(),
+        }
+    }
+}
+impl<'a> StreamedTriple<'a, ByRefTerms> {
+    pub fn by_ref_terms(s: RefTerm<'a>, p: RefTerm<'a>, o: RefTerm<'a>) -> Self {
+        let s = unsafe { std::mem::transmute(s) };
+        let p = unsafe { std::mem::transmute(p) };
+        let o = unsafe { std::mem::transmute(o) };
+        StreamedTriple {
+            _phantom: PhantomData,
+            wrapped: [s, p, o],
         }
     }
 }
