@@ -379,7 +379,14 @@ pub trait MutableGraph: Graph {
     where
         TS: TripleSource,
     {
-        src.in_sink(&mut self.inserter())
+        let mut c = 0;
+        src.try_for_each_triple(|t| -> MGResult<Self, ()> {
+            if self.insert(t.s(), t.p(), t.o())? {
+                c += 1;
+            }
+            Ok(())
+        })
+        .and(Ok(c))
     }
 
     /// Return a [`TripleSink`](../triple/stream/trait.TripleSink.html)
@@ -398,7 +405,14 @@ pub trait MutableGraph: Graph {
     where
         TS: TripleSource,
     {
-        src.in_sink(&mut self.remover())
+        let mut c = 0;
+        src.try_for_each_triple(|t| -> MGResult<Self, ()> {
+            if self.remove(t.s(), t.p(), t.o())? {
+                c += 1;
+            }
+            Ok(())
+        })
+        .and(Ok(c))
     }
 
     /// Remove all triples matching the given matchers.

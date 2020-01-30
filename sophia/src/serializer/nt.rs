@@ -273,8 +273,8 @@ pub(crate) mod test {
                 StaticTerm::new_literal_dt("Pierre-Antoine", xsd::string).unwrap(),
             ],
         ];
-        let mut triples = triples.into_iter().as_triple_source();
-        let s = triples.in_sink(&mut stringifier()).unwrap();
+        let triples = triples.into_iter().as_triple_source();
+        let s = stringifier().stringify(triples).unwrap();
         assert_eq!(
             s,
             r#"<http://champin.net/#pa> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person> .

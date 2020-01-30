@@ -115,8 +115,11 @@ pub trait TripleSource {
     fn in_graph<G: MutableGraph>(
         &mut self,
         graph: &mut G,
-    ) -> StreamResult<usize, Self::Error, <G as MutableGraph>::MutationError> {
-        self.in_sink(&mut graph.inserter())
+    ) -> StreamResult<usize, Self::Error, <G as MutableGraph>::MutationError>
+    where
+        Self: Sized,
+    {
+        graph.insert_all(self)
     }
 }
 

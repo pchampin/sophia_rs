@@ -51,11 +51,13 @@ pub trait TripleWriter<W: io::Write>: TripleSink<Outcome = ()> + Sized {
     fn new(write: W, config: Self::Config) -> Self;
 
     /// Serialize the triples from the given source.
-    fn write<TS, T>(&mut self, mut source: TS) -> StreamResult<(), TS::Error, Self::Error>
+    fn write<TS>(&mut self, mut source: TS) -> StreamResult<(), TS::Error, Self::Error>
     where
         TS: TripleSource,
     {
-        source.in_sink(self)
+        source
+            .try_for_each_triple(|t| self.feed(&t))
+            .and_then(|_| self.finish().map_err(SinkError))
     }
 
     /// Serialize the given graph.
@@ -63,7 +65,7 @@ pub trait TripleWriter<W: io::Write>: TripleSink<Outcome = ()> + Sized {
     where
         G: Graph,
     {
-        graph.triples().in_sink(self)
+        self.write(graph.triples())
     }
 
     /// Serialize the given triple.
@@ -71,8 +73,8 @@ pub trait TripleWriter<W: io::Write>: TripleSink<Outcome = ()> + Sized {
     where
         T: Triple,
     {
-        let mut source = vec![[t.s(), t.p(), t.o()]].into_iter().as_triple_source();
-        source.in_sink(self)
+        let source = vec![[t.s(), t.p(), t.o()]].into_iter().as_triple_source();
+        self.write(source)
     }
 }
 
@@ -90,11 +92,13 @@ pub trait TripleStringifier: TripleSink<Outcome = String> + Sized {
     fn new(config: Self::Config) -> Self;
 
     /// Stringify the triples from the given source.
-    fn stringify<TS, T>(&mut self, mut source: TS) -> StreamResult<String, TS::Error, Self::Error>
+    fn stringify<TS>(&mut self, mut source: TS) -> StreamResult<String, TS::Error, Self::Error>
     where
         TS: TripleSource,
     {
-        source.in_sink(self)
+        source
+            .try_for_each_triple(|t| self.feed(&t))
+            .and_then(|_| self.finish().map_err(SinkError))
     }
 
     /// Stringify the given graph.
@@ -102,7 +106,7 @@ pub trait TripleStringifier: TripleSink<Outcome = String> + Sized {
     where
         G: Graph,
     {
-        graph.triples().in_sink(self)
+        self.stringify(graph.triples())
     }
 
     /// Stringify the given triple.
@@ -110,8 +114,8 @@ pub trait TripleStringifier: TripleSink<Outcome = String> + Sized {
     where
         T: Triple,
     {
-        let mut source = vec![[t.s(), t.p(), t.o()]].into_iter().as_triple_source();
-        source.in_sink(self)
+        let source = vec![[t.s(), t.p(), t.o()]].into_iter().as_triple_source();
+        self.stringify(source)
     }
 }
 
