@@ -79,17 +79,22 @@ where
     {
         match self {
             StrictRioSource::Error(opt) => Err(SourceError(consume_err(opt))),
-            StrictRioSource::Parser(parser) => parser
-                .parse_all(&mut |t| -> StdResult<(), MyStreamError<E, EF>> {
-                    f(StreamedTriple::by_ref_terms(
-                        rio2refterm(t.subject.into()),
-                        rio2refterm(t.predicate.into()),
-                        rio2refterm(t.object.into()),
-                    ))
-                    .map_err(MyStreamError::from_sink_error)
-                })
-                .map_err(|e| e.into_stream_error())
-                .and(Ok(false)),
+            StrictRioSource::Parser(parser) => {
+                if parser.is_end() {
+                    return Ok(false);
+                }
+                parser
+                    .parse_step(&mut |t| -> StdResult<(), MyStreamError<E, EF>> {
+                        f(StreamedTriple::by_ref_terms(
+                            rio2refterm(t.subject.into()),
+                            rio2refterm(t.predicate.into()),
+                            rio2refterm(t.object.into()),
+                        ))
+                        .map_err(MyStreamError::from_sink_error)
+                    })
+                    .map_err(|e| e.into_stream_error())
+                    .and(Ok(true))
+            }
         }
     }
 }
