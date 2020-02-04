@@ -112,6 +112,7 @@ pub trait TripleSource {
     /// Insert all triples from this source into the given [graph](../../graph/trait.MutableGraph.html).
     ///
     /// Stop on the first error (in the source or in the graph).
+    #[inline]
     fn in_graph<G: MutableGraph>(
         &mut self,
         graph: &mut G,
@@ -121,7 +122,125 @@ pub trait TripleSource {
     {
         graph.insert_all(self)
     }
+    /// Creates a triple source which uses a closure to determine if a triple should be yielded.
+    #[inline]
+    fn filter_triples<F>(self, filter: F) -> FilterSource<Self, F>
+    where
+        Self: Sized,
+        F: FnMut(&StreamedTriple<Self::Triple>) -> bool,
+    {
+        FilterSource {
+            source: self,
+            filter,
+        }
+    }
+    /// Creates a triple source that both filters and maps.
+    #[inline]
+    fn filter_map_triples<F>(self, filter_map: F) -> FilterMapSource<Self, F>
+    where
+        Self: Sized,
+        F: FnMut(StreamedTriple<Self::Triple>) -> bool,
+    {
+        FilterMapSource {
+            source: self,
+            filter_map,
+        }
+    }
+    /// Takes a closure and creates triple source which yield the result of that closure for each triple.
+    #[inline]
+    fn map_triples<F>(self, map: F) -> MapSource<Self, F>
+    where
+        Self: Sized,
+        F: FnMut(StreamedTriple<Self::Triple>) -> bool,
+    {
+        MapSource { source: self, map }
+    }
 }
+
+pub struct FilterSource<S, F> {
+    source: S,
+    filter: F,
+}
+
+impl<S, F> TripleSource for FilterSource<S, F>
+where
+    S: TripleSource,
+    F: FnMut(&StreamedTriple<S::Triple>) -> bool,
+{
+    type Error = S::Error;
+    type Triple = S::Triple;
+    fn try_for_some_triple<G, E>(&mut self, f: &mut G) -> StreamResult<bool, Self::Error, E>
+    where
+        G: FnMut(StreamedTriple<Self::Triple>) -> Result<(), E>,
+        E: Error,
+    {
+        let filter = &mut self.filter;
+        self.source.try_for_some_triple(&mut |t| {
+            if (filter)(&t) {
+                f(t)
+            } else {
+                Ok(())
+            }
+        })
+    }
+}
+
+pub struct MapSource<S, F> {
+    source: S,
+    map: F,
+}
+
+impl<S, F, U> TripleSource for MapSource<S, F>
+where
+    S: TripleSource,
+    F: FnMut(StreamedTriple<S::Triple>) -> U,
+    U: Triple,
+{
+    type Error = S::Error;
+    type Triple = ByValue<U>;
+    fn try_for_some_triple<G, E>(&mut self, f: &mut G) -> StreamResult<bool, Self::Error, E>
+    where
+        G: FnMut(StreamedTriple<Self::Triple>) -> Result<(), E>,
+        E: Error,
+    {
+        let map = &mut self.map;
+        self.source
+            .try_for_some_triple(&mut |t| f(StreamedTriple::by_value((map)(t))))
+    }
+}
+
+// TODO impl QuadSource for MapSource where U: Quad
+
+pub struct FilterMapSource<S, F> {
+    source: S,
+    filter_map: F,
+}
+
+impl<S, F, U> TripleSource for FilterMapSource<S, F>
+where
+    S: TripleSource,
+    F: FnMut(StreamedTriple<S::Triple>) -> Option<U>,
+    U: Triple,
+{
+    type Error = S::Error;
+    type Triple = ByValue<U>;
+    fn try_for_some_triple<G, E>(&mut self, f: &mut G) -> StreamResult<bool, Self::Error, E>
+    where
+        G: FnMut(StreamedTriple<Self::Triple>) -> Result<(), E>,
+        E: Error,
+    {
+        let filter_map = &mut self.filter_map;
+        self.source.try_for_some_triple(&mut |t| {
+            if let Some(u) = (filter_map)(t) {
+                f(StreamedTriple::by_value(u))
+            } else {
+                Ok(())
+            }
+        })
+    }
+}
+
+// TODO impl QuadSource for FilterMapSource where U: Quad
 
 impl<I, T, E> TripleSource for I
 where
