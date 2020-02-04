@@ -1,26 +1,44 @@
-//! A [`TripleSource`] produces [triples], and may also fail in the process.
-//!
+//! A `TripleSource` produces triples, and may also fail in the process.
+//! 
+//! If provies an API similar to (a subset of) the `Iterator` API,
+//! with methods such as [`for_each_triple`] and [`try_for_each_triple`].
+//! 
 //! # Rationale (or Why not simply use `Iterator`?)
 //!
-//! [`TripleSource`]s are conceptually very similar to iterators,
-//! so why introduce a new trait?
-//! The answer is that Rust iterators are limited,
-//! when it comes to yielding *references*,
-//! and [`TripleSource`] is designed to overcome this limitation.
+//! The [`Iterator`] trait is designed in such a way that items must live at least as long as the iterator itself.
+//! This assumption may be too strong in some situations.
 //!
-//! More precisely, when `Iterator::Item` is a reference type
-//! (or contains some reference, such as `[&RcTerm;3]` for example),
-//! its lifetime must be known in advance,
-//! and will typically be the lifetime of the iterator itself
-//! (what we shall call *long-lived* references).
-//! But triple sources (parsers in particular)
-//! may need to yield *short-lived* references,
-//! *i.e.* references that will be valid during the time need to process them,
-//! but may be outlived by the triple source itself.
+//! For example,
+//! consider a parser using 3 buffers to store the subject, predicate,
+//! and object of the triples it parses.
+//! Each time it extracts a triple from the data,
+//! it yields it (as 3 references to its internal buffers)
+//! to the closure passed to `for_each_triple`.
+//! Then, it **reuses** the buffers to store the data for the next triple,
+//! and yields the new triple, as 3 references to the *same* buffers.
+//!
+//! Such a parser can not implement [`Iterator`],
+//! because, once yielded by the iterator's `next` method,
+//! an item is free to live during further iterations.
+//! In particular, it can be stored in a vector,
+//! and still be alive when the `next` method is called again
+//! (consider for example the [`Iterator::collect`] method).
+//!
+//! Because many parsers (as well as other triple sources)
+//! will be implemented in a manner similar to that described above,
+//! we have to provide a trait with *weaker assumptions*
+//! on the lifetime of the yielded triples.
+//!
+//! The alternative would be to wrap such parsers with a layer that would *copy*
+//! the data from internal buffers to fresh buffers for each triples,
+//! but we do not want to impose that cost on all implementations
+//! — especially when many consumers will be happy with short-lived references.
 //!
 //! [`TripleSource`]: trait.TripleSource.html
-//! [`triples`]: ../trait.Triple.html
+//! [`for_each_triple`]: ./trait.TripleSource.html#method.for_each_triple
+//! [`try_for_each_triple`]: ./trait.TripleSource.html#method.try_for_each_triple
 //! [`Iterator`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html
+//! [`Iterator::collect`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.collect
 
 mod _error;
 pub use self::_error::*;
@@ -67,7 +85,7 @@ pub trait TripleSource {
         while self.try_for_some_triple(&mut f)? {}
         Ok(())
     }
-    /// Call f for at least one triple from this triple source.
+    /// Call f for at least one triple from this triple source, if any.
     ///
     /// Return false if there are no more triples in this source.
     #[inline]
