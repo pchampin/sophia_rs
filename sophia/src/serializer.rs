@@ -132,11 +132,13 @@ pub trait QuadWriter<W: io::Write>: QuadSink<Outcome = ()> + Sized {
     fn new(write: W, config: Self::Config) -> Self;
 
     /// Serialize the triples from the given source.
-    fn write<QS, T>(&mut self, mut source: QS) -> StreamResult<(), QS::Error, Self::Error>
+    fn write<QS>(&mut self, mut source: QS) -> StreamResult<(), QS::Error, Self::Error>
     where
         QS: QuadSource,
     {
-        source.in_sink(self)
+        source
+            .try_for_each_quad(|q| self.feed(&q))
+            .and_then(|_| self.finish().map_err(SinkError))
     }
 
     /// Serialize the given dataset.
@@ -144,7 +146,7 @@ pub trait QuadWriter<W: io::Write>: QuadSink<Outcome = ()> + Sized {
     where
         D: Dataset,
     {
-        dataset.quads().in_sink(self)
+        self.write(dataset.quads())
     }
 
     /// Serialize the given triple.
@@ -152,10 +154,10 @@ pub trait QuadWriter<W: io::Write>: QuadSink<Outcome = ()> + Sized {
     where
         Q: Quad,
     {
-        let mut source = vec![([q.s(), q.p(), q.o()], q.g())]
+        let source = vec![([q.s(), q.p(), q.o()], q.g())]
             .into_iter()
             .as_quad_source();
-        source.in_sink(self)
+        self.write(source)
     }
 }
 
@@ -173,11 +175,13 @@ pub trait QuadStringifier: QuadSink<Outcome = String> + Sized {
     fn new(config: Self::Config) -> Self;
 
     /// Stringify the triples from the given source.
-    fn stringify<QS, T>(&mut self, mut source: QS) -> StreamResult<String, QS::Error, Self::Error>
+    fn stringify<QS>(&mut self, mut source: QS) -> StreamResult<String, QS::Error, Self::Error>
     where
         QS: QuadSource,
     {
-        source.in_sink(self)
+        source
+            .try_for_each_quad(|q| self.feed(&q))
+            .and_then(|_| self.finish().map_err(SinkError))
     }
 
     /// Stringify the given dataset.
@@ -188,7 +192,7 @@ pub trait QuadStringifier: QuadSink<Outcome = String> + Sized {
     where
         D: Dataset,
     {
-        dataset.quads().in_sink(self)
+        self.stringify(dataset.quads())
     }
 
     /// Stringify the given triple.
@@ -196,10 +200,10 @@ pub trait QuadStringifier: QuadSink<Outcome = String> + Sized {
     where
         Q: Quad,
     {
-        let mut source = vec![([q.s(), q.p(), q.o()], q.g())]
+        let source = vec![([q.s(), q.p(), q.o()], q.g())]
             .into_iter()
             .as_quad_source();
-        source.in_sink(self)
+        self.stringify(source)
     }
 }
 

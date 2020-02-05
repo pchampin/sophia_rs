@@ -151,7 +151,6 @@ macro_rules! test_dataset_impl {
             use $crate::dataset::test::*;
             use $crate::dataset::*;
             use $crate::ns::*;
-            use $crate::quad::stream::*;
             use $crate::term::{matcher::ANY, *};
 
             #[allow(unused_imports)]
@@ -279,22 +278,6 @@ macro_rules! test_dataset_impl {
                 )?);
                 assert_eq!(d.quads().count(), 0);
                 Ok(())
-            }
-
-            #[test]
-            fn test_sink_mutations() {
-                let mut d = $mutable_dataset_factory();
-                assert_eq!(d.quads().count(), 0);
-                assert_eq!(make_quad_source().in_sink(&mut d.inserter()).unwrap(), 2);
-                assert_eq!(d.quads().count(), 2);
-                if $is_set {
-                    assert_eq!(make_quad_source().in_sink(&mut d.inserter()).unwrap(), 0);
-                    assert_eq!(d.quads().count(), 2);
-                }
-                assert_eq!(make_quad_source().in_sink(&mut d.remover()).unwrap(), 2);
-                assert_eq!(d.quads().count(), 0);
-                assert_eq!(make_quad_source().in_sink(&mut d.remover()).unwrap(), 0);
-                assert_eq!(d.quads().count(), 0);
             }
 
             #[test]

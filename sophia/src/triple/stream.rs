@@ -1,6 +1,6 @@
-//! A `TripleSource` produces triples, and may also fail in the process.
+//! A [`TripleSource`] produces triples, and may also fail in the process.
 //!
-//! If provies an API similar to (a subset of) the `Iterator` API,
+//! If provides an API similar to (a subset of) the [`Iterator`] API,
 //! with methods such as [`for_each_triple`] and [`try_for_each_triple`].
 //!
 //! # Rationale (or Why not simply use `Iterator`?)
@@ -35,13 +35,10 @@
 //! — especially when many consumers will be happy with short-lived references.
 //!
 //! [`TripleSource`]: trait.TripleSource.html
+//! [`Iterator`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html
 //! [`for_each_triple`]: ./trait.TripleSource.html#method.for_each_triple
 //! [`try_for_each_triple`]: ./trait.TripleSource.html#method.try_for_each_triple
-//! [`Iterator`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html
 //! [`Iterator::collect`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.collect
-
-mod _error;
-pub use self::_error::*;
 
 use std::convert::Infallible;
 use std::error::Error;
@@ -50,6 +47,9 @@ use std::iter::Map;
 use crate::graph::*;
 use crate::triple::streaming_mode::*;
 use crate::triple::*;
+
+mod _error;
+pub use self::_error::*;
 
 /// A triple source produces [triples], and may also fail in the process.
 ///
@@ -158,8 +158,8 @@ pub trait TripleSource {
 }
 
 pub struct FilterSource<S, F> {
-    source: S,
-    filter: F,
+    pub(crate) source: S,
+    pub(crate) filter: F,
 }
 
 impl<S, F> TripleSource for FilterSource<S, F>
@@ -186,8 +186,8 @@ where
 }
 
 pub struct MapSource<S, F> {
-    source: S,
-    map: F,
+    pub(crate) source: S,
+    pub(crate) map: F,
 }
 
 impl<S, F, U> TripleSource for MapSource<S, F>
@@ -212,8 +212,8 @@ where
 // TODO impl QuadSource for MapSource where U: Quad
 
 pub struct FilterMapSource<S, F> {
-    source: S,
-    filter_map: F,
+    pub(crate) source: S,
+    pub(crate) filter_map: F,
 }
 
 impl<S, F, U> TripleSource for FilterMapSource<S, F>

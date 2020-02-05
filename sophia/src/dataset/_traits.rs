@@ -16,7 +16,6 @@ use crate::term::matcher::*;
 use crate::term::*;
 use crate::triple::stream::StreamResult;
 
-use super::*;
 use crate::graph::insert_if_absent;
 
 /// Type alias for the terms returned by a dataset.
@@ -590,13 +589,6 @@ pub trait MutableDataset: Dataset {
         V: TermData,
         W: TermData;
 
-    /// Return a [`QuadSink`](../quad/stream/trait.QuadSink.html)
-    /// that will insert into this dataset all the quads it receives.
-    #[inline]
-    fn inserter(&mut self) -> Inserter<Self> {
-        Inserter::new(self)
-    }
-
     /// Insert into this dataset all quads from the given source.
     #[inline]
     fn insert_all<TS>(
@@ -606,14 +598,14 @@ pub trait MutableDataset: Dataset {
     where
         TS: QuadSource,
     {
-        src.in_sink(&mut self.inserter())
-    }
-
-    /// Return a [`QuadSink`](../quad/stream/trait.QuadSink.html)
-    /// that will remove from this dataset all the quads it receives.
-    #[inline]
-    fn remover(&mut self) -> Remover<Self> {
-        Remover::new(self)
+        let mut c = 0;
+        src.try_for_each_quad(|q| -> MDResult<Self, ()> {
+            if self.insert(q.s(), q.p(), q.o(), q.g())? {
+                c += 1;
+            }
+            Ok(())
+        })
+        .and(Ok(c))
     }
 
     /// Remove from this dataset all quads from the given source.
@@ -625,7 +617,14 @@ pub trait MutableDataset: Dataset {
     where
         TS: QuadSource,
     {
-        src.in_sink(&mut self.remover())
+        let mut c = 0;
+        src.try_for_each_quad(|q| -> MDResult<Self, ()> {
+            if self.remove(q.s(), q.p(), q.o(), q.g())? {
+                c += 1;
+            }
+            Ok(())
+        })
+        .and(Ok(c))
     }
 
     /// Remove all quads matching the given matchers.
