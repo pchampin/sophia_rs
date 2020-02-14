@@ -59,7 +59,7 @@ macro_rules! namespace {
     ($iri_prefix:expr, $($suffix:ident),*) => {
         pub static PREFIX:&'static str = $iri_prefix;
         $(
-            ns_term!($iri_prefix, $suffix);
+            $crate::ns_term!($iri_prefix, $suffix);
         )*
     }
 }
@@ -73,7 +73,7 @@ macro_rules! namespace {
 #[macro_export]
 macro_rules! ns_term {
     ($prefix:expr, $ident:ident) => {
-        ns_term!($prefix, $ident, stringify!($ident));
+        $crate::ns_term!($prefix, $ident, stringify!($ident));
     };
     ($prefix:expr, $ident:ident, $suffix:expr) => {
         #[allow(non_upper_case_globals)]
