@@ -17,9 +17,7 @@ use std::error::Error;
 use crate::dataset::*;
 use crate::quad::streaming_mode::*;
 use crate::quad::*;
-use crate::triple::stream::{
-    SinkError, SourceError, StreamError, StreamResult,
-};
+use crate::triple::stream::{SinkError, SourceError, StreamError, StreamResult};
 
 mod _filter;
 pub use _filter::*;

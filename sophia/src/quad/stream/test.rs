@@ -127,20 +127,16 @@ fn filter_map_quads() {
     let e = make_mapped_dataset();
     let mut c = 0;
     d.quads()
-        .filter_map_quads(|q|
+        .filter_map_quads(|q| {
             if q.s() == &BOB as &StaticTerm {
                 Some((
-                    [
-                        map_term(q.s()),
-                        map_term(q.p()),
-                        map_term(q.o()),
-                    ],
+                    [map_term(q.s()), map_term(q.p()), map_term(q.o())],
                     q.g().map(map_term),
                 ))
             } else {
                 None
             }
-        )
+        })
         .for_each_quad(|q| {
             c += 1;
             assert!(e.contains(q.s(), q.p(), q.o(), q.g()).unwrap());
@@ -175,22 +171,26 @@ fn filter_map_quads_to_triples() {
 #[test]
 fn filter_map_quads_iter() {
     let d = make_dataset();
-    let v = d.quads()
-        .filter_map_quads(|q|
+    let v = d
+        .quads()
+        .filter_map_quads(|q| {
             if q.s() == &BOB as &StaticTerm {
                 Some(q.o().value())
             } else {
                 None
             }
-        )
+        })
         .into_iter()
         .collect::<Result<Vec<String>, _>>()
         .unwrap();
-    assert_eq!(&v[..], [
-        "http://example.org/Person",
-        "Bob",
-        "http://example.org/alice",
-    ]);
+    assert_eq!(
+        &v[..],
+        [
+            "http://example.org/Person",
+            "Bob",
+            "http://example.org/alice",
+        ]
+    );
 }
 
 #[test]
@@ -199,14 +199,12 @@ fn map_quads() {
     let e = make_mapped_dataset();
     let mut c = 0;
     d.quads()
-        .map_quads(|q| (
-            [
-                map_term(q.s()),
-                map_term(q.p()),
-                map_term(q.o()),
-            ],
-            q.g().map(map_term),
-        ))
+        .map_quads(|q| {
+            (
+                [map_term(q.s()), map_term(q.p()), map_term(q.o())],
+                q.g().map(map_term),
+            )
+        })
         .for_each_quad(|q| {
             c += 1;
             assert!(e.contains(q.s(), q.p(), q.o(), q.g()).unwrap());
@@ -220,7 +218,7 @@ fn map_quads_to_triple() {
     let d = make_dataset();
     let mut g = Vec::<[BoxTerm; 3]>::new();
     d.quads()
-        .map_quads(|q| -> [BoxTerm; 3] {[q.s().into(), q.p().into(), q.o().into()]})
+        .map_quads(|q| -> [BoxTerm; 3] { [q.s().into(), q.p().into(), q.o().into()] })
         .in_graph(&mut g)
         .unwrap();
     assert_eq!(d.len(), g.len());
@@ -234,16 +232,20 @@ fn map_quads_to_triple() {
 #[test]
 fn map_quads_iter() {
     let d = make_dataset();
-    let v = d.quads()
+    let v = d
+        .quads()
         .map_quads(|q| q.o().value())
         .into_iter()
         .collect::<Result<Vec<String>, _>>()
         .unwrap();
-    assert_eq!(&v[..], [
-        "http://example.org/Person",
-        "Alice",
-        "http://example.org/Person",
-        "Bob",
-        "http://example.org/alice",
-    ]);
+    assert_eq!(
+        &v[..],
+        [
+            "http://example.org/Person",
+            "Alice",
+            "http://example.org/Person",
+            "Bob",
+            "http://example.org/alice",
+        ]
+    );
 }

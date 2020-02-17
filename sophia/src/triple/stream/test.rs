@@ -122,17 +122,13 @@ fn filter_map_triples() {
     let h = make_mapped_graph();
     let mut c = 0;
     g.triples()
-        .filter_map_triples(|t|
+        .filter_map_triples(|t| {
             if t.s() == &BOB as &StaticTerm {
-                Some([
-                    map_term(t.s()),
-                    map_term(t.p()),
-                    map_term(t.o()),
-                ])
+                Some([map_term(t.s()), map_term(t.p()), map_term(t.o())])
             } else {
                 None
             }
-        )
+        })
         .for_each_triple(|t| {
             c += 1;
             assert!(h.contains(t.s(), t.p(), t.o()).unwrap());
@@ -167,22 +163,26 @@ fn filter_map_triples_to_quads() {
 #[test]
 fn filter_map_triples_iter() {
     let g = make_graph();
-    let v = g.triples()
-        .filter_map_triples(|t|
+    let v = g
+        .triples()
+        .filter_map_triples(|t| {
             if t.s() == &BOB as &StaticTerm {
                 Some(t.o().value())
             } else {
                 None
             }
-        )
+        })
         .into_iter()
         .collect::<Result<Vec<String>, _>>()
         .unwrap();
-    assert_eq!(&v[..], [
-        "http://example.org/Person",
-        "Bob",
-        "http://example.org/alice",
-    ]);
+    assert_eq!(
+        &v[..],
+        [
+            "http://example.org/Person",
+            "Bob",
+            "http://example.org/alice",
+        ]
+    );
 }
 
 #[test]
@@ -191,11 +191,7 @@ fn map_triples() {
     let h = make_mapped_graph();
     let mut c = 0;
     g.triples()
-        .map_triples(|t| [
-            map_term(t.s()),
-            map_term(t.p()),
-            map_term(t.o()),
-        ])
+        .map_triples(|t| [map_term(t.s()), map_term(t.p()), map_term(t.o())])
         .for_each_triple(|t| {
             c += 1;
             assert!(h.contains(t.s(), t.p(), t.o()).unwrap());
@@ -209,7 +205,9 @@ fn map_triples_to_quads() {
     let g = make_graph();
     let mut d = Vec::<([BoxTerm; 3], Option<BoxTerm>)>::new();
     g.triples()
-        .map_triples(|t| -> [BoxTerm; 4] {[t.s().into(), t.p().into(), t.o().into(), t.s().into()]})
+        .map_triples(|t| -> [BoxTerm; 4] {
+            [t.s().into(), t.p().into(), t.o().into(), t.s().into()]
+        })
         .in_dataset(&mut d)
         .unwrap();
     assert_eq!(g.len(), d.len());
@@ -223,16 +221,20 @@ fn map_triples_to_quads() {
 #[test]
 fn map_triples_iter() {
     let g = make_graph();
-    let v = g.triples()
+    let v = g
+        .triples()
         .map_triples(|t| t.o().value())
         .into_iter()
         .collect::<Result<Vec<String>, _>>()
         .unwrap();
-    assert_eq!(&v[..], [
-        "http://example.org/Person",
-        "Alice",
-        "http://example.org/Person",
-        "Bob",
-        "http://example.org/alice",
-    ]);
+    assert_eq!(
+        &v[..],
+        [
+            "http://example.org/Person",
+            "Alice",
+            "http://example.org/Person",
+            "Bob",
+            "http://example.org/alice",
+        ]
+    );
 }

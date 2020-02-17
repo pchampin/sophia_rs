@@ -61,7 +61,8 @@ where
     }
 }
 
-impl<S, F, T> IntoIterator for FilterMapSource<S, F> where
+impl<S, F, T> IntoIterator for FilterMapSource<S, F>
+where
     S: TripleSource,
     F: FnMut(StreamedTriple<S::Triple>) -> Option<T>,
     T: 'static,
@@ -87,10 +88,10 @@ pub struct FilterMapSourceIterator<S, F, T, E> {
 
 impl<S, F, T, E> Iterator for FilterMapSourceIterator<S, F, T, E>
 where
-    S: TripleSource<Error=E>,
+    S: TripleSource<Error = E>,
     F: FnMut(StreamedTriple<S::Triple>) -> Option<T>,
     T: 'static,
-    E: 'static + std::error::Error
+    E: 'static + std::error::Error,
 {
     type Item = Result<T, S::Error>;
     fn next(&mut self) -> Option<Result<T, S::Error>> {
@@ -104,8 +105,12 @@ where
                     buffer.push_back(Ok(v));
                 }
             }) {
-                Ok(b) => { remaining = b; }
-                Err(err) => { buffer.push_back(Err(err)); }
+                Ok(b) => {
+                    remaining = b;
+                }
+                Err(err) => {
+                    buffer.push_back(Err(err));
+                }
             };
         }
         std::mem::swap(&mut self.buffer, &mut buffer);
