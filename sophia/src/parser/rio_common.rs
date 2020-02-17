@@ -8,8 +8,10 @@ use rio_api::parser::*;
 
 use crate::ns::xsd;
 use crate::quad::stream::*;
+use crate::quad::streaming_mode::StreamedQuad;
 use crate::term::{BoxTerm, RefTerm};
 use crate::triple::stream::*;
+use crate::triple::streaming_mode::StreamedTriple;
 
 /// TripleSource / QuadSource adapter for RIO TripleParser / QuadParser
 pub enum StrictRioSource<T, E> {
@@ -69,25 +71,30 @@ where
     E: Error + 'static,
 {
     type Error = E;
+    type Triple = crate::triple::streaming_mode::ByRefTerms;
 
-    fn in_sink<TS: TripleSink>(
-        &mut self,
-        sink: &mut TS,
-    ) -> StdResult<TS::Outcome, StreamError<E, TS::Error>> {
+    fn try_for_some_triple<F, EF>(&mut self, f: &mut F) -> StreamResult<bool, E, EF>
+    where
+        F: FnMut(StreamedTriple<Self::Triple>) -> Result<(), EF>,
+        EF: Error,
+    {
         match self {
             StrictRioSource::Error(opt) => Err(SourceError(consume_err(opt))),
             StrictRioSource::Parser(parser) => {
+                if parser.is_end() {
+                    return Ok(false);
+                }
                 parser
-                    .parse_all(&mut |t| -> StdResult<(), MyStreamError<E, TS::Error>> {
-                        sink.feed(&[
+                    .parse_step(&mut |t| -> StdResult<(), MyStreamError<E, EF>> {
+                        f(StreamedTriple::by_ref_terms(
                             rio2refterm(t.subject.into()),
                             rio2refterm(t.predicate.into()),
                             rio2refterm(t.object.into()),
-                        ])
+                        ))
                         .map_err(MyStreamError::from_sink_error)
                     })
-                    .map_err(|e| e.into_stream_error())?;
-                Ok(sink.finish().map_err(SinkError)?)
+                    .map_err(|e| e.into_stream_error())
+                    .and(Ok(true))
             }
         }
     }
@@ -99,32 +106,31 @@ where
     E: Error + 'static,
 {
     type Error = E;
+    type Quad = crate::quad::streaming_mode::ByRefTerms;
 
-    fn in_sink<TS: QuadSink>(
-        &mut self,
-        sink: &mut TS,
-    ) -> StdResult<TS::Outcome, StreamError<E, TS::Error>> {
+    fn try_for_some_quad<F, EF>(&mut self, f: &mut F) -> StreamResult<bool, E, EF>
+    where
+        F: FnMut(StreamedQuad<Self::Quad>) -> Result<(), EF>,
+        EF: Error,
+    {
         match self {
             StrictRioSource::Error(opt) => Err(SourceError(consume_err(opt))),
             StrictRioSource::Parser(parser) => {
+                if parser.is_end() {
+                    return Ok(false);
+                }
                 parser
-                    .parse_all(&mut |q| -> StdResult<(), MyStreamError<E, TS::Error>> {
-                        sink.feed(&(
-                            [
-                                rio2refterm(q.subject.into()),
-                                rio2refterm(q.predicate.into()),
-                                rio2refterm(q.object.into()),
-                            ],
-                            if let Some(n) = q.graph_name {
-                                Some(rio2refterm(n.into()))
-                            } else {
-                                None
-                            },
+                    .parse_step(&mut |q| -> StdResult<(), MyStreamError<E, EF>> {
+                        f(StreamedQuad::by_ref_terms(
+                            rio2refterm(q.subject.into()),
+                            rio2refterm(q.predicate.into()),
+                            rio2refterm(q.object.into()),
+                            q.graph_name.map(|g| rio2refterm(g.into())),
                         ))
                         .map_err(MyStreamError::from_sink_error)
                     })
-                    .map_err(|e| e.into_stream_error())?;
-                Ok(sink.finish().map_err(SinkError)?)
+                    .map_err(|e| e.into_stream_error())
+                    .and(Ok(true))
             }
         }
     }
@@ -151,32 +157,31 @@ where
     E: Error + 'static,
 {
     type Error = E;
+    type Quad = crate::quad::streaming_mode::ByRefTerms;
 
-    fn in_sink<TS: QuadSink>(
-        &mut self,
-        sink: &mut TS,
-    ) -> StdResult<TS::Outcome, StreamError<E, TS::Error>> {
+    fn try_for_some_quad<F, EF>(&mut self, f: &mut F) -> StreamResult<bool, E, EF>
+    where
+        F: FnMut(StreamedQuad<Self::Quad>) -> Result<(), EF>,
+        EF: Error,
+    {
         match self {
             GeneralizedRioSource::Error(opt) => Err(SourceError(consume_err(opt))),
             GeneralizedRioSource::Parser(parser) => {
+                if parser.is_end() {
+                    return Ok(false);
+                }
                 parser
-                    .parse_all(&mut |q| -> StdResult<(), MyStreamError<E, TS::Error>> {
-                        sink.feed(&(
-                            [
-                                rio2refterm(q.subject),
-                                rio2refterm(q.predicate),
-                                rio2refterm(q.object),
-                            ],
-                            if let Some(n) = q.graph_name {
-                                Some(rio2refterm(n))
-                            } else {
-                                None
-                            },
+                    .parse_step(&mut |q| -> StdResult<(), MyStreamError<E, EF>> {
+                        f(StreamedQuad::by_ref_terms(
+                            rio2refterm(q.subject),
+                            rio2refterm(q.predicate),
+                            rio2refterm(q.object),
+                            q.graph_name.map(rio2refterm),
                         ))
                         .map_err(MyStreamError::from_sink_error)
                     })
-                    .map_err(|e| e.into_stream_error())?;
-                Ok(sink.finish().map_err(SinkError)?)
+                    .map_err(|e| e.into_stream_error())
+                    .and(Ok(true))
             }
         }
     }

@@ -1,3 +1,5 @@
+// this module is transparently re-exported by its parent `stream`
+
 use std::error::Error;
 
 /// A error that is raised by functions that move fallible `Source`s into
@@ -66,3 +68,6 @@ where
         }
     }
 }
+
+/// Convenient type alias
+pub type StreamResult<T, E1, E2> = Result<T, StreamError<E1, E2>>;

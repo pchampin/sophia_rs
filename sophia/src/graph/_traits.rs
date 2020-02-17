@@ -8,7 +8,6 @@ use resiter::filter::*;
 use resiter::map::*;
 
 use crate::graph::adapter::GraphAsDataset;
-use crate::graph::{Inserter, Remover};
 use crate::term::matcher::TermMatcher;
 use crate::term::*;
 use crate::triple::stream::*;
@@ -363,30 +362,23 @@ pub trait MutableGraph: Graph {
         U: TermData,
         V: TermData;
 
-    /// Return a [`TripleSink`](../triple/stream/trait.TripleSink.html)
-    /// that will insert into this graph all the triples it receives.
-    #[inline]
-    fn inserter(&mut self) -> Inserter<Self> {
-        Inserter::new(self)
-    }
-
     /// Insert into this graph all triples from the given source.
     #[inline]
     fn insert_all<TS>(
         &mut self,
         src: &mut TS,
-    ) -> Result<usize, StreamError<TS::Error, <Self as MutableGraph>::MutationError>>
+    ) -> StreamResult<usize, TS::Error, <Self as MutableGraph>::MutationError>
     where
         TS: TripleSource,
     {
-        src.in_sink(&mut self.inserter())
-    }
-
-    /// Return a [`TripleSink`](../triple/stream/trait.TripleSink.html)
-    /// that will remove from this graph all the triples it receives.
-    #[inline]
-    fn remover(&mut self) -> Remover<Self> {
-        Remover::new(self)
+        let mut c = 0;
+        src.try_for_each_triple(|t| -> MGResult<Self, ()> {
+            if self.insert(t.s(), t.p(), t.o())? {
+                c += 1;
+            }
+            Ok(())
+        })
+        .and(Ok(c))
     }
 
     /// Remove from this graph all triples from the given source.
@@ -394,11 +386,18 @@ pub trait MutableGraph: Graph {
     fn remove_all<TS>(
         &mut self,
         src: &mut TS,
-    ) -> Result<usize, StreamError<TS::Error, <Self as MutableGraph>::MutationError>>
+    ) -> StreamResult<usize, TS::Error, <Self as MutableGraph>::MutationError>
     where
         TS: TripleSource,
     {
-        src.in_sink(&mut self.remover())
+        let mut c = 0;
+        src.try_for_each_triple(|t| -> MGResult<Self, ()> {
+            if self.remove(t.s(), t.p(), t.o())? {
+                c += 1;
+            }
+            Ok(())
+        })
+        .and(Ok(c))
     }
 
     /// Remove all triples matching the given matchers.

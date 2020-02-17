@@ -5,12 +5,10 @@ use std::marker::PhantomData;
 use std::ptr::NonNull;
 
 use crate::quad::Quad;
-use crate::term::{Term, TermData};
+use crate::term::{RefTerm, Term, TermData};
 
 mod _unsafe_quad;
 pub(crate) use _unsafe_quad::*;
-
-// TODO update documentation of Graph::Quad
 
 /// See [module](./index.html) documentation.
 pub trait QuadStreamingMode {
@@ -27,6 +25,12 @@ impl<Q: Quad> QuadStreamingMode for ByValue<Q> {
 pub struct ByRef<Q: Quad>(PhantomData<Q>);
 impl<Q: Quad> QuadStreamingMode for ByRef<Q> {
     type UnsafeQuad = NonNull<Q>;
+}
+/// See [module](./index.html) documentation.
+#[derive(Debug)]
+pub struct ByRefTerms {}
+impl QuadStreamingMode for ByRefTerms {
+    type UnsafeQuad = ([RefTerm<'static>; 3], Option<RefTerm<'static>>);
 }
 /// See [module](./index.html) documentation.
 #[derive(Debug)]
@@ -79,6 +83,23 @@ where
         StreamedQuad {
             _phantom: PhantomData,
             wrapped: quad.into(),
+        }
+    }
+}
+impl<'a> StreamedQuad<'a, ByRefTerms> {
+    pub fn by_ref_terms(
+        s: RefTerm<'a>,
+        p: RefTerm<'a>,
+        o: RefTerm<'a>,
+        g: Option<RefTerm<'a>>,
+    ) -> Self {
+        let s = unsafe { std::mem::transmute(s) };
+        let p = unsafe { std::mem::transmute(p) };
+        let o = unsafe { std::mem::transmute(o) };
+        let g = unsafe { std::mem::transmute(g) };
+        StreamedQuad {
+            _phantom: PhantomData,
+            wrapped: ([s, p, o], g),
         }
     }
 }

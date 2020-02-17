@@ -18,7 +18,5 @@ pub mod inmem;
 
 mod _ext_impl;
 pub use self::_ext_impl::*;
-mod _sinks;
-pub use self::_sinks::*;
 mod _traits;
 pub use self::_traits::*;

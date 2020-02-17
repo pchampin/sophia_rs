@@ -1,113 +1,140 @@
-//! `QuadSource` and `QuadSink`,
-//! are pervasive traits for streaming quads from one object to another.
+//! A `QuadSource` produces quads, and may also fail in the process.
 //!
-//! See [`QuadSource`]'s and [`QuadSink`]'s documentation for more detail.
+//! If provides an API similar to (a subset of) the [`Iterator`] API,
+//! with methods such as [`for_each_quad`] and [`try_for_each_quad`].
 //!
 //! # Rationale (or Why not simply use `Iterator`?)
 //!
 //! See the documentation of module [`triple::stream`].
 //!
 //! [`QuadSource`]: trait.QuadSource.html
-//! [`QuadSink`]: trait.QuadSink.html
-//! [`Quad`]: ../trait.Quad.html
 //! [`Iterator`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html
-//! [`triple::stream`]: ../../triple/stream/index.html
+//! [`for_each_quad`]: ./trait.TripleSource.html#method.for_each_quad
+//! [`try_for_each_quad`]: ./trait.TripleSource.html#method.try_for_each_quad
 
-use std::convert::Infallible;
 use std::error::Error;
 
 use crate::dataset::*;
+use crate::quad::streaming_mode::*;
 use crate::quad::*;
-use crate::triple::stream::*;
+use crate::triple::stream::{SinkError, SourceError, StreamError, StreamResult};
 
-use std::result::Result; // override ::error::Result
+mod _filter;
+pub use _filter::*;
+mod _filter_map;
+pub use _filter_map::*;
+mod _iterator;
+pub use _iterator::*;
+mod _map;
+pub use _map::*;
 
 /// A quad source produces [quads], and may also fail in the process.
 ///
-/// It provides additional methods dedicated to interacting with [`QuadSink`]s.
-/// Any iterator yielding [quads] wrapped in [results]
+/// Any iterator yielding [quads] wrapped in `Result`
 /// implements the `QuadSource` trait.
 ///
 /// [quads]: ../trait.Quad.html
-/// [results]: ../../error/type.Result.html
-/// [`QuadSink`]: trait.QuadSink.html
-///
 pub trait QuadSource {
     /// The type of errors produced by this source.
     type Error: 'static + Error;
 
-    /// Feed all quads from this source into the given [sink](trait.QuadSink.html).
-    ///
-    /// Stop on the first error (in the source or the sink).
-    fn in_sink<TS: QuadSink>(
-        &mut self,
-        sink: &mut TS,
-    ) -> Result<TS::Outcome, StreamError<Self::Error, TS::Error>>;
+    /// Determine the type of [`Quad`](../quad/trait.Quad.html)s
+    /// that this quad source yields.
+    /// (see [`streaming_mode`](../quad/streaming_mode/index.html)
+    type Quad: QuadStreamingMode;
 
+    /// Call f for at least one quad from this quad source, if any.
+    ///
+    /// Return false if there are no more quads in this source.
+    fn try_for_some_quad<F, E>(&mut self, f: &mut F) -> StreamResult<bool, Self::Error, E>
+    where
+        F: FnMut(StreamedQuad<Self::Quad>) -> Result<(), E>,
+        E: Error;
+
+    /// Call f for all quads from this quad source.
+    #[inline]
+    fn try_for_each_quad<F, E>(&mut self, f: F) -> StreamResult<(), Self::Error, E>
+    where
+        F: FnMut(StreamedQuad<Self::Quad>) -> Result<(), E>,
+        E: Error,
+    {
+        let mut f = f;
+        while self.try_for_some_quad(&mut f)? {}
+        Ok(())
+    }
+    /// Call f for at least one quad from this quad source, if any.
+    ///
+    /// Return false if there are no more quads in this source.
+    #[inline]
+    fn for_some_quad<F>(&mut self, f: &mut F) -> Result<bool, Self::Error>
+    where
+        F: FnMut(StreamedQuad<Self::Quad>) -> (),
+    {
+        self.try_for_some_quad(&mut |t| -> Result<(), Self::Error> {
+            f(t);
+            Ok(())
+        })
+        .map_err(StreamError::inner_into)
+    }
+    /// Call f for all quads from this quad source.
+    #[inline]
+    fn for_each_quad<F>(&mut self, f: F) -> Result<(), Self::Error>
+    where
+        F: FnMut(StreamedQuad<Self::Quad>) -> (),
+    {
+        let mut f = f;
+        while self.for_some_quad(&mut f)? {}
+        Ok(())
+    }
     /// Insert all quads from this source into the given [dataset](../../dataset/trait.MutableDataset.html).
     ///
     /// Stop on the first error (in the source or in the dataset).
+    #[inline]
     fn in_dataset<D: MutableDataset>(
         &mut self,
         dataset: &mut D,
-    ) -> Result<usize, StreamError<Self::Error, <D as MutableDataset>::MutationError>> {
-        self.in_sink(&mut dataset.inserter())
+    ) -> StreamResult<usize, Self::Error, <D as MutableDataset>::MutationError>
+    where
+        Self: Sized,
+    {
+        dataset.insert_all(self)
     }
-}
-
-impl<I, T, E> QuadSource for I
-where
-    I: Iterator<Item = Result<T, E>>,
-    T: Quad,
-    E: 'static + Error,
-{
-    type Error = E;
-
-    fn in_sink<TS: QuadSink>(
-        &mut self,
-        sink: &mut TS,
-    ) -> Result<TS::Outcome, StreamError<Self::Error, TS::Error>> {
-        for tr in self {
-            let t = tr.map_err(SourceError)?;
-            sink.feed(&t).map_err(SinkError)?;
+    /// Creates a quad source which uses a closure to determine if a quad should be yielded.
+    #[inline]
+    fn filter_quads<F>(self, filter: F) -> FilterSource<Self, F>
+    where
+        Self: Sized,
+        F: FnMut(&StreamedQuad<Self::Quad>) -> bool,
+    {
+        FilterSource {
+            source: self,
+            filter,
         }
-        Ok(sink.finish().map_err(SinkError)?)
+    }
+    /// Creates a quad source that both filters and maps.
+    #[inline]
+    fn filter_map_quads<F, T>(self, filter_map: F) -> FilterMapSource<Self, F>
+    where
+        Self: Sized,
+        F: FnMut(StreamedQuad<Self::Quad>) -> Option<T>,
+    {
+        FilterMapSource {
+            source: self,
+            filter_map,
+        }
+    }
+    /// Takes a closure and creates quad source which yield the result of that closure for each quad.
+    #[inline]
+    fn map_quads<F, T>(self, map: F) -> MapSource<Self, F>
+    where
+        Self: Sized,
+        F: FnMut(StreamedQuad<Self::Quad>) -> T,
+    {
+        MapSource { source: self, map }
     }
 }
 
-/// A utility extension trait for converting any iterator of [`Quad`]s
-/// into [`QuadSource`], by wrapping its items in `Ok` results.
-///
-/// [`QuadSource`]: trait.QuadSource.html
-/// [`Quad`]: ../trait.Quad.html
-pub trait AsQuadSource<Q>: Sized {
-    /// Map all items of this iterator into an Ok result.
-    fn as_quad_source(self) -> AsInfallibleSource<Self, Q>;
-}
-
-impl<Q, I> AsQuadSource<Q> for I
-where
-    I: Iterator<Item = Q> + Sized,
-    Q: Quad,
-{
-    fn as_quad_source(self) -> AsInfallibleSource<Self, Q> {
-        self.map(Ok)
-    }
-}
-
-/// A quad sink consumes [quads](../trait.Quad.html),
-/// produces a result, and may also fail in the process.
-///
-/// Typical quad sinks are [serializer]
-/// or graphs' [inserters] and [removers].
-///
-/// See also [`QuadSource`].
-///
-/// [serializer]: ../../serializer/index.html
-/// [inserters]: ../../graph/trait.MutableGraph.html#method.inserter
-/// [removers]: ../../graph/trait.MutableGraph.html#method.remover
-/// [`QuadSource`]: trait.QuadSource.html
-///
+/// Soon to be deprecated.
 pub trait QuadSink {
     /// The type of the result produced by this quad sink.
     ///
@@ -118,7 +145,7 @@ pub trait QuadSink {
     type Error: 'static + Error;
 
     /// Feed one quad in this sink.
-    fn feed<Q: Quad>(&mut self, t: &Q) -> Result<(), Self::Error>;
+    fn feed<T: Quad>(&mut self, t: &T) -> Result<(), Self::Error>;
 
     /// Produce the result once all quads were fed.
     ///
@@ -126,24 +153,5 @@ pub trait QuadSink {
     fn finish(&mut self) -> Result<Self::Outcome, Self::Error>;
 }
 
-/// [`()`](https://doc.rust-lang.org/std/primitive.unit.html) acts as a "black hole",
-/// consuming all quads without erring, and producing no result.
-///
-/// Useful for benchmarking quad sources.
-impl QuadSink for () {
-    type Outcome = ();
-    type Error = Infallible;
-
-    fn feed<Q: Quad>(&mut self, _: &Q) -> Result<(), Self::Error> {
-        Ok(())
-    }
-    fn finish(&mut self) -> Result<Self::Outcome, Self::Error> {
-        Ok(())
-    }
-}
-
 #[cfg(test)]
-mod test {
-    // The code from this module is tested through its use in other modules
-    // (especially the parser/serializer modules).
-}
+mod test;

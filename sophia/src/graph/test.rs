@@ -137,7 +137,6 @@ macro_rules! test_graph_impl {
             use $crate::ns::*;
             use $crate::term::matcher::ANY;
             use $crate::term::*;
-            use $crate::triple::stream::*;
 
             #[allow(unused_imports)]
             use super::*;
@@ -206,22 +205,6 @@ macro_rules! test_graph_impl {
                     println!("effectively skipped, since is_set is false");
                 }
                 Ok(())
-            }
-
-            #[test]
-            fn test_sink_mutations() {
-                let mut g = $mutable_graph_factory();
-                assert_eq!(g.triples().count(), 0);
-                assert_eq!(make_triple_source().in_sink(&mut g.inserter()).unwrap(), 2);
-                assert_eq!(g.triples().count(), 2);
-                if $is_set {
-                    assert_eq!(make_triple_source().in_sink(&mut g.inserter()).unwrap(), 0);
-                    assert_eq!(g.triples().count(), 2);
-                }
-                assert_eq!(make_triple_source().in_sink(&mut g.remover()).unwrap(), 2);
-                assert_eq!(g.triples().count(), 0);
-                assert_eq!(make_triple_source().in_sink(&mut g.remover()).unwrap(), 0);
-                assert_eq!(g.triples().count(), 0);
             }
 
             #[test]

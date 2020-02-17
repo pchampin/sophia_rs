@@ -51,28 +51,30 @@ pub trait TripleWriter<W: io::Write>: TripleSink<Outcome = ()> + Sized {
     fn new(write: W, config: Self::Config) -> Self;
 
     /// Serialize the triples from the given source.
-    fn write<TS, T>(&mut self, mut source: TS) -> Result<(), StreamError<TS::Error, Self::Error>>
+    fn write<TS>(&mut self, mut source: TS) -> StreamResult<(), TS::Error, Self::Error>
     where
         TS: TripleSource,
     {
-        source.in_sink(self)
+        source
+            .try_for_each_triple(|t| self.feed(&t))
+            .and_then(|_| self.finish().map_err(SinkError))
     }
 
     /// Serialize the given graph.
-    fn write_graph<G>(&mut self, graph: &mut G) -> Result<(), StreamError<G::Error, Self::Error>>
+    fn write_graph<G>(&mut self, graph: &mut G) -> StreamResult<(), G::Error, Self::Error>
     where
         G: Graph,
     {
-        graph.triples().in_sink(self)
+        self.write(graph.triples())
     }
 
     /// Serialize the given triple.
-    fn write_triple<T>(&mut self, t: &T) -> Result<(), StreamError<Infallible, Self::Error>>
+    fn write_triple<T>(&mut self, t: &T) -> StreamResult<(), Infallible, Self::Error>
     where
         T: Triple,
     {
-        let mut source = vec![[t.s(), t.p(), t.o()]].into_iter().as_triple_source();
-        source.in_sink(self)
+        let source = vec![[t.s(), t.p(), t.o()]].into_iter().as_triple_source();
+        self.write(source)
     }
 }
 
@@ -90,34 +92,30 @@ pub trait TripleStringifier: TripleSink<Outcome = String> + Sized {
     fn new(config: Self::Config) -> Self;
 
     /// Stringify the triples from the given source.
-    fn stringify<TS, T>(
-        &mut self,
-        mut source: TS,
-    ) -> Result<String, StreamError<TS::Error, Self::Error>>
+    fn stringify<TS>(&mut self, mut source: TS) -> StreamResult<String, TS::Error, Self::Error>
     where
         TS: TripleSource,
     {
-        source.in_sink(self)
+        source
+            .try_for_each_triple(|t| self.feed(&t))
+            .and_then(|_| self.finish().map_err(SinkError))
     }
 
     /// Stringify the given graph.
-    fn stringify_graph<G>(
-        &mut self,
-        graph: &mut G,
-    ) -> Result<String, StreamError<G::Error, Self::Error>>
+    fn stringify_graph<G>(&mut self, graph: &mut G) -> StreamResult<String, G::Error, Self::Error>
     where
         G: Graph,
     {
-        graph.triples().in_sink(self)
+        self.stringify(graph.triples())
     }
 
     /// Stringify the given triple.
-    fn stringify_triple<T>(&mut self, t: &T) -> Result<String, StreamError<Infallible, Self::Error>>
+    fn stringify_triple<T>(&mut self, t: &T) -> StreamResult<String, Infallible, Self::Error>
     where
         T: Triple,
     {
-        let mut source = vec![[t.s(), t.p(), t.o()]].into_iter().as_triple_source();
-        source.in_sink(self)
+        let source = vec![[t.s(), t.p(), t.o()]].into_iter().as_triple_source();
+        self.stringify(source)
     }
 }
 
@@ -134,33 +132,32 @@ pub trait QuadWriter<W: io::Write>: QuadSink<Outcome = ()> + Sized {
     fn new(write: W, config: Self::Config) -> Self;
 
     /// Serialize the triples from the given source.
-    fn write<QS, T>(&mut self, mut source: QS) -> Result<(), StreamError<QS::Error, Self::Error>>
+    fn write<QS>(&mut self, mut source: QS) -> StreamResult<(), QS::Error, Self::Error>
     where
         QS: QuadSource,
     {
-        source.in_sink(self)
+        source
+            .try_for_each_quad(|q| self.feed(&q))
+            .and_then(|_| self.finish().map_err(SinkError))
     }
 
     /// Serialize the given dataset.
-    fn write_dataset<D>(
-        &mut self,
-        dataset: &mut D,
-    ) -> Result<(), StreamError<D::Error, Self::Error>>
+    fn write_dataset<D>(&mut self, dataset: &mut D) -> StreamResult<(), D::Error, Self::Error>
     where
         D: Dataset,
     {
-        dataset.quads().in_sink(self)
+        self.write(dataset.quads())
     }
 
     /// Serialize the given triple.
-    fn write_quad<Q>(&mut self, q: &Q) -> Result<(), StreamError<Infallible, Self::Error>>
+    fn write_quad<Q>(&mut self, q: &Q) -> StreamResult<(), Infallible, Self::Error>
     where
         Q: Quad,
     {
-        let mut source = vec![([q.s(), q.p(), q.o()], q.g())]
+        let source = vec![([q.s(), q.p(), q.o()], q.g())]
             .into_iter()
             .as_quad_source();
-        source.in_sink(self)
+        self.write(source)
     }
 }
 
@@ -178,36 +175,35 @@ pub trait QuadStringifier: QuadSink<Outcome = String> + Sized {
     fn new(config: Self::Config) -> Self;
 
     /// Stringify the triples from the given source.
-    fn stringify<QS, T>(
-        &mut self,
-        mut source: QS,
-    ) -> Result<String, StreamError<QS::Error, Self::Error>>
+    fn stringify<QS>(&mut self, mut source: QS) -> StreamResult<String, QS::Error, Self::Error>
     where
         QS: QuadSource,
     {
-        source.in_sink(self)
+        source
+            .try_for_each_quad(|q| self.feed(&q))
+            .and_then(|_| self.finish().map_err(SinkError))
     }
 
     /// Stringify the given dataset.
     fn stringify_dataset<D>(
         &mut self,
         dataset: &mut D,
-    ) -> Result<String, StreamError<D::Error, Self::Error>>
+    ) -> StreamResult<String, D::Error, Self::Error>
     where
         D: Dataset,
     {
-        dataset.quads().in_sink(self)
+        self.stringify(dataset.quads())
     }
 
     /// Stringify the given triple.
-    fn stringify_quad<Q>(&mut self, q: &Q) -> Result<String, StreamError<Infallible, Self::Error>>
+    fn stringify_quad<Q>(&mut self, q: &Q) -> StreamResult<String, Infallible, Self::Error>
     where
         Q: Quad,
     {
-        let mut source = vec![([q.s(), q.p(), q.o()], q.g())]
+        let source = vec![([q.s(), q.p(), q.o()], q.g())]
             .into_iter()
             .as_quad_source();
-        source.in_sink(self)
+        self.stringify(source)
     }
 }
 

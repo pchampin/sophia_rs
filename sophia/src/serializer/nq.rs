@@ -235,8 +235,8 @@ mod test {
                 Some(StaticTerm::new_iri("http://example.org/graph").unwrap()),
             ),
         ];
-        let mut quads = quads.into_iter().as_quad_source();
-        let s = quads.in_sink(&mut stringifier()).unwrap();
+        let quads = quads.into_iter().as_quad_source();
+        let s = stringifier().stringify(quads).unwrap();
         assert_eq!(
             s,
             r#"<http://champin.net/#pa> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person> .
