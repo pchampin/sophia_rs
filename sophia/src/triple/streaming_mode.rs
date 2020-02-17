@@ -72,8 +72,6 @@ use crate::triple::Triple;
 mod _unsafe_triple;
 pub(crate) use _unsafe_triple::*;
 
-// TODO update documentation of Graph::Triple
-
 /// See [module](./index.html) documentation.
 pub trait TripleStreamingMode {
     type UnsafeTriple: UnsafeTriple;

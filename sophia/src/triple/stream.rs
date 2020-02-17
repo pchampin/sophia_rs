@@ -40,9 +40,7 @@
 //! [`try_for_each_triple`]: ./trait.TripleSource.html#method.try_for_each_triple
 //! [`Iterator::collect`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.collect
 
-use std::convert::Infallible;
 use std::error::Error;
-use std::iter::Map;
 
 use crate::graph::*;
 use crate::triple::streaming_mode::*;
@@ -50,6 +48,14 @@ use crate::triple::*;
 
 mod _error;
 pub use self::_error::*;
+mod _filter;
+pub use self::_filter::*;
+mod _filter_map;
+pub use self::_filter_map::*;
+mod _iterator;
+pub use self::_iterator::*;
+mod _map;
+pub use self::_map::*;
 
 /// A triple source produces [triples], and may also fail in the process.
 ///
@@ -101,7 +107,7 @@ pub trait TripleSource {
     }
     /// Call f for all triples from this triple source.
     #[inline]
-    fn for_each_triple<F>(&mut self, f: &mut F) -> Result<(), Self::Error>
+    fn for_each_triple<F>(&mut self, f: F) -> Result<(), Self::Error>
     where
         F: FnMut(StreamedTriple<Self::Triple>) -> (),
     {
@@ -136,10 +142,10 @@ pub trait TripleSource {
     }
     /// Creates a triple source that both filters and maps.
     #[inline]
-    fn filter_map_triples<F>(self, filter_map: F) -> FilterMapSource<Self, F>
+    fn filter_map_triples<F, T>(self, filter_map: F) -> FilterMapSource<Self, F>
     where
         Self: Sized,
-        F: FnMut(StreamedTriple<Self::Triple>) -> bool,
+        F: FnMut(StreamedTriple<Self::Triple>) -> Option<T>,
     {
         FilterMapSource {
             source: self,
@@ -148,143 +154,12 @@ pub trait TripleSource {
     }
     /// Takes a closure and creates triple source which yield the result of that closure for each triple.
     #[inline]
-    fn map_triples<F>(self, map: F) -> MapSource<Self, F>
+    fn map_triples<F, T>(self, map: F) -> MapSource<Self, F>
     where
         Self: Sized,
-        F: FnMut(StreamedTriple<Self::Triple>) -> bool,
+        F: FnMut(StreamedTriple<Self::Triple>) -> T,
     {
         MapSource { source: self, map }
-    }
-}
-
-pub struct FilterSource<S, F> {
-    pub(crate) source: S,
-    pub(crate) filter: F,
-}
-
-impl<S, F> TripleSource for FilterSource<S, F>
-where
-    S: TripleSource,
-    F: FnMut(&StreamedTriple<S::Triple>) -> bool,
-{
-    type Error = S::Error;
-    type Triple = S::Triple;
-    fn try_for_some_triple<G, E>(&mut self, f: &mut G) -> StreamResult<bool, Self::Error, E>
-    where
-        G: FnMut(StreamedTriple<Self::Triple>) -> Result<(), E>,
-        E: Error,
-    {
-        let filter = &mut self.filter;
-        self.source.try_for_some_triple(&mut |t| {
-            if (filter)(&t) {
-                f(t)
-            } else {
-                Ok(())
-            }
-        })
-    }
-}
-
-pub struct MapSource<S, F> {
-    pub(crate) source: S,
-    pub(crate) map: F,
-}
-
-impl<S, F, U> TripleSource for MapSource<S, F>
-where
-    S: TripleSource,
-    F: FnMut(StreamedTriple<S::Triple>) -> U,
-    U: Triple,
-{
-    type Error = S::Error;
-    type Triple = ByValue<U>;
-    fn try_for_some_triple<G, E>(&mut self, f: &mut G) -> StreamResult<bool, Self::Error, E>
-    where
-        G: FnMut(StreamedTriple<Self::Triple>) -> Result<(), E>,
-        E: Error,
-    {
-        let map = &mut self.map;
-        self.source
-            .try_for_some_triple(&mut |t| f(StreamedTriple::by_value((map)(t))))
-    }
-}
-
-// TODO impl QuadSource for MapSource where U: Quad
-
-pub struct FilterMapSource<S, F> {
-    pub(crate) source: S,
-    pub(crate) filter_map: F,
-}
-
-impl<S, F, U> TripleSource for FilterMapSource<S, F>
-where
-    S: TripleSource,
-    F: FnMut(StreamedTriple<S::Triple>) -> Option<U>,
-    U: Triple,
-{
-    type Error = S::Error;
-    type Triple = ByValue<U>;
-    fn try_for_some_triple<G, E>(&mut self, f: &mut G) -> StreamResult<bool, Self::Error, E>
-    where
-        G: FnMut(StreamedTriple<Self::Triple>) -> Result<(), E>,
-        E: Error,
-    {
-        let filter_map = &mut self.filter_map;
-        self.source.try_for_some_triple(&mut |t| {
-            if let Some(u) = (filter_map)(t) {
-                f(StreamedTriple::by_value(u))
-            } else {
-                Ok(())
-            }
-        })
-    }
-}
-
-// TODO impl QuadSource for FilterMapSource where U: Quad
-
-impl<I, T, E> TripleSource for I
-where
-    I: Iterator<Item = Result<T, E>>,
-    T: Triple,
-    E: 'static + Error,
-{
-    type Error = E;
-    type Triple = ByValue<T>;
-
-    fn try_for_some_triple<F, EF>(&mut self, f: &mut F) -> StreamResult<bool, E, EF>
-    where
-        F: FnMut(StreamedTriple<Self::Triple>) -> Result<(), EF>,
-        EF: Error,
-    {
-        match self.next() {
-            Some(Ok(triple)) => f(StreamedTriple::by_value(triple))
-                .map_err(SinkError)
-                .and(Ok(true)),
-            Some(Err(err)) => Err(SourceError(err)),
-            None => Ok(false),
-        }
-    }
-}
-
-pub type AsInfallibleSource<I, T> = Map<I, fn(T) -> Result<T, Infallible>>;
-
-/// A utility extension trait for converting any iterator of [`Triple`]s
-/// into [`TripleSource`], by wrapping its items in `Ok` results.
-///
-/// [`TripleSource`]: trait.TripleSource.html
-/// [`Triple`]: ../trait.Triple.html
-pub trait AsTripleSource<T>: Sized {
-    /// Map all items of this iterator into an Ok result.
-    fn as_triple_source(self) -> AsInfallibleSource<Self, T>;
-}
-
-impl<T, I> AsTripleSource<T> for I
-where
-    I: Iterator<Item = T> + Sized,
-    T: Triple,
-{
-    fn as_triple_source(self) -> AsInfallibleSource<Self, T> {
-        self.map(Ok)
     }
 }
 
@@ -308,7 +183,4 @@ pub trait TripleSink {
 }
 
 #[cfg(test)]
-mod test {
-    // The code from this module is tested through its use in other modules
-    // (especially the parser/serializer modules).
-}
+mod test;

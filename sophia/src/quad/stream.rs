@@ -12,9 +12,7 @@
 //! [`for_each_quad`]: ./trait.TripleSource.html#method.for_each_quad
 //! [`try_for_each_quad`]: ./trait.TripleSource.html#method.try_for_each_quad
 
-use std::convert::Infallible;
 use std::error::Error;
-use std::iter::Map;
 
 use crate::dataset::*;
 use crate::quad::streaming_mode::*;
@@ -22,6 +20,12 @@ use crate::quad::*;
 use crate::triple::stream::{
     FilterMapSource, FilterSource, MapSource, SinkError, SourceError, StreamError, StreamResult,
 };
+
+mod _filter;
+mod _filter_map;
+mod _iterator;
+pub use _iterator::*;
+mod _map;
 
 /// A quad source produces [quads], and may also fail in the process.
 ///
@@ -73,7 +77,7 @@ pub trait QuadSource {
     }
     /// Call f for all quads from this quad source.
     #[inline]
-    fn for_each_quad<F>(&mut self, f: &mut F) -> Result<(), Self::Error>
+    fn for_each_quad<F>(&mut self, f: F) -> Result<(), Self::Error>
     where
         F: FnMut(StreamedQuad<Self::Quad>) -> (),
     {
@@ -108,10 +112,10 @@ pub trait QuadSource {
     }
     /// Creates a quad source that both filters and maps.
     #[inline]
-    fn filter_map_quads<F>(self, filter_map: F) -> FilterMapSource<Self, F>
+    fn filter_map_quads<F, T>(self, filter_map: F) -> FilterMapSource<Self, F>
     where
         Self: Sized,
-        F: FnMut(StreamedQuad<Self::Quad>) -> bool,
+        F: FnMut(StreamedQuad<Self::Quad>) -> Option<T>,
     {
         FilterMapSource {
             source: self,
@@ -120,128 +124,12 @@ pub trait QuadSource {
     }
     /// Takes a closure and creates quad source which yield the result of that closure for each quad.
     #[inline]
-    fn map_quads<F>(self, map: F) -> MapSource<Self, F>
+    fn map_quads<F, T>(self, map: F) -> MapSource<Self, F>
     where
         Self: Sized,
-        F: FnMut(StreamedQuad<Self::Quad>) -> bool,
+        F: FnMut(StreamedQuad<Self::Quad>) -> T,
     {
         MapSource { source: self, map }
-    }
-}
-
-impl<S, F> QuadSource for FilterSource<S, F>
-where
-    S: QuadSource,
-    F: FnMut(&StreamedQuad<S::Quad>) -> bool,
-{
-    type Error = S::Error;
-    type Quad = S::Quad;
-    fn try_for_some_quad<G, E>(&mut self, f: &mut G) -> StreamResult<bool, Self::Error, E>
-    where
-        G: FnMut(StreamedQuad<Self::Quad>) -> Result<(), E>,
-        E: Error,
-    {
-        let filter = &mut self.filter;
-        self.source.try_for_some_quad(&mut |t| {
-            if (filter)(&t) {
-                f(t)
-            } else {
-                Ok(())
-            }
-        })
-    }
-}
-
-impl<S, F, U> QuadSource for MapSource<S, F>
-where
-    S: QuadSource,
-    F: FnMut(StreamedQuad<S::Quad>) -> U,
-    U: Quad,
-{
-    type Error = S::Error;
-    type Quad = ByValue<U>;
-    fn try_for_some_quad<G, E>(&mut self, f: &mut G) -> StreamResult<bool, Self::Error, E>
-    where
-        G: FnMut(StreamedQuad<Self::Quad>) -> Result<(), E>,
-        E: Error,
-    {
-        let map = &mut self.map;
-        self.source
-            .try_for_some_quad(&mut |t| f(StreamedQuad::by_value((map)(t))))
-    }
-}
-
-// TODO impl TripleSource for MapSource where U: Triple
-
-impl<S, F, U> QuadSource for FilterMapSource<S, F>
-where
-    S: QuadSource,
-    F: FnMut(StreamedQuad<S::Quad>) -> Option<U>,
-    U: Quad,
-{
-    type Error = S::Error;
-    type Quad = ByValue<U>;
-    fn try_for_some_quad<G, E>(&mut self, f: &mut G) -> StreamResult<bool, Self::Error, E>
-    where
-        G: FnMut(StreamedQuad<Self::Quad>) -> Result<(), E>,
-        E: Error,
-    {
-        let filter_map = &mut self.filter_map;
-        self.source.try_for_some_quad(&mut |t| {
-            if let Some(u) = (filter_map)(t) {
-                f(StreamedQuad::by_value(u))
-            } else {
-                Ok(())
-            }
-        })
-    }
-}
-
-// TODO impl TripleSource for FilterMapSource where U: Triple
-
-impl<I, T, E> QuadSource for I
-where
-    I: Iterator<Item = Result<T, E>>,
-    T: Quad,
-    E: 'static + Error,
-{
-    type Error = E;
-    type Quad = ByValue<T>;
-
-    fn try_for_some_quad<F, EF>(&mut self, f: &mut F) -> StreamResult<bool, E, EF>
-    where
-        F: FnMut(StreamedQuad<Self::Quad>) -> Result<(), EF>,
-        EF: Error,
-    {
-        match self.next() {
-            Some(Ok(quad)) => f(StreamedQuad::by_value(quad))
-                .map_err(SinkError)
-                .and(Ok(true)),
-            Some(Err(err)) => Err(SourceError(err)),
-            None => Ok(false),
-        }
-    }
-}
-
-pub type AsInfallibleSource<I, T> = Map<I, fn(T) -> Result<T, Infallible>>;
-
-/// A utility extension trait for converting any iterator of [`Quad`]s
-/// into [`QuadSource`], by wrapping its items in `Ok` results.
-///
-/// [`QuadSource`]: trait.QuadSource.html
-/// [`Quad`]: ../trait.Quad.html
-pub trait AsQuadSource<T>: Sized {
-    /// Map all items of this iterator into an Ok result.
-    fn as_quad_source(self) -> AsInfallibleSource<Self, T>;
-}
-
-impl<T, I> AsQuadSource<T> for I
-where
-    I: Iterator<Item = T> + Sized,
-    T: Quad,
-{
-    fn as_quad_source(self) -> AsInfallibleSource<Self, T> {
-        self.map(Ok)
     }
 }
 
@@ -265,7 +153,4 @@ pub trait QuadSink {
 }
 
 #[cfg(test)]
-mod test {
-    // The code from this module is tested through its use in other modules
-    // (especially the parser/serializer modules).
-}
+mod test;

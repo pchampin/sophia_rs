@@ -1,3 +1,5 @@
+// this module is transparently re-exported by its parent `stream`
+
 use std::error::Error;
 
 /// A error that is raised by functions that move fallible `Source`s into

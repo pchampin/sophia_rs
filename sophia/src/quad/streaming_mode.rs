@@ -10,8 +10,6 @@ use crate::term::{RefTerm, Term, TermData};
 mod _unsafe_quad;
 pub(crate) use _unsafe_quad::*;
 
-// TODO update documentation of Graph::Quad
-
 /// See [module](./index.html) documentation.
 pub trait QuadStreamingMode {
     type UnsafeQuad: UnsafeQuad;
