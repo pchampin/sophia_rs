@@ -1,7 +1,9 @@
 use super::*;
 use crate::dataset::Dataset;
 use crate::ns::{rdf, xsd};
+use crate::quad::Quad;
 use crate::term::BoxTerm;
+use crate::triple::stream::TripleSource;
 
 pub const NS: &'static str = "http://example.org/";
 lazy_static! {
@@ -148,6 +150,50 @@ fn filter_map_quads() {
 }
 
 #[test]
+fn filter_map_quads_to_triples() {
+    let d = make_dataset();
+    let mut g = Vec::<[BoxTerm; 3]>::new();
+    d.quads()
+        .filter_map_quads(|q| -> Option<[BoxTerm; 3]> {
+            if q.s() == &BOB as &StaticTerm {
+                Some([q.s().into(), q.p().into(), q.o().into()])
+            } else {
+                None
+            }
+        })
+        .in_graph(&mut g)
+        .unwrap();
+    let d = &d[2..];
+    assert_eq!(d.len(), g.len());
+    for i in 0..d.len() {
+        assert_eq!(d[i].s(), g[i].s());
+        assert_eq!(d[i].p(), g[i].p());
+        assert_eq!(d[i].o(), g[i].o());
+    }
+}
+
+#[test]
+fn filter_map_quads_iter() {
+    let d = make_dataset();
+    let v = d.quads()
+        .filter_map_quads(|q|
+            if q.s() == &BOB as &StaticTerm {
+                Some(q.o().value())
+            } else {
+                None
+            }
+        )
+        .into_iter()
+        .collect::<Result<Vec<String>, _>>()
+        .unwrap();
+    assert_eq!(&v[..], [
+        "http://example.org/Person",
+        "Bob",
+        "http://example.org/alice",
+    ]);
+}
+
+#[test]
 fn map_quads() {
     let d = make_dataset();
     let e = make_mapped_dataset();
@@ -169,10 +215,21 @@ fn map_quads() {
     assert_eq!(c, e.len());
 }
 
-
-// TODO implement tests for mapping triples to quads
-
-// TODO implement tests for mapping quads to triples
+#[test]
+fn map_quads_to_triple() {
+    let d = make_dataset();
+    let mut g = Vec::<[BoxTerm; 3]>::new();
+    d.quads()
+        .map_quads(|q| -> [BoxTerm; 3] {[q.s().into(), q.p().into(), q.o().into()]})
+        .in_graph(&mut g)
+        .unwrap();
+    assert_eq!(d.len(), g.len());
+    for i in 0..d.len() {
+        assert_eq!(d[i].s(), g[i].s());
+        assert_eq!(d[i].p(), g[i].p());
+        assert_eq!(d[i].o(), g[i].o());
+    }
+}
 
 #[test]
 fn map_quads_iter() {
@@ -185,28 +242,6 @@ fn map_quads_iter() {
     assert_eq!(&v[..], [
         "http://example.org/Person",
         "Alice",
-        "http://example.org/Person",
-        "Bob",
-        "http://example.org/alice",
-    ]);
-}
-
-
-#[test]
-fn filter_map_quads_iter() {
-    let d = make_dataset();
-    let v = d.quads()
-        .filter_map_quads(|q|
-            if q.s() == &BOB as &StaticTerm {
-                Some(q.o().value())
-            } else {
-                None
-            }
-        )
-        .into_iter()
-        .collect::<Result<Vec<String>, _>>()
-        .unwrap();
-    assert_eq!(&v[..], [
         "http://example.org/Person",
         "Bob",
         "http://example.org/alice",

@@ -1,7 +1,9 @@
 use super::*;
 use crate::graph::Graph;
 use crate::ns::{rdf, xsd};
+use crate::quad::stream::QuadSource;
 use crate::term::BoxTerm;
+use crate::triple::Triple;
 
 pub const NS: &'static str = "http://example.org/";
 lazy_static! {
@@ -140,6 +142,50 @@ fn filter_map_triples() {
 }
 
 #[test]
+fn filter_map_triples_to_quads() {
+    let g = make_graph();
+    let mut d = Vec::<([BoxTerm; 3], Option<BoxTerm>)>::new();
+    g.triples()
+        .filter_map_triples(|t| -> Option<[BoxTerm; 4]> {
+            if t.s() == &BOB as &StaticTerm {
+                Some([t.s().into(), t.p().into(), t.o().into(), t.s().into()])
+            } else {
+                None
+            }
+        })
+        .in_dataset(&mut d)
+        .unwrap();
+    let g = &g[2..];
+    assert_eq!(g.len(), d.len());
+    for i in 0..g.len() {
+        assert_eq!(g[i].s(), d[i].s());
+        assert_eq!(g[i].p(), d[i].p());
+        assert_eq!(g[i].o(), d[i].o());
+    }
+}
+
+#[test]
+fn filter_map_triples_iter() {
+    let g = make_graph();
+    let v = g.triples()
+        .filter_map_triples(|t|
+            if t.s() == &BOB as &StaticTerm {
+                Some(t.o().value())
+            } else {
+                None
+            }
+        )
+        .into_iter()
+        .collect::<Result<Vec<String>, _>>()
+        .unwrap();
+    assert_eq!(&v[..], [
+        "http://example.org/Person",
+        "Bob",
+        "http://example.org/alice",
+    ]);
+}
+
+#[test]
 fn map_triples() {
     let g = make_graph();
     let h = make_mapped_graph();
@@ -159,6 +205,22 @@ fn map_triples() {
 }
 
 #[test]
+fn map_triples_to_quads() {
+    let g = make_graph();
+    let mut d = Vec::<([BoxTerm; 3], Option<BoxTerm>)>::new();
+    g.triples()
+        .map_triples(|t| -> [BoxTerm; 4] {[t.s().into(), t.p().into(), t.o().into(), t.s().into()]})
+        .in_dataset(&mut d)
+        .unwrap();
+    assert_eq!(g.len(), d.len());
+    for i in 0..g.len() {
+        assert_eq!(g[i].s(), d[i].s());
+        assert_eq!(g[i].p(), d[i].p());
+        assert_eq!(g[i].o(), d[i].o());
+    }
+}
+
+#[test]
 fn map_triples_iter() {
     let g = make_graph();
     let v = g.triples()
@@ -169,27 +231,6 @@ fn map_triples_iter() {
     assert_eq!(&v[..], [
         "http://example.org/Person",
         "Alice",
-        "http://example.org/Person",
-        "Bob",
-        "http://example.org/alice",
-    ]);
-}
-
-#[test]
-fn filter_map_triples_iter() {
-    let g = make_graph();
-    let v = g.triples()
-        .filter_map_triples(|t|
-            if t.s() == &BOB as &StaticTerm {
-                Some(t.o().value())
-            } else {
-                None
-            }
-        )
-        .into_iter()
-        .collect::<Result<Vec<String>, _>>()
-        .unwrap();
-    assert_eq!(&v[..], [
         "http://example.org/Person",
         "Bob",
         "http://example.org/alice",

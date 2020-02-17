@@ -2,6 +2,8 @@
 
 use super::*;
 
+use crate::quad::streaming_mode::StreamedQuad;
+
 use std::collections::VecDeque;
 
 /// The result of
@@ -11,14 +13,14 @@ pub struct FilterMapSource<S, F> {
     pub filter_map: F,
 }
 
-impl<S, F, U> TripleSource for FilterMapSource<S, F>
+impl<S, F, T> TripleSource for FilterMapSource<S, F>
 where
     S: TripleSource,
-    F: FnMut(StreamedTriple<S::Triple>) -> Option<U>,
-    U: Triple,
+    F: FnMut(StreamedTriple<S::Triple>) -> Option<T>,
+    T: Triple,
 {
     type Error = S::Error;
-    type Triple = ByValue<U>;
+    type Triple = ByValue<T>;
     fn try_for_some_triple<G, E>(&mut self, f: &mut G) -> StreamResult<bool, Self::Error, E>
     where
         G: FnMut(StreamedTriple<Self::Triple>) -> Result<(), E>,
@@ -26,8 +28,32 @@ where
     {
         let filter_map = &mut self.filter_map;
         self.source.try_for_some_triple(&mut |t| {
+            if let Some(q) = (filter_map)(t) {
+                f(StreamedTriple::by_value(q))
+            } else {
+                Ok(())
+            }
+        })
+    }
+}
+
+impl<S, F, T> crate::quad::stream::QuadSource for FilterMapSource<S, F>
+where
+    S: TripleSource,
+    F: FnMut(StreamedTriple<S::Triple>) -> Option<T>,
+    T: crate::quad::Quad,
+{
+    type Error = S::Error;
+    type Quad = crate::quad::streaming_mode::ByValue<T>;
+    fn try_for_some_quad<G, E>(&mut self, f: &mut G) -> StreamResult<bool, Self::Error, E>
+    where
+        G: FnMut(StreamedQuad<Self::Quad>) -> Result<(), E>,
+        E: Error,
+    {
+        let filter_map = &mut self.filter_map;
+        self.source.try_for_some_triple(&mut |t| {
             if let Some(u) = (filter_map)(t) {
-                f(StreamedTriple::by_value(u))
+                f(StreamedQuad::by_value(u))
             } else {
                 Ok(())
             }

@@ -2,6 +2,8 @@
 
 use super::*;
 
+use crate::quad::streaming_mode::StreamedQuad;
+
 use std::collections::VecDeque;
 
 /// The result of
@@ -29,6 +31,27 @@ where
             .try_for_some_triple(&mut |t| f(StreamedTriple::by_value((map)(t))))
     }
 }
+
+impl<S, F, T> crate::quad::stream::QuadSource for MapSource<S, F>
+where
+    S: TripleSource,
+    F: FnMut(StreamedTriple<S::Triple>) -> T,
+    T: crate::quad::Quad,
+{
+    type Error = S::Error;
+    type Quad = crate::quad::streaming_mode::ByValue<T>;
+    fn try_for_some_quad<G, E>(&mut self, f: &mut G) -> StreamResult<bool, Self::Error, E>
+    where
+        G: FnMut(StreamedQuad<Self::Quad>) -> Result<(), E>,
+        E: Error,
+    {
+        let map = &mut self.map;
+        self.source
+            .try_for_some_triple(&mut |t| f(StreamedQuad::by_value((map)(t))))
+    }
+}
+
+
 
 impl<S, F, T> IntoIterator for MapSource<S, F> where
     S: TripleSource,
