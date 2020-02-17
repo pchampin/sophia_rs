@@ -3,17 +3,17 @@ use crate::graph::Graph;
 use crate::ns::{rdf, xsd};
 use crate::term::BoxTerm;
 
-pub(crate) const NS: &'static str = "http://example.org/";
+pub const NS: &'static str = "http://example.org/";
 lazy_static! {
-    pub(crate) static ref ALICE: StaticTerm = StaticTerm::new_iri2(NS, "alice").unwrap();
-    pub(crate) static ref BOB: StaticTerm = StaticTerm::new_iri2(NS, "bob").unwrap();
-    pub(crate) static ref CHARLIE: StaticTerm = StaticTerm::new_iri2(NS, "charlie").unwrap();
-    pub(crate) static ref KNOWS: StaticTerm = StaticTerm::new_iri2(NS, "knows").unwrap();
-    pub(crate) static ref NAME: StaticTerm = StaticTerm::new_iri2(NS, "name").unwrap();
-    pub(crate) static ref PERSON: StaticTerm = StaticTerm::new_iri2(NS, "Person").unwrap();
-    pub(crate) static ref ALICE_LIT: StaticTerm =
+    pub static ref ALICE: StaticTerm = StaticTerm::new_iri2(NS, "alice").unwrap();
+    pub static ref BOB: StaticTerm = StaticTerm::new_iri2(NS, "bob").unwrap();
+    pub static ref CHARLIE: StaticTerm = StaticTerm::new_iri2(NS, "charlie").unwrap();
+    pub static ref KNOWS: StaticTerm = StaticTerm::new_iri2(NS, "knows").unwrap();
+    pub static ref NAME: StaticTerm = StaticTerm::new_iri2(NS, "name").unwrap();
+    pub static ref PERSON: StaticTerm = StaticTerm::new_iri2(NS, "Person").unwrap();
+    pub static ref ALICE_LIT: StaticTerm =
         StaticTerm::new_literal_dt("Alice", xsd::string.clone()).unwrap();
-    pub(crate) static ref BOB_LIT: StaticTerm =
+    pub static ref BOB_LIT: StaticTerm =
         StaticTerm::new_literal_dt("Bob", xsd::string.clone()).unwrap();
 }
 
@@ -120,7 +120,7 @@ fn filter_map_triples() {
     let h = make_mapped_graph();
     let mut c = 0;
     g.triples()
-        .filter_map_triples(|t| 
+        .filter_map_triples(|t|
             if t.s() == &BOB as &StaticTerm {
                 Some([
                     map_term(t.s()),
@@ -156,4 +156,42 @@ fn map_triples() {
         })
         .unwrap();
     assert_eq!(c, h.len());
+}
+
+#[test]
+fn map_triples_iter() {
+    let g = make_graph();
+    let v = g.triples()
+        .map_triples(|t| t.o().value())
+        .into_iter()
+        .collect::<Result<Vec<String>, _>>()
+        .unwrap();
+    assert_eq!(&v[..], [
+        "http://example.org/Person",
+        "Alice",
+        "http://example.org/Person",
+        "Bob",
+        "http://example.org/alice",
+    ]);
+}
+
+#[test]
+fn filter_map_triples_iter() {
+    let g = make_graph();
+    let v = g.triples()
+        .filter_map_triples(|t|
+            if t.s() == &BOB as &StaticTerm {
+                Some(t.o().value())
+            } else {
+                None
+            }
+        )
+        .into_iter()
+        .collect::<Result<Vec<String>, _>>()
+        .unwrap();
+    assert_eq!(&v[..], [
+        "http://example.org/Person",
+        "Bob",
+        "http://example.org/alice",
+    ]);
 }

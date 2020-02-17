@@ -2,23 +2,23 @@
 
 use super::*;
 
+use std::collections::VecDeque;
+
 /// The result of
 /// [`TripleSource::map_triples`](./trait.TripleSource.html#method.map_triples)
-/// or
-/// [`QuadSource::map_quads`](../../quad/stream/trait.QuadSource.html#method.map_quads)
 pub struct MapSource<S, F> {
-    pub(crate) source: S,
-    pub(crate) map: F,
+    pub source: S,
+    pub map: F,
 }
 
-impl<S, F, U> TripleSource for MapSource<S, F>
+impl<S, F, T> TripleSource for MapSource<S, F>
 where
     S: TripleSource,
-    F: FnMut(StreamedTriple<S::Triple>) -> U,
-    U: Triple,
+    F: FnMut(StreamedTriple<S::Triple>) -> T,
+    T: Triple,
 {
     type Error = S::Error;
-    type Triple = ByValue<U>;
+    type Triple = ByValue<T>;
     fn try_for_some_triple<G, E>(&mut self, f: &mut G) -> StreamResult<bool, Self::Error, E>
     where
         G: FnMut(StreamedTriple<Self::Triple>) -> Result<(), E>,
@@ -30,5 +30,52 @@ where
     }
 }
 
-// TODO impl IntoIter for MapSource where U: 'static'
+impl<S, F, T> IntoIterator for MapSource<S, F> where
+    S: TripleSource,
+    F: FnMut(StreamedTriple<S::Triple>) -> T,
+    T: 'static,
+{
+    type Item = Result<T, S::Error>;
+    type IntoIter = MapSourceIterator<S, F, T, S::Error>;
+    fn into_iter(self) -> Self::IntoIter {
+        MapSourceIterator {
+            source: self.source,
+            map: self.map,
+            buffer: VecDeque::new(),
+        }
+    }
+}
 
+/// An iterator over the result of
+/// [`TripleSource::map_triples`](./trait.TripleSource.html#method.map_triples)
+pub struct MapSourceIterator<S, F, T, E> {
+    pub source: S,
+    pub map: F,
+    pub buffer: VecDeque<Result<T, E>>,
+}
+
+impl<S, F, T, E> Iterator for MapSourceIterator<S, F, T, E>
+where
+    S: TripleSource<Error=E>,
+    F: FnMut(StreamedTriple<S::Triple>) -> T,
+    T: 'static,
+    E: 'static + std::error::Error
+{
+    type Item = Result<T, S::Error>;
+    fn next(&mut self) -> Option<Result<T, S::Error>> {
+        let mut remaining = true;
+        let mut buffer = VecDeque::new();
+        std::mem::swap(&mut self.buffer, &mut buffer);
+        let map = &mut self.map;
+        while self.buffer.is_empty() && remaining {
+            match self.source.for_some_triple(&mut |t| {
+                buffer.push_back(Ok((map)(t)));
+            }) {
+                Ok(b) => { remaining = b; }
+                Err(err) => { buffer.push_back(Err(err)); }
+            };
+        }
+        std::mem::swap(&mut self.buffer, &mut buffer);
+        self.buffer.pop_front()
+    }
+}

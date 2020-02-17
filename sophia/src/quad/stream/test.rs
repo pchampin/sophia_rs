@@ -125,7 +125,7 @@ fn filter_map_quads() {
     let e = make_mapped_dataset();
     let mut c = 0;
     d.quads()
-        .filter_map_quads(|q| 
+        .filter_map_quads(|q|
             if q.s() == &BOB as &StaticTerm {
                 Some((
                     [
@@ -169,6 +169,46 @@ fn map_quads() {
     assert_eq!(c, e.len());
 }
 
+
 // TODO implement tests for mapping triples to quads
 
 // TODO implement tests for mapping quads to triples
+
+#[test]
+fn map_quads_iter() {
+    let d = make_dataset();
+    let v = d.quads()
+        .map_quads(|q| q.o().value())
+        .into_iter()
+        .collect::<Result<Vec<String>, _>>()
+        .unwrap();
+    assert_eq!(&v[..], [
+        "http://example.org/Person",
+        "Alice",
+        "http://example.org/Person",
+        "Bob",
+        "http://example.org/alice",
+    ]);
+}
+
+
+#[test]
+fn filter_map_quads_iter() {
+    let d = make_dataset();
+    let v = d.quads()
+        .filter_map_quads(|q|
+            if q.s() == &BOB as &StaticTerm {
+                Some(q.o().value())
+            } else {
+                None
+            }
+        )
+        .into_iter()
+        .collect::<Result<Vec<String>, _>>()
+        .unwrap();
+    assert_eq!(&v[..], [
+        "http://example.org/Person",
+        "Bob",
+        "http://example.org/alice",
+    ]);
+}

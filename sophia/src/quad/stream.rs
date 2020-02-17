@@ -18,14 +18,17 @@ use crate::dataset::*;
 use crate::quad::streaming_mode::*;
 use crate::quad::*;
 use crate::triple::stream::{
-    FilterMapSource, FilterSource, MapSource, SinkError, SourceError, StreamError, StreamResult,
+    SinkError, SourceError, StreamError, StreamResult,
 };
 
 mod _filter;
+pub use _filter::*;
 mod _filter_map;
+pub use _filter_map::*;
 mod _iterator;
 pub use _iterator::*;
 mod _map;
+pub use _map::*;
 
 /// A quad source produces [quads], and may also fail in the process.
 ///

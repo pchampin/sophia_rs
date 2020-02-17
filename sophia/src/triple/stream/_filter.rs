@@ -4,11 +4,9 @@ use super::*;
 
 /// The result of
 /// [`TripleSource::filter_triples`](./trait.TripleSource.html#method.filter_triples)
-/// or
-/// [`QuadSource::filter_quads`](../../quad/stream/trait.QuadSource.html#method.filter_quads)
 pub struct FilterSource<S, F> {
-    pub(crate) source: S,
-    pub(crate) filter: F,
+    pub source: S,
+    pub filter: F,
 }
 
 impl<S, F> TripleSource for FilterSource<S, F>
