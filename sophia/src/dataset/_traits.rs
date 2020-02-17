@@ -39,8 +39,9 @@ pub type DResultTermSet<D> = DResult<D, HashSet<DTerm<D>>>;
 /// NB: the semantics of this trait allows a dataset to contain duplicate quads;
 /// see also [`SetDataset`](trait.SetDataset.html).
 pub trait Dataset {
-    /// The type of [`Quad`](../quad/trait.Quad.html)s
-    /// that the methods of this dataset will yield.
+    /// Determine the type of [`Quad`](../quad/trait.Quad.html)s
+    /// that the methods of this dataset will yield
+    /// (see [`streaming_mode`](../quad/streaming_mode/index.html)
     type Quad: QuadStreamingMode;
     /// The error type that this dataset may raise.
     ///
