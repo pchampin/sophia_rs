@@ -95,7 +95,7 @@ pub mod rdf {
         "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
         // classes
         Alt,
-        Bad,
+        Bag,
         List,
         PlainLiteral,
         Property,
