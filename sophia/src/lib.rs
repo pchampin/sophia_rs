@@ -34,8 +34,8 @@
 //! use sophia::graph::{*, inmem::LightGraph};
 //! use sophia::ns::Namespace;
 //! use sophia::parser;
-//! use sophia::serializer;
-//! use sophia::serializer::TripleStringifier;
+//! use sophia::serializer::*;
+//! use sophia::serializer::nt::NtSerializer;
 //! use sophia::triple::stream::TripleSource;
 //!
 //! let example = r#"
@@ -57,8 +57,8 @@
 //! let alice = ex.get("alice").unwrap();
 //! graph.insert(&bob, &knows, &alice).unwrap();
 //!
-//! let mut nt_stringifier = serializer::nt::stringifier();
-//! let example2 = nt_stringifier.stringify_graph(&mut graph).unwrap();
+//! let mut nt_stringifier = NtSerializer::new_stringifier();
+//! let example2 = nt_stringifier.serialize_graph(&mut graph).unwrap().as_str();
 //! println!("The resulting graph\n{}", example2);
 //! ```
 

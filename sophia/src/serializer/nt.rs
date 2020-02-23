@@ -10,7 +10,6 @@
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
 use std::io;
-use std::mem::swap;
 
 use crate::term::{LiteralKind, Term, TermData};
 use crate::triple::stream::*;
@@ -18,74 +17,98 @@ use crate::triple::stream::*;
 use super::*;
 
 /// N-Triples serializer configuration.
-///
-/// For more information,
-/// see the [uniform interface] of serializers.
-///
-/// [uniform interface]: ../index.html#uniform-interface
-///
 #[derive(Clone, Debug, Default)]
-pub struct Config {
+pub struct NtConfig {
     ascii: bool,
 }
 
-impl Config {
-    pub fn writer<W: io::Write>(&self, write: W) -> Writer<W> {
-        Writer::new(write, self.clone())
-    }
-
-    pub fn stringifier(&self) -> Stringifier {
-        Stringifier::new(self.clone())
+impl NtConfig {
+    pub fn set_ascii(&mut self, ascii: bool) -> &mut Self {
+        self.ascii = ascii;
+        self
     }
 }
 
-def_default_serializer_api!();
-
-/// A [`TripleSink`] returned by [`Config::writer`].
-///
-/// [`TripleSink`]: ../../triple/stream/trait.TripleSink.html
-/// [`Config::writer`]: struct.Config.html#method.writer
-pub struct Writer<W: io::Write> {
+// N-Triples serializer.
+pub struct NtSerializer<W> {
+    config: NtConfig,
     write: W,
 }
 
-impl<W: io::Write> TripleWriter<W> for Writer<W> {
-    type Config = Config;
+impl<W> NtSerializer<W>
+where
+    W: io::Write,
+{
+    /// Build a new N-Triples serializer writing to `write`, with the default config.
+    #[inline]
+    pub fn new(write: W) -> NtSerializer<W> {
+        Self::new_with_config(write, NtConfig::default())
+    }
 
-    fn new(write: W, config: Self::Config) -> Self {
-        if config.ascii {
-            unimplemented!()
-        }
-        // TODO if ascii is true,
-        // wrap write in a dedicated type that will rewrite non-ascii characters
-        Writer { write }
+    /// Build a new N-Triples serializer writing to `write`, with the given config.
+    pub fn new_with_config(write: W, config: NtConfig) -> NtSerializer<W> {
+        NtSerializer { write, config }
+    }
+
+    /// Borrow this serializer's configuration.
+    pub fn config(&self) -> &NtConfig {
+        &self.config
     }
 }
 
-impl<W: io::Write> TripleSink for Writer<W> {
-    type Outcome = ();
+impl<W> TripleSerializer for NtSerializer<W>
+where
+    W: io::Write,
+{
     type Error = io::Error;
 
-    fn feed<T: Triple>(&mut self, t: &T) -> Result<(), Self::Error> {
-        let w = &mut self.write;
+    fn serialize_triples<TS>(
+        &mut self,
+        source: &mut TS,
+    ) -> StreamResult<&mut Self, TS::Error, Self::Error>
+    where
+        TS: TripleSource,
+    {
+        if self.config.ascii {
+            todo!("Pure-ASCII N-Triples is not implemented yet")
+        }
+        source
+            .try_for_each_triple(|t| {
+                let w = &mut self.write;
 
-        write_term(w, t.s())?;
-        w.write_all(b" ")?;
-        write_term(w, t.p())?;
-        w.write_all(b" ")?;
-        write_term(w, t.o())?;
-        w.write_all(b" .\n")
-    }
-
-    fn finish(&mut self) -> Result<(), Self::Error> {
-        Ok(())
+                write_term(w, t.s())?;
+                w.write_all(b" ")?;
+                write_term(w, t.p())?;
+                w.write_all(b" ")?;
+                write_term(w, t.o())?;
+                w.write_all(b" .\n")
+            })
+            .map(|_| self)
     }
 }
 
-def_triple_stringifier!();
+type NtStringifier = NtSerializer<Vec<u8>>;
+
+impl NtStringifier {
+    #[inline]
+    pub fn new_stringifier() -> NtStringifier {
+        NtSerializer::new(Vec::new())
+    }
+
+    #[inline]
+    pub fn new_stringifier_with_config(config: NtConfig) -> NtStringifier {
+        NtSerializer::new_with_config(Vec::new(), config)
+    }
+}
+
+impl Stringifier for NtStringifier {
+    fn as_utf8(&self) -> &[u8] {
+        &self.write[..]
+    }
+}
 
 /// Write a single RDF term into `w` using the N-Triples syntax.
-pub fn write_term<T, W>(w: &mut W, t: &Term<T>) -> io::Result<()>
+pub(crate) fn write_term<T, W>(w: &mut W, t: &Term<T>) -> io::Result<()>
 where
     T: TermData,
     W: io::Write,
@@ -131,7 +154,7 @@ where
 }
 
 /// Stringifies a single RDF term using the N-Triples syntax.
-pub fn stringify_term<T>(t: &Term<T>) -> String
+pub(crate) fn stringify_term<T>(t: &Term<T>) -> String
 where
     T: TermData,
 {
@@ -261,7 +284,7 @@ pub(crate) mod test {
     #[test]
     fn graph() {
         let me = StaticTerm::new_iri("http://champin.net/#pa").unwrap();
-        let triples = vec![
+        let g = vec![
             [
                 me,
                 rdf::type_,
@@ -273,10 +296,12 @@ pub(crate) mod test {
                 StaticTerm::new_literal_dt("Pierre-Antoine", xsd::string).unwrap(),
             ],
         ];
-        let triples = triples.into_iter().as_triple_source();
-        let s = stringifier().stringify(triples).unwrap();
+        let s = NtSerializer::new_stringifier()
+            .serialize_graph(&g)
+            .unwrap()
+            .to_string();
         assert_eq!(
-            s,
+            &s,
             r#"<http://champin.net/#pa> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person> .
 <http://champin.net/#pa> <http://schema.org/name> "Pierre-Antoine" .
 "#

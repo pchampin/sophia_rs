@@ -10,189 +10,105 @@
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
 use std::io;
-use std::mem::swap;
 
-use crate::quad::stream::*;
-use crate::quad::Quad;
-use crate::term::{LiteralKind, Term, TermData};
+use crate::quad::{stream::*, Quad};
 
+use super::nt::write_term;
 use super::*;
 
 /// N-Quads serializer configuration.
-///
-/// For more information,
-/// see the [uniform interface] of serializers.
-///
-/// [uniform interface]: ../index.html#uniform-interface
-///
 #[derive(Clone, Debug, Default)]
-pub struct Config {
+pub struct NtConfig {
     ascii: bool,
 }
 
-impl Config {
-    pub fn writer<W: io::Write>(&self, write: W) -> Writer<W> {
-        Writer::new(write, self.clone())
-    }
-
-    pub fn stringifier(&self) -> Stringifier {
-        Stringifier::new(self.clone())
+impl NtConfig {
+    pub fn set_ascii(&mut self, ascii: bool) -> &mut Self {
+        self.ascii = ascii;
+        self
     }
 }
 
-def_default_serializer_api!();
-
-/// A [`QuadSink`] returned by [`Config::writer`].
-///
-/// [`QuadSink`]: ../../quad/stream/trait.QuadSink.html
-/// [`Config::writer`]: struct.Config.html#method.writer
-pub struct Writer<W: io::Write> {
+// N-Quads serializer.
+pub struct NtSerializer<W> {
+    config: NtConfig,
     write: W,
 }
 
-impl<W: io::Write> QuadWriter<W> for Writer<W> {
-    type Config = Config;
-
-    fn new(write: W, config: Self::Config) -> Self {
-        if config.ascii {
-            unimplemented!()
-        }
-        // TODO if ascii is true,
-        // wrap write in a dedicated type that will rewrite non-ascii characters
-        Writer { write }
-    }
-}
-
-impl<W: io::Write> QuadSink for Writer<W> {
-    type Outcome = ();
-    type Error = io::Error;
-
-    fn feed<T: Quad>(&mut self, t: &T) -> Result<(), Self::Error> {
-        let w = &mut self.write;
-
-        write_term(w, t.s())?;
-        w.write_all(b" ")?;
-        write_term(w, t.p())?;
-        w.write_all(b" ")?;
-        write_term(w, t.o())?;
-        if let Some(g) = t.g() {
-            w.write_all(b" ")?;
-            write_term(w, g)?;
-        }
-        w.write_all(b" .\n")
-    }
-
-    fn finish(&mut self) -> Result<(), Self::Error> {
-        Ok(())
-    }
-}
-
-def_quad_stringifier!();
-
-/// Write a single RDF term into `w` using the N-Quads syntax.
-pub fn write_term<T, W>(w: &mut W, t: &Term<T>) -> io::Result<()>
+impl<W> NtSerializer<W>
 where
-    T: TermData,
     W: io::Write,
 {
-    use self::LiteralKind::*;
-    use self::Term::*;
-    match t {
-        Iri(iri) => {
-            w.write_all(b"<")?;
-            iri.write_to(w)?;
-            w.write_all(b">")?;
-        }
-        BNode(ident) => {
-            w.write_all(b"_:")?;
-            if ident.is_n3() {
-                w.write_all((ident.as_ref()).as_bytes())?;
-            } else {
-                write_non_n3_bnode_id(w, ident.as_ref())?;
-            }
-        }
-        Literal(value, Lang(tag)) => {
-            w.write_all(b"\"")?;
-            write_quoted_string(w, value.as_ref())?;
-            w.write_all(b"\"@")?;
-            w.write_all(tag.as_ref().as_bytes())?;
-        }
-        Literal(value, Datatype(iri)) => {
-            w.write_all(b"\"")?;
-            write_quoted_string(w, value.as_ref())?;
-            w.write_all(b"\"")?;
-            if iri != &"http://www.w3.org/2001/XMLSchema#string" {
-                w.write_all(b"^^<")?;
-                iri.write_to(w)?;
-                w.write_all(b">")?;
-            }
-        }
-        Variable(name) => {
-            w.write_all(b"?")?;
-            w.write_all(name.as_ref().as_bytes())?;
-        }
-    };
-    Ok(())
+    /// Build a new N-Quads serializer writing to `write`, with the default config.
+    #[inline]
+    pub fn new(write: W) -> NtSerializer<W> {
+        Self::new_with_config(write, NtConfig::default())
+    }
+
+    /// Build a new N-Quads serializer writing to `write`, with the given config.
+    pub fn new_with_config(write: W, config: NtConfig) -> NtSerializer<W> {
+        NtSerializer { write, config }
+    }
+
+    /// Borrow this serializer's configuration.
+    pub fn config(&self) -> &NtConfig {
+        &self.config
+    }
 }
 
-/// Stringifies a single RDF term using the N-Quads syntax.
-pub fn stringify_term<T>(t: &Term<T>) -> String
+impl<W> QuadSerializer for NtSerializer<W>
 where
-    T: TermData,
+    W: io::Write,
 {
-    let mut v = Vec::new();
-    write_term(&mut v, t).unwrap();
-    unsafe { String::from_utf8_unchecked(v) }
+    type Error = io::Error;
+
+    fn serialize_quads<QS>(
+        &mut self,
+        source: &mut QS,
+    ) -> StreamResult<&mut Self, QS::Error, Self::Error>
+    where
+        QS: QuadSource,
+    {
+        if self.config.ascii {
+            todo!("Pure-ASCII N-Quads is not implemented yet")
+        }
+        source
+            .try_for_each_quad(|q| {
+                let w = &mut self.write;
+
+                write_term(w, q.s())?;
+                w.write_all(b" ")?;
+                write_term(w, q.p())?;
+                w.write_all(b" ")?;
+                write_term(w, q.o())?;
+                if let Some(g) = q.g() {
+                    w.write_all(b" ")?;
+                    write_term(w, g)?;
+                }
+                w.write_all(b" .\n")
+            })
+            .map(|_| self)
+    }
 }
 
-pub(crate) fn write_quoted_string(w: &mut impl io::Write, txt: &str) -> io::Result<()> {
-    let mut cut = txt.len();
-    let mut cutchar = '\0';
-    for (pos, chr) in txt.char_indices() {
-        if chr <= '\\' && (chr == '\n' || chr == '\r' || chr == '\\' || chr == '"') {
-            cut = pos;
-            cutchar = chr;
-            break;
-        }
+type NtStringifier = NtSerializer<Vec<u8>>;
+
+impl NtStringifier {
+    #[inline]
+    pub fn new_stringifier() -> NtStringifier {
+        NtSerializer::new(Vec::new())
     }
-    w.write_all(txt[..cut].as_bytes())?;
-    if cut < txt.len() {
-        match cutchar {
-            '\n' => {
-                w.write_all(b"\\n")?;
-            }
-            '\r' => {
-                w.write_all(b"\\r")?;
-            }
-            '"' => {
-                w.write_all(b"\\\"")?;
-            }
-            '\\' => {
-                w.write_all(b"\\\\")?;
-            }
-            _ => unreachable!(),
-        }
-    };
-    if cut + 1 >= txt.len() {
-        return Ok(());
-    } // else
-    write_quoted_string(w, &txt[cut + 1..])
+
+    #[inline]
+    pub fn new_stringifier_with_config(config: NtConfig) -> NtStringifier {
+        NtSerializer::new_with_config(Vec::new(), config)
+    }
 }
 
-pub(crate) fn write_non_n3_bnode_id(w: &mut impl io::Write, id: &str) -> io::Result<()> {
-    fn halfbyte_to_hex(val: u8) -> u8 {
-        if val < 10 {
-            b'0' + val
-        } else {
-            b'a' + val
-        }
+impl Stringifier for NtStringifier {
+    fn as_utf8(&self) -> &[u8] {
+        &self.write[..]
     }
-    w.write_all(b"_")?;
-    for b in id.as_bytes() {
-        w.write_all(&[halfbyte_to_hex(b / 16), halfbyte_to_hex(b % 16)])?;
-    }
-    w.write_all(b"_:_")?;
-    Ok(())
 }
 
 // ---------------------------------------------------------------------------------
@@ -200,24 +116,15 @@ pub(crate) fn write_non_n3_bnode_id(w: &mut impl io::Write, id: &str) -> io::Res
 // ---------------------------------------------------------------------------------
 
 #[cfg(test)]
-mod test {
-    use super::super::nt::test::NT_TERMS;
+pub(crate) mod test {
     use super::*;
     use crate::ns::*;
     use crate::term::*;
 
     #[test]
-    fn terms() {
-        for (term, expected) in NT_TERMS.iter() {
-            let got = stringify_term(term);
-            assert_eq!(got, *expected);
-        }
-    }
-
-    #[test]
-    fn graph() {
+    fn dataset() {
         let me = StaticTerm::new_iri("http://champin.net/#pa").unwrap();
-        let quads = vec![
+        let d = vec![
             (
                 [
                     me,
@@ -232,15 +139,17 @@ mod test {
                     StaticTerm::new_iri("http://schema.org/name").unwrap(),
                     StaticTerm::new_literal_dt("Pierre-Antoine", xsd::string).unwrap(),
                 ],
-                Some(StaticTerm::new_iri("http://example.org/graph").unwrap()),
+                Some(StaticTerm::new_iri("http://champin.net/").unwrap()),
             ),
         ];
-        let quads = quads.into_iter().as_quad_source();
-        let s = stringifier().stringify(quads).unwrap();
+        let s = NtSerializer::new_stringifier()
+            .serialize_dataset(&d)
+            .unwrap()
+            .to_string();
         assert_eq!(
-            s,
+            &s,
             r#"<http://champin.net/#pa> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person> .
-<http://champin.net/#pa> <http://schema.org/name> "Pierre-Antoine" <http://example.org/graph> .
+<http://champin.net/#pa> <http://schema.org/name> "Pierre-Antoine" <http://champin.net/> .
 "#
         );
     }
