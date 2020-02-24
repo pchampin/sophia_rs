@@ -9,7 +9,6 @@ use std::iter::once;
 use resiter::map::*;
 
 use crate::graph::*;
-use crate::term::matcher::*;
 use crate::term::*;
 use crate::triple::*;
 
@@ -140,7 +139,7 @@ fn matcher(t: &RcTerm, b: &BindingMap) -> Binding {
         let vname: &str = &vname;
         b.get(vname).cloned().into()
     } else {
-        Binding::Bound(t.clone())
+        Binding::Exactly(t.clone())
     }
 }
 
@@ -156,47 +155,13 @@ where
     g.triples_matching(s, p, o)
 }
 
-/// An enum capturing the different states of variable during query processing.
-enum Binding {
-    /// The variable is bound to the given term.
-    Bound(RcTerm),
-    /// The variable is free.
-    Free,
-}
+type Binding = crate::term::matcher::AnyOrExactly<RcTerm>;
 
 impl Binding {
-    pub fn is_free(&self) -> bool {
+    fn is_free(&self) -> bool {
         match self {
-            Binding::Free => true,
+            Binding::Any => true,
             _ => false,
-        }
-    }
-}
-
-impl From<Option<RcTerm>> for Binding {
-    fn from(src: Option<RcTerm>) -> Binding {
-        match src {
-            Some(t) => Binding::Bound(t),
-            None => Binding::Free,
-        }
-    }
-}
-
-impl TermMatcher for Binding {
-    type TermData = std::rc::Rc<str>;
-    fn constant(&self) -> Option<&Term<Self::TermData>> {
-        match self {
-            Binding::Bound(t) => Some(t),
-            Binding::Free => None,
-        }
-    }
-    fn matches<T>(&self, t: &Term<T>) -> bool
-    where
-        T: TermData,
-    {
-        match self {
-            Binding::Bound(tself) => tself == t,
-            Binding::Free => true,
         }
     }
 }
