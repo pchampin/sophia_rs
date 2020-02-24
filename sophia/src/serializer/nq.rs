@@ -13,7 +13,6 @@ use std::io;
 
 use crate::quad::{stream::*, Quad};
 
-use super::nt::write_term;
 use super::*;
 
 /// N-Quads serializer configuration.
@@ -74,18 +73,15 @@ where
         }
         source
             .try_for_each_quad(|q| {
-                let w = &mut self.write;
-
-                write_term(w, q.s())?;
-                w.write_all(b" ")?;
-                write_term(w, q.p())?;
-                w.write_all(b" ")?;
-                write_term(w, q.o())?;
-                if let Some(g) = q.g() {
-                    w.write_all(b" ")?;
-                    write_term(w, g)?;
+                {
+                    let w = &mut self.write;
+                    write!(w, "{} {} {} ", q.s(), q.p(), q.o())?;
+                    if let Some(g) = q.g() {
+                        write!(w, "{} ", g)?;
+                    }
+                    w.write_all(b".\n")
                 }
-                w.write_all(b" .\n")
+                .map_err(|e| io::Error::new(io::ErrorKind::Other, e))
             })
             .map(|_| self)
     }

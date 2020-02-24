@@ -51,6 +51,7 @@ mod _bnode_id;
 pub use self::_bnode_id::*;
 mod _convert;
 pub use self::_convert::*;
+mod _display;
 mod _iri_data;
 pub use self::_iri_data::*;
 mod _graph_name_matcher; // is 'pub use'd by module 'matcher'
@@ -123,14 +124,6 @@ where
             Variable(name) => String::from(name.as_ref()),
         }
     }
-
-    /// Return the [N3] serialization of this term.
-    ///
-    /// [N3]: https://www.w3.org/DesignIssues/Notation3
-    ///
-    pub fn n3(&self) -> String {
-        crate::serializer::nt::stringify_term(self)
-    }
 }
 
 impl<T> Term<T>
@@ -198,7 +191,7 @@ where
     {
         match dt {
             Iri(iri) => Ok(Literal(T::from(txt), Datatype(iri))),
-            _ => Err(TermError::InvalidDatatype(dt.n3())),
+            _ => Err(TermError::InvalidDatatype(format!("{}", dt))),
         }
     }
 

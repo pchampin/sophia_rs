@@ -13,8 +13,8 @@ fn h<H: std::hash::Hash>(x: &H) -> u64 {
 fn iri() {
     let exp = "http://champin.net/";
     let i = RefTerm::new_iri("http://champin.net/").unwrap();
-    assert_eq!(i.value(), exp.to_string());
-    assert_eq!(i.n3(), format!("<{}>", exp));
+    assert_eq!(&i.value(), exp);
+    assert_eq!(format!("{}", i), format!("<{}>", exp));
 
     if let Iri(iri) = i {
         assert_eq!(iri, exp);
@@ -34,8 +34,8 @@ fn iri() {
 fn iri2() {
     let exp = "http://champin.net/#pa";
     let i = RefTerm::new_iri2("http://champin.net/#", "pa").unwrap();
-    assert_eq!(i.value(), exp.to_string());
-    assert_eq!(i.n3(), format!("<{}>", exp));
+    assert_eq!(&i.value(), exp);
+    assert_eq!(format!("{}", i), format!("<{}>", exp));
 
     if let Iri(iri) = i {
         assert_eq!(iri, exp);
@@ -148,8 +148,8 @@ fn iri_normalized_last_hash_or_slash() {
 #[test]
 fn bnode() {
     let b1 = BoxTerm::new_bnode("foo").unwrap();
-    assert_eq!(b1.value(), "foo".to_string());
-    assert_eq!(b1.n3(), "_:foo".to_string());
+    assert_eq!(&b1.value(), "foo");
+    assert_eq!(&format!("{}", b1), "_:foo");
 
     if let BNode(id1) = b1 {
         assert_eq!(AsRef::<str>::as_ref(&id1), "foo");
@@ -250,8 +250,8 @@ fn bnode_is_n3() {
 #[test]
 fn literal_lang() {
     let lit = RefTerm::new_literal_lang("hello", "en").unwrap();
-    assert_eq!(lit.value(), "hello".to_string());
-    assert_eq!(lit.n3(), "\"hello\"@en".to_string());
+    assert_eq!(&lit.value(), "hello");
+    assert_eq!(&format!("{}", lit), "\"hello\"@en");
 
     if let Literal(val, Lang(tag)) = lit {
         assert_eq!(val.as_ref() as &str, "hello");
@@ -266,8 +266,8 @@ fn literal_lang() {
 #[test]
 fn literal_dt() {
     let lit = RefTerm::new_literal_dt("hello", xsd::string.clone()).unwrap();
-    assert_eq!(lit.value(), "hello".to_string());
-    assert_eq!(lit.n3(), "\"hello\"".to_string());
+    assert_eq!(&lit.value(), "hello");
+    assert_eq!(&format!("{}", lit), "\"hello\"");
 
     if let Literal(val, Datatype(iri)) = lit {
         assert_eq!(val.as_ref() as &str, "hello");
@@ -279,8 +279,8 @@ fn literal_dt() {
     let lit = RefTerm::new_literal_dt("42", xsd::integer.clone()).unwrap();
     assert_eq!(lit.value(), "42".to_string());
     assert_eq!(
-        lit.n3(),
-        "\"42\"^^<http://www.w3.org/2001/XMLSchema#integer>".to_string()
+        &format!("{}", lit),
+        "\"42\"^^<http://www.w3.org/2001/XMLSchema#integer>",
     );
 }
 
@@ -391,8 +391,8 @@ fn variable() {
         );
 
         let var = res.unwrap();
-        assert_eq!(var.value(), id.to_string());
-        assert_eq!(var.n3(), format!("?{}", id));
+        assert_eq!(&var.value(), id);
+        assert_eq!(format!("{}", var), format!("?{}", id));
     }
 
     let neg = NEGATIVE_1CHAR_IDS.iter().chain(NEGATIVE_VARIABLES.iter());

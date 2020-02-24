@@ -2,7 +2,6 @@
 
 use std::fmt;
 use std::hash::{Hash, Hasher};
-use std::io::{Result as IoResult, Write};
 
 use self::iri_rfc3987::{is_absolute_iri_ref, is_relative_iri_ref};
 use super::*;
@@ -52,18 +51,6 @@ where
     /// Whether this IRI is absolute or relative.
     pub fn is_absolute(&self) -> bool {
         self.absolute
-    }
-
-    /// Write this IRI to `w`.
-    pub fn write_to<W>(&self, w: &mut W) -> IoResult<()>
-    where
-        W: Write,
-    {
-        w.write_all(self.ns.as_ref().as_bytes())?;
-        if let Some(ref suffix) = self.suffix {
-            w.write_all(suffix.as_ref().as_bytes())?;
-        }
-        Ok(())
     }
 
     pub(crate) fn new(ns: T, suffix: Option<T>) -> Result<IriData<T>> {
