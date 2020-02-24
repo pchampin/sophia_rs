@@ -110,26 +110,6 @@ impl<T> Term<T>
 where
     T: TermData,
 {
-    /// Return a copy of this term's underlying text.
-    ///
-    /// NB: for literals, the value only conveys the literal value,
-    /// *not* the datatype or the language tag.error
-    ///
-    /// See also [`n3`](#method.n3).
-    pub fn value(&self) -> String {
-        match self {
-            Iri(iri) => iri.to_string(),
-            BNode(id) => String::from(id.as_ref()),
-            Literal(value, _) => String::from(value.as_ref()),
-            Variable(name) => String::from(name.as_ref()),
-        }
-    }
-}
-
-impl<T> Term<T>
-where
-    T: TermData,
-{
     /// Return a new IRI term from the given text.
     ///
     /// May fail if `txt` is not a valid IRI.
@@ -322,6 +302,21 @@ where
         T: From<U>,
     {
         Variable(T::from(name))
+    }
+
+    /// Return a copy of this term's underlying text.
+    ///
+    /// NB: for literals, the value only conveys the literal value,
+    /// *not* the datatype or the language tag.error
+    ///
+    /// See also [`n3`](#method.n3).
+    pub fn value(&self) -> String {
+        match self {
+            Iri(iri) => iri.to_string(),
+            BNode(id) => String::from(id.as_ref()),
+            Literal(value, _) => String::from(value.as_ref()),
+            Variable(name) => String::from(name.as_ref()),
+        }
     }
 
     /// If `t` is or contains a relative IRI, replace it with an absolute one,
