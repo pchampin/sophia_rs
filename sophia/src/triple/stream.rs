@@ -163,24 +163,5 @@ pub trait TripleSource {
     }
 }
 
-/// Soon to be deprecated.
-pub trait TripleSink {
-    /// The type of the result produced by this triple sink.
-    ///
-    /// See [`finish`](#tymethod.finish).
-    type Outcome;
-
-    /// The type of error raised by this triple sink.
-    type Error: 'static + Error;
-
-    /// Feed one triple in this sink.
-    fn feed<T: Triple>(&mut self, t: &T) -> Result<(), Self::Error>;
-
-    /// Produce the result once all triples were fed.
-    ///
-    /// NB: the behaviour of a triple sink after `finish` is called is unspecified by this trait.
-    fn finish(&mut self) -> Result<Self::Outcome, Self::Error>;
-}
-
 #[cfg(test)]
 mod test;

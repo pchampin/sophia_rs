@@ -134,24 +134,5 @@ pub trait QuadSource {
     }
 }
 
-/// Soon to be deprecated.
-pub trait QuadSink {
-    /// The type of the result produced by this quad sink.
-    ///
-    /// See [`finish`](#tymethod.finish).
-    type Outcome;
-
-    /// The type of error raised by this quad sink.
-    type Error: 'static + Error;
-
-    /// Feed one quad in this sink.
-    fn feed<T: Quad>(&mut self, t: &T) -> Result<(), Self::Error>;
-
-    /// Produce the result once all quads were fed.
-    ///
-    /// NB: the behaviour of a quad sink after `finish` is called is unspecified by this trait.
-    fn finish(&mut self) -> Result<Self::Outcome, Self::Error>;
-}
-
 #[cfg(test)]
 mod test;
