@@ -25,6 +25,9 @@ pub type GTriple<'a, G> = StreamedTriple<'a, <G as Graph>::Triple>;
 /// Type alias for results produced by a graph.
 pub type GResult<G, T> = Result<T, <G as Graph>::Error>;
 /// Type alias for fallible triple iterators produced by a graph.
+///
+/// See [`Graph::triples`](./trait.Graph.html#tymethod.triples)
+/// for more information about how to use it.
 pub type GTripleSource<'a, G> = Box<dyn Iterator<Item = GResult<G, GTriple<'a, G>>> + 'a>;
 /// Type alias for fallible hashets of terms produced by a graph.
 pub type GResultTermSet<G> = GResult<G, HashSet<GTerm<G>>>;
@@ -50,6 +53,39 @@ pub trait Graph {
     /// This iterator is fallible:
     /// its items are `Result`s,
     /// an error may occur at any time during the iteration.
+    ///
+    /// # Examples
+    ///
+    /// The result of this method is an iterator,
+    /// so it can be used in a `for` loop:
+    /// ```
+    /// # use sophia::graph::Graph;
+    /// # use sophia::term::BoxTerm;
+    /// # fn foo() -> Result<(), std::convert::Infallible> {
+    /// # let graph = Vec::<[BoxTerm;3]>::new();
+    /// for t in graph.triples() {
+    ///     let t = t?; // rethrow error if any
+    ///     // do something with t
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// Another way is to use the specific methods provided by
+    /// [`TripleSource`](../triple/stream/trait.TripleSource.html),
+    /// for example:
+    /// ```
+    /// # use sophia::graph::Graph;
+    /// # use sophia::term::BoxTerm;
+    /// # use sophia::triple::stream::TripleSource;
+    /// # fn foo() -> Result<(), std::convert::Infallible> {
+    /// # let graph = Vec::<[BoxTerm;3]>::new();
+    /// graph.triples().for_each_triple(|t| {
+    ///     // do something with t
+    /// })?; // rethrow error if any
+    /// # Ok(())
+    /// # }
+    /// ```
     fn triples(&self) -> GTripleSource<Self>;
 
     /// An iterator visiting all triples with the given subject.

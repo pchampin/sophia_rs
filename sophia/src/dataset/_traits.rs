@@ -28,6 +28,9 @@ pub type DResult<D, T> = Result<T, <D as Dataset>::Error>;
 /// Type alias for fallible quad iterators produced by a dataset.
 pub type DQuadSource<'a, D> = Box<dyn Iterator<Item = DResult<D, DQuad<'a, D>>> + 'a>;
 /// Type alias for fallible hashets of terms produced by a dataset.
+///
+/// See [`Dataset::quads`](./trait.Dataset.html#tymethod.quads)
+/// for more information about how to use it.
 pub type DResultTermSet<D> = DResult<D, HashSet<DTerm<D>>>;
 
 /// Generic trait for RDF datasets.
@@ -43,9 +46,6 @@ pub trait Dataset {
     /// (see [`streaming_mode`](../quad/streaming_mode/index.html)
     type Quad: QuadStreamingMode;
     /// The error type that this dataset may raise.
-    ///
-    /// Must be either [`Never`](../error/enum.Never.html) (for infallible datasets)
-    /// or [`Error`](../error/struct.Error.html).
     type Error: 'static + Error;
 
     /// An iterator visiting all quads of this dataset in arbitrary order.
@@ -53,6 +53,39 @@ pub trait Dataset {
     /// This iterator is fallible:
     /// its items are `Result`s,
     /// an error may occur at any time during the iteration.
+    ///
+    /// # Examples
+    ///
+    /// The result of this method is an iterator,
+    /// so it can be used in a `for` loop:
+    /// ```
+    /// # use sophia::dataset::Dataset;
+    /// # use sophia::term::BoxTerm;
+    /// # fn foo() -> Result<(), std::convert::Infallible> {
+    /// # let dataset = Vec::<[BoxTerm;4]>::new();
+    /// for q in dataset.quads() {
+    ///     let q = q?; // rethrow error if any
+    ///     // do something with q
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// Another way is to use the specific methods provided by
+    /// [`QuadSource`](../quad/stream/trait.QuadSource.html),
+    /// for example:
+    /// ```
+    /// # use sophia::dataset::Dataset;
+    /// # use sophia::term::BoxTerm;
+    /// # use sophia::quad::stream::QuadSource;
+    /// # fn foo() -> Result<(), std::convert::Infallible> {
+    /// # let dataset = Vec::<[BoxTerm;4]>::new();
+    /// dataset.quads().for_each_quad(|q| {
+    ///     // do something with q
+    /// })?; // rethrow error if any
+    /// # Ok(())
+    /// # }
+    /// ```
     fn quads(&self) -> DQuadSource<Self>;
 
     /// An iterator visiting all quads with the given subject.
@@ -542,9 +575,6 @@ pub type MDResult<D, T> = std::result::Result<T, <D as MutableDataset>::Mutation
 ///
 pub trait MutableDataset: Dataset {
     /// The error type that this dataset may raise during mutations.
-    ///
-    /// Must be either [`Never`](../error/enum.Never.html) (for infallible datasets)
-    /// or [`Error`](../error/struct.Error.html).
     type MutationError: 'static + Error;
 
     /// Insert the given quad in this dataset.
