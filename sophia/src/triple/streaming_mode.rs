@@ -1,3 +1,5 @@
+//! Streaming modes for triple iterators and triple streams.
+//!
 //! # What this is about
 //!
 //! The [`Graph`] traits provides a number of methods for iterating over [`Triple`]s,

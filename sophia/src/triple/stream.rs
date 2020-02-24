@@ -1,6 +1,7 @@
-//! A [`TripleSource`] produces triples, and may also fail in the process.
+//! A triple source produces triples, and may also fail in the process.
 //!
-//! If provides an API similar to (a subset of) the [`Iterator`] API,
+//! The trait [`TripleSource`]
+//! provides an API similar to (a subset of) the [`Iterator`] API,
 //! with methods such as [`for_each_triple`] and [`try_for_each_triple`].
 //!
 //! # Rationale (or Why not simply use `Iterator`?)

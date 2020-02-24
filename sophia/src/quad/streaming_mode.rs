@@ -1,5 +1,7 @@
-//! This is the quad counterpart of
-//! [`triple::streaming_mode`](../../triple/streaming_mode/index.html).
+//! Streaming modes for quad iterators and quad streams.
+//!
+//! See [`triple::streaming_mode`](../../triple/streaming_mode/index.html)
+//! for more detail.
 
 use std::marker::PhantomData;
 use std::ptr::NonNull;

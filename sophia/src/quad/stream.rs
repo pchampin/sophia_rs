@@ -1,16 +1,18 @@
-//! A `QuadSource` produces quads, and may also fail in the process.
+//! A quad source produces quads, and may also fail in the process.
 //!
-//! If provides an API similar to (a subset of) the [`Iterator`] API,
+//! The trait [`QuadSource`]
+//! provides an API similar to (a subset of) the [`Iterator`] API,
 //! with methods such as [`for_each_quad`] and [`try_for_each_quad`].
 //!
 //! # Rationale (or Why not simply use `Iterator`?)
 //!
-//! See the documentation of module [`triple::stream`].
+//! See the documentation of the [`triple::stream`] module.
 //!
 //! [`QuadSource`]: trait.QuadSource.html
 //! [`Iterator`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html
-//! [`for_each_quad`]: ./trait.TripleSource.html#method.for_each_quad
-//! [`try_for_each_quad`]: ./trait.TripleSource.html#method.try_for_each_quad
+//! [`for_each_quad`]: ./trait.QuadSource.html#method.for_each_quad
+//! [`try_for_each_quad`]: ./trait.QuadSource.html#method.try_for_each_quad
+//! [`triple::stream`]: ../../triple/stream/index.html
 
 use std::error::Error;
 
