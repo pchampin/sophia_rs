@@ -28,7 +28,7 @@ pub trait TripleSerializer {
     /// [`TripleSource`]: ../triple/stream/trait.TripleSource.html
     fn serialize_triples<TS>(
         &mut self,
-        source: &mut TS,
+        source: TS,
     ) -> StreamResult<&mut Self, TS::Error, Self::Error>
     where
         TS: TripleSource,
@@ -47,7 +47,7 @@ pub trait TripleSerializer {
         G: Graph,
         Self: Sized,
     {
-        self.serialize_triples(&mut graph.triples())
+        self.serialize_triples(graph.triples())
     }
 }
 
@@ -60,7 +60,7 @@ pub trait QuadSerializer {
     /// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
     fn serialize_quads<QS>(
         &mut self,
-        source: &mut QS,
+        source: QS,
     ) -> StreamResult<&mut Self, QS::Error, Self::Error>
     where
         QS: QuadSource,
@@ -82,7 +82,7 @@ pub trait QuadSerializer {
         D: Dataset,
         Self: Sized,
     {
-        self.serialize_quads(&mut dataset.quads())
+        self.serialize_quads(dataset.quads())
     }
 }
 

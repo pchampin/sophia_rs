@@ -63,7 +63,7 @@ where
 
     fn serialize_triples<TS>(
         &mut self,
-        source: &mut TS,
+        source: TS,
     ) -> StreamResult<&mut Self, TS::Error, Self::Error>
     where
         TS: TripleSource,
@@ -71,31 +71,31 @@ where
         if self.config.ascii {
             todo!("Pure-ASCII N-Triples is not implemented yet")
         }
+        let mut source = source;
         source
             .try_for_each_triple(|t| {
-                let w = &mut self.write;
-                writeln!(w, "{} {} {} .", t.s(), t.p(), t.o())
+                writeln!(self.write, "{} {} {} .", t.s(), t.p(), t.o())
                     .map_err(|e| io::Error::new(io::ErrorKind::Other, e))
             })
             .map(|_| self)
     }
 }
 
-type NtStringifier = NtSerializer<Vec<u8>>;
-
-impl NtStringifier {
+impl NtSerializer<Vec<u8>> {
+    /// Create a new serializer wich targets a `String`.
     #[inline]
-    pub fn new_stringifier() -> NtStringifier {
-        NtSerializer::new(Vec::new())
+    pub fn new_stringifier() -> Self {
+        Self::new(Vec::new())
     }
 
+    /// Create a new serializer wich targets a `String` with a custom config.
     #[inline]
-    pub fn new_stringifier_with_config(config: NtConfig) -> NtStringifier {
-        NtSerializer::new_with_config(Vec::new(), config)
+    pub fn new_stringifier_with_config(config: NtConfig) -> Self {
+        Self::new_with_config(Vec::new(), config)
     }
 }
 
-impl Stringifier for NtStringifier {
+impl Stringifier for NtSerializer<Vec<u8>> {
     fn as_utf8(&self) -> &[u8] {
         &self.write[..]
     }
