@@ -61,10 +61,7 @@ where
 {
     type Error = io::Error;
 
-    fn serialize_quads<QS>(
-        &mut self,
-        source: QS,
-    ) -> StreamResult<&mut Self, QS::Error, Self::Error>
+    fn serialize_quads<QS>(&mut self, source: QS) -> StreamResult<&mut Self, QS::Error, Self::Error>
     where
         QS: QuadSource,
     {
