@@ -223,6 +223,52 @@ pub mod xml {
     );
 }
 
+/// The standard `owl:` namespace
+pub mod owl {
+    namespace!(
+        "http://www.w3.org/2002/07/owl#",
+        Nothing,
+        Thing,
+        // Classes
+        AllDifferent,
+        AllDisjointClasses,
+        AnnotationProperty,
+        Class,
+        DatatypeProperty,
+        FunctionalProperty,
+        InverseFunctionalProperty,
+        IrreflexiveProperty,
+        ObjectProperty,
+        SymmetricProperty,
+        TransitiveProperty,
+        // Properties
+        allValuesFrom,
+        assertionProperty,
+        complementOf,
+        differentFrom,
+        disjointWith,
+        distinctMembers,
+        equivalentClass,
+        equivalentProperty,
+        intersectionOf,
+        inverseOf,
+        maxCardinality,
+        maxQualifiedCardinality,
+        members,
+        onClass,
+        oneOf,
+        onProperty,
+        propertyChainAxiom,
+        propertyDisjointWith,
+        sameAs,
+        someValuesFrom,
+        sourceIndividual,
+        targetIndividual,
+        targetValue,
+        unionOf
+    );
+}
+
 #[cfg(test)]
 mod test {
     // Nothing really worth testing here
