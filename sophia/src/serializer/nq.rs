@@ -17,11 +17,11 @@ use super::*;
 
 /// N-Quads serializer configuration.
 #[derive(Clone, Debug, Default)]
-pub struct NtConfig {
+pub struct NqConfig {
     ascii: bool,
 }
 
-impl NtConfig {
+impl NqConfig {
     pub fn set_ascii(&mut self, ascii: bool) -> &mut Self {
         self.ascii = ascii;
         self
@@ -29,33 +29,33 @@ impl NtConfig {
 }
 
 // N-Quads serializer.
-pub struct NtSerializer<W> {
-    config: NtConfig,
+pub struct NqSerializer<W> {
+    config: NqConfig,
     write: W,
 }
 
-impl<W> NtSerializer<W>
+impl<W> NqSerializer<W>
 where
     W: io::Write,
 {
     /// Build a new N-Quads serializer writing to `write`, with the default config.
     #[inline]
-    pub fn new(write: W) -> NtSerializer<W> {
-        Self::new_with_config(write, NtConfig::default())
+    pub fn new(write: W) -> NqSerializer<W> {
+        Self::new_with_config(write, NqConfig::default())
     }
 
     /// Build a new N-Quads serializer writing to `write`, with the given config.
-    pub fn new_with_config(write: W, config: NtConfig) -> NtSerializer<W> {
-        NtSerializer { write, config }
+    pub fn new_with_config(write: W, config: NqConfig) -> NqSerializer<W> {
+        NqSerializer { write, config }
     }
 
     /// Borrow this serializer's configuration.
-    pub fn config(&self) -> &NtConfig {
+    pub fn config(&self) -> &NqConfig {
         &self.config
     }
 }
 
-impl<W> QuadSerializer for NtSerializer<W>
+impl<W> QuadSerializer for NqSerializer<W>
 where
     W: io::Write,
 {
@@ -87,21 +87,20 @@ where
     }
 }
 
-type NtStringifier = NtSerializer<Vec<u8>>;
-
-impl NtStringifier {
+impl NqSerializer<Vec<u8>> {
+    /// Create a new serializer wich targets a `String`.
     #[inline]
-    pub fn new_stringifier() -> NtStringifier {
-        NtSerializer::new(Vec::new())
+    pub fn new_stringifier() -> Self {
+        NqSerializer::new(Vec::new())
     }
-
+    /// Create a new serializer wich targets a `String` with a custom config.
     #[inline]
-    pub fn new_stringifier_with_config(config: NtConfig) -> NtStringifier {
-        NtSerializer::new_with_config(Vec::new(), config)
+    pub fn new_stringifier_with_config(config: NqConfig) -> Self {
+        NqSerializer::new_with_config(Vec::new(), config)
     }
 }
 
-impl Stringifier for NtStringifier {
+impl Stringifier for NqSerializer<Vec<u8>> {
     fn as_utf8(&self) -> &[u8] {
         &self.write[..]
     }
@@ -138,7 +137,7 @@ pub(crate) mod test {
                 Some(StaticTerm::new_iri("http://champin.net/").unwrap()),
             ),
         ];
-        let s = NtSerializer::new_stringifier()
+        let s = NqSerializer::new_stringifier()
             .serialize_dataset(&d)
             .unwrap()
             .to_string();

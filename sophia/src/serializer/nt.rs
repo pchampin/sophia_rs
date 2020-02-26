@@ -81,21 +81,20 @@ where
     }
 }
 
-type NtStringifier = NtSerializer<Vec<u8>>;
-
-impl NtStringifier {
+impl NtSerializer<Vec<u8>> {
+    /// Create a new serializer wich targets a `String`.
     #[inline]
-    pub fn new_stringifier() -> NtStringifier {
+    pub fn new_stringifier() -> Self {
         NtSerializer::new(Vec::new())
     }
-
+    /// Create a new serializer wich targets a `String` with a custom config.
     #[inline]
-    pub fn new_stringifier_with_config(config: NtConfig) -> NtStringifier {
+    pub fn new_stringifier_with_config(config: NtConfig) -> Self {
         NtSerializer::new_with_config(Vec::new(), config)
     }
 }
 
-impl Stringifier for NtStringifier {
+impl Stringifier for NtSerializer<Vec<u8>> {
     fn as_utf8(&self) -> &[u8] {
         &self.write[..]
     }
