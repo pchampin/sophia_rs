@@ -2,11 +2,12 @@
 //! Notation3.
 //! 
 
-use super::{TermData, TermError, Result};
+use super::{Term, TermData, TermError, Result};
 use regex::Regex;
 use lazy_static::lazy_static;
 use std::fmt;
 use std::io;
+use std::convert;
 
 lazy_static! {
     /// Production of SPARQL's VARNAME according to the
@@ -66,10 +67,10 @@ where
     /// factory.
     pub fn copy_with<'a, U, F>(&'a self, mut factory: F) -> Variable<U>
     where
-        U: TermData + From<&'a str>,
+        U: TermData,
         F: FnMut(&'a str) -> U,
     {
-        Variable(factory(self.0.as_ref()))
+        Variable(factory(self.as_ref()))
     }
 
     // Writes a variable to the `fmt::Write` using the N3/SPARQL syntax.
@@ -78,7 +79,7 @@ where
         W: fmt::Write,
     {
         w.write_char('?')?;
-        w.write_str(self.0.as_ref())
+        w.write_str(self.as_ref())
     }
 
     // Writes a variable to the `io::Write` using the N3/SPARQL syntax.
@@ -87,7 +88,12 @@ where
         W: io::Write,
     {
         w.write_all(b"?")?;
-        w.write_all(self.0.as_ref().as_bytes())
+        w.write_all(self.as_ref().as_bytes())
+    }
+
+    /// Return a copy of this variables's underlying identifier.
+    pub fn value(&self) -> String {
+        self.as_ref().to_owned()
     }
 }
 
@@ -97,7 +103,7 @@ where
     U: TermData,
 {
     fn eq(&self, other: &Variable<U>) -> bool {
-        self.0.as_ref() == other.0.as_ref()
+        self.as_ref() == other.as_ref()
     }
 }
 
@@ -110,6 +116,16 @@ where
     }
 }
 
+impl<TD> convert::AsRef<str> for Variable<TD>
+where 
+    TD: TermData,
+{
+    /// As variable is merly a wrapper around `TermData`.
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
+    }
+}
+
 impl<'a, T, U> From<&'a Variable<U>> for Variable<T>
 where
     T: TermData + From<&'a str>,
@@ -117,6 +133,20 @@ where
 {
     fn from(other: &'a Variable<U>) -> Self {
         other.copy_with(T::from)
+    }
+}
+
+impl<TD> convert::TryFrom<Term<TD>> for Variable<TD> 
+where
+    TD: TermData,
+{
+    type Error = TermError;
+
+    fn try_from(term: Term<TD>) -> Result<Self, Self::Error> {
+        match term {
+            Term::Variable(var) => Ok(var),
+            _ => Err(TermError::UnexpectedKindOfTerm { term: term.to_string(), expect: "variable".to_owned() }),
+        }
     }
 }
 
