@@ -1,18 +1,18 @@
-//! Variables like used in SPARQL or universally quantified variables in 
+//! Variables like used in SPARQL or universally quantified variables in
 //! Notation3.
-//! 
+//!
 
-use super::{Term, TermData, TermError, Result};
-use regex::Regex;
+use super::{Result, Term, TermData, TermError};
 use lazy_static::lazy_static;
+use regex::Regex;
+use std::convert;
 use std::fmt;
 use std::io;
-use std::convert;
 
 lazy_static! {
     /// Production of SPARQL's VARNAME according to the
     /// [SPARQL spec](https://www.w3.org/TR/sparql11-query/#rVARNAME).
-    /// 
+    ///
     /// _Note:_ This regular expression matches the whole input (`^...$`),
     /// therefore, it can not be used to capture `VARNAME`s in an arbitrary
     /// string.
@@ -33,9 +33,9 @@ lazy_static! {
 #[derive(Clone, Copy, Debug, Eq, Hash)]
 pub struct Variable<TD: TermData>(TD);
 
-impl<TD> Variable<TD> 
+impl<TD> Variable<TD>
 where
-    TD: TermData
+    TD: TermData,
 {
     /// Return a new variable term with the given name.
     ///
@@ -63,7 +63,7 @@ where
         Variable(name.into())
     }
 
-    /// Copy self while transforming the inner `TermData` with the given 
+    /// Copy self while transforming the inner `TermData` with the given
     /// factory.
     pub fn copy_with<'a, U, F>(&'a self, mut factory: F) -> Variable<U>
     where
@@ -117,7 +117,7 @@ where
 }
 
 impl<TD> convert::AsRef<str> for Variable<TD>
-where 
+where
     TD: TermData,
 {
     /// As variable is merly a wrapper around `TermData`.
@@ -136,7 +136,7 @@ where
     }
 }
 
-impl<TD> convert::TryFrom<Term<TD>> for Variable<TD> 
+impl<TD> convert::TryFrom<Term<TD>> for Variable<TD>
 where
     TD: TermData,
 {
@@ -145,7 +145,10 @@ where
     fn try_from(term: Term<TD>) -> Result<Self, Self::Error> {
         match term {
             Term::Variable(var) => Ok(var),
-            _ => Err(TermError::UnexpectedKindOfTerm { term: term.to_string(), expect: "variable".to_owned() }),
+            _ => Err(TermError::UnexpectedKindOfTerm {
+                term: term.to_string(),
+                expect: "variable".to_owned(),
+            }),
         }
     }
 }
