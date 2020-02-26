@@ -453,7 +453,7 @@ where
     }
 }
 
-impl<TD> From<Variable<TD>> for Term<TD> 
+impl<TD> From<Variable<TD>> for Term<TD>
 where
     TD: TermData,
 {
