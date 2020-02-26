@@ -1,5 +1,8 @@
 use thiserror::Error;
 
+/// Type alias for `Result` with default error `TermError`.
+///
+/// Can be used like `std::result::Result` as well.
 pub type Result<T, E = TermError> = std::result::Result<T, E>;
 
 /// This error is raised when the creation of a term fails.
@@ -17,4 +20,7 @@ pub enum TermError {
     /// Names of variables must apply to SPARQL's [production rules](https://www.w3.org/TR/sparql11-query/#rVARNAME).
     #[error("The name '{0}' is not valid for a variable according to the SPARQL specification")]
     InvalidVariableName(String),
+    /// Raised when failing to downcast a term.
+    #[error("The term '{term}' is not the expected {expect}")]
+    UnexpectedKindOfTerm { term: String, expect: String },
 }

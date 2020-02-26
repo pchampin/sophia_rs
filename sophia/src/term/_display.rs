@@ -53,9 +53,8 @@ where
                 w.write_char('>')?;
             }
         }
-        Variable(name) => {
-            w.write_char('?')?;
-            w.write_str(name.as_ref())?;
+        Variable(var) => {
+            var.write_fmt(w)?;
         }
     };
     Ok(())

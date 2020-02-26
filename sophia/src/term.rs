@@ -47,6 +47,9 @@ pub mod iri_rfc3987;
 use self::iri_rfc3987::IriRefStructure;
 pub mod matcher;
 
+pub mod variable;
+use self::variable::Variable;
+
 mod _bnode_id;
 pub use self::_bnode_id::*;
 mod _convert;
@@ -72,7 +75,7 @@ where
     Iri(IriData<T>),
     BNode(BNodeId<T>),
     Literal(T, LiteralKind<T>),
-    Variable(T),
+    Variable(Variable<T>),
 }
 pub use self::Term::*;
 
@@ -180,14 +183,10 @@ where
     /// May fail if `name` is not a valid variable name.
     pub fn new_variable<U>(name: U) -> Result<Term<T>>
     where
+        U: AsRef<str>,
         T: From<U>,
     {
-        let name = T::from(name);
-        if N3_VARIABLE_NAME.is_match(name.as_ref()) {
-            Ok(Variable(name))
-        } else {
-            Err(TermError::InvalidVariableName(name.as_ref().to_string()))
-        }
+        Variable::new(name).map(Into::into)
     }
 
     /// Copy another term with the given factory.
@@ -203,7 +202,7 @@ where
                 factory(value.as_ref()),
                 LiteralKind::from_with(kind, factory),
             ),
-            Variable(name) => Variable(factory(name.as_ref())),
+            Variable(var) => Variable(var.copy_with(factory)),
         }
     }
 
@@ -301,7 +300,7 @@ where
     where
         T: From<U>,
     {
-        Variable(T::from(name))
+        Variable::new_unchecked(name).into()
     }
 
     /// Return a copy of this term's underlying text.
@@ -315,7 +314,7 @@ where
             Iri(iri) => iri.to_string(),
             BNode(id) => String::from(id.as_ref()),
             Literal(value, _) => String::from(value.as_ref()),
-            Variable(name) => String::from(name.as_ref()),
+            Variable(var) => var.value(),
         }
     }
 
@@ -425,7 +424,7 @@ where
             (Literal(value1, kind1), Literal(value2, kind2)) => {
                 value1.as_ref() == value2.as_ref() && kind1 == kind2
             }
-            (Variable(name1), Variable(name2)) => name1.as_ref() == name2.as_ref(),
+            (Variable(var1), Variable(var2)) => var1 == var2,
             _ => false,
         }
     }
@@ -454,6 +453,15 @@ where
     }
 }
 
+impl<TD> From<Variable<TD>> for Term<TD>
+where
+    TD: TermData,
+{
+    fn from(var: Variable<TD>) -> Self {
+        Term::Variable(var)
+    }
+}
+
 /// Check the equality of two graph names (`Option<&Term>`)
 /// using possibly different `TermData`.
 pub fn same_graph_name<T, U>(g1: Option<&Term<T>>, g2: Option<&Term<U>>) -> bool
@@ -466,15 +474,6 @@ where
         (None, None) => true,
         _ => false,
     }
-}
-
-lazy_static! {
-    static ref N3_VARIABLE_NAME: Regex = Regex::new(r"(?x)
-      ^
-      [A-Za-z\u{c0}-\u{d6}\u{d8}-\u{f6}\u{f8}-\u{2ff}\u{370}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}_0-9]
-      [A-Za-z\u{c0}-\u{d6}\u{d8}-\u{f6}\u{f8}-\u{2ff}\u{370}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}_0-9\u{00B7}\u{0300}-\u{036F}\u{203F}-\u{2040}]*
-      $
-    ").unwrap();
 }
 
 #[cfg(test)]
