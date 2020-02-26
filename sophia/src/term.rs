@@ -47,6 +47,8 @@ pub mod iri_rfc3987;
 use self::iri_rfc3987::IriRefStructure;
 pub mod matcher;
 
+pub mod variable;
+
 mod _bnode_id;
 pub use self::_bnode_id::*;
 mod _convert;
