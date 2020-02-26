@@ -135,8 +135,8 @@ where
 
 /// Make a matcher corresponding to term `t`, given binding `b`.
 fn matcher(t: &RcTerm, b: &BindingMap) -> Binding {
-    if let Variable(vname) = t {
-        let vname: &str = &vname;
+    if let Variable(var) = t {
+        let vname: &str = var.as_ref();
         b.get(vname).cloned().into()
     } else {
         Binding::Exactly(t.clone())

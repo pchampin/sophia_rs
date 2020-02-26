@@ -17,4 +17,7 @@ pub enum TermError {
     /// Names of variables must apply to SPARQL's [production rules](https://www.w3.org/TR/sparql11-query/#rVARNAME).
     #[error("The name '{0}' is not valid for a variable according to the SPARQL specification")]
     InvalidVariableName(String),
+    /// Raised when failing to downcast a term.
+    #[error("The term '{term}' is not the expected {expect}")]
+    UnexpectedKindOfTerm{ term: String, expect: String },
 }
