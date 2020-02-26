@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 /// Type alias for `Result` with default error `TermError`.
-/// 
+///
 /// Can be used like `std::result::Result` as well.
 pub type Result<T, E = TermError> = std::result::Result<T, E>;
 
