@@ -423,17 +423,23 @@ fn variable_similar_but_not_eq() {
 
 #[test]
 fn term_similar_but_not_eq() {
-    let txt = "http://champin.net/#pa";
+    let txt = "foo";
     let t1 = StaticTerm::new_iri(txt).unwrap();
     let t2 = StaticTerm::new_literal_dt(txt, xsd::anyURI).unwrap();
-    // "http://champin.net/#pa" is not a valid blank node identifier
-    // let t3 = StaticTerm::new_bnode(txt).unwrap();
+    let t3 = StaticTerm::new_bnode(txt).unwrap();
+    let t4 = StaticTerm::new_variable(txt).unwrap();
     assert_ne!(t1, t2);
     assert_ne!(h(&t1), h(&t2));
-    // assert_ne!(t1, t3);
-    // assert_ne!(h(&t1), h(&t3));
-    // assert_ne!(t2, t3);
-    // assert_ne!(h(&t2), h(&t3));
+    assert_ne!(t1, t3);
+    assert_ne!(h(&t1), h(&t3));
+    assert_ne!(t1, t4);
+    assert_ne!(h(&t1), h(&t4));
+    assert_ne!(t2, t3);
+    assert_ne!(h(&t2), h(&t3));
+    assert_ne!(t2, t4);
+    assert_ne!(h(&t2), h(&t4));
+    assert_ne!(t3, t4);
+    assert_ne!(h(&t3), h(&t4));
 }
 
 #[test]

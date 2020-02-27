@@ -8,12 +8,13 @@ use regex::Regex;
 use std::convert::TryFrom;
 use std::fmt;
 use std::io;
+use std::ops::Deref;
 
 lazy_static! {
     /// Production of SPARQL's VARNAME according to the
     /// [SPARQL spec](https://www.w3.org/TR/sparql11-query/#rVARNAME).
     ///
-    /// # Cpatures
+    /// # Captures
     ///
     /// This regular expression matches the whole input (`^...$`),
     /// therefore, it can not be used to capture `VARNAME`s in an arbitrary
@@ -108,6 +109,26 @@ where
 {
     fn eq(&self, other: &Variable<U>) -> bool {
         self.as_ref() == other.as_ref()
+    }
+}
+
+impl<TD> PartialEq<str> for Variable<TD>
+where
+    TD: TermData,
+{
+    fn eq(&self, other: &str) -> bool {
+        self.as_ref() == other
+    }
+}
+
+impl<TD> Deref for Variable<TD>
+where
+    TD: TermData,
+{
+    type Target = TD;
+
+    fn deref(&self) -> &TD {
+        &self.0
     }
 }
 

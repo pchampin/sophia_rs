@@ -6,7 +6,6 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use std::convert::TryFrom;
 use std::fmt;
-use std::hash::{Hash, Hasher};
 use std::io;
 use std::ops::Deref;
 
@@ -56,7 +55,7 @@ lazy_static! {
 /// fn is_foobar(t: BoxTerm) -> bool {
 ///     match t {
 ///         BNode(bn) =>
-///             bn.starts_with("foo") || bn == "bar",
+///             bn.starts_with("foo") || &bn == "bar",
 ///         _ =>
 ///             false,
 ///     }
@@ -65,7 +64,7 @@ lazy_static! {
 ///
 /// See [module documentation](index.html)
 /// for more detail.
-#[derive(Clone, Copy, Debug, Eq)]
+#[derive(Clone, Copy, Debug, Eq, Hash)]
 pub struct BlankNode<TD: TermData>(TD);
 
 impl<TD> BlankNode<TD>
@@ -133,15 +132,6 @@ where
     pub fn value(&self) -> String {
         self.as_ref().to_owned()
     }
-
-    /// Whether this blank node identifier is compatible with the N3 family
-    /// of syntaxes (N-Triples, Turtle...).
-    ///
-    /// This is already checked by the standard constructor
-    /// [`new()`](struct.BlankNode.html#mehod.new).
-    pub fn is_n3(&self) -> bool {
-        BLANK_NODE_LABEL.is_match(self.as_ref())
-    }
 }
 
 impl<TD> fmt::Display for BlankNode<TD>
@@ -189,15 +179,6 @@ where
 {
     fn eq(&self, other: &str) -> bool {
         self.as_ref() == other
-    }
-}
-
-impl<TD> Hash for BlankNode<TD>
-where
-    TD: TermData,
-{
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.as_ref().hash(state)
     }
 }
 

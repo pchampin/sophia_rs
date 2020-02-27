@@ -300,7 +300,7 @@ where
     where
         T: From<U>,
     {
-        Variable::new_unchecked(name).into()
+        Variable::<T>::new_unchecked(name).into()
     }
 
     /// Return a copy of this term's underlying text.

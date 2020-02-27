@@ -30,16 +30,7 @@ where
             w.write_char('>')?;
         }
         BNode(bn) => {
-            if bn.is_n3() {
-                bn.write_fmt(w)?;
-            } else {
-                // non conformant identifier
-                w.write_str("_:_")?;
-                for b in bn.as_ref().as_bytes() {
-                    write!(w, "{:x}", b)?;
-                }
-                w.write_str("_:_")?;
-            }
+            bn.write_fmt(w)?;
         }
         Literal(value, Lang(tag)) => {
             w.write_char('"')?;
@@ -122,11 +113,6 @@ pub(crate) mod test {
                 // BNode nice
                 StaticTerm::new_bnode("foo_bar.baz").unwrap(),
                 r"_:foo_bar.baz",
-            ),
-            (
-                // BNode naughty
-                unsafe { StaticTerm::new_bnode_unchecked("foo bar") },
-                r"_:_666f6f20626172_:_",
             ),
             (
                 StaticTerm::new_literal_lang("chat", "fr-FR").unwrap(),
