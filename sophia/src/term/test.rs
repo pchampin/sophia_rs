@@ -198,8 +198,8 @@ fn bnode_id_deref() {
 fn bnode_id_eq_str() {
     let b1 = BoxTerm::new_bnode("foo").unwrap();
     if let BNode(id1) = b1 {
-        assert_eq!(id1, "foo");
-        assert!(id1 == "foo");
+        assert_eq!(&id1, "foo");
+        assert!(&id1 == "foo");
     } else {
         panic!("b1 should be a BNode");
     }
@@ -211,25 +211,18 @@ fn bnode_is_n3() {
         .iter()
         .chain(POSITIVE_N3_BNODE_IDS.iter());
     for id in pos {
-        let b = BoxTerm::new_bnode(*id).unwrap();
-        if let BNode(bid) = b {
-            assert!(bid.is_n3())
-        } else {
-            unreachable!()
-        }
+        assert!(BoxTerm::new_bnode(*id).is_ok());
     }
+}
 
+#[test]
+fn bnode_is_not_n3() {
     let neg = NEGATIVE_1CHAR_IDS
         .iter()
         .chain(NEGATIVE_N3_BNODE_IDS.iter())
         .chain(NT_ONLY_BNODE_IDS.iter());
     for id in neg {
-        let b = BoxTerm::new_bnode(*id).unwrap();
-        if let BNode(bid) = b {
-            assert!(!bid.is_n3())
-        } else {
-            unreachable!()
-        }
+        assert!(BoxTerm::new_bnode(*id).is_err());
     }
 
     for id in [
@@ -238,12 +231,7 @@ fn bnode_is_n3() {
     ]
     .iter()
     {
-        let b = BoxTerm::new_bnode(*id).unwrap();
-        if let BNode(bid) = b {
-            assert!(!bid.is_n3())
-        } else {
-            unreachable!()
-        }
+        assert!(BoxTerm::new_bnode(*id).is_err());
     }
 }
 
@@ -427,8 +415,8 @@ fn variable_eq_different_term_data() {
 
 #[test]
 fn variable_similar_but_not_eq() {
-    let v1 = BoxTerm::new_bnode("xyz").unwrap();
-    let v2 = BoxTerm::new_bnode("xyZ").unwrap();
+    let v1 = BoxTerm::new_variable("xyz").unwrap();
+    let v2 = BoxTerm::new_variable("xyZ").unwrap();
     assert_ne!(v1, v2);
     assert_ne!(h(&v1), h(&v2));
 }
@@ -438,13 +426,14 @@ fn term_similar_but_not_eq() {
     let txt = "http://champin.net/#pa";
     let t1 = StaticTerm::new_iri(txt).unwrap();
     let t2 = StaticTerm::new_literal_dt(txt, xsd::anyURI).unwrap();
-    let t3 = StaticTerm::new_bnode(txt).unwrap();
+    // "http://champin.net/#pa" is not a valid blank node identifier
+    // let t3 = StaticTerm::new_bnode(txt).unwrap();
     assert_ne!(t1, t2);
     assert_ne!(h(&t1), h(&t2));
-    assert_ne!(t1, t3);
-    assert_ne!(h(&t1), h(&t3));
-    assert_ne!(t2, t3);
-    assert_ne!(h(&t2), h(&t3));
+    // assert_ne!(t1, t3);
+    // assert_ne!(h(&t1), h(&t3));
+    // assert_ne!(t2, t3);
+    // assert_ne!(h(&t2), h(&t3));
 }
 
 #[test]

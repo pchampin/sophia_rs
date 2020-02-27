@@ -39,7 +39,6 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use language_tag::LangTag;
-use regex::Regex;
 
 pub mod factory;
 pub mod index_map;
@@ -49,9 +48,9 @@ pub mod matcher;
 
 pub mod variable;
 use self::variable::Variable;
+pub mod blank_node;
+pub use self::blank_node::BlankNode;
 
-mod _bnode_id;
-pub use self::_bnode_id::*;
 mod _convert;
 pub use self::_convert::*;
 mod _display;
@@ -73,7 +72,7 @@ where
     T: TermData,
 {
     Iri(IriData<T>),
-    BNode(BNodeId<T>),
+    BNode(BlankNode<T>),
     Literal(T, LiteralKind<T>),
     Variable(Variable<T>),
 }
@@ -143,9 +142,10 @@ where
     /// and because future versions may be more picky regarding bnode IDs.
     pub fn new_bnode<U>(id: U) -> Result<Term<T>>
     where
+        U: AsRef<str>,
         T: From<U>,
     {
-        Ok(BNode(BNodeId::new(T::from(id))))
+        BlankNode::new(id).map(Into::into)
     }
 
     /// Return a new literal term with the given value and language tag.
@@ -197,12 +197,12 @@ where
     {
         match other {
             Iri(iri) => Iri(IriData::from_with(&iri, factory)),
-            BNode(id) => BNode(BNodeId::from_with(&id, factory)),
+            BNode(bn) => bn.copy_with(factory).into(),
             Literal(value, kind) => Literal(
                 factory(value.as_ref()),
                 LiteralKind::from_with(kind, factory),
             ),
-            Variable(var) => Variable(var.copy_with(factory)),
+            Variable(var) => var.copy_with(factory).into(),
         }
     }
 
@@ -260,7 +260,7 @@ where
     where
         T: From<U>,
     {
-        BNode(BNodeId::new(T::from(id)))
+        BlankNode::<T>::new_unchecked(id).into()
     }
 
     /// Return a literal term.
@@ -312,7 +312,7 @@ where
     pub fn value(&self) -> String {
         match self {
             Iri(iri) => iri.to_string(),
-            BNode(id) => String::from(id.as_ref()),
+            BNode(bn) => bn.value(),
             Literal(value, _) => String::from(value.as_ref()),
             Variable(var) => var.value(),
         }
@@ -459,6 +459,15 @@ where
 {
     fn from(var: Variable<TD>) -> Self {
         Term::Variable(var)
+    }
+}
+
+impl<TD> From<BlankNode<TD>> for Term<TD>
+where
+    TD: TermData,
+{
+    fn from(bn: BlankNode<TD>) -> Self {
+        Term::BNode(bn)
     }
 }
 

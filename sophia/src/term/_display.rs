@@ -29,12 +29,16 @@ where
             write!(w, "{}", iri)?;
             w.write_char('>')?;
         }
-        BNode(ident) => {
-            w.write_str("_:")?;
-            if ident.is_n3() {
-                w.write_str(ident.as_ref())?;
+        BNode(bn) => {
+            if bn.is_n3() {
+                bn.write_fmt(w)?;
             } else {
-                write_non_n3_bnode_id(w, ident.as_ref())?;
+                // non conformant identifier
+                w.write_str("_:_")?;
+                for b in bn.as_ref().as_bytes() {
+                    write!(w, "{:x}", b)?;
+                }
+                w.write_str("_:_")?;
             }
         }
         Literal(value, Lang(tag)) => {
@@ -94,15 +98,6 @@ fn write_quoted_string(w: &mut impl fmt::Write, txt: &str) -> fmt::Result {
     write_quoted_string(w, &txt[cut + 1..])
 }
 
-fn write_non_n3_bnode_id(w: &mut impl fmt::Write, id: &str) -> fmt::Result {
-    w.write_str("_")?;
-    for b in id.as_bytes() {
-        write!(w, "{:x}", b)?;
-    }
-    w.write_str("_:_")?;
-    Ok(())
-}
-
 #[cfg(test)]
 pub(crate) mod test {
     use crate::ns::*;
@@ -130,7 +125,7 @@ pub(crate) mod test {
             ),
             (
                 // BNode naughty
-                StaticTerm::new_bnode("foo bar").unwrap(),
+                unsafe { StaticTerm::new_bnode_unchecked("foo bar") },
                 r"_:_666f6f20626172_:_",
             ),
             (

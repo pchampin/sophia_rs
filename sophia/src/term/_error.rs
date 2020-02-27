@@ -20,6 +20,11 @@ pub enum TermError {
     /// Names of variables must apply to SPARQL's [production rules](https://www.w3.org/TR/sparql11-query/#rVARNAME).
     #[error("The name '{0}' is not valid for a variable according to the SPARQL specification")]
     InvalidVariableName(String),
+    /// Names of variables must apply to N3's [production rules](https://www.w3.org/TR/turtle/#grammar-production-BlankNode).
+    #[error(
+        "The identifier '{0}' is not valid for a blank node according to the N3 specification"
+    )]
+    InvalidBlankNodeId(String),
     /// Raised when failing to downcast a term.
     #[error("The term '{term}' is not the expected {expect}")]
     UnexpectedKindOfTerm { term: String, expect: String },
