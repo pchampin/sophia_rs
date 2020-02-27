@@ -29,13 +29,8 @@ where
             write!(w, "{}", iri)?;
             w.write_char('>')?;
         }
-        BNode(ident) => {
-            w.write_str("_:")?;
-            if ident.is_n3() {
-                w.write_str(ident.as_ref())?;
-            } else {
-                write_non_n3_bnode_id(w, ident.as_ref())?;
-            }
+        BNode(bn) => {
+            bn.write_fmt(w)?;
         }
         Literal(value, Lang(tag)) => {
             w.write_char('"')?;
@@ -94,15 +89,6 @@ fn write_quoted_string(w: &mut impl fmt::Write, txt: &str) -> fmt::Result {
     write_quoted_string(w, &txt[cut + 1..])
 }
 
-fn write_non_n3_bnode_id(w: &mut impl fmt::Write, id: &str) -> fmt::Result {
-    w.write_str("_")?;
-    for b in id.as_bytes() {
-        write!(w, "{:x}", b)?;
-    }
-    w.write_str("_:_")?;
-    Ok(())
-}
-
 #[cfg(test)]
 pub(crate) mod test {
     use crate::ns::*;
@@ -127,11 +113,6 @@ pub(crate) mod test {
                 // BNode nice
                 StaticTerm::new_bnode("foo_bar.baz").unwrap(),
                 r"_:foo_bar.baz",
-            ),
-            (
-                // BNode naughty
-                StaticTerm::new_bnode("foo bar").unwrap(),
-                r"_:_666f6f20626172_:_",
             ),
             (
                 StaticTerm::new_literal_lang("chat", "fr-FR").unwrap(),

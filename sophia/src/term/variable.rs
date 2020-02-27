@@ -5,17 +5,22 @@
 use super::{Result, Term, TermData, TermError};
 use lazy_static::lazy_static;
 use regex::Regex;
-use std::convert;
+use std::convert::TryFrom;
 use std::fmt;
 use std::io;
+use std::ops::Deref;
 
 lazy_static! {
     /// Production of SPARQL's VARNAME according to the
     /// [SPARQL spec](https://www.w3.org/TR/sparql11-query/#rVARNAME).
     ///
-    /// _Note:_ This regular expression matches the whole input (`^...$`),
+    /// # Captures
+    ///
+    /// This regular expression matches the whole input (`^...$`),
     /// therefore, it can not be used to capture `VARNAME`s in an arbitrary
     /// string.
+    ///
+    /// # Rule
     ///
     /// `VARNAME ::= ( PN_CHARS_U | [0-9] ) ( PN_CHARS_U | [0-9] | #x00B7 | [#x0300-#x036F] | [#x203F-#x2040] )*`
     pub static ref VARNAME: Regex = Regex::new(r#"(?x)
@@ -73,7 +78,7 @@ where
         Variable(factory(self.as_ref()))
     }
 
-    // Writes a variable to the `fmt::Write` using the N3/SPARQL syntax.
+    /// Writes the variable to the `fmt::Write` using the N3/SPARQL syntax.
     pub fn write_fmt<W>(&self, w: &mut W) -> fmt::Result
     where
         W: fmt::Write,
@@ -82,7 +87,7 @@ where
         w.write_str(self.as_ref())
     }
 
-    // Writes a variable to the `io::Write` using the N3/SPARQL syntax.
+    /// Writes the variable to the `io::Write` using the N3/SPARQL syntax.
     pub fn write_io<W>(&self, w: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -107,6 +112,26 @@ where
     }
 }
 
+impl<TD> PartialEq<str> for Variable<TD>
+where
+    TD: TermData,
+{
+    fn eq(&self, other: &str) -> bool {
+        self.as_ref() == other
+    }
+}
+
+impl<TD> Deref for Variable<TD>
+where
+    TD: TermData,
+{
+    type Target = TD;
+
+    fn deref(&self) -> &TD {
+        &self.0
+    }
+}
+
 impl<TD> fmt::Display for Variable<TD>
 where
     TD: TermData,
@@ -116,7 +141,7 @@ where
     }
 }
 
-impl<TD> convert::AsRef<str> for Variable<TD>
+impl<TD> AsRef<str> for Variable<TD>
 where
     TD: TermData,
 {
@@ -136,7 +161,7 @@ where
     }
 }
 
-impl<TD> convert::TryFrom<Term<TD>> for Variable<TD>
+impl<TD> TryFrom<Term<TD>> for Variable<TD>
 where
     TD: TermData,
 {
