@@ -34,11 +34,7 @@ impl Query {
                             matcher(t.p(), &initial_bindings),
                             matcher(t.o(), &initial_bindings),
                         ];
-                        // NB: the unsafe code below is used to cheat about tm's lifetime.
-                        // Because G is bound to 'a, triples_matching() requires tm to live as long as 'a.
-                        // But in fact, that is not necessary, because we are consuming the iterator immediately.
-                        let tm_ref = unsafe { &*(&tm[..] as *const [Binding]) };
-                        let hint = triples_matching(graph, tm_ref).size_hint();
+                        let hint = triples_matching(graph, &tm).size_hint();
                         (hint.1.unwrap_or(std::usize::MAX), hint.0)
                     })
                     .collect();
