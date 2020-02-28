@@ -27,6 +27,10 @@ where
             None => Ok(false),
         }
     }
+
+    fn size_hint_triples(&self) -> (usize, Option<usize>) {
+        self.size_hint()
+    }
 }
 
 pub type AsInfallibleSource<I, T> = Map<I, fn(T) -> Result<T, Infallible>>;

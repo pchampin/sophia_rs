@@ -30,4 +30,8 @@ where
             }
         })
     }
+
+    fn size_hint_quads(&self) -> (usize, Option<usize>) {
+        (0, self.source.size_hint_quads().1)
+    }
 }

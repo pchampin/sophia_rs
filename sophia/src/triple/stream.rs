@@ -166,6 +166,15 @@ pub trait TripleSource {
     {
         MapSource { source: self, map }
     }
+
+    /// Returns the bounds on the remaining length of the triple source.
+    ///
+    /// This method has the same contract as [`Iterator::size_hint`].
+    ///
+    /// [`Iterator::size_hint`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.size_hint
+    fn size_hint_triples(&self) -> (usize, Option<usize>) {
+        (0, None)
+    }
 }
 
 #[cfg(test)]
