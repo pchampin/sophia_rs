@@ -49,7 +49,9 @@ pub mod matcher;
 pub mod variable;
 use self::variable::Variable;
 pub mod blank_node;
-pub use self::blank_node::BlankNode;
+use self::blank_node::BlankNode;
+pub mod iri;
+// use self::iri::Iri;
 
 mod _convert;
 pub use self::_convert::*;
