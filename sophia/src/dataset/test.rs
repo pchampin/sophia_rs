@@ -346,18 +346,16 @@ macro_rules! test_dataset_impl {
             fn test_x_all_mutations() {
                 let mut d = $mutable_dataset_factory();
                 assert_eq!(d.quads().count(), 0);
-                assert_eq!(d.insert_all(&mut make_quad_source()).unwrap(), 2);
-                assert_eq!(d.quads().count(), 2, "after insert");
+                assert_eq!(d.insert_all(make_quad_source()).unwrap(), 2);
+                assert_eq!(d.quads().count(), 2, "after insert_all");
                 if $is_set {
-                    assert_eq!(d.insert_all(&mut make_quad_source()).unwrap(), 0);
+                    assert_eq!(d.insert_all(make_quad_source()).unwrap(), 0);
                     assert_eq!(d.quads().count(), 2, "after insert_all again");
                 }
-                assert_eq!(d.remove_all(&mut make_quad_source()).unwrap(), 2);
+                assert_eq!(d.remove_all(make_quad_source()).unwrap(), 2);
                 assert_eq!(d.quads().count(), 0, "after remove_all");
-                if $is_set {
-                    assert_eq!(d.remove_all(&mut make_quad_source()).unwrap(), 0);
-                    assert_eq!(d.quads().count(), 0, "after remove_all again");
-                }
+                assert_eq!(d.remove_all(make_quad_source()).unwrap(), 0);
+                assert_eq!(d.quads().count(), 0, "after remove_all again");
             }
 
             #[test]

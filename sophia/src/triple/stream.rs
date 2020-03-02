@@ -125,7 +125,7 @@ pub trait TripleSource {
     /// Stop on the first error (in the source or in the graph).
     #[inline]
     fn in_graph<G: MutableGraph>(
-        &mut self,
+        self,
         graph: &mut G,
     ) -> StreamResult<usize, Self::Error, <G as MutableGraph>::MutationError>
     where

@@ -272,18 +272,16 @@ macro_rules! test_graph_impl {
             fn test_x_all_mutations() {
                 let mut g = $mutable_graph_factory();
                 assert_eq!(g.triples().count(), 0);
-                assert_eq!(g.insert_all(&mut make_triple_source()).unwrap(), 2);
+                assert_eq!(g.insert_all(make_triple_source()).unwrap(), 2);
                 assert_eq!(g.triples().count(), 2, "after insert_all");
                 if $is_set {
-                    assert_eq!(g.insert_all(&mut make_triple_source()).unwrap(), 0);
+                    assert_eq!(g.insert_all(make_triple_source()).unwrap(), 0);
                     assert_eq!(g.triples().count(), 2, "after insert_all again");
                 }
-                assert_eq!(g.remove_all(&mut make_triple_source()).unwrap(), 2);
+                assert_eq!(g.remove_all(make_triple_source()).unwrap(), 2);
                 assert_eq!(g.triples().count(), 0, "after remove_all");
-                if $is_set {
-                    assert_eq!(g.remove_all(&mut make_triple_source()).unwrap(), 0);
-                    assert_eq!(g.triples().count(), 0, "after remove_all again");
-                }
+                assert_eq!(g.remove_all(make_triple_source()).unwrap(), 0);
+                assert_eq!(g.triples().count(), 0, "after remove_all again");
             }
 
             #[test]

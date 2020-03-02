@@ -642,13 +642,14 @@ pub trait MutableDataset: Dataset {
     ///
     /// [`SetDataset`]: trait.SetDataset.html
     #[inline]
-    fn insert_all<TS>(
+    fn insert_all<QS>(
         &mut self,
-        src: &mut TS,
-    ) -> StreamResult<usize, TS::Error, <Self as MutableDataset>::MutationError>
+        src: QS,
+    ) -> StreamResult<usize, QS::Error, <Self as MutableDataset>::MutationError>
     where
-        TS: QuadSource,
+        QS: QuadSource,
     {
+        let mut src = src;
         let mut c = 0;
         src.try_for_each_quad(|q| -> MDResult<Self, ()> {
             if self.insert(q.s(), q.p(), q.o(), q.g())? {
@@ -672,13 +673,14 @@ pub trait MutableDataset: Dataset {
     ///
     /// [`SetDataset`]: trait.SetDataset.html
     #[inline]
-    fn remove_all<TS>(
+    fn remove_all<QS>(
         &mut self,
-        src: &mut TS,
-    ) -> StreamResult<usize, TS::Error, <Self as MutableDataset>::MutationError>
+        src: QS,
+    ) -> StreamResult<usize, QS::Error, <Self as MutableDataset>::MutationError>
     where
-        TS: QuadSource,
+        QS: QuadSource,
     {
+        let mut src = src;
         let mut c = 0;
         src.try_for_each_quad(|q| -> MDResult<Self, ()> {
             if self.remove(q.s(), q.p(), q.o(), q.g())? {

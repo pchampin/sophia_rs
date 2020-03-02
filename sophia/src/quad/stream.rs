@@ -97,7 +97,7 @@ pub trait QuadSource {
     /// Stop on the first error (in the source or in the dataset).
     #[inline]
     fn in_dataset<D: MutableDataset>(
-        &mut self,
+        self,
         dataset: &mut D,
     ) -> StreamResult<usize, Self::Error, <D as MutableDataset>::MutationError>
     where

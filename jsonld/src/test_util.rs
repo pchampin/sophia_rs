@@ -99,9 +99,9 @@ impl<'a> Test<'a> {
 
     pub fn input_dataset(&self) -> HashSet<([BoxTerm; 3], Option<BoxTerm>)> {
         let nq = self.input();
-        let mut quads = sophia::parser::nq::parse_str(&nq);
+        let quads = sophia::parser::nq::parse_str(&nq);
         let mut dataset = HashSet::new();
-        MutableDataset::insert_all(&mut dataset, &mut quads)
+        MutableDataset::insert_all(&mut dataset, quads)
             .expect("test input could not be parsed");
         dataset
     }

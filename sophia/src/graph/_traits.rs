@@ -459,11 +459,12 @@ pub trait MutableGraph: Graph {
     #[inline]
     fn insert_all<TS>(
         &mut self,
-        src: &mut TS,
+        src: TS,
     ) -> StreamResult<usize, TS::Error, <Self as MutableGraph>::MutationError>
     where
         TS: TripleSource,
     {
+        let mut src = src;
         let mut c = 0;
         src.try_for_each_triple(|t| -> MGResult<Self, ()> {
             if self.insert(t.s(), t.p(), t.o())? {
@@ -489,11 +490,12 @@ pub trait MutableGraph: Graph {
     #[inline]
     fn remove_all<TS>(
         &mut self,
-        src: &mut TS,
+        src: TS,
     ) -> StreamResult<usize, TS::Error, <Self as MutableGraph>::MutationError>
     where
         TS: TripleSource,
     {
+        let mut src = src;
         let mut c = 0;
         src.try_for_each_triple(|t| -> MGResult<Self, ()> {
             if self.remove(t.s(), t.p(), t.o())? {
