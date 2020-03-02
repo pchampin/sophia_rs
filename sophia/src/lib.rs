@@ -48,7 +48,7 @@
 //!     :bob foaf:name "Bob".
 //! "#;
 //! let mut graph = LightGraph::new();
-//! parser::turtle::parse_str(example).in_graph(&mut graph);
+//! parser::turtle::parse_str(example).add_to_graph(&mut graph);
 //!
 //! let ex = Namespace::new("http://example.org/")?;
 //! let foaf = Namespace::new("http://xmlns.com/foaf/0.1/")?;
