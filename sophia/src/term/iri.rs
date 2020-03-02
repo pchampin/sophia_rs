@@ -12,11 +12,11 @@ use std::hash::{Hash, Hasher};
 use super::iri_rfc3987::{is_absolute_iri_ref, is_relative_iri_ref};
 use super::{Result, TermData, TermError};
 
-/// Noramlization policies are used to ensure that
+/// Normalization policies are used to ensure that
 /// IRIs are represented in a given format.
 ///
 /// They are applied by copying terms with
-/// [`Term::noramlized`](enum.Term.html#method.noramlized_with).
+/// [`Term::normalized`](enum.Term.html#method.normalized_with).
 #[derive(Clone, Copy)]
 pub enum Normalization {
     /// IRIs are represented as a single string (`ns`) with an empty `suffix`.
@@ -36,11 +36,19 @@ pub enum Normalization {
 ///  - provides some identical methods to what `&str` provides (see below);
 ///  - can otherwise be converted to a `String` with `to_string`;
 ///
-/// See [module documentation](index.html)
-/// for more detail.
+/// # Contract
+///
+/// Each `Iri` represents a valid IRI according to the
+/// [RFC3987](https://tools.ietf.org/html/rfc3987) either relative or absolute.
+/// For building static IRIs an unsafe API is exposed. These do not do anything
+/// actual unsafe. Instead, they do not perform validity checks. It is the
+/// obligation of the user to ensure that invocations of `*_unchecked()`
+/// methods produce valid output. Note that the creation of invalid IRIs may
+/// lead to unexpected errors in other places.
+///
 #[derive(Clone, Copy, Debug, Eq)]
 pub struct Iri<TD: TermData> {
-    /// The namespace fo the IRI.
+    /// The namespace of the IRI.
     ///
     /// If no suffix is provided `ns` contains the whole IRI.
     pub(crate) ns: TD,
@@ -199,7 +207,7 @@ where
         }
     }
 
-    /// Transorms the IRI according to the given policy.
+    /// Transforms the IRI according to the given policy.
     ///
     /// If the policy already applies the IRI is returned unchanged.
     pub fn normalized(&self, policy: Normalization) -> Cow<'_, Self>
@@ -231,11 +239,11 @@ where
         }
     }
 
-    /// Seperates the IRI into namesapce and suffix at the last hash `#` or
+    /// Separates the IRI into namespace and suffix at the last hash `#` or
     /// slash `/` in the IRI.
     ///
     /// 1. If this already applies the IRI is returned unchanged.
-    /// 1. If the IRI none of the seperators contains it is returned unchanged.
+    /// 1. If the IRI none of the separators contains it is returned unchanged.
     /// 1. In every other case a new IRI is allocated and the policy is
     ///   applied.
     pub fn suffixed_at_last_hash_or_slash(&self) -> Cow<'_, Self>
@@ -249,7 +257,7 @@ where
             Some(suf) => {
                 let suf = suf.as_ref();
                 if let Some(pos) = suf.rfind(SEPERATORS) {
-                    // case: suffix with seperator
+                    // case: suffix with separator
                     let mut new_ns = String::with_capacity(ns.len() + pos + 1);
                     new_ns.push_str(ns);
                     new_ns.push_str(&suf[..=pos]);
@@ -260,10 +268,10 @@ where
                     };
                     Cow::Owned(iri)
                 } else if ns.ends_with(SEPERATORS) {
-                    // case: ns does end with seperator
+                    // case: ns does end with separator
                     Cow::Borrowed(self)
                 } else if let Some(pos) = ns.rfind(SEPERATORS) {
-                    // case: ns does not end with seperator but contains one
+                    // case: ns does not end with separator but contains one
                     let mut new_suffix = String::with_capacity(ns.len() - pos - 1 + suf.len());
                     new_suffix.push_str(&ns[pos + 1..]);
                     new_suffix.push_str(suf);
@@ -274,7 +282,7 @@ where
                     };
                     Cow::Owned(iri)
                 } else {
-                    // case: neither contains a seperator
+                    // case: neither contains a separator
                     Cow::Borrowed(self)
                 }
             }
@@ -290,7 +298,7 @@ where
                         Cow::Owned(iri)
                     }
                     None => {
-                        // case: no seperators
+                        // case: no separators
                         Cow::Borrowed(self)
                     }
                 }
