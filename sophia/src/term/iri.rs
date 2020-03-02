@@ -160,7 +160,7 @@ where
         }
     }
 
-    /// The length of this IRI.
+    /// The length in this IRI.
     pub fn len(&self) -> usize {
         self.ns.as_ref().len() + self.suffix_as_str().len()
     }
@@ -306,6 +306,31 @@ where
         }
     }
 
+    /// Checks if the IRI matches a namespace.
+    ///
+    /// If it does the remaining suffix is returned as iterator of `char`s.
+    /// This prevents an additional allocation.
+    ///
+    /// In case the `ns` and the IRI are the same, the function succeeds but
+    /// returns an empty `Iterator`.
+    pub fn match_ns<'s, U>(&'s self, ns: &Iri<U>) -> Option<impl 's + Iterator<Item = char>>
+    where
+        U: TermData,
+    {
+        if self.len() < ns.len() {
+            None
+        } else {
+            let mut chars_s = self.chars();
+            for b_ns in ns.chars() {
+                match chars_s.next() {
+                    Some(b_s) if b_s != b_ns => return None,
+                    _ => {}
+                }
+            }
+            Some(chars_s)
+        }
+    }
+
     /// Returns either the suffix if existent or an empty string.
     fn suffix_as_str(&self) -> &str {
         match &self.suffix {
@@ -419,6 +444,5 @@ where
 
 #[cfg(test)]
 mod test {
-    // The code from this module is tested through its use in other modules
-    // (especially the ::term::test module).
+    // TODO test match_ns()
 }
