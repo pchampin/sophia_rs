@@ -10,8 +10,8 @@ use std::borrow::Borrow;
 use std::fmt;
 
 /// Resolve some kind of IRI with `self` as the base.
-pub trait Resolve<T> {
-    fn resolve(&self, other: &T) -> Result<T>;
+pub trait Resolve<S, T = S> {
+    fn resolve(&self, other: &S) -> Result<T>;
 }
 
 /// Keeps track of the different components of an IRI reference.
@@ -131,11 +131,11 @@ impl<'a> IriParsed<'a> {
     }
 }
 
-impl<'a> Resolve<String> for IriParsed<'a> {
+impl<'a> Resolve<&str, String> for IriParsed<'a> {
     /// Resolve an IRI given as `String`.
     ///
     /// Fails if `other` is not a valid IRI.
-    fn resolve(&self, other: &String) -> Result<String> {
+    fn resolve(&self, other: &&str) -> Result<String> {
         let other = IriParsed::new(other)?;
         let joined = self.join(&other);
         Ok(joined.to_string())
