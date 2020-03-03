@@ -13,6 +13,7 @@ pub use self::_join::*;
 use std::borrow::Cow;
 use std::fmt;
 use std::hash::{Hash, Hasher};
+use std::io;
 
 use super::{Result, TermData, TermError};
 
@@ -132,12 +133,17 @@ where
     /// This function conducts no checks if the resulting IRI is valid. This is
     /// a contract that is generally assumed. Breaking it could result in
     /// unexpected behavior.
+    ///
+    /// However, in `debug` builds assertions that perform checks are enabled.
     pub fn new_unchecked<U>(iri: U, absolute: bool) -> Self
     where
         TD: From<U>,
     {
+        let ns: TD = iri.into();
+        debug_assert!(is_valid_iri_ref(ns.as_ref()));
+        debug_assert_eq!(absolute, is_absolute_iri_ref(ns.as_ref()));
         Iri {
-            ns: iri.into(),
+            ns,
             suffix: None,
             absolute,
         }
@@ -153,13 +159,23 @@ where
     /// This function conducts no checks if the resulting IRI is valid. This is
     /// a contract that is generally assumed. Breaking it could result in
     /// unexpected behavior.
+    ///
+    /// However, in `debug` builds assertions that perform checks are enabled.
     pub fn new_suffixed_unchecked<U, V>(ns: U, suffix: V, absolute: bool) -> Self
     where
         TD: From<U> + From<V>,
     {
+        let ns: TD = ns.into();
+        let sf: TD = suffix.into();
+        #[cfg(debug_assertions)]
+        {
+            let iri = format!("{}{}", ns.as_ref(), sf.as_ref());
+            debug_assert!(is_valid_iri_ref(&iri));
+            debug_assert_eq!(absolute, is_absolute_iri_ref(&iri));
+        }
         Iri {
-            ns: ns.into(),
-            suffix: Some(suffix.into()),
+            ns,
+            suffix: Some(sf),
             absolute,
         }
     }
@@ -357,6 +373,32 @@ where
         }
     }
 
+    /// Writes the IRI to the `fmt::Write` using the NTriples syntax.
+    ///
+    /// This means the IRI is in angled brackets and no prefix is used.
+    pub fn write_fmt<W>(&self, w: &mut W) -> fmt::Result
+    where
+        W: fmt::Write,
+    {
+        write!(w, "<{}{}>", self.ns.as_ref(), self.suffix_as_str())
+    }
+
+    /// Writes the blank node to the `io::Write` using the N3 syntax.
+    pub fn write_io<W>(&self, w: &mut W) -> io::Result<()>
+    where
+        W: io::Write,
+    {
+        w.write_all(b"<")?;
+        w.write_all(self.ns.as_ref().as_bytes())?;
+        w.write_all(self.suffix_as_str().as_bytes())?;
+        w.write_all(b">")
+    }
+
+    /// Return a copy of this IRIs underlying `TermData`.
+    pub fn value(&self) -> String {
+        format!("{}{}", self.ns.as_ref(), self.suffix_as_str())
+    }
+
     /// Returns either the suffix if existent or an empty string.
     fn suffix_as_str(&self) -> &str {
         match &self.suffix {
@@ -375,7 +417,7 @@ impl Iri<&'static str> {
     /// # Safety
     ///
     /// The resulting IRI may be invalid.
-    pub const unsafe fn from_raw_parts(
+    pub const fn from_raw_parts_unchecked(
         ns: &'static str,
         suffix: Option<&'static str>,
         absolute: bool,
@@ -385,6 +427,15 @@ impl Iri<&'static str> {
             suffix,
             absolute,
         }
+    }
+}
+
+impl<TD> fmt::Display for Iri<TD>
+where
+    TD: TermData,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.write_fmt(f)
     }
 }
 
@@ -430,6 +481,16 @@ where
 //     }
 // }
 
+impl<'a, T, U> From<&'a Iri<U>> for Iri<T>
+where
+    T: TermData + From<&'a str>,
+    U: TermData,
+{
+    fn from(other: &'a Iri<U>) -> Self {
+        other.copy_with(T::from)
+    }
+}
+
 impl<TD> Hash for Iri<TD>
 where
     TD: TermData,
@@ -441,19 +502,44 @@ where
     }
 }
 
-impl<TD> fmt::Display for Iri<TD>
-where
-    TD: TermData,
-{
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let ns = self.ns.as_ref();
-        let suffix = self.suffix_as_str();
-        write!(f, "{}{}", ns, suffix)
-    }
-}
-
 #[cfg(test)]
 mod test {
+    use super::*;
+
+    #[cfg(debug_assertions)]
+    mod debug {
+        use super::*;
+
+        #[test]
+        #[should_panic]
+        fn check_unchecked_negative() {
+            let _ = Iri::<&'static str>::new_unchecked("[]", true);
+        }
+
+        #[test]
+        fn check_unchecked_positive() {
+            let _ = Iri::<&'static str>::new_unchecked("foo", false);
+        }
+
+        #[test]
+        #[should_panic]
+        fn check_unchecked_suffixed_negative() {
+            let _ = Iri::<&'static str>::new_suffixed_unchecked("foo#", "[]", false);
+        }
+
+        #[test]
+        fn check_unchecked_suffixed_positive() {
+            let _ = Iri::<&'static str>::new_suffixed_unchecked("foo#", "bar", false);
+        }
+    }
+
+    #[test]
+    fn display() {
+        let iri = Iri::<&'static str>::new_suffixed("foo#", "bar").unwrap();
+        assert!(!iri.is_absolute());
+        assert_eq!(iri.to_string(), "<foo#bar>");
+        assert_eq!(iri.value(), "foo#bar");
+    }
 
     pub const POSITIVE_IRIS: &[(
         &str,
