@@ -5,11 +5,15 @@
 //! [RFC3987](https://tools.ietf.org/html/rfc3987).
 //!
 
+mod _regex;
+pub use self::_regex::*;
+mod _join;
+pub use self::_join::*;
+
 use std::borrow::Cow;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-use super::iri_rfc3987::{is_absolute_iri_ref, is_relative_iri_ref};
 use super::{Result, TermData, TermError};
 
 /// Normalization policies are used to ensure that
@@ -128,7 +132,7 @@ where
     /// This function conducts no checks if the resulting IRI is valid. This is
     /// a contract that is generally assumed. Breaking it could result in
     /// unexpected behavior.
-    pub unsafe fn new_unchecked<U>(iri: U, absolute: bool) -> Self
+    pub fn new_unchecked<U>(iri: U, absolute: bool) -> Self
     where
         TD: From<U>,
     {
@@ -149,7 +153,7 @@ where
     /// This function conducts no checks if the resulting IRI is valid. This is
     /// a contract that is generally assumed. Breaking it could result in
     /// unexpected behavior.
-    pub unsafe fn new_suffixed_unchecked<U, V>(ns: U, suffix: V, absolute: bool) -> Self
+    pub fn new_suffixed_unchecked<U, V>(ns: U, suffix: V, absolute: bool) -> Self
     where
         TD: From<U> + From<V>,
     {
@@ -232,7 +236,7 @@ where
                 full.push_str(self.ns.as_ref());
                 full.push_str(s.as_ref());
                 // Okay as derived from existing IRI.
-                let iri = unsafe { Self::new_unchecked(full, self.absolute) };
+                let iri = Self::new_unchecked(full, self.absolute);
                 Cow::Owned(iri)
             }
             None => Cow::Borrowed(self),
@@ -331,6 +335,28 @@ where
         }
     }
 
+    /// Parses the components of the IRI.
+    ///
+    /// This is necessary to use the IRI as a base to resolve other IRIs.
+    ///
+    /// # Errors
+    ///
+    /// As a regular expression is applied to the internal representation of
+    /// the IRI, it is required that the IRI is not suffixed. Otherwise
+    /// `TermError::IriParse` is raised.
+    ///
+    /// In order to prevent this a IRI can be transformed with the
+    /// [`no_suffix()`](#method.no_suffix.html) method.
+    ///
+    /// Parsing the components, this function may also raise an error on
+    /// malformed IRIs.
+    pub fn parse_components(&self) -> Result<IriParsed<'_>> {
+        match self.suffix {
+            None => IriParsed::new(self.ns.as_ref()),
+            Some(_) => Err(TermError::IriParse),
+        }
+    }
+
     /// Returns either the suffix if existent or an empty string.
     fn suffix_as_str(&self) -> &str {
         match &self.suffix {
@@ -426,23 +452,276 @@ where
     }
 }
 
-// TODO
-// impl<'a> IriRefStructure<'a> {
-//     pub fn join_iri<T>(&self, iri_term: &Iri<T>) -> Iri<T>
-//     where
-//         T: AsRef<str> + Clone + From<String>,
-//     {
-//         let parsed_ns = IriRefStructure::new(iri_term.ns.as_ref()).unwrap();
-//         let abs_ns = T::from(self.join(&parsed_ns).to_string());
-//         Iri {
-//             ns: abs_ns,
-//             suffix: iri_term.suffix.clone(),
-//             absolute: true,
-//         }
-//     }
-// }
-
 #[cfg(test)]
 mod test {
-    // TODO test match_ns()
+
+    pub const POSITIVE_IRIS: &[(
+        &str,
+        (
+            bool,
+            Option<&str>,
+            Option<&str>,
+            &[&str],
+            Option<&str>,
+            Option<&str>,
+        ),
+    )] = &[
+        ("http:", (true, Some("http"), None, &[], None, None)),
+        (
+            "http://example.org",
+            (true, Some("http"), Some("example.org"), &[], None, None),
+        ),
+        (
+            "http://127.0.0.1",
+            (true, Some("http"), Some("127.0.0.1"), &[], None, None),
+        ),
+        (
+            "http://[::]",
+            (true, Some("http"), Some("[::]"), &[], None, None),
+        ),
+        (
+            "http://%0D",
+            (true, Some("http"), Some("%0D"), &[], None, None),
+        ),
+        (
+            "http://example.org/",
+            (
+                true,
+                Some("http"),
+                Some("example.org"),
+                &["", ""],
+                None,
+                None,
+            ),
+        ),
+        (
+            "http://éxample.org/",
+            (
+                true,
+                Some("http"),
+                Some("éxample.org"),
+                &["", ""],
+                None,
+                None,
+            ),
+        ),
+        (
+            "http://user:pw@example.org:1234/",
+            (
+                true,
+                Some("http"),
+                Some("user:pw@example.org:1234"),
+                &["", ""],
+                None,
+                None,
+            ),
+        ),
+        (
+            "http://example.org/foo/bar/baz",
+            (
+                true,
+                Some("http"),
+                Some("example.org"),
+                &["", "foo", "bar", "baz"],
+                None,
+                None,
+            ),
+        ),
+        (
+            "http://example.org/foo/bar/",
+            (
+                true,
+                Some("http"),
+                Some("example.org"),
+                &["", "foo", "bar", ""],
+                None,
+                None,
+            ),
+        ),
+        (
+            "http://example.org/foo/bar/bàz",
+            (
+                true,
+                Some("http"),
+                Some("example.org"),
+                &["", "foo", "bar", "bàz"],
+                None,
+                None,
+            ),
+        ),
+        (
+            "http://example.org/foo/.././/bar",
+            (
+                true,
+                Some("http"),
+                Some("example.org"),
+                &["", "foo", "..", ".", "", "bar"],
+                None,
+                None,
+            ),
+        ),
+        (
+            "http://example.org/!$&'()*+,=:@/foo%0D",
+            (
+                true,
+                Some("http"),
+                Some("example.org"),
+                &["", "!$&'()*+,=:@", "foo%0D"],
+                None,
+                None,
+            ),
+        ),
+        (
+            "http://example.org/?abc",
+            (
+                true,
+                Some("http"),
+                Some("example.org"),
+                &["", ""],
+                Some("abc"),
+                None,
+            ),
+        ),
+        (
+            "http://example.org/?!$&'()*+,=:@/?\u{E000}",
+            (
+                true,
+                Some("http"),
+                Some("example.org"),
+                &["", ""],
+                Some("!$&'()*+,=:@/?\u{E000}"),
+                None,
+            ),
+        ),
+        (
+            "http://example.org/#def",
+            (
+                true,
+                Some("http"),
+                Some("example.org"),
+                &["", ""],
+                None,
+                Some("def"),
+            ),
+        ),
+        (
+            "http://example.org/?abc#def",
+            (
+                true,
+                Some("http"),
+                Some("example.org"),
+                &["", ""],
+                Some("abc"),
+                Some("def"),
+            ),
+        ),
+        (
+            "tag:abc/def",
+            (true, Some("tag"), None, &["abc", "def"], None, None),
+        ),
+        ("tag:", (true, Some("tag"), None, &[], None, None)),
+        ("foo", (false, None, None, &["foo"], None, None)),
+        ("..", (false, None, None, &[".."], None, None)),
+        (
+            "//example.org",
+            (false, None, Some("example.org"), &[], None, None),
+        ),
+        ("?", (false, None, None, &[], Some(""), None)),
+        ("#", (false, None, None, &[], None, Some(""))),
+        ("?#", (false, None, None, &[], Some(""), Some(""))),
+        (
+            "http://example.org/#Andr%C3%A9",
+            (
+                true,
+                Some("http"),
+                Some("example.org"),
+                &["", ""],
+                None,
+                Some("Andr%C3%A9"),
+            ),
+        ),
+        (
+            "http://example.org/?Andr%C3%A9",
+            (
+                true,
+                Some("http"),
+                Some("example.org"),
+                &["", ""],
+                Some("Andr%C3%A9"),
+                None,
+            ),
+        ),
+        (
+            "?Andr%C3%A9#Andr%C3%A9",
+            (
+                false,
+                None,
+                None,
+                &[],
+                Some("Andr%C3%A9"),
+                Some("Andr%C3%A9"),
+            ),
+        ),
+    ];
+
+    pub const NEGATIVE_IRIS: &[&str] = &[
+        "http://[/",
+        "http://a/[",
+        "http://a/]",
+        "http://a/|",
+        "http://a/ ",
+        "http://a/\u{E000}",
+        "[",
+        "]",
+        "|",
+        " ",
+        "\u{E000}",
+    ];
+
+    pub const RELATIVE_IRIS: &[(&str, &str)] = &[
+        // all relative iris are resolved against http://a/b/c/d;p?q
+        // normal examples from https://tools.ietf.org/html/rfc3986#section-5.4.1
+        ("g:h", "g:h"),
+        ("g", "http://a/b/c/g"),
+        ("./g", "http://a/b/c/g"),
+        ("g/", "http://a/b/c/g/"),
+        ("/g", "http://a/g"),
+        ("//g", "http://g"),
+        ("?y", "http://a/b/c/d;p?y"),
+        ("g?y", "http://a/b/c/g?y"),
+        ("#s", "http://a/b/c/d;p?q#s"),
+        ("g#s", "http://a/b/c/g#s"),
+        ("g?y#s", "http://a/b/c/g?y#s"),
+        (";x", "http://a/b/c/;x"),
+        ("g;x", "http://a/b/c/g;x"),
+        ("g;x?y#s", "http://a/b/c/g;x?y#s"),
+        ("", "http://a/b/c/d;p?q"),
+        (".", "http://a/b/c/"),
+        ("./", "http://a/b/c/"),
+        ("..", "http://a/b/"),
+        ("../", "http://a/b/"),
+        ("../g", "http://a/b/g"),
+        ("../..", "http://a/"),
+        ("../../", "http://a/"),
+        ("../../g", "http://a/g"),
+        // abnormal example from https://tools.ietf.org/html/rfc3986#section-5.4.2
+        ("../../../g", "http://a/g"),
+        ("../../../../g", "http://a/g"),
+        ("/./g", "http://a/g"),
+        ("/../g", "http://a/g"),
+        ("g.", "http://a/b/c/g."),
+        (".g", "http://a/b/c/.g"),
+        ("g..", "http://a/b/c/g.."),
+        ("..g", "http://a/b/c/..g"),
+        ("./../g", "http://a/b/g"),
+        ("./g/.", "http://a/b/c/g/"),
+        ("g/./h", "http://a/b/c/g/h"),
+        ("g/../h", "http://a/b/c/h"),
+        ("g;x=1/./y", "http://a/b/c/g;x=1/y"),
+        ("g;x=1/../y", "http://a/b/c/y"),
+        ("g?y/./x", "http://a/b/c/g?y/./x"),
+        ("g?y/../x", "http://a/b/c/g?y/../x"),
+        ("g#s/./x", "http://a/b/c/g#s/./x"),
+        ("g#s/../x", "http://a/b/c/g#s/../x"),
+    ];
 }
