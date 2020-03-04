@@ -187,6 +187,7 @@ pub(crate) mod test {
     use crate::dataset::MDResult;
     use crate::dataset::*;
     use crate::ns::rdfs;
+    use crate::triple::stream::TripleSource;
     use sophia_term::BoxTerm;
     use std::collections::HashSet;
 
@@ -194,20 +195,28 @@ pub(crate) mod test {
     pub type MyDataset = HashSet<MyQuad>;
     pub type MyDatasetGraph = DatasetGraph<MyDataset, MyDataset, Option<BoxTerm>>;
 
-    pub fn make_default_graph() -> MyDatasetGraph {
-        DatasetGraph {
+    pub fn make_default_graph<TS>(ts: TS) -> Result<MyDatasetGraph, ()> where
+        TS: TripleSource,
+    {
+        let mut g = DatasetGraph {
             dataset: MyDataset::new(),
             gmatcher: None,
             _phantom: PhantomData,
-        }
+        };
+        g.insert_all(ts).unwrap();
+        Ok(g)
     }
 
-    pub fn make_named_graph() -> MyDatasetGraph {
-        DatasetGraph {
+    pub fn make_named_graph<TS>(ts: TS) -> Result<MyDatasetGraph, ()> where
+        TS: TripleSource,
+    {
+        let mut g = DatasetGraph {
             dataset: MyDataset::new(),
             gmatcher: Some(rdfs::Resource.map_into()),
             _phantom: PhantomData,
-        }
+        };
+        g.insert_all(ts).unwrap();
+        Ok(g)
     }
 
     // call to test_impl_graph! has been moved to ::graph::adapter::test::dataset,

@@ -197,14 +197,6 @@ mod test {
     type VecAsGraph = Vec<[BoxTerm; 3]>;
     test_graph_impl!(vec, VecAsGraph, false);
 
-    #[test]
-    fn test_collect_vec() {
-        let g: VecAsGraph = G.triples().collect_triples().unwrap();
-        assert_eq!(g.len(), 3);
-        let len = g.triples_with_o(&rdfs::Class).oks().count();
-        assert_eq!(len, 2);
-    }
-
     type HashSetAsGraph = HashSet<[BoxTerm; 3]>;
     test_graph_impl!(hashset, HashSetAsGraph);
 
@@ -217,6 +209,6 @@ mod test {
     }
 
     // only for the purpose of testing the test macro with is_set and is_gen set to false
-    //test_graph_impl!(vec_strict, VecAsGraph, false, VecAsGraph::new, false);
-    //test_graph_impl!(hashset_strict, HashSetAsGraph, true, HashSetAsGraph::new, false);
+    test_graph_impl!(vec_strict, VecAsGraph, false, VecAsGraph::from_triple_source, false);
+    test_graph_impl!(hashset_strict, HashSetAsGraph, true, HashSetAsGraph::from_triple_source, false);
 }
