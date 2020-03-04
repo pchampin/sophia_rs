@@ -3,6 +3,7 @@
 use std::collections::{HashMap, HashSet};
 use std::iter::empty;
 
+use crate::triple::stream::TripleSource;
 use crate::triple::streaming_mode::{ByTermRefs, StreamedTriple};
 
 use super::*;
@@ -109,6 +110,15 @@ where
     T: IndexedGraph,
 {
     #[inline]
+    unsafe fn igw_wrap_empty(graph: T) -> Self {
+        SpoWrapper {
+            wrapped: graph,
+            s2p: HashMap::default(),
+            sp2o: HashMap::default(),
+        }
+    }
+
+    #[inline]
     fn igw_hook_insert_indexed(&mut self, modified: &Option<[T::Index; 3]>) {
         if let Some([si, pi, oi]) = *modified {
             if insert_in_index(&mut self.sp2o, [si, pi], oi) {
@@ -145,6 +155,14 @@ where
     T: IndexedGraph + Graph<Triple = ByTermRefs<<T as IndexedGraph>::TermData>>,
 {
     impl_indexed_graph_for_wrapper!();
+}
+
+impl<TS, T> CollectibleGraph<TS> for SpoWrapper<T>
+where
+    TS: TripleSource,
+    T: IndexedGraph + Graph<Triple = ByTermRefs<<T as IndexedGraph>::TermData>>,
+{
+    impl_collectible_graph_for_indexed_graph!();
 }
 
 impl<T> MutableGraph for SpoWrapper<T>

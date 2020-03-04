@@ -334,6 +334,12 @@ pub trait IndexedGraphWrapper<T>
 where
     T: IndexedGraph,
 {
+    /// Wrap the given graph.
+    ///
+    /// # Safety
+    /// This method requires that the given graph is empty.
+    unsafe fn igw_wrap_empty(graph: T) -> Self;
+
     /// Hook to be executed at the end of
     /// [`IndexedGraph::insert_indexed`](../indexed/trait.IndexedGraph.html#tymethod.insert_indexed).
     fn igw_hook_insert_indexed(&mut self, modified: &Option<[T::Index; 3]>);
@@ -356,6 +362,19 @@ macro_rules! impl_indexed_graph_for_wrapper {
     () => {
         type Index = T::Index;
         type TermData = T::TermData;
+
+        #[inline]
+        fn with_capacity(capacity: usize) -> Self {
+            unsafe {
+                Self::igw_wrap_empty(T::with_capacity(capacity))
+            }
+        }
+
+        #[inline]
+        fn shrink_to_fit(&mut self) {
+            self.get_wrapped_mut().shrink_to_fit();
+            self.igw_hook_shrink_to_fit();
+        }
 
         #[inline]
         fn get_index<U>(&self, t: &sophia_term::Term<U>) -> Option<Self::Index>
@@ -400,11 +419,6 @@ macro_rules! impl_indexed_graph_for_wrapper {
             let modified = self.get_wrapped_mut().remove_indexed(s, p, o);
             self.igw_hook_remove_indexed(&modified);
             modified
-        }
-
-        fn shrink_to_fit(&mut self) {
-            self.get_wrapped_mut().shrink_to_fit();
-            self.igw_hook_shrink_to_fit();
         }
     };
 }
