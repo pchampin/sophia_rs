@@ -33,10 +33,7 @@ impl<W> JsonLdSerializer<W> {
     }
 
     /// Convert a quad stream into a Json object
-    fn convert_quads<QS>(
-        &mut self,
-        source: QS,
-    ) -> StreamResult<JsonValue, QS::Error, JsonLdError>
+    fn convert_quads<QS>(&mut self, source: QS) -> StreamResult<JsonValue, QS::Error, JsonLdError>
     where
         QS: QuadSource,
     {
@@ -52,10 +49,7 @@ where
 {
     type Error = JsonLdError;
 
-    fn serialize_quads<QS>(
-        &mut self,
-        source: QS,
-    ) -> StreamResult<&mut Self, QS::Error, Self::Error>
+    fn serialize_quads<QS>(&mut self, source: QS) -> StreamResult<&mut Self, QS::Error, Self::Error>
     where
         QS: QuadSource,
     {
@@ -105,10 +99,7 @@ impl Jsonifier {
 impl QuadSerializer for Jsonifier {
     type Error = JsonLdError;
 
-    fn serialize_quads<QS>(
-        &mut self,
-        source: QS,
-    ) -> StreamResult<&mut Self, QS::Error, Self::Error>
+    fn serialize_quads<QS>(&mut self, source: QS) -> StreamResult<&mut Self, QS::Error, Self::Error>
     where
         QS: QuadSource,
     {

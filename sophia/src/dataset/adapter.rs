@@ -195,7 +195,8 @@ pub(crate) mod test {
     pub type MyDataset = HashSet<MyQuad>;
     pub type MyDatasetGraph = DatasetGraph<MyDataset, MyDataset, Option<BoxTerm>>;
 
-    pub fn make_default_graph<TS>(ts: TS) -> Result<MyDatasetGraph, ()> where
+    pub fn make_default_graph<TS>(ts: TS) -> Result<MyDatasetGraph, ()>
+    where
         TS: TripleSource,
     {
         let mut g = DatasetGraph {
@@ -207,7 +208,8 @@ pub(crate) mod test {
         Ok(g)
     }
 
-    pub fn make_named_graph<TS>(ts: TS) -> Result<MyDatasetGraph, ()> where
+    pub fn make_named_graph<TS>(ts: TS) -> Result<MyDatasetGraph, ()>
+    where
         TS: TripleSource,
     {
         let mut g = DatasetGraph {

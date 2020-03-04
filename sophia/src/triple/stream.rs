@@ -162,9 +162,10 @@ pub trait TripleSource {
         (0, None)
     }
     /// Collect these triples into a new graph.
-    fn collect_triples<G>(self) -> StreamResult<G, Self::Error, <G as Graph>::Error> where
+    fn collect_triples<G>(self) -> StreamResult<G, Self::Error, <G as Graph>::Error>
+    where
         Self: Sized,
-        G: CollectibleGraph<Self>
+        G: CollectibleGraph<Self>,
     {
         G::from_triple_source(self)
     }

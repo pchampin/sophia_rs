@@ -71,23 +71,27 @@ pub trait IndexedGraph {
 #[macro_export]
 macro_rules! impl_collectible_graph_for_indexed_graph {
     ($indexed_mutable_graph: ty) => {
-        impl CollectibleGraph<TS> for $indexed_mutable_graph where
+        impl CollectibleGraph<TS> for $indexed_mutable_graph
+        where
             TS: $crate::triple::stream::TripleSource,
         {
             impl_collectible_graph_for_indexed_graph!();
         }
     };
     () => {
-        fn from_triple_source(mut triples: TS) -> $crate::triple::stream::StreamResult<Self, TS::Error, Self::Error> {
+        fn from_triple_source(
+            mut triples: TS,
+        ) -> $crate::triple::stream::StreamResult<Self, TS::Error, Self::Error> {
             use $crate::triple::Triple;
             let (tmin, tmax) = triples.size_hint_triples();
             let cap = tmax.unwrap_or(tmin);
             let mut g = Self::with_capacity(cap);
-            triples.try_for_each_triple(|t| -> Result<(), Self::Error> {
-                g.insert_indexed(t.s(), t.p(), t.o());
-                Ok(())
-            })
-            .map(|_| g)
+            triples
+                .try_for_each_triple(|t| -> Result<(), Self::Error> {
+                    g.insert_indexed(t.s(), t.p(), t.o());
+                    Ok(())
+                })
+                .map(|_| g)
         }
     };
 }

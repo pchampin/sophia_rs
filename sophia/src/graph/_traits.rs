@@ -379,7 +379,8 @@ pub trait Graph {
 
 /// A graph that can be constructed from a
 /// [`TripleSource`](../triple/stream/trait.TripleSource.html)
-pub trait CollectibleGraph<TS>: Graph + Sized where
+pub trait CollectibleGraph<TS>: Graph + Sized
+where
     TS: TripleSource,
 {
     fn from_triple_source(triples: TS) -> StreamResult<Self, TS::Error, Self::Error>;

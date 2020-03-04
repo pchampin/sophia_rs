@@ -101,8 +101,7 @@ impl<'a> Test<'a> {
         let nq = self.input();
         let quads = sophia::parser::nq::parse_str(&nq);
         let mut dataset = HashSet::new();
-        MutableDataset::insert_all(&mut dataset, quads)
-            .expect("test input could not be parsed");
+        MutableDataset::insert_all(&mut dataset, quads).expect("test input could not be parsed");
         dataset
     }
 

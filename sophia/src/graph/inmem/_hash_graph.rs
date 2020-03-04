@@ -176,7 +176,7 @@ where
                 HashSet::with_capacity(cap)
             } else {
                 HashSet::default()
-            }
+            },
         };
         hash_graph.insert_all(triples).map(|_| hash_graph)
     }
