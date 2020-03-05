@@ -1,4 +1,4 @@
-//! Contains helper functions and marocs for testing Dataset implementations
+//! Contains helper functions and macros for testing Dataset implementations
 
 use std::fmt::Debug;
 
@@ -8,20 +8,21 @@ use crate::quad::stream::*;
 use crate::quad::streaming_mode::{QuadStreamingMode, UnsafeQuad};
 use crate::quad::*;
 use crate::term::*;
+use lazy_static::lazy_static;
 
 pub const NS: &str = "http://example.org/";
 
 lazy_static! {
-    pub static ref G1: StaticTerm = StaticTerm::new_iri2(NS, "G1").unwrap();
-    pub static ref G2: StaticTerm = StaticTerm::new_iri2(NS, "G2").unwrap();
-    pub static ref C1: StaticTerm = StaticTerm::new_iri2(NS, "C1").unwrap();
-    pub static ref C2: StaticTerm = StaticTerm::new_iri2(NS, "C2").unwrap();
-    pub static ref P1: StaticTerm = StaticTerm::new_iri2(NS, "p1").unwrap();
-    pub static ref P2: StaticTerm = StaticTerm::new_iri2(NS, "p2").unwrap();
-    pub static ref I1A: StaticTerm = StaticTerm::new_iri2(NS, "I1A").unwrap();
-    pub static ref I1B: StaticTerm = StaticTerm::new_iri2(NS, "I1B").unwrap();
-    pub static ref I2A: StaticTerm = StaticTerm::new_iri2(NS, "I2A").unwrap();
-    pub static ref I2B: StaticTerm = StaticTerm::new_iri2(NS, "I2B").unwrap();
+    pub static ref G1: StaticTerm = StaticTerm::new_iri_suffixed(NS, "G1").unwrap();
+    pub static ref G2: StaticTerm = StaticTerm::new_iri_suffixed(NS, "G2").unwrap();
+    pub static ref C1: StaticTerm = StaticTerm::new_iri_suffixed(NS, "C1").unwrap();
+    pub static ref C2: StaticTerm = StaticTerm::new_iri_suffixed(NS, "C2").unwrap();
+    pub static ref P1: StaticTerm = StaticTerm::new_iri_suffixed(NS, "p1").unwrap();
+    pub static ref P2: StaticTerm = StaticTerm::new_iri_suffixed(NS, "p2").unwrap();
+    pub static ref I1A: StaticTerm = StaticTerm::new_iri_suffixed(NS, "I1A").unwrap();
+    pub static ref I1B: StaticTerm = StaticTerm::new_iri_suffixed(NS, "I1B").unwrap();
+    pub static ref I2A: StaticTerm = StaticTerm::new_iri_suffixed(NS, "I2A").unwrap();
+    pub static ref I2B: StaticTerm = StaticTerm::new_iri_suffixed(NS, "I2B").unwrap();
     pub static ref DG: Option<&'static StaticTerm> = None;
     pub static ref GN1: Option<&'static StaticTerm> = Some(&G1);
     pub static ref GN2: Option<&'static StaticTerm> = Some(&G2);

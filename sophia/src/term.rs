@@ -32,18 +32,19 @@
 //!   and be cloned and sent without any restriction.
 //!
 
+use language_tag::LangTag;
+use std::borrow::Cow;
+use std::convert::TryInto;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use language_tag::LangTag;
-
 pub mod factory;
 pub mod index_map;
-pub mod iri_rfc3987;
-use self::iri_rfc3987::IriRefStructure;
+// pub mod iri_rfc3987;
+// use self::iri_rfc3987::IriRefStructure;
 pub mod matcher;
 
 pub mod variable;
@@ -51,13 +52,13 @@ use self::variable::Variable;
 pub mod blank_node;
 use self::blank_node::BlankNode;
 pub mod iri;
-// use self::iri::Iri;
+use self::iri::{Iri, Normalization};
 
 mod _convert;
 pub use self::_convert::*;
 mod _display;
-mod _iri_data;
-pub use self::_iri_data::*;
+// mod _iri_data;
+// pub use self::_iri_data::*;
 mod _graph_name_matcher; // is 'pub use'd by module 'matcher'
 mod _literal_kind;
 pub use self::_literal_kind::*;
@@ -73,7 +74,7 @@ pub enum Term<T>
 where
     T: TermData,
 {
-    Iri(IriData<T>),
+    Iri(Iri<T>),
     BNode(BlankNode<T>),
     Literal(T, LiteralKind<T>),
     Variable(Variable<T>),
@@ -117,24 +118,25 @@ where
     /// Return a new IRI term from the given text.
     ///
     /// May fail if `txt` is not a valid IRI.
-    ///
     pub fn new_iri<U>(iri: U) -> Result<Term<T>>
     where
+        U: AsRef<str>,
         T: From<U>,
     {
-        Ok(Iri(IriData::new(T::from(iri), None)?))
+        Iri::new(iri).map(Into::into)
     }
 
     /// Return a new IRI term from the two given parts (prefix and suffix).
     ///
     /// May fail if the concatenation of `ns` and `suffix`
     /// does not produce a valid IRI.
-    ///
-    pub fn new_iri2<U, V>(ns: U, suffix: V) -> Result<Term<T>>
+    pub fn new_iri_suffixed<U, V>(ns: U, suffix: V) -> Result<Term<T>>
     where
+        U: AsRef<str>,
+        V: AsRef<str>,
         T: From<U> + From<V>,
     {
-        Ok(Iri(IriData::new(T::from(ns), Some(T::from(suffix)))?))
+        Iri::new_suffixed(ns, suffix).map(Into::into)
     }
 
     /// Return a new blank node term with the given bnode ID.
@@ -174,10 +176,7 @@ where
     where
         T: From<U>,
     {
-        match dt {
-            Iri(iri) => Ok(Literal(T::from(txt), Datatype(iri))),
-            _ => Err(TermError::InvalidDatatype(format!("{}", dt))),
-        }
+        Ok(Literal(T::from(txt), Datatype(dt.try_into()?)))
     }
 
     /// Return a new variable term with the given name.
@@ -198,7 +197,7 @@ where
         F: FnMut(&'a str) -> T,
     {
         match other {
-            Iri(iri) => Iri(IriData::from_with(&iri, factory)),
+            Iri(iri) => iri.copy_with(factory).into(),
             BNode(bn) => bn.copy_with(factory).into(),
             Literal(value, kind) => Literal(
                 factory(value.as_ref()),
@@ -208,50 +207,62 @@ where
         }
     }
 
-    /// Copy another term with the given factory,
-    /// applying the given normalization policy.
-    pub fn normalized_with<U, F>(other: &'_ Term<U>, mut factory: F, norm: Normalization) -> Term<T>
+    /// Transforms the underlying IRIs according to the given policy.
+    ///
+    /// If the policy already applies the Term is returned unchanged.
+    pub fn normalized(&self, policy: Normalization) -> Cow<'_, Self>
     where
-        U: TermData,
-        F: FnMut(&str) -> T,
+        T: From<String>,
     {
-        match other {
-            Iri(iri) => Iri(IriData::normalized_with(&iri, factory, norm)),
-            Literal(value, kind) => Literal(
-                factory(value.as_ref()),
-                LiteralKind::normalized_with(kind, factory, norm),
-            ),
-            _ => Self::from_with(other, factory),
+        match self {
+            Iri(iri) => match iri.normalized(policy) {
+                Cow::Borrowed(_) => Cow::Borrowed(self),
+                Cow::Owned(iri) => Cow::Owned(iri.into()),
+            },
+            Literal(value, kind) => match kind.normalized(policy) {
+                Cow::Borrowed(_) => Cow::Borrowed(self),
+                Cow::Owned(kind) => Cow::Owned(Term::Literal(value.clone(), kind)),
+            },
+            _ => Cow::Borrowed(self),
         }
     }
 
-    /// Return a new IRI term.
+    /// Create a new IRI-term from a given IRI without checking its validity.
+    ///
+    /// As it is not checked if absolute or relative this property must be
+    /// entered as well.
     ///
     /// # Safety
-    /// This function requires that `iri` is a valid IRI reference,
-    /// and that `abs` correctly indicates whether it is absolute or relative.
-    pub unsafe fn new_iri_unchecked<U>(iri: U, abs: Option<bool>) -> Term<T>
+    ///
+    /// This function conducts no checks if the resulting IRI is valid. This is
+    /// a contract that is generally assumed. Breaking it could result in
+    /// unexpected behavior.
+    ///
+    /// However, in `debug` builds assertions that perform checks are enabled.
+    pub fn new_iri_unchecked<U>(iri: U, absolute: bool) -> Term<T>
     where
         T: From<U>,
     {
-        Iri(IriData::new_unchecked(T::from(iri), None, abs))
+        Iri::new_unchecked(iri, absolute).into()
     }
 
-    /// Return a new IRI term,
+    /// Create a new IRI-term from a given namespace and suffix.
+    ///
+    /// As it is not checked if absolute or relative this property must be
+    /// entered as well.
     ///
     /// # Safety
-    /// This function requires that that
-    /// `ns` and `suffix` concatenate to a valid IRI reference,
-    /// and that `abs` correctly indicates whether it is absolute or relative.
-    pub unsafe fn new_iri2_unchecked<U, V>(ns: U, suffix: V, abs: Option<bool>) -> Term<T>
+    ///
+    /// This function conducts no checks if the resulting IRI is valid. This is
+    /// a contract that is generally assumed. Breaking it could result in
+    /// unexpected behavior.
+    ///
+    /// However, in `debug` builds assertions that perform checks are enabled.
+    pub unsafe fn new_iri_suffixed_unchecked<U, V>(ns: U, suffix: V, absolute: bool) -> Term<T>
     where
         T: From<U> + From<V>,
     {
-        Iri(IriData::new_unchecked(
-            T::from(ns),
-            Some(T::from(suffix)),
-            abs,
-        ))
+        Iri::new_suffixed_unchecked(ns, suffix, absolute).into()
     }
 
     /// Return a new blank node term.
@@ -277,21 +288,11 @@ where
     }
 
     /// Return a typed literal term.
-    ///
-    /// # Panics
-    /// Panics if `dt` is not an IRI.
     pub fn new_literal_dt_unchecked<U>(txt: U, dt: Term<T>) -> Term<T>
     where
         T: From<U> + Debug,
     {
-        if let Iri(dt) = dt {
-            Literal(T::from(txt), Datatype(dt))
-        } else {
-            panic!(format!(
-                "new_literal_dt_unchecked expects Term::Iri as dt, got {:?}",
-                dt
-            ))
-        }
+        Literal(T::from(txt), Datatype(dt.try_into().unwrap()))
     }
 
     /// Return a new variable term.
@@ -313,95 +314,96 @@ where
     /// See also [`n3`](#method.n3).
     pub fn value(&self) -> String {
         match self {
-            Iri(iri) => iri.to_string(),
+            Iri(iri) => iri.value(),
             BNode(bn) => bn.value(),
             Literal(value, _) => String::from(value.as_ref()),
             Variable(var) => var.value(),
         }
     }
 
-    /// If `t` is or contains a relative IRI, replace it with an absolute one,
-    /// using this term as the base.
-    /// Otherwise, returns `t` unchanged.
-    ///
-    /// This affects IRI terms, but also Literal terms with a datatype.
-    ///
-    /// # Example
-    /// ```
-    /// use sophia::term::*;
-    ///
-    /// let i1 = BoxTerm::new_iri("http://example.org/foo/bar").unwrap();
-    /// let i2 = BoxTerm::new_iri("../baz").unwrap();
-    /// let i3 = i1.join(&i2);
-    /// assert_eq!(&i3.value(), "http://example.org/baz");
-    /// ```
-    ///
-    /// # Panics
-    /// Panics if this Term is not an IRI or is not absolute (see [`is_absolute`](#method.is_absolute)).
-    ///
-    /// # Performance
-    /// If you need to join multiple terms to the same base,
-    /// you should use [`batch_join`](#method.batch_join) instead,
-    /// as it factorizes the pre-processing required for joining IRIs.
-    ///
-    pub fn join<U>(&self, t: &Term<U>) -> Term<U>
-    where
-        U: TermData + From<String>,
-    {
-        let mut ret = None;
-        self.batch_join(|join| {
-            //let t = warp.take().unwrap();
-            ret = Some(join(t));
-        });
-        ret.unwrap()
-    }
+    // TODO
+    // /// If `t` is or contains a relative IRI, replace it with an absolute one,
+    // /// using this term as the base.
+    // /// Otherwise, returns `t` unchanged.
+    // ///
+    // /// This affects IRI terms, but also Literal terms with a datatype.
+    // ///
+    // /// # Example
+    // /// ```
+    // /// use sophia::term::*;
+    // ///
+    // /// let i1 = BoxTerm::new_iri("http://example.org/foo/bar").unwrap();
+    // /// let i2 = BoxTerm::new_iri("../baz").unwrap();
+    // /// let i3 = i1.join(&i2);
+    // /// assert_eq!(&i3.value(), "http://example.org/baz");
+    // /// ```
+    // ///
+    // /// # Panics
+    // /// Panics if this Term is not an IRI or is not absolute (see [`is_absolute`](#method.is_absolute)).
+    // ///
+    // /// # Performance
+    // /// If you need to join multiple terms to the same base,
+    // /// you should use [`batch_join`](#method.batch_join) instead,
+    // /// as it factorizes the pre-processing required for joining IRIs.
+    // ///
+    // pub fn join<U>(&self, t: &Term<U>) -> Term<U>
+    // where
+    //     U: TermData + From<String>,
+    // {
+    //     let mut ret = None;
+    //     self.batch_join(|join| {
+    //         //let t = warp.take().unwrap();
+    //         ret = Some(join(t));
+    //     });
+    //     ret.unwrap()
+    // }
 
-    /// Takes a closure with a `join` parameter,
-    /// where `join` is a function comparable to the [`join`](#method.join) method.
-    /// Useful for joining multiple terms with this IRI.
-    ///
-    /// # Example
-    /// ```
-    /// use sophia::term::*;
-    ///
-    /// let i1 = BoxTerm::new_iri("http://example.org/foo/bar").unwrap();
-    /// let mut terms = vec![
-    ///     BoxTerm::new_iri("../baz").unwrap(),
-    ///     BoxTerm::new_iri("#baz").unwrap(),
-    ///     BoxTerm::new_iri("http://another.example.org").unwrap(),
-    /// ];
-    /// i1.batch_join(|join| {
-    ///     for t in &mut terms {
-    ///         *t = join(t);
-    ///     }
-    /// });
-    /// ```
-    ///
-    /// # Panics
-    /// Panics if this Term is not an IRI or is not absolute (see [`is_absolute`](#method.is_absolute)).
-    ///
-    pub fn batch_join<F, U>(&self, task: F)
-    where
-        F: FnOnce(&dyn Fn(&Term<U>) -> Term<U>) -> (),
-        U: TermData + From<String>,
-    {
-        match self {
-            Iri(iri) if iri.is_absolute() => {
-                let iri_txt = iri.to_string();
-                let base = IriRefStructure::new(&iri_txt).unwrap();
-                task(&|t| match t {
-                    Iri(ref iri) => Iri(base.join_iri(iri)),
-                    Literal(ref txt, Datatype(ref iri)) => {
-                        Literal(txt.clone(), Datatype(base.join_iri(iri)))
-                    }
-                    _ => t.clone(),
-                });
-            }
-            _ => panic!("Can only join with absolute Iri"),
-        }
-    }
+    // /// Takes a closure with a `join` parameter,
+    // /// where `join` is a function comparable to the [`join`](#method.join) method.
+    // /// Useful for joining multiple terms with this IRI.
+    // ///
+    // /// # Example
+    // /// ```
+    // /// use sophia::term::*;
+    // ///
+    // /// let i1 = BoxTerm::new_iri("http://example.org/foo/bar").unwrap();
+    // /// let mut terms = vec![
+    // ///     BoxTerm::new_iri("../baz").unwrap(),
+    // ///     BoxTerm::new_iri("#baz").unwrap(),
+    // ///     BoxTerm::new_iri("http://another.example.org").unwrap(),
+    // /// ];
+    // /// i1.batch_join(|join| {
+    // ///     for t in &mut terms {
+    // ///         *t = join(t);
+    // ///     }
+    // /// });
+    // /// ```
+    // ///
+    // /// # Panics
+    // /// Panics if this Term is not an IRI or is not absolute (see [`is_absolute`](#method.is_absolute)).
+    // ///
+    // pub fn batch_join<F, U>(&self, task: F)
+    // where
+    //     F: FnOnce(&dyn Fn(&Term<U>) -> Term<U>) -> (),
+    //     U: TermData + From<String>,
+    // {
+    //     match self {
+    //         Iri(iri) if iri.is_absolute() => {
+    //             let iri_txt = iri.to_string();
+    //             let base = IriRefStructure::new(&iri_txt).unwrap();
+    //             task(&|t| match t {
+    //                 Iri(ref iri) => Iri(base.join_iri(iri)),
+    //                 Literal(ref txt, Datatype(ref iri)) => {
+    //                     Literal(txt.clone(), Datatype(base.join_iri(iri)))
+    //                 }
+    //                 _ => t.clone(),
+    //             });
+    //         }
+    //         _ => panic!("Can only join with absolute Iri"),
+    //     }
+    // }
 
-    /// Return whether this term is absolue.
+    /// Return whether this term is absolute.
     ///
     /// * An IRI is absolute iff it is an absolute IRI.
     /// * A typed literal is absolute iff its datatype is absolute.
@@ -432,12 +434,12 @@ where
     }
 }
 
-impl<T, U> PartialEq<IriData<U>> for Term<T>
+impl<T, U> PartialEq<Iri<U>> for Term<T>
 where
     T: TermData,
     U: TermData,
 {
-    fn eq(&self, other: &IriData<U>) -> bool {
+    fn eq(&self, other: &Iri<U>) -> bool {
         match self {
             Iri(iri1) => iri1 == other,
             _ => false,
@@ -452,6 +454,15 @@ where
 {
     fn from(other: &'a Term<U>) -> Term<T> {
         Self::from_with(other, T::from)
+    }
+}
+
+impl<TD> From<Iri<TD>> for Term<TD>
+where
+    TD: TermData,
+{
+    fn from(iri: Iri<TD>) -> Self {
+        Term::Iri(iri)
     }
 }
 

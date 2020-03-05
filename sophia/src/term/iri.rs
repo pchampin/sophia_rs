@@ -10,12 +10,12 @@ pub use self::_regex::*;
 mod _join;
 pub use self::_join::*;
 
+use super::{Result, Term, TermData, TermError};
 use std::borrow::Cow;
+use std::convert::TryFrom;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::io;
-
-use super::{Result, TermData, TermError};
 
 /// Normalization policies are used to ensure that
 /// IRIs are represented in a given format.
@@ -263,7 +263,8 @@ where
     /// slash `/` in the IRI.
     ///
     /// 1. If this already applies the IRI is returned unchanged.
-    /// 1. If the IRI none of the separators contains it is returned unchanged.
+    /// 1. If the IRI none of the separators contains the no suffix policy is
+    /// applied.
     /// 1. In every other case a new IRI is allocated and the policy is
     ///   applied.
     pub fn suffixed_at_last_hash_or_slash(&self) -> Cow<'_, Self>
@@ -303,7 +304,13 @@ where
                     Cow::Owned(iri)
                 } else {
                     // case: neither contains a separator
-                    Cow::Borrowed(self)
+                    let new_ns = self.value();
+                    let iri = Iri {
+                        ns: new_ns.into(),
+                        suffix: None,
+                        absolute: self.absolute,
+                    };
+                    Cow::Owned(iri)
                 }
             }
             None => {
@@ -462,24 +469,23 @@ where
         ns_len + sf_len == other.len()
             && ns == &other[..ns_len]
             // prevents panic if not suffixed
-            && (sf.is_empty() || sf == &other[ns_len + 1..])
+            && (sf.is_empty() || sf == &other[ns_len..])
     }
 }
 
-// TODO when integrated into Term
-// impl<T, U> PartialEq<Term<U>> for Iri<T>
-// where
-//     T: AsRef<str>,
-//     U: TermData,
-// {
-//     #[inline]
-//     fn eq(&self, other: &Term<U>) -> bool {
-//         match other {
-//             Iri(other_iri) => other_iri == self,
-//             _ => false,
-//         }
-//     }
-// }
+impl<T, U> PartialEq<Term<U>> for Iri<T>
+where
+    T: TermData,
+    U: TermData,
+{
+    #[inline]
+    fn eq(&self, other: &Term<U>) -> bool {
+        match other {
+            Term::Iri(other_iri) => other_iri == self,
+            _ => false,
+        }
+    }
+}
 
 impl<'a, T, U> From<&'a Iri<U>> for Iri<T>
 where
@@ -499,6 +505,41 @@ where
         state.write(self.ns.as_ref().as_bytes());
         state.write(self.suffix_as_str().as_bytes());
         state.write_u8(0xff);
+    }
+}
+
+impl<TD> TryFrom<Term<TD>> for Iri<TD>
+where
+    TD: TermData,
+{
+    type Error = TermError;
+
+    fn try_from(term: Term<TD>) -> Result<Self, Self::Error> {
+        match term {
+            Term::Iri(iri) => Ok(iri),
+            _ => Err(TermError::UnexpectedKindOfTerm {
+                term: term.to_string(),
+                expect: "IRI".to_owned(),
+            }),
+        }
+    }
+}
+
+impl<'a, T, U> TryFrom<&'a Term<U>> for Iri<T>
+where
+    T: TermData + From<&'a str>,
+    U: TermData,
+{
+    type Error = TermError;
+
+    fn try_from(term: &'a Term<U>) -> Result<Self, Self::Error> {
+        match term {
+            Term::Iri(iri) => Ok(iri.copy_with(T::from)),
+            _ => Err(TermError::UnexpectedKindOfTerm {
+                term: term.to_string(),
+                expect: "IRI".to_owned(),
+            }),
+        }
     }
 }
 

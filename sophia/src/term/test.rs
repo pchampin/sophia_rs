@@ -17,9 +17,9 @@ fn iri() {
     assert_eq!(format!("{}", i), format!("<{}>", exp));
 
     if let Iri(iri) = i {
-        assert_eq!(iri, exp);
+        assert_eq!(&iri, exp);
         assert_eq!(iri.len(), exp.len());
-        let s1 = iri.to_string();
+        let s1 = iri.value();
         let s2: String = iri.chars().collect();
         assert_eq!(s1, exp);
         assert_eq!(s2, exp);
@@ -33,21 +33,21 @@ fn iri() {
 #[test]
 fn iri2() {
     let exp = "http://champin.net/#pa";
-    let i = RefTerm::new_iri2("http://champin.net/#", "pa").unwrap();
+    let i = RefTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
     assert_eq!(&i.value(), exp);
     assert_eq!(format!("{}", i), format!("<{}>", exp));
 
     if let Iri(iri) = i {
-        assert_eq!(iri, exp);
+        assert_eq!(&iri, exp);
         assert_eq!(iri.len(), exp.len());
-        let s1 = iri.to_string();
+        let s1 = iri.value();
         let s2: String = iri.chars().collect();
         assert_eq!(s1, exp);
         assert_eq!(s2, exp);
     } else {
         assert!(false, "Should have returned Iri(_)");
     }
-    let res = RefTerm::new_iri2("1://champin.net/", "pa");
+    let res = RefTerm::new_iri_suffixed("1://champin.net/", "pa");
     assert!(res.is_err());
 }
 
@@ -74,9 +74,9 @@ fn iri_eq_different_term_data() {
 #[test]
 fn iri_eq_different_cut() {
     let i1 = BoxTerm::new_iri("http://champin.net/#pa").unwrap();
-    let i2 = BoxTerm::new_iri2("http://champin.net/#", "pa").unwrap();
-    let i3 = BoxTerm::new_iri2("http://champin.net/", "#pa").unwrap();
-    let i4 = BoxTerm::new_iri2("http://champin.", "net/#pa").unwrap();
+    let i2 = BoxTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
+    let i3 = BoxTerm::new_iri_suffixed("http://champin.net/", "#pa").unwrap();
+    let i4 = BoxTerm::new_iri_suffixed("http://champin.", "net/#pa").unwrap();
     assert_eq!(i1, i2);
     assert_eq!(h(&i1), h(&i2));
     assert_eq!(i1, i3);
@@ -102,8 +102,8 @@ fn iri_similar_but_not_eq() {
 #[test]
 fn iri_normalized_no_suffix() {
     let norm = Normalization::NoSuffix;
-    let i1 = BoxTerm::new_iri2("http://champin.net/#", "pa").unwrap();
-    let i2 = BoxTerm::normalized_with(&i1, |txt| Box::from(txt), norm);
+    let i1 = BoxTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
+    let i2 = i1.normalized(norm).into_owned();
     assert_eq!(i1, i2);
     if let Iri(i2) = i2 {
         assert!(i2.suffix.is_none());
@@ -129,9 +129,9 @@ fn iri_normalized_last_hash_or_slash() {
         let i1 = if sf1.len() == 0 {
             BoxTerm::new_iri(*ns1).unwrap()
         } else {
-            BoxTerm::new_iri2(*ns1, *sf1).unwrap()
+            BoxTerm::new_iri_suffixed(*ns1, *sf1).unwrap()
         };
-        let i2 = BoxTerm::normalized_with(&i1, |txt| Box::from(txt), norm);
+        let i2 = i1.normalized(norm).into_owned();
         assert_eq!(i1, i2);
         if let Iri(i2) = i2 {
             assert_eq!(&i2.ns[..], *ns2);
@@ -323,9 +323,9 @@ fn literal_similar_but_not_eq() {
 #[test]
 fn literal_normalized_no_suffix() {
     let norm = Normalization::NoSuffix;
-    let dt = BoxTerm::new_iri2("http://champin.net/#", "pa").unwrap();
+    let dt = BoxTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
     let l1 = BoxTerm::new_literal_dt("hello", dt).unwrap();
-    let l2 = BoxTerm::normalized_with(&l1, |txt| Box::from(txt), norm);
+    let l2 = l1.normalized(norm).into_owned();
     assert_eq!(l1, l2);
     if let Literal(_, Datatype(i2)) = l2 {
         assert!(i2.suffix.is_none());
@@ -351,10 +351,10 @@ fn literal_normalized_last_hash_or_slash() {
         let dt = if sf1.len() == 0 {
             BoxTerm::new_iri(*ns1).unwrap()
         } else {
-            BoxTerm::new_iri2(*ns1, *sf1).unwrap()
+            BoxTerm::new_iri_suffixed(*ns1, *sf1).unwrap()
         };
         let l1 = BoxTerm::new_literal_dt("hello", dt).unwrap();
-        let l2 = BoxTerm::normalized_with(&l1, |txt| Box::from(txt), norm);
+        let l2 = l1.normalized(norm).into_owned();
         assert_eq!(l1, l2);
         if let Literal(_, Datatype(i2)) = l2 {
             assert_eq!(&i2.ns[..], *ns2);

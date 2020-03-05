@@ -30,7 +30,7 @@ pub trait TermFactory {
         T: TermData,
         U: TermData,
     {
-        Term::new_iri2(
+        Term::new_iri_suffixed(
             self.get_term_data(ns.as_ref()),
             self.get_term_data(suffix.as_ref()),
         )
@@ -77,12 +77,12 @@ pub trait TermFactory {
         Term::from_with(other, |txt| self.get_term_data(txt))
     }
 
-    fn copy_normalized<T>(&mut self, other: &Term<T>, norm: Normalization) -> FTerm<Self>
-    where
-        T: TermData,
-    {
-        Term::normalized_with(other, |txt| self.get_term_data(txt), norm)
-    }
+    // fn copy_normalized<T>(&mut self, other: &Term<T>, norm: Normalization) -> FTerm<Self>
+    // where
+    //     T: TermData,
+    // {
+    //     Term::normalized_with(other, |txt| self.get_term_data(txt), norm)
+    // }
 
     fn shrink_to_fit(&mut self);
 }

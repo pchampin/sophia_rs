@@ -1,4 +1,4 @@
-// this module is transparently re-exported by its sibbling `matcher`
+// this module is transparently re-exported by its sibling `matcher`
 
 use crate::term::matcher::{AnyOrExactly, AnyTerm};
 use crate::term::*;
@@ -224,7 +224,7 @@ mod test {
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
+        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
         let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphNameMatcher::constant(&m);
@@ -241,7 +241,7 @@ mod test {
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
+        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
         let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphNameMatcher::constant(&m);
@@ -258,7 +258,7 @@ mod test {
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
+        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
         let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphNameMatcher::constant(&m);
@@ -275,7 +275,7 @@ mod test {
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
+        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
         let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphNameMatcher::constant(&m);
@@ -291,7 +291,7 @@ mod test {
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
+        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
         let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphNameMatcher::constant(&m);
@@ -307,7 +307,7 @@ mod test {
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
+        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
         let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphNameMatcher::constant(&m);
@@ -327,7 +327,7 @@ mod test {
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
+        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
         let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphNameMatcher::constant(&m);
@@ -343,7 +343,7 @@ mod test {
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
+        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
         let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphNameMatcher::constant(&m[..]);
@@ -360,7 +360,7 @@ mod test {
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
+        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
         let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphNameMatcher::constant(&m[..]);
@@ -379,7 +379,7 @@ mod test {
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
+        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
         let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphNameMatcher::constant(&m);
@@ -397,7 +397,7 @@ mod test {
         };
 
         let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri2("http://champin.net/#", "pa").unwrap());
+        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
         let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphNameMatcher::constant(&m);
