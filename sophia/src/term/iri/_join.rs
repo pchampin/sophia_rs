@@ -5,12 +5,16 @@
 //!
 
 use super::{Iri, IRELATIVE_REF_REGEX, IRI_REGEX};
-use crate::term::{Result, TermData, TermError};
+use crate::term::{Result, TermData, TermError, Term, LiteralKind};
 use std::borrow::Borrow;
 use std::fmt;
 
 /// Resolve some kind of IRI with `self` as the base.
-pub trait Resolve<S, T = S> {
+pub trait Resolve<S, T = S> 
+where
+    S: ?Sized,
+    T: Sized,
+{
     fn resolve(&self, other: &S) -> Result<T>;
 }
 
@@ -131,11 +135,11 @@ impl<'a> IriParsed<'a> {
     }
 }
 
-impl<'a> Resolve<&str, String> for IriParsed<'a> {
+impl<'a> Resolve<str, String> for IriParsed<'a> {
     /// Resolve an IRI given as `String`.
     ///
     /// Fails if `other` is not a valid IRI.
-    fn resolve(&self, other: &&str) -> Result<String> {
+    fn resolve(&self, other: &str) -> Result<String> {
         let other = IriParsed::new(other)?;
         let joined = self.join(&other);
         Ok(joined.to_string())
@@ -186,19 +190,28 @@ where
 // }
 
 // TODO
-// impl<'a, TD> Resolve<Term<TD>> for IriParsed<'a>
-// where
-//     TD: TermData + From<String>
-// {
-//     /// Resolve the IRIs and the IRIs of typed literals.
-//     ///
-//     /// # Performance
-//     ///
-//     /// May allocate an intermediate IRI if an IRI is suffixed.
-//     fn resolve(&self, other: &Term<TD>) -> Result<Iri<TD>> {
-
-//     }
-// }
+impl<'a, TD> Resolve<Term<TD>> for IriParsed<'a>
+where
+    TD: TermData + From<String>
+{
+    /// Resolve IRIs and the IRIs of typed literals.
+    ///
+    /// # Performance
+    ///
+    /// May allocate an intermediate IRI if an IRI is suffixed.
+    fn resolve(&self, other: &Term<TD>) -> Result<Term<TD>> {
+        match other {
+            Term::Iri(iri) => {
+                self.resolve(iri).map(Into::into)
+            },
+            Term::Literal(txt, LiteralKind::Datatype(dt)) => {
+                let dt = self.resolve(dt)?.into();
+                Ok(Term::new_literal_dt_unchecked(txt.clone(), dt))
+            },
+            term => Ok(term.clone()),
+        }
+    }
+}
 
 impl fmt::Display for IriParsed<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

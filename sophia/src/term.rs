@@ -290,7 +290,7 @@ where
     /// Return a typed literal term.
     pub fn new_literal_dt_unchecked<U>(txt: U, dt: Term<T>) -> Term<T>
     where
-        T: From<U> + Debug,
+        T: From<U>,
     {
         Literal(T::from(txt), Datatype(dt.try_into().unwrap()))
     }
@@ -320,88 +320,6 @@ where
             Variable(var) => var.value(),
         }
     }
-
-    // TODO
-    // /// If `t` is or contains a relative IRI, replace it with an absolute one,
-    // /// using this term as the base.
-    // /// Otherwise, returns `t` unchanged.
-    // ///
-    // /// This affects IRI terms, but also Literal terms with a datatype.
-    // ///
-    // /// # Example
-    // /// ```
-    // /// use sophia::term::*;
-    // ///
-    // /// let i1 = BoxTerm::new_iri("http://example.org/foo/bar").unwrap();
-    // /// let i2 = BoxTerm::new_iri("../baz").unwrap();
-    // /// let i3 = i1.join(&i2);
-    // /// assert_eq!(&i3.value(), "http://example.org/baz");
-    // /// ```
-    // ///
-    // /// # Panics
-    // /// Panics if this Term is not an IRI or is not absolute (see [`is_absolute`](#method.is_absolute)).
-    // ///
-    // /// # Performance
-    // /// If you need to join multiple terms to the same base,
-    // /// you should use [`batch_join`](#method.batch_join) instead,
-    // /// as it factorizes the pre-processing required for joining IRIs.
-    // ///
-    // pub fn join<U>(&self, t: &Term<U>) -> Term<U>
-    // where
-    //     U: TermData + From<String>,
-    // {
-    //     let mut ret = None;
-    //     self.batch_join(|join| {
-    //         //let t = warp.take().unwrap();
-    //         ret = Some(join(t));
-    //     });
-    //     ret.unwrap()
-    // }
-
-    // /// Takes a closure with a `join` parameter,
-    // /// where `join` is a function comparable to the [`join`](#method.join) method.
-    // /// Useful for joining multiple terms with this IRI.
-    // ///
-    // /// # Example
-    // /// ```
-    // /// use sophia::term::*;
-    // ///
-    // /// let i1 = BoxTerm::new_iri("http://example.org/foo/bar").unwrap();
-    // /// let mut terms = vec![
-    // ///     BoxTerm::new_iri("../baz").unwrap(),
-    // ///     BoxTerm::new_iri("#baz").unwrap(),
-    // ///     BoxTerm::new_iri("http://another.example.org").unwrap(),
-    // /// ];
-    // /// i1.batch_join(|join| {
-    // ///     for t in &mut terms {
-    // ///         *t = join(t);
-    // ///     }
-    // /// });
-    // /// ```
-    // ///
-    // /// # Panics
-    // /// Panics if this Term is not an IRI or is not absolute (see [`is_absolute`](#method.is_absolute)).
-    // ///
-    // pub fn batch_join<F, U>(&self, task: F)
-    // where
-    //     F: FnOnce(&dyn Fn(&Term<U>) -> Term<U>) -> (),
-    //     U: TermData + From<String>,
-    // {
-    //     match self {
-    //         Iri(iri) if iri.is_absolute() => {
-    //             let iri_txt = iri.to_string();
-    //             let base = IriRefStructure::new(&iri_txt).unwrap();
-    //             task(&|t| match t {
-    //                 Iri(ref iri) => Iri(base.join_iri(iri)),
-    //                 Literal(ref txt, Datatype(ref iri)) => {
-    //                     Literal(txt.clone(), Datatype(base.join_iri(iri)))
-    //                 }
-    //                 _ => t.clone(),
-    //             });
-    //         }
-    //         _ => panic!("Can only join with absolute Iri"),
-    //     }
-    // }
 
     /// Return whether this term is absolute.
     ///
