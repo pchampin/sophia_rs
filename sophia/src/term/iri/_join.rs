@@ -5,7 +5,7 @@
 //!
 
 use super::{Iri, IRELATIVE_REF_REGEX, IRI_REGEX};
-use crate::quad::Quad;
+use crate::quad::{Quad, TupleQuad};
 use crate::term::{LiteralKind, Result, Term, TermData, TermError};
 use crate::triple::Triple;
 use std::borrow::Borrow;
@@ -231,7 +231,7 @@ where
     }
 }
 
-impl<'a, Q> Resolve<Q, ([Term<Q::TermData>; 3], Option<Term<Q::TermData>>)> for IriParsed<'a>
+impl<'a, Q> Resolve<Q, TupleQuad<Q::TermData>> for IriParsed<'a>
 where
     Q: Quad,
     Q::TermData: From<String>,
@@ -241,7 +241,7 @@ where
     /// # Performance
     ///
     /// May allocate an intermediate IRI if an IRI is suffixed.
-    fn resolve(&self, other: &Q) -> Result<([Term<Q::TermData>; 3], Option<Term<Q::TermData>>)> {
+    fn resolve(&self, other: &Q) -> Result<TupleQuad<Q::TermData>> {
         let g = match other.g() {
             Some(g) => Some(self.resolve(g)?),
             None => None,

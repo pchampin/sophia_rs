@@ -19,6 +19,8 @@ use std::error::Error;
 use crate::dataset::*;
 use crate::quad::streaming_mode::*;
 use crate::quad::*;
+use crate::term::iri::IriParsed;
+use crate::triple::stream::Resolver;
 use crate::triple::stream::{SinkError, SourceError, StreamError, StreamResult};
 
 mod _filter;
@@ -29,6 +31,10 @@ mod _iterator;
 pub use _iterator::*;
 mod _map;
 pub use _map::*;
+
+/// Type alias for referencing the `TermData` used in a `QuadSource`.
+pub type QSData<S> =
+    <<<S as QuadSource>::Quad as QuadStreamingMode>::UnsafeQuad as UnsafeQuad>::TermData;
 
 /// A quad source produces [quads], and may also fail in the process.
 ///
@@ -133,6 +139,14 @@ pub trait QuadSource {
         F: FnMut(StreamedQuad<Self::Quad>) -> T,
     {
         MapSource { source: self, map }
+    }
+
+    fn resolve_quads(self, base: IriParsed<'_>) -> Resolver<'_, Self>
+    where
+        Self: Sized,
+        QSData<Self>: From<String>,
+    {
+        Resolver::new(base, self)
     }
 }
 

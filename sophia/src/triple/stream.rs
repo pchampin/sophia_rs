@@ -61,6 +61,10 @@ pub use self::_map::*;
 mod _resolve;
 pub use self::_resolve::*;
 
+/// Type alias for referencing the `TermData` used in a `TripleSource`.
+pub type TSData<S> =
+    <<<S as TripleSource>::Triple as TripleStreamingMode>::UnsafeTriple as UnsafeTriple>::TermData;
+
 /// A triple source produces [triples], and may also fail in the process.
 ///
 /// Any iterator yielding [triples] wrapped in `Result`
@@ -166,11 +170,10 @@ pub trait TripleSource {
         MapSource { source: self, map }
     }
 
-    fn resolve_triples<'a>(self, base: IriParsed<'a>) -> Resolver<'a, Self>
+    fn resolve_triples(self, base: IriParsed<'_>) -> Resolver<'_, Self>
     where
         Self: Sized,
-        <<Self::Triple as TripleStreamingMode>::UnsafeTriple as UnsafeTriple>::TermData:
-            From<String>,
+        TSData<Self>: From<String>,
     {
         Resolver::new(base, self)
     }
