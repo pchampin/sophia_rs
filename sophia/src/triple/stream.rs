@@ -44,6 +44,7 @@
 use std::error::Error;
 
 use crate::graph::*;
+use crate::term::iri::IriParsed;
 use crate::triple::streaming_mode::*;
 use crate::triple::*;
 
@@ -57,6 +58,8 @@ mod _iterator;
 pub use self::_iterator::*;
 mod _map;
 pub use self::_map::*;
+mod _resolve;
+pub use self::_resolve::*;
 
 /// A triple source produces [triples], and may also fail in the process.
 ///
@@ -161,6 +164,15 @@ pub trait TripleSource {
         F: FnMut(StreamedTriple<Self::Triple>) -> T,
     {
         MapSource { source: self, map }
+    }
+
+    fn resolve_triples<'a>(self, base: IriParsed<'a>) -> Resolver<'a, Self>
+    where
+        Self: Sized,
+        <<Self::Triple as TripleStreamingMode>::UnsafeTriple as UnsafeTriple>::TermData:
+            From<String>,
+    {
+        Resolver::new(base, self)
     }
 }
 

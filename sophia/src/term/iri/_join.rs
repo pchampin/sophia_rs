@@ -5,12 +5,14 @@
 //!
 
 use super::{Iri, IRELATIVE_REF_REGEX, IRI_REGEX};
-use crate::term::{Result, TermData, TermError, Term, LiteralKind};
+use crate::quad::Quad;
+use crate::term::{LiteralKind, Result, Term, TermData, TermError};
+use crate::triple::Triple;
 use std::borrow::Borrow;
 use std::fmt;
 
 /// Resolve some kind of IRI with `self` as the base.
-pub trait Resolve<S, T = S> 
+pub trait Resolve<S, T = S>
 where
     S: ?Sized,
     T: Sized,
@@ -189,10 +191,9 @@ where
 //     }
 // }
 
-// TODO
 impl<'a, TD> Resolve<Term<TD>> for IriParsed<'a>
 where
-    TD: TermData + From<String>
+    TD: TermData + From<String>,
 {
     /// Resolve IRIs and the IRIs of typed literals.
     ///
@@ -201,15 +202,59 @@ where
     /// May allocate an intermediate IRI if an IRI is suffixed.
     fn resolve(&self, other: &Term<TD>) -> Result<Term<TD>> {
         match other {
-            Term::Iri(iri) => {
-                self.resolve(iri).map(Into::into)
-            },
+            Term::Iri(iri) => self.resolve(iri).map(Into::into),
             Term::Literal(txt, LiteralKind::Datatype(dt)) => {
                 let dt = self.resolve(dt)?.into();
                 Ok(Term::new_literal_dt_unchecked(txt.clone(), dt))
-            },
+            }
             term => Ok(term.clone()),
         }
+    }
+}
+
+impl<'a, T> Resolve<T, [Term<T::TermData>; 3]> for IriParsed<'a>
+where
+    T: Triple,
+    T::TermData: From<String>,
+{
+    /// Resolve IRIs and the IRIs of typed literals.
+    ///
+    /// # Performance
+    ///
+    /// May allocate an intermediate IRI if an IRI is suffixed.
+    fn resolve(&self, other: &T) -> Result<[Term<T::TermData>; 3]> {
+        Ok([
+            self.resolve(other.s())?,
+            self.resolve(other.p())?,
+            self.resolve(other.o())?,
+        ])
+    }
+}
+
+impl<'a, Q> Resolve<Q, ([Term<Q::TermData>; 3], Option<Term<Q::TermData>>)> for IriParsed<'a>
+where
+    Q: Quad,
+    Q::TermData: From<String>,
+{
+    /// Resolve IRIs and the IRIs of typed literals.
+    ///
+    /// # Performance
+    ///
+    /// May allocate an intermediate IRI if an IRI is suffixed.
+    fn resolve(&self, other: &Q) -> Result<([Term<Q::TermData>; 3], Option<Term<Q::TermData>>)> {
+        let g = match other.g() {
+            Some(g) => Some(self.resolve(g)?),
+            None => None,
+        };
+
+        Ok((
+            [
+                self.resolve(other.s())?,
+                self.resolve(other.p())?,
+                self.resolve(other.o())?,
+            ],
+            g,
+        ))
     }
 }
 
