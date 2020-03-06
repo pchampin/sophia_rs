@@ -6,7 +6,7 @@ use crate::term::factory::{FTerm, TermFactory};
 use crate::term::index_map::TermIndexMap;
 use crate::term::*;
 
-/// An in-memory implemention of [`TermIndexMap`](../../term/index_map/trait.TermIndexMap.html)
+/// An in-memory implementation of [`TermIndexMap`](../../term/index_map/trait.TermIndexMap.html)
 /// with unsigned integers as indices.
 pub struct TermIndexMapU<I, F>
 where
@@ -215,7 +215,7 @@ where
     S: TermData,
     T: Borrow<Term<S>>,
 {
-    StaticTerm::from_with(t.borrow(), |txt| &*(txt as *const str))
+    t.borrow().copy_with(|txt| &*(txt as *const str))
 }
 
 #[cfg(test)]

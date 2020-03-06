@@ -74,7 +74,7 @@ pub trait TermFactory {
     where
         T: TermData,
     {
-        Term::from_with(other, |txt| self.get_term_data(txt))
+        other.copy_with(|txt| self.get_term_data(txt))
     }
 
     // fn copy_normalized<T>(&mut self, other: &Term<T>, norm: Normalization) -> FTerm<Self>

@@ -191,12 +191,12 @@ where
     }
 
     /// Copy another term with the given factory.
-    pub fn from_with<'a, U, F>(other: &'a Term<U>, mut factory: F) -> Term<T>
+    pub fn copy_with<'a, U, F>(&'a self, mut factory: F) -> Term<U>
     where
         U: TermData,
-        F: FnMut(&'a str) -> T,
+        F: FnMut(&'a str) -> U,
     {
-        match other {
+        match self {
             Iri(iri) => iri.copy_with(factory).into(),
             BNode(bn) => bn.copy_with(factory).into(),
             Literal(value, kind) => Literal(
@@ -371,7 +371,7 @@ where
     U: TermData,
 {
     fn from(other: &'a Term<U>) -> Term<T> {
-        Self::from_with(other, T::from)
+        other.copy_with(T::from)
     }
 }
 
