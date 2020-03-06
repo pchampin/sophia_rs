@@ -24,8 +24,8 @@ use crate::ns::Namespace;
 use crate::parser::{LocatableError, TripleParser};
 use crate::term::factory::RcTermFactory;
 use crate::term::factory::TermFactory;
-use crate::term::iri_rfc3987::is_absolute_iri_ref;
-use crate::term::iri_rfc3987::is_relative_iri_ref;
+use crate::term::iri::is_absolute_iri_ref;
+use crate::term::iri::is_relative_iri_ref;
 use crate::term::matcher::TermMatcher;
 use crate::term::StaticTerm;
 use crate::term::Term;
@@ -73,7 +73,7 @@ mod xmlname {
 
     use regex::Regex;
 
-    lazy_static! {
+    lazy_static::lazy_static! {
         static ref XMLNAME_REGEX: Regex = Regex::new(r"(?x)^
             # NameStartChar
             [_A-Za-z\u{C0}-\u{D6}\u{D8}-\u{F6}\u{F8}-\u{2FF}\u{370}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}]
