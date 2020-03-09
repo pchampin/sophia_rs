@@ -17,6 +17,10 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::io;
 
+/// According to [RFC3987](https://tools.ietf.org/html/rfc3987#section-2.2):
+/// `gen-delims = ":" / "/" / "?" / "#" / "[" / "]" / "@"`
+pub const GEN_DELIMS: &[char] = &[':', '/', '?', '#', '[', ']', '@'];
+
 /// Normalization policies are used to ensure that
 /// IRIs are represented in a given format.
 ///
@@ -26,9 +30,10 @@ use std::io;
 pub enum Normalization {
     /// IRIs are represented as a single string (`ns`) with an empty `suffix`.
     NoSuffix,
-    /// IRIs are represented with a prefix `ns` extending to the last hash (`#`) or slash (`/`),
-    /// and a `suffix` containing the remaining characters.
-    LastHashOrSlash,
+    /// IRIs are represented with a prefix `ns` extending to the last
+    /// [`gen-delim`](./const.GEN_DELIMS.html) and a `suffix` containing the
+    /// remaining characters.
+    LastGenDelim,
 }
 
 /// Representation of an IRI.
@@ -43,7 +48,7 @@ pub enum Normalization {
 ///
 /// # Contract
 ///
-/// Each `Iri` represents a valid IRI according to the
+/// Each `Iri` represents a valid IRI reference according to the
 /// [RFC3987](https://tools.ietf.org/html/rfc3987) either relative or absolute.
 /// For building static IRIs an unsafe API is exposed. These do not do anything
 /// actual unsafe. Instead, they do not perform validity checks. It is the
@@ -180,7 +185,7 @@ where
         }
     }
 
-    /// The length in this IRI.
+    /// The length of this IRI.
     pub fn len(&self) -> usize {
         self.ns.as_ref().len() + self.suffix_as_str().len()
     }
@@ -236,7 +241,7 @@ where
     {
         match policy {
             Normalization::NoSuffix => self.no_suffix(),
-            Normalization::LastHashOrSlash => self.suffixed_at_last_hash_or_slash(),
+            Normalization::LastGenDelim => self.suffixed_at_last_gen_delim(),
         }
     }
 
@@ -267,17 +272,15 @@ where
     /// applied.
     /// 1. In every other case a new IRI is allocated and the policy is
     ///   applied.
-    pub fn suffixed_at_last_hash_or_slash(&self) -> Cow<'_, Self>
+    pub fn suffixed_at_last_gen_delim(&self) -> Cow<'_, Self>
     where
         TD: From<String>,
     {
-        const SEPERATORS: &[char] = &['#', '/'];
-
         let ns = self.ns.as_ref();
         match &self.suffix {
             Some(suf) => {
                 let suf = suf.as_ref();
-                if let Some(pos) = suf.rfind(SEPERATORS) {
+                if let Some(pos) = suf.rfind(GEN_DELIMS) {
                     // case: suffix with separator
                     let mut new_ns = String::with_capacity(ns.len() + pos + 1);
                     new_ns.push_str(ns);
@@ -288,10 +291,10 @@ where
                         absolute: self.absolute,
                     };
                     Cow::Owned(iri)
-                } else if ns.ends_with(SEPERATORS) {
+                } else if ns.ends_with(GEN_DELIMS) {
                     // case: ns does end with separator
                     Cow::Borrowed(self)
-                } else if let Some(pos) = ns.rfind(SEPERATORS) {
+                } else if let Some(pos) = ns.rfind(GEN_DELIMS) {
                     // case: ns does not end with separator but contains one
                     let mut new_suffix = String::with_capacity(ns.len() - pos - 1 + suf.len());
                     new_suffix.push_str(&ns[pos + 1..]);
@@ -314,7 +317,7 @@ where
                 }
             }
             None => {
-                match ns.rfind(SEPERATORS) {
+                match ns.rfind(GEN_DELIMS) {
                     Some(pos) => {
                         // case: no suffix
                         let iri = Iri {
@@ -373,6 +376,13 @@ where
     ///
     /// Parsing the components, this function may also raise an error on
     /// malformed IRIs.
+    ///
+    /// ## Planned behavior
+    ///
+    /// Technically a suffixed IRI can parsed successfully when the suffix is
+    /// separating the IRI at a component. However, detecting this requires
+    /// more effort. Maybe this feature will be implemented (by you?) in a
+    /// future release of `sophia`.
     pub fn parse_components(&self) -> Result<IriParsed<'_>> {
         match self.suffix {
             None => IriParsed::new(self.ns.as_ref()),
