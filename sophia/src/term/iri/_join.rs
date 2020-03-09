@@ -172,7 +172,7 @@ where
             .expect("ensured by no_suffix()");
         let joined = self.join(&parsed);
 
-        Ok(Iri::new_unchecked(joined.to_string(), other.is_absolute()))
+        Ok(Iri::new_unchecked(joined.to_string(), joined.is_absolute()))
     }
 }
 

@@ -84,7 +84,7 @@ where
         let base = &self.base;
 
         source
-            .try_for_some_quad(&mut |t| match base.resolve(&t) {
+            .try_for_some_quad(&mut |q| match base.resolve(&q) {
                 Ok(resolved) => f(StreamedQuad::by_value(resolved)).map_err(SinkError),
                 Err(e) => Err(SourceError(e)),
             })
@@ -93,5 +93,48 @@ where
                 SinkError(SourceError(e)) => SourceError(SinkError(e)),
                 SinkError(SinkError(e)) => SinkError(e),
             })
+    }
+}
+
+impl<'a, S> IntoIterator for Resolver<'a, S>
+where
+    S: TripleSource,
+    TSData<S>: From<String>,
+{
+    type Item = StreamResult<[Term<TSData<S>>; 3], S::Error, TermError>;
+    type IntoIter = ResolveIter<'a, S>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        ResolveIter {
+            base: self.base,
+            source: self.source,
+        }
+    }
+}
+
+pub struct ResolveIter<'a, S> {
+    base: IriParsed<'a>,
+    source: S,
+}
+
+impl<'a, S> Iterator for ResolveIter<'a, S>
+where
+    S: TripleSource,
+    TSData<S>: From<String>,
+{
+    type Item = StreamResult<[Term<TSData<S>>; 3], S::Error, TermError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut triple = None;
+        let source = &mut self.source;
+        let base = &self.base;
+
+        match source.for_some_triple(&mut |t| {
+            triple = Some(base.resolve(&t).map_err(SinkError));
+        }) {
+            Ok(true) => triple,
+            Ok(false) => None,
+            Err(e) => Some(Err(SourceError(e))),
+        }
     }
 }

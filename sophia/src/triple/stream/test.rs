@@ -2,6 +2,7 @@ use super::*;
 use crate::graph::Graph;
 use crate::ns::{rdf, xsd};
 use crate::quad::stream::QuadSource;
+use crate::term::iri::IriParsed;
 use crate::term::BoxTerm;
 use crate::triple::Triple;
 use lazy_static::lazy_static;
@@ -16,9 +17,17 @@ lazy_static! {
     pub static ref NAME: StaticTerm = StaticTerm::new_iri_suffixed(NS, "name").unwrap();
     pub static ref PERSON: StaticTerm = StaticTerm::new_iri_suffixed(NS, "Person").unwrap();
     pub static ref ALICE_LIT: StaticTerm =
-        StaticTerm::new_literal_dt("Alice", xsd::string.try_into().unwrap()).unwrap();
+    StaticTerm::new_literal_dt("Alice", xsd::string.try_into().unwrap()).unwrap();
     pub static ref BOB_LIT: StaticTerm =
-        StaticTerm::new_literal_dt("Bob", xsd::string.try_into().unwrap()).unwrap();
+    StaticTerm::new_literal_dt("Bob", xsd::string.try_into().unwrap()).unwrap();
+
+    // Relative IRIs
+    pub static ref ALICE_REF: StaticTerm = StaticTerm::new_iri("alice").unwrap();
+    pub static ref BOB_REF: StaticTerm = StaticTerm::new_iri("bob").unwrap();
+    pub static ref CHARLIE_REF: StaticTerm = StaticTerm::new_iri("charlie").unwrap();
+    pub static ref KNOWS_REF: StaticTerm = StaticTerm::new_iri("knows").unwrap();
+    pub static ref NAME_REF: StaticTerm = StaticTerm::new_iri("name").unwrap();
+    pub static ref PERSON_REF: StaticTerm = StaticTerm::new_iri("Person").unwrap();
 }
 
 fn make_graph() -> Vec<[&'static StaticTerm; 3]> {
@@ -29,6 +38,17 @@ fn make_graph() -> Vec<[&'static StaticTerm; 3]> {
         [&BOB, &NAME, &BOB_LIT],
         [&BOB, &KNOWS, &ALICE],
     ]
+}
+
+fn make_ref_graph() -> Vec<[Term<String>; 3]> {
+    vec![
+        [&ALICE_REF, &rdf::type_, &PERSON_REF],
+        [&BOB_REF, &rdf::type_, &PERSON_REF],
+        [&BOB_REF, &KNOWS_REF, &ALICE_REF],
+    ]
+    .into_iter()
+    .map(|t| [Term::from(t.s()), Term::from(t.p()), Term::from(t.o())])
+    .collect()
 }
 
 fn map_term(t: &StaticTerm) -> StaticTerm {
@@ -239,4 +259,35 @@ fn map_triples_iter() {
             "http://example.org/alice",
         ]
     );
+}
+
+#[test]
+fn resolve_triple() {
+    let g = make_graph();
+    let g_ref = make_ref_graph();
+    let base = IriParsed::new(&NS).expect("Shouldn't fail");
+
+    g_ref
+        .triples()
+        .resolve_triples(base)
+        .for_each_triple(|t| {
+            assert!(g.contains(t.s(), t.p(), t.o()).unwrap());
+        })
+        .unwrap();
+}
+
+#[test]
+fn resolve_triples_iter() {
+    let g = make_graph();
+    let g_ref = make_ref_graph();
+    let base = IriParsed::new(&NS).expect("Shouldn't fail");
+
+    g_ref
+        .triples()
+        .resolve_triples(base)
+        .into_iter()
+        .for_each(|t| {
+            let t = t.unwrap();
+            assert!(g.contains(t.s(), t.p(), t.o()).unwrap());
+        });
 }
