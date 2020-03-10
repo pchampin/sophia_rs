@@ -556,6 +556,7 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
+    use test_case::test_case;
 
     #[cfg(debug_assertions)]
     mod debug {
@@ -590,6 +591,17 @@ mod test {
         assert!(!iri.is_absolute());
         assert_eq!(iri.to_string(), "<foo#bar>");
         assert_eq!(iri.value(), "foo#bar");
+    }
+
+    #[test_case("http://example.org/", "http://example.org/#test" => Some("#test".to_string()) ; "simple")]
+    #[test_case("../", "../" => Some("".to_string()) ; "same")]
+    #[test_case("../test", "../" => None ; "inverse")]
+    #[test_case("../test#", "../test#foo?bar" => Some("foo?bar".to_string()) ; "extended suffix")]
+    #[test_case("../test#fo", "../test#foo" => Some("o".to_string()) ; "incomplete suffix")]
+    fn match_ns(ns: &str, iri: &str) -> Option<String> {
+        let ns: Iri<&str> = Iri::new(ns).unwrap();
+        let iri: Iri<&str> = Iri::new(iri).unwrap();
+        iri.match_ns(&ns).map(|chars| chars.collect())
     }
 
     pub const POSITIVE_IRIS: &[(
