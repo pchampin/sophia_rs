@@ -19,8 +19,6 @@ use std::error::Error;
 use crate::dataset::*;
 use crate::quad::streaming_mode::*;
 use crate::quad::*;
-use crate::term::iri::IriParsed;
-use crate::triple::stream::Resolver;
 use crate::triple::stream::{SinkError, SourceError, StreamError, StreamResult};
 
 mod _filter;
@@ -139,14 +137,6 @@ pub trait QuadSource {
         F: FnMut(StreamedQuad<Self::Quad>) -> T,
     {
         MapSource { source: self, map }
-    }
-
-    fn resolve_quads(self, base: IriParsed<'_>) -> Resolver<'_, Self>
-    where
-        Self: Sized,
-        QSData<Self>: From<String>,
-    {
-        Resolver::new(base, self)
     }
 }
 

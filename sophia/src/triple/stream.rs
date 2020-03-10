@@ -44,7 +44,6 @@
 use std::error::Error;
 
 use crate::graph::*;
-use crate::term::iri::IriParsed;
 use crate::triple::streaming_mode::*;
 use crate::triple::*;
 
@@ -58,8 +57,6 @@ mod _iterator;
 pub use self::_iterator::*;
 mod _map;
 pub use self::_map::*;
-mod _resolve;
-pub use self::_resolve::*;
 
 /// Type alias for referencing the `TermData` used in a `TripleSource`.
 pub type TSData<S> =
@@ -168,14 +165,6 @@ pub trait TripleSource {
         F: FnMut(StreamedTriple<Self::Triple>) -> T,
     {
         MapSource { source: self, map }
-    }
-
-    fn resolve_triples(self, base: IriParsed<'_>) -> Resolver<'_, Self>
-    where
-        Self: Sized,
-        TSData<Self>: From<String>,
-    {
-        Resolver::new(base, self)
     }
 }
 

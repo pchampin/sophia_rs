@@ -2,7 +2,6 @@ use super::*;
 use crate::graph::Graph;
 use crate::ns::{rdf, xsd};
 use crate::quad::stream::QuadSource;
-use crate::term::iri::IriParsed;
 use crate::term::BoxTerm;
 use crate::triple::Triple;
 use lazy_static::lazy_static;
@@ -38,17 +37,6 @@ fn make_graph() -> Vec<[&'static StaticTerm; 3]> {
         [&BOB, &NAME, &BOB_LIT],
         [&BOB, &KNOWS, &ALICE],
     ]
-}
-
-fn make_ref_graph() -> Vec<[Term<String>; 3]> {
-    vec![
-        [&ALICE_REF, &rdf::type_, &PERSON_REF],
-        [&BOB_REF, &rdf::type_, &PERSON_REF],
-        [&BOB_REF, &KNOWS_REF, &ALICE_REF],
-    ]
-    .into_iter()
-    .map(|t| [Term::from(t.s()), Term::from(t.p()), Term::from(t.o())])
-    .collect()
 }
 
 fn map_term(t: &StaticTerm) -> StaticTerm {
@@ -261,33 +249,45 @@ fn map_triples_iter() {
     );
 }
 
-#[test]
-fn resolve_triple() {
-    let g = make_graph();
-    let g_ref = make_ref_graph();
-    let base = IriParsed::new(&NS).expect("Shouldn't fail");
+// TODO: Requires implementation of `resolve_triples()`.
+// fn make_ref_graph() -> Vec<[Term<String>; 3]> {
+//     vec![
+//         [&ALICE_REF, &rdf::type_, &PERSON_REF],
+//         [&BOB_REF, &rdf::type_, &PERSON_REF],
+//         [&BOB_REF, &KNOWS_REF, &ALICE_REF],
+//     ]
+//     .into_iter()
+//     .map(|t| [Term::from(t.s()), Term::from(t.p()), Term::from(t.o())])
+//     .collect()
+// }
 
-    g_ref
-        .triples()
-        .resolve_triples(base)
-        .for_each_triple(|t| {
-            assert!(g.contains(t.s(), t.p(), t.o()).unwrap());
-        })
-        .unwrap();
-}
+// #[test]
+// fn resolve_triple() {
+//     let g = make_graph();
+//     let g_ref = make_ref_graph();
+//     let base = IriParsed::new(&NS).expect("Shouldn't fail");
 
-#[test]
-fn resolve_triples_iter() {
-    let g = make_graph();
-    let g_ref = make_ref_graph();
-    let base = IriParsed::new(&NS).expect("Shouldn't fail");
+//     g_ref
+//         .triples()
+//         .resolve_triples(base)
+//         .for_each_triple(|t| {
+//             assert!(g.contains(t.s(), t.p(), t.o()).unwrap());
+//         })
+//         .unwrap();
+// }
 
-    g_ref
-        .triples()
-        .resolve_triples(base)
-        .into_iter()
-        .for_each(|t| {
-            let t = t.unwrap();
-            assert!(g.contains(t.s(), t.p(), t.o()).unwrap());
-        });
-}
+// #[test]
+// fn resolve_triples_iter() {
+//     let g = make_graph();
+//     let g_ref = make_ref_graph();
+//     let base = IriParsed::new(&NS).expect("Shouldn't fail");
+
+//     g_ref
+//         .triples()
+//         .resolve_triples(base)
+//         .into_iter()
+//         .for_each(|t| {
+//             let t = t.unwrap();
+//             assert!(g.contains(t.s(), t.p(), t.o()).unwrap());
+//         });
+// }
