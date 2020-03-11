@@ -74,9 +74,15 @@ pub enum Term<T>
 where
     T: TermData,
 {
+    /// An IRI referencing a resource.
     Iri(Iri<T>),
+    /// A blank node. 
+    /// 
+    /// Also known as existentially quantified variable.
     BNode(BlankNode<T>),
+    /// An RDF literal.
     Literal(T, LiteralKind<T>),
+    /// A universally quantified variable like in SPARQL or Notation3.
     Variable(Variable<T>),
 }
 pub use self::Term::*;

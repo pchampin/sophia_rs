@@ -17,6 +17,8 @@ where
     S: ?Sized,
     T: Sized,
 {
+    /// Resolve relative IRI(s) somewhat contained in `other` with `self` as
+    /// the base IRI.
     fn resolve(&self, other: &S) -> Result<T>;
 }
 
