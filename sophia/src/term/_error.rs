@@ -19,11 +19,12 @@ pub enum TermError {
     IriParse,
     /// The language tags of literals must apply to [BCP47](https://tools.ietf.org/html/bcp47).
     #[error("The given language tag '{tag}' is not valid according to BCP47: {err}")]
-    InvalidLanguageTag { 
+    InvalidLanguageTag {
         /// The provided, faulty language tag.
-        tag: String, 
+        tag: String,
         /// What is wrong with `tag`.
-        err: String },
+        err: String,
+    },
     /// Names of variables must apply to SPARQL's [production rules](https://www.w3.org/TR/sparql11-query/#rVARNAME).
     #[error("The name '{0}' is not valid for a variable according to the SPARQL specification")]
     InvalidVariableName(String),
@@ -34,9 +35,10 @@ pub enum TermError {
     InvalidBlankNodeId(String),
     /// Raised when failing to downcast a term.
     #[error("The term '{term}' is not the expected {expect}")]
-    UnexpectedKindOfTerm { 
+    UnexpectedKindOfTerm {
         /// The unexpected term.
-        term: String, 
+        term: String,
         /// What was expected.
-        expect: String },
+        expect: String,
+    },
 }

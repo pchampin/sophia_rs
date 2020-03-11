@@ -43,8 +43,6 @@ use std::sync::Arc;
 
 pub mod factory;
 pub mod index_map;
-// pub mod iri_rfc3987;
-// use self::iri_rfc3987::IriRefStructure;
 pub mod matcher;
 
 pub mod variable;
@@ -57,8 +55,6 @@ use self::iri::{Iri, Normalization};
 mod _convert;
 pub use self::_convert::*;
 mod _display;
-// mod _iri_data;
-// pub use self::_iri_data::*;
 mod _graph_name_matcher; // is 'pub use'd by module 'matcher'
 mod _literal_kind;
 pub use self::_literal_kind::*;
@@ -76,8 +72,8 @@ where
 {
     /// An IRI referencing a resource.
     Iri(Iri<T>),
-    /// A blank node. 
-    /// 
+    /// A blank node.
+    ///
     /// Also known as existentially quantified variable.
     BNode(BlankNode<T>),
     /// An RDF literal.

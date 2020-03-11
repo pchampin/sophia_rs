@@ -14,14 +14,14 @@ use super::*;
 pub type FTerm<F> = Term<<F as TermFactory>::TermData>;
 
 /// A factory for terms.
-/// 
+///
 /// Implementors may cache terms or data to save memory or accelerate creation.
 pub trait TermFactory {
     /// Data used by terms created by the factory.
     type TermData: TermData;
 
     /// Get new `TermData`.
-    /// 
+    ///
     /// Mostly used internal to create new terms.
     fn get_term_data(&mut self, txt: &str) -> Self::TermData;
 
@@ -84,7 +84,7 @@ pub trait TermFactory {
     }
 
     /// Copy a term.
-    /// 
+    ///
     /// The `TermData` of the copy is derived from the factory.
     fn copy<T>(&mut self, other: &Term<T>) -> FTerm<Self>
     where
