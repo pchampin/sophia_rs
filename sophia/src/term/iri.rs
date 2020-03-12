@@ -21,7 +21,6 @@ mod _join;
 pub use self::_join::*;
 
 use super::{Result, Term, TermData, TermError};
-use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -227,9 +226,12 @@ where
         self.suffix.is_some()
     }
 
-    /// Copy self while transforming the inner `TermData` with the given
+    /// Clone self while transforming the inner `TermData` with the given
     /// factory.
-    pub fn copy_with<'a, U, F>(&'a self, mut factory: F) -> Iri<U>
+    ///
+    /// Clone as this might allocate a new `TermData`. However there is also
+    /// `TermData` that is cheap to clone, i.e. `Copy`.
+    pub fn clone_with<'a, U, F>(&'a self, mut factory: F) -> Iri<U>
     where
         U: TermData,
         F: FnMut(&'a str) -> U,
@@ -245,21 +247,24 @@ where
     /// Transforms the IRI according to the given policy.
     ///
     /// If the policy already applies the IRI is returned unchanged.
-    pub fn normalized(&self, policy: Normalization) -> Cow<'_, Self>
+    pub fn clone_normalized_with<F, U>(&self, policy: Normalization, factory: F) -> Iri<U>
     where
-        TD: From<String>,
+        F: FnMut(&str) -> U,
+        U: TermData,
     {
         match policy {
-            Normalization::NoSuffix => self.no_suffix(),
-            Normalization::LastGenDelim => self.suffixed_at_last_gen_delim(),
+            Normalization::NoSuffix => self.clone_no_suffix(factory),
+            Normalization::LastGenDelim => self.clone_suffixed_at_last_gen_delim(factory),
         }
     }
 
     /// If the given IRI has a suffix it is appended to the namespace and a new
     /// IRI is returned else the IRI is returned unchanged.
-    pub fn no_suffix(&self) -> Cow<'_, Self>
+    pub fn clone_no_suffix<F, U>(&self, factory: F) -> Iri<U>
     where
-        TD: From<String>,
+        // TODO: New string is created anyway -> save copy by a second factory? (FnMut(String) -> U)
+        F: FnMut(&str) -> U,
+        U: TermData,
     {
         match &self.suffix {
             Some(s) => {
@@ -267,10 +272,10 @@ where
                 full.push_str(self.ns.as_ref());
                 full.push_str(s.as_ref());
                 // Okay as derived from existing IRI.
-                let iri = Self::new_unchecked(full, self.absolute);
-                Cow::Owned(iri)
+                let mut factory = factory;
+                Iri::new_unchecked(factory(&full), self.absolute)
             }
-            None => Cow::Borrowed(self),
+            None => self.clone_with(factory),
         }
     }
 
@@ -282,10 +287,12 @@ where
     /// applied.
     /// 1. In every other case a new IRI is allocated and the policy is
     ///   applied.
-    pub fn suffixed_at_last_gen_delim(&self) -> Cow<'_, Self>
+    pub fn clone_suffixed_at_last_gen_delim<F, U>(&self, factory: F) -> Iri<U>
     where
-        TD: From<String>,
+        F: FnMut(&str) -> U,
+        U: TermData,
     {
+        let mut factory = factory;
         let ns = self.ns.as_ref();
         match &self.suffix {
             Some(suf) => {
@@ -295,51 +302,42 @@ where
                     let mut new_ns = String::with_capacity(ns.len() + pos + 1);
                     new_ns.push_str(ns);
                     new_ns.push_str(&suf[..=pos]);
-                    let iri = Iri {
-                        ns: new_ns.into(),
-                        suffix: Some(suf[pos + 1..].to_string().into()),
+                    Iri {
+                        ns: factory(&new_ns),
+                        suffix: Some(factory(&suf[pos + 1..])),
                         absolute: self.absolute,
-                    };
-                    Cow::Owned(iri)
+                    }
                 } else if ns.ends_with(GEN_DELIMS) {
                     // case: ns does end with separator
-                    Cow::Borrowed(self)
+                    self.clone_with(factory)
                 } else if let Some(pos) = ns.rfind(GEN_DELIMS) {
                     // case: ns does not end with separator but contains one
                     let mut new_suffix = String::with_capacity(ns.len() - pos - 1 + suf.len());
                     new_suffix.push_str(&ns[pos + 1..]);
                     new_suffix.push_str(suf);
-                    let iri = Iri {
-                        ns: ns[..=pos].to_string().into(),
-                        suffix: Some(new_suffix.into()),
+                    Iri {
+                        ns: factory(&ns[..=pos]),
+                        suffix: Some(factory(&new_suffix)),
                         absolute: self.absolute,
-                    };
-                    Cow::Owned(iri)
+                    }
                 } else {
                     // case: neither contains a separator
-                    let new_ns = self.value();
-                    let iri = Iri {
-                        ns: new_ns.into(),
-                        suffix: None,
-                        absolute: self.absolute,
-                    };
-                    Cow::Owned(iri)
+                    self.clone_no_suffix(factory)
                 }
             }
             None => {
                 match ns.rfind(GEN_DELIMS) {
                     Some(pos) => {
                         // case: no suffix
-                        let iri = Iri {
-                            ns: ns[..=pos].to_string().into(),
-                            suffix: Some(ns[pos + 1..].to_string().into()),
+                        Iri {
+                            ns: factory(&ns[..=pos]),
+                            suffix: Some(factory(&ns[pos + 1..])),
                             absolute: self.absolute,
-                        };
-                        Cow::Owned(iri)
+                        }
                     }
                     None => {
                         // case: no separators
-                        Cow::Borrowed(self)
+                        self.clone_with(factory)
                     }
                 }
             }
@@ -513,7 +511,7 @@ where
     U: TermData,
 {
     fn from(other: &'a Iri<U>) -> Self {
-        other.copy_with(T::from)
+        other.clone_with(T::from)
     }
 }
 
@@ -554,7 +552,7 @@ where
 
     fn try_from(term: &'a Term<U>) -> Result<Self, Self::Error> {
         match term {
-            Term::Iri(iri) => Ok(iri.copy_with(T::from)),
+            Term::Iri(iri) => Ok(iri.clone_with(T::from)),
             _ => Err(TermError::UnexpectedKindOfTerm {
                 term: term.to_string(),
                 expect: "IRI".to_owned(),

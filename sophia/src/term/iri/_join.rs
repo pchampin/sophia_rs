@@ -8,7 +8,6 @@ use super::{Iri, IRELATIVE_REF_REGEX, IRI_REGEX};
 use crate::quad::{Quad, TupleQuad};
 use crate::term::{LiteralKind, Result, Term, TermData, TermError};
 use crate::triple::Triple;
-use std::borrow::Borrow;
 use std::fmt;
 
 /// Resolve some kind of IRI with `self` as the base.
@@ -159,7 +158,7 @@ impl<'a> Resolve<IriParsed<'a>> for IriParsed<'a> {
 
 impl<'a, TD> Resolve<Iri<TD>> for IriParsed<'a>
 where
-    TD: TermData + From<String>,
+    TD: TermData + for<'b> From<&'b str>,
 {
     /// Resolve the given IRI.
     ///
@@ -167,14 +166,22 @@ where
     ///
     /// May allocate an intermediate IRI if `other` is suffixed.
     fn resolve(&self, other: &Iri<TD>) -> Result<Iri<TD>> {
-        let no_suffix = other.no_suffix();
-        let transformed: &Iri<TD> = no_suffix.borrow();
-        let parsed = transformed
-            .parse_components()
-            .expect("ensured by no_suffix()");
-        let joined = self.join(&parsed);
-
-        Ok(Iri::new_unchecked(joined.to_string(), joined.is_absolute()))
+        if other.has_suffix() {
+            let no_suffix = other.clone_no_suffix(|s| TD::from(s));
+            let parsed = no_suffix.parse_components().expect("ensured by no_suffix");
+            let joined = self.join(&parsed);
+            Ok(Iri::new_unchecked(
+                joined.to_string().as_str(),
+                joined.is_absolute(),
+            ))
+        } else {
+            let parsed = other.parse_components().expect("is not suffixed");
+            let joined = self.join(&parsed);
+            Ok(Iri::new_unchecked(
+                joined.to_string().as_str(),
+                joined.is_absolute(),
+            ))
+        }
     }
 }
 
@@ -195,7 +202,7 @@ where
 
 impl<'a, TD> Resolve<Term<TD>> for IriParsed<'a>
 where
-    TD: TermData + From<String>,
+    TD: TermData + for<'b> From<&'b str>,
 {
     /// Resolve IRIs and the IRIs of typed literals.
     ///
@@ -217,7 +224,7 @@ where
 impl<'a, T> Resolve<T, [Term<T::TermData>; 3]> for IriParsed<'a>
 where
     T: Triple,
-    T::TermData: From<String>,
+    T::TermData: for<'b> From<&'b str>,
 {
     /// Resolve IRIs and the IRIs of typed literals.
     ///
@@ -236,7 +243,7 @@ where
 impl<'a, Q> Resolve<Q, TupleQuad<Q::TermData>> for IriParsed<'a>
 where
     Q: Quad,
-    Q::TermData: From<String>,
+    Q::TermData: for<'b> From<&'b str>,
 {
     /// Resolve IRIs and the IRIs of typed literals.
     ///

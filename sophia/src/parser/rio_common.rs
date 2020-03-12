@@ -223,5 +223,5 @@ pub fn rio2refterm(t: GeneralizedTerm) -> RefTerm {
 
 /// Convert RIO term to Sophia term
 pub fn rio2boxterm(t: GeneralizedTerm) -> BoxTerm {
-    rio2refterm(t).copy_with(Box::from)
+    rio2refterm(t).clone_with(Box::from)
 }

@@ -102,7 +102,7 @@ where
     }
 
     fn make_index(&mut self, t: &RefTerm) -> T {
-        let t = self.factory.copy(&t);
+        let t = self.factory.clone_term(&t);
         let rt = unsafe { fake_static(&t) };
         if let Some(i) = self.get_index(&rt) {
             self.i2c[i.as_usize()].inc();
@@ -215,7 +215,7 @@ where
     S: TermData,
     T: Borrow<Term<S>>,
 {
-    t.borrow().copy_with(|txt| &*(txt as *const str))
+    t.borrow().clone_with(|txt| &*(txt as *const str))
 }
 
 #[cfg(test)]

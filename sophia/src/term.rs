@@ -33,7 +33,6 @@
 //!
 
 use language_tag::LangTag;
-use std::borrow::Cow;
 use std::convert::TryInto;
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -192,40 +191,42 @@ where
         Variable::new(name).map(Into::into)
     }
 
-    /// Copy another term with the given factory.
-    pub fn copy_with<'a, U, F>(&'a self, mut factory: F) -> Term<U>
+    /// Clone another term with the given factory.
+    ///
+    /// Clone as this might allocate a new `TermData`. However there is also
+    /// `TermData` that is cheap to clone, i.e. `Copy`.
+    pub fn clone_with<'a, U, F>(&'a self, mut factory: F) -> Term<U>
     where
         U: TermData,
         F: FnMut(&'a str) -> U,
     {
         match self {
-            Iri(iri) => iri.copy_with(factory).into(),
-            BNode(bn) => bn.copy_with(factory).into(),
+            Iri(iri) => iri.clone_with(factory).into(),
+            BNode(bn) => bn.clone_with(factory).into(),
             Literal(value, kind) => Literal(
                 factory(value.as_ref()),
                 LiteralKind::from_with(kind, factory),
             ),
-            Variable(var) => var.copy_with(factory).into(),
+            Variable(var) => var.clone_with(factory).into(),
         }
     }
 
     /// Transforms the underlying IRIs according to the given policy.
     ///
     /// If the policy already applies the Term is returned unchanged.
-    pub fn normalized(&self, policy: Normalization) -> Cow<'_, Self>
+    pub fn clone_normalized_with<F, U>(&self, policy: Normalization, factory: F) -> Term<U>
     where
-        T: From<String>,
+        F: FnMut(&str) -> U,
+        U: TermData,
     {
+        let mut factory = factory;
         match self {
-            Iri(iri) => match iri.normalized(policy) {
-                Cow::Borrowed(_) => Cow::Borrowed(self),
-                Cow::Owned(iri) => Cow::Owned(iri.into()),
-            },
-            Literal(value, kind) => match kind.normalized(policy) {
-                Cow::Borrowed(_) => Cow::Borrowed(self),
-                Cow::Owned(kind) => Cow::Owned(Term::Literal(value.clone(), kind)),
-            },
-            _ => Cow::Borrowed(self),
+            Iri(iri) => Iri(iri.clone_normalized_with(policy, factory)),
+            Literal(txt, kind) => Literal(
+                factory(txt.as_ref()),
+                kind.clone_normalized_with(policy, factory),
+            ),
+            _ => self.clone_with(factory),
         }
     }
 
@@ -377,7 +378,7 @@ where
     U: TermData,
 {
     fn from(other: &'a Term<U>) -> Term<T> {
-        other.copy_with(T::from)
+        other.clone_with(T::from)
     }
 }
 

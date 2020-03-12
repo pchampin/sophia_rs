@@ -68,9 +68,12 @@ where
         Variable(name.into())
     }
 
-    /// Copy self while transforming the inner `TermData` with the given
+    /// Clone self while transforming the inner `TermData` with the given
     /// factory.
-    pub fn copy_with<'a, U, F>(&'a self, mut factory: F) -> Variable<U>
+    ///
+    /// Clone as this might allocate a new `TermData`. However there is also
+    /// `TermData` that is cheap to clone, i.e. `Copy`.
+    pub fn clone_with<'a, U, F>(&'a self, mut factory: F) -> Variable<U>
     where
         U: TermData,
         F: FnMut(&'a str) -> U,
@@ -145,7 +148,7 @@ impl<TD> AsRef<str> for Variable<TD>
 where
     TD: TermData,
 {
-    /// As variable is merly a wrapper around `TermData`.
+    /// As variable is merely a wrapper around `TermData`.
     fn as_ref(&self) -> &str {
         self.0.as_ref()
     }
@@ -157,7 +160,7 @@ where
     U: TermData,
 {
     fn from(other: &'a Variable<U>) -> Self {
-        other.copy_with(T::from)
+        other.clone_with(T::from)
     }
 }
 

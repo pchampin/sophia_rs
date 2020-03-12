@@ -1,7 +1,6 @@
 // this module is transparently re-exported by its parent `term`
 
 use super::*;
-use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 
 /// There are two kinds of literals: language-tagged, and typed.
@@ -24,7 +23,7 @@ where
     {
         match other {
             Lang(tag) => Lang(factory(tag.as_ref())),
-            Datatype(iri) => Datatype(iri.copy_with(factory)),
+            Datatype(iri) => Datatype(iri.clone_with(factory)),
         }
     }
 
@@ -33,16 +32,14 @@ where
     ///
     /// If the policy already applies or it is language tagged the literal is
     /// returned unchanged.
-    pub fn normalized(&self, policy: Normalization) -> Cow<'_, Self>
+    pub fn clone_normalized_with<F, U>(&self, policy: Normalization, factory: F) -> LiteralKind<U>
     where
-        T: From<String>,
+        F: FnMut(&str) -> U,
+        U: TermData,
     {
         match self {
-            Lang(_) => Cow::Borrowed(self),
-            Datatype(iri) => match iri.normalized(policy) {
-                Cow::Borrowed(_) => Cow::Borrowed(self),
-                Cow::Owned(iri) => Cow::Owned(Datatype(iri)),
-            },
+            Lang(_) => LiteralKind::from_with(&self, factory),
+            Datatype(iri) => Datatype(iri.clone_normalized_with(policy, factory)),
         }
     }
 }

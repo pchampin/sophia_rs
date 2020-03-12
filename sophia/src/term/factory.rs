@@ -72,7 +72,7 @@ pub trait TermFactory {
         U: TermData,
         // Self::TermData: Debug,
     {
-        Term::new_literal_dt(self.get_term_data(txt.as_ref()), self.copy(&dt))
+        Term::new_literal_dt(self.get_term_data(txt.as_ref()), self.clone_term(&dt))
     }
 
     /// Get a new variable.
@@ -83,22 +83,25 @@ pub trait TermFactory {
         Term::new_variable(self.get_term_data(name.as_ref()))
     }
 
-    /// Copy a term.
+    /// Clone a term.
     ///
-    /// The `TermData` of the copy is derived from the factory.
-    fn copy<T>(&mut self, other: &Term<T>) -> FTerm<Self>
+    /// The `TermData` of the clone is derived from the factory.
+    fn clone_term<T>(&mut self, other: &Term<T>) -> FTerm<Self>
     where
         T: TermData,
     {
-        other.copy_with(|txt| self.get_term_data(txt))
+        other.clone_with(|txt| self.get_term_data(txt))
     }
 
-    // fn copy_normalized<T>(&mut self, other: &Term<T>, norm: Normalization) -> FTerm<Self>
-    // where
-    //     T: TermData,
-    // {
-    //     Term::normalized_with(other, |txt| self.get_term_data(txt), norm)
-    // }
+    /// Clones the given term.
+    ///
+    /// The data is derived from the factory.
+    fn clone_normalized<T>(&mut self, other: &Term<T>, norm: Normalization) -> FTerm<Self>
+    where
+        T: TermData,
+    {
+        other.clone_normalized_with(norm, |txt| self.get_term_data(txt))
+    }
 
     /// Release memory that the factory no longer uses.
     fn shrink_to_fit(&mut self);
