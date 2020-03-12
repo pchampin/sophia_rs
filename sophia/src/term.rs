@@ -234,7 +234,7 @@ where
     /// As it is not checked if absolute or relative this property must be
     /// entered as well.
     ///
-    /// # Safety
+    /// # Pre-conditions
     ///
     /// This function conducts no checks if the resulting IRI is valid. This is
     /// a contract that is generally assumed. Breaking it could result in
@@ -253,14 +253,14 @@ where
     /// As it is not checked if absolute or relative this property must be
     /// entered as well.
     ///
-    /// # Safety
+    /// # Pre-conditions
     ///
     /// This function conducts no checks if the resulting IRI is valid. This is
     /// a contract that is generally assumed. Breaking it could result in
     /// unexpected behavior.
     ///
     /// However, in `debug` builds assertions that perform checks are enabled.
-    pub unsafe fn new_iri_suffixed_unchecked<U, V>(ns: U, suffix: V, absolute: bool) -> Term<T>
+    pub fn new_iri_suffixed_unchecked<U, V>(ns: U, suffix: V, absolute: bool) -> Term<T>
     where
         T: From<U> + From<V>,
     {
@@ -290,6 +290,10 @@ where
     }
 
     /// Return a typed literal term.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `dt` is not an IRI.
     pub fn new_literal_dt_unchecked<U>(txt: U, dt: Term<T>) -> Term<T>
     where
         T: From<U>,

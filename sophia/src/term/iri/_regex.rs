@@ -20,7 +20,7 @@ pub fn is_relative_iri_ref(txt: &str) -> bool {
 }
 
 lazy_static! {
-    /// Match an IRI reference either absolute or relative.
+    /// Match an absolute IRI reference.
     pub static ref IRI_REGEX: Regex = Regex::new(r"(?x)^
         #scheme
        ( # CAPTURE scheme

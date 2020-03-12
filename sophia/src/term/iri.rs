@@ -4,6 +4,16 @@
 //! IRIs themselves are specified in
 //! [RFC3987](https://tools.ietf.org/html/rfc3987).
 //!
+//! # Naming
+//!
+//! > According to RFC3987, an IRI is always absolute. An IRI reference, on the
+//! > other hand, can be absolute or relative (and an absolute IRI reference
+//! > happens to be an IRI).
+//!
+//! In most cases when the documentation talks about IRIs it is actually
+//! referred to IRI references. Only if IRI reference, absolute IRI or relative
+//! IRI are explicitly mentioned the difference matters.
+//!
 
 mod _regex;
 pub use self::_regex::*;
@@ -431,7 +441,7 @@ impl Iri<&'static str> {
     /// This constructor is used by the [`namespace!`](../macro.namespace.html) macro,
     /// but should not be used directly.
     ///
-    /// # Safety
+    /// # Pre-condition
     ///
     /// The resulting IRI may be invalid.
     pub const fn from_raw_parts_unchecked(
