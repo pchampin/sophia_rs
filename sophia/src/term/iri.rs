@@ -10,9 +10,9 @@
 //! > other hand, can be absolute or relative (and an absolute IRI reference
 //! > happens to be an IRI).
 //!
-//! In most cases when the documentation talks about IRIs it is actually
-//! referred to IRI references. Only if IRI reference, absolute IRI or relative
-//! IRI are explicitly mentioned the difference matters.
+//! In most cases when the documentation talks about IRIs it actually
+//! refers to IRI references. Only if IRI reference, absolute IRI or relative
+//! IRI are explicitly mentioned does the difference matter.
 //!
 
 mod _regex;
