@@ -25,9 +25,7 @@ where
     use self::Term::*;
     match t {
         Iri(iri) => {
-            w.write_char('<')?;
-            write!(w, "{}", iri)?;
-            w.write_char('>')?;
+            iri.write_fmt(w)?;
         }
         BNode(bn) => {
             bn.write_fmt(w)?;
@@ -42,10 +40,9 @@ where
             w.write_char('"')?;
             write_quoted_string(w, value.as_ref())?;
             w.write_char('"')?;
-            if iri != &"http://www.w3.org/2001/XMLSchema#string" {
-                w.write_str("^^<")?;
-                write!(w, "{}", iri)?;
-                w.write_char('>')?;
+            if iri != "http://www.w3.org/2001/XMLSchema#string" {
+                w.write_str("^^")?;
+                iri.write_fmt(w)?;
             }
         }
         Variable(var) => {
@@ -93,6 +90,7 @@ fn write_quoted_string(w: &mut impl fmt::Write, txt: &str) -> fmt::Result {
 pub(crate) mod test {
     use crate::ns::*;
     use crate::term::*;
+    use lazy_static::lazy_static;
 
     lazy_static! {
         pub(crate) static ref NT_TERMS: Vec<(StaticTerm, &'static str)> = vec![
@@ -101,7 +99,7 @@ pub(crate) mod test {
                 r"<http://example.org/foo/bar>",
             ),
             (
-                StaticTerm::new_iri2("http://example.org/foo/", "bar").unwrap(),
+                StaticTerm::new_iri_suffixed("http://example.org/foo/", "bar").unwrap(),
                 r"<http://example.org/foo/bar>",
             ),
             (
@@ -131,7 +129,7 @@ pub(crate) mod test {
                 r#"" \n \r \\ \" hello world""#,
             ),
             (
-                // Literal with non-ascii characteres
+                // Literal with non-ascii characters
                 StaticTerm::new_literal_dt("é \u{10000}", xsd::string).unwrap(),
                 // in canonical form, non-ascii characters are NOT escaped in literals
                 "\"é \u{10000}\"",

@@ -19,7 +19,7 @@ use std::error::Error;
 /// For a proper use in multi-threaded environments the trait bounds should be
 /// supplied with `+ Send + Sync`. However, such bounds wound make `StreamError`
 /// incompatible with `sophia`'s whole error-handling. This should be resolved
-/// when the error-handling is completly refactored
+/// when the error-handling is completely refactored
 /// ([tracking issue](https://github.com/pchampin/sophia_rs/issues/8)).
 #[derive(Debug, thiserror::Error)]
 pub enum StreamError<SourceErr, SinkErr>

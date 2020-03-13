@@ -4,7 +4,7 @@
 //! # Usage
 //!
 //! This is how triple matchers can be used to retrieve any subject of type
-//! `s:City` or `s:Counry`.
+//! `s:City` or `s:Country`.
 //!
 //! ```
 //! # use sophia::graph::{*, inmem::LightGraph};
@@ -212,7 +212,7 @@ mod test {
         let m = BoxTerm::new_iri("http://champin.net/#pa").unwrap();
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
-        let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
+        let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
         let t2 = RcTerm::new_iri("http://example.org/").unwrap();
 
         let mc = TermMatcher::constant(&m);
@@ -227,7 +227,7 @@ mod test {
         let m = ANY;
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
-        let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
+        let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
 
         let mc = TermMatcher::constant(&m);
         assert!(mc.is_none());
@@ -239,7 +239,7 @@ mod test {
         let m = AnyOrExactly::<BoxTerm>::Any;
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
-        let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
+        let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
 
         let mc = TermMatcher::constant(&m);
         assert!(mc.is_none());
@@ -251,7 +251,7 @@ mod test {
         let m = AnyOrExactly::Exactly(BoxTerm::new_iri("http://champin.net/#pa").unwrap());
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
-        let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
+        let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
         let t2 = RcTerm::new_iri("http://example.org/").unwrap();
 
         let mc = TermMatcher::constant(&m);
@@ -269,7 +269,7 @@ mod test {
         ];
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
-        let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
+        let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
         let t2 = RcTerm::new_iri("http://example.org/").unwrap();
         let t3 = RcTerm::new_iri("http://example.org/other").unwrap();
 
@@ -285,7 +285,7 @@ mod test {
         let m = [BoxTerm::new_iri("http://champin.net/#pa").unwrap()];
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
-        let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
+        let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
         let t2 = RcTerm::new_iri("http://example.org/").unwrap();
 
         let mc = TermMatcher::constant(&m[..]);
@@ -300,7 +300,7 @@ mod test {
         let m: [BoxTerm; 0] = [];
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
-        let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
+        let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
 
         let mc = TermMatcher::constant(&m[..]);
         assert!(mc.is_none());
@@ -309,7 +309,7 @@ mod test {
 
     #[test]
     fn test_func_as_matcher() {
-        let t1 = RcTerm::new_iri2("http://champin.net/#", "pa").unwrap();
+        let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
         let t2 = RcTerm::new_iri("http://example.org/").unwrap();
 
         let m = |t: &RefTerm| t.value().starts_with("http://champin");

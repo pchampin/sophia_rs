@@ -14,9 +14,17 @@ pub enum TermError {
     /// The IRI of a term must apply to [RFC 3987](https://tools.ietf.org/html/rfc3987).
     #[error("The given IRI '{0}' is not valid according to RFC3987")]
     InvalidIri(String),
+    /// An IRI must be represented by one `TermData` to be able to parse its components.
+    #[error("IRI components could not be parsed in one as it has a suffix")]
+    IriParse,
     /// The language tags of literals must apply to [BCP47](https://tools.ietf.org/html/bcp47).
     #[error("The given language tag '{tag}' is not valid according to BCP47: {err}")]
-    InvalidLanguageTag { tag: String, err: String },
+    InvalidLanguageTag {
+        /// The provided, faulty language tag.
+        tag: String,
+        /// What is wrong with `tag`.
+        err: String,
+    },
     /// Names of variables must apply to SPARQL's [production rules](https://www.w3.org/TR/sparql11-query/#rVARNAME).
     #[error("The name '{0}' is not valid for a variable according to the SPARQL specification")]
     InvalidVariableName(String),
@@ -27,5 +35,10 @@ pub enum TermError {
     InvalidBlankNodeId(String),
     /// Raised when failing to downcast a term.
     #[error("The term '{term}' is not the expected {expect}")]
-    UnexpectedKindOfTerm { term: String, expect: String },
+    UnexpectedKindOfTerm {
+        /// The unexpected term.
+        term: String,
+        /// What was expected.
+        expect: String,
+    },
 }

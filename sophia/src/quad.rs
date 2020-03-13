@@ -101,6 +101,9 @@ where
     }
 }
 
+/// An owned `Quad` as a tuple of an array and an optional name.
+pub type TupleQuad<TD> = ([Term<TD>; 3], Option<Term<TD>>);
+
 impl<'a, T> Quad for (T, Option<&'a Term<T::TermData>>)
 where
     T: Triple,

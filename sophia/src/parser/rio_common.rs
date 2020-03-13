@@ -201,7 +201,8 @@ pub fn rio2refterm(t: GeneralizedTerm) -> RefTerm {
     unsafe {
         match t {
             GeneralizedTerm::BlankNode(b) => RefTerm::new_bnode(b.id).unwrap(),
-            GeneralizedTerm::NamedNode(n) => RefTerm::new_iri_unchecked(n.iri, None),
+            GeneralizedTerm::NamedNode(n) => RefTerm::new_iri(n.iri)
+                .expect("Already checked by parser but determine if absolute."),
             GeneralizedTerm::Literal(Simple { value }) => {
                 RefTerm::new_literal_dt_unchecked(value, xsd::string)
             }
@@ -211,7 +212,8 @@ pub fn rio2refterm(t: GeneralizedTerm) -> RefTerm {
             GeneralizedTerm::Literal(Typed { value, datatype }) => {
                 RefTerm::new_literal_dt_unchecked(
                     value,
-                    RefTerm::new_iri_unchecked(datatype.iri, None),
+                    RefTerm::new_iri(datatype.iri)
+                        .expect("Already checked by parser but determine if absolute."),
                 )
             }
             GeneralizedTerm::Variable(v) => RefTerm::new_variable_unchecked(v.name),
@@ -221,5 +223,5 @@ pub fn rio2refterm(t: GeneralizedTerm) -> RefTerm {
 
 /// Convert RIO term to Sophia term
 pub fn rio2boxterm(t: GeneralizedTerm) -> BoxTerm {
-    BoxTerm::from_with(&rio2refterm(t), Box::from)
+    rio2refterm(t).clone_with(Box::from)
 }

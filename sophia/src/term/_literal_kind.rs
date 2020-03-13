@@ -1,54 +1,52 @@
 // this module is transparently re-exported by its parent `term`
 
-use std::hash::{Hash, Hasher};
-
 use super::*;
+use std::hash::{Hash, Hasher};
 
 /// There are two kinds of literals: language-tagged, and typed.
 #[derive(Clone, Copy, Debug, Eq)]
-pub enum LiteralKind<T: AsRef<str>> {
+pub enum LiteralKind<T: TermData> {
     Lang(T),
-    Datatype(IriData<T>),
+    Datatype(Iri<T>),
 }
 pub use self::LiteralKind::*;
 
 impl<T> LiteralKind<T>
 where
-    T: AsRef<str>,
+    T: TermData,
 {
     /// Copy another literal kind with the given factory.
-    pub fn from_with<'a, U, F>(other: &'a LiteralKind<U>, mut factory: F) -> LiteralKind<T>
+    pub fn from_with<'a, U, F>(other: &'a LiteralKind<U>, mut factory: F) -> Self
     where
-        U: AsRef<str>,
+        U: TermData,
         F: FnMut(&'a str) -> T,
     {
         match other {
             Lang(tag) => Lang(factory(tag.as_ref())),
-            Datatype(iri) => Datatype(IriData::from_with(iri, factory)),
+            Datatype(iri) => Datatype(iri.clone_with(factory)),
         }
     }
 
-    /// Copy another literal kind with the given factory,
-    /// applying the given normalization policy.
-    pub fn normalized_with<U, F>(
-        other: &'_ LiteralKind<U>,
-        mut factory: F,
-        norm: Normalization,
-    ) -> LiteralKind<T>
+    /// If the literal is typed transform the IRI according to the given
+    /// policy.
+    ///
+    /// If the policy already applies or it is language tagged the literal is
+    /// returned unchanged.
+    pub fn clone_normalized_with<F, U>(&self, policy: Normalization, factory: F) -> LiteralKind<U>
     where
-        U: AsRef<str>,
-        F: FnMut(&str) -> T,
+        F: FnMut(&str) -> U,
+        U: TermData,
     {
-        match other {
-            Lang(tag) => Lang(factory(tag.as_ref())),
-            Datatype(iri) => Datatype(IriData::normalized_with(iri, factory, norm)),
+        match self {
+            Lang(_) => LiteralKind::from_with(&self, factory),
+            Datatype(iri) => Datatype(iri.clone_normalized_with(policy, factory)),
         }
     }
 }
 
 impl<T> Hash for LiteralKind<T>
 where
-    T: AsRef<str>,
+    T: TermData,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
@@ -60,8 +58,8 @@ where
 
 impl<T, U> PartialEq<LiteralKind<U>> for LiteralKind<T>
 where
-    T: AsRef<str>,
-    U: AsRef<str>,
+    T: TermData,
+    U: TermData,
 {
     fn eq(&self, other: &LiteralKind<U>) -> bool {
         match (self, other) {

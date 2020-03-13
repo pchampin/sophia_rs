@@ -260,7 +260,8 @@ where
         // Return early if in a top-level rdf:RDF element
         if rdf::RDF.matches(&ty) && self.parents.is_empty() {
             self.state.push(ParsingState::Node);
-            self.parents.push(self.factory.borrow_mut().copy(&rdf::RDF));
+            self.parents
+                .push(self.factory.borrow_mut().clone_term(&rdf::RDF));
             return Ok(());
         }
 
@@ -320,7 +321,7 @@ where
 
         // Add the type as a triple if it is not `rdf:Description`
         if !ty.matches(&rdf::Description) {
-            let type_ = self.factory.borrow_mut().copy(&rdf::type_);
+            let type_ = self.factory.borrow_mut().clone_term(&rdf::type_);
             self.triples.push_back(Ok([s.clone(), type_, ty]));
         }
 
@@ -428,7 +429,7 @@ where
             _ => return Err(RdfError::AmbiguousSubject).locate_err_with(&self.reader),
         };
 
-        // Make the predicate a resource element if an objec tis present.
+        // Make the predicate a resource element if an object is present.
         if let Some(o) = o {
             self.parents.push(o.clone());
             std::mem::replace(self.state.last_mut().unwrap(), ParsingState::Resource);
@@ -541,14 +542,14 @@ where
             while let Some(e) = elements.next() {
                 self.triples.push_back(Ok([
                     node.clone(),
-                    self.factory.borrow_mut().copy(&rdf::first),
+                    self.factory.borrow_mut().clone_term(&rdf::first),
                     e.clone(),
                 ]));
                 if elements.peek().is_some() {
                     let next_node = self.new_bnode();
                     self.triples.push_back(Ok([
                         node,
-                        self.factory.borrow_mut().copy(&rdf::rest),
+                        self.factory.borrow_mut().clone_term(&rdf::rest),
                         next_node.clone(),
                     ]));
                     node = next_node;
@@ -556,8 +557,8 @@ where
                     let mut f = self.factory.borrow_mut();
                     self.triples.push_back(Ok([
                         node.clone(),
-                        f.copy(&rdf::rest),
-                        f.copy(&rdf::nil),
+                        f.clone_term(&rdf::rest),
+                        f.clone_term(&rdf::nil),
                     ]));
                 }
             }
@@ -693,7 +694,7 @@ where
             object.push(self.new_bnode());
         } else if parse_type == Some(b"Literal") {
             if object.is_empty() && attributes.is_empty() {
-                let xmlliteral = self.factory.borrow_mut().copy(&rdf::XMLLiteral);
+                let xmlliteral = self.factory.borrow_mut().clone_term(&rdf::XMLLiteral);
                 let mut scope = self.scope_mut();
                 scope.datatype = Some(xmlliteral);
             } else {
@@ -753,11 +754,11 @@ where
         obj: Term<F::TermData>,
     ) {
         let mut factory = self.factory.borrow_mut();
-        let ty = factory.copy(&rdf::type_);
-        let subject = factory.copy(&rdf::subject);
-        let predicate = factory.copy(&rdf::predicate);
-        let object = factory.copy(&rdf::object);
-        let stmt = factory.copy(&rdf::Statement);
+        let ty = factory.clone_term(&rdf::type_);
+        let subject = factory.clone_term(&rdf::subject);
+        let predicate = factory.clone_term(&rdf::predicate);
+        let object = factory.clone_term(&rdf::object);
+        let stmt = factory.clone_term(&rdf::Statement);
 
         self.triples.push_back(Ok([id.clone(), ty, stmt]));
         self.triples.push_back(Ok([id.clone(), subject, sbj]));

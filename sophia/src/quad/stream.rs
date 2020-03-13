@@ -30,6 +30,10 @@ pub use _iterator::*;
 mod _map;
 pub use _map::*;
 
+/// Type alias for referencing the `TermData` used in a `QuadSource`.
+pub type QSData<S> =
+    <<<S as QuadSource>::Quad as QuadStreamingMode>::UnsafeQuad as UnsafeQuad>::TermData;
+
 /// A quad source produces [quads], and may also fail in the process.
 ///
 /// Any iterator yielding [quads] wrapped in `Result`

@@ -19,7 +19,7 @@
 //! g.insert(&s_name, &rdfs::range, &xsd::string);
 //! ```
 
-use crate::term::{iri_rfc3987::is_valid_iri_ref, Result, Term, TermData, TermError};
+use crate::term::{iri::is_valid_iri_ref, Result, Term, TermData, TermError};
 
 /// A custom namespace.
 #[derive(Clone, Debug)]
@@ -28,7 +28,7 @@ pub struct Namespace<T: TermData>(T);
 impl<T: TermData> Namespace<T> {
     /// Build a custom namespace based on the given IRI.
     ///
-    /// `iri` must be a valid IRI, othewise this constructor returns an error.
+    /// `iri` must be a valid IRI, otherwise this constructor returns an error.
     pub fn new(iri: T) -> Result<Namespace<T>> {
         if is_valid_iri_ref(iri.as_ref()) {
             Ok(Namespace(iri))
@@ -42,9 +42,10 @@ impl<T: TermData> Namespace<T> {
     /// Return an error if the concatenation produces an invalid IRI.
     pub fn get<U>(&self, suffix: U) -> Result<Term<T>>
     where
+        U: AsRef<str>,
         T: From<U>,
     {
-        Term::new_iri2(self.0.clone(), suffix)
+        Term::new_iri_suffixed(self.0.clone(), suffix)
     }
 }
 
@@ -77,9 +78,9 @@ macro_rules! ns_term {
     };
     ($prefix:expr, $ident:ident, $suffix:expr) => {
         #[allow(non_upper_case_globals)]
-        pub static $ident: $crate::term::StaticTerm = $crate::term::Term::Iri(unsafe {
-            $crate::term::IriData::from_raw_parts($prefix, Some($suffix), true)
-        });
+        pub static $ident: $crate::term::StaticTerm = $crate::term::Term::Iri(
+            $crate::term::iri::Iri::from_raw_parts_unchecked($prefix, Some($suffix), true),
+        );
     };
 }
 

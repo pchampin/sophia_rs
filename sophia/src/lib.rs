@@ -63,8 +63,6 @@
 //! ```
 
 extern crate language_tag;
-#[macro_use]
-extern crate lazy_static;
 #[cfg(feature = "xml")]
 extern crate quick_xml;
 extern crate resiter;

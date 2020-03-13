@@ -102,7 +102,10 @@ where
 
     /// Copy self while transforming the inner `TermData` with the given
     /// factory.
-    pub fn copy_with<'a, U, F>(&'a self, mut factory: F) -> BlankNode<U>
+    ///
+    /// Clone as this might allocate a new `TermData`. However there is also
+    /// `TermData` that is cheap to clone, i.e. `Copy`.
+    pub fn clone_with<'a, U, F>(&'a self, mut factory: F) -> BlankNode<U>
     where
         U: TermData,
         F: FnMut(&'a str) -> U,
@@ -188,7 +191,7 @@ where
     U: TermData,
 {
     fn from(other: &'a BlankNode<U>) -> Self {
-        other.copy_with(T::from)
+        other.clone_with(T::from)
     }
 }
 

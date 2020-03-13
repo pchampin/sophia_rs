@@ -4,19 +4,29 @@ use crate::ns::{rdf, xsd};
 use crate::quad::stream::QuadSource;
 use crate::term::BoxTerm;
 use crate::triple::Triple;
+use lazy_static::lazy_static;
+use std::convert::TryInto;
 
 pub const NS: &'static str = "http://example.org/";
 lazy_static! {
-    pub static ref ALICE: StaticTerm = StaticTerm::new_iri2(NS, "alice").unwrap();
-    pub static ref BOB: StaticTerm = StaticTerm::new_iri2(NS, "bob").unwrap();
-    pub static ref CHARLIE: StaticTerm = StaticTerm::new_iri2(NS, "charlie").unwrap();
-    pub static ref KNOWS: StaticTerm = StaticTerm::new_iri2(NS, "knows").unwrap();
-    pub static ref NAME: StaticTerm = StaticTerm::new_iri2(NS, "name").unwrap();
-    pub static ref PERSON: StaticTerm = StaticTerm::new_iri2(NS, "Person").unwrap();
+    pub static ref ALICE: StaticTerm = StaticTerm::new_iri_suffixed(NS, "alice").unwrap();
+    pub static ref BOB: StaticTerm = StaticTerm::new_iri_suffixed(NS, "bob").unwrap();
+    pub static ref CHARLIE: StaticTerm = StaticTerm::new_iri_suffixed(NS, "charlie").unwrap();
+    pub static ref KNOWS: StaticTerm = StaticTerm::new_iri_suffixed(NS, "knows").unwrap();
+    pub static ref NAME: StaticTerm = StaticTerm::new_iri_suffixed(NS, "name").unwrap();
+    pub static ref PERSON: StaticTerm = StaticTerm::new_iri_suffixed(NS, "Person").unwrap();
     pub static ref ALICE_LIT: StaticTerm =
-        StaticTerm::new_literal_dt("Alice", xsd::string.clone()).unwrap();
+    StaticTerm::new_literal_dt("Alice", xsd::string.try_into().unwrap()).unwrap();
     pub static ref BOB_LIT: StaticTerm =
-        StaticTerm::new_literal_dt("Bob", xsd::string.clone()).unwrap();
+    StaticTerm::new_literal_dt("Bob", xsd::string.try_into().unwrap()).unwrap();
+
+    // Relative IRIs
+    pub static ref ALICE_REF: StaticTerm = StaticTerm::new_iri("alice").unwrap();
+    pub static ref BOB_REF: StaticTerm = StaticTerm::new_iri("bob").unwrap();
+    pub static ref CHARLIE_REF: StaticTerm = StaticTerm::new_iri("charlie").unwrap();
+    pub static ref KNOWS_REF: StaticTerm = StaticTerm::new_iri("knows").unwrap();
+    pub static ref NAME_REF: StaticTerm = StaticTerm::new_iri("name").unwrap();
+    pub static ref PERSON_REF: StaticTerm = StaticTerm::new_iri("Person").unwrap();
 }
 
 fn make_graph() -> Vec<[&'static StaticTerm; 3]> {
@@ -238,3 +248,46 @@ fn map_triples_iter() {
         ]
     );
 }
+
+// TODO: Requires implementation of `resolve_triples()`.
+// fn make_ref_graph() -> Vec<[Term<String>; 3]> {
+//     vec![
+//         [&ALICE_REF, &rdf::type_, &PERSON_REF],
+//         [&BOB_REF, &rdf::type_, &PERSON_REF],
+//         [&BOB_REF, &KNOWS_REF, &ALICE_REF],
+//     ]
+//     .into_iter()
+//     .map(|t| [Term::from(t.s()), Term::from(t.p()), Term::from(t.o())])
+//     .collect()
+// }
+
+// #[test]
+// fn resolve_triple() {
+//     let g = make_graph();
+//     let g_ref = make_ref_graph();
+//     let base = IriParsed::new(&NS).expect("Shouldn't fail");
+
+//     g_ref
+//         .triples()
+//         .resolve_triples(base)
+//         .for_each_triple(|t| {
+//             assert!(g.contains(t.s(), t.p(), t.o()).unwrap());
+//         })
+//         .unwrap();
+// }
+
+// #[test]
+// fn resolve_triples_iter() {
+//     let g = make_graph();
+//     let g_ref = make_ref_graph();
+//     let base = IriParsed::new(&NS).expect("Shouldn't fail");
+
+//     g_ref
+//         .triples()
+//         .resolve_triples(base)
+//         .into_iter()
+//         .for_each(|t| {
+//             let t = t.unwrap();
+//             assert!(g.contains(t.s(), t.p(), t.o()).unwrap());
+//         });
+// }
