@@ -1,3 +1,16 @@
+0.4.0
+    New features
+    - Turtle, TriG, Generalized TriG parsers
+    Improvements
+    - N-Triples and N-Quads parsers are much faster, thanks to @Tpt's rio
+    Improved API
+    - No more lifetime parameter in Triple, Quad, Graph, Dataset
+    - Common traits for parsers and serializers
+    - More idiomatic API for Triple- and QuadSource
+    Dev
+    - reduced dependancies (coercible-errors, error-chain, pest)
+    - no more central Error type
+
 0.3.0
     New features
     - support for quads and datasets
