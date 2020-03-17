@@ -185,6 +185,25 @@ where
     }
 }
 
+
+impl<'a, T, U> TryFrom<&'a Term<U>> for Variable<T>
+where
+    T: TermData + From<&'a str>,
+    U: TermData,
+{
+    type Error = TermError;
+
+    fn try_from(term: &'a Term<U>) -> Result<Self, Self::Error> {
+        match term {
+            Term::Variable(var) => Ok(var.clone_with(T::from)),
+            _ => Err(TermError::UnexpectedKindOfTerm {
+                term: term.to_string(),
+                expect: "variable".to_owned(),
+            }),
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

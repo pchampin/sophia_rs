@@ -272,6 +272,15 @@ where
     }
 }
 
+impl<TD> fmt::Display for Literal<TD>
+where
+    TD: TermData,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.write_fmt(f)
+    }
+}
+
 impl<TD> Hash for Literal<TD>
 where
     TD: TermData,

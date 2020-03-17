@@ -215,6 +215,25 @@ where
     }
 }
 
+
+impl<'a, T, U> TryFrom<&'a Term<U>> for BlankNode<T>
+where
+    T: TermData + From<&'a str>,
+    U: TermData,
+{
+    type Error = TermError;
+
+    fn try_from(term: &'a Term<U>) -> Result<Self, Self::Error> {
+        match term {
+            Term::BNode(bn) => Ok(bn.clone_with(T::from)),
+            _ => Err(TermError::UnexpectedKindOfTerm {
+                term: term.to_string(),
+                expect: "blank node".to_owned(),
+            }),
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
