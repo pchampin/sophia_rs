@@ -90,13 +90,16 @@ where
 
     /// Return a new blank node with the given identifier.
     ///
-    /// # Safety
+    /// # Pre-condition
     ///
     /// This function requires that `id` is a valid blank node identifier.
-    pub unsafe fn new_unchecked<U>(id: U) -> Self
+    pub fn new_unchecked<U>(id: U) -> Self
     where
+        U: AsRef<str>,
         TD: From<U>,
     {
+        debug_assert!(BLANK_NODE_LABEL.is_match(id.as_ref()));
+
         BlankNode(id.into())
     }
 

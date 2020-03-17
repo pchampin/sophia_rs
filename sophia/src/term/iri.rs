@@ -142,7 +142,7 @@ where
     /// As it is not checked if absolute or relative this property must be
     /// entered as well.
     ///
-    /// # Safety
+    /// # Pre-condition
     ///
     /// This function conducts no checks if the resulting IRI is valid. This is
     /// a contract that is generally assumed. Breaking it could result in
@@ -168,7 +168,7 @@ where
     /// As it is not checked if absolute or relative this property must be
     /// entered as well.
     ///
-    /// # Safety
+    /// # Pre-condition
     ///
     /// This function conducts no checks if the resulting IRI is valid. This is
     /// a contract that is generally assumed. Breaking it could result in

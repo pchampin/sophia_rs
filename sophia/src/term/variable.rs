@@ -59,12 +59,16 @@ where
 
     /// Return a new variable term.
     ///
-    /// # Safety
+    /// # Pre-condition
+    ///
     /// This function requires that `name` is a valid variable name.
-    pub unsafe fn new_unchecked<U>(name: U) -> Self
+    pub fn new_unchecked<U>(name: U) -> Self
     where
+        U: AsRef<str>,
         TD: From<U>,
     {
+        debug_assert!(VARNAME.is_match(name.as_ref()));
+
         Variable(name.into())
     }
 

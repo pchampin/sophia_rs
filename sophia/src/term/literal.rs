@@ -2,8 +2,6 @@
 //! [RDF](https://www.w3.org/TR/rdf11-primer/#section-literal).
 //!
 
-#![deny(missing_docs)]
-
 use crate::ns::{rdf, xsd};
 use crate::term::iri::Normalization;
 use crate::term::{Iri, Result, Term, TermData, TermError};

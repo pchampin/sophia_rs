@@ -150,6 +150,7 @@ where
         BlankNode::new(id).map(Into::into)
     }
 
+    /// Return a new simple literal with datatype `xsd:string`.
     pub fn new_literal<U>(txt: U) -> Self
     where
         T: From<U>,
@@ -264,10 +265,12 @@ where
 
     /// Return a new blank node term.
     ///
-    /// # Safety
+    /// # Pre-condition
+    ///
     /// This function requires that `id` is a valid bnode ID.
-    pub unsafe fn new_bnode_unchecked<U>(id: U) -> Term<T>
+    pub fn new_bnode_unchecked<U>(id: U) -> Term<T>
     where
+        U: AsRef<str>,
         T: From<U>,
     {
         BlankNode::<T>::new_unchecked(id).into()
@@ -302,10 +305,12 @@ where
 
     /// Return a new variable term.
     ///
-    /// # Safety
+    /// # Pre-condition
+    ///
     /// This function requires that `name` is a valid variable name.
-    pub unsafe fn new_variable_unchecked<U>(name: U) -> Term<T>
+    pub fn new_variable_unchecked<U>(name: U) -> Term<T>
     where
+        U: AsRef<str>,
         T: From<U>,
     {
         Variable::<T>::new_unchecked(name).into()
