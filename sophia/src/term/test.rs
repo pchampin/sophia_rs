@@ -1,5 +1,6 @@
 use super::*;
 
+use super::Term::*;
 use crate::ns::xsd;
 
 fn h<H: std::hash::Hash>(x: &H) -> u64 {
@@ -243,11 +244,11 @@ fn literal_lang() {
     assert_eq!(&lit.value(), "hello");
     assert_eq!(&format!("{}", lit), "\"hello\"@en");
 
-    if let Literal(val, Lang(tag)) = lit {
-        assert_eq!(val.as_ref() as &str, "hello");
+    if let Literal(literal::Literal::Lang { txt, tag }) = lit {
+        assert_eq!(txt.as_ref() as &str, "hello");
         assert_eq!(tag.as_ref() as &str, "en");
     } else {
-        assert!(false, "Should have returned Literal(_, Lang(_))");
+        panic!("Should have returned Literal::Lang");
     }
     let res = RefTerm::new_literal_lang("hello", "");
     assert!(res.is_err());
@@ -255,23 +256,27 @@ fn literal_lang() {
 
 #[test]
 fn literal_dt() {
-    let lit = RefTerm::new_literal_dt("hello", xsd::string.clone()).unwrap();
+    let lit = RefTerm::new_literal("hello");
     assert_eq!(&lit.value(), "hello");
     assert_eq!(&format!("{}", lit), "\"hello\"");
 
-    if let Literal(val, Datatype(iri)) = lit {
-        assert_eq!(val.as_ref() as &str, "hello");
-        assert_eq!(iri, xsd::string);
+    let lit: literal::Literal<_> = lit.try_into().unwrap();
+    assert_eq!(RefTerm::from(lit.dt()), xsd::string);
+
+    if let literal::Literal::Simple(txt) = lit {
+        assert_eq!(txt.as_ref() as &str, "hello");
     } else {
-        assert!(false, "Should have returned Literal(_, Datatype(_))");
+        panic!("Should have returned Literal::Typed");
     }
 
     let lit = RefTerm::new_literal_dt("42", xsd::integer.clone()).unwrap();
-    assert_eq!(lit.value(), "42".to_string());
+    assert_eq!(&lit.value(), "42");
     assert_eq!(
         &format!("{}", lit),
         "\"42\"^^<http://www.w3.org/2001/XMLSchema#integer>",
     );
+    let lit: literal::Literal<_> = lit.try_into().unwrap();
+    assert_eq!(RefTerm::from(lit.dt()), xsd::integer);
 }
 
 #[test]
@@ -329,8 +334,9 @@ fn literal_normalized_no_suffix() {
     let l1 = BoxTerm::new_literal_dt("hello", dt).unwrap();
     let l2 = l1.clone_normalized_with(norm, |s| Box::from(s));
     assert_eq!(l1, l2);
-    if let Literal(_, Datatype(i2)) = l2 {
-        assert!(i2.suffix.is_none());
+
+    if let Literal(l2) = l2 {
+        assert!(!l2.dt().has_suffix());
     }
 }
 
@@ -358,7 +364,8 @@ fn literal_normalized_last_hash_or_slash() {
         let l1 = BoxTerm::new_literal_dt("hello", dt).unwrap();
         let l2 = l1.clone_normalized_with(norm, |s| Box::from(s));
         assert_eq!(l1, l2);
-        if let Literal(_, Datatype(i2)) = l2 {
+        if let Literal(l2) = l2 {
+            let i2 = l2.dt();
             assert_eq!(&i2.ns[..], *ns2);
             let sf2 = if sf2.len() == 0 {
                 None

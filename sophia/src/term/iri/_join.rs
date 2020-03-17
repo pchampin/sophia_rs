@@ -6,7 +6,7 @@
 
 use super::{Iri, IRELATIVE_REF_REGEX, IRI_REGEX};
 use crate::quad::{Quad, TupleQuad};
-use crate::term::{LiteralKind, Result, Term, TermData, TermError};
+use crate::term::{Literal, Result, Term, TermData, TermError};
 use crate::triple::Triple;
 use std::fmt;
 
@@ -186,19 +186,28 @@ where
 }
 
 // TODO
-// impl<'a, TD> Resolve<Literal<TD>> for IriParsed<'a>
-// where
-//     TD: TermData + From<String>
-// {
-//     /// May resolve the data type's IRI.
-//     ///
-//     /// # Performance
-//     ///
-//     /// May allocate an intermediate IRI if `other` is suffixed.
-//     fn resolve(&self, other: &Literal<TD>) -> Result<Iri<TD>> {
-
-//     }
-// }
+impl<'a, TD> Resolve<Literal<TD>> for IriParsed<'a>
+where
+    TD: TermData + for<'b> From<&'b str>,
+{
+    /// May resolve the data type's IRI.
+    ///
+    /// # Exception
+    ///
+    /// This only operates on `Typed` literals. The datatype of `Simple` and
+    /// `Lang` literals are static terms `xsd:string` and `rdf:langString`.
+    /// Therefore, those are not affected.
+    ///
+    /// # Performance
+    ///
+    /// May allocate an intermediate IRI if `other` is suffixed.
+    fn resolve(&self, other: &Literal<TD>) -> Result<Literal<TD>> {
+        match other {
+            Literal::Typed { txt, dt } => Ok(Literal::new_dt(txt.clone(), self.resolve(dt)?)),
+            lit => Ok(lit.clone()),
+        }
+    }
+}
 
 impl<'a, TD> Resolve<Term<TD>> for IriParsed<'a>
 where
@@ -212,10 +221,7 @@ where
     fn resolve(&self, other: &Term<TD>) -> Result<Term<TD>> {
         match other {
             Term::Iri(iri) => self.resolve(iri).map(Into::into),
-            Term::Literal(txt, LiteralKind::Datatype(dt)) => {
-                let dt = self.resolve(dt)?.into();
-                Ok(Term::new_literal_dt_unchecked(txt.clone(), dt))
-            }
+            Term::Literal(lit) => self.resolve(lit).map(Into::into),
             term => Ok(term.clone()),
         }
     }

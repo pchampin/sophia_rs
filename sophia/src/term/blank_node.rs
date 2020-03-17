@@ -54,7 +54,7 @@ lazy_static! {
 ///
 /// fn is_foobar(t: BoxTerm) -> bool {
 ///     match t {
-///         BNode(bn) =>
+///         Term::BNode(bn) =>
 ///             bn.starts_with("foo") || &bn == "bar",
 ///         _ =>
 ///             false,

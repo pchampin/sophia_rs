@@ -32,12 +32,10 @@
 //!   and be cloned and sent without any restriction.
 //!
 
-use language_tag::LangTag;
 use std::convert::TryInto;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::rc::Rc;
-use std::str::FromStr;
 use std::sync::Arc;
 
 pub mod factory;
@@ -51,14 +49,13 @@ use self::blank_node::BlankNode;
 pub mod iri;
 use self::iri::{Iri, Normalization};
 pub mod literal;
+use self::literal::Literal;
 
 mod _convert;
 pub use self::_convert::*;
 mod _display;
-mod _graph_name_matcher; // is 'pub use'd by module 'matcher'
-mod _literal_kind;
-pub use self::_literal_kind::*;
 mod _error;
+mod _graph_name_matcher; // is 'pub use'd by module 'matcher'
 pub use self::_error::*;
 
 /// Generic type for RDF terms.
@@ -66,22 +63,21 @@ pub use self::_error::*;
 /// See [module documentation](index.html) for more detail.
 ///
 #[derive(Clone, Copy, Debug, Eq, Hash)]
-pub enum Term<T>
+pub enum Term<TD>
 where
-    T: TermData,
+    TD: TermData,
 {
     /// An IRI referencing a resource.
-    Iri(Iri<T>),
+    Iri(Iri<TD>),
     /// A blank node.
     ///
     /// Also known as existentially quantified variable.
-    BNode(BlankNode<T>),
+    BNode(BlankNode<TD>),
     /// An RDF literal.
-    Literal(T, LiteralKind<T>),
+    Literal(Literal<TD>),
     /// A universally quantified variable like in SPARQL or Notation3.
-    Variable(Variable<T>),
+    Variable(Variable<TD>),
 }
-pub use self::Term::*;
 
 /// Trait alias for types holding the textual data of terms.
 pub trait TermData: AsRef<str> + Clone + Eq + Hash {}
@@ -125,7 +121,7 @@ where
         U: AsRef<str>,
         T: From<U>,
     {
-        Iri::new(iri).map(Into::into)
+        Iri::<T>::new(iri).map(Into::into)
     }
 
     /// Return a new IRI term from the two given parts (prefix and suffix).
@@ -138,7 +134,7 @@ where
         V: AsRef<str>,
         T: From<U> + From<V>,
     {
-        Iri::new_suffixed(ns, suffix).map(Into::into)
+        Iri::<T>::new_suffixed(ns, suffix).map(Into::into)
     }
 
     /// Return a new blank node term with the given bnode ID.
@@ -154,31 +150,33 @@ where
         BlankNode::new(id).map(Into::into)
     }
 
+    pub fn new_literal<U>(txt: U) -> Self
+    where
+        T: From<U>,
+    {
+        Literal::<T>::new(txt).into()
+    }
+
     /// Return a new literal term with the given value and language tag.
     ///
     /// May fail if the language tag is not a valid BCP47 language tag.
-    pub fn new_literal_lang<U, V>(txt: U, lang: V) -> Result<Term<T>>
+    pub fn new_literal_lang<U, V>(txt: U, lang: V) -> Result<Self>
     where
+        V: AsRef<str>,
         T: From<U> + From<V>,
     {
-        let tag = T::from(lang);
-        match LangTag::from_str(tag.as_ref()) {
-            Err(err) => Err(TermError::InvalidLanguageTag {
-                tag: tag.as_ref().to_string(),
-                err,
-            }),
-            Ok(_) => Ok(Literal(T::from(txt), Lang(tag))),
-        }
+        Literal::<T>::new_lang(txt, lang).map(Into::into)
     }
 
     /// Return a new literal term with the given value and datatype.
     ///
     /// May fail if `dt` is not a valid datatype.
-    pub fn new_literal_dt<U>(txt: U, dt: Term<T>) -> Result<Term<T>>
+    pub fn new_literal_dt<U, V>(txt: U, dt: V) -> Result<Self>
     where
         T: From<U>,
+        V: TryInto<Iri<T>, Error = TermError>,
     {
-        Ok(Literal(T::from(txt), Datatype(dt.try_into()?)))
+        Ok(Literal::new_dt(txt, dt.try_into()?).into())
     }
 
     /// Return a new variable term with the given name.
@@ -196,18 +194,17 @@ where
     ///
     /// Clone as this might allocate a new `TermData`. However there is also
     /// `TermData` that is cheap to clone, i.e. `Copy`.
-    pub fn clone_with<'a, U, F>(&'a self, mut factory: F) -> Term<U>
+    pub fn clone_with<'a, U, F>(&'a self, factory: F) -> Term<U>
     where
         U: TermData,
         F: FnMut(&'a str) -> U,
     {
+        use self::Term::*;
+
         match self {
             Iri(iri) => iri.clone_with(factory).into(),
             BNode(bn) => bn.clone_with(factory).into(),
-            Literal(value, kind) => Literal(
-                factory(value.as_ref()),
-                LiteralKind::from_with(kind, factory),
-            ),
+            Literal(lit) => lit.clone_with(factory).into(),
             Variable(var) => var.clone_with(factory).into(),
         }
     }
@@ -220,13 +217,9 @@ where
         F: FnMut(&str) -> U,
         U: TermData,
     {
-        let mut factory = factory;
         match self {
-            Iri(iri) => Iri(iri.clone_normalized_with(policy, factory)),
-            Literal(txt, kind) => Literal(
-                factory(txt.as_ref()),
-                kind.clone_normalized_with(policy, factory),
-            ),
+            Term::Iri(iri) => iri.clone_normalized_with(policy, factory).into(),
+            Term::Literal(lit) => lit.clone_normalized_with(policy, factory).into(),
             _ => self.clone_with(factory),
         }
     }
@@ -247,7 +240,7 @@ where
     where
         T: From<U>,
     {
-        Iri::new_unchecked(iri, absolute).into()
+        Iri::<T>::new_unchecked(iri, absolute).into()
     }
 
     /// Create a new IRI-term from a given namespace and suffix.
@@ -266,7 +259,7 @@ where
     where
         T: From<U> + From<V>,
     {
-        Iri::new_suffixed_unchecked(ns, suffix, absolute).into()
+        Iri::<T>::new_suffixed_unchecked(ns, suffix, absolute).into()
     }
 
     /// Return a new blank node term.
@@ -282,13 +275,16 @@ where
 
     /// Return a literal term.
     ///
-    /// # Safety
-    /// This function that `lang` is a valid language tag.
-    pub unsafe fn new_literal_lang_unchecked<U, V>(txt: U, lang: V) -> Term<T>
+    /// # Pre-condition
+    ///
+    /// This function requires that `lang` is a valid language tag.
+    /// In debug mode this constraint is asserted.
+    pub fn new_literal_lang_unchecked<U, V>(txt: U, lang: V) -> Self
     where
+        V: AsRef<str>,
         T: From<U> + From<V>,
     {
-        Literal(T::from(txt), Lang(T::from(lang)))
+        Literal::<T>::new_lang_unchecked(txt, lang).into()
     }
 
     /// Return a typed literal term.
@@ -296,11 +292,12 @@ where
     /// # Panics
     ///
     /// Panics if `dt` is not an IRI.
-    pub fn new_literal_dt_unchecked<U>(txt: U, dt: Term<T>) -> Term<T>
+    pub fn new_literal_dt_unchecked<U, V>(txt: U, dt: V) -> Self
     where
         T: From<U>,
+        V: TryInto<Iri<T>, Error = TermError>,
     {
-        Literal(T::from(txt), Datatype(dt.try_into().unwrap()))
+        Literal::new_dt(txt, dt.try_into().unwrap()).into()
     }
 
     /// Return a new variable term.
@@ -321,10 +318,12 @@ where
     ///
     /// See also [`n3`](#method.n3).
     pub fn value(&self) -> String {
+        use self::Term::*;
+
         match self {
             Iri(iri) => iri.value(),
             BNode(bn) => bn.value(),
-            Literal(value, _) => String::from(value.as_ref()),
+            Literal(lit) => lit.value(),
             Variable(var) => var.value(),
         }
     }
@@ -336,7 +335,8 @@ where
     /// * Any other term is always absolute.
     pub fn is_absolute(&self) -> bool {
         match self {
-            Iri(iri) | Literal(_, Datatype(iri)) => iri.is_absolute(),
+            Term::Iri(iri) => iri.is_absolute(),
+            Term::Literal(lit) => lit.is_absolute(),
             _ => true,
         }
     }
@@ -348,12 +348,12 @@ where
     U: TermData,
 {
     fn eq(&self, other: &Term<U>) -> bool {
+        use self::Term::*;
+
         match (self, other) {
             (Iri(iri1), Iri(iri2)) => iri1 == iri2,
             (BNode(id1), BNode(id2)) => id1 == id2,
-            (Literal(value1, kind1), Literal(value2, kind2)) => {
-                value1.as_ref() == value2.as_ref() && kind1 == kind2
-            }
+            (Literal(l1), Literal(l2)) => l1 == l2,
             (Variable(var1), Variable(var2)) => var1 == var2,
             _ => false,
         }
@@ -367,7 +367,46 @@ where
 {
     fn eq(&self, other: &Iri<U>) -> bool {
         match self {
-            Iri(iri1) => iri1 == other,
+            Term::Iri(iri) => iri == other,
+            _ => false,
+        }
+    }
+}
+
+impl<T, U> PartialEq<Literal<U>> for Term<T>
+where
+    T: TermData,
+    U: TermData,
+{
+    fn eq(&self, other: &Literal<U>) -> bool {
+        match self {
+            Term::Literal(lit) => lit == other,
+            _ => false,
+        }
+    }
+}
+
+impl<T, U> PartialEq<BlankNode<U>> for Term<T>
+where
+    T: TermData,
+    U: TermData,
+{
+    fn eq(&self, other: &BlankNode<U>) -> bool {
+        match self {
+            Term::BNode(bn) => bn == other,
+            _ => false,
+        }
+    }
+}
+
+impl<T, U> PartialEq<Variable<U>> for Term<T>
+where
+    T: TermData,
+    U: TermData,
+{
+    fn eq(&self, other: &Variable<U>) -> bool {
+        match self {
+            Term::Variable(var) => var == other,
             _ => false,
         }
     }
@@ -389,6 +428,15 @@ where
 {
     fn from(iri: Iri<TD>) -> Self {
         Term::Iri(iri)
+    }
+}
+
+impl<TD> From<Literal<TD>> for Term<TD>
+where
+    TD: TermData,
+{
+    fn from(lit: Literal<TD>) -> Self {
+        Term::Literal(lit)
     }
 }
 

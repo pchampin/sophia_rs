@@ -88,12 +88,12 @@ where
 }
 
 impl NqSerializer<Vec<u8>> {
-    /// Create a new serializer wich targets a `String`.
+    /// Create a new serializer which targets a `String`.
     #[inline]
     pub fn new_stringifier() -> Self {
         NqSerializer::new(Vec::new())
     }
-    /// Create a new serializer wich targets a `String` with a custom config.
+    /// Create a new serializer which targets a `String` with a custom config.
     #[inline]
     pub fn new_stringifier_with_config(config: NqConfig) -> Self {
         NqSerializer::new_with_config(Vec::new(), config)
@@ -132,7 +132,7 @@ pub(crate) mod test {
                 [
                     me,
                     StaticTerm::new_iri("http://schema.org/name").unwrap(),
-                    StaticTerm::new_literal_dt("Pierre-Antoine", xsd::string).unwrap(),
+                    StaticTerm::new_literal("Pierre-Antoine"),
                 ],
                 Some(StaticTerm::new_iri("http://champin.net/").unwrap()),
             ),

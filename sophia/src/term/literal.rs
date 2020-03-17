@@ -2,16 +2,21 @@
 //! [RDF](https://www.w3.org/TR/rdf11-primer/#section-literal).
 //!
 
+#![deny(missing_docs)]
+
 use crate::ns::{rdf, xsd};
 use crate::term::iri::Normalization;
-use crate::term::{Iri, Result, TermData, TermError};
+use crate::term::{Iri, Result, Term, TermData, TermError};
 use language_tag::LangTag;
 use std::convert::TryFrom;
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::io;
 
-/// There are two kinds of literals: language-tagged, and typed.
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+/// An RDF literal.
+///
+/// Each literals has a lexical value, i.e. a text, and a datatype.
+#[derive(Clone, Copy, Debug, Eq)]
 pub enum Literal<TD: TermData> {
     /// Simple literals are of type `xsd:string` and have shorthands in many
     /// serialization formats.
@@ -20,7 +25,12 @@ pub enum Literal<TD: TermData> {
     /// additional language-tag.
     ///
     /// The tags conform to [BCP47](https://tools.ietf.org/html/bcp47).
-    Lang { txt: TD, tag: TD },
+    Lang {
+        /// The text of the tagged literal.
+        txt: TD,
+        /// The language tag.
+        tag: TD,
+    },
     /// Typed literals have a dedicated datatype.
     ///
     /// Datatypes in RDF have a lexical scope and a value scope. Transformation
@@ -30,7 +40,12 @@ pub enum Literal<TD: TermData> {
     /// [RDF specification](https://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/#section-Graph-Literal)
     /// explicitly requires implementations to accept those literals. In the
     /// end such malformed literals lead to logical inconsistency in a graph.
-    Typed { txt: TD, dt: Iri<TD> },
+    Typed {
+        /// The text of the typed literal.
+        txt: TD,
+        /// The IRI referencing the datatype.
+        dt: Iri<TD>,
+    },
 }
 
 use self::Literal::*;
@@ -231,12 +246,54 @@ where
         }
     }
 
+    /// Return the language-tag of the literal if it has one.
     pub fn lang(&self) -> Option<&TD> {
         if let Lang { tag, .. } = self {
             Some(tag)
         } else {
             None
         }
+    }
+
+    /// Check if the datatype IRI is absolute.
+    pub fn is_absolute(&self) -> bool {
+        if let Literal::Typed { dt, .. } = self {
+            dt.is_absolute()
+        } else {
+            // other datatypes `xsd:string` and `rdf:langString` are absolute IRIs
+            true
+        }
+    }
+
+    /// Check if both literals have the same lexical value.
+    pub fn eq_txt<U>(&self, other: Literal<U>) -> bool
+    where
+        U: TermData,
+    {
+        self.txt().as_ref() == other.txt().as_ref()
+    }
+}
+
+impl<TD> Hash for Literal<TD>
+where
+    TD: TermData,
+{
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            Simple(txt) => {
+                // Same hash as Typed { .., dt: xsd::string }
+                state.write(txt.as_ref().as_bytes());
+                xsd::string.hash(state);
+            }
+            Lang { txt, tag } => {
+                state.write(txt.as_ref().as_bytes());
+                tag.as_ref().to_ascii_lowercase().hash(state);
+            }
+            Typed { txt, dt } => {
+                state.write(txt.as_ref().as_bytes());
+                dt.hash(state);
+            }
+        };
     }
 }
 
@@ -247,6 +304,74 @@ where
 {
     fn from(other: &'a Literal<U>) -> Self {
         other.clone_with(T::from)
+    }
+}
+
+impl<TD> TryFrom<Term<TD>> for Literal<TD>
+where
+    TD: TermData,
+{
+    type Error = TermError;
+
+    fn try_from(term: Term<TD>) -> Result<Self, Self::Error> {
+        match term {
+            Term::Literal(lit) => Ok(lit),
+            _ => Err(TermError::UnexpectedKindOfTerm {
+                term: term.to_string(),
+                expect: "literal".to_owned(),
+            }),
+        }
+    }
+}
+
+impl<'a, T, U> TryFrom<&'a Term<U>> for Literal<T>
+where
+    T: TermData + From<&'a str>,
+    U: TermData,
+{
+    type Error = TermError;
+
+    fn try_from(term: &'a Term<U>) -> Result<Self, Self::Error> {
+        match term {
+            Term::Literal(lit) => Ok(lit.into()),
+            _ => Err(TermError::UnexpectedKindOfTerm {
+                term: term.to_string(),
+                expect: "literal".to_owned(),
+            }),
+        }
+    }
+}
+
+impl<T, U> PartialEq<Literal<U>> for Literal<T>
+where
+    T: TermData,
+    U: TermData,
+{
+    fn eq(&self, other: &Literal<U>) -> bool {
+        match (self, other) {
+            (Simple(st), Simple(ot)) => st.as_ref() == ot.as_ref(),
+            (Lang { txt: st, tag: stag }, Lang { txt: ot, tag: otag }) => {
+                st.as_ref() == ot.as_ref() && stag.as_ref().eq_ignore_ascii_case(otag.as_ref())
+            }
+            (Typed { txt: st, dt: sdt }, Typed { txt: ot, dt: odt }) => {
+                st.as_ref() == ot.as_ref() && sdt == odt
+            }
+            (Simple(st), Typed { txt: ot, dt }) if dt == &xsd::string => st.as_ref() == ot.as_ref(),
+            (Typed { txt: st, dt }, Simple(ot)) if dt == &xsd::string => st.as_ref() == ot.as_ref(),
+            _ => false,
+        }
+    }
+}
+
+impl<TD> PartialEq<str> for Literal<TD>
+where
+    TD: TermData,
+{
+    fn eq(&self, other: &str) -> bool {
+        match self {
+            Simple(txt) => txt.as_ref() == other,
+            _ => false,
+        }
     }
 }
 
