@@ -1,5 +1,5 @@
 //! IRIs for identifying resources like specified in
-//! [RDF](https://www.w3.org/TR/rdf11-primer/#section-blank-node).
+//! [RDF](https://www.w3.org/TR/rdf11-primer/#section-IRI).
 //!
 //! IRIs themselves are specified in
 //! [RFC3987](https://tools.ietf.org/html/rfc3987).

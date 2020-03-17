@@ -50,6 +50,7 @@ pub mod blank_node;
 use self::blank_node::BlankNode;
 pub mod iri;
 use self::iri::{Iri, Normalization};
+pub mod literal;
 
 mod _convert;
 pub use self::_convert::*;
