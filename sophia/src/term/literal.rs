@@ -98,9 +98,15 @@ where
         TD: From<U>,
         Iri<TD>: From<V>,
     {
-        Self::Typed {
-            txt: txt.into(),
-            dt: dt.into(),
+        let dt = dt.into();
+
+        if xsd::string == dt {
+            Self::Simple(txt.into())
+        } else {
+            Self::Typed {
+                txt: txt.into(),
+                dt,
+            }
         }
     }
 
