@@ -51,8 +51,6 @@ use self::iri::{Iri, Normalization};
 pub mod literal;
 use self::literal::Literal;
 
-mod _convert;
-pub use self::_convert::*;
 mod _display;
 mod _error;
 mod _graph_name_matcher; // is 'pub use'd by module 'matcher'
