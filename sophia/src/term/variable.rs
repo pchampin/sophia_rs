@@ -185,7 +185,6 @@ where
     }
 }
 
-
 impl<'a, T, U> TryFrom<&'a Term<U>> for Variable<T>
 where
     T: TermData + From<&'a str>,

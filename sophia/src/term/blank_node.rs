@@ -215,7 +215,6 @@ where
     }
 }
 
-
 impl<'a, T, U> TryFrom<&'a Term<U>> for BlankNode<T>
 where
     T: TermData + From<&'a str>,

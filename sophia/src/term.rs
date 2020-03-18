@@ -463,6 +463,21 @@ where
     }
 }
 
+impl<TD> From<String> for Term<TD>
+where
+    TD: TermData + From<String>,
+{
+    fn from(txt: String) -> Self {
+        Self::new_literal(txt)
+    }
+}
+
+impl<'a> From<&'a str> for RefTerm<'a> {
+    fn from(txt: &'a str) -> Self {
+        RefTerm::new_literal(txt)
+    }
+}
+
 /// Check the equality of two graph names (`Option<&Term>`)
 /// using possibly different `TermData`.
 pub fn same_graph_name<T, U>(g1: Option<&Term<T>>, g2: Option<&Term<U>>) -> bool

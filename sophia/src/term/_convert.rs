@@ -5,20 +5,6 @@
 use super::*;
 use crate::ns::xsd;
 
-impl From<String> for BoxTerm {
-    fn from(val: String) -> BoxTerm {
-        let dt = BoxTerm::from(&xsd::string);
-        BoxTerm::new_literal_dt_unchecked(val, dt)
-    }
-}
-
-impl<'a> From<&'a str> for RefTerm<'a> {
-    fn from(val: &'a str) -> RefTerm<'a> {
-        let dt = xsd::string;
-        RefTerm::new_literal_dt_unchecked(val, dt)
-    }
-}
-
 impl From<bool> for BoxTerm {
     fn from(val: bool) -> BoxTerm {
         let txt = val.to_string().into_boxed_str();
@@ -57,7 +43,7 @@ mod test {
 
     #[test]
     fn test_string() {
-        let t1 = Term::from("hello".to_string());
+        let t1 = Term::<String>::from("hello".to_string());
         let t2 = Term::new_literal_dt("hello", xsd::string.clone()).unwrap();
         assert_eq!(t1, t2);
     }

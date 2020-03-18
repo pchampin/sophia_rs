@@ -11,6 +11,9 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::io;
 
+mod _convert;
+pub use self::_convert::*;
+
 /// An RDF literal.
 ///
 /// Each literals has a lexical value, i.e. a text, and a datatype.
@@ -186,8 +189,12 @@ where
             Typed { txt, dt } => {
                 w.write_char('"')?;
                 fmt_quoted_string(w, txt.as_ref())?;
-                w.write_str("\"^^")?;
-                dt.write_fmt(w)
+                if &xsd::string != dt {
+                    w.write_str("\"^^")?;
+                    dt.write_fmt(w)
+                } else {
+                    w.write_char('"')
+                }
             }
         }
     }
@@ -212,8 +219,12 @@ where
             Typed { txt, dt } => {
                 w.write_all(b"\"")?;
                 io_quoted_string(w, txt.as_ref().as_bytes())?;
-                w.write_all(b"\"^^")?;
-                dt.write_io(w)
+                if &xsd::string != dt {
+                    w.write_all(b"\"^^")?;
+                    dt.write_io(w)
+                } else {
+                    w.write_all(b"\"")
+                }
             }
         }
     }
