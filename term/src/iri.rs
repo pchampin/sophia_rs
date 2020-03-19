@@ -34,24 +34,24 @@ pub const GEN_DELIMS: &[char] = &[':', '/', '?', '#', '[', ']', '@'];
 /// IRIs are represented in a given format.
 ///
 /// They are applied by copying terms with
-/// [`Term::normalized`](enum.Term.html#method.normalized_with).
+/// [`Term::normalized`](../enum.Term.html#method.normalized_with).
 #[derive(Clone, Copy)]
 pub enum Normalization {
     /// IRIs are represented as a single string (`ns`) with an empty `suffix`.
     NoSuffix,
     /// IRIs are represented with a prefix `ns` extending to the last
-    /// [`gen-delim`](./const.GEN_DELIMS.html) and a `suffix` containing the
+    /// [`gen-delim`](./constant.GEN_DELIMS.html) and a `suffix` containing the
     /// remaining characters.
     LastGenDelim,
 }
 
 /// Representation of an IRI.
 ///
-/// May be encountered when pattern-matching on [`Term`](enum.Term.html)s
-/// of the [`Iri`](enum.Term.html#variant.Iri) variant.
+/// May be encountered when pattern-matching on [`Term`](../enum.Term.html)s
+/// of the [`Iri`](../enum.Term.html#variant.Iri) variant.
 /// For that purpose, note that `Iri`
 ///  - can be directly compared to a `&str` with the `==` operator;
-///  - can be directly compared to a [`Term`](enum.Term.html) with the `==` operator;
+///  - can be directly compared to a [`Term`](../enum.Term.html) with the `==` operator;
 ///  - provides some identical methods to what `&str` provides (see below);
 ///  - can otherwise be converted to a `String` with `to_string`;
 ///

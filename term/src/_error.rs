@@ -25,6 +25,16 @@ pub enum TermError {
         /// What is wrong with `tag`.
         err: String,
     },
+    /// The lexical value of a literal can not be interpreted accortding to its datatype
+    #[error("The given lexical value '{lex}' is invalid for datatype {dt}")]
+    InvalidLexicalValue {
+        /// The faulty lexical value.
+        lex: String,
+        /// The literal datatype IRI.
+        dt: String,
+        /// The underlying error.
+        source: Box<dyn std::error::Error>,
+    },
     /// Names of variables must apply to SPARQL's [production rules](https://www.w3.org/TR/sparql11-query/#rVARNAME).
     #[error("The name '{0}' is not valid for a variable according to the SPARQL specification")]
     InvalidVariableName(String),

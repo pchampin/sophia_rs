@@ -62,23 +62,19 @@
 //! println!("The resulting graph\n{}", example2);
 //! ```
 
-extern crate language_tag;
-#[cfg(feature = "xml")]
-extern crate quick_xml;
-extern crate resiter;
-#[cfg(feature = "rio")]
-extern crate rio_api;
-#[cfg(feature = "rio")]
-extern crate rio_turtle;
-extern crate url;
-extern crate weak_table;
-
 pub mod dataset;
 pub mod graph;
-pub mod ns;
 pub mod parser;
 pub mod quad;
 pub mod query;
 pub mod serializer;
-pub mod term;
 pub mod triple;
+
+/// See [`sophia_term::ns`](https://docs.rs/sophia_term/latest/sophia_term/ns/index.html)
+pub mod ns {
+    pub use sophia_term::ns::*;
+}
+/// See [`sophia_term`](https://docs.rs/sophia_term/latest/sophia_term/)
+pub mod term {
+    pub use sophia_term::*;
+}

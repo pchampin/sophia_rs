@@ -1,0 +1,24 @@
+[package]
+name = "sophia_term"
+version = "0.4.0"
+authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
+edition = "2018"
+description = "A Rust toolkit for RDF and Linked Data - Types for RDF terms"
+repository = "https://github.com/pchampin/sophia_rs"
+documentation = "https://docs.rs/sophia_term"
+readme = "../README.md"
+license = "CECILL-B"
+keywords = ["rdf", "linked-data", "semantic-web"]
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+language-tag = "0.9.0"
+lazy_static = "1.4.0"
+regex = "1.3.5"
+weak-table = "0.2.3"
+thiserror = "1.0.11"
+
+[dev-dependencies]
+test-case = "1.0.0"

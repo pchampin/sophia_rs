@@ -28,7 +28,7 @@ lazy_static! {
     /// # Rule
     ///
     /// `BLANK_NODE_LABEL ::= (PN_CHARS_U | [0-9]) ((PN_CHARS | '.')* PN_CHARS)?`
-    pub static ref BLANK_NODE_LABEL: Regex = Regex::new(r"(?x)
+    static ref BLANK_NODE_LABEL: Regex = Regex::new(r"(?x)
       ^
       [A-Za-z\u{c0}-\u{d6}\u{d8}-\u{f6}\u{f8}-\u{2ff}\u{370}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}_0-9]
       (
@@ -42,15 +42,15 @@ lazy_static! {
 
 /// Internal representation of a blank node identifier.
 ///
-/// May be encountered when pattern-matching on [`Term`](enum.Term.html)s
-/// of the [`BNode`](enum.Term.html#variant.BNode) variant.
+/// May be encountered when pattern-matching on [`Term`](../enum.Term.html)s
+/// of the [`BNode`](../enum.Term.html#variant.BNode) variant.
 /// For that purpose, note that `BlankNode`
 ///  - derefs implicitly to its internal type `T`;
 ///  - can be directly compared to a `&str` with the `==` operator.
 ///
 /// Example :
 /// ```
-/// use sophia::term::*;
+/// use sophia_term::*;
 ///
 /// fn is_foobar(t: BoxTerm) -> bool {
 ///     match t {
@@ -74,7 +74,7 @@ where
     /// Return a new blank node with the given identifier.
     ///
     /// May fail if `id` is not a valid identifier according to
-    /// [`BLANK_NODE_LABEL`](struct.BLANK_NODE_LABEL.html). This means that it
+    /// [`BLANK_NODE_LABEL`](https://www.w3.org/TR/n-triples/#grammar-production-BLANK_NODE_LABEL). This means that it
     /// must not include the typical leading `_:`.
     pub fn new<U>(id: U) -> Result<Self>
     where
@@ -302,5 +302,5 @@ mod test {
         }
     }
 
-    // further tests are executed in `crate::term::test`
+    // further tests are executed in `crate::test`
 }

@@ -21,7 +21,7 @@ pub fn is_relative_iri_ref(txt: &str) -> bool {
 
 lazy_static! {
     /// Match an absolute IRI reference.
-    pub static ref IRI_REGEX: Regex = Regex::new(r"(?x)^
+    pub(crate) static ref IRI_REGEX: Regex = Regex::new(r"(?x)^
         #scheme
        ( # CAPTURE scheme
         [A-Za-z] [-A-Za-z0-9+.]*
@@ -155,7 +155,7 @@ lazy_static! {
     $").unwrap();
 
     /// Match a relative IRI.
-    pub static ref IRELATIVE_REF_REGEX: Regex = Regex::new(r"(?x)^
+    pub(crate) static ref IRELATIVE_REF_REGEX: Regex = Regex::new(r"(?x)^
         #irelative_part
         (?: #iauthority + ipath_abempty
           //

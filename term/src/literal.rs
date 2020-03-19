@@ -2,9 +2,9 @@
 //! [RDF](https://www.w3.org/TR/rdf11-primer/#section-literal).
 //!
 
+use crate::iri::Normalization;
 use crate::ns::{rdf, xsd};
-use crate::term::iri::Normalization;
-use crate::term::{Iri, Result, Term, TermData, TermError};
+use crate::{Iri, Result, Term, TermData, TermError};
 use language_tag::LangTag;
 use std::convert::{TryFrom, TryInto};
 use std::fmt;

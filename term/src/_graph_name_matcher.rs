@@ -1,7 +1,7 @@
 // this module is transparently re-exported by its sibling `matcher`
 
-use crate::term::matcher::{AnyOrExactly, AnyTerm};
-use crate::term::*;
+use crate::matcher::{AnyOrExactly, AnyTerm};
+use crate::*;
 
 /// Generic trait for matching graph names, *i.e.* optional [term]s.
 ///
@@ -217,7 +217,7 @@ mod test {
 
     use super::*;
 
-    use crate::term::matcher::{AnyOrExactly, ANY};
+    use crate::matcher::{AnyOrExactly, ANY};
     #[test]
     fn test_option_ref_term_as_matcher() {
         let m = Some(BoxTerm::new_iri("http://champin.net/#pa").unwrap());

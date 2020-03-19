@@ -3,8 +3,8 @@
 
 use super::*;
 use crate::ns::xsd;
-use crate::term::{Iri, Result, StaticTerm, TermData, TermError};
-use crate::triple::stream::{SinkError, SourceError, StreamResult};
+use crate::{Iri, Result, StaticTerm, TermData, TermError};
+//use crate::triple::stream::{SinkError, SourceError, StreamResult};
 
 /// Provide an IRI to specify the semantic datatype.
 pub trait DataType {
@@ -45,7 +45,7 @@ pub trait AsLiteral<TD: TermData>: DataType {
 /// Create `self` from an RDF literal.
 pub trait FromLiteral: Sized {
     /// Error raised if literal text is malformed.
-    type Error: std::error::Error;
+    type Error: std::error::Error + 'static;
 
     /// Direct from a literal.
     fn from_literal<TD: TermData>(lit: &Literal<TD>) -> Result<Self, Self::Error>;
@@ -56,29 +56,33 @@ pub trait FromLiteral: Sized {
     ///
     /// The default implementation throws `SourceError(UnexpectedKindOfTerm)`
     /// if `t` is not a literal.
-    fn from_term<'a, TD>(t: &'a Term<TD>) -> StreamResult<Self, TermError, Self::Error>
+    fn from_term<'a, TD>(t: &'a Term<TD>) -> Result<Self, TermError>
     where
         TD: 'a + TermData,
     {
         if let Term::Literal(lit) = t {
-            Self::from_literal(lit).map_err(SinkError)
+            Self::from_literal(lit).map_err(|err| TermError::InvalidLexicalValue {
+                lex: lit.value(),
+                dt: lit.dt().value(),
+                source: Box::new(err),
+            })
         } else {
-            Err(SourceError(TermError::UnexpectedKindOfTerm {
+            Err(TermError::UnexpectedKindOfTerm {
                 term: t.to_string(),
                 expect: "literal".to_string(),
-            }))
+            })
         }
     }
 }
 
 macro_rules! impl_dt_with_term {
     ($ty:ty, $iri:expr, $term:expr) => {
-        impl $crate::term::literal::DataType for $ty {
-            fn iri() -> &'static $crate::term::iri::Iri<&'static str> {
+        impl $crate::literal::DataType for $ty {
+            fn iri() -> &'static $crate::iri::Iri<&'static str> {
                 &$iri
             }
 
-            fn iri_as_term() -> &'static crate::term::Term<&'static str> {
+            fn iri_as_term() -> &'static crate::Term<&'static str> {
                 &$term
             }
         }
@@ -102,13 +106,13 @@ impl_dt_with_term!(&str, xsd::iri::string, xsd::string);
 
 macro_rules! impl_as_literal {
     ($ty:ty) => {
-        impl<TD> $crate::term::literal::AsLiteral<TD> for $ty
+        impl<TD> $crate::literal::AsLiteral<TD> for $ty
         where
             Self: std::string::ToString,
-            TD: $crate::term::TermData + From<String> + From<&'static str>,
+            TD: $crate::TermData + From<String> + From<&'static str>,
         {
             fn as_literal(&self) -> Literal<TD> {
-                $crate::term::literal::Literal::new_dt(self.to_string(), Self::iri())
+                $crate::literal::Literal::new_dt(self.to_string(), Self::iri())
             }
         }
     };
@@ -139,7 +143,7 @@ where
 
 macro_rules! impl_from_literal {
     ($ty:ty) => {
-        impl $crate::term::literal::FromLiteral for $ty {
+        impl $crate::literal::FromLiteral for $ty {
             type Error = <$ty as std::str::FromStr>::Err;
 
             fn from_literal<TD: TermData>(lit: &Literal<TD>) -> Result<Self, Self::Error> {

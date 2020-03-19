@@ -6,20 +6,16 @@
 //!
 //! # Example
 //! ```
-//! use sophia::graph::MutableGraph;
-//! use sophia::graph::inmem::FastGraph;
-//! use sophia::ns::{Namespace, rdf, rdfs, xsd};
-//!
-//!
-//! let mut g = FastGraph::new();
+//! use sophia_term::ns::{Namespace, rdf, rdfs, xsd};
 //!
 //! let schema = Namespace::new("http://schema.org/").unwrap();
 //! let s_name = schema.get("name").unwrap();
-//! g.insert(&s_name, &rdf::type_, &rdf::Property);
-//! g.insert(&s_name, &rdfs::range, &xsd::string);
+//! // and then, given a graph:
+//! //g.insert(&s_name, &rdf::type_, &rdf::Property);
+//! //g.insert(&s_name, &rdfs::range, &xsd::string);
 //! ```
 
-use crate::term::{iri::is_valid_iri_ref, Result, Term, TermData, TermError};
+use crate::{iri::is_valid_iri_ref, Result, Term, TermData, TermError};
 
 /// A custom namespace.
 #[derive(Clone, Debug)]
@@ -102,8 +98,8 @@ macro_rules! ns_term {
     };
     ($prefix:expr, $ident:ident, $suffix:expr) => {
         #[allow(non_upper_case_globals)]
-        pub static $ident: $crate::term::StaticTerm = $crate::term::Term::Iri(
-            $crate::term::iri::Iri::from_raw_parts_unchecked($prefix, Some($suffix), true),
+        pub static $ident: $crate::StaticTerm = $crate::Term::Iri(
+            $crate::iri::Iri::from_raw_parts_unchecked($prefix, Some($suffix), true),
         );
     };
 }
@@ -121,8 +117,8 @@ macro_rules! ns_iri {
     };
     ($prefix:expr, $ident:ident, $suffix:expr) => {
         #[allow(non_upper_case_globals)]
-        pub static $ident: $crate::term::iri::Iri<&'static str> =
-            $crate::term::iri::Iri::from_raw_parts_unchecked($prefix, Some($suffix), true);
+        pub static $ident: $crate::iri::Iri<&'static str> =
+            $crate::iri::Iri::from_raw_parts_unchecked($prefix, Some($suffix), true);
     };
 }
 

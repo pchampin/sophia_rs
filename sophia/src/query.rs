@@ -7,9 +7,10 @@ use std::collections::HashMap;
 use std::iter::once;
 
 use resiter::map::*;
+use sophia_term::matcher::AnyOrExactly;
+use sophia_term::*;
 
 use crate::graph::*;
-use crate::term::*;
 use crate::triple::*;
 
 /// A map associating variable names to [`term`](../term/enum.Term.html)s.
@@ -151,12 +152,16 @@ where
     g.triples_matching(s, p, o)
 }
 
-type Binding = crate::term::matcher::AnyOrExactly<RcTerm>;
+type Binding = AnyOrExactly<RcTerm>;
 
-impl Binding {
+trait BindingExt {
+    fn is_free(&self) -> bool;
+}
+
+impl BindingExt for Binding {
     fn is_free(&self) -> bool {
         match self {
-            Binding::Any => true,
+            AnyOrExactly::Any => true,
             _ => false,
         }
     }

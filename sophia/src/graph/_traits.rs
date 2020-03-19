@@ -191,6 +191,25 @@ pub trait Graph {
     /// An iterator visiting all triples matching the given subject, predicate and object.
     ///
     /// See also [`triples`](#tymethod.triples).
+    ///
+    /// # Usage
+    ///
+    /// ```
+    /// # use sophia::graph::{*, inmem::LightGraph};
+    /// # use sophia::triple::Triple;
+    /// use sophia_term::ns::{Namespace, rdf};
+    /// use sophia_term::matcher::{ANY, TermMatcher};
+    ///
+    /// # let mut graph = LightGraph::new();
+    /// let s = Namespace::new("http://schema.org/").unwrap();
+    /// let city = s.get("City").unwrap();
+    /// let country = s.get("Country").unwrap();
+    ///
+    /// for t in graph.triples_matching(&ANY, &rdf::type_, &[city, country]) {
+    ///     let t = t.unwrap();
+    ///     println!("{} was found", t.s());
+    /// }
+    /// ```
     fn triples_matching<'s, S, P, O>(
         &'s self,
         ms: &'s S,
@@ -378,6 +397,21 @@ pub trait MutableGraph: Graph {
     /// a return value of `true` does *not* mean that the triple was not already in the graph,
     /// only that the graph now has one more occurrence of it.
     ///
+    /// # Usage
+    /// ```
+    /// # use sophia_term::BoxTerm;
+    /// # use sophia_term::ns::{Namespace, rdf, rdfs, xsd};
+    /// # use sophia::graph::MutableGraph;
+    /// # use std::collections::HashSet;
+    ///
+    /// fn populate<G: MutableGraph>(graph: &mut G) {
+    ///     let schema = Namespace::new("http://schema.org/").unwrap();
+    ///     let s_name = schema.get("name").unwrap();
+    ///
+    ///     graph.insert(&s_name, &rdf::type_, &rdf::Property);
+    ///     graph.insert(&s_name, &rdfs::range, &xsd::string);
+    /// }
+    /// ```
     fn insert<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
     where
         T: TermData,

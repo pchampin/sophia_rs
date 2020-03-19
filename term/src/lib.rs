@@ -1,8 +1,12 @@
-//! Terms are the building blocks of an RDF graph.
+//! This crate is part of [Sophia],
+//! an [RDF] and [Linked Data] toolkit in Rust.
+
+//!
+//! Terms are the building blocks of an [RDF] graph.
 //! There are four types of terms: IRIs, blank nodes (BNode for short),
 //! literals and variables.
 //!
-//! NB: variable only exist in [generalized RDF](../index.html#generalized-vs-strict-rdf-model).
+//! NB: variable only exist in [generalized RDF].
 //!
 //! This module defines a generic type [`Term`](enum.Term.html)
 //! which can be derived differently depending on your needs.
@@ -31,6 +35,10 @@
 //!   Those terms can live as long as the program runs,
 //!   and be cloned and sent without any restriction.
 //!
+//! [Sophia]: https://docs.rs/sophia/latest/sophia/
+//! [RDF]: https://www.w3.org/TR/rdf-primer/
+//! [Linked Data]: http://linkeddata.org/
+//! [generalized RDF]: https://docs.rs/sophia/latest/sophia/#generalized-vs-strict-rdf-model
 
 use std::convert::TryInto;
 use std::fmt::Debug;
@@ -41,6 +49,7 @@ use std::sync::Arc;
 pub mod factory;
 pub mod index_map;
 pub mod matcher;
+pub mod ns;
 
 pub mod variable;
 use self::variable::Variable;

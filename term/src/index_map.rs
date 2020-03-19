@@ -1,7 +1,7 @@
 //! A trait for bidirectional mappings between terms and *indexes* of a smaller type.
 
-use crate::term::factory::{FTerm, TermFactory};
-use crate::term::RefTerm;
+use crate::factory::{FTerm, TermFactory};
+use crate::RefTerm;
 
 /// A bidirectionnal mapping between [`Term`]s and *indexes* of a smaller type.
 ///
@@ -69,8 +69,10 @@ pub trait TermIndexMap: Default {
     }
 }
 
-#[cfg(test)]
+#[allow(clippy::cognitive_complexity)]
 /// Takes an empty TermIndexMap, and checks that it behaves as expected.
+///
+/// This function is provided to test TermIndexMap implementations.
 pub fn assert_term_index_map_works<T: TermIndexMap>(ti: &mut T) {
     let t = RefTerm::new_iri("http://example.org/").unwrap();
     assert!(ti.get_index(&t).is_none());

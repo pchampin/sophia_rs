@@ -1,39 +1,17 @@
 //! This crate defines generic traits and default implementations for *matchers*,
 //! objects that can be used to match zero, one or several terms.
 //!
-//! # Usage
-//!
-//! This is how triple matchers can be used to retrieve any subject of type
-//! `s:City` or `s:Country`.
-//!
-//! ```
-//! # use sophia::graph::{*, inmem::LightGraph};
-//! # use sophia::triple::Triple;
-//! use sophia::ns::{Namespace, rdf};
-//! use sophia::term::matcher::ANY;
-//!
-//! # let mut graph = LightGraph::new();
-//! let s = Namespace::new("http://schema.org/").unwrap();
-//! let city = s.get("City").unwrap();
-//! let country = s.get("Country").unwrap();
-//!
-//! for t in graph.triples_matching(&ANY, &rdf::type_, &[city, country]) {
-//!     let t = t.unwrap();
-//!     println!("{} was found", t.s());
-//! }
-//! ```
-//!
-//! For more kinds of matchers,
+//! For a list of matcher implementations,
 //! check [`TermMarcher`'s ](trait.TermMatcher.html#implementors) and
 //! [`GraphNameMatcher`'s implementors lists](trait.GraphNameMatcher.html#implementors).
 //!
-//! For methods using matchers, see for example
-//! [`Graph::triples_matching`](../../graph/trait.Graph.html#method.triples_matching),
-//! [`MutableGraph::remove_matching`](../../graph/trait.MutableGraph.html#method.remove_matching),
-//! [`MutableGraph::retain_matching`](../../graph/trait.MutableGraph.html#method.retain_matching),
-//! [`Dataset::quads_matching`](../../dataset/trait.Dataset.html#method.quads_matching),
-//! [`MutableDataset::remove_matching`](../../dataset/trait.MutableDataset.html#method.remove_matching),
-//! [`MutableDataset::retain_matching`](../../dataset/trait.MutableDataset.html#method.retain_matching).
+//! For methods using matchers (with examples), see for example
+//! [`Graph::triples_matching`](https://docs.rs/sophia/latest/sophia/graph/trait.Graph.html#method.triples_matching),
+//! [`MutableGraph::remove_matching`](https://docs.rs/sophia/latest/sophia/graph/trait.MutableGraph.html#method.remove_matching),
+//! [`MutableGraph::retain_matching`](https://docs.rs/sophia/latest/sophia/graph/trait.MutableGraph.html#method.retain_matching),
+//! [`Dataset::quads_matching`](https://docs.rs/sophia/latest/sophia/dataset/trait.Dataset.html#method.quads_matching),
+//! [`MutableDataset::remove_matching`](https://docs.rs/sophia/latest/sophia/dataset/trait.MutableDataset.html#method.remove_matching),
+//! [`MutableDataset::retain_matching`](https://docs.rs/sophia/latest/sophia/dataset/trait.MutableDataset.html#method.retain_matching).
 //!
 
 use super::*;

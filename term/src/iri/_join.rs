@@ -5,9 +5,7 @@
 //!
 
 use super::{Iri, IRELATIVE_REF_REGEX, IRI_REGEX};
-use crate::quad::{Quad, TupleQuad};
-use crate::term::{Literal, Result, Term, TermData, TermError};
-use crate::triple::Triple;
+use crate::{Literal, Result, Term, TermData, TermError};
 use std::fmt;
 
 /// Resolve some kind of IRI with `self` as the base.
@@ -234,6 +232,7 @@ where
     }
 }
 
+/*
 impl<'a, T, TD> Resolve<T, [Term<TD>; 3]> for IriParsed<'a>
 where
     T: Triple,
@@ -279,6 +278,7 @@ where
         ))
     }
 }
+*/
 
 impl fmt::Display for IriParsed<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

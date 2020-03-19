@@ -4,7 +4,7 @@
 
 use std::fmt;
 
-use crate::term::*;
+use crate::*;
 
 impl<T> fmt::Display for Term<T>
 where
@@ -41,9 +41,9 @@ where
 
 #[cfg(test)]
 pub(crate) mod test {
+    use crate::literal::AsLiteral;
     use crate::ns::*;
-    use crate::term::literal::AsLiteral;
-    use crate::term::*;
+    use crate::*;
     use lazy_static::lazy_static;
 
     lazy_static! {
