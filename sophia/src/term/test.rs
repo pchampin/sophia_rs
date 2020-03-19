@@ -1,6 +1,5 @@
-use super::*;
-
 use super::Term::*;
+use super::*;
 use crate::ns::xsd;
 
 fn h<H: std::hash::Hash>(x: &H) -> u64 {
@@ -244,30 +243,27 @@ fn literal_lang() {
     assert_eq!(&lit.value(), "hello");
     assert_eq!(&format!("{}", lit), "\"hello\"@en");
 
-    if let Literal(literal::Literal::Lang { txt, tag }) = lit {
-        assert_eq!(txt.as_ref() as &str, "hello");
-        assert_eq!(tag.as_ref() as &str, "en");
-    } else {
-        panic!("Should have returned Literal::Lang");
-    }
+    let lit: literal::Literal<&str> = lit.try_into().expect("Should be a literal");
+
+    assert_eq!(*lit.txt(), "hello");
+    assert_eq!(
+        *lit.lang().expect("Should have returned Literal::Lang"),
+        "en"
+    );
+
     let res = RefTerm::new_literal_lang("hello", "");
     assert!(res.is_err());
 }
 
 #[test]
 fn literal_dt() {
-    let lit = RefTerm::new_literal("hello");
+    let lit = "hello".as_term();
     assert_eq!(&lit.value(), "hello");
     assert_eq!(&format!("{}", lit), "\"hello\"");
 
-    let lit: literal::Literal<_> = lit.try_into().unwrap();
+    let lit: literal::Literal<&str> = lit.try_into().expect("Should be a literal");
     assert_eq!(RefTerm::from(lit.dt()), xsd::string);
-
-    if let literal::Literal::Simple(txt) = lit {
-        assert_eq!(txt.as_ref() as &str, "hello");
-    } else {
-        panic!("Should have returned Literal::Typed");
-    }
+    assert_eq!(*lit.txt(), "hello");
 
     let lit = RefTerm::new_literal_dt("42", xsd::integer.clone()).unwrap();
     assert_eq!(&lit.value(), "42");
@@ -365,7 +361,7 @@ fn literal_normalized_last_hash_or_slash() {
         let l2 = l1.clone_normalized_with(norm, |s| Box::from(s));
         assert_eq!(l1, l2);
         if let Literal(l2) = l2 {
-            let i2 = l2.dt();
+            let i2 = l2.try_borrow_dt().unwrap();
             assert_eq!(&i2.ns[..], *ns2);
             let sf2 = if sf2.len() == 0 {
                 None

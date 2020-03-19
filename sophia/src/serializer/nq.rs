@@ -132,7 +132,7 @@ pub(crate) mod test {
                 [
                     me,
                     StaticTerm::new_iri("http://schema.org/name").unwrap(),
-                    StaticTerm::new_literal("Pierre-Antoine"),
+                    "Pierre-Antoine".into(),
                 ],
                 Some(StaticTerm::new_iri("http://champin.net/").unwrap()),
             ),

@@ -131,9 +131,10 @@ impl_as_literal!(String);
 impl<'a, TD> AsLiteral<TD> for &'a str
 where
     TD: TermData + From<&'a str>,
+    Iri<TD>: From<Iri<&'a str>>,
 {
     fn as_literal(&self) -> Literal<TD> {
-        Literal::new(*self)
+        Literal::new_dt(*self, xsd::string.try_into().unwrap())
     }
 }
 

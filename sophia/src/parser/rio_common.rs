@@ -202,7 +202,7 @@ pub fn rio2refterm(t: GeneralizedTerm) -> RefTerm {
         GeneralizedTerm::NamedNode(n) => {
             RefTerm::new_iri(n.iri).expect("Already checked by parser but determine if absolute.")
         }
-        GeneralizedTerm::Literal(Simple { value }) => RefTerm::new_literal(value),
+        GeneralizedTerm::Literal(Simple { value }) => value.into(),
         GeneralizedTerm::Literal(LanguageTaggedString { value, language }) => {
             RefTerm::new_literal_lang_unchecked(value, language)
         }

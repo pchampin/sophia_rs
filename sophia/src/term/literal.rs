@@ -6,7 +6,7 @@ use crate::ns::{rdf, xsd};
 use crate::term::iri::Normalization;
 use crate::term::{Iri, Result, Term, TermData, TermError};
 use language_tag::LangTag;
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::io;
@@ -14,55 +14,74 @@ use std::io;
 mod _convert;
 pub use self::_convert::*;
 
+/// Internal distinction of literals.
+///
+/// Opaque to users.
+#[derive(Clone, Copy, Debug, Eq)]
+enum Kind<TD: TermData> {
+    /// Something representing a language tag.
+    ///
+    /// The tags conform to [BCP47](https://tools.ietf.org/html/bcp47).
+    Lang(TD),
+    /// The IRI referencing the datatype.
+    Dt(Iri<TD>),
+}
+
+use self::Kind::*;
+
+impl<T, U> PartialEq<Kind<U>> for Kind<T>
+where
+    T: TermData,
+    U: TermData,
+{
+    fn eq(&self, other: &Kind<U>) -> bool {
+        match (self, other) {
+            (Lang(stag), Lang(otag)) => stag.as_ref().eq_ignore_ascii_case(otag.as_ref()),
+            (Dt(sdt), Dt(odt)) => sdt == odt,
+            _ => false,
+        }
+    }
+}
+
 /// An RDF literal.
 ///
 /// Each literals has a lexical value, i.e. a text, and a datatype.
+///
+/// # Simple (or plain) literals
+///
+/// Simple literals are of type `xsd:string` and have shorthands in many
+/// serialization formats. However, they are not an own kind of literals. To
+/// construct simple literals you can either use [`new_dt()`](#method.new_dt)
+/// or use the [`AsLiteral`](trait.AsLiteral.html) trait on strings.
+///
+/// # Language tagged literals
+///
+/// Language-tagged literals have the type `rdf:langString` and an additional
+/// language-tag.
+///
+/// The tags conform to [BCP47](https://tools.ietf.org/html/bcp47).
+///
+/// # Typed literals
+///
+/// Typed literals have a dedicated datatype.
+///
+/// Datatypes in RDF have a lexical scope and a value scope. Transformation
+/// between them is done by the lexical-to-value mapping of a datatype. If the
+/// text of a typed literal is not in the value space of its datatype, literal
+/// is called ill-typed or malformed. However,
+/// [RDF specification](https://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/#section-Graph-Literal)
+/// explicitly requires implementations to accept those literals. In the end
+/// such malformed literals lead to logical inconsistency in a graph.
 #[derive(Clone, Copy, Debug, Eq)]
-pub enum Literal<TD: TermData> {
-    /// Simple literals are of type `xsd:string` and have shorthands in many
-    /// serialization formats.
-    Simple(TD),
-    /// Language-tagged literals have the type `rdf:langString` and an
-    /// additional language-tag.
-    ///
-    /// The tags conform to [BCP47](https://tools.ietf.org/html/bcp47).
-    Lang {
-        /// The text of the tagged literal.
-        txt: TD,
-        /// The language tag.
-        tag: TD,
-    },
-    /// Typed literals have a dedicated datatype.
-    ///
-    /// Datatypes in RDF have a lexical scope and a value scope. Transformation
-    /// between them is done by the lexical-to-value mapping of a datatype. If
-    /// the text of a typed literal is not in the value space of its datatype,
-    /// the literal is called ill-typed or malformed. However,
-    /// [RDF specification](https://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/#section-Graph-Literal)
-    /// explicitly requires implementations to accept those literals. In the
-    /// end such malformed literals lead to logical inconsistency in a graph.
-    Typed {
-        /// The text of the typed literal.
-        txt: TD,
-        /// The IRI referencing the datatype.
-        dt: Iri<TD>,
-    },
+pub struct Literal<TD: TermData> {
+    txt: TD,
+    kind: Kind<TD>,
 }
-
-use self::Literal::*;
 
 impl<TD> Literal<TD>
 where
     TD: TermData,
 {
-    /// Return a new literal with type `xsd:string`.
-    pub fn new<U>(txt: U) -> Self
-    where
-        TD: From<U>,
-    {
-        Self::Simple(txt.into())
-    }
-
     /// Return a new language-tagged literal.
     ///
     /// # Error
@@ -81,9 +100,9 @@ where
             });
         }
 
-        Ok(Self::Lang {
+        Ok(Self {
             txt: txt.into(),
-            tag: tag.into(),
+            kind: Lang(tag.into()),
         })
     }
 
@@ -98,15 +117,9 @@ where
         TD: From<U>,
         Iri<TD>: From<V>,
     {
-        let dt = dt.into();
-
-        if xsd::string == dt {
-            Self::Simple(txt.into())
-        } else {
-            Self::Typed {
-                txt: txt.into(),
-                dt,
-            }
+        Self {
+            txt: txt.into(),
+            kind: Dt(dt.into()),
         }
     }
 
@@ -124,9 +137,9 @@ where
     {
         debug_assert!(tag.as_ref().parse::<LangTag>().is_ok());
 
-        Self::Lang {
+        Self {
             txt: txt.into(),
-            tag: tag.into(),
+            kind: Lang(tag.into()),
         }
     }
 
@@ -135,22 +148,19 @@ where
     ///
     /// Clone as this might allocate new `TermData`. However there is also
     /// `TermData` that is cheap to clone, i.e. `Copy`.
-    pub fn clone_with<'a, U, F>(&'a self, mut factory: F) -> Literal<U>
+    pub fn clone_with<'a, U, F>(&'a self, factory: F) -> Literal<U>
     where
         U: TermData,
         F: FnMut(&'a str) -> U,
     {
-        match self {
-            Simple(txt) => Simple(factory(txt.as_ref())),
-            Lang { txt, tag } => Lang {
-                txt: factory(txt.as_ref()),
-                tag: factory(tag.as_ref()),
-            },
-            Typed { txt, dt } => Typed {
-                txt: factory(txt.as_ref()),
-                dt: dt.clone_with(factory),
-            },
-        }
+        let mut factory = factory;
+        let txt = factory(self.txt.as_ref());
+        let kind = match &self.kind {
+            Lang(tag) => Lang(factory(tag.as_ref())),
+            Dt(iri) => Dt(iri.clone_with(factory)),
+        };
+
+        Literal { txt, kind }
     }
 
     /// If the literal is typed transform the IRI according to the given
@@ -164,13 +174,13 @@ where
         U: TermData,
     {
         let mut factory = factory;
-        match self {
-            Typed { txt, dt } => Typed {
-                txt: factory(txt.as_ref()),
-                dt: dt.clone_normalized_with(policy, factory),
-            },
-            lit => lit.clone_with(factory),
-        }
+        let txt = factory(self.txt.as_ref());
+        let kind = match &self.kind {
+            Lang(tag) => Lang(factory(tag.as_ref())),
+            Dt(iri) => Dt(iri.clone_normalized_with(policy, factory)),
+        };
+
+        Literal { txt, kind }
     }
 
     /// Writes the literal to the `fmt::Write` using the NTriples syntax.
@@ -178,21 +188,15 @@ where
     where
         W: fmt::Write,
     {
-        match self {
-            Simple(txt) => {
-                w.write_char('"')?;
-                fmt_quoted_string(w, txt.as_ref())?;
-                w.write_char('"')
-            }
-            Lang { txt, tag } => {
-                w.write_char('"')?;
-                fmt_quoted_string(w, txt.as_ref())?;
+        w.write_char('"')?;
+        fmt_quoted_string(w, self.txt.as_ref())?;
+
+        match &self.kind {
+            Lang(tag) => {
                 w.write_str("\"@")?;
                 w.write_str(tag.as_ref())
             }
-            Typed { txt, dt } => {
-                w.write_char('"')?;
-                fmt_quoted_string(w, txt.as_ref())?;
+            Dt(dt) => {
                 if &xsd::string != dt {
                     w.write_str("\"^^")?;
                     dt.write_fmt(w)
@@ -208,21 +212,15 @@ where
     where
         W: io::Write,
     {
-        match self {
-            Simple(txt) => {
-                w.write_all(b"\"")?;
-                io_quoted_string(w, txt.as_ref().as_bytes())?;
-                w.write_all(b"\"")
-            }
-            Lang { txt, tag } => {
-                w.write_all(b"\"")?;
-                io_quoted_string(w, txt.as_ref().as_bytes())?;
+        w.write_all(b"\"")?;
+        io_quoted_string(w, self.txt.as_ref().as_bytes())?;
+
+        match &self.kind {
+            Lang(tag) => {
                 w.write_all(b"\"@")?;
                 w.write_all(tag.as_ref().as_bytes())
             }
-            Typed { txt, dt } => {
-                w.write_all(b"\"")?;
-                io_quoted_string(w, txt.as_ref().as_bytes())?;
+            Dt(dt) => {
                 if &xsd::string != dt {
                     w.write_all(b"\"^^")?;
                     dt.write_io(w)
@@ -240,28 +238,34 @@ where
 
     /// Returns the literal's lexical value.
     pub fn txt(&self) -> &TD {
-        match self {
-            Simple(txt) | Lang { txt, .. } | Typed { txt, .. } => txt,
+        &self.txt
+    }
+
+    /// Try to borrow the stored datatype IRI.
+    ///
+    /// If the literal is language-tagged `None` is returned.
+    ///
+    /// If you rely on having a datatype use the [`dt()`](#method.dt) method.
+    pub fn try_borrow_dt(&self) -> Option<&Iri<TD>> {
+        match &self.kind {
+            Dt(iri) => Some(iri),
+            Lang(_) => None,
         }
     }
 
-    /// Return a copy of the IRI of the literals datatype.
+    /// Return an IRI borrowing the literals datatype.
     ///
     /// _Note:_ A language-tagged literal has always the type `rdf:langString`.
-    pub fn dt<'a>(&self) -> Iri<TD>
-    where
-        TD: From<&'a str>,
-    {
-        match self {
-            Simple(_) => Iri::try_from(&xsd::string).expect("ensured"),
-            Lang { .. } => Iri::try_from(&rdf::langString).expect("ensured"),
-            Typed { dt, .. } => dt.clone(),
+    pub fn dt(&self) -> Iri<&str> {
+        match &self.kind {
+            Lang(_) => rdf::langString.try_into().expect("ensured"),
+            Dt(dt) => dt.into(),
         }
     }
 
     /// Return the language-tag of the literal if it has one.
     pub fn lang(&self) -> Option<&TD> {
-        if let Lang { tag, .. } = self {
+        if let Lang(tag) = &self.kind {
             Some(tag)
         } else {
             None
@@ -270,10 +274,10 @@ where
 
     /// Check if the datatype IRI is absolute.
     pub fn is_absolute(&self) -> bool {
-        if let Literal::Typed { dt, .. } = self {
+        if let Dt(dt) = &self.kind {
             dt.is_absolute()
         } else {
-            // other datatypes `xsd:string` and `rdf:langString` are absolute IRIs
+            // other datatype `rdf:langString` is absolute
             true
         }
     }
@@ -293,29 +297,6 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.write_fmt(f)
-    }
-}
-
-impl<TD> Hash for Literal<TD>
-where
-    TD: TermData,
-{
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        match self {
-            Simple(txt) => {
-                // Same hash as Typed { .., dt: xsd::string }
-                state.write(txt.as_ref().as_bytes());
-                xsd::string.hash(state);
-            }
-            Lang { txt, tag } => {
-                state.write(txt.as_ref().as_bytes());
-                tag.as_ref().to_ascii_lowercase().hash(state);
-            }
-            Typed { txt, dt } => {
-                state.write(txt.as_ref().as_bytes());
-                dt.hash(state);
-            }
-        };
     }
 }
 
@@ -370,29 +351,16 @@ where
     U: TermData,
 {
     fn eq(&self, other: &Literal<U>) -> bool {
-        match (self, other) {
-            (Simple(st), Simple(ot)) => st.as_ref() == ot.as_ref(),
-            (Lang { txt: st, tag: stag }, Lang { txt: ot, tag: otag }) => {
-                st.as_ref() == ot.as_ref() && stag.as_ref().eq_ignore_ascii_case(otag.as_ref())
-            }
-            (Typed { txt: st, dt: sdt }, Typed { txt: ot, dt: odt }) => {
-                st.as_ref() == ot.as_ref() && sdt == odt
-            }
-            (Simple(st), Typed { txt: ot, dt }) if dt == &xsd::string => st.as_ref() == ot.as_ref(),
-            (Typed { txt: st, dt }, Simple(ot)) if dt == &xsd::string => st.as_ref() == ot.as_ref(),
-            _ => false,
-        }
+        self.txt.as_ref() == other.txt.as_ref() && self.kind == other.kind
     }
 }
 
-impl<TD> PartialEq<str> for Literal<TD>
-where
-    TD: TermData,
-{
-    fn eq(&self, other: &str) -> bool {
-        match self {
-            Simple(txt) => txt.as_ref() == other,
-            _ => false,
+impl<TD: TermData> Hash for Literal<TD> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        state.write(self.txt.as_ref().as_bytes());
+        match &self.kind {
+            Lang(tag) => state.write(tag.as_ref().to_ascii_lowercase().as_bytes()),
+            Dt(iri) => iri.hash(state),
         }
     }
 }

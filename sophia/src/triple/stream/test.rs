@@ -14,8 +14,8 @@ lazy_static! {
     pub static ref KNOWS: StaticTerm = StaticTerm::new_iri_suffixed(NS, "knows").unwrap();
     pub static ref NAME: StaticTerm = StaticTerm::new_iri_suffixed(NS, "name").unwrap();
     pub static ref PERSON: StaticTerm = StaticTerm::new_iri_suffixed(NS, "Person").unwrap();
-    pub static ref ALICE_LIT: StaticTerm = StaticTerm::new_literal("Alice");
-    pub static ref BOB_LIT: StaticTerm = StaticTerm::new_literal("Bob");
+    pub static ref ALICE_LIT: StaticTerm = "Alice".into();
+    pub static ref BOB_LIT: StaticTerm = "Bob".into();
 
     // Relative IRIs
     pub static ref ALICE_REF: StaticTerm = StaticTerm::new_iri("alice").unwrap();

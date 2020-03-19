@@ -122,7 +122,7 @@ pub(crate) mod test {
             [
                 me,
                 StaticTerm::new_iri("http://schema.org/name").unwrap(),
-                StaticTerm::new_literal("Pierre-Antoine"),
+                "Pierre-Antoine".into(),
             ],
         ];
         let s = NtSerializer::new_stringifier()

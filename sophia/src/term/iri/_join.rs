@@ -202,9 +202,10 @@ where
     ///
     /// May allocate an intermediate IRI if `other` is suffixed.
     fn resolve(&self, other: &Literal<TD>) -> Result<Literal<TD>> {
-        match other {
-            Literal::Typed { txt, dt } => Ok(Literal::new_dt(txt.clone(), self.resolve(dt)?)),
-            lit => Ok(lit.clone()),
+        if let Some(dt) = other.try_borrow_dt() {
+            Ok(Literal::new_dt(other.txt().clone(), self.resolve(dt)?))
+        } else {
+            Ok(other.clone())
         }
     }
 }

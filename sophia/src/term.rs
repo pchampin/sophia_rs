@@ -49,7 +49,7 @@ use self::blank_node::BlankNode;
 pub mod iri;
 use self::iri::{Iri, Normalization};
 pub mod literal;
-use self::literal::Literal;
+use self::literal::{AsLiteral, Literal};
 
 mod _display;
 mod _error;
@@ -148,14 +148,6 @@ where
         BlankNode::new(id).map(Into::into)
     }
 
-    /// Return a new simple literal with datatype `xsd:string`.
-    pub fn new_literal<U>(txt: U) -> Self
-    where
-        T: From<U>,
-    {
-        Literal::<T>::new(txt).into()
-    }
-
     /// Return a new literal term with the given value and language tag.
     ///
     /// May fail if the language tag is not a valid BCP47 language tag.
@@ -169,7 +161,7 @@ where
 
     /// Return a new literal term with the given value and datatype.
     ///
-    /// May fail if `dt` is not a valid datatype.
+    /// May fail if `dt` is not an IRI.
     pub fn new_literal_dt<U, V>(txt: U, dt: V) -> Result<Self>
     where
         T: From<U>,
@@ -461,16 +453,16 @@ where
 
 impl<TD> From<String> for Term<TD>
 where
-    TD: TermData + From<String>,
+    TD: TermData + From<String> + From<&'static str>,
 {
     fn from(txt: String) -> Self {
-        Self::new_literal(txt)
+        txt.as_term()
     }
 }
 
 impl<'a> From<&'a str> for RefTerm<'a> {
     fn from(txt: &'a str) -> Self {
-        RefTerm::new_literal(txt)
+        txt.as_term()
     }
 }
 
