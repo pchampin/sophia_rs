@@ -355,6 +355,20 @@ where
     }
 }
 
+impl<T, U> PartialEq<Term<U>> for Literal<T>
+where
+    T: TermData,
+    U: TermData,
+{
+    fn eq(&self, other: &Term<U>) -> bool {
+        if let Term::Literal(other) = other {
+            self == other
+        } else {
+            false
+        }
+    }
+}
+
 impl<TD: TermData> Hash for Literal<TD> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         state.write(self.txt.as_ref().as_bytes());
