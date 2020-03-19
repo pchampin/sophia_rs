@@ -51,7 +51,7 @@ pub trait FromLiteral: Sized {
     ///
     /// # Error
     ///
-    /// The blanked implementation throws `SourceError(UnexpectedKindOfTerm)`
+    /// The default implementation throws `SourceError(UnexpectedKindOfTerm)`
     /// if `t` is not a literal.
     fn from_term<'a, TD>(t: &'a Term<TD>) -> StreamResult<Self, TermError, Self::Error>
     where
