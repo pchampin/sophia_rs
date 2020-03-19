@@ -11,8 +11,8 @@ use super::*;
 use crate::quad::stream::AsQuadSource;
 use crate::quad::streaming_mode::*;
 use crate::quad::*;
-use crate::term::*;
 use crate::triple::*;
+use sophia_term::*;
 
 impl<Q> Dataset for [Q]
 where
@@ -154,7 +154,7 @@ mod test {
 
     use crate::dataset::*;
     use crate::ns::*;
-    use crate::term::*;
+    use sophia_term::*;
 
     #[test]
     fn test_slice() {

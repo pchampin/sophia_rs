@@ -68,8 +68,8 @@
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 
-use crate::term::{RefTerm, Term, TermData};
 use crate::triple::Triple;
+use sophia_term::{RefTerm, Term, TermData};
 
 mod _unsafe_triple;
 pub(crate) use _unsafe_triple::*;

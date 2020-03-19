@@ -2,9 +2,9 @@
 use std::borrow::Borrow;
 use std::collections::HashMap;
 
-use crate::term::factory::{FTerm, TermFactory};
-use crate::term::index_map::TermIndexMap;
-use crate::term::*;
+use sophia_term::factory::{FTerm, TermFactory};
+use sophia_term::index_map::TermIndexMap;
+use sophia_term::*;
 
 /// An in-memory implementation of [`TermIndexMap`](../../term/index_map/trait.TermIndexMap.html)
 /// with unsigned integers as indices.
@@ -221,8 +221,8 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::term::factory::RcTermFactory;
-    use crate::term::index_map::assert_term_index_map_works;
+    use sophia_term::factory::RcTermFactory;
+    use sophia_term::index_map::assert_term_index_map_works;
 
     #[test]
     fn test_term_index() {

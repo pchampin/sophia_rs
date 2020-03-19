@@ -22,14 +22,14 @@ use crate::ns::rdf;
 use crate::ns::xsd;
 use crate::ns::Namespace;
 use crate::parser::{LocatableError, TripleParser};
-use crate::term::factory::RcTermFactory;
-use crate::term::factory::TermFactory;
-use crate::term::iri::is_absolute_iri_ref;
-use crate::term::iri::is_relative_iri_ref;
-use crate::term::matcher::TermMatcher;
-use crate::term::StaticTerm;
-use crate::term::Term;
-use crate::term::TermError;
+use sophia_term::factory::RcTermFactory;
+use sophia_term::factory::TermFactory;
+use sophia_term::iri::is_absolute_iri_ref;
+use sophia_term::iri::is_relative_iri_ref;
+use sophia_term::matcher::TermMatcher;
+use sophia_term::StaticTerm;
+use sophia_term::Term;
+use sophia_term::TermError;
 
 mod _error;
 pub use self::_error::*;
@@ -267,10 +267,10 @@ mod test {
     use crate::graph::inmem::TermIndexMapU;
     use crate::graph::Graph;
     use crate::parser::TripleParser;
-    use crate::term::factory::RcTermFactory;
-    use crate::term::Term;
     use crate::triple::stream::TripleSource;
     use crate::triple::Triple;
+    use sophia_term::factory::RcTermFactory;
+    use sophia_term::Term;
 
     type TestGraph = HashGraph<TermIndexMapU<u16, RcTermFactory>>;
 
@@ -337,7 +337,7 @@ mod test {
                     .expect("failed parsing N-Triples file");
 
                 use std::rc::Rc;
-                use crate::term::factory::TermFactory;
+                use sophia_term::factory::TermFactory;
                 use crate::graph::MutableGraph;
 
                 fn relabel(factory: &mut RcTermFactory, t: Term<Rc<str>>) -> Term<Rc<str>> {

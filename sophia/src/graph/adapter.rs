@@ -9,7 +9,7 @@ use resiter::Map;
 use crate::dataset::*;
 use crate::graph::{Graph, MutableGraph, SetGraph};
 use crate::quad::streaming_mode::{FromTriple, StreamedQuad};
-use crate::term::{Term, TermData};
+use sophia_term::{Term, TermData};
 
 mod _error;
 pub use self::_error::*;
@@ -373,7 +373,7 @@ mod test {
     use crate::dataset::{Dataset, MutableDataset};
     use crate::graph::*;
     use crate::ns::{rdf, rdfs};
-    use crate::term::{BoxTerm, StaticTerm};
+    use sophia_term::{BoxTerm, StaticTerm};
     use std::collections::HashSet;
     use std::error::Error;
 

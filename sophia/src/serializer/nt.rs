@@ -108,7 +108,7 @@ impl Stringifier for NtSerializer<Vec<u8>> {
 pub(crate) mod test {
     use super::*;
     use crate::ns::*;
-    use crate::term::*;
+    use sophia_term::*;
 
     #[test]
     fn graph() {

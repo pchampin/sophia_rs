@@ -13,7 +13,7 @@
 //!
 
 use crate::quad::Quad;
-use crate::term::*;
+use sophia_term::*;
 
 pub mod stream;
 pub mod streaming_mode;

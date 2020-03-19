@@ -7,7 +7,7 @@ use std::marker::PhantomData;
 use std::ptr::NonNull;
 
 use crate::quad::Quad;
-use crate::term::{RefTerm, Term, TermData};
+use sophia_term::{RefTerm, Term, TermData};
 
 mod _unsafe_quad;
 pub(crate) use _unsafe_quad::*;

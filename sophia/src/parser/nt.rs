@@ -32,9 +32,9 @@ mod test {
     use crate::graph::inmem::FastGraph;
     use crate::graph::Graph;
     use crate::ns::{rdf, xsd};
-    use crate::term::matcher::ANY;
-    use crate::term::StaticTerm;
     use crate::triple::stream::TripleSource;
+    use sophia_term::matcher::ANY;
+    use sophia_term::StaticTerm;
 
     #[test]
     fn test_simple_nt_string() -> std::result::Result<(), Box<dyn std::error::Error>> {

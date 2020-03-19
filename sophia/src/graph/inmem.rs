@@ -34,8 +34,8 @@
 
 use super::_traits::*;
 use super::indexed::*;
-use crate::term::factory::*;
-use crate::term::*;
+use sophia_term::factory::*;
+use sophia_term::*;
 
 #[macro_use]
 mod _wrapper;

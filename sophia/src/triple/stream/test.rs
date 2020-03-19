@@ -2,9 +2,9 @@ use super::*;
 use crate::graph::Graph;
 use crate::ns::rdf;
 use crate::quad::stream::QuadSource;
-use crate::term::BoxTerm;
 use crate::triple::Triple;
 use lazy_static::lazy_static;
+use sophia_term::BoxTerm;
 
 pub const NS: &'static str = "http://example.org/";
 lazy_static! {

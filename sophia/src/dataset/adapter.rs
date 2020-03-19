@@ -7,9 +7,9 @@ use resiter::Map;
 
 use crate::dataset::{Dataset, MutableDataset, SetDataset};
 use crate::graph::*;
-use crate::term::matcher::{GraphNameMatcher, ANY};
-use crate::term::{Term, TermData};
 use crate::triple::streaming_mode::{FromQuad, StreamedTriple};
+use sophia_term::matcher::{GraphNameMatcher, ANY};
+use sophia_term::{Term, TermData};
 
 /// The adapter returned by
 /// [`Dataset::union_graph`](../trait.Dataset.html#method.union_graph)
@@ -187,7 +187,7 @@ pub(crate) mod test {
     use crate::dataset::MDResult;
     use crate::dataset::*;
     use crate::ns::rdfs;
-    use crate::term::BoxTerm;
+    use sophia_term::BoxTerm;
     use std::collections::HashSet;
 
     pub type MyQuad = ([BoxTerm; 3], Option<BoxTerm>);

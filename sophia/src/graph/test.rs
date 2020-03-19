@@ -4,11 +4,11 @@ use std::fmt::Debug;
 
 use crate::graph::*;
 use crate::ns::*;
-use crate::term::*;
 use crate::triple::stream::*;
 use crate::triple::streaming_mode::{TripleStreamingMode, UnsafeTriple};
 use crate::triple::*;
 use lazy_static::lazy_static;
+use sophia_term::*;
 
 pub const NS: &str = "http://example.org/";
 
@@ -133,11 +133,11 @@ macro_rules! test_graph_impl {
         #[cfg(test)]
         mod $module_name {
             use resiter::oks::*;
+            use sophia_term::matcher::ANY;
+            use sophia_term::*;
             use $crate::graph::test::*;
             use $crate::graph::*;
             use $crate::ns::*;
-            use $crate::term::matcher::ANY;
-            use $crate::term::*;
 
             #[allow(unused_imports)]
             use super::*;

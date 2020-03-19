@@ -79,7 +79,7 @@ pub enum RdfError {
     #[error("Prefixes must not be `_`")]
     InvalidPrefixBlank,
     #[error("Invalid RDF-term: {0}")]
-    InvalidRdfTerm(#[from] crate::term::TermError),
+    InvalidRdfTerm(#[from] sophia_term::TermError),
     #[error("Invalid Url: {0}")]
     InvalidUrl(#[from] url::ParseError),
     #[error("The given base IRI `{0}` is not a valid IRI")]

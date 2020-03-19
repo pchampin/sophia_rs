@@ -33,8 +33,8 @@ mod test {
     use crate::dataset::Dataset;
     use crate::ns::{rdf, xsd};
     use crate::quad::stream::QuadSource;
-    use crate::term::matcher::ANY;
-    use crate::term::StaticTerm;
+    use sophia_term::matcher::ANY;
+    use sophia_term::StaticTerm;
 
     #[test]
     fn test_simple_nq_string() -> std::result::Result<(), Box<dyn std::error::Error>> {

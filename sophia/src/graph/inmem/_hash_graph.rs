@@ -6,10 +6,10 @@ use std::hash::Hash;
 
 use crate::graph::indexed::IndexedGraph;
 use crate::graph::*;
-use crate::term::factory::TermFactory;
-use crate::term::index_map::TermIndexMap;
-use crate::term::{RefTerm, Term, TermData};
 use crate::triple::streaming_mode::{ByTermRefs, StreamedTriple};
+use sophia_term::factory::TermFactory;
+use sophia_term::index_map::TermIndexMap;
+use sophia_term::{RefTerm, Term, TermData};
 
 /// A generic implementation of [`Graph`] and [`MutableGraph`],
 /// storing its terms in a [`TermIndexMap`],

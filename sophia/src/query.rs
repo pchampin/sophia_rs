@@ -173,7 +173,7 @@ mod test {
 
     use crate::graph::inmem::FastGraph;
     use crate::ns::{rdf, Namespace};
-    use crate::term::RcTerm;
+    use sophia_term::RcTerm;
 
     #[test]
     fn test_bindings_for_triple_0var_0() {

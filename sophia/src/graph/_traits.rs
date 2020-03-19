@@ -8,11 +8,11 @@ use resiter::filter::*;
 use resiter::map::*;
 
 use crate::graph::adapter::GraphAsDataset;
-use crate::term::matcher::TermMatcher;
-use crate::term::*;
 use crate::triple::stream::*;
 use crate::triple::streaming_mode::*;
 use crate::triple::*;
+use sophia_term::matcher::TermMatcher;
+use sophia_term::*;
 
 use std::convert::Infallible;
 use std::error::Error;

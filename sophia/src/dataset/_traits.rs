@@ -12,9 +12,9 @@ use crate::dataset::adapter::DatasetGraph;
 use crate::quad::stream::*;
 use crate::quad::streaming_mode::*;
 use crate::quad::*;
-use crate::term::matcher::*;
-use crate::term::*;
 use crate::triple::stream::StreamResult;
+use sophia_term::matcher::*;
+use sophia_term::*;
 
 use crate::graph::insert_if_absent;
 

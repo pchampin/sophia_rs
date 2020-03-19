@@ -6,9 +6,9 @@ use std::hash::Hash;
 use crate::dataset::indexed::IndexedDataset;
 use crate::dataset::*;
 use crate::quad::streaming_mode::{ByTermRefs, StreamedQuad};
-use crate::term::factory::TermFactory;
-use crate::term::index_map::TermIndexMap;
-use crate::term::*;
+use sophia_term::factory::TermFactory;
+use sophia_term::index_map::TermIndexMap;
+use sophia_term::*;
 
 /// A generic implementation of [`Dataset`] and [`MutableDataset`],
 /// storing its terms in a [`TermIndexMap`],

@@ -309,30 +309,30 @@ macro_rules! impl_dataset_for_wrapper {
         #[inline]
         fn quads_with_s<'s_, T_>(
             &'s_ self,
-            s: &'s_ $crate::term::Term<T_>
+            s: &'s_ sophia_term::Term<T_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: $crate::term::TermData,
+            T_: sophia_term::TermData,
         {
             DatasetWrapper::dw_quads_with_s(self, s)
         }
         #[inline]
         fn quads_with_p<'s_, T_>(
             &'s_ self,
-            p: &'s_ $crate::term::Term<T_>
+            p: &'s_ sophia_term::Term<T_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: $crate::term::TermData,
+            T_: sophia_term::TermData,
         {
             DatasetWrapper::dw_quads_with_p(self, p)
         }
         #[inline]
         fn quads_with_o<'s_, T_>(
             &'s_ self,
-            o: &'s_ $crate::term::Term<T_>
+            o: &'s_ sophia_term::Term<T_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: $crate::term::TermData,
+            T_: sophia_term::TermData,
         {
 
             DatasetWrapper::dw_quads_with_o(self, o)
@@ -340,154 +340,154 @@ macro_rules! impl_dataset_for_wrapper {
         #[inline]
         fn quads_with_g<'s_, T_>(
             &'s_ self,
-            g: std::option::Option<&'s_ $crate::term::Term<T_>>
+            g: std::option::Option<&'s_ sophia_term::Term<T_>>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: $crate::term::TermData,
+            T_: sophia_term::TermData,
         {
             DatasetWrapper::dw_quads_with_g(self, g)
         }
         #[inline]
         fn quads_with_sp<'s_, T_, U_>(
             &'s_ self,
-            s: &'s_ $crate::term::Term<T_>,
-            p: &'s_ $crate::term::Term<U_>
+            s: &'s_ sophia_term::Term<T_>,
+            p: &'s_ sophia_term::Term<U_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: $crate::term::TermData,
-            U_: $crate::term::TermData,
+            T_: sophia_term::TermData,
+            U_: sophia_term::TermData,
         {
             DatasetWrapper::dw_quads_with_sp(self, s, p)
         }
         #[inline]
         fn quads_with_so<'s_, T_, U_>(
             &'s_ self,
-            s: &'s_ $crate::term::Term<T_>,
-            o: &'s_ $crate::term::Term<U_>
+            s: &'s_ sophia_term::Term<T_>,
+            o: &'s_ sophia_term::Term<U_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: $crate::term::TermData,
-            U_: $crate::term::TermData,
+            T_: sophia_term::TermData,
+            U_: sophia_term::TermData,
         {
             DatasetWrapper::dw_quads_with_so(self, s, o)
         }
         #[inline]
         fn quads_with_sg<'s_, T_, U_>(
             &'s_ self,
-            s: &'s_ $crate::term::Term<T_>,
-            g: std::option::Option<&'s_ $crate::term::Term<U_>>
+            s: &'s_ sophia_term::Term<T_>,
+            g: std::option::Option<&'s_ sophia_term::Term<U_>>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: $crate::term::TermData,
-            U_: $crate::term::TermData,
+            T_: sophia_term::TermData,
+            U_: sophia_term::TermData,
         {
             DatasetWrapper::dw_quads_with_sg(self, s, g)
         }
         #[inline]
         fn quads_with_po<'s_, T_, U_>(
             &'s_ self,
-            p: &'s_ $crate::term::Term<T_>,
-            o: &'s_ $crate::term::Term<U_>
+            p: &'s_ sophia_term::Term<T_>,
+            o: &'s_ sophia_term::Term<U_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: $crate::term::TermData,
-            U_: $crate::term::TermData,
+            T_: sophia_term::TermData,
+            U_: sophia_term::TermData,
         {
             DatasetWrapper::dw_quads_with_po(self, p, o)
         }
         #[inline]
         fn quads_with_pg<'s_, T_, U_>(
             &'s_ self,
-            p: &'s_ $crate::term::Term<T_>,
-            g: std::option::Option<&'s_ $crate::term::Term<U_>>
+            p: &'s_ sophia_term::Term<T_>,
+            g: std::option::Option<&'s_ sophia_term::Term<U_>>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: $crate::term::TermData,
-            U_: $crate::term::TermData,
+            T_: sophia_term::TermData,
+            U_: sophia_term::TermData,
         {
             DatasetWrapper::dw_quads_with_pg(self, p, g)
         }
         #[inline]
         fn quads_with_og<'s_, T_, U_>(
             &'s_ self,
-            o: &'s_ $crate::term::Term<T_>,
-            g: std::option::Option<&'s_ $crate::term::Term<U_>>
+            o: &'s_ sophia_term::Term<T_>,
+            g: std::option::Option<&'s_ sophia_term::Term<U_>>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: $crate::term::TermData,
-            U_: $crate::term::TermData,
+            T_: sophia_term::TermData,
+            U_: sophia_term::TermData,
         {
             DatasetWrapper::dw_quads_with_og(self, o, g)
         }
         #[inline]
         fn quads_with_spo<'s_, T_, U_, V_>(
             &'s_ self,
-            s: &'s_ $crate::term::Term<T_>,
-            p: &'s_ $crate::term::Term<U_>,
-            o: &'s_ $crate::term::Term<V_>
+            s: &'s_ sophia_term::Term<T_>,
+            p: &'s_ sophia_term::Term<U_>,
+            o: &'s_ sophia_term::Term<V_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: $crate::term::TermData,
-            U_: $crate::term::TermData,
-            V_: $crate::term::TermData,
+            T_: sophia_term::TermData,
+            U_: sophia_term::TermData,
+            V_: sophia_term::TermData,
         {
             DatasetWrapper::dw_quads_with_spo(self, s, p, o)
         }
         #[inline]
         fn quads_with_spg<'s_, T_, U_, V_>(
             &'s_ self,
-            s: &'s_ $crate::term::Term<T_>,
-            p: &'s_ $crate::term::Term<U_>,
-            g: std::option::Option<&'s_ $crate::term::Term<V_>>
+            s: &'s_ sophia_term::Term<T_>,
+            p: &'s_ sophia_term::Term<U_>,
+            g: std::option::Option<&'s_ sophia_term::Term<V_>>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: $crate::term::TermData,
-            U_: $crate::term::TermData,
-            V_: $crate::term::TermData,
+            T_: sophia_term::TermData,
+            U_: sophia_term::TermData,
+            V_: sophia_term::TermData,
         {
             DatasetWrapper::dw_quads_with_spg(self, s, p, g)
         }
         #[inline]
         fn quads_with_sog<'s_, T_, U_, V_>(
             &'s_ self,
-            s: &'s_ $crate::term::Term<T_>,
-            o: &'s_ $crate::term::Term<U_>,
-            g: std::option::Option<&'s_ $crate::term::Term<V_>>
+            s: &'s_ sophia_term::Term<T_>,
+            o: &'s_ sophia_term::Term<U_>,
+            g: std::option::Option<&'s_ sophia_term::Term<V_>>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: $crate::term::TermData,
-            U_: $crate::term::TermData,
-            V_: $crate::term::TermData,
+            T_: sophia_term::TermData,
+            U_: sophia_term::TermData,
+            V_: sophia_term::TermData,
         {
             DatasetWrapper::dw_quads_with_sog(self, s, o, g)
         }
         #[inline]
         fn quads_with_pog<'s_, T_, U_, V_>(
             &'s_ self,
-            p: &'s_ $crate::term::Term<T_>,
-            o: &'s_ $crate::term::Term<U_>,
-            g: std::option::Option<&'s_ $crate::term::Term<V_>>
+            p: &'s_ sophia_term::Term<T_>,
+            o: &'s_ sophia_term::Term<U_>,
+            g: std::option::Option<&'s_ sophia_term::Term<V_>>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: $crate::term::TermData,
-            U_: $crate::term::TermData,
-            V_: $crate::term::TermData,
+            T_: sophia_term::TermData,
+            U_: sophia_term::TermData,
+            V_: sophia_term::TermData,
         {
             DatasetWrapper::dw_quads_with_pog(self, p, o, g)
         }
         #[inline]
         fn quads_with_spog<'s_, T_, U_, V_, W_>(
             &'s_ self,
-            s: &'s_ $crate::term::Term<T_>,
-            p: &'s_ $crate::term::Term<U_>,
-            o: &'s_ $crate::term::Term<V_>,
-            g: std::option::Option<&'s_ $crate::term::Term<W_>>
+            s: &'s_ sophia_term::Term<T_>,
+            p: &'s_ sophia_term::Term<U_>,
+            o: &'s_ sophia_term::Term<V_>,
+            g: std::option::Option<&'s_ sophia_term::Term<W_>>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: $crate::term::TermData,
-            U_: $crate::term::TermData,
-            V_: $crate::term::TermData,
-            W_: $crate::term::TermData,
+            T_: sophia_term::TermData,
+            U_: sophia_term::TermData,
+            V_: sophia_term::TermData,
+            W_: sophia_term::TermData,
         {
             DatasetWrapper::dw_quads_with_spog(self, s, p, o, g)
         }
@@ -495,16 +495,16 @@ macro_rules! impl_dataset_for_wrapper {
         #[inline]
         fn contains<T_, U_, V_, W_>(
             & self,
-            s: &$crate::term::Term<T_>,
-            p: &$crate::term::Term<U_>,
-            o: &$crate::term::Term<V_>,
-            g: std::option::Option<&$crate::term::Term<W_>>
+            s: &sophia_term::Term<T_>,
+            p: &sophia_term::Term<U_>,
+            o: &sophia_term::Term<V_>,
+            g: std::option::Option<&sophia_term::Term<W_>>
         ) -> $crate::dataset::DResult<Self, bool>
         where
-            T_: $crate::term::TermData,
-            U_: $crate::term::TermData,
-            V_: $crate::term::TermData,
-            W_: $crate::term::TermData,
+            T_: sophia_term::TermData,
+            U_: sophia_term::TermData,
+            V_: sophia_term::TermData,
+            W_: sophia_term::TermData,
         {
             DatasetWrapper::dw_contains(self, s, p, o, g)
         }
@@ -583,9 +583,9 @@ macro_rules! impl_indexed_dataset_for_wrapper {
         type TermData = T::TermData;
 
         #[inline]
-        fn get_index<U>(&self, t: &$crate::term::Term<U>) -> Option<Self::Index>
+        fn get_index<U>(&self, t: &sophia_term::Term<U>) -> Option<Self::Index>
         where
-            U: $crate::term::TermData,
+            U: sophia_term::TermData,
         {
             self.get_wrapped().get_index(t)
         }
@@ -593,10 +593,10 @@ macro_rules! impl_indexed_dataset_for_wrapper {
         #[inline]
         fn get_index_for_graph_name<U>(
             &self,
-            g: std::option::Option<&'_ $crate::term::Term<U>>
+            g: std::option::Option<&'_ sophia_term::Term<U>>
         ) -> Option<Self::Index>
         where
-            U: $crate::term::TermData,
+            U: sophia_term::TermData,
         {
             self.get_wrapped().get_index_for_graph_name(g)
         }
@@ -613,16 +613,16 @@ macro_rules! impl_indexed_dataset_for_wrapper {
 
         fn insert_indexed<U, V, W, X>(
             &mut self,
-            s: &$crate::term::Term<U>,
-            p: &$crate::term::Term<V>,
-            o: &$crate::term::Term<W>,
-            g: std::option::Option<&'_ $crate::term::Term<X>>,
+            s: &sophia_term::Term<U>,
+            p: &sophia_term::Term<V>,
+            o: &sophia_term::Term<W>,
+            g: std::option::Option<&'_ sophia_term::Term<X>>,
         ) -> Option<[Self::Index; 4]>
         where
-            U: $crate::term::TermData,
-            V: $crate::term::TermData,
-            W: $crate::term::TermData,
-            X: $crate::term::TermData,
+            U: sophia_term::TermData,
+            V: sophia_term::TermData,
+            W: sophia_term::TermData,
+            X: sophia_term::TermData,
         {
             let modified = self.get_wrapped_mut().insert_indexed(s, p, o, g);
             self.idw_hook_insert_indexed(&modified);
@@ -631,16 +631,16 @@ macro_rules! impl_indexed_dataset_for_wrapper {
 
         fn remove_indexed<U, V, W, X>(
             &mut self,
-            s: &$crate::term::Term<U>,
-            p: &$crate::term::Term<V>,
-            o: &$crate::term::Term<W>,
-            g: std::option::Option<&'_ $crate::term::Term<X>>
+            s: &sophia_term::Term<U>,
+            p: &sophia_term::Term<V>,
+            o: &sophia_term::Term<W>,
+            g: std::option::Option<&'_ sophia_term::Term<X>>
         ) -> Option<[Self::Index; 4]>
         where
-            U: $crate::term::TermData,
-            V: $crate::term::TermData,
-            W: $crate::term::TermData,
-            X: $crate::term::TermData,
+            U: sophia_term::TermData,
+            V: sophia_term::TermData,
+            W: sophia_term::TermData,
+            X: sophia_term::TermData,
         {
             let modified = self.get_wrapped_mut().remove_indexed(s, p, o, g);
             self.idw_hook_remove_indexed(&modified);

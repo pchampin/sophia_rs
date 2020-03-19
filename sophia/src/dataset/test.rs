@@ -7,8 +7,8 @@ use crate::ns::*;
 use crate::quad::stream::*;
 use crate::quad::streaming_mode::{QuadStreamingMode, UnsafeQuad};
 use crate::quad::*;
-use crate::term::*;
 use lazy_static::lazy_static;
+use sophia_term::*;
 
 pub const NS: &str = "http://example.org/";
 
@@ -149,10 +149,10 @@ macro_rules! test_dataset_impl {
         #[cfg(test)]
         mod $module_name {
             use resiter::oks::*;
+            use sophia_term::{matcher::ANY, *};
             use $crate::dataset::test::*;
             use $crate::dataset::*;
             use $crate::ns::*;
-            use $crate::term::{matcher::ANY, *};
 
             #[allow(unused_imports)]
             use super::*;

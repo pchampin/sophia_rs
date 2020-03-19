@@ -2,7 +2,7 @@
 
 use std::hash::Hash;
 
-use crate::term::*;
+use sophia_term::*;
 
 /// A utility trait for implementing [`Dataset`] and [`MutableDataset`]
 /// based on an internal [`TermIndexMap`] for efficient storage.
@@ -92,18 +92,18 @@ macro_rules! impl_mutable_dataset_for_indexed_dataset {
         type MutationError = std::convert::Infallible;
 
         fn insert<T_, U_, V_, W_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>, g: Option<&Term<W_>>) -> MDResult< Self, bool> where
-            T_: $crate::term::TermData,
-            U_: $crate::term::TermData,
-            V_: $crate::term::TermData,
-            W_: $crate::term::TermData,
+            T_: sophia_term::TermData,
+            U_: sophia_term::TermData,
+            V_: sophia_term::TermData,
+            W_: sophia_term::TermData,
         {
             Ok(self.insert_indexed(s, p, o, g).is_some())
         }
         fn remove<T_, U_, V_, W_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>, g: Option<&Term<W_>>) -> MDResult< Self, bool> where
-            T_: $crate::term::TermData,
-            U_: $crate::term::TermData,
-            V_: $crate::term::TermData,
-            W_: $crate::term::TermData,
+            T_: sophia_term::TermData,
+            U_: sophia_term::TermData,
+            V_: sophia_term::TermData,
+            W_: sophia_term::TermData,
         {
             Ok(self.remove_indexed(s, p, o, g).is_some())
         }

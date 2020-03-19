@@ -8,10 +8,10 @@ use std::hash::{BuildHasher, Hash};
 use resiter::oks::*;
 
 use super::*;
-use crate::term::*;
 use crate::triple::stream::AsTripleSource;
 use crate::triple::streaming_mode::*;
 use crate::triple::*;
+use sophia_term::*;
 
 impl<T> Graph for [T]
 where
@@ -134,7 +134,7 @@ mod test {
 
     use crate::graph::*;
     use crate::ns::*;
-    use crate::term::BoxTerm;
+    use sophia_term::BoxTerm;
 
     #[test]
     fn test_slice() {

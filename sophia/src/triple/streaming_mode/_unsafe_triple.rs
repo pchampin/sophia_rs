@@ -2,8 +2,8 @@
 
 use std::ptr::NonNull;
 
-use crate::term::{Term, TermData};
 use crate::triple::Triple;
+use sophia_term::{Term, TermData};
 
 pub trait UnsafeTriple {
     type TermData: TermData;

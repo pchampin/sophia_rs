@@ -8,9 +8,9 @@ use rio_api::parser::*;
 
 use crate::quad::stream::*;
 use crate::quad::streaming_mode::StreamedQuad;
-use crate::term::{BoxTerm, RefTerm};
 use crate::triple::stream::*;
 use crate::triple::streaming_mode::StreamedTriple;
+use sophia_term::{BoxTerm, RefTerm};
 
 /// TripleSource / QuadSource adapter for RIO TripleParser / QuadParser
 pub enum StrictRioSource<T, E> {
