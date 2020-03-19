@@ -318,8 +318,6 @@ where
     ///
     /// NB: for literals, the value only conveys the literal value,
     /// *not* the datatype or the language tag.error
-    ///
-    /// See also [`n3`](#method.n3).
     pub fn value(&self) -> String {
         use self::Term::*;
 

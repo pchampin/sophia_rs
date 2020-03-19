@@ -89,7 +89,7 @@ where
 
     /// Return a new typed literal.
     ///
-    /// Neither is checked if `dt` refers to a datatype nor if `txt` is
+    /// Neither is checked if `dt` refers to a known datatype nor if `txt` is
     /// ill-type and not in the lexical space of `dt`. This is intended as the
     /// [RDF specification](https://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/#section-Graph-Literal)
     /// requires implementations to accept ill-typed literals.
@@ -173,9 +173,7 @@ where
         }
     }
 
-    /// Writes the IRI to the `fmt::Write` using the NTriples syntax.
-    ///
-    /// This means the IRI is in angled brackets and no prefix is used.
+    /// Writes the literal to the `fmt::Write` using the NTriples syntax.
     pub fn write_fmt<W>(&self, w: &mut W) -> fmt::Result
     where
         W: fmt::Write,
@@ -205,7 +203,7 @@ where
         }
     }
 
-    /// Writes the blank node to the `io::Write` using the N3 syntax.
+    /// Writes the literal to the `io::Write` using the NTriples syntax.
     pub fn write_io<W>(&self, w: &mut W) -> io::Result<()>
     where
         W: io::Write,
