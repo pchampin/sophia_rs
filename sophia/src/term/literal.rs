@@ -47,13 +47,6 @@ where
 ///
 /// Each literals has a lexical value, i.e. a text, and a datatype.
 ///
-/// # Simple (or plain) literals
-///
-/// Simple literals are of type `xsd:string` and have shorthands in many
-/// serialization formats. However, they are not an own kind of literals. To
-/// construct simple literals you can either use [`new_dt()`](#method.new_dt)
-/// or use the [`AsLiteral`](trait.AsLiteral.html) trait on strings.
-///
 /// # Language tagged literals
 ///
 /// Language-tagged literals have the type `rdf:langString` and an additional
@@ -61,9 +54,7 @@ where
 ///
 /// The tags conform to [BCP47](https://tools.ietf.org/html/bcp47).
 ///
-/// # Typed literals
-///
-/// Typed literals have a dedicated datatype.
+/// # Datatypes
 ///
 /// Datatypes in RDF have a lexical scope and a value scope. Transformation
 /// between them is done by the lexical-to-value mapping of a datatype. If the
@@ -106,7 +97,7 @@ where
         })
     }
 
-    /// Return a new typed literal.
+    /// Return a new literal with an arbitrary datatype.
     ///
     /// Neither is checked if `dt` refers to a known datatype nor if `txt` is
     /// ill-type and not in the lexical space of `dt`. This is intended as the
