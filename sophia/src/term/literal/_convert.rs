@@ -8,23 +8,26 @@ use crate::triple::stream::{SinkError, SourceError, StreamResult};
 
 /// Provide an IRI to specify the semantic datatype.
 pub trait DataType {
-    /// Static datatype of this Rust-type.
-    fn dt() -> &'static Iri<&'static str>;
+    /// Static IRI referencing the datatype of this Rust-type.
+    fn iri() -> &'static Iri<&'static str>;
 
     /// Datatype of `self`.
     ///
     /// This can be used for `enum`s where each variant may has its own
     /// datatype.
-    fn dt_of(&self) -> &'static Iri<&'static str> {
-        Self::dt()
+    fn datatype(&self) -> &'static Iri<&'static str> {
+        Self::iri()
     }
 
-    fn dt_term() -> StaticTerm {
-        Iri::from(Self::dt()).into()
-    }
+    /// Same as `iri()` but returns a `Term`
+    fn iri_as_term() -> &'static StaticTerm;
 
-    fn dt_term_of(&self) -> StaticTerm {
-        Iri::from(Self::dt_of(self)).into()
+    /// Datatype of `self`.
+    ///
+    /// This can be used for `enum`s where each variant may has its own
+    /// datatype.
+    fn datatype_as_term(&self) -> &'static StaticTerm {
+        Self::iri_as_term()
     }
 }
 
@@ -69,37 +72,33 @@ pub trait FromLiteral: Sized {
 }
 
 macro_rules! impl_dt_with_term {
-    ($ty:ty, $term:expr) => {
+    ($ty:ty, $iri:expr, $term:expr) => {
         impl $crate::term::literal::DataType for $ty {
-            fn dt() -> &'static $crate::term::iri::Iri<&'static str> {
-                if let Term::Iri(iri) = &$term {
-                    iri
-                } else {
-                    panic!("Should not have passed a non IRI")
-                }
+            fn iri() -> &'static $crate::term::iri::Iri<&'static str> {
+                &$iri
             }
 
-            fn dt_term() -> crate::term::Term<&'static str> {
-                $term.clone()
+            fn iri_as_term() -> &'static crate::term::Term<&'static str> {
+                &$term
             }
         }
     };
 }
 
-impl_dt_with_term!(u8, xsd::unsignedByte);
-impl_dt_with_term!(u16, xsd::unsignedShort);
-impl_dt_with_term!(u32, xsd::unsignedInt);
-impl_dt_with_term!(u64, xsd::unsignedLong);
-impl_dt_with_term!(i8, xsd::byte);
-impl_dt_with_term!(i16, xsd::short);
-impl_dt_with_term!(i32, xsd::integer);
-impl_dt_with_term!(i64, xsd::long);
-impl_dt_with_term!(f32, xsd::float);
-impl_dt_with_term!(f64, xsd::double);
-impl_dt_with_term!(bool, xsd::boolean);
-impl_dt_with_term!(String, xsd::string);
-impl_dt_with_term!(str, xsd::string);
-impl_dt_with_term!(&str, xsd::string);
+impl_dt_with_term!(u8, xsd::iri::unsignedByte, xsd::unsignedByte);
+impl_dt_with_term!(u16, xsd::iri::unsignedShort, xsd::unsignedShort);
+impl_dt_with_term!(u32, xsd::iri::unsignedInt, xsd::unsignedInt);
+impl_dt_with_term!(u64, xsd::iri::unsignedLong, xsd::unsignedLong);
+impl_dt_with_term!(i8, xsd::iri::byte, xsd::byte);
+impl_dt_with_term!(i16, xsd::iri::short, xsd::short);
+impl_dt_with_term!(i32, xsd::iri::int, xsd::int);
+impl_dt_with_term!(i64, xsd::iri::long, xsd::long);
+impl_dt_with_term!(f32, xsd::iri::float, xsd::float);
+impl_dt_with_term!(f64, xsd::iri::double, xsd::double);
+impl_dt_with_term!(bool, xsd::iri::boolean, xsd::boolean);
+impl_dt_with_term!(String, xsd::iri::string, xsd::string);
+impl_dt_with_term!(str, xsd::iri::string, xsd::string);
+impl_dt_with_term!(&str, xsd::iri::string, xsd::string);
 
 macro_rules! impl_as_literal {
     ($ty:ty) => {
@@ -109,7 +108,7 @@ macro_rules! impl_as_literal {
             TD: $crate::term::TermData + From<String> + From<&'static str>,
         {
             fn as_literal(&self) -> Literal<TD> {
-                $crate::term::literal::Literal::new_dt(self.to_string(), Self::dt())
+                $crate::term::literal::Literal::new_dt(self.to_string(), Self::iri())
             }
         }
     };
@@ -255,7 +254,7 @@ mod test {
         if t != lit {
             return Err(Failed::TermNeqLiteral);
         }
-        if xsd::integer != lit.dt() {
+        if xsd::int != lit.dt() {
             return Err(Failed::WrongDt);
         }
 

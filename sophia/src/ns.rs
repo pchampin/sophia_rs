@@ -57,12 +57,36 @@ impl<T: TermData> Namespace<T> {
 /// as it is never checked that the prefix IRI is a valid IRI reference.
 #[macro_export]
 macro_rules! namespace {
+    ($iri_prefix:expr, $($suffix:ident),*; $($r_id:ident, $r_sf:expr),*) => {
+        pub static PREFIX:&'static str = $iri_prefix;
+        $(
+            $crate::ns_term!($iri_prefix, $suffix);
+        )*
+        $(
+            $crate::ns_term!($iri_prefix, $r_id, $r_sf);
+        )*
+
+        pub mod iri {
+            $(
+                $crate::ns_iri!($iri_prefix, $suffix);
+            )*
+            $(
+                $crate::ns_iri!($iri_prefix, $r_id, $r_sf);
+            )*
+        }
+    };
     ($iri_prefix:expr, $($suffix:ident),*) => {
         pub static PREFIX:&'static str = $iri_prefix;
         $(
             $crate::ns_term!($iri_prefix, $suffix);
         )*
-    }
+
+        pub mod iri {
+            $(
+                $crate::ns_iri!($iri_prefix, $suffix);
+            )*
+        }
+    };
 }
 
 /// Helper for creating a term in a "namespace module".
@@ -81,6 +105,24 @@ macro_rules! ns_term {
         pub static $ident: $crate::term::StaticTerm = $crate::term::Term::Iri(
             $crate::term::iri::Iri::from_raw_parts_unchecked($prefix, Some($suffix), true),
         );
+    };
+}
+
+/// Helper for creating a term in a "namespace module".
+/// In general, you should use the [`namespace!`](macro.namespace.html) macro instead.
+///
+/// # Safety
+/// This macro is conceptually unsafe,
+/// as it is never checked that the prefix IRI is a valid IRI reference.
+#[macro_export]
+macro_rules! ns_iri {
+    ($prefix:expr, $ident:ident) => {
+        $crate::ns_iri!($prefix, $ident, stringify!($ident));
+    };
+    ($prefix:expr, $ident:ident, $suffix:expr) => {
+        #[allow(non_upper_case_globals)]
+        pub static $ident: $crate::term::iri::Iri<&'static str> =
+            $crate::term::iri::Iri::from_raw_parts_unchecked($prefix, Some($suffix), true);
     };
 }
 
@@ -127,9 +169,9 @@ pub mod rdf {
         datatype,
         bagID,
         aboutEach,
-        aboutEachPrefix
+        aboutEachPrefix;
+        type_, "type"
     );
-    ns_term!("http://www.w3.org/1999/02/22-rdf-syntax-ns#", type_, "type");
 }
 
 /// The standard `xsd:` namespace.

@@ -33,7 +33,7 @@ lazy_static! {
 
 /// A variable as an RDF term.
 ///
-/// Defined in SPARQL and Noation3. However, `sophia` allows them generally
+/// Defined in SPARQL and Notation3. However, `sophia` allows them generally
 /// everywhere. Serializers and parsers might deny them.
 #[derive(Clone, Copy, Debug, Eq, Hash)]
 pub struct Variable<TD: TermData>(TD);
