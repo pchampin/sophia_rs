@@ -82,12 +82,12 @@ where
 }
 
 impl NtSerializer<Vec<u8>> {
-    /// Create a new serializer wich targets a `String`.
+    /// Create a new serializer which targets a `String`.
     #[inline]
     pub fn new_stringifier() -> Self {
         NtSerializer::new(Vec::new())
     }
-    /// Create a new serializer wich targets a `String` with a custom config.
+    /// Create a new serializer which targets a `String` with a custom config.
     #[inline]
     pub fn new_stringifier_with_config(config: NtConfig) -> Self {
         NtSerializer::new_with_config(Vec::new(), config)
@@ -122,7 +122,7 @@ pub(crate) mod test {
             [
                 me,
                 StaticTerm::new_iri("http://schema.org/name").unwrap(),
-                StaticTerm::new_literal_dt("Pierre-Antoine", xsd::string).unwrap(),
+                "Pierre-Antoine".into(),
             ],
         ];
         let s = NtSerializer::new_stringifier()

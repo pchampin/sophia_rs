@@ -33,7 +33,7 @@ lazy_static! {
 
 /// A variable as an RDF term.
 ///
-/// Defined in SPARQL and Noation3. However, `sophia` allows them generally
+/// Defined in SPARQL and Notation3. However, `sophia` allows them generally
 /// everywhere. Serializers and parsers might deny them.
 #[derive(Clone, Copy, Debug, Eq, Hash)]
 pub struct Variable<TD: TermData>(TD);
@@ -59,12 +59,16 @@ where
 
     /// Return a new variable term.
     ///
-    /// # Safety
+    /// # Pre-condition
+    ///
     /// This function requires that `name` is a valid variable name.
-    pub unsafe fn new_unchecked<U>(name: U) -> Self
+    pub fn new_unchecked<U>(name: U) -> Self
     where
+        U: AsRef<str>,
         TD: From<U>,
     {
+        debug_assert!(VARNAME.is_match(name.as_ref()));
+
         Variable(name.into())
     }
 
@@ -124,6 +128,20 @@ where
     }
 }
 
+impl<T, U> PartialEq<Term<U>> for Variable<T>
+where
+    T: TermData,
+    U: TermData,
+{
+    fn eq(&self, other: &Term<U>) -> bool {
+        if let Term::Variable(other) = other {
+            self == other
+        } else {
+            false
+        }
+    }
+}
+
 impl<TD> Deref for Variable<TD>
 where
     TD: TermData,
@@ -173,6 +191,24 @@ where
     fn try_from(term: Term<TD>) -> Result<Self, Self::Error> {
         match term {
             Term::Variable(var) => Ok(var),
+            _ => Err(TermError::UnexpectedKindOfTerm {
+                term: term.to_string(),
+                expect: "variable".to_owned(),
+            }),
+        }
+    }
+}
+
+impl<'a, T, U> TryFrom<&'a Term<U>> for Variable<T>
+where
+    T: TermData + From<&'a str>,
+    U: TermData,
+{
+    type Error = TermError;
+
+    fn try_from(term: &'a Term<U>) -> Result<Self, Self::Error> {
+        match term {
+            Term::Variable(var) => Ok(var.clone_with(T::from)),
             _ => Err(TermError::UnexpectedKindOfTerm {
                 term: term.to_string(),
                 expect: "variable".to_owned(),

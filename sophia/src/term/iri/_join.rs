@@ -6,7 +6,7 @@
 
 use super::{Iri, IRELATIVE_REF_REGEX, IRI_REGEX};
 use crate::quad::{Quad, TupleQuad};
-use crate::term::{LiteralKind, Result, Term, TermData, TermError};
+use crate::term::{Literal, Result, Term, TermData, TermError};
 use crate::triple::Triple;
 use std::fmt;
 
@@ -156,18 +156,19 @@ impl<'a> Resolve<IriParsed<'a>> for IriParsed<'a> {
     }
 }
 
-impl<'a, TD> Resolve<Iri<TD>> for IriParsed<'a>
+impl<'a, TD, TD2> Resolve<Iri<TD>, Iri<TD2>> for IriParsed<'a>
 where
-    TD: TermData + for<'b> From<&'b str>,
+    TD: TermData,
+    TD2: TermData + for<'b> From<&'b str>,
 {
     /// Resolve the given IRI.
     ///
     /// # Performance
     ///
     /// May allocate an intermediate IRI if `other` is suffixed.
-    fn resolve(&self, other: &Iri<TD>) -> Result<Iri<TD>> {
+    fn resolve(&self, other: &Iri<TD>) -> Result<Iri<TD2>> {
         if other.has_suffix() {
-            let no_suffix = other.clone_no_suffix(|s| TD::from(s));
+            let no_suffix = other.clone_no_suffix(|s| TD2::from(s));
             let parsed = no_suffix.parse_components().expect("ensured by no_suffix");
             let joined = self.join(&parsed);
             Ok(Iri::new_unchecked(
@@ -186,22 +187,56 @@ where
 }
 
 // TODO
-// impl<'a, TD> Resolve<Literal<TD>> for IriParsed<'a>
-// where
-//     TD: TermData + From<String>
-// {
-//     /// May resolve the data type's IRI.
-//     ///
-//     /// # Performance
-//     ///
-//     /// May allocate an intermediate IRI if `other` is suffixed.
-//     fn resolve(&self, other: &Literal<TD>) -> Result<Iri<TD>> {
-
-//     }
-// }
-
-impl<'a, TD> Resolve<Term<TD>> for IriParsed<'a>
+impl<'a, TD, TD2> Resolve<Literal<TD>, Literal<TD2>> for IriParsed<'a>
 where
+    TD: TermData,
+    TD2: TermData + for<'b> From<&'b str>,
+{
+    /// May resolve the data type's IRI.
+    ///
+    /// # Exception
+    ///
+    /// This only operates on `Typed` literals. The datatype of `Simple` and
+    /// `Lang` literals are static terms `xsd:string` and `rdf:langString`.
+    /// Therefore, those are not affected.
+    ///
+    /// # Performance
+    ///
+    /// May allocate an intermediate IRI if `other` is suffixed.
+    fn resolve(&self, other: &Literal<TD>) -> Result<Literal<TD2>> {
+        if other.is_absolute() {
+            Ok(other.into())
+        } else {
+            Ok(Literal::new_dt(
+                other.txt().as_ref(),
+                self.resolve(&other.dt())?,
+            ))
+        }
+    }
+}
+
+impl<'a, TD, TD2> Resolve<Term<TD>, Term<TD2>> for IriParsed<'a>
+where
+    TD: TermData,
+    TD2: TermData + for<'b> From<&'b str>,
+{
+    /// Resolve IRIs and the IRIs of typed literals.
+    ///
+    /// # Performance
+    ///
+    /// May allocate an intermediate IRI if an IRI is suffixed.
+    fn resolve(&self, other: &Term<TD>) -> Result<Term<TD2>> {
+        match other {
+            Term::Iri(iri) => self.resolve(iri).map(Into::into),
+            Term::Literal(lit) => self.resolve(lit).map(Into::into),
+            term => Ok(term.into()),
+        }
+    }
+}
+
+impl<'a, T, TD> Resolve<T, [Term<TD>; 3]> for IriParsed<'a>
+where
+    T: Triple,
     TD: TermData + for<'b> From<&'b str>,
 {
     /// Resolve IRIs and the IRIs of typed literals.
@@ -209,29 +244,7 @@ where
     /// # Performance
     ///
     /// May allocate an intermediate IRI if an IRI is suffixed.
-    fn resolve(&self, other: &Term<TD>) -> Result<Term<TD>> {
-        match other {
-            Term::Iri(iri) => self.resolve(iri).map(Into::into),
-            Term::Literal(txt, LiteralKind::Datatype(dt)) => {
-                let dt = self.resolve(dt)?.into();
-                Ok(Term::new_literal_dt_unchecked(txt.clone(), dt))
-            }
-            term => Ok(term.clone()),
-        }
-    }
-}
-
-impl<'a, T> Resolve<T, [Term<T::TermData>; 3]> for IriParsed<'a>
-where
-    T: Triple,
-    T::TermData: for<'b> From<&'b str>,
-{
-    /// Resolve IRIs and the IRIs of typed literals.
-    ///
-    /// # Performance
-    ///
-    /// May allocate an intermediate IRI if an IRI is suffixed.
-    fn resolve(&self, other: &T) -> Result<[Term<T::TermData>; 3]> {
+    fn resolve(&self, other: &T) -> Result<[Term<TD>; 3]> {
         Ok([
             self.resolve(other.s())?,
             self.resolve(other.p())?,
@@ -240,17 +253,17 @@ where
     }
 }
 
-impl<'a, Q> Resolve<Q, TupleQuad<Q::TermData>> for IriParsed<'a>
+impl<'a, Q, TD> Resolve<Q, TupleQuad<TD>> for IriParsed<'a>
 where
     Q: Quad,
-    Q::TermData: for<'b> From<&'b str>,
+    TD: TermData + for<'b> From<&'b str>,
 {
     /// Resolve IRIs and the IRIs of typed literals.
     ///
     /// # Performance
     ///
     /// May allocate an intermediate IRI if an IRI is suffixed.
-    fn resolve(&self, other: &Q) -> Result<TupleQuad<Q::TermData>> {
+    fn resolve(&self, other: &Q) -> Result<TupleQuad<TD>> {
         let g = match other.g() {
             Some(g) => Some(self.resolve(g)?),
             None => None,

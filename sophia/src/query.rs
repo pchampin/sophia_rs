@@ -131,7 +131,7 @@ where
 
 /// Make a matcher corresponding to term `t`, given binding `b`.
 fn matcher(t: &RcTerm, b: &BindingMap) -> Binding {
-    if let Variable(var) = t {
+    if let Term::Variable(var) = t {
         let vname: &str = var.as_ref();
         b.get(vname).cloned().into()
     } else {

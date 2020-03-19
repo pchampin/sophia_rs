@@ -1,5 +1,5 @@
 //! IRIs for identifying resources like specified in
-//! [RDF](https://www.w3.org/TR/rdf11-primer/#section-blank-node).
+//! [RDF](https://www.w3.org/TR/rdf11-primer/#section-IRI).
 //!
 //! IRIs themselves are specified in
 //! [RFC3987](https://tools.ietf.org/html/rfc3987).
@@ -142,7 +142,7 @@ where
     /// As it is not checked if absolute or relative this property must be
     /// entered as well.
     ///
-    /// # Safety
+    /// # Pre-condition
     ///
     /// This function conducts no checks if the resulting IRI is valid. This is
     /// a contract that is generally assumed. Breaking it could result in
@@ -168,7 +168,7 @@ where
     /// As it is not checked if absolute or relative this property must be
     /// entered as well.
     ///
-    /// # Safety
+    /// # Pre-condition
     ///
     /// This function conducts no checks if the resulting IRI is valid. This is
     /// a contract that is generally assumed. Breaking it could result in

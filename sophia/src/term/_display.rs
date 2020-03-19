@@ -21,7 +21,6 @@ where
     T: TermData,
     W: fmt::Write,
 {
-    use self::LiteralKind::*;
     use self::Term::*;
     match t {
         Iri(iri) => {
@@ -30,20 +29,8 @@ where
         BNode(bn) => {
             bn.write_fmt(w)?;
         }
-        Literal(value, Lang(tag)) => {
-            w.write_char('"')?;
-            write_quoted_string(w, value.as_ref())?;
-            w.write_str("\"@")?;
-            w.write_str(tag.as_ref())?;
-        }
-        Literal(value, Datatype(iri)) => {
-            w.write_char('"')?;
-            write_quoted_string(w, value.as_ref())?;
-            w.write_char('"')?;
-            if iri != "http://www.w3.org/2001/XMLSchema#string" {
-                w.write_str("^^")?;
-                iri.write_fmt(w)?;
-            }
+        Literal(lit) => {
+            lit.write_fmt(w)?;
         }
         Variable(var) => {
             var.write_fmt(w)?;
@@ -52,43 +39,10 @@ where
     Ok(())
 }
 
-fn write_quoted_string(w: &mut impl fmt::Write, txt: &str) -> fmt::Result {
-    let mut cut = txt.len();
-    let mut cutchar = '\0';
-    for (pos, chr) in txt.char_indices() {
-        if chr <= '\\' && (chr == '\n' || chr == '\r' || chr == '\\' || chr == '"') {
-            cut = pos;
-            cutchar = chr;
-            break;
-        }
-    }
-    w.write_str(&txt[..cut])?;
-    if cut < txt.len() {
-        match cutchar {
-            '\n' => {
-                w.write_str("\\n")?;
-            }
-            '\r' => {
-                w.write_str("\\r")?;
-            }
-            '"' => {
-                w.write_str("\\\"")?;
-            }
-            '\\' => {
-                w.write_str("\\\\")?;
-            }
-            _ => unreachable!(),
-        }
-    };
-    if cut + 1 >= txt.len() {
-        return Ok(());
-    } // else
-    write_quoted_string(w, &txt[cut + 1..])
-}
-
 #[cfg(test)]
 pub(crate) mod test {
     use crate::ns::*;
+    use crate::term::literal::AsLiteral;
     use crate::term::*;
     use lazy_static::lazy_static;
 
@@ -117,7 +71,7 @@ pub(crate) mod test {
                 r#""chat"@fr-FR"#,
             ),
             (
-                StaticTerm::new_literal_dt("chat", xsd::string).unwrap(),
+                "chat".as_term(),
                 r#""chat""#,
             ),
             (
@@ -125,12 +79,12 @@ pub(crate) mod test {
                 r#""42"^^<http://www.w3.org/2001/XMLSchema#integer>"#,
             ),
             (
-                StaticTerm::new_literal_dt(" \n \r \\ \" hello world", xsd::string).unwrap(),
+                " \n \r \\ \" hello world".as_term(),
                 r#"" \n \r \\ \" hello world""#,
             ),
             (
                 // Literal with non-ascii characters
-                StaticTerm::new_literal_dt("é \u{10000}", xsd::string).unwrap(),
+                "é \u{10000}".as_term(),
                 // in canonical form, non-ascii characters are NOT escaped in literals
                 "\"é \u{10000}\"",
             )

@@ -27,7 +27,7 @@ pub type DQuad<'a, D> = StreamedQuad<'a, <D as Dataset>::Quad>;
 pub type DResult<D, T> = Result<T, <D as Dataset>::Error>;
 /// Type alias for fallible quad iterators produced by a dataset.
 pub type DQuadSource<'a, D> = Box<dyn Iterator<Item = DResult<D, DQuad<'a, D>>> + 'a>;
-/// Type alias for fallible hashets of terms produced by a dataset.
+/// Type alias for fallible hashsets of terms produced by a dataset.
 ///
 /// See [`Dataset::quads`](./trait.Dataset.html#tymethod.quads)
 /// for more information about how to use it.
@@ -435,17 +435,17 @@ pub trait Dataset {
         for q in self.quads() {
             let q = q?;
             let (s, p, o) = (q.s(), q.p(), q.o());
-            if let Iri(_) = s {
+            if let Term::Iri(_) = s {
                 insert_if_absent(&mut res, s)
             }
-            if let Iri(_) = p {
+            if let Term::Iri(_) = p {
                 insert_if_absent(&mut res, p)
             }
-            if let Iri(_) = o {
+            if let Term::Iri(_) = o {
                 insert_if_absent(&mut res, o)
             }
             if let Some(gn) = q.g() {
-                if let Iri(_) = gn {
+                if let Term::Iri(_) = gn {
                     insert_if_absent(&mut res, &gn)
                 }
             }
@@ -459,17 +459,17 @@ pub trait Dataset {
         for q in self.quads() {
             let q = q?;
             let (s, p, o) = (q.s(), q.p(), q.o());
-            if let BNode(_) = s {
+            if let Term::BNode(_) = s {
                 insert_if_absent(&mut res, s)
             }
-            if let BNode(_) = p {
+            if let Term::BNode(_) = p {
                 insert_if_absent(&mut res, p)
             }
-            if let BNode(_) = o {
+            if let Term::BNode(_) = o {
                 insert_if_absent(&mut res, o)
             }
             if let Some(gn) = q.g() {
-                if let BNode(_) = gn {
+                if let Term::BNode(_) = gn {
                     insert_if_absent(&mut res, &gn)
                 }
             }
@@ -483,17 +483,17 @@ pub trait Dataset {
         for q in self.quads() {
             let q = q?;
             let (s, p, o) = (q.s(), q.p(), q.o());
-            if let Literal(_, _) = s {
+            if let Term::Literal(_) = s {
                 insert_if_absent(&mut res, s)
             }
-            if let Literal(_, _) = p {
+            if let Term::Literal(_) = p {
                 insert_if_absent(&mut res, p)
             }
-            if let Literal(_, _) = o {
+            if let Term::Literal(_) = o {
                 insert_if_absent(&mut res, o)
             }
             if let Some(gn) = q.g() {
-                if let Literal(_, _) = gn {
+                if let Term::Literal(_) = gn {
                     insert_if_absent(&mut res, &gn)
                 }
             }
@@ -507,17 +507,17 @@ pub trait Dataset {
         for q in self.quads() {
             let q = q?;
             let (s, p, o) = (q.s(), q.p(), q.o());
-            if let Variable(_) = s {
+            if let Term::Variable(_) = s {
                 insert_if_absent(&mut res, s)
             }
-            if let Variable(_) = p {
+            if let Term::Variable(_) = p {
                 insert_if_absent(&mut res, p)
             }
-            if let Variable(_) = o {
+            if let Term::Variable(_) = o {
                 insert_if_absent(&mut res, o)
             }
             if let Some(gn) = q.g() {
-                if let Variable(_) = gn {
+                if let Term::Variable(_) = gn {
                     insert_if_absent(&mut res, &gn)
                 }
             }
@@ -583,7 +583,7 @@ pub trait MutableDataset: Dataset {
     ///
     /// NB: unless this dataset also implements [`SetDataset`](trait.SetDataset.html),
     /// a return value of `true` does *not* mean that the quad was not already in the dataset,
-    /// only that the dataset now has one more occurence of it.
+    /// only that the dataset now has one more occurrence of it.
     ///
     fn insert<T, U, V, W>(
         &mut self,
@@ -604,7 +604,7 @@ pub trait MutableDataset: Dataset {
     ///
     /// NB: unless this dataset also implements [`SetDataset`](trait.SetDataset.html),
     /// a return value of `true` does *not* mean that the quad is not still contained in the dataset,
-    /// only that the dataset now has one less occurence of it.
+    /// only that the dataset now has one less occurrence of it.
     ///
     fn remove<T, U, V, W>(
         &mut self,

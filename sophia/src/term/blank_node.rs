@@ -54,7 +54,7 @@ lazy_static! {
 ///
 /// fn is_foobar(t: BoxTerm) -> bool {
 ///     match t {
-///         BNode(bn) =>
+///         Term::BNode(bn) =>
 ///             bn.starts_with("foo") || &bn == "bar",
 ///         _ =>
 ///             false,
@@ -90,13 +90,16 @@ where
 
     /// Return a new blank node with the given identifier.
     ///
-    /// # Safety
+    /// # Pre-condition
     ///
     /// This function requires that `id` is a valid blank node identifier.
-    pub unsafe fn new_unchecked<U>(id: U) -> Self
+    pub fn new_unchecked<U>(id: U) -> Self
     where
+        U: AsRef<str>,
         TD: From<U>,
     {
+        debug_assert!(BLANK_NODE_LABEL.is_match(id.as_ref()));
+
         BlankNode(id.into())
     }
 
@@ -185,6 +188,20 @@ where
     }
 }
 
+impl<T, U> PartialEq<Term<U>> for BlankNode<T>
+where
+    T: TermData,
+    U: TermData,
+{
+    fn eq(&self, other: &Term<U>) -> bool {
+        if let Term::BNode(other) = other {
+            self == other
+        } else {
+            false
+        }
+    }
+}
+
 impl<'a, T, U> From<&'a BlankNode<U>> for BlankNode<T>
 where
     T: TermData + From<&'a str>,
@@ -204,6 +221,24 @@ where
     fn try_from(term: Term<TD>) -> Result<Self, Self::Error> {
         match term {
             Term::BNode(bn) => Ok(bn),
+            _ => Err(TermError::UnexpectedKindOfTerm {
+                term: term.to_string(),
+                expect: "blank node".to_owned(),
+            }),
+        }
+    }
+}
+
+impl<'a, T, U> TryFrom<&'a Term<U>> for BlankNode<T>
+where
+    T: TermData + From<&'a str>,
+    U: TermData,
+{
+    type Error = TermError;
+
+    fn try_from(term: &'a Term<U>) -> Result<Self, Self::Error> {
+        match term {
+            Term::BNode(bn) => Ok(bn.clone_with(T::from)),
             _ => Err(TermError::UnexpectedKindOfTerm {
                 term: term.to_string(),
                 expect: "blank node".to_owned(),

@@ -29,7 +29,7 @@ pub type GResult<G, T> = Result<T, <G as Graph>::Error>;
 /// See [`Graph::triples`](./trait.Graph.html#tymethod.triples)
 /// for more information about how to use it.
 pub type GTripleSource<'a, G> = Box<dyn Iterator<Item = GResult<G, GTriple<'a, G>>> + 'a>;
-/// Type alias for fallible hashets of terms produced by a graph.
+/// Type alias for fallible hashsets of terms produced by a graph.
 pub type GResultTermSet<G> = GResult<G, HashSet<GTerm<G>>>;
 
 /// Generic trait for RDF graphs.
@@ -269,13 +269,13 @@ pub trait Graph {
         for t in self.triples() {
             let t = t?;
             let (s, p, o) = (t.s(), t.p(), t.o());
-            if let Iri(_) = s {
+            if let Term::Iri(_) = s {
                 insert_if_absent(&mut res, s)
             }
-            if let Iri(_) = p {
+            if let Term::Iri(_) = p {
                 insert_if_absent(&mut res, p)
             }
-            if let Iri(_) = o {
+            if let Term::Iri(_) = o {
                 insert_if_absent(&mut res, o)
             }
         }
@@ -288,13 +288,13 @@ pub trait Graph {
         for t in self.triples() {
             let t = t?;
             let (s, p, o) = (t.s(), t.p(), t.o());
-            if let BNode(_) = s {
+            if let Term::BNode(_) = s {
                 insert_if_absent(&mut res, s)
             }
-            if let BNode(_) = p {
+            if let Term::BNode(_) = p {
                 insert_if_absent(&mut res, p)
             }
-            if let BNode(_) = o {
+            if let Term::BNode(_) = o {
                 insert_if_absent(&mut res, o)
             }
         }
@@ -307,13 +307,13 @@ pub trait Graph {
         for t in self.triples() {
             let t = t?;
             let (s, p, o) = (t.s(), t.p(), t.o());
-            if let Literal(_, _) = s {
+            if let Term::Literal(_) = s {
                 insert_if_absent(&mut res, s)
             }
-            if let Literal(_, _) = p {
+            if let Term::Literal(_) = p {
                 insert_if_absent(&mut res, p)
             }
-            if let Literal(_, _) = o {
+            if let Term::Literal(_) = o {
                 insert_if_absent(&mut res, o)
             }
         }
@@ -326,13 +326,13 @@ pub trait Graph {
         for t in self.triples() {
             let t = t?;
             let (s, p, o) = (t.s(), t.p(), t.o());
-            if let Variable(_) = s {
+            if let Term::Variable(_) = s {
                 insert_if_absent(&mut res, s)
             }
-            if let Variable(_) = p {
+            if let Term::Variable(_) = p {
                 insert_if_absent(&mut res, p)
             }
-            if let Variable(_) = o {
+            if let Term::Variable(_) = o {
                 insert_if_absent(&mut res, o)
             }
         }
@@ -376,7 +376,7 @@ pub trait MutableGraph: Graph {
     ///
     /// NB: unless this graph also implements [`SetGraph`](trait.SetGraph.html),
     /// a return value of `true` does *not* mean that the triple was not already in the graph,
-    /// only that the graph now has one more occurence of it.
+    /// only that the graph now has one more occurrence of it.
     ///
     fn insert<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
     where
@@ -390,7 +390,7 @@ pub trait MutableGraph: Graph {
     ///
     /// NB: unless this graph also implements [`SetGraph`](trait.SetGraph.html),
     /// a return value of `true` does *not* mean that the triple is not still contained in the graph,
-    /// only that the graph now has one less occurence of it.
+    /// only that the graph now has one less occurrence of it.
     ///
     fn remove<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
     where

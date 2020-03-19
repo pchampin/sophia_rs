@@ -6,7 +6,6 @@ use std::result::Result as StdResult;
 use rio_api::model::*;
 use rio_api::parser::*;
 
-use crate::ns::xsd;
 use crate::quad::stream::*;
 use crate::quad::streaming_mode::StreamedQuad;
 use crate::term::{BoxTerm, RefTerm};
@@ -198,26 +197,21 @@ fn consume_err<E>(opt: &mut Option<E>) -> E {
 pub fn rio2refterm(t: GeneralizedTerm) -> RefTerm {
     use Literal::*;
 
-    unsafe {
-        match t {
-            GeneralizedTerm::BlankNode(b) => RefTerm::new_bnode(b.id).unwrap(),
-            GeneralizedTerm::NamedNode(n) => RefTerm::new_iri(n.iri)
-                .expect("Already checked by parser but determine if absolute."),
-            GeneralizedTerm::Literal(Simple { value }) => {
-                RefTerm::new_literal_dt_unchecked(value, xsd::string)
-            }
-            GeneralizedTerm::Literal(LanguageTaggedString { value, language }) => {
-                RefTerm::new_literal_lang_unchecked(value, language)
-            }
-            GeneralizedTerm::Literal(Typed { value, datatype }) => {
-                RefTerm::new_literal_dt_unchecked(
-                    value,
-                    RefTerm::new_iri(datatype.iri)
-                        .expect("Already checked by parser but determine if absolute."),
-                )
-            }
-            GeneralizedTerm::Variable(v) => RefTerm::new_variable_unchecked(v.name),
+    match t {
+        GeneralizedTerm::BlankNode(b) => RefTerm::new_bnode(b.id).unwrap(),
+        GeneralizedTerm::NamedNode(n) => {
+            RefTerm::new_iri(n.iri).expect("Already checked by parser but determine if absolute.")
         }
+        GeneralizedTerm::Literal(Simple { value }) => value.into(),
+        GeneralizedTerm::Literal(LanguageTaggedString { value, language }) => {
+            RefTerm::new_literal_lang_unchecked(value, language)
+        }
+        GeneralizedTerm::Literal(Typed { value, datatype }) => RefTerm::new_literal_dt_unchecked(
+            value,
+            RefTerm::new_iri(datatype.iri)
+                .expect("Already checked by parser but determine if absolute."),
+        ),
+        GeneralizedTerm::Variable(v) => RefTerm::new_variable_unchecked(v.name),
     }
 }
 
