@@ -24,9 +24,11 @@ $ git submodule update
 
 ## Licence
 
-[CECILL-C]
+* [CECILL-B] (compatible with BSD) for core reusable components
+* [CECILL-C] (compatible with GNU LGPL) for other components
 
-(compatible with GNU LGPL)
 
-[CECILL-C]: http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.html
+
+[CECILL-B]: https://cecill.info/licences/Licence_CeCILL-B_V1-en.html
+[CECILL-C]: https://cecill.info/licences/Licence_CeCILL-C_V1-en.html
 [RDF test-suite]: https://github.com/w3c/rdf-tests/
