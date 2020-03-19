@@ -89,7 +89,7 @@ where
 
     /// Return a new typed literal.
     ///
-    /// Neither is checked if `dt` refers to a datatype nor if `txt` is
+    /// Neither is checked if `dt` refers to a known datatype nor if `txt` is
     /// ill-type and not in the lexical space of `dt`. This is intended as the
     /// [RDF specification](https://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/#section-Graph-Literal)
     /// requires implementations to accept ill-typed literals.
