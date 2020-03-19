@@ -232,18 +232,6 @@ where
         &self.txt
     }
 
-    /// Try to borrow the stored datatype IRI.
-    ///
-    /// If the literal is language-tagged `None` is returned.
-    ///
-    /// If you rely on having a datatype use the [`dt()`](#method.dt) method.
-    pub fn try_borrow_dt(&self) -> Option<&Iri<TD>> {
-        match &self.kind {
-            Dt(iri) => Some(iri),
-            Lang(_) => None,
-        }
-    }
-
     /// Return an IRI borrowing the literals datatype.
     ///
     /// _Note:_ A language-tagged literal has always the type `rdf:langString`.

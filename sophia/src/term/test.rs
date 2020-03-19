@@ -361,13 +361,9 @@ fn literal_normalized_last_hash_or_slash() {
         let l2 = l1.clone_normalized_with(norm, |s| Box::from(s));
         assert_eq!(l1, l2);
         if let Literal(l2) = l2 {
-            let i2 = l2.try_borrow_dt().unwrap();
+            let i2 = l2.dt();
             assert_eq!(&i2.ns[..], *ns2);
-            let sf2 = if sf2.len() == 0 {
-                None
-            } else {
-                Some(Box::from(*sf2))
-            };
+            let sf2 = if sf2.len() == 0 { None } else { Some(*sf2) };
             assert_eq!(i2.suffix, sf2);
         }
     }
