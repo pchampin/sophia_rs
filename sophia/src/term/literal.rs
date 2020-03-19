@@ -203,7 +203,7 @@ where
         }
     }
 
-    /// Writes the blank node to the `io::Write` using the N3 syntax.
+    /// Writes the literal to the `io::Write` using the NTriples syntax.
     pub fn write_io<W>(&self, w: &mut W) -> io::Result<()>
     where
         W: io::Write,
