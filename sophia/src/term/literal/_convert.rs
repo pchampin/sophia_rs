@@ -178,7 +178,9 @@ mod test {
     fn borrow_str() {
         let _: Literal<&'static str> = "test".as_literal();
         let string = "test2".to_string();
-        let _: Literal<&str> = string.as_str().as_literal();
+        let l1: Literal<&str> = string.as_str().as_literal();
+        let l2: Literal<std::sync::Arc<str>> = string.as_literal();
+        assert_eq!(l1, l2);
     }
 
     #[test_case("0" => Ok(0) ; "zero")]
