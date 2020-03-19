@@ -173,9 +173,7 @@ where
         }
     }
 
-    /// Writes the IRI to the `fmt::Write` using the NTriples syntax.
-    ///
-    /// This means the IRI is in angled brackets and no prefix is used.
+    /// Writes the literal to the `fmt::Write` using the NTriples syntax.
     pub fn write_fmt<W>(&self, w: &mut W) -> fmt::Result
     where
         W: fmt::Write,
