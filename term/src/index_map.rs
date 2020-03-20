@@ -3,7 +3,7 @@
 use crate::factory::{FTerm, TermFactory};
 use crate::RefTerm;
 
-/// A bidirectionnal mapping between [`Term`]s and *indexes* of a smaller type.
+/// A bidirectional mapping between [`Term`]s and *indexes* of a smaller type.
 ///
 /// The TermIndexMap maintains a reference count for each index,
 /// to automatically free them whenever they are not used.
@@ -20,7 +20,7 @@ pub trait TermIndexMap: Default {
     /// The factory used to instantiate terms.
     type Factory: TermFactory;
 
-    // A reserved index representing no term
+    /// A reserved index representing no term
     const NULL_INDEX: Self::Index;
 
     /// Return the index associated to the given term, if it exists.
@@ -36,7 +36,7 @@ pub trait TermIndexMap: Default {
     /// Shrinks the capacity of the TermIndexMap as much as possible.
     fn shrink_to_fit(&mut self);
 
-    // The following methods have a default impl, and would generally not be overriden
+    // The following methods have a default impl, and would generally not be overridden
 
     /// Return the index associated to the given graph name, if it exists.
     fn get_index_for_graph_name(&self, g: Option<&RefTerm>) -> Option<Self::Index> {
@@ -58,7 +58,7 @@ pub trait TermIndexMap: Default {
     /// As a consequence, this methods returns *an option of option* :
     /// * `None` means that given index is *not* associated to any graph name,
     /// * `Some(None)` means that the given index is associated to the default graph,
-    /// * `Some(Some(term))` means that given index is associetd to a proper graph name.
+    /// * `Some(Some(term))` means that given index is associated to a proper graph name.
     #[allow(clippy::option_option)]
     fn get_graph_name(&self, i: Self::Index) -> Option<Option<&FTerm<Self::Factory>>> {
         if i == Self::NULL_INDEX {

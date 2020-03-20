@@ -40,6 +40,8 @@
 //! [Linked Data]: http://linkeddata.org/
 //! [generalized RDF]: https://docs.rs/sophia/latest/sophia/#generalized-vs-strict-rdf-model
 
+#![deny(missing_docs)]
+
 use std::convert::TryInto;
 use std::fmt::Debug;
 use std::hash::Hash;

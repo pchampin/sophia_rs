@@ -6,9 +6,10 @@ use crate::*;
 /// Generic trait for matching graph names, *i.e.* optional [term]s.
 ///
 /// [term]: ../enum.Term.html
-///
 pub trait GraphNameMatcher {
+    /// `TermData` of the term(s) used by this matcher.
     type TermData: TermData;
+
     /// If this matcher matches only one graph name, return it, else `None`.
     ///
     /// NB: a graph name is already an `Option`, `None` meaning the (unnamed) default graph.
