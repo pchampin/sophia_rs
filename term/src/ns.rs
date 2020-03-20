@@ -54,6 +54,7 @@ impl<T: TermData> Namespace<T> {
 #[macro_export]
 macro_rules! namespace {
     ($iri_prefix:expr, $($suffix:ident),*; $($r_id:ident, $r_sf:expr),*) => {
+        /// Prefix used in this namespace.
         pub static PREFIX:&'static str = $iri_prefix;
         $(
             $crate::ns_term!($iri_prefix, $suffix);
@@ -62,6 +63,7 @@ macro_rules! namespace {
             $crate::ns_term!($iri_prefix, $r_id, $r_sf);
         )*
 
+        /// Version of the terms in this namespace as `Iri`s.
         pub mod iri {
             $(
                 $crate::ns_iri!($iri_prefix, $suffix);
@@ -72,11 +74,13 @@ macro_rules! namespace {
         }
     };
     ($iri_prefix:expr, $($suffix:ident),*) => {
+        /// Prefix used in this namespace.
         pub static PREFIX:&'static str = $iri_prefix;
         $(
             $crate::ns_term!($iri_prefix, $suffix);
         )*
 
+        /// Version of the terms in this namespace as `Iri`s.
         pub mod iri {
             $(
                 $crate::ns_iri!($iri_prefix, $suffix);
@@ -97,6 +101,7 @@ macro_rules! ns_term {
         $crate::ns_term!($prefix, $ident, stringify!($ident));
     };
     ($prefix:expr, $ident:ident, $suffix:expr) => {
+        /// Generated term.
         #[allow(non_upper_case_globals)]
         pub static $ident: $crate::StaticTerm = $crate::Term::Iri(
             $crate::iri::Iri::from_raw_parts_unchecked($prefix, Some($suffix), true),
@@ -116,6 +121,7 @@ macro_rules! ns_iri {
         $crate::ns_iri!($prefix, $ident, stringify!($ident));
     };
     ($prefix:expr, $ident:ident, $suffix:expr) => {
+        /// Generated IRI.
         #[allow(non_upper_case_globals)]
         pub static $ident: $crate::iri::Iri<&'static str> =
             $crate::iri::Iri::from_raw_parts_unchecked($prefix, Some($suffix), true);

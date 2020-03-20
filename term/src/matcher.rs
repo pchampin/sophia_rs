@@ -21,9 +21,10 @@ pub use super::_graph_name_matcher::*;
 /// Generic trait for matching [term]s.
 ///
 /// [term]: ../enum.Term.html
-///
 pub trait TermMatcher {
+    /// `TermData` of the term(s) used by this matcher.
     type TermData: TermData;
+
     /// If this matcher matches only one term, return this term, else `None`.
     fn constant(&self) -> Option<&Term<Self::TermData>>;
 
@@ -54,7 +55,9 @@ impl TermMatcher for AnyTerm {
 
 /// A matcher matching either any term, or only a specific one.
 pub enum AnyOrExactly<T> {
+    /// Match any term.
     Any,
+    /// Match only this term.
     Exactly(T),
 }
 
