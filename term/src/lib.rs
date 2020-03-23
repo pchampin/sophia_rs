@@ -174,7 +174,8 @@ where
     pub fn new_literal_dt<U, V>(txt: U, dt: V) -> Result<Self>
     where
         T: From<U>,
-        V: TryInto<Iri<T>, Error = TermError>,
+        V: TryInto<Iri<T>>,
+        TermError: From<<V as TryInto<Iri<T>>>::Error>,
     {
         Ok(Literal::new_dt(txt, dt.try_into()?).into())
     }
@@ -293,11 +294,12 @@ where
     ///
     /// # Panics
     ///
-    /// Panics if `dt` is not an IRI.
+    /// Panics if `dt` cannot be converted into an IRI.
     pub fn new_literal_dt_unchecked<U, V>(txt: U, dt: V) -> Self
     where
         T: From<U>,
-        V: TryInto<Iri<T>, Error = TermError>,
+        V: TryInto<Iri<T>>,
+        <V as TryInto<Iri<T>>>::Error: Debug,
     {
         Literal::new_dt(txt, dt.try_into().unwrap()).into()
     }

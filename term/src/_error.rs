@@ -52,3 +52,9 @@ pub enum TermError {
         expect: String,
     },
 }
+
+impl From<std::convert::Infallible> for TermError {
+    fn from(_: std::convert::Infallible) -> TermError {
+        unreachable!()
+    }
+}

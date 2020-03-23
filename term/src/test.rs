@@ -257,14 +257,26 @@ fn literal_lang() {
 
 #[test]
 fn literal_dt() {
+    // Constructing from str
     let lit = "hello".as_term();
     assert_eq!(&lit.value(), "hello");
     assert_eq!(&format!("{}", lit), "\"hello\"");
-
     let lit: literal::Literal<&str> = lit.try_into().expect("Should be a literal");
-    assert_eq!(RefTerm::from(lit.dt()), xsd::string);
+    assert_eq!(lit.dt(), xsd::iri::string);
     assert_eq!(*lit.txt(), "hello");
 
+    // Constructing from int
+    let lit: Term<Box<str>> = 42_i32.as_term();
+    assert_eq!(&lit.value(), "42");
+    assert_eq!(
+        &format!("{}", lit),
+        "\"42\"^^<http://www.w3.org/2001/XMLSchema#int>",
+    );
+    let lit: literal::Literal<_> = lit.try_into().expect("Should be a literal");
+    assert_eq!(lit.dt(), xsd::iri::int);
+    assert_eq!(lit.txt().as_ref(), "42");
+
+    // Constructing with IRI datatype
     let lit = RefTerm::new_literal_dt("42", xsd::integer.clone()).unwrap();
     assert_eq!(&lit.value(), "42");
     assert_eq!(
@@ -272,7 +284,19 @@ fn literal_dt() {
         "\"42\"^^<http://www.w3.org/2001/XMLSchema#integer>",
     );
     let lit: literal::Literal<_> = lit.try_into().unwrap();
-    assert_eq!(RefTerm::from(lit.dt()), xsd::integer);
+    assert_eq!(lit.dt(), xsd::iri::integer);
+    assert_eq!(*lit.txt(), "42");
+
+    // Constructing with IRI datatype
+    let lit = RefTerm::new_literal_dt("42", xsd::iri::integer).unwrap();
+    assert_eq!(&lit.value(), "42");
+    assert_eq!(
+        &format!("{}", lit),
+        "\"42\"^^<http://www.w3.org/2001/XMLSchema#integer>",
+    );
+    let lit: literal::Literal<_> = lit.try_into().unwrap();
+    assert_eq!(lit.dt(), xsd::iri::integer);
+    assert_eq!(*lit.txt(), "42");
 }
 
 #[test]
