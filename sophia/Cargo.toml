@@ -17,6 +17,9 @@ all-features = true
 default = []
 xml = ["lazy_static", "percent-encoding", "quick-xml", "regex", "url"]
 
+# This feature enables to use the graph and dataset test macros in other crates
+export_test = ["lazy_static"]
+
 [dependencies]
 sophia_term = "0.4"
 resiter = "0.4.0"
