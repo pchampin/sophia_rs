@@ -18,7 +18,7 @@ default = []
 xml = ["lazy_static", "percent-encoding", "quick-xml", "regex", "url"]
 
 [dependencies]
-sophia_term = "0.4"
+sophia_term = { version = "0.1.0", path = "../term" }
 resiter = "0.4.0"
 rio_api = { version = "0.4.1", features = ["generalized"] }
 rio_turtle = { version = "0.4.0", features = ["generalized"] }
