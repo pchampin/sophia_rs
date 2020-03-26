@@ -16,7 +16,7 @@ where
 {
     /// Resolve relative IRI(s) somewhat contained in `other` with `self` as
     /// the base IRI.
-    fn resolve(&self, other: &S) -> Result<T>;
+    fn resolve(&self, other: &S) -> T;
 }
 
 /// Keeps track of the different components of an IRI reference.
@@ -136,7 +136,7 @@ impl<'a> IriParsed<'a> {
     }
 }
 
-impl<'a> Resolve<str, String> for IriParsed<'a> {
+impl<'a> Resolve<str, Result<String>> for IriParsed<'a> {
     /// Resolve an IRI given as `String`.
     ///
     /// Fails if `other` is not a valid IRI.
@@ -149,8 +149,8 @@ impl<'a> Resolve<str, String> for IriParsed<'a> {
 
 impl<'a> Resolve<IriParsed<'a>> for IriParsed<'a> {
     /// Just a call to `IriParsed::join()`
-    fn resolve(&self, other: &IriParsed<'a>) -> Result<IriParsed<'a>> {
-        Ok(self.join(other))
+    fn resolve(&self, other: &IriParsed<'a>) -> IriParsed<'a> {
+        self.join(other)
     }
 }
 
@@ -164,27 +164,26 @@ where
     /// # Performance
     ///
     /// May allocate an intermediate IRI if `other` is suffixed.
-    fn resolve(&self, other: &Iri<TD>) -> Result<Iri<TD2>> {
+    fn resolve(&self, other: &Iri<TD>) -> Iri<TD2> {
         if other.has_suffix() {
             let no_suffix = other.clone_no_suffix(|s| TD2::from(s));
             let parsed = no_suffix.parse_components().expect("ensured by no_suffix");
             let joined = self.join(&parsed);
-            Ok(Iri::new_unchecked(
+            Iri::new_unchecked(
                 joined.to_string().as_str(),
                 joined.is_absolute(),
-            ))
+            )
         } else {
             let parsed = other.parse_components().expect("is not suffixed");
             let joined = self.join(&parsed);
-            Ok(Iri::new_unchecked(
+            Iri::new_unchecked(
                 joined.to_string().as_str(),
                 joined.is_absolute(),
-            ))
+            )
         }
     }
 }
 
-// TODO
 impl<'a, TD, TD2> Resolve<Literal<TD>, Literal<TD2>> for IriParsed<'a>
 where
     TD: TermData,
@@ -201,14 +200,14 @@ where
     /// # Performance
     ///
     /// May allocate an intermediate IRI if `other` is suffixed.
-    fn resolve(&self, other: &Literal<TD>) -> Result<Literal<TD2>> {
+    fn resolve(&self, other: &Literal<TD>) -> Literal<TD2> {
         if other.is_absolute() {
-            Ok(other.into())
+            other.into()
         } else {
-            Ok(Literal::new_dt(
+            Literal::new_dt(
                 other.txt().as_ref(),
-                self.resolve(&other.dt())?,
-            ))
+                self.resolve(&other.dt()),
+            )
         }
     }
 }
@@ -223,62 +222,14 @@ where
     /// # Performance
     ///
     /// May allocate an intermediate IRI if an IRI is suffixed.
-    fn resolve(&self, other: &Term<TD>) -> Result<Term<TD2>> {
+    fn resolve(&self, other: &Term<TD>) -> Term<TD2> {
         match other {
-            Term::Iri(iri) => self.resolve(iri).map(Into::into),
-            Term::Literal(lit) => self.resolve(lit).map(Into::into),
-            term => Ok(term.into()),
+            Term::Iri(iri) => self.resolve(iri).into(),
+            Term::Literal(lit) => self.resolve(lit).into(),
+            term => term.into(),
         }
     }
 }
-
-/*
-impl<'a, T, TD> Resolve<T, [Term<TD>; 3]> for IriParsed<'a>
-where
-    T: Triple,
-    TD: TermData + for<'b> From<&'b str>,
-{
-    /// Resolve IRIs and the IRIs of typed literals.
-    ///
-    /// # Performance
-    ///
-    /// May allocate an intermediate IRI if an IRI is suffixed.
-    fn resolve(&self, other: &T) -> Result<[Term<TD>; 3]> {
-        Ok([
-            self.resolve(other.s())?,
-            self.resolve(other.p())?,
-            self.resolve(other.o())?,
-        ])
-    }
-}
-
-impl<'a, Q, TD> Resolve<Q, TupleQuad<TD>> for IriParsed<'a>
-where
-    Q: Quad,
-    TD: TermData + for<'b> From<&'b str>,
-{
-    /// Resolve IRIs and the IRIs of typed literals.
-    ///
-    /// # Performance
-    ///
-    /// May allocate an intermediate IRI if an IRI is suffixed.
-    fn resolve(&self, other: &Q) -> Result<TupleQuad<TD>> {
-        let g = match other.g() {
-            Some(g) => Some(self.resolve(g)?),
-            None => None,
-        };
-
-        Ok((
-            [
-                self.resolve(other.s())?,
-                self.resolve(other.p())?,
-                self.resolve(other.o())?,
-            ],
-            g,
-        ))
-    }
-}
-*/
 
 impl fmt::Display for IriParsed<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
