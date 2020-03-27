@@ -169,17 +169,11 @@ where
             let no_suffix = other.clone_no_suffix(|s| TD2::from(s));
             let parsed = no_suffix.parse_components().expect("ensured by no_suffix");
             let joined = self.join(&parsed);
-            Iri::new_unchecked(
-                joined.to_string().as_str(),
-                joined.is_absolute(),
-            )
+            Iri::new_unchecked(joined.to_string().as_str(), joined.is_absolute())
         } else {
             let parsed = other.parse_components().expect("is not suffixed");
             let joined = self.join(&parsed);
-            Iri::new_unchecked(
-                joined.to_string().as_str(),
-                joined.is_absolute(),
-            )
+            Iri::new_unchecked(joined.to_string().as_str(), joined.is_absolute())
         }
     }
 }
@@ -204,10 +198,7 @@ where
         if other.is_absolute() {
             other.into()
         } else {
-            Literal::new_dt(
-                other.txt().as_ref(),
-                self.resolve(&other.dt()),
-            )
+            Literal::new_dt(other.txt().as_ref(), self.resolve(&other.dt()))
         }
     }
 }
