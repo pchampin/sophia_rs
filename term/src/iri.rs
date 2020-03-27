@@ -612,6 +612,20 @@ mod test {
         iri.match_ns(&ns).map(|chars| chars.collect())
     }
 
+    #[test]
+    fn convert_to_mown_does_not_allocate() {
+        use crate::mown_str::MownStr;
+        let iri1 = Iri::<Box<str>>::new_suffixed("http://example.org/", "foo").unwrap();
+        let iri2 = Iri::<MownStr>::from(&iri1);
+        let Iri { ns, suffix, .. } = iri2;
+        if let MownStr::Own(_) = ns {
+            assert!(false, "ns has been allocated");
+        }
+        if let Some(MownStr::Own(_)) = suffix {
+            assert!(false, "suffix has been allocated");
+        }
+    }
+
     pub const POSITIVE_IRIS: &[(
         &str,
         (

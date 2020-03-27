@@ -431,6 +431,19 @@ fn io_quoted_string<W: io::Write>(w: &mut W, txt: &[u8]) -> io::Result<()> {
 
 #[cfg(test)]
 mod test {
-    // The code from this module is tested through its use in other modules
+    // Most of the code from this module is tested through its use in other modules
     // (especially the ::term::test module).
+
+    use super::*;
+
+    #[test]
+    fn convert_to_mown_does_not_allocate() {
+        use crate::mown_str::MownStr;
+        let lit1 = Literal::<Box<str>>::new_dt("hello", &xsd::iri::string);
+        let lit2 = Literal::<MownStr>::from(&lit1);
+        let Literal { txt, .. } = lit2;
+        if let MownStr::Own(_) = txt {
+            assert!(false, "txt has been allocated");
+        }
+    }
 }
