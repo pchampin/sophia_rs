@@ -5,9 +5,10 @@ use std::fmt;
 use std::hash;
 use std::ops::Deref;
 
-/// Either a borrowed reference to a `str` or an own `Box<str>`.
+/// "Maybe own str":
+/// either a borrowed reference to a `str` or an own `Box<str>`.
 ///
-/// It does not try to be mutable,
+/// It does not try to be mutable, nor generic,
 /// which makes it lighter than, for example, `Cow<str>`.
 #[derive(Clone)]
 pub enum MownStr<'a> {
@@ -128,6 +129,26 @@ impl<'a> fmt::Debug for MownStr<'a> {
 impl<'a> fmt::Display for MownStr<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(self.deref(), f)
+    }
+}
+
+// Converting
+
+impl<'a> From<MownStr<'a>> for Box<str> {
+    fn from(other: MownStr<'a>) -> Box<str> {
+        match other {
+            Ref(r) => Box::from(r),
+            Own(b) => b,
+        }
+    }
+}
+
+impl<'a> From<MownStr<'a>> for String {
+    fn from(other: MownStr<'a>) -> String {
+        match other {
+            Ref(r) => String::from(r),
+            Own(b) => b.into(),
+        }
     }
 }
 
