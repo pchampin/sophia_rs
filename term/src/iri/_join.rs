@@ -165,16 +165,10 @@ where
     ///
     /// May allocate an intermediate IRI if `other` is suffixed.
     fn resolve(&self, other: &Iri<TD>) -> Iri<TD2> {
-        if other.has_suffix() {
-            let no_suffix = other.clone_no_suffix(|s| TD2::from(s));
-            let parsed = no_suffix.parse_components().expect("ensured by no_suffix");
-            let joined = self.join(&parsed);
-            Iri::new_unchecked(joined.to_string().as_str(), joined.is_absolute())
-        } else {
-            let parsed = other.parse_components().expect("is not suffixed");
-            let joined = self.join(&parsed);
-            Iri::new_unchecked(joined.to_string().as_str(), joined.is_absolute())
-        }
+        let mut buffer = String::new();
+        let parsed = other.parse_components(&mut buffer);
+        let joined = self.join(&parsed);
+        Iri::new_unchecked(joined.to_string().as_str(), joined.is_absolute())
     }
 }
 

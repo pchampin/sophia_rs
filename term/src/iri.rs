@@ -373,29 +373,38 @@ where
     ///
     /// This is necessary to use the IRI as a base to resolve other IRIs.
     ///
-    /// # Errors
+    /// # Auxiliary buffer
     ///
-    /// As a regular expression is applied to the internal representation of
-    /// the IRI, it is required that the IRI is not suffixed. Otherwise
-    /// `TermError::IriParse` is raised.
+    /// The buffer parameter is only required in the situation where
+    /// the internal representation of this `Iri` makes it unsuitable
+    /// for building an `IriParsed`
+    /// (typically because it is split in an `ns` and a `suffix` part).
+    /// In those situations, the buffer will be used to store the full IRI,
+    /// and will be borrowed by the returned `IriParsed`.
     ///
-    /// In order to prevent this a IRI can be transformed with the
-    /// [`no_suffix()`](#method.no_suffix.html) method.
+    /// Otherwise, the buffer will not be used,
+    /// the data will be borrowed directly from `self`.
     ///
-    /// Parsing the components, this function may also raise an error on
-    /// malformed IRIs.
+    /// ## Implementation detail
     ///
-    /// ## Planned behavior
+    /// Currently, the buffer is used whenever the IRI is internally stored in two parts
+    /// (ns and suffix), i.e. when it was created with `new_suffixed`.
     ///
-    /// Technically a suffixed IRI can parsed successfully when the suffix is
+    /// Technically a suffixed IRI could parsed successfully when the suffix is
     /// separating the IRI at a component. However, detecting this requires
     /// more effort. Maybe this feature will be implemented (by you?) in a
     /// future release of `sophia`.
-    pub fn parse_components(&self) -> Result<IriParsed<'_>> {
-        match self.suffix {
-            None => IriParsed::new(self.ns.as_ref()),
-            Some(_) => Err(TermError::IriParse),
-        }
+    pub fn parse_components<'s>(&'s self, buffer: &'s mut String) -> IriParsed<'s> {
+        let data = match &self.suffix {
+            None => self.ns.as_ref(),
+            Some(s) => {
+                buffer.reserve(self.ns.as_ref().len() + s.as_ref().len() - buffer.capacity());
+                buffer.push_str(self.ns.as_ref());
+                buffer.push_str(s.as_ref());
+                buffer.as_str()
+            }
+        };
+        IriParsed::new(data).expect("Iri must contain a valid IRI reference")
     }
 
     /// Writes the IRI to the `fmt::Write` using the NTriples syntax.
