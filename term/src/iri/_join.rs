@@ -5,18 +5,15 @@
 //!
 
 use super::{Iri, IRELATIVE_REF_REGEX, IRI_REGEX};
-use crate::{Literal, Result, Term, TermData, TermError};
+use crate::mown_str::MownStr;
+use crate::{Literal, MownTerm, Result, Term, TermData, TermError};
 use std::fmt;
 
 /// Resolve some kind of IRI with `self` as the base.
-pub trait Resolve<S, T = S>
-where
-    S: ?Sized,
-    T: Sized,
-{
+pub trait Resolve<S, T> {
     /// Resolve relative IRI(s) somewhat contained in `other` with `self` as
     /// the base IRI.
-    fn resolve(&self, other: &S) -> T;
+    fn resolve(&self, other: S) -> T;
 }
 
 /// Keeps track of the different components of an IRI reference.
@@ -136,28 +133,31 @@ impl<'a> IriParsed<'a> {
     }
 }
 
-impl<'a> Resolve<str, Result<String>> for IriParsed<'a> {
+impl<'a, 'b> Resolve<&'a str, Result<MownStr<'a>>> for IriParsed<'b> {
     /// Resolve an IRI given as `String`.
     ///
     /// Fails if `other` is not a valid IRI.
-    fn resolve(&self, other: &str) -> Result<String> {
-        let other = IriParsed::new(other)?;
-        let joined = self.join(&other);
-        Ok(joined.to_string())
+    fn resolve(&self, other: &'a str) -> Result<MownStr<'a>> {
+        let other_parsed = IriParsed::new(other)?;
+        if other_parsed.is_absolute() {
+            Ok(other.into())
+        } else {
+            Ok(self.join(&other_parsed).to_string().into())
+        }
     }
 }
 
-impl<'a> Resolve<IriParsed<'a>> for IriParsed<'a> {
+impl<'a> Resolve<&'a IriParsed<'a>, IriParsed<'a>> for IriParsed<'a> {
     /// Just a call to `IriParsed::join()`
-    fn resolve(&self, other: &IriParsed<'a>) -> IriParsed<'a> {
+    fn resolve(&self, other: &'a IriParsed<'a>) -> IriParsed<'a> {
         self.join(other)
     }
 }
 
-impl<'a, TD, TD2> Resolve<Iri<TD>, Iri<TD2>> for IriParsed<'a>
+impl<'a, 'b, TD, TD2> Resolve<&'a Iri<TD>, Iri<TD2>> for IriParsed<'b>
 where
     TD: TermData,
-    TD2: TermData + for<'b> From<&'b str>,
+    TD2: TermData + for<'x> From<&'x str>,
 {
     /// Resolve the given IRI.
     ///
@@ -172,45 +172,116 @@ where
     }
 }
 
-impl<'a, TD, TD2> Resolve<Literal<TD>, Literal<TD2>> for IriParsed<'a>
+impl<'a, 'b, TD> Resolve<&'a Iri<TD>, Iri<MownStr<'a>>> for IriParsed<'b>
 where
     TD: TermData,
-    TD2: TermData + for<'b> From<&'b str>,
 {
-    /// May resolve the data type's IRI.
-    ///
-    /// # Exception
-    ///
-    /// This only operates on `Typed` literals. The datatype of `Simple` and
-    /// `Lang` literals are static terms `xsd:string` and `rdf:langString`.
-    /// Therefore, those are not affected.
+    //impl<'a> IriParsed<'a> {
+    /// Resolve the given IRI.
     ///
     /// # Performance
     ///
     /// May allocate an intermediate IRI if `other` is suffixed.
-    fn resolve(&self, other: &Literal<TD>) -> Literal<TD2> {
+    fn resolve(&self, other: &'a Iri<TD>) -> Iri<MownStr<'a>> {
+        //pub fn resolve_mown<'b, TD: TermData>(&self, other: &Iri<TD>) -> Iri<MownStr<'b>> {
+        if other.absolute {
+            return other.into();
+        }
+        let mut buffer = String::new();
+        let parsed = other.parse_components(&mut buffer);
+        let joined = self.join(&parsed);
+        Iri::new_unchecked(joined.to_string(), joined.is_absolute())
+    }
+}
+
+impl<'a, 'b, TD, TD2> Resolve<&'a Literal<TD>, Literal<TD2>> for IriParsed<'b>
+where
+    TD: TermData,
+    TD2: TermData + for<'x> From<&'x str>,
+{
+    /// Resolve the data type's IRI if it is relative.
+    ///
+    /// # Exception
+    ///
+    /// This only changes on `Typed` literals.
+    /// Language-tagged literals are absolue by construction.
+    /// Therefore, those are not affected.
+    ///
+    /// # Performance
+    ///
+    /// May allocate an intermediate IRI if `other.dt()` is suffixed.
+    fn resolve(&self, other: &'a Literal<TD>) -> Literal<TD2> {
         if other.is_absolute() {
             other.into()
         } else {
-            Literal::new_dt(other.txt().as_ref(), self.resolve(&other.dt()))
+            let dt: Iri<TD2> = self.resolve(&other.dt());
+            Literal::new_dt(other.txt().as_ref(), dt)
         }
     }
 }
 
-impl<'a, TD, TD2> Resolve<Term<TD>, Term<TD2>> for IriParsed<'a>
+impl<'a, 'b, TD> Resolve<&'a Literal<TD>, Literal<MownStr<'a>>> for IriParsed<'b>
+where
+    TD: TermData + 'a,
+{
+    /// Resolve the data type's IRI if it is relative.
+    ///
+    /// # Exception
+    ///
+    /// This only changes on `Typed` literals.
+    /// Language-tagged literals are absolue by construction.
+    /// Therefore, those are not affected.
+    ///
+    /// # Performance
+    ///
+    /// May allocate an intermediate IRI if `other.dt()` is suffixed.
+    fn resolve(&self, other: &'a Literal<TD>) -> Literal<MownStr<'a>> {
+        if other.is_absolute() {
+            other.into()
+        } else {
+            let dt = Iri::<MownStr>::new_unchecked(
+                self.resolve(other.dt().value().as_str())
+                    .unwrap()
+                    .to_string(),
+                self.is_absolute(),
+            );
+            Literal::new_dt(other.txt().as_ref(), dt)
+        }
+    }
+}
+
+impl<'a, 'b, TD, TD2> Resolve<&'a Term<TD>, Term<TD2>> for IriParsed<'b>
 where
     TD: TermData,
-    TD2: TermData + for<'b> From<&'b str>,
+    TD2: TermData + for<'x> From<&'x str>,
 {
     /// Resolve IRIs and the IRIs of typed literals.
     ///
     /// # Performance
     ///
     /// May allocate an intermediate IRI if an IRI is suffixed.
-    fn resolve(&self, other: &Term<TD>) -> Term<TD2> {
+    fn resolve(&self, other: &'a Term<TD>) -> Term<TD2> {
         match other {
-            Term::Iri(iri) => self.resolve(iri).into(),
-            Term::Literal(lit) => self.resolve(lit).into(),
+            Term::Iri(iri) => Resolve::<_, Iri<TD2>>::resolve(self, iri).into(),
+            Term::Literal(lit) => Resolve::<_, Literal<TD2>>::resolve(self, lit).into(),
+            term => term.into(),
+        }
+    }
+}
+
+impl<'a, 'b, TD> Resolve<&'a Term<TD>, MownTerm<'a>> for IriParsed<'b>
+where
+    TD: TermData,
+{
+    /// Resolve IRIs and the IRIs of typed literals.
+    ///
+    /// # Performance
+    ///
+    /// May allocate an intermediate IRI if an IRI is suffixed.
+    fn resolve(&self, other: &'a Term<TD>) -> MownTerm<'a> {
+        match other {
+            Term::Iri(iri) => Resolve::<_, Iri<MownStr>>::resolve(self, iri).into(),
+            Term::Literal(lit) => Resolve::<_, Literal<MownStr>>::resolve(self, lit).into(),
             term => term.into(),
         }
     }
@@ -268,6 +339,7 @@ fn remove_dot_segments(path: &mut Vec<&str>) {
 mod test {
     use super::super::test::{NEGATIVE_IRIS, POSITIVE_IRIS, RELATIVE_IRIS};
     use super::*;
+    use crate::{BoxTerm, RefTerm};
 
     #[test]
     fn positive() {
@@ -298,8 +370,97 @@ mod test {
         let base = IriParsed::new("http://a/b/c/d;p?q").unwrap();
         for (rel, abs) in RELATIVE_IRIS {
             let rel = IriParsed::new(rel).unwrap();
-            let gpt = base.join(&rel);
-            assert_eq!(&gpt.to_string(), abs);
+            let got = base.join(&rel);
+            assert_eq!(&got.to_string(), abs);
+        }
+    }
+
+    #[test]
+    fn resolve_str() {
+        let base = IriParsed::new("http://a/b/c/d;p?q").unwrap();
+        for (rel, abs) in RELATIVE_IRIS {
+            let got = base.resolve(*rel).unwrap();
+            assert_eq!(got, *abs);
+        }
+    }
+
+    #[test]
+    fn resolve_bad_str() {
+        let base = IriParsed::new("http://a/b/c/d;p?q").unwrap();
+        for txt in NEGATIVE_IRIS {
+            assert!(base.resolve(*txt).is_err());
+        }
+    }
+
+    #[test]
+    fn resolve_iri_parsed() {
+        let base = IriParsed::new("http://a/b/c/d;p?q").unwrap();
+        for (rel, abs) in RELATIVE_IRIS {
+            let rel = IriParsed::new(rel).unwrap();
+            let got = base.resolve(&rel);
+            assert_eq!(&got.to_string(), abs);
+        }
+    }
+
+    #[test]
+    fn resolve_iri_mown() {
+        let base = IriParsed::new("http://a/b/c/d;p?q").unwrap();
+        for (rel, abs) in RELATIVE_IRIS {
+            let rel = Iri::<&str>::new(*rel).unwrap();
+            let got: Iri<MownStr> = base.resolve(&rel);
+            assert_eq!(&got.value(), abs);
+        }
+    }
+
+    #[test]
+    fn resolve_iri_box() {
+        let base = IriParsed::new("http://a/b/c/d;p?q").unwrap();
+        for (rel, abs) in RELATIVE_IRIS {
+            let rel = Iri::<&str>::new(*rel).unwrap();
+            let got: Iri<Box<str>> = base.resolve(&rel);
+            assert_eq!(&got.value(), abs);
+        }
+    }
+
+    #[test]
+    fn resolve_literal_mown() {
+        let base = IriParsed::new("http://a/b/c/d;p?q").unwrap();
+        for (rel, abs) in RELATIVE_IRIS {
+            let rel = Iri::<&str>::new(*rel).unwrap();
+            let lit = Literal::<&str>::new_dt("hello", rel);
+            let got: Literal<MownStr> = base.resolve(&lit);
+            assert_eq!(&got.dt().value(), abs);
+        }
+    }
+
+    #[test]
+    fn resolve_literal_box() {
+        let base = IriParsed::new("http://a/b/c/d;p?q").unwrap();
+        for (rel, abs) in RELATIVE_IRIS {
+            let rel = Iri::<&str>::new(*rel).unwrap();
+            let lit = Literal::<&str>::new_dt("hello", rel);
+            let got: Literal<Box<str>> = base.resolve(&lit);
+            assert_eq!(&got.dt().value(), abs);
+        }
+    }
+
+    #[test]
+    fn resolve_iri_term_mown() {
+        let base = IriParsed::new("http://a/b/c/d;p?q").unwrap();
+        for (rel, abs) in RELATIVE_IRIS {
+            let rel = RefTerm::new_iri(*rel).unwrap();
+            let got: MownTerm = base.resolve(&rel);
+            assert_eq!(&got.value(), abs);
+        }
+    }
+
+    #[test]
+    fn resolve_iri_term_box() {
+        let base = IriParsed::new("http://a/b/c/d;p?q").unwrap();
+        for (rel, abs) in RELATIVE_IRIS {
+            let rel = RefTerm::new_iri(*rel).unwrap();
+            let got: BoxTerm = base.resolve(&rel);
+            assert_eq!(&got.value(), abs);
         }
     }
 }

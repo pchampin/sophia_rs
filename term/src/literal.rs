@@ -446,4 +446,18 @@ mod test {
             assert!(false, "txt has been allocated");
         }
     }
+
+    #[test]
+    fn resolve_to_mown_does_not_allocate_txt() {
+        use crate::iri::{IriParsed, Resolve};
+        use crate::mown_str::MownStr;
+        let lit1 = Literal::<Box<str>>::new_dt("hello", Iri::new("").unwrap());
+        let xsd_string = &xsd::iri::string.value();
+        let base = IriParsed::new(&xsd_string).unwrap();
+        let lit2: Literal<MownStr> = base.resolve(&lit1);
+        let Literal { txt, .. } = lit2;
+        if let MownStr::Own(_) = txt {
+            assert!(false, "txt has been allocated");
+        }
+    }
 }
