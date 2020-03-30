@@ -7,7 +7,7 @@
 //! for different kinds of datasets,
 //! as well as a few implementations for them.
 
-#[cfg(test)]
+#[cfg(any(test, feature = "test_macro"))]
 #[macro_use]
 pub mod test;
 

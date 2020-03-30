@@ -78,7 +78,12 @@ pub fn populate_nodes_types<G: MutableGraph>(g: &mut G) -> MGResult<G, ()> {
     Ok(())
 }
 
-pub fn as_box_t<T: Triple>(triple: T) -> [BoxTerm; 3] {
+pub fn as_box_t<T: Triple, E>(triple: Result<T, E>) -> [BoxTerm; 3] {
+    let triple = match triple {
+        Ok(t) => t,
+        Err(_) => panic!("as_box_t received an error")
+    };
+
     [triple.s().into(), triple.p().into(), triple.o().into()]
 }
 
@@ -110,7 +115,8 @@ pub fn make_triple_source() -> impl TripleSource {
 }
 
 /// Generates a test suite for [`Graph`] and [`MutableGraph`] implementations.
-///
+/// 
+/// This macro is only available when the feature `test_macros` is enabled.
 /// [`Graph`]: graph/trait.Graph.html
 /// [`MutableGraph`]: graph/trait.MutableGraph.html
 #[macro_export]
@@ -132,7 +138,6 @@ macro_rules! test_graph_impl {
     ($module_name: ident, $mutable_graph_impl: ident, $is_set: expr, $mutable_graph_factory: path) => {
         #[cfg(test)]
         mod $module_name {
-            use resiter::oks::*;
             use sophia_term::matcher::ANY;
             use sophia_term::*;
             use $crate::graph::test::*;
@@ -256,7 +261,7 @@ macro_rules! test_graph_impl {
                 let triples = g.triples();
                 let hint = triples.size_hint();
                 for iter in vec![triples, g.triples_matching(&ANY, &ANY, &ANY)] {
-                    let v: Vec<_> = iter.oks().map(as_box_t).collect();
+                    let v: Vec<_> = iter.map(as_box_t).collect();
                     assert_eq!(v.len(), g.triples().count());
                     assert_consistent_hint(v.len(), hint);
                     assert!(Graph::contains(&v, &C1, &rdf::type_, &rdfs::Class)?);
@@ -273,7 +278,7 @@ macro_rules! test_graph_impl {
                 let triples = g.triples_with_s(&C2);
                 let hint = triples.size_hint();
                 for iter in vec![triples, g.triples_matching(&*C2, &ANY, &ANY)] {
-                    let v: Vec<_> = iter.oks().map(as_box_t).collect();
+                    let v: Vec<_> = iter.map(as_box_t).collect();
                     assert_eq!(v.len(), 4);
                     assert_consistent_hint(v.len(), hint);
                     assert!(Graph::contains(&v, &C2, &rdf::type_, &rdfs::Class)?);
@@ -290,7 +295,7 @@ macro_rules! test_graph_impl {
                 let triples = g.triples_with_p(&rdf::type_);
                 let hint = triples.size_hint();
                 for iter in vec![triples, g.triples_matching(&ANY, &rdf::type_, &ANY)] {
-                    let v: Vec<_> = iter.oks().map(as_box_t).collect();
+                    let v: Vec<_> = iter.map(as_box_t).collect();
                     assert_eq!(v.len(), 9);
                     assert_consistent_hint(v.len(), hint);
                     assert!(Graph::contains(&v, &C2, &rdf::type_, &rdfs::Resource)?);
@@ -312,7 +317,7 @@ macro_rules! test_graph_impl {
                 let triples = g.triples_with_o(&C2);
                 let hint = triples.size_hint();
                 for iter in vec![triples, g.triples_matching(&ANY, &ANY, &*C2)] {
-                    let v: Vec<_> = iter.oks().map(as_box_t).collect();
+                    let v: Vec<_> = iter.map(as_box_t).collect();
                     assert_eq!(v.len(), 5);
                     assert_consistent_hint(v.len(), hint);
                     assert!(Graph::contains(&v, &P2, &rdfs::domain, &C2)?);
@@ -329,7 +334,7 @@ macro_rules! test_graph_impl {
                 let triples = g.triples_with_sp(&C2, &rdf::type_);
                 let hint = triples.size_hint();
                 for iter in vec![triples, g.triples_matching(&*C2, &rdf::type_, &ANY)] {
-                    let v: Vec<_> = iter.oks().map(as_box_t).collect();
+                    let v: Vec<_> = iter.map(as_box_t).collect();
                     assert_eq!(v.len(), 2);
                     assert_consistent_hint(v.len(), hint);
                     assert!(Graph::contains(&v, &C2, &rdf::type_, &rdfs::Class)?);
@@ -347,7 +352,7 @@ macro_rules! test_graph_impl {
                 let hint = triples.size_hint();
 
                 for iter in vec![triples, g.triples_matching(&*C2, &ANY, &rdfs::Resource)] {
-                    let v: Vec<_> = iter.oks().map(as_box_t).collect();
+                    let v: Vec<_> = iter.map(as_box_t).collect();
                     assert_eq!(v.len(), 2);
                     assert_consistent_hint(v.len(), hint);
                     assert!(Graph::contains(
@@ -369,7 +374,7 @@ macro_rules! test_graph_impl {
                 let triples = g.triples_with_po(&rdf::type_, &rdfs::Class);
                 let hint = triples.size_hint();
                 for iter in vec![triples, g.triples_matching(&ANY, &rdf::type_, &rdfs::Class)] {
-                    let v: Vec<_> = iter.oks().map(as_box_t).collect();
+                    let v: Vec<_> = iter.map(as_box_t).collect();
                     assert_eq!(v.len(), 2);
                     assert_consistent_hint(v.len(), hint);
                     assert!(Graph::contains(&v, &C2, &rdf::type_, &rdfs::Class)?);
@@ -389,7 +394,7 @@ macro_rules! test_graph_impl {
                     triples,
                     g.triples_matching(&*C2, &rdf::type_, &rdfs::Resource),
                 ] {
-                    let v: Vec<_> = iter.oks().map(as_box_t).collect();
+                    let v: Vec<_> = iter.map(as_box_t).collect();
                     assert_eq!(v.len(), 1);
                     assert_consistent_hint(v.len(), hint);
                     assert!(Graph::contains(&v, &C2, &rdf::type_, &rdfs::Resource)?);
@@ -421,7 +426,6 @@ macro_rules! test_graph_impl {
                 let o_matcher: [StaticTerm; 2] = [C2.clone(), rdfs::Class.clone()];
                 let v: Vec<_> = g
                     .triples_matching(&ANY, &p_matcher[..], &o_matcher[..])
-                    .oks()
                     .map(as_box_t)
                     .collect();
                 assert_eq!(v.len(), 5);
