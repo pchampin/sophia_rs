@@ -176,7 +176,7 @@ fn filter_map_quads_iter() {
         .quads()
         .filter_map_quads(|q| {
             if q.s() == &BOB as &StaticTerm {
-                Some(q.o().value())
+                Some(q.o().value().to_string())
             } else {
                 None
             }
@@ -235,7 +235,7 @@ fn map_quads_iter() {
     let d = make_dataset();
     let v = d
         .quads()
-        .map_quads(|q| q.o().value())
+        .map_quads(|q| q.o().value().to_string())
         .into_iter()
         .collect::<Result<Vec<String>, _>>()
         .unwrap();

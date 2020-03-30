@@ -174,7 +174,7 @@ fn filter_map_triples_iter() {
         .triples()
         .filter_map_triples(|t| {
             if t.s() == &BOB as &StaticTerm {
-                Some(t.o().value())
+                Some(t.o().value().to_string())
             } else {
                 None
             }
@@ -230,7 +230,7 @@ fn map_triples_iter() {
     let g = make_graph();
     let v = g
         .triples()
-        .map_triples(|t| t.o().value())
+        .map_triples(|t| t.o().value().to_string())
         .into_iter()
         .collect::<Result<Vec<String>, _>>()
         .unwrap();

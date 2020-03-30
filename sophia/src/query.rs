@@ -118,13 +118,13 @@ where
     triples_matching(g, unsafe { &*(&tm[..] as *const [Binding]) }).map_ok(move |tr| {
         let mut b2 = b.clone();
         if tm[0].is_free() {
-            b2.insert(tq.s().value(), tr.s().into());
+            b2.insert(tq.s().value().to_string(), tr.s().into());
         }
         if tm[1].is_free() {
-            b2.insert(tq.p().value(), tr.p().into());
+            b2.insert(tq.p().value().to_string(), tr.p().into());
         }
         if tm[2].is_free() {
-            b2.insert(tq.o().value(), tr.o().into());
+            b2.insert(tq.o().value().to_string(), tr.o().into());
         }
         b2
     })
@@ -263,7 +263,7 @@ mod test {
         }
         let mut results: Vec<_> = results
             .into_iter()
-            .map(|b| b.get("v1").unwrap().value())
+            .map(|b| b.get("v1").unwrap().value().to_string())
             .collect();
         results.sort();
         assert_eq!(results[0], "http://example.org/alice");

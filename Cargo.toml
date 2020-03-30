@@ -4,6 +4,3 @@ members = [
     "sophia",
     "term",
 ]
-
-[patch.crates-io]
-sophia_term = { path = "term" }

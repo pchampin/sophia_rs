@@ -21,6 +21,7 @@ mod _join;
 pub use self::_join::*;
 
 use super::{Result, Term, TermData, TermError};
+use crate::mown_str::MownStr;
 use std::convert::TryFrom;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -433,29 +434,38 @@ where
     ///
     /// This is necessary to use the IRI as a base to resolve other IRIs.
     ///
-    /// # Errors
+    /// # Auxiliary buffer
     ///
-    /// As a regular expression is applied to the internal representation of
-    /// the IRI, it is required that the IRI is not suffixed. Otherwise
-    /// `TermError::IriParse` is raised.
+    /// The buffer parameter is only required in the situation where
+    /// the internal representation of this `Iri` makes it unsuitable
+    /// for building an `IriParsed`
+    /// (typically because it is split in an `ns` and a `suffix` part).
+    /// In those situations, the buffer will be used to store the full IRI,
+    /// and will be borrowed by the returned `IriParsed`.
     ///
-    /// In order to prevent this a IRI can be transformed with the
-    /// [`no_suffix()`](#method.no_suffix.html) method.
+    /// Otherwise, the buffer will not be used,
+    /// the data will be borrowed directly from `self`.
     ///
-    /// Parsing the components, this function may also raise an error on
-    /// malformed IRIs.
+    /// ## Implementation detail
     ///
-    /// ## Planned behavior
+    /// Currently, the buffer is used whenever the IRI is internally stored in two parts
+    /// (ns and suffix), i.e. when it was created with `new_suffixed`.
     ///
-    /// Technically a suffixed IRI can parsed successfully when the suffix is
+    /// Technically a suffixed IRI could parsed successfully when the suffix is
     /// separating the IRI at a component. However, detecting this requires
     /// more effort. Maybe this feature will be implemented (by you?) in a
     /// future release of `sophia`.
-    pub fn parse_components(&self) -> Result<IriParsed<'_>> {
-        match self.suffix {
-            None => IriParsed::new(self.ns.as_ref()),
-            Some(_) => Err(TermError::IriParse),
-        }
+    pub fn parse_components<'s>(&'s self, buffer: &'s mut String) -> IriParsed<'s> {
+        let data = match &self.suffix {
+            None => self.ns.as_ref(),
+            Some(s) => {
+                buffer.reserve(self.ns.as_ref().len() + s.as_ref().len() - buffer.capacity());
+                buffer.push_str(self.ns.as_ref());
+                buffer.push_str(s.as_ref());
+                buffer.as_str()
+            }
+        };
+        IriParsed::new(data).expect("Iri must contain a valid IRI reference")
     }
 
     /// Writes the IRI to the `fmt::Write` using the NTriples syntax.
@@ -479,9 +489,12 @@ where
         w.write_all(b">")
     }
 
-    /// Return a copy of this IRIs underlying `TermData`.
-    pub fn value(&self) -> String {
-        format!("{}{}", self.ns.as_ref(), self.suffix_as_str())
+    /// Return this IRI as text.
+    pub fn value(&self) -> MownStr {
+        match &self.suffix {
+            None => self.ns.as_ref().into(),
+            Some(s) => format!("{}{}", self.ns.as_ref(), s.as_ref()).into(),
+        }
     }
 
     /// Returns either the suffix if existent or an empty string.
@@ -660,6 +673,20 @@ mod test {
         let ns: Iri<&str> = Iri::new(ns).unwrap();
         let iri: Iri<&str> = Iri::new(iri).unwrap();
         iri.match_ns(&ns).map(|chars| chars.collect())
+    }
+
+    #[test]
+    fn convert_to_mown_does_not_allocate() {
+        use crate::mown_str::MownStr;
+        let iri1 = Iri::<Box<str>>::new_suffixed("http://example.org/", "foo").unwrap();
+        let iri2 = Iri::<MownStr>::from(&iri1);
+        let Iri { ns, suffix, .. } = iri2;
+        if let MownStr::Own(_) = ns {
+            assert!(false, "ns has been allocated");
+        }
+        if let Some(MownStr::Own(_)) = suffix {
+            assert!(false, "suffix has been allocated");
+        }
     }
 
     pub const POSITIVE_IRIS: &[(
