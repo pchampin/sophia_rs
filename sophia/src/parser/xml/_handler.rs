@@ -161,7 +161,7 @@ where
     /// Check the given `ID` is unique.
     fn check_unique_id(&mut self, id: Term<F::TermData>) -> Result<Term<F::TermData>> {
         if self.ids.contains(&id) {
-            Err(RdfError::DuplicateId(id.value())).locate_err_with(&self.reader)
+            Err(RdfError::DuplicateId(id.value().to_string())).locate_err_with(&self.reader)
         } else {
             self.ids.insert(id.clone());
             Ok(id)
@@ -267,7 +267,7 @@ where
 
         // Bail out if the node has an invalid name.
         if RESERVED_NODE_NAMES.matches(&ty) {
-            Err(RdfError::InvalidNodeName(ty.value())).locate_err_with(&self.reader)?;
+            Err(RdfError::InvalidNodeName(ty.value().to_string())).locate_err_with(&self.reader)?;
         }
 
         // Separate node subject from other attributes
@@ -303,7 +303,8 @@ where
                     self.scope().expand_iri(&v).locate_err_with(&self.reader)?,
                 );
             } else if RESERVED_ATTRIBUTES_NAMES.matches(&k) {
-                Err(RdfError::InvalidAttribute(k.value())).locate_err_with(&self.reader)?;
+                Err(RdfError::InvalidAttribute(k.value().to_string()))
+                    .locate_err_with(&self.reader)?;
             } else {
                 properties.insert(
                     k,
@@ -343,7 +344,8 @@ where
 
         // Fail if the property is among forbidden names.
         if RESERVED_PROPERTY_NAMES.matches(&pred) {
-            Err(RdfError::InvalidPropertyName(pred.value())).locate_err_with(&self.reader)?;
+            Err(RdfError::InvalidPropertyName(pred.value().to_string()))
+                .locate_err_with(&self.reader)?;
         } else {
             self.parents.push(pred);
         }
@@ -408,7 +410,8 @@ where
                     }
                 }
             } else if RESERVED_ATTRIBUTES_NAMES.matches(&k) {
-                Err(RdfError::InvalidAttribute(k.value())).locate_err_with(&self.reader)?;
+                Err(RdfError::InvalidAttribute(k.value().to_string()))
+                    .locate_err_with(&self.reader)?;
             } else {
                 let v = a
                     .unescape_and_decode_value(&self.reader)
@@ -640,7 +643,8 @@ where
 
         // Fail if the property is among forbidden names.
         if RESERVED_PROPERTY_NAMES.matches(&pred) {
-            return Err(RdfError::InvalidPropertyName(pred.value())).locate_err_with(&self.reader);
+            return Err(RdfError::InvalidPropertyName(pred.value().to_string()))
+                .locate_err_with(&self.reader);
         }
 
         let mut object = Vec::with_capacity(1);
@@ -682,7 +686,8 @@ where
                     }
                 };
             } else if RESERVED_ATTRIBUTES_NAMES.matches(&k) {
-                return Err(RdfError::InvalidAttribute(k.value())).locate_err_with(&self.reader);
+                return Err(RdfError::InvalidAttribute(k.value().to_string()))
+                    .locate_err_with(&self.reader);
             } else {
                 attributes.insert(k, v);
             }

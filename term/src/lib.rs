@@ -35,6 +35,10 @@
 //!   Those terms can live as long as the program runs,
 //!   and be cloned and sent without any restriction.
 //!
+//! * [`MownTerm`](type.MownTerm.html) (alias of `Term<MownStr<'a>>)
+//!   should be used in situations where some terms can borrow their data,
+//!   while others need to own it.
+//!
 //! [Sophia]: https://docs.rs/sophia/latest/sophia/
 //! [RDF]: https://www.w3.org/TR/rdf-primer/
 //! [Linked Data]: http://linkeddata.org/
@@ -61,6 +65,8 @@ pub mod iri;
 use self::iri::{Iri, Normalization};
 pub mod literal;
 use self::literal::{AsLiteral, Literal};
+pub mod mown_str;
+use self::mown_str::MownStr;
 
 mod _display;
 mod _error;
@@ -117,6 +123,11 @@ pub type RefTerm<'a> = Term<&'a str>;
 /// See [module documentation](index.html)
 /// for more detail on when to use it.
 pub type StaticTerm = RefTerm<'static>;
+/// Convenient alias for a specialization of `Term<T>`.
+///
+/// See [module documentation](index.html)
+/// for more detail on when to use it.
+pub type MownTerm<'a> = Term<MownStr<'a>>;
 
 impl<T> Term<T>
 where
@@ -319,11 +330,11 @@ where
         Variable::<T>::new_unchecked(name).into()
     }
 
-    /// Return a copy of this term's underlying text.
+    /// Return this term's value as text.
     ///
     /// NB: for literals, the value only conveys the literal value,
     /// *not* the datatype or the language tag.error
-    pub fn value(&self) -> String {
+    pub fn value(&self) -> MownStr {
         use self::Term::*;
 
         match self {

@@ -13,7 +13,7 @@ fn h<H: std::hash::Hash>(x: &H) -> u64 {
 fn iri() {
     let exp = "http://champin.net/";
     let i = RefTerm::new_iri("http://champin.net/").unwrap();
-    assert_eq!(&i.value(), exp);
+    assert_eq!(i.value(), exp);
     assert_eq!(format!("{}", i), format!("<{}>", exp));
 
     if let Iri(iri) = i {
@@ -34,7 +34,7 @@ fn iri() {
 fn iri2() {
     let exp = "http://champin.net/#pa";
     let i = RefTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
-    assert_eq!(&i.value(), exp);
+    assert_eq!(i.value(), exp);
     assert_eq!(format!("{}", i), format!("<{}>", exp));
 
     if let Iri(iri) = i {
@@ -150,7 +150,7 @@ fn iri_normalized_last_hash_or_slash() {
 #[test]
 fn bnode() {
     let b1 = BoxTerm::new_bnode("foo").unwrap();
-    assert_eq!(&b1.value(), "foo");
+    assert_eq!(b1.value(), "foo");
     assert_eq!(&format!("{}", b1), "_:foo");
 
     if let BNode(id1) = b1 {
@@ -240,7 +240,7 @@ fn bnode_is_not_n3() {
 #[test]
 fn literal_lang() {
     let lit = RefTerm::new_literal_lang("hello", "en").unwrap();
-    assert_eq!(&lit.value(), "hello");
+    assert_eq!(lit.value(), "hello");
     assert_eq!(&format!("{}", lit), "\"hello\"@en");
 
     let lit: literal::Literal<&str> = lit.try_into().expect("Should be a literal");
@@ -259,7 +259,7 @@ fn literal_lang() {
 fn literal_dt() {
     // Constructing from str
     let lit = "hello".as_term();
-    assert_eq!(&lit.value(), "hello");
+    assert_eq!(lit.value(), "hello");
     assert_eq!(&format!("{}", lit), "\"hello\"");
     let lit: literal::Literal<&str> = lit.try_into().expect("Should be a literal");
     assert_eq!(lit.dt(), xsd::iri::string);
@@ -267,7 +267,7 @@ fn literal_dt() {
 
     // Constructing from int
     let lit: Term<Box<str>> = 42_i32.as_term();
-    assert_eq!(&lit.value(), "42");
+    assert_eq!(lit.value(), "42");
     assert_eq!(
         &format!("{}", lit),
         "\"42\"^^<http://www.w3.org/2001/XMLSchema#int>",
@@ -278,7 +278,7 @@ fn literal_dt() {
 
     // Constructing with IRI datatype
     let lit = RefTerm::new_literal_dt("42", xsd::integer.clone()).unwrap();
-    assert_eq!(&lit.value(), "42");
+    assert_eq!(lit.value(), "42");
     assert_eq!(
         &format!("{}", lit),
         "\"42\"^^<http://www.w3.org/2001/XMLSchema#integer>",
@@ -289,7 +289,7 @@ fn literal_dt() {
 
     // Constructing with IRI datatype
     let lit = RefTerm::new_literal_dt("42", xsd::iri::integer).unwrap();
-    assert_eq!(&lit.value(), "42");
+    assert_eq!(lit.value(), "42");
     assert_eq!(
         &format!("{}", lit),
         "\"42\"^^<http://www.w3.org/2001/XMLSchema#integer>",

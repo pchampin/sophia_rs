@@ -62,8 +62,8 @@ pub trait FromLiteral: Sized {
     {
         if let Term::Literal(lit) = t {
             Self::from_literal(lit).map_err(|err| TermError::InvalidLexicalValue {
-                lex: lit.value(),
-                dt: lit.dt().value(),
+                lex: lit.value().to_string(),
+                dt: lit.dt().value().to_string(),
                 source: Box::new(err),
             })
         } else {
