@@ -115,7 +115,8 @@ pub fn make_triple_source() -> impl TripleSource {
 }
 
 /// Generates a test suite for [`Graph`] and [`MutableGraph`] implementations.
-///
+/// 
+/// This macro is only available when the feature `test_macros` is enabled.
 /// [`Graph`]: graph/trait.Graph.html
 /// [`MutableGraph`]: graph/trait.MutableGraph.html
 #[macro_export]
