@@ -1,6 +1,7 @@
 //! [`MownStr`](./enum.MownStr.html)
 //! is either a borrowed reference to a `str` or an own `Box<str>`.
 
+use std::borrow::Cow;
 use std::fmt;
 use std::hash;
 use std::ops::Deref;
@@ -37,6 +38,15 @@ impl<'a> From<Box<str>> for MownStr<'a> {
 impl<'a> From<String> for MownStr<'a> {
     fn from(other: String) -> MownStr<'a> {
         Own(other.into())
+    }
+}
+
+impl<'a> From<Cow<'a, str>> for MownStr<'a> {
+    fn from(other: Cow<'a, str>) -> MownStr<'a> {
+        match other {
+            Cow::Borrowed(r) => Ref(r),
+            Cow::Owned(s) => Own(s.into()),
+        }
     }
 }
 
@@ -152,6 +162,15 @@ impl<'a> From<MownStr<'a>> for String {
     }
 }
 
+impl<'a> From<MownStr<'a>> for Cow<'a, str> {
+    fn from(other: MownStr<'a>) -> Cow<'a, str> {
+        match other {
+            Ref(r) => Cow::Borrowed(r),
+            Own(b) => Cow::Owned(b.into()),
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -179,6 +198,24 @@ mod test {
     #[test]
     fn test_build_own_from_string() {
         let mown: MownStr = "hello".to_string().into();
+        assert!(match mown {
+            Ref(_) => false,
+            Own(_) => true,
+        });
+    }
+
+    #[test]
+    fn test_build_ref_from_cow() {
+        let mown: MownStr = Cow::Borrowed("hello").into();
+        assert!(match mown {
+            Ref(_) => true,
+            Own(_) => false,
+        });
+    }
+
+    #[test]
+    fn test_build_own_from_cow() {
+        let mown: MownStr = Cow::<str>::Owned("hello".to_string()).into();
         assert!(match mown {
             Ref(_) => false,
             Own(_) => true,
