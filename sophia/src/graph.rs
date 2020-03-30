@@ -5,7 +5,7 @@
 //! for different kinds of graph,
 //! as well as a few implementations for them.
 
-#[cfg(test)]
+#[cfg(any(test, feature = "export_test"))] 
 #[macro_use]
 pub mod test;
 
