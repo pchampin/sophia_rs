@@ -237,8 +237,8 @@ where
     /// _Note:_ A language-tagged literal has always the type `rdf:langString`.
     pub fn dt(&self) -> Iri<&str> {
         match &self.kind {
-            Lang(_) => rdf::langString.try_into().expect("ensured"),
-            Dt(dt) => dt.into(),
+            Lang(_) => rdf::iri::langString,
+            Dt(dt) => dt.as_ref_str(),
         }
     }
 

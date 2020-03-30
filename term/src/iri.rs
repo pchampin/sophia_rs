@@ -194,6 +194,71 @@ where
         }
     }
 
+    /// The namespace of the IRI.
+    ///
+    /// If the IRI has no suffix this is the whole IRI.
+    pub fn ns(&self) -> &TD {
+        &self.ns
+    }
+
+    /// The suffix of the IRI.
+    pub fn suffix(&self) -> &Option<TD> {
+        &self.suffix
+    }
+
+    /// Borrow the inner contents of the IRI.
+    pub fn as_ref(&self) -> Iri<&TD> {
+        Iri {
+            ns: &self.ns,
+            suffix: self.suffix.as_ref(),
+            absolute: self.absolute,
+        }
+    }
+
+    /// Borrow the inner contents of the IRI as `&str`.
+    pub fn as_ref_str(&self) -> Iri<&str> {
+        Iri {
+            ns: self.ns.as_ref(),
+            suffix: self.suffix.as_ref().map(|td| td.as_ref()),
+            absolute: self.absolute,
+        }
+    }
+
+    /// Create a new IRI by applying `f` to the `TermData` of `self`.
+    ///
+    /// # Debug
+    ///
+    /// In `debug` builds it is asserted that the mapping does not alter the
+    /// `TermData`'s text, i.e. the passed in IRI must be equal to the result.
+    pub fn map<F, TD2>(self, f: F) -> Iri<TD2>
+    where
+        F: FnMut(TD) -> TD2,
+        TD2: TermData,
+    {
+        #[cfg(debug_assertions)]
+        let origin = self.clone();
+
+        let mut f = f;
+        let new = Iri {
+            ns: f(self.ns),
+            suffix: self.suffix.map(f),
+            absolute: self.absolute,
+        };
+
+        debug_assert!(origin == new);
+
+        new
+    }
+
+    /// Maps the IRI using the `Into` trait.
+    pub fn map_into<TD2>(self) -> Iri<TD2>
+    where
+        TD: Into<TD2>,
+        TD2: TermData,
+    {
+        self.map(Into::into)
+    }
+
     /// The length of this IRI.
     pub fn len(&self) -> usize {
         self.ns.as_ref().len() + self.suffix_as_str().len()
@@ -231,17 +296,12 @@ where
     ///
     /// Clone as this might allocate a new `TermData`. However there is also
     /// `TermData` that is cheap to clone, i.e. `Copy`.
-    pub fn clone_with<'a, U, F>(&'a self, mut factory: F) -> Iri<U>
+    pub fn clone_with<'a, U, F>(&'a self, factory: F) -> Iri<U>
     where
         U: TermData,
         F: FnMut(&'a str) -> U,
     {
-        let suffix = self.suffix.as_ref().map(|s| factory(s.as_ref()));
-        Iri {
-            ns: factory(self.ns.as_ref()),
-            suffix,
-            absolute: self.absolute,
-        }
+        self.as_ref_str().map(factory)
     }
 
     /// Transforms the IRI according to the given policy.
@@ -502,16 +562,6 @@ where
             Term::Iri(other_iri) => other_iri == self,
             _ => false,
         }
-    }
-}
-
-impl<'a, T, U> From<&'a Iri<U>> for Iri<T>
-where
-    T: TermData + From<&'a str>,
-    U: TermData,
-{
-    fn from(other: &'a Iri<U>) -> Self {
-        other.clone_with(T::from)
     }
 }
 
