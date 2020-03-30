@@ -133,6 +133,7 @@ pub fn make_quad_source() -> impl QuadSource {
 
 /// Generates a test suite for [`Dataset`] and [`MutableDataset`] implementations.
 ///
+/// This macro is only available when the feature `test_macros` is enabled.
 /// [`Dataset`]: dataset/trait.Dataset.html
 /// [`MutableDataset`]: dataset/trait.MutableDataset.html
 #[macro_export]
