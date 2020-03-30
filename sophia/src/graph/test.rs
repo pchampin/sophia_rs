@@ -81,7 +81,7 @@ pub fn populate_nodes_types<G: MutableGraph>(g: &mut G) -> MGResult<G, ()> {
 pub fn as_box_t<T: Triple, E>(triple: Result<T, E>) -> [BoxTerm; 3] {
     let triple = match triple {
         Ok(t) => t,
-        Err(_) => panic!("as_box_t received an error")
+        Err(_) => panic!("as_box_t received an error"),
     };
 
     [triple.s().into(), triple.p().into(), triple.o().into()]
@@ -115,7 +115,7 @@ pub fn make_triple_source() -> impl TripleSource {
 }
 
 /// Generates a test suite for [`Graph`] and [`MutableGraph`] implementations.
-/// 
+///
 /// This macro is only available when the feature `test_macros` is enabled.
 /// [`Graph`]: graph/trait.Graph.html
 /// [`MutableGraph`]: graph/trait.MutableGraph.html
