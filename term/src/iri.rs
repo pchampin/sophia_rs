@@ -21,6 +21,7 @@ mod _join;
 pub use self::_join::*;
 
 use super::{Result, Term, TermData, TermError};
+use crate::mown_str::MownStr;
 use std::convert::TryFrom;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -428,9 +429,12 @@ where
         w.write_all(b">")
     }
 
-    /// Return a copy of this IRIs underlying `TermData`.
-    pub fn value(&self) -> String {
-        format!("{}{}", self.ns.as_ref(), self.suffix_as_str())
+    /// Return this IRI as text.
+    pub fn value(&self) -> MownStr {
+        match &self.suffix {
+            None => self.ns.as_ref().into(),
+            Some(s) => format!("{}{}", self.ns.as_ref(), s.as_ref()).into(),
+        }
     }
 
     /// Returns either the suffix if existent or an empty string.

@@ -280,7 +280,13 @@ mod test {
             for t in self.triples() {
                 v.push(t.unwrap());
             }
-            v.sort_by_key(|t| (t.s().value(), t.p().value(), t.o().value()));
+            v.sort_by_key(|t| {
+                (
+                    t.s().value().to_string(),
+                    t.p().value().to_string(),
+                    t.o().value().to_string(),
+                )
+            });
             v.fmt(f)
         }
     }

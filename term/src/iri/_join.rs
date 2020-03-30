@@ -240,7 +240,7 @@ where
             other.into()
         } else {
             let dt = Iri::<MownStr>::new_unchecked(
-                self.resolve(other.dt().value().as_str())
+                self.resolve(other.dt().value().as_ref())
                     .unwrap()
                     .to_string(),
                 self.is_absolute(),

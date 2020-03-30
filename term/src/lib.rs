@@ -330,11 +330,11 @@ where
         Variable::<T>::new_unchecked(name).into()
     }
 
-    /// Return a copy of this term's underlying text.
+    /// Return this term's value as text.
     ///
     /// NB: for literals, the value only conveys the literal value,
     /// *not* the datatype or the language tag.error
-    pub fn value(&self) -> String {
+    pub fn value(&self) -> MownStr {
         use self::Term::*;
 
         match self {

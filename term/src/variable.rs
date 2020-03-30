@@ -3,6 +3,7 @@
 //!
 
 use super::{Result, Term, TermData, TermError};
+use crate::mown_str::MownStr;
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::convert::TryFrom;
@@ -103,9 +104,9 @@ where
         w.write_all(self.as_ref().as_bytes())
     }
 
-    /// Return a copy of this variables's underlying identifier.
-    pub fn value(&self) -> String {
-        self.as_ref().to_owned()
+    /// Return this variables's name as text.
+    pub fn value(&self) -> MownStr {
+        self.as_ref().into()
     }
 }
 

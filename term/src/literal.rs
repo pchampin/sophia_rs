@@ -3,6 +3,7 @@
 //!
 
 use crate::iri::Normalization;
+use crate::mown_str::MownStr;
 use crate::ns::{rdf, xsd};
 use crate::{Iri, Result, Term, TermData, TermError};
 use language_tag::LangTag;
@@ -222,9 +223,9 @@ where
         }
     }
 
-    /// Return a copy of the literal's lexical value.
-    pub fn value(&self) -> String {
-        self.txt().as_ref().to_string()
+    /// Return this literal's lexical value as text.
+    pub fn value(&self) -> MownStr {
+        self.txt().as_ref().into()
     }
 
     /// Returns the literal's lexical value.
