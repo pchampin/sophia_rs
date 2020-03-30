@@ -238,8 +238,8 @@ where
     /// _Note:_ A language-tagged literal has always the type `rdf:langString`.
     pub fn dt(&self) -> Iri<&str> {
         match &self.kind {
-            Lang(_) => rdf::langString.try_into().expect("ensured"),
-            Dt(dt) => dt.into(),
+            Lang(_) => rdf::iri::langString,
+            Dt(dt) => dt.as_ref_str(),
         }
     }
 
@@ -440,7 +440,7 @@ mod test {
     #[test]
     fn convert_to_mown_does_not_allocate() {
         use crate::mown_str::MownStr;
-        let lit1 = Literal::<Box<str>>::new_dt("hello", &xsd::iri::string);
+        let lit1 = Literal::<Box<str>>::new_dt("hello", xsd::iri::string.clone().map_into());
         let lit2 = Literal::<MownStr>::from(&lit1);
         let Literal { txt, .. } = lit2;
         if let MownStr::Own(_) = txt {

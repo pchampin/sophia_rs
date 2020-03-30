@@ -185,7 +185,7 @@ where
     fn resolve(&self, other: &'a Iri<TD>) -> Iri<MownStr<'a>> {
         //pub fn resolve_mown<'b, TD: TermData>(&self, other: &Iri<TD>) -> Iri<MownStr<'b>> {
         if other.absolute {
-            return other.into();
+            return other.as_ref_str().map_into();
         }
         let mut buffer = String::new();
         let parsed = other.parse_components(&mut buffer);
