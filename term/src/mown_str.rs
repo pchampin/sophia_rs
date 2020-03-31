@@ -15,7 +15,7 @@ use std::ops::Deref;
 pub enum MownStr<'a> {
     /// Variant simply borrowing `str`
     Ref(&'a str),
-    /// Variany owning `str` into a box
+    /// Variant owning `str` into a box
     Own(Box<str>),
 }
 

@@ -154,7 +154,7 @@ fn bnode() {
     assert_eq!(&format!("{}", b1), "_:foo");
 
     if let BNode(id1) = b1 {
-        assert_eq!(AsRef::<str>::as_ref(&id1), "foo");
+        assert_eq!(id1.as_str(), "foo");
     } else {
         panic!("b1 should be a BNode");
     }
