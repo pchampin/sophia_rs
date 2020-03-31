@@ -212,7 +212,7 @@ where
     /// May allocate an intermediate IRI if `other.dt()` is suffixed.
     fn resolve(&self, other: &'a Literal<TD>) -> Literal<TD2> {
         if other.is_absolute() {
-            other.into()
+            other.clone_into()
         } else {
             let dt: Iri<TD2> = self.resolve(&other.dt());
             Literal::new_dt(other.txt().as_ref(), dt)
@@ -237,7 +237,7 @@ where
     /// May allocate an intermediate IRI if `other.dt()` is suffixed.
     fn resolve(&self, other: &'a Literal<TD>) -> Literal<MownStr<'a>> {
         if other.is_absolute() {
-            other.into()
+            other.clone_into()
         } else {
             let dt = Iri::<MownStr>::new_unchecked(
                 self.resolve(other.dt().value().as_ref())
