@@ -155,7 +155,7 @@ where
     }
 
     /// Borrow the blank nodes ID.
-    /// 
+    ///
     /// _Note:_ The ID does not have a leading `_:`.
     pub fn as_str(&self) -> &str {
         self.0.as_ref()

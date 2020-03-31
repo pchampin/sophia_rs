@@ -209,7 +209,7 @@ impl<F: Fn(Option<&Term<&str>>) -> bool> GraphNameMatcher for F {
     where
         T: TermData,
     {
-        (self)(g.map(RefTerm::from).as_ref())
+        (self)(g.map(|t| t.as_ref_str()).as_ref())
     }
 }
 

@@ -264,7 +264,7 @@ where
         match other {
             Term::Iri(iri) => Resolve::<_, Iri<TD2>>::resolve(self, iri).into(),
             Term::Literal(lit) => Resolve::<_, Literal<TD2>>::resolve(self, lit).into(),
-            term => term.into(),
+            term => term.clone_into(),
         }
     }
 }
@@ -282,7 +282,7 @@ where
         match other {
             Term::Iri(iri) => Resolve::<_, Iri<MownStr>>::resolve(self, iri).into(),
             Term::Literal(lit) => Resolve::<_, Literal<MownStr>>::resolve(self, lit).into(),
-            term => term.into(),
+            term => term.clone_into(),
         }
     }
 }

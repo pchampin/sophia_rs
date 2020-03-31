@@ -56,9 +56,9 @@ impl MutableGraph for Vec<[BoxTerm; 3]> {
         U: TermData,
         V: TermData,
     {
-        let s = BoxTerm::from(s);
-        let p = BoxTerm::from(p);
-        let o = BoxTerm::from(o);
+        let s = s.clone_into();
+        let p = p.clone_into();
+        let o = o.clone_into();
         self.push([s, p, o]);
         Ok(true)
     }
@@ -107,9 +107,9 @@ where
         U: TermData,
         V: TermData,
     {
-        let s = BoxTerm::from(s);
-        let p = BoxTerm::from(p);
-        let o = BoxTerm::from(o);
+        let s = s.clone_into();
+        let p = p.clone_into();
+        let o = o.clone_into();
         Ok(HashSet::insert(self, [s, p, o]))
     }
     fn remove<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
@@ -118,9 +118,9 @@ where
         U: TermData,
         V: TermData,
     {
-        let s = BoxTerm::from(s);
-        let p = BoxTerm::from(p);
-        let o = BoxTerm::from(o);
+        let s = s.clone_into();
+        let p = p.clone_into();
+        let o = o.clone_into();
         Ok(HashSet::remove(self, &[s, p, o]))
     }
 }

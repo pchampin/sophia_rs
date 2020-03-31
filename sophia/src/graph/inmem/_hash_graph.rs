@@ -9,7 +9,7 @@ use crate::graph::*;
 use crate::triple::streaming_mode::{ByTermRefs, StreamedTriple};
 use sophia_term::factory::TermFactory;
 use sophia_term::index_map::TermIndexMap;
-use sophia_term::{RefTerm, Term, TermData};
+use sophia_term::{Term, TermData};
 
 /// A generic implementation of [`Graph`] and [`MutableGraph`],
 /// storing its terms in a [`TermIndexMap`],
@@ -65,7 +65,7 @@ where
     where
         T: TermData,
     {
-        self.terms.get_index(&RefTerm::from(t))
+        self.terms.get_index(&t.as_ref_str())
     }
 
     #[inline]
@@ -84,9 +84,9 @@ where
         U: TermData,
         V: TermData,
     {
-        let si = self.terms.make_index(&RefTerm::from(s));
-        let pi = self.terms.make_index(&RefTerm::from(p));
-        let oi = self.terms.make_index(&RefTerm::from(o));
+        let si = self.terms.make_index(&s.as_ref_str());
+        let pi = self.terms.make_index(&p.as_ref_str());
+        let oi = self.terms.make_index(&o.as_ref_str());
         let modified = self.triples.insert([si, pi, oi]);
         if modified {
             Some([si, pi, oi])
@@ -109,9 +109,9 @@ where
         U: TermData,
         V: TermData,
     {
-        let si = self.terms.get_index(&RefTerm::from(s));
-        let pi = self.terms.get_index(&RefTerm::from(p));
-        let oi = self.terms.get_index(&RefTerm::from(o));
+        let si = self.terms.get_index(&s.as_ref_str());
+        let pi = self.terms.get_index(&p.as_ref_str());
+        let oi = self.terms.get_index(&o.as_ref_str());
         if let (Some(si), Some(pi), Some(oi)) = (si, pi, oi) {
             let modified = self.triples.remove(&[si, pi, oi]);
             if modified {

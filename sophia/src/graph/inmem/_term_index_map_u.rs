@@ -215,7 +215,7 @@ where
     S: TermData,
     T: Borrow<Term<S>>,
 {
-    t.borrow().clone_with(|txt| &*(txt as *const str))
+    t.borrow().clone_map(|txt| &*(txt as *const str))
 }
 
 #[cfg(test)]

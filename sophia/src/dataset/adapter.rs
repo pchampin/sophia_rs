@@ -205,7 +205,7 @@ pub(crate) mod test {
     pub fn make_named_graph() -> MyDatasetGraph {
         DatasetGraph {
             dataset: MyDataset::new(),
-            gmatcher: Some(BoxTerm::from(&rdfs::Resource)),
+            gmatcher: Some(rdfs::Resource.map_into()),
             _phantom: PhantomData,
         }
     }

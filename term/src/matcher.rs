@@ -180,7 +180,7 @@ impl<F: Fn(&RefTerm) -> bool> TermMatcher for F {
     where
         T: TermData,
     {
-        self(&RefTerm::from(t))
+        self(&t.as_ref_str())
     }
 }
 
