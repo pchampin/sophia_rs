@@ -216,7 +216,7 @@ where
         use self::Term::*;
 
         match self {
-            Iri(iri) => iri.clone_with(factory).into(),
+            Iri(iri) => iri.clone_map(factory).into(),
             BNode(bn) => bn.clone_with(factory).into(),
             Literal(lit) => lit.clone_with(factory).into(),
             Variable(var) => var.clone_with(factory).into(),

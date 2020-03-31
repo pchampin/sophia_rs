@@ -295,14 +295,26 @@ where
     /// Clone self while transforming the inner `TermData` with the given
     /// factory.
     ///
-    /// Clone as this might allocate a new `TermData`. However there is also
-    /// `TermData` that is cheap to clone, i.e. `Copy`.
-    pub fn clone_with<'a, U, F>(&'a self, factory: F) -> Iri<U>
+    /// This is done in one step in contrast to calling `clone().map(factory)`.
+    pub fn clone_map<'a, U, F>(&'a self, factory: F) -> Iri<U>
     where
         U: TermData,
         F: FnMut(&'a str) -> U,
     {
-        self.as_ref_str().map(factory)
+        let mut factory = factory;
+        Iri {
+            ns: factory(self.ns.as_ref()),
+            suffix: self.suffix.as_ref().map(|td| factory(td.as_ref())),
+            absolute: self.absolute,
+        }
+    }
+
+    /// Apply `clone_map()` using the `Into` trait.
+    pub fn clone_into<'src, U>(&'src self) -> Iri<U>
+    where
+        U: TermData + From<&'src str>,
+    {
+        self.clone_map(Into::into)
     }
 
     /// Transforms the IRI according to the given policy.
@@ -336,7 +348,7 @@ where
                 let mut factory = factory;
                 Iri::new_unchecked(factory(&full), self.absolute)
             }
-            None => self.clone_with(factory),
+            None => self.clone_map(factory),
         }
     }
 
@@ -370,7 +382,7 @@ where
                     }
                 } else if ns.ends_with(GEN_DELIMS) {
                     // case: ns does end with separator
-                    self.clone_with(factory)
+                    self.clone_map(factory)
                 } else if let Some(pos) = ns.rfind(GEN_DELIMS) {
                     // case: ns does not end with separator but contains one
                     let mut new_suffix = String::with_capacity(ns.len() - pos - 1 + suf.len());
@@ -398,7 +410,7 @@ where
                     }
                     None => {
                         // case: no separators
-                        self.clone_with(factory)
+                        self.clone_map(factory)
                     }
                 }
             }
@@ -615,7 +627,7 @@ where
 
     fn try_from(term: &'a Term<U>) -> Result<Self, Self::Error> {
         match term {
-            Term::Iri(iri) => Ok(iri.clone_with(T::from)),
+            Term::Iri(iri) => Ok(iri.clone_map(T::from)),
             _ => Err(TermError::UnexpectedKindOfTerm {
                 term: term.to_string(),
                 expect: "IRI".to_owned(),
@@ -679,7 +691,7 @@ mod test {
     fn convert_to_mown_does_not_allocate() {
         use crate::mown_str::MownStr;
         let iri1 = Iri::<Box<str>>::new_suffixed("http://example.org/", "foo").unwrap();
-        let iri2 = iri1.as_ref_str().map_into::<MownStr>();
+        let iri2 = iri1.clone_map(Into::into);
         let Iri { ns, suffix, .. } = iri2;
         if let MownStr::Own(_) = ns {
             assert!(false, "ns has been allocated");
