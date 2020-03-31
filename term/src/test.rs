@@ -468,12 +468,33 @@ fn term_similar_but_not_eq() {
 }
 
 #[test]
+fn map() {
+    let mut cnt = 0;
+    let t = StaticTerm::new_iri_suffixed("http://champin.net/", "#pa").unwrap();
+    let t2 = t.map(|s| {
+        cnt += s.len();
+        String::from(s)
+    });
+    assert_eq!(cnt, "http://champin.net/".len() + "#pa".len());
+    assert_eq!(t2, Term::<&str>::new_iri("http://champin.net/#pa").unwrap());
+}
+
+#[test]
+fn map_into() {
+    let t1 = StaticTerm::new_iri("http://champin.net/#pa").unwrap();
+    let t2 = t1.map_into::<Box<str>>();
+    let _3 = t2.clone().map_into::<Rc<str>>();
+    let _4 = t2.clone().map_into::<Arc<str>>();
+    let _5 = t2.map_into::<String>();
+}
+
+#[test]
 fn convert() {
     let t1 = StaticTerm::new_iri("http://champin.net/#pa").unwrap();
-    let t2 = BoxTerm::from(&t1);
-    let t3 = RcTerm::from(&t2);
-    let t4 = ArcTerm::from(&t3);
-    let _t = RefTerm::from(&t4);
+    let t2 = t1.clone_into::<Box<str>>();
+    let t3 = t2.clone_into::<Rc<str>>();
+    let t4 = t3.clone_into::<Arc<str>>();
+    let _5 = t4.clone_into::<&str>();
 }
 
 pub(crate) const POSITIVE_1CHAR_IDS: &[&str] = &[

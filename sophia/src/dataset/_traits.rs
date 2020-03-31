@@ -532,7 +532,7 @@ pub trait Dataset {
     {
         DatasetGraph {
             dataset: self,
-            gmatcher: graph_name.map(|n| n.into()),
+            gmatcher: graph_name.map(|n| n.clone_into()),
             _phantom: PhantomData,
         }
     }
@@ -547,7 +547,7 @@ pub trait Dataset {
     {
         DatasetGraph {
             dataset: self,
-            gmatcher: graph_name.map(|n| n.into()),
+            gmatcher: graph_name.map(|n| n.clone_into()),
             _phantom: PhantomData,
         }
     }
@@ -681,11 +681,11 @@ pub trait MutableDataset: Dataset {
             .map_ok(|q| {
                 (
                     [
-                        BoxTerm::from(q.s()),
-                        BoxTerm::from(q.p()),
-                        BoxTerm::from(q.o()),
+                        q.s().clone_into::<Box<str>>(),
+                        q.p().clone_into::<Box<str>>(),
+                        q.o().clone_into::<Box<str>>(),
                     ],
-                    q.g().map(BoxTerm::from),
+                    q.g().map(|g| g.clone_into::<Box<str>>()),
                 )
             })
             .collect::<std::result::Result<Vec<_>, _>>()
@@ -718,11 +718,11 @@ pub trait MutableDataset: Dataset {
             .map_ok(|q| {
                 (
                     [
-                        BoxTerm::from(q.s()),
-                        BoxTerm::from(q.p()),
-                        BoxTerm::from(q.o()),
+                        q.s().clone_into::<Box<str>>(),
+                        q.p().clone_into::<Box<str>>(),
+                        q.o().clone_into::<Box<str>>(),
                     ],
-                    q.g().map(BoxTerm::from),
+                    q.g().map(|g| g.clone_into::<Box<str>>()),
                 )
             })
             .collect::<std::result::Result<Vec<_>, _>>()

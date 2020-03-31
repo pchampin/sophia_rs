@@ -6,7 +6,7 @@
 //!
 //! It also provides two pre-defined trade-offs:
 //! [`FastGraph`] and [`LightGraph`],
-//! provided in different flavours
+//! provided in different flavors
 //! ([default](#types), [`small`](small/index.html), [`sync`](sync/index.html)).
 //!
 //! # Customized trade-off
@@ -74,7 +74,7 @@ test_graph_impl!(test_fastg, FastGraph);
 #[cfg(test)]
 test_graph_impl!(test_lightg, LightGraph);
 
-/// Flavours of Graph implementations with a smaller memory-footprint.
+/// Flavors of Graph implementations with a smaller memory-footprint.
 ///
 /// The trade-off is that these implementations can only contain a small number (2^16) of terms.
 ///
@@ -94,7 +94,7 @@ pub mod small {
     test_graph_impl!(test_lightg, LightGraph);
 }
 
-/// Flavours of Graph implementations which are safe to share across threads.
+/// Flavors of Graph implementations which are safe to share across threads.
 pub mod sync {
     use super::*;
 
