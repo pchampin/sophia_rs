@@ -149,7 +149,7 @@ where
         let txt = factory(self.txt.as_ref());
         let kind = match &self.kind {
             Lang(tag) => Lang(factory(tag.as_ref())),
-            Dt(iri) => Dt(iri.clone_with(factory)),
+            Dt(iri) => Dt(iri.clone_map(factory)),
         };
 
         Literal { txt, kind }
@@ -440,7 +440,7 @@ mod test {
     #[test]
     fn convert_to_mown_does_not_allocate() {
         use crate::mown_str::MownStr;
-        let lit1 = Literal::<Box<str>>::new_dt("hello", &xsd::iri::string);
+        let lit1 = Literal::<Box<str>>::new_dt("hello", xsd::iri::string.map_into());
         let lit2 = Literal::<MownStr>::from(&lit1);
         let Literal { txt, .. } = lit2;
         if let MownStr::Own(_) = txt {
