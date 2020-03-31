@@ -226,29 +226,17 @@ where
     }
 
     /// Create a new IRI by applying `f` to the `TermData` of `self`.
-    ///
-    /// # Debug
-    ///
-    /// In `debug` builds it is asserted that the mapping does not alter the
-    /// `TermData`'s text, i.e. the passed in IRI must be equal to the result.
     pub fn map<F, TD2>(self, f: F) -> Iri<TD2>
     where
         F: FnMut(TD) -> TD2,
         TD2: TermData,
     {
-        #[cfg(debug_assertions)]
-        let origin = self.clone();
-
         let mut f = f;
-        let new = Iri {
+        Iri {
             ns: f(self.ns),
             suffix: self.suffix.map(f),
             absolute: self.absolute,
-        };
-
-        debug_assert!(origin == new);
-
-        new
+        }
     }
 
     /// Maps the IRI using the `Into` trait.
@@ -258,6 +246,31 @@ where
         TD2: TermData,
     {
         self.map(Into::into)
+    }
+
+    /// Clone self while transforming the inner `TermData` with the given
+    /// factory.
+    ///
+    /// This is done in one step in contrast to calling `clone().map(factory)`.
+    pub fn clone_map<'a, U, F>(&'a self, factory: F) -> Iri<U>
+    where
+        U: TermData,
+        F: FnMut(&'a str) -> U,
+    {
+        let mut factory = factory;
+        Iri {
+            ns: factory(self.ns.as_ref()),
+            suffix: self.suffix.as_ref().map(|td| factory(td.as_ref())),
+            absolute: self.absolute,
+        }
+    }
+
+    /// Apply `clone_map()` using the `Into` trait.
+    pub fn clone_into<'src, U>(&'src self) -> Iri<U>
+    where
+        U: TermData + From<&'src str>,
+    {
+        self.clone_map(Into::into)
     }
 
     /// The length of this IRI.
@@ -290,31 +303,6 @@ where
     /// and a suffix (`true`).
     pub fn has_suffix(&self) -> bool {
         self.suffix.is_some()
-    }
-
-    /// Clone self while transforming the inner `TermData` with the given
-    /// factory.
-    ///
-    /// This is done in one step in contrast to calling `clone().map(factory)`.
-    pub fn clone_map<'a, U, F>(&'a self, factory: F) -> Iri<U>
-    where
-        U: TermData,
-        F: FnMut(&'a str) -> U,
-    {
-        let mut factory = factory;
-        Iri {
-            ns: factory(self.ns.as_ref()),
-            suffix: self.suffix.as_ref().map(|td| factory(td.as_ref())),
-            absolute: self.absolute,
-        }
-    }
-
-    /// Apply `clone_map()` using the `Into` trait.
-    pub fn clone_into<'src, U>(&'src self) -> Iri<U>
-    where
-        U: TermData + From<&'src str>,
-    {
-        self.clone_map(Into::into)
     }
 
     /// Transforms the IRI according to the given policy.

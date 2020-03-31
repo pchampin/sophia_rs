@@ -135,12 +135,67 @@ where
         }
     }
 
+    /// Borrow the inner contents of the literal.
+    pub fn as_ref(&self) -> Literal<&TD> {
+        let txt = &self.txt;
+        match &self.kind {
+            Lang(tag) => Literal {
+                txt,
+                kind: Lang(tag),
+            },
+            Dt(dt) => Literal {
+                txt,
+                kind: Dt(dt.as_ref()),
+            },
+        }
+    }
+
+    /// Borrow the inner contents of the literal as `&str`.
+    pub fn as_ref_str(&self) -> Literal<&str> {
+        let txt = self.txt.as_ref();
+        match &self.kind {
+            Lang(tag) => Literal {
+                txt,
+                kind: Lang(tag.as_ref()),
+            },
+            Dt(dt) => Literal {
+                txt,
+                kind: Dt(dt.as_ref_str()),
+            },
+        }
+    }
+
+    /// Create a new IRI by applying `f` to the `TermData` of `self`.
+    pub fn map<F, TD2>(self, f: F) -> Literal<TD2>
+    where
+        F: FnMut(TD) -> TD2,
+        TD2: TermData,
+    {
+        let mut f = f;
+        let txt = f(self.txt);
+        Literal {
+            txt,
+            kind: match self.kind {
+                Lang(tag) => Lang(f(tag)),
+                Dt(dt) => Dt(dt.map(f)),
+            },
+        }
+    }
+
+    /// Maps the IRI using the `Into` trait.
+    pub fn map_into<TD2>(self) -> Literal<TD2>
+    where
+        TD: Into<TD2>,
+        TD2: TermData,
+    {
+        self.map(Into::into)
+    }
+
     /// Clone self while transforming the inner `TermData` with the given
     /// factory.
     ///
-    /// Clone as this might allocate new `TermData`. However there is also
-    /// `TermData` that is cheap to clone, i.e. `Copy`.
-    pub fn clone_with<'a, U, F>(&'a self, factory: F) -> Literal<U>
+    /// This is done in one step in contrast to calling `clone().map(factory)`.
+    pub fn clone_map<'a, U, F>(&'a self, factory: F) -> Literal<U>
     where
         U: TermData,
         F: FnMut(&'a str) -> U,
@@ -153,6 +208,14 @@ where
         };
 
         Literal { txt, kind }
+    }
+
+    /// Apply `clone_map()` using the `Into` trait.
+    pub fn clone_into<'src, U>(&'src self) -> Literal<U>
+    where
+        U: TermData + From<&'src str>,
+    {
+        self.clone_map(Into::into)
     }
 
     /// If the literal is typed transform the IRI according to the given
@@ -280,16 +343,6 @@ where
     }
 }
 
-impl<'a, T, U> From<&'a Literal<U>> for Literal<T>
-where
-    T: TermData + From<&'a str>,
-    U: TermData,
-{
-    fn from(other: &'a Literal<U>) -> Self {
-        other.clone_with(T::from)
-    }
-}
-
 impl<TD> TryFrom<Term<TD>> for Literal<TD>
 where
     TD: TermData,
@@ -316,7 +369,7 @@ where
 
     fn try_from(term: &'a Term<U>) -> Result<Self, Self::Error> {
         match term {
-            Term::Literal(lit) => Ok(lit.into()),
+            Term::Literal(lit) => Ok(lit.clone_into()),
             _ => Err(TermError::UnexpectedKindOfTerm {
                 term: term.to_string(),
                 expect: "literal".to_owned(),
@@ -441,7 +494,7 @@ mod test {
     fn convert_to_mown_does_not_allocate() {
         use crate::mown_str::MownStr;
         let lit1 = Literal::<Box<str>>::new_dt("hello", xsd::iri::string.map_into());
-        let lit2 = Literal::<MownStr>::from(&lit1);
+        let lit2 = lit1.clone_into();
         let Literal { txt, .. } = lit2;
         if let MownStr::Own(_) = txt {
             assert!(false, "txt has been allocated");
