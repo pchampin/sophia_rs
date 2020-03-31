@@ -165,7 +165,7 @@ where
         }
     }
 
-    /// Create a new IRI by applying `f` to the `TermData` of `self`.
+    /// Create a new literal by applying `f` to the `TermData` of `self`.
     pub fn map<F, TD2>(self, f: F) -> Literal<TD2>
     where
         F: FnMut(TD) -> TD2,
@@ -182,7 +182,7 @@ where
         }
     }
 
-    /// Maps the IRI using the `Into` trait.
+    /// Maps the literal using the `Into` trait.
     pub fn map_into<TD2>(self) -> Literal<TD2>
     where
         TD: Into<TD2>,

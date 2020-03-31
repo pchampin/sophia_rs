@@ -133,7 +133,7 @@ where
 /// Make a matcher corresponding to term `t`, given binding `b`.
 fn matcher(t: &RcTerm, b: &BindingMap) -> Binding {
     if let Term::Variable(var) = t {
-        let vname: &str = var.as_ref();
+        let vname: &str = var.as_str();
         b.get(vname).cloned().into()
     } else {
         Binding::Exactly(t.clone())

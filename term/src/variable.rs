@@ -73,17 +73,61 @@ where
         Variable(name.into())
     }
 
+    /// Borrow the inner contents of the variable.
+    pub fn as_ref(&self) -> Variable<&TD> {
+        Variable(&self.0)
+    }
+
+    /// Borrow the inner contents of the variable as `&str`.
+    pub fn as_ref_str(&self) -> Variable<&str> {
+        Variable(self.0.as_ref())
+    }
+
+    /// Create a new variable by applying `f` to the `TermData` of `self`.
+    pub fn map<F, TD2>(self, f: F) -> Variable<TD2>
+    where
+        F: FnMut(TD) -> TD2,
+        TD2: TermData,
+    {
+        let mut f = f;
+        Variable(f(self.0))
+    }
+
+    /// Maps the variable using the `Into` trait.
+    pub fn map_into<TD2>(self) -> Variable<TD2>
+    where
+        TD: Into<TD2>,
+        TD2: TermData,
+    {
+        self.map(Into::into)
+    }
+
     /// Clone self while transforming the inner `TermData` with the given
     /// factory.
     ///
-    /// Clone as this might allocate a new `TermData`. However there is also
-    /// `TermData` that is cheap to clone, i.e. `Copy`.
-    pub fn clone_with<'a, U, F>(&'a self, mut factory: F) -> Variable<U>
+    /// This is done in one step in contrast to calling `clone().map(factory)`.
+    pub fn clone_map<'a, U, F>(&'a self, factory: F) -> Variable<U>
     where
         U: TermData,
         F: FnMut(&'a str) -> U,
     {
-        Variable(factory(self.as_ref()))
+        let mut factory = factory;
+        Variable(factory(self.0.as_ref()))
+    }
+
+    /// Apply `clone_map()` using the `Into` trait.
+    pub fn clone_into<'src, U>(&'src self) -> Variable<U>
+    where
+        U: TermData + From<&'src str>,
+    {
+        self.clone_map(Into::into)
+    }
+
+    /// Borrow the variables ID.
+    /// 
+    /// _Note:_ The ID does not have a leading `_:`.
+    pub fn as_str(&self) -> &str {
+        self.0.as_ref()
     }
 
     /// Writes the variable to the `fmt::Write` using the N3/SPARQL syntax.
@@ -92,7 +136,7 @@ where
         W: fmt::Write,
     {
         w.write_char('?')?;
-        w.write_str(self.as_ref())
+        w.write_str(self.as_str())
     }
 
     /// Writes the variable to the `io::Write` using the N3/SPARQL syntax.
@@ -101,12 +145,12 @@ where
         W: io::Write,
     {
         w.write_all(b"?")?;
-        w.write_all(self.as_ref().as_bytes())
+        w.write_all(self.as_str().as_bytes())
     }
 
     /// Return this variables's name as text.
     pub fn value(&self) -> MownStr {
-        self.as_ref().into()
+        self.as_str().into()
     }
 }
 
@@ -116,7 +160,7 @@ where
     U: TermData,
 {
     fn eq(&self, other: &Variable<U>) -> bool {
-        self.as_ref() == other.as_ref()
+        self.as_str() == other.as_str()
     }
 }
 
@@ -125,7 +169,7 @@ where
     TD: TermData,
 {
     fn eq(&self, other: &str) -> bool {
-        self.as_ref() == other
+        self.as_str() == other
     }
 }
 
@@ -163,26 +207,6 @@ where
     }
 }
 
-impl<TD> AsRef<str> for Variable<TD>
-where
-    TD: TermData,
-{
-    /// As variable is merely a wrapper around `TermData`.
-    fn as_ref(&self) -> &str {
-        self.0.as_ref()
-    }
-}
-
-impl<'a, T, U> From<&'a Variable<U>> for Variable<T>
-where
-    T: TermData + From<&'a str>,
-    U: TermData,
-{
-    fn from(other: &'a Variable<U>) -> Self {
-        other.clone_with(T::from)
-    }
-}
-
 impl<TD> TryFrom<Term<TD>> for Variable<TD>
 where
     TD: TermData,
@@ -209,7 +233,7 @@ where
 
     fn try_from(term: &'a Term<U>) -> Result<Self, Self::Error> {
         match term {
-            Term::Variable(var) => Ok(var.clone_with(T::from)),
+            Term::Variable(var) => Ok(var.clone_into()),
             _ => Err(TermError::UnexpectedKindOfTerm {
                 term: term.to_string(),
                 expect: "variable".to_owned(),

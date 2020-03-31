@@ -348,7 +348,7 @@ mod test {
 
                 fn relabel(factory: &mut RcTermFactory, t: Term<Rc<str>>) -> Term<Rc<str>> {
                     if let Term::BNode(bnode) = t {
-                        match bnode.as_ref() {
+                        match bnode.as_str() {
                             $($l => factory.bnode($r).unwrap(),)*
                             other => factory.bnode(other).unwrap(),
                         }
