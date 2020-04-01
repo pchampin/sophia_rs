@@ -91,12 +91,11 @@ pub fn populate_nodes_types<D: MutableDataset>(d: &mut D) -> MDResult<D, ()> {
     Ok(())
 }
 
-pub fn as_box_q<Q: Quad, E>(quad: Result<Q, E>) -> ([BoxTerm; 3], Option<BoxTerm>) {
-    let quad = match quad {
-        Ok(q) => q,
-        Err(_) => panic!("as_box_q received an error"),
-    };
-
+pub fn as_box_q<Q: Quad, E>(quad: Result<Q, E>) -> ([BoxTerm; 3], Option<BoxTerm>)
+where
+    E: Debug,
+{
+    let quad = quad.unwrap();
     (
         [quad.s().into(), quad.p().into(), quad.o().into()],
         quad.g().map(|n| n.into()),

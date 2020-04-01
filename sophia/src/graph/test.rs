@@ -78,12 +78,11 @@ pub fn populate_nodes_types<G: MutableGraph>(g: &mut G) -> MGResult<G, ()> {
     Ok(())
 }
 
-pub fn as_box_t<T: Triple, E>(triple: Result<T, E>) -> [BoxTerm; 3] {
-    let triple = match triple {
-        Ok(t) => t,
-        Err(_) => panic!("as_box_t received an error"),
-    };
-
+pub fn as_box_t<T: Triple, E>(triple: Result<T, E>) -> [BoxTerm; 3]
+where
+    E: Debug,
+{
+    let triple = triple.unwrap();
     [triple.s().into(), triple.p().into(), triple.o().into()]
 }
 

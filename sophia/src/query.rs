@@ -160,10 +160,7 @@ trait BindingExt {
 
 impl BindingExt for Binding {
     fn is_free(&self) -> bool {
-        match self {
-            AnyOrExactly::Any => true,
-            _ => false,
-        }
+        matches!(self, AnyOrExactly::Any)
     }
 }
 
