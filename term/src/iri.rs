@@ -657,6 +657,40 @@ mod test {
     }
 
     #[test]
+    fn map() {
+        let input = Iri::new_suffixed("some/iri/", "example").unwrap();
+        let expect: Iri<&str> = Iri::new("SOME/IRI/EXAMPLE").unwrap();
+
+        let mut cnt = 0;
+        let mut invoked = 0;
+
+        let cl = input.clone_map(|s: &str| {
+            cnt += s.len();
+            invoked += 1;
+            s.to_ascii_uppercase()
+        });
+        assert_eq!(cl, expect);
+        assert_eq!(cnt, "some/iri/example".len());
+        assert_eq!(invoked, 2);
+
+        cnt = 0;
+        invoked = 0;
+        let mapped = input.map(|s: &str| {
+            cnt += s.len();
+            invoked += 1;
+            s.to_ascii_uppercase()
+        });
+        assert_eq!(mapped, expect);
+        assert_eq!(cnt, "some/iri/example".len());
+        assert_eq!(invoked, 2);
+
+        assert_eq!(
+            cl.map_into::<Box<str>>(),
+            mapped.clone_into::<std::sync::Arc<str>>()
+        );
+    }
+
+    #[test]
     fn display() {
         let iri = Iri::<&'static str>::new_suffixed("foo#", "bar").unwrap();
         assert!(!iri.is_absolute());

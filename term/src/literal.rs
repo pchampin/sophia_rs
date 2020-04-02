@@ -496,9 +496,7 @@ mod test {
         let lit1 = Literal::<Box<str>>::new_dt("hello", xsd::iri::string.map_into());
         let lit2 = lit1.clone_into();
         let Literal { txt, .. } = lit2;
-        if let MownStr::Own(_) = txt {
-            assert!(false, "txt has been allocated");
-        }
+        assert!(!matches!(txt, MownStr::Own(_)), "txt has been allocated");
     }
 
     #[test]
@@ -510,8 +508,42 @@ mod test {
         let base = IriParsed::new(&xsd_string).unwrap();
         let lit2: Literal<MownStr> = base.resolve(&lit1);
         let Literal { txt, .. } = lit2;
-        if let MownStr::Own(_) = txt {
-            assert!(false, "txt has been allocated");
-        }
+        assert!(!matches!(txt, MownStr::Own(_)), "txt has been allocated");
+    }
+
+    #[test]
+    fn map() {
+        let dt = Iri::new_suffixed("some/iri/", "example").unwrap();
+        let input = Literal::new_dt("test", dt);
+        let dt2: Iri<&str> = Iri::new("SOME/IRI/EXAMPLE").unwrap();
+        let expect = Literal::new_dt("TEST", dt2);
+
+        let mut cnt = 0;
+        let mut invoked = 0;
+
+        let cl = input.clone_map(|s: &str| {
+            cnt += s.len();
+            invoked += 1;
+            s.to_ascii_uppercase()
+        });
+        assert_eq!(cl, expect);
+        assert_eq!(cnt, "some/iri/exampletest".len());
+        assert_eq!(invoked, 3);
+
+        cnt = 0;
+        invoked = 0;
+        let mapped = input.map(|s: &str| {
+            cnt += s.len();
+            invoked += 1;
+            s.to_ascii_uppercase()
+        });
+        assert_eq!(mapped, expect);
+        assert_eq!(cnt, "some/iri/exampletest".len());
+        assert_eq!(invoked, 3);
+
+        assert_eq!(
+            cl.map_into::<Box<str>>(),
+            mapped.clone_into::<std::sync::Arc<str>>()
+        );
     }
 }
