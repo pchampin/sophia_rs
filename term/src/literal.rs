@@ -138,31 +138,21 @@ where
     /// Borrow the inner contents of the literal.
     pub fn as_ref(&self) -> Literal<&TD> {
         let txt = &self.txt;
-        match &self.kind {
-            Lang(tag) => Literal {
-                txt,
-                kind: Lang(tag),
-            },
-            Dt(dt) => Literal {
-                txt,
-                kind: Dt(dt.as_ref()),
-            },
-        }
+        let kind = match &self.kind {
+            Lang(tag) => Lang(tag),
+            Dt(dt) => Dt(dt.as_ref()),
+        };
+        Literal { txt, kind }
     }
 
     /// Borrow the inner contents of the literal as `&str`.
     pub fn as_ref_str(&self) -> Literal<&str> {
         let txt = self.txt.as_ref();
-        match &self.kind {
-            Lang(tag) => Literal {
-                txt,
-                kind: Lang(tag.as_ref()),
-            },
-            Dt(dt) => Literal {
-                txt,
-                kind: Dt(dt.as_ref_str()),
-            },
-        }
+        let kind = match &self.kind {
+            Lang(tag) => Lang(tag.as_ref()),
+            Dt(dt) => Dt(dt.as_ref_str()),
+        };
+        Literal { txt, kind }
     }
 
     /// Create a new literal by applying `f` to the `TermData` of `self`.
@@ -173,13 +163,11 @@ where
     {
         let mut f = f;
         let txt = f(self.txt);
-        Literal {
-            txt,
-            kind: match self.kind {
-                Lang(tag) => Lang(f(tag)),
-                Dt(dt) => Dt(dt.map(f)),
-            },
-        }
+        let kind = match self.kind {
+            Lang(tag) => Lang(f(tag)),
+            Dt(dt) => Dt(dt.map(f)),
+        };
+        Literal { txt, kind }
     }
 
     /// Maps the literal using the `Into` trait.
