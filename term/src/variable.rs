@@ -296,4 +296,38 @@ mod test {
             Err(_) => b"failed write".to_vec(),
         }
     }
+
+    #[test]
+    fn map() {
+        let input: Variable<&str> = Variable::new("test").unwrap();
+        let expect: Variable<&str> = Variable::new("TEST").unwrap();
+
+        let mut cnt = 0;
+        let mut invoked = 0;
+
+        let cl = input.clone_map(|s: &str| {
+            cnt += s.len();
+            invoked += 1;
+            s.to_ascii_uppercase()
+        });
+        assert_eq!(cl, expect);
+        assert_eq!(cnt, "test".len());
+        assert_eq!(invoked, 1);
+
+        cnt = 0;
+        invoked = 0;
+        let mapped = input.map(|s: &str| {
+            cnt += s.len();
+            invoked += 1;
+            s.to_ascii_uppercase()
+        });
+        assert_eq!(mapped, expect);
+        assert_eq!(cnt, "test".len());
+        assert_eq!(invoked, 1);
+
+        assert_eq!(
+            cl.map_into::<Box<str>>(),
+            mapped.clone_into::<std::sync::Arc<str>>()
+        );
+    }
 }
