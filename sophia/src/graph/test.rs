@@ -83,7 +83,11 @@ where
     E: Debug,
 {
     let triple = triple.unwrap();
-    [triple.s().into(), triple.p().into(), triple.o().into()]
+    [
+        triple.s().clone_into(),
+        triple.p().clone_into(),
+        triple.o().clone_into(),
+    ]
 }
 
 #[allow(dead_code)]
@@ -445,7 +449,7 @@ macro_rules! test_graph_impl {
                 assert_eq!(subjects.len(), 8);
 
                 let rsubjects: std::collections::HashSet<_> =
-                    subjects.iter().map(|t| RefTerm::from(t)).collect();
+                    subjects.iter().map(|t| t.as_ref_str()).collect();
                 assert!(rsubjects.contains(&C1));
                 assert!(rsubjects.contains(&C2));
                 assert!(rsubjects.contains(&P1));
@@ -466,7 +470,7 @@ macro_rules! test_graph_impl {
                 assert_eq!(predicates.len(), 6);
 
                 let rpredicates: std::collections::HashSet<_> =
-                    predicates.iter().map(|t| RefTerm::from(t)).collect();
+                    predicates.iter().map(|t| t.as_ref_str()).collect();
                 assert!(rpredicates.contains(&rdf::type_));
                 assert!(rpredicates.contains(&rdfs::subClassOf));
                 assert!(rpredicates.contains(&rdfs::domain));
@@ -485,7 +489,7 @@ macro_rules! test_graph_impl {
                 assert_eq!(objects.len(), 7);
 
                 let robjects: std::collections::HashSet<_> =
-                    objects.iter().map(|t| RefTerm::from(t)).collect();
+                    objects.iter().map(|t| t.as_ref_str()).collect();
                 assert!(robjects.contains(&rdf::Property));
                 assert!(robjects.contains(&rdfs::Class));
                 assert!(robjects.contains(&rdfs::Resource));
@@ -505,7 +509,7 @@ macro_rules! test_graph_impl {
                 assert_eq!(iris.len(), 2);
 
                 let riris: std::collections::HashSet<_> =
-                    iris.iter().map(|t| RefTerm::from(t)).collect();
+                    iris.iter().map(|t| t.as_ref_str()).collect();
                 assert!(riris.contains(&rdf::Property));
                 assert!(riris.contains(&rdf::type_));
                 Ok(())
@@ -535,7 +539,7 @@ macro_rules! test_graph_impl {
                 assert_eq!(literals.len(), 3);
 
                 let rliterals: std::collections::HashSet<_> =
-                    literals.iter().map(|t| RefTerm::from(t)).collect();
+                    literals.iter().map(|t| t.as_ref_str()).collect();
                 assert!(rliterals.contains(&StaticTerm::from("lit1")));
                 assert!(rliterals.contains(&StaticTerm::from("lit2")));
                 assert!(rliterals.contains(&StaticTerm::new_literal_lang("lit2", "en").unwrap()));

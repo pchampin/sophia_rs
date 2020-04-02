@@ -56,10 +56,10 @@ impl MutableDataset for Vec<([BoxTerm; 3], Option<BoxTerm>)> {
         V: TermData,
         W: TermData,
     {
-        let s = s.into();
-        let p = p.into();
-        let o = o.into();
-        let g = g.map(|n| n.into());
+        let s = s.clone_into();
+        let p = p.clone_into();
+        let o = o.clone_into();
+        let g = g.map(|n| n.clone_into());
         self.push(([s, p, o], g));
         Ok(true)
     }
@@ -118,10 +118,10 @@ impl<S: ::std::hash::BuildHasher> MutableDataset for HashSet<([BoxTerm; 3], Opti
         V: TermData,
         W: TermData,
     {
-        let s = s.into();
-        let p = p.into();
-        let o = o.into();
-        let g = g.map(|n| n.into());
+        let s = s.clone_into();
+        let p = p.clone_into();
+        let o = o.clone_into();
+        let g = g.map(|n| n.clone_into());
         Ok(HashSet::insert(self, ([s, p, o], g)))
     }
     fn remove<T, U, V, W>(
@@ -137,10 +137,10 @@ impl<S: ::std::hash::BuildHasher> MutableDataset for HashSet<([BoxTerm; 3], Opti
         V: TermData,
         W: TermData,
     {
-        let s = s.into();
-        let p = p.into();
-        let o = o.into();
-        let g = g.map(|n| n.into());
+        let s = s.clone_into();
+        let p = p.clone_into();
+        let o = o.clone_into();
+        let g = g.map(|n| n.clone_into());
         Ok(HashSet::remove(self, &([s, p, o], g)))
     }
 }

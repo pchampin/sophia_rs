@@ -66,7 +66,7 @@ where
     where
         T: TermData,
     {
-        self.terms.get_index(&t.into())
+        self.terms.get_index(&t.clone_into())
     }
 
     #[inline]
@@ -75,7 +75,7 @@ where
         T: TermData,
     {
         self.terms
-            .get_index_for_graph_name(g.map(RefTerm::from).as_ref())
+            .get_index_for_graph_name(g.map(|g| g.as_ref_str()).as_ref())
     }
 
     #[inline]
@@ -101,12 +101,12 @@ where
         V: TermData,
         W: TermData,
     {
-        let si = self.terms.make_index(&s.into());
-        let pi = self.terms.make_index(&p.into());
-        let oi = self.terms.make_index(&o.into());
+        let si = self.terms.make_index(&s.clone_into());
+        let pi = self.terms.make_index(&p.clone_into());
+        let oi = self.terms.make_index(&o.clone_into());
         let gi = self
             .terms
-            .make_index_for_graph_name(g.map(RefTerm::from).as_ref());
+            .make_index_for_graph_name(g.map(|g| g.as_ref_str()).as_ref());
         let modified = self.quads.insert([si, pi, oi, gi]);
         if modified {
             Some([si, pi, oi, gi])

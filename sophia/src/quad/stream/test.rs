@@ -153,7 +153,7 @@ fn filter_map_quads_to_triples() {
     d.quads()
         .filter_map_quads(|q| -> Option<[BoxTerm; 3]> {
             if q.s() == &BOB as &StaticTerm {
-                Some([q.s().into(), q.p().into(), q.o().into()])
+                Some([q.s().clone_into(), q.p().clone_into(), q.o().clone_into()])
             } else {
                 None
             }
@@ -219,7 +219,9 @@ fn map_quads_to_triple() {
     let d = make_dataset();
     let mut g = Vec::<[BoxTerm; 3]>::new();
     d.quads()
-        .map_quads(|q| -> [BoxTerm; 3] { [q.s().into(), q.p().into(), q.o().into()] })
+        .map_quads(|q| -> [BoxTerm; 3] {
+            [q.s().clone_into(), q.p().clone_into(), q.o().clone_into()]
+        })
         .in_graph(&mut g)
         .unwrap();
     assert_eq!(d.len(), g.len());

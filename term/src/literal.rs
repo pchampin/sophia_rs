@@ -7,7 +7,7 @@ use crate::mown_str::MownStr;
 use crate::ns::{rdf, xsd};
 use crate::{Iri, Result, Term, TermData, TermError};
 use language_tag::LangTag;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::io;
@@ -104,14 +104,14 @@ where
     /// ill-type and not in the lexical space of `dt`. This is intended as the
     /// [RDF specification](https://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/#section-Graph-Literal)
     /// requires implementations to accept ill-typed literals.
-    pub fn new_dt<U, V>(txt: U, dt: V) -> Self
+    pub fn new_dt<U, V>(txt: U, dt: Iri<V>) -> Self
     where
-        TD: From<U>,
-        Iri<TD>: From<V>,
+        TD: From<U> + From<V>,
+        V: TermData,
     {
         Self {
             txt: txt.into(),
-            kind: Dt(dt.into()),
+            kind: Dt(dt.map_into()),
         }
     }
 
@@ -135,12 +135,55 @@ where
         }
     }
 
+    /// Borrow the inner contents of the literal.
+    pub fn as_ref(&self) -> Literal<&TD> {
+        let txt = &self.txt;
+        let kind = match &self.kind {
+            Lang(tag) => Lang(tag),
+            Dt(dt) => Dt(dt.as_ref()),
+        };
+        Literal { txt, kind }
+    }
+
+    /// Borrow the inner contents of the literal as `&str`.
+    pub fn as_ref_str(&self) -> Literal<&str> {
+        let txt = self.txt.as_ref();
+        let kind = match &self.kind {
+            Lang(tag) => Lang(tag.as_ref()),
+            Dt(dt) => Dt(dt.as_ref_str()),
+        };
+        Literal { txt, kind }
+    }
+
+    /// Create a new literal by applying `f` to the `TermData` of `self`.
+    pub fn map<F, TD2>(self, f: F) -> Literal<TD2>
+    where
+        F: FnMut(TD) -> TD2,
+        TD2: TermData,
+    {
+        let mut f = f;
+        let txt = f(self.txt);
+        let kind = match self.kind {
+            Lang(tag) => Lang(f(tag)),
+            Dt(dt) => Dt(dt.map(f)),
+        };
+        Literal { txt, kind }
+    }
+
+    /// Maps the literal using the `Into` trait.
+    pub fn map_into<TD2>(self) -> Literal<TD2>
+    where
+        TD: Into<TD2>,
+        TD2: TermData,
+    {
+        self.map(Into::into)
+    }
+
     /// Clone self while transforming the inner `TermData` with the given
     /// factory.
     ///
-    /// Clone as this might allocate new `TermData`. However there is also
-    /// `TermData` that is cheap to clone, i.e. `Copy`.
-    pub fn clone_with<'a, U, F>(&'a self, factory: F) -> Literal<U>
+    /// This is done in one step in contrast to calling `clone().map(factory)`.
+    pub fn clone_map<'a, U, F>(&'a self, factory: F) -> Literal<U>
     where
         U: TermData,
         F: FnMut(&'a str) -> U,
@@ -149,10 +192,18 @@ where
         let txt = factory(self.txt.as_ref());
         let kind = match &self.kind {
             Lang(tag) => Lang(factory(tag.as_ref())),
-            Dt(iri) => Dt(iri.clone_with(factory)),
+            Dt(iri) => Dt(iri.clone_map(factory)),
         };
 
         Literal { txt, kind }
+    }
+
+    /// Apply `clone_map()` using the `Into` trait.
+    pub fn clone_into<'src, U>(&'src self) -> Literal<U>
+    where
+        U: TermData + From<&'src str>,
+    {
+        self.clone_map(Into::into)
     }
 
     /// If the literal is typed transform the IRI according to the given
@@ -238,8 +289,8 @@ where
     /// _Note:_ A language-tagged literal has always the type `rdf:langString`.
     pub fn dt(&self) -> Iri<&str> {
         match &self.kind {
-            Lang(_) => rdf::langString.try_into().expect("ensured"),
-            Dt(dt) => dt.into(),
+            Lang(_) => rdf::iri::langString,
+            Dt(dt) => dt.as_ref_str(),
         }
     }
 
@@ -280,16 +331,6 @@ where
     }
 }
 
-impl<'a, T, U> From<&'a Literal<U>> for Literal<T>
-where
-    T: TermData + From<&'a str>,
-    U: TermData,
-{
-    fn from(other: &'a Literal<U>) -> Self {
-        other.clone_with(T::from)
-    }
-}
-
 impl<TD> TryFrom<Term<TD>> for Literal<TD>
 where
     TD: TermData,
@@ -316,7 +357,7 @@ where
 
     fn try_from(term: &'a Term<U>) -> Result<Self, Self::Error> {
         match term {
-            Term::Literal(lit) => Ok(lit.into()),
+            Term::Literal(lit) => Ok(lit.clone_into()),
             _ => Err(TermError::UnexpectedKindOfTerm {
                 term: term.to_string(),
                 expect: "literal".to_owned(),
@@ -440,25 +481,58 @@ mod test {
     #[test]
     fn convert_to_mown_does_not_allocate() {
         use crate::mown_str::MownStr;
-        let lit1 = Literal::<Box<str>>::new_dt("hello", &xsd::iri::string);
-        let lit2 = Literal::<MownStr>::from(&lit1);
+        let lit1 = Literal::<Box<str>>::new_dt("hello", xsd::iri::string.clone());
+        let lit2 = lit1.clone_into();
         let Literal { txt, .. } = lit2;
-        if let MownStr::Own(_) = txt {
-            assert!(false, "txt has been allocated");
-        }
+        assert!(!matches!(txt, MownStr::Own(_)), "txt has been allocated");
     }
 
     #[test]
     fn resolve_to_mown_does_not_allocate_txt() {
         use crate::iri::{IriParsed, Resolve};
         use crate::mown_str::MownStr;
-        let lit1 = Literal::<Box<str>>::new_dt("hello", Iri::new("").unwrap());
+        let dt1 = Iri::<Box<str>>::new("").unwrap();
+        let lit1 = Literal::<Box<str>>::new_dt("hello", dt1);
         let xsd_string = &xsd::iri::string.value();
         let base = IriParsed::new(&xsd_string).unwrap();
         let lit2: Literal<MownStr> = base.resolve(&lit1);
         let Literal { txt, .. } = lit2;
-        if let MownStr::Own(_) = txt {
-            assert!(false, "txt has been allocated");
-        }
+        assert!(!matches!(txt, MownStr::Own(_)), "txt has been allocated");
+    }
+
+    #[test]
+    fn map() {
+        let dt = Iri::<&str>::new_suffixed("some/iri/", "example").unwrap();
+        let input = Literal::new_dt("test", dt);
+        let dt2 = Iri::<&str>::new("SOME/IRI/EXAMPLE").unwrap();
+        let expect = Literal::<&str>::new_dt("TEST", dt2);
+
+        let mut cnt = 0;
+        let mut invoked = 0;
+
+        let cl = input.clone_map(|s: &str| {
+            cnt += s.len();
+            invoked += 1;
+            s.to_ascii_uppercase()
+        });
+        assert_eq!(cl, expect);
+        assert_eq!(cnt, "some/iri/exampletest".len());
+        assert_eq!(invoked, 3);
+
+        cnt = 0;
+        invoked = 0;
+        let mapped = input.map(|s: &str| {
+            cnt += s.len();
+            invoked += 1;
+            s.to_ascii_uppercase()
+        });
+        assert_eq!(mapped, expect);
+        assert_eq!(cnt, "some/iri/exampletest".len());
+        assert_eq!(invoked, 3);
+
+        assert_eq!(
+            cl.map_into::<Box<str>>(),
+            mapped.clone_into::<std::sync::Arc<str>>()
+        );
     }
 }

@@ -204,11 +204,60 @@ where
         Variable::new(name).map(Into::into)
     }
 
-    /// Clone another term with the given factory.
+    /// Borrow the inner contents of the term.
+    pub fn as_ref(&self) -> Term<&T> {
+        use self::Term::*;
+
+        match &self {
+            Iri(iri) => Iri(iri.as_ref()),
+            Literal(lit) => Literal(lit.as_ref()),
+            BNode(bn) => BNode(bn.as_ref()),
+            Variable(var) => Variable(var.as_ref()),
+        }
+    }
+
+    /// Borrow the inner contents of the term as `&str`.
+    pub fn as_ref_str(&self) -> Term<&str> {
+        use self::Term::*;
+
+        match &self {
+            Iri(iri) => Iri(iri.as_ref_str()),
+            Literal(lit) => Literal(lit.as_ref_str()),
+            BNode(bn) => BNode(bn.as_ref_str()),
+            Variable(var) => Variable(var.as_ref_str()),
+        }
+    }
+
+    /// Create a new term by applying `f` to the `TermData` of `self`.
+    pub fn map<F, TD2>(self, f: F) -> Term<TD2>
+    where
+        F: FnMut(T) -> TD2,
+        TD2: TermData,
+    {
+        use self::Term::*;
+
+        match self {
+            Iri(iri) => Iri(iri.map(f)),
+            Literal(lit) => Literal(lit.map(f)),
+            BNode(bn) => BNode(bn.map(f)),
+            Variable(var) => Variable(var.map(f)),
+        }
+    }
+
+    /// Maps the term using the `Into` trait.
+    pub fn map_into<TD2>(self) -> Term<TD2>
+    where
+        T: Into<TD2>,
+        TD2: TermData,
+    {
+        self.map(Into::into)
+    }
+
+    /// Clone self while transforming the inner `TermData` with the given
+    /// factory.
     ///
-    /// Clone as this might allocate a new `TermData`. However there is also
-    /// `TermData` that is cheap to clone, i.e. `Copy`.
-    pub fn clone_with<'a, U, F>(&'a self, factory: F) -> Term<U>
+    /// This is done in one step in contrast to calling `clone().map(factory)`.
+    pub fn clone_map<'a, U, F>(&'a self, factory: F) -> Term<U>
     where
         U: TermData,
         F: FnMut(&'a str) -> U,
@@ -216,11 +265,19 @@ where
         use self::Term::*;
 
         match self {
-            Iri(iri) => iri.clone_with(factory).into(),
-            BNode(bn) => bn.clone_with(factory).into(),
-            Literal(lit) => lit.clone_with(factory).into(),
-            Variable(var) => var.clone_with(factory).into(),
+            Iri(iri) => iri.clone_map(factory).into(),
+            BNode(bn) => bn.clone_map(factory).into(),
+            Literal(lit) => lit.clone_map(factory).into(),
+            Variable(var) => var.clone_map(factory).into(),
         }
+    }
+
+    /// Apply `clone_map()` using the `Into` trait.
+    pub fn clone_into<'src, U>(&'src self) -> Term<U>
+    where
+        U: TermData + From<&'src str>,
+    {
+        self.clone_map(Into::into)
     }
 
     /// Transforms the underlying IRIs according to the given policy.
@@ -234,7 +291,7 @@ where
         match self {
             Term::Iri(iri) => iri.clone_normalized_with(policy, factory).into(),
             Term::Literal(lit) => lit.clone_normalized_with(policy, factory).into(),
-            _ => self.clone_with(factory),
+            _ => self.clone_map(factory),
         }
     }
 
@@ -426,16 +483,6 @@ where
             Term::Variable(var) => var == other,
             _ => false,
         }
-    }
-}
-
-impl<'a, T, U> From<&'a Term<U>> for Term<T>
-where
-    T: TermData + From<&'a str>,
-    U: TermData,
-{
-    fn from(other: &'a Term<U>) -> Term<T> {
-        other.clone_with(T::from)
     }
 }
 

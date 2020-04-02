@@ -104,17 +104,61 @@ where
         BlankNode(id.into())
     }
 
-    /// Copy self while transforming the inner `TermData` with the given
+    /// Borrow the inner contents of the blank node.
+    pub fn as_ref(&self) -> BlankNode<&TD> {
+        BlankNode(&self.0)
+    }
+
+    /// Borrow the inner contents of the blank node as `&str`.
+    pub fn as_ref_str(&self) -> BlankNode<&str> {
+        BlankNode(self.0.as_ref())
+    }
+
+    /// Create a new blank node by applying `f` to the `TermData` of `self`.
+    pub fn map<F, TD2>(self, f: F) -> BlankNode<TD2>
+    where
+        F: FnMut(TD) -> TD2,
+        TD2: TermData,
+    {
+        let mut f = f;
+        BlankNode(f(self.0))
+    }
+
+    /// Maps the blank node using the `Into` trait.
+    pub fn map_into<TD2>(self) -> BlankNode<TD2>
+    where
+        TD: Into<TD2>,
+        TD2: TermData,
+    {
+        self.map(Into::into)
+    }
+
+    /// Clone self while transforming the inner `TermData` with the given
     /// factory.
     ///
-    /// Clone as this might allocate a new `TermData`. However there is also
-    /// `TermData` that is cheap to clone, i.e. `Copy`.
-    pub fn clone_with<'a, U, F>(&'a self, mut factory: F) -> BlankNode<U>
+    /// This is done in one step in contrast to calling `clone().map(factory)`.
+    pub fn clone_map<'a, U, F>(&'a self, factory: F) -> BlankNode<U>
     where
         U: TermData,
         F: FnMut(&'a str) -> U,
     {
-        BlankNode(factory(self.as_ref()))
+        let mut factory = factory;
+        BlankNode(factory(self.0.as_ref()))
+    }
+
+    /// Apply `clone_map()` using the `Into` trait.
+    pub fn clone_into<'src, U>(&'src self) -> BlankNode<U>
+    where
+        U: TermData + From<&'src str>,
+    {
+        self.clone_map(Into::into)
+    }
+
+    /// Borrow the blank nodes ID.
+    ///
+    /// _Note:_ The ID does not have a leading `_:`.
+    pub fn as_str(&self) -> &str {
+        self.0.as_ref()
     }
 
     /// Writes the blank node to the `fmt::Write` using the N3 syntax.
@@ -123,7 +167,7 @@ where
         W: fmt::Write,
     {
         w.write_str("_:")?;
-        w.write_str(self.as_ref())
+        w.write_str(self.as_str())
     }
 
     /// Writes the blank node to the `io::Write` using the N3 syntax.
@@ -132,12 +176,12 @@ where
         W: io::Write,
     {
         w.write_all(b"_:")?;
-        w.write_all(self.as_ref().as_bytes())
+        w.write_all(self.as_str().as_bytes())
     }
 
     /// Return this blank nodes's identifier as text.
     pub fn value(&self) -> MownStr {
-        self.as_ref().into()
+        self.as_str().into()
     }
 }
 
@@ -147,15 +191,6 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.write_fmt(f)
-    }
-}
-
-impl<TD> AsRef<str> for BlankNode<TD>
-where
-    TD: TermData,
-{
-    fn as_ref(&self) -> &str {
-        self.0.as_ref()
     }
 }
 
@@ -176,7 +211,7 @@ where
     U: TermData,
 {
     fn eq(&self, other: &BlankNode<U>) -> bool {
-        self.as_ref() == other.as_ref()
+        self.as_str() == other.as_str()
     }
 }
 
@@ -185,7 +220,7 @@ where
     TD: TermData,
 {
     fn eq(&self, other: &str) -> bool {
-        self.as_ref() == other
+        self.as_str() == other
     }
 }
 
@@ -200,16 +235,6 @@ where
         } else {
             false
         }
-    }
-}
-
-impl<'a, T, U> From<&'a BlankNode<U>> for BlankNode<T>
-where
-    T: TermData + From<&'a str>,
-    U: TermData,
-{
-    fn from(other: &'a BlankNode<U>) -> Self {
-        other.clone_with(T::from)
     }
 }
 
@@ -239,7 +264,7 @@ where
 
     fn try_from(term: &'a Term<U>) -> Result<Self, Self::Error> {
         match term {
-            Term::BNode(bn) => Ok(bn.clone_with(T::from)),
+            Term::BNode(bn) => Ok(bn.clone_into()),
             _ => Err(TermError::UnexpectedKindOfTerm {
                 term: term.to_string(),
                 expect: "blank node".to_owned(),
@@ -301,6 +326,40 @@ mod test {
             Ok(_) => buf,
             Err(_) => b"failed write".to_vec(),
         }
+    }
+
+    #[test]
+    fn map() {
+        let input: BlankNode<&str> = BlankNode::new("test").unwrap();
+        let expect: BlankNode<&str> = BlankNode::new("TEST").unwrap();
+
+        let mut cnt = 0;
+        let mut invoked = 0;
+
+        let cl = input.clone_map(|s: &str| {
+            cnt += s.len();
+            invoked += 1;
+            s.to_ascii_uppercase()
+        });
+        assert_eq!(cl, expect);
+        assert_eq!(cnt, "test".len());
+        assert_eq!(invoked, 1);
+
+        cnt = 0;
+        invoked = 0;
+        let mapped = input.map(|s: &str| {
+            cnt += s.len();
+            invoked += 1;
+            s.to_ascii_uppercase()
+        });
+        assert_eq!(mapped, expect);
+        assert_eq!(cnt, "test".len());
+        assert_eq!(invoked, 1);
+
+        assert_eq!(
+            cl.map_into::<Box<str>>(),
+            mapped.clone_into::<std::sync::Arc<str>>()
+        );
     }
 
     // further tests are executed in `crate::test`

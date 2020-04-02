@@ -151,7 +151,12 @@ fn filter_map_triples_to_quads() {
     g.triples()
         .filter_map_triples(|t| -> Option<[BoxTerm; 4]> {
             if t.s() == &BOB as &StaticTerm {
-                Some([t.s().into(), t.p().into(), t.o().into(), t.s().into()])
+                Some([
+                    t.s().clone_into(),
+                    t.p().clone_into(),
+                    t.o().clone_into(),
+                    t.s().clone_into(),
+                ])
             } else {
                 None
             }
@@ -213,7 +218,12 @@ fn map_triples_to_quads() {
     let mut d = Vec::<([BoxTerm; 3], Option<BoxTerm>)>::new();
     g.triples()
         .map_triples(|t| -> [BoxTerm; 4] {
-            [t.s().into(), t.p().into(), t.o().into(), t.s().into()]
+            [
+                t.s().clone_into(),
+                t.p().clone_into(),
+                t.o().clone_into(),
+                t.s().clone_into(),
+            ]
         })
         .in_dataset(&mut d)
         .unwrap();

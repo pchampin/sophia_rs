@@ -90,7 +90,7 @@ pub trait TermFactory {
     where
         T: TermData,
     {
-        other.clone_with(|txt| self.get_term_data(txt))
+        other.clone_map(|txt| self.get_term_data(txt))
     }
 
     /// Clones the given term.

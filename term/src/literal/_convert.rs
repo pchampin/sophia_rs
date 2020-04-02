@@ -112,7 +112,7 @@ macro_rules! impl_as_literal {
             TD: $crate::TermData + From<String> + From<&'static str>,
         {
             fn as_literal(&self) -> Literal<TD> {
-                $crate::literal::Literal::new_dt(self.to_string(), Self::iri())
+                $crate::literal::Literal::new_dt(self.to_string(), Self::iri().clone())
             }
         }
     };
@@ -134,10 +134,9 @@ impl_as_literal!(String);
 impl<'a, TD> AsLiteral<TD> for &'a str
 where
     TD: TermData + From<&'a str>,
-    Iri<TD>: From<Iri<&'a str>>,
 {
     fn as_literal(&self) -> Literal<TD> {
-        Literal::new_dt(*self, xsd::string.try_into().unwrap())
+        Literal::new_dt(*self, xsd::iri::string)
     }
 }
 

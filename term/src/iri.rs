@@ -195,6 +195,84 @@ where
         }
     }
 
+    /// The namespace of the IRI.
+    ///
+    /// If the IRI has no suffix this is the whole IRI.
+    pub fn ns(&self) -> &TD {
+        &self.ns
+    }
+
+    /// The suffix of the IRI.
+    pub fn suffix(&self) -> &Option<TD> {
+        &self.suffix
+    }
+
+    /// Borrow the inner contents of the IRI.
+    pub fn as_ref(&self) -> Iri<&TD> {
+        Iri {
+            ns: &self.ns,
+            suffix: self.suffix.as_ref(),
+            absolute: self.absolute,
+        }
+    }
+
+    /// Borrow the inner contents of the IRI as `&str`.
+    pub fn as_ref_str(&self) -> Iri<&str> {
+        Iri {
+            ns: self.ns.as_ref(),
+            suffix: self.suffix.as_ref().map(|td| td.as_ref()),
+            absolute: self.absolute,
+        }
+    }
+
+    /// Create a new IRI by applying `f` to the `TermData` of `self`.
+    pub fn map<F, TD2>(self, f: F) -> Iri<TD2>
+    where
+        F: FnMut(TD) -> TD2,
+        TD2: TermData,
+    {
+        let mut f = f;
+        Iri {
+            ns: f(self.ns),
+            suffix: self.suffix.map(f),
+            absolute: self.absolute,
+        }
+    }
+
+    /// Maps the IRI using the `Into` trait.
+    pub fn map_into<TD2>(self) -> Iri<TD2>
+    where
+        TD: Into<TD2>,
+        TD2: TermData,
+    {
+        self.map(Into::into)
+    }
+
+    /// Clone self while transforming the inner `TermData` with the given
+    /// factory.
+    ///
+    /// This is done in one step in contrast to calling `clone().map(factory)`.
+    pub fn clone_map<'a, U, F>(&'a self, factory: F) -> Iri<U>
+    where
+        U: TermData,
+        F: FnMut(&'a str) -> U,
+    {
+        let mut factory = factory;
+        Iri {
+            ns: factory(self.ns.as_ref()),
+            suffix: self.suffix.as_ref().map(|td| factory(td.as_ref())),
+            absolute: self.absolute,
+        }
+    }
+
+    /// Apply `clone_map()` using the `Into` trait.
+    pub fn clone_into<'src, U>(&'src self) -> Iri<U>
+    where
+        U: TermData + From<&'src str>,
+    {
+        self.clone_map(Into::into)
+    }
+
     /// The length of this IRI.
     pub fn len(&self) -> usize {
         self.ns.as_ref().len() + self.suffix_as_str().len()
@@ -225,24 +303,6 @@ where
     /// and a suffix (`true`).
     pub fn has_suffix(&self) -> bool {
         self.suffix.is_some()
-    }
-
-    /// Clone self while transforming the inner `TermData` with the given
-    /// factory.
-    ///
-    /// Clone as this might allocate a new `TermData`. However there is also
-    /// `TermData` that is cheap to clone, i.e. `Copy`.
-    pub fn clone_with<'a, U, F>(&'a self, mut factory: F) -> Iri<U>
-    where
-        U: TermData,
-        F: FnMut(&'a str) -> U,
-    {
-        let suffix = self.suffix.as_ref().map(|s| factory(s.as_ref()));
-        Iri {
-            ns: factory(self.ns.as_ref()),
-            suffix,
-            absolute: self.absolute,
-        }
     }
 
     /// Transforms the IRI according to the given policy.
@@ -276,7 +336,7 @@ where
                 let mut factory = factory;
                 Iri::new_unchecked(factory(&full), self.absolute)
             }
-            None => self.clone_with(factory),
+            None => self.clone_map(factory),
         }
     }
 
@@ -310,7 +370,7 @@ where
                     }
                 } else if ns.ends_with(GEN_DELIMS) {
                     // case: ns does end with separator
-                    self.clone_with(factory)
+                    self.clone_map(factory)
                 } else if let Some(pos) = ns.rfind(GEN_DELIMS) {
                     // case: ns does not end with separator but contains one
                     let mut new_suffix = String::with_capacity(ns.len() - pos - 1 + suf.len());
@@ -338,7 +398,7 @@ where
                     }
                     None => {
                         // case: no separators
-                        self.clone_with(factory)
+                        self.clone_map(factory)
                     }
                 }
             }
@@ -518,16 +578,6 @@ where
     }
 }
 
-impl<'a, T, U> From<&'a Iri<U>> for Iri<T>
-where
-    T: TermData + From<&'a str>,
-    U: TermData,
-{
-    fn from(other: &'a Iri<U>) -> Self {
-        other.clone_with(T::from)
-    }
-}
-
 impl<TD> Hash for Iri<TD>
 where
     TD: TermData,
@@ -565,7 +615,7 @@ where
 
     fn try_from(term: &'a Term<U>) -> Result<Self, Self::Error> {
         match term {
-            Term::Iri(iri) => Ok(iri.clone_with(T::from)),
+            Term::Iri(iri) => Ok(iri.clone_map(T::from)),
             _ => Err(TermError::UnexpectedKindOfTerm {
                 term: term.to_string(),
                 expect: "IRI".to_owned(),
@@ -607,6 +657,40 @@ mod test {
     }
 
     #[test]
+    fn map() {
+        let input = Iri::new_suffixed("some/iri/", "example").unwrap();
+        let expect: Iri<&str> = Iri::new("SOME/IRI/EXAMPLE").unwrap();
+
+        let mut cnt = 0;
+        let mut invoked = 0;
+
+        let cl = input.clone_map(|s: &str| {
+            cnt += s.len();
+            invoked += 1;
+            s.to_ascii_uppercase()
+        });
+        assert_eq!(cl, expect);
+        assert_eq!(cnt, "some/iri/example".len());
+        assert_eq!(invoked, 2);
+
+        cnt = 0;
+        invoked = 0;
+        let mapped = input.map(|s: &str| {
+            cnt += s.len();
+            invoked += 1;
+            s.to_ascii_uppercase()
+        });
+        assert_eq!(mapped, expect);
+        assert_eq!(cnt, "some/iri/example".len());
+        assert_eq!(invoked, 2);
+
+        assert_eq!(
+            cl.map_into::<Box<str>>(),
+            mapped.clone_into::<std::sync::Arc<str>>()
+        );
+    }
+
+    #[test]
     fn display() {
         let iri = Iri::<&'static str>::new_suffixed("foo#", "bar").unwrap();
         assert!(!iri.is_absolute());
@@ -629,7 +713,7 @@ mod test {
     fn convert_to_mown_does_not_allocate() {
         use crate::mown_str::MownStr;
         let iri1 = Iri::<Box<str>>::new_suffixed("http://example.org/", "foo").unwrap();
-        let iri2 = Iri::<MownStr>::from(&iri1);
+        let iri2 = iri1.clone_map(Into::into);
         let Iri { ns, suffix, .. } = iri2;
         if let MownStr::Own(_) = ns {
             assert!(false, "ns has been allocated");

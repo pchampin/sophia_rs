@@ -56,12 +56,7 @@ pub fn populate<D: MutableDataset>(d: &mut D) -> MDResult<D, ()> {
 }
 
 pub fn populate_nodes_types<D: MutableDataset>(d: &mut D) -> MDResult<D, ()> {
-    d.insert(
-        &rdf::type_,
-        &rdf::type_,
-        &rdf::Property,
-        Some(StaticTerm::from(&rdf::type_)).as_ref(),
-    )?;
+    d.insert(&rdf::type_, &rdf::type_, &rdf::Property, Some(&rdf::type_))?;
     d.insert(
         &StaticTerm::new_bnode("b1").unwrap(),
         &StaticTerm::new_bnode("b2").unwrap(),
@@ -97,8 +92,12 @@ where
 {
     let quad = quad.unwrap();
     (
-        [quad.s().into(), quad.p().into(), quad.o().into()],
-        quad.g().map(|n| n.into()),
+        [
+            quad.s().clone_into(),
+            quad.p().clone_into(),
+            quad.o().clone_into(),
+        ],
+        quad.g().map(|n| n.clone_into()),
     )
 }
 
@@ -732,7 +731,7 @@ macro_rules! test_dataset_impl {
                 assert_eq!(subjects.len(), 8);
 
                 let rsubjects: std::collections::HashSet<_> =
-                    subjects.iter().map(|t| RefTerm::from(t)).collect();
+                    subjects.iter().map(|t| t.as_ref_str()).collect();
                 assert!(rsubjects.contains(&C1));
                 assert!(rsubjects.contains(&C2));
                 assert!(rsubjects.contains(&P1));
@@ -753,7 +752,7 @@ macro_rules! test_dataset_impl {
                 assert_eq!(predicates.len(), 6);
 
                 let rpredicates: std::collections::HashSet<_> =
-                    predicates.iter().map(|t| RefTerm::from(t)).collect();
+                    predicates.iter().map(|t| t.as_ref_str()).collect();
                 assert!(rpredicates.contains(&rdf::type_));
                 assert!(rpredicates.contains(&rdfs::subClassOf));
                 assert!(rpredicates.contains(&rdfs::domain));
@@ -772,7 +771,7 @@ macro_rules! test_dataset_impl {
                 assert_eq!(objects.len(), 6);
 
                 let robjects: std::collections::HashSet<_> =
-                    objects.iter().map(|t| RefTerm::from(t)).collect();
+                    objects.iter().map(|t| t.as_ref_str()).collect();
                 assert!(robjects.contains(&rdf::Property));
                 assert!(robjects.contains(&rdfs::Class));
                 assert!(robjects.contains(&C1));
@@ -791,7 +790,7 @@ macro_rules! test_dataset_impl {
                 assert_eq!(graph_names.len(), 2);
 
                 let rgraph_names: std::collections::HashSet<_> =
-                    graph_names.iter().map(|t| RefTerm::from(t)).collect();
+                    graph_names.iter().map(|t| t.as_ref_str()).collect();
                 assert!(rgraph_names.contains(&G1));
                 assert!(rgraph_names.contains(&G2));
                 Ok(())
@@ -806,7 +805,7 @@ macro_rules! test_dataset_impl {
                 assert_eq!(iris.len(), 2);
 
                 let riris: std::collections::HashSet<_> =
-                    iris.iter().map(|t| RefTerm::from(t)).collect();
+                    iris.iter().map(|t| t.as_ref_str()).collect();
                 assert!(riris.contains(&rdf::Property));
                 assert!(riris.contains(&rdf::type_));
                 Ok(())
@@ -836,7 +835,7 @@ macro_rules! test_dataset_impl {
                 assert_eq!(literals.len(), 3);
 
                 let rliterals: std::collections::HashSet<_> =
-                    literals.iter().map(|t| RefTerm::from(t)).collect();
+                    literals.iter().map(|t| t.as_ref_str()).collect();
                 assert!(rliterals.contains(&StaticTerm::from("lit1")));
                 assert!(rliterals.contains(&StaticTerm::from("lit2")));
                 assert!(rliterals.contains(&StaticTerm::new_literal_lang("lit2", "en").unwrap()));

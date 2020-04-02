@@ -185,7 +185,7 @@ where
     fn resolve(&self, other: &'a Iri<TD>) -> Iri<MownStr<'a>> {
         //pub fn resolve_mown<'b, TD: TermData>(&self, other: &Iri<TD>) -> Iri<MownStr<'b>> {
         if other.absolute {
-            return other.into();
+            return other.clone_into();
         }
         let mut buffer = String::new();
         let parsed = other.parse_components(&mut buffer);
@@ -204,7 +204,7 @@ where
     /// # Exception
     ///
     /// This only changes on `Typed` literals.
-    /// Language-tagged literals are absolue by construction.
+    /// Language-tagged literals are absolute by construction.
     /// Therefore, those are not affected.
     ///
     /// # Performance
@@ -212,7 +212,7 @@ where
     /// May allocate an intermediate IRI if `other.dt()` is suffixed.
     fn resolve(&self, other: &'a Literal<TD>) -> Literal<TD2> {
         if other.is_absolute() {
-            other.into()
+            other.clone_into()
         } else {
             let dt: Iri<TD2> = self.resolve(&other.dt());
             Literal::new_dt(other.txt().as_ref(), dt)
@@ -229,7 +229,7 @@ where
     /// # Exception
     ///
     /// This only changes on `Typed` literals.
-    /// Language-tagged literals are absolue by construction.
+    /// Language-tagged literals are absolute by construction.
     /// Therefore, those are not affected.
     ///
     /// # Performance
@@ -237,7 +237,7 @@ where
     /// May allocate an intermediate IRI if `other.dt()` is suffixed.
     fn resolve(&self, other: &'a Literal<TD>) -> Literal<MownStr<'a>> {
         if other.is_absolute() {
-            other.into()
+            other.clone_into()
         } else {
             let dt = Iri::<MownStr>::new_unchecked(
                 self.resolve(other.dt().value().as_ref())
@@ -264,7 +264,7 @@ where
         match other {
             Term::Iri(iri) => Resolve::<_, Iri<TD2>>::resolve(self, iri).into(),
             Term::Literal(lit) => Resolve::<_, Literal<TD2>>::resolve(self, lit).into(),
-            term => term.into(),
+            term => term.clone_into(),
         }
     }
 }
@@ -282,7 +282,7 @@ where
         match other {
             Term::Iri(iri) => Resolve::<_, Iri<MownStr>>::resolve(self, iri).into(),
             Term::Literal(lit) => Resolve::<_, Literal<MownStr>>::resolve(self, lit).into(),
-            term => term.into(),
+            term => term.clone_into(),
         }
     }
 }

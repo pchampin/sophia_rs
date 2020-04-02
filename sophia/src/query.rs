@@ -118,13 +118,13 @@ where
     triples_matching(g, unsafe { &*(&tm[..] as *const [Binding]) }).map_ok(move |tr| {
         let mut b2 = b.clone();
         if tm[0].is_free() {
-            b2.insert(tq.s().value().to_string(), tr.s().into());
+            b2.insert(tq.s().value().to_string(), tr.s().clone_into());
         }
         if tm[1].is_free() {
-            b2.insert(tq.p().value().to_string(), tr.p().into());
+            b2.insert(tq.p().value().to_string(), tr.p().clone_into());
         }
         if tm[2].is_free() {
-            b2.insert(tq.o().value().to_string(), tr.o().into());
+            b2.insert(tq.o().value().to_string(), tr.o().clone_into());
         }
         b2
     })
@@ -133,7 +133,7 @@ where
 /// Make a matcher corresponding to term `t`, given binding `b`.
 fn matcher(t: &RcTerm, b: &BindingMap) -> Binding {
     if let Term::Variable(var) = t {
-        let vname: &str = var.as_ref();
+        let vname: &str = var.as_str();
         b.get(vname).cloned().into()
     } else {
         Binding::Exactly(t.clone())
@@ -180,11 +180,7 @@ mod test {
         let s_event = schema.get("Event").unwrap();
         let x_alice = RcTerm::new_iri("http://example.org/alice").unwrap();
 
-        let tq: [RcTerm; 3] = [
-            x_alice.clone(),
-            RcTerm::from(&rdf::type_),
-            RcTerm::from(&s_event),
-        ];
+        let tq: [RcTerm; 3] = [x_alice.clone(), rdf::type_.map_into(), s_event.map_into()];
 
         let results: Result<Vec<_>, _> = bindings_for_triple(&g, &tq, BindingMap::new()).collect();
         let results = results.unwrap();
@@ -199,11 +195,7 @@ mod test {
         let s_person = schema.get("Person").unwrap();
         let x_alice = RcTerm::new_iri("http://example.org/alice").unwrap();
 
-        let tq: [RcTerm; 3] = [
-            x_alice.clone(),
-            RcTerm::from(&rdf::type_),
-            RcTerm::from(&s_person),
-        ];
+        let tq: [RcTerm; 3] = [x_alice.clone(), rdf::type_.map_into(), s_person.map_into()];
 
         let results: Result<Vec<BindingMap>, _> =
             bindings_for_triple(&g, &tq, BindingMap::new()).collect();
@@ -223,11 +215,7 @@ mod test {
 
         let v1 = RcTerm::new_variable("v1").unwrap();
 
-        let tq: [RcTerm; 3] = [
-            v1.clone(),
-            RcTerm::from(&rdf::type_),
-            RcTerm::from(&s_event),
-        ];
+        let tq: [RcTerm; 3] = [v1.clone(), rdf::type_.map_into(), s_event.map_into()];
 
         let results: Result<Vec<BindingMap>, _> =
             bindings_for_triple(&g, &tq, BindingMap::new()).collect();
@@ -244,11 +232,7 @@ mod test {
 
         let v1 = RcTerm::new_variable("v1").unwrap();
 
-        let tq: [RcTerm; 3] = [
-            v1.clone(),
-            RcTerm::from(&rdf::type_),
-            RcTerm::from(&s_person),
-        ];
+        let tq: [RcTerm; 3] = [v1.clone(), rdf::type_.map_into(), s_person.map_into()];
 
         let results: Result<Vec<BindingMap>, _> =
             bindings_for_triple(&g, &tq, BindingMap::new()).collect();
@@ -278,7 +262,7 @@ mod test {
         let v1 = RcTerm::new_variable("v1").unwrap();
         let v2 = RcTerm::new_variable("v2").unwrap();
 
-        let tq: [RcTerm; 3] = [v1.clone(), RcTerm::from(&s_name), v2.clone()];
+        let tq: [RcTerm; 3] = [v1.clone(), s_name.map_into(), v2.clone()];
 
         let results: Result<Vec<BindingMap>, _> =
             bindings_for_triple(&g, &tq, BindingMap::new()).collect();
@@ -319,12 +303,8 @@ mod test {
         let v2 = RcTerm::new_variable("v2").unwrap();
 
         let mut q = Query::Triples(vec![
-            [v1.clone(), RcTerm::from(&s_name), v2.clone()],
-            [
-                v1.clone(),
-                RcTerm::from(&rdf::type_),
-                RcTerm::from(&s_person),
-            ],
+            [v1.clone(), s_name.map_into(), v2.clone()],
+            [v1.clone(), rdf::type_.map_into(), s_person.map_into()],
         ]);
 
         let results: Result<Vec<BindingMap>, _> = q.process(&g).collect();

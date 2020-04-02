@@ -491,9 +491,9 @@ pub trait MutableGraph: Graph {
             .triples_matching(ms, mp, mo)
             .map_ok(|t| {
                 [
-                    BoxTerm::from(t.s()),
-                    BoxTerm::from(t.p()),
-                    BoxTerm::from(t.o()),
+                    t.s().clone_into::<Box<str>>(),
+                    t.p().clone_into::<Box<str>>(),
+                    t.o().clone_into::<Box<str>>(),
                 ]
             })
             .collect::<std::result::Result<Vec<_>, _>>()
@@ -527,9 +527,9 @@ pub trait MutableGraph: Graph {
             .filter_ok(|t| !(ms.matches(t.s()) && mp.matches(t.p()) && mo.matches(t.o())))
             .map_ok(|t| {
                 [
-                    BoxTerm::from(t.s()),
-                    BoxTerm::from(t.p()),
-                    BoxTerm::from(t.o()),
+                    t.s().clone_into::<Box<str>>(),
+                    t.p().clone_into::<Box<str>>(),
+                    t.o().clone_into::<Box<str>>(),
                 ]
             })
             .collect::<std::result::Result<Vec<_>, _>>()
