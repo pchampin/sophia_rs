@@ -179,47 +179,32 @@ mod test {
     #[test]
     fn test_build_ref() {
         let mown: MownStr = "hello".into();
-        assert!(match mown {
-            Ref(_) => true,
-            Own(_) => false,
-        });
+        assert!(matches!(mown, Ref(_)));
     }
 
     #[test]
     fn test_build_own_from_box() {
         let bx: Box<str> = "hello".into();
         let mown: MownStr = bx.into();
-        assert!(match mown {
-            Ref(_) => false,
-            Own(_) => true,
-        });
+        assert!(matches!(mown, Own(_)));
     }
 
     #[test]
     fn test_build_own_from_string() {
         let mown: MownStr = "hello".to_string().into();
-        assert!(match mown {
-            Ref(_) => false,
-            Own(_) => true,
-        });
+        assert!(matches!(mown, Own(_)));
     }
 
     #[test]
     fn test_build_ref_from_cow() {
         let mown: MownStr = Cow::Borrowed("hello").into();
-        assert!(match mown {
-            Ref(_) => true,
-            Own(_) => false,
-        });
+        assert!(matches!(mown, Ref(_)));
     }
 
     #[test]
     fn test_build_own_from_cow() {
         let mown: MownStr = Cow::<str>::Owned("hello".to_string()).into();
-        assert!(match mown {
-            Ref(_) => false,
-            Own(_) => true,
-        });
+        assert!(matches!(mown, Own(_)));
     }
 
     #[test]
