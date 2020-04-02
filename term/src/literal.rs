@@ -7,7 +7,7 @@ use crate::mown_str::MownStr;
 use crate::ns::{rdf, xsd};
 use crate::{Iri, Result, Term, TermData, TermError};
 use language_tag::LangTag;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::io;
@@ -104,14 +104,14 @@ where
     /// ill-type and not in the lexical space of `dt`. This is intended as the
     /// [RDF specification](https://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/#section-Graph-Literal)
     /// requires implementations to accept ill-typed literals.
-    pub fn new_dt<U, V>(txt: U, dt: V) -> Self
+    pub fn new_dt<U, V>(txt: U, dt: Iri<V>) -> Self
     where
-        TD: From<U>,
-        Iri<TD>: From<V>,
+        TD: From<U> + From<V>,
+        V: TermData,
     {
         Self {
             txt: txt.into(),
-            kind: Dt(dt.into()),
+            kind: Dt(dt.map_into()),
         }
     }
 
@@ -493,7 +493,7 @@ mod test {
     #[test]
     fn convert_to_mown_does_not_allocate() {
         use crate::mown_str::MownStr;
-        let lit1 = Literal::<Box<str>>::new_dt("hello", xsd::iri::string.map_into());
+        let lit1 = Literal::<Box<str>>::new_dt("hello", xsd::iri::string.clone());
         let lit2 = lit1.clone_into();
         let Literal { txt, .. } = lit2;
         assert!(!matches!(txt, MownStr::Own(_)), "txt has been allocated");
@@ -503,7 +503,8 @@ mod test {
     fn resolve_to_mown_does_not_allocate_txt() {
         use crate::iri::{IriParsed, Resolve};
         use crate::mown_str::MownStr;
-        let lit1 = Literal::<Box<str>>::new_dt("hello", Iri::new("").unwrap());
+        let dt1 = Iri::<Box<str>>::new("").unwrap();
+        let lit1 = Literal::<Box<str>>::new_dt("hello", dt1);
         let xsd_string = &xsd::iri::string.value();
         let base = IriParsed::new(&xsd_string).unwrap();
         let lit2: Literal<MownStr> = base.resolve(&lit1);
@@ -513,10 +514,10 @@ mod test {
 
     #[test]
     fn map() {
-        let dt = Iri::new_suffixed("some/iri/", "example").unwrap();
+        let dt = Iri::<&str>::new_suffixed("some/iri/", "example").unwrap();
         let input = Literal::new_dt("test", dt);
-        let dt2: Iri<&str> = Iri::new("SOME/IRI/EXAMPLE").unwrap();
-        let expect = Literal::new_dt("TEST", dt2);
+        let dt2 = Iri::<&str>::new("SOME/IRI/EXAMPLE").unwrap();
+        let expect = Literal::<&str>::new_dt("TEST", dt2);
 
         let mut cnt = 0;
         let mut invoked = 0;
