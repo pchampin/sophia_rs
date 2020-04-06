@@ -169,15 +169,15 @@ mod test {
     use super::*;
 
     use crate::graph::inmem::FastGraph;
-    use crate::ns::{rdf, Namespace};
-    use sophia_term::RcTerm;
+    use crate::ns::rdf;
+    use sophia_term::{iri::Iri, RcTerm};
 
     #[test]
     fn test_bindings_for_triple_0var_0() {
         let g = data();
 
-        let schema = Namespace::new("http://schema.org/").unwrap();
-        let s_event = schema.get("Event").unwrap();
+        let schema = Iri::<&str>::new("http://schema.org/").unwrap();
+        let s_event = Term::from(schema.with_suffix("Event").unwrap());
         let x_alice = RcTerm::new_iri("http://example.org/alice").unwrap();
 
         let tq: [RcTerm; 3] = [x_alice.clone(), rdf::type_.map_into(), s_event.map_into()];
@@ -191,8 +191,8 @@ mod test {
     fn test_bindings_for_triple_0var_1() {
         let g = data();
 
-        let schema = Namespace::new("http://schema.org/").unwrap();
-        let s_person = schema.get("Person").unwrap();
+        let schema = Iri::<&str>::new("http://schema.org/").unwrap();
+        let s_person = Term::from(schema.with_suffix("Person").unwrap());
         let x_alice = RcTerm::new_iri("http://example.org/alice").unwrap();
 
         let tq: [RcTerm; 3] = [x_alice.clone(), rdf::type_.map_into(), s_person.map_into()];
@@ -210,8 +210,8 @@ mod test {
     fn test_bindings_for_triple_1var_0() {
         let g = data();
 
-        let schema = Namespace::new("http://schema.org/").unwrap();
-        let s_event = schema.get("Event").unwrap();
+        let schema = Iri::<&str>::new("http://schema.org/").unwrap();
+        let s_event = Term::from(schema.with_suffix("Event").unwrap());
 
         let v1 = RcTerm::new_variable("v1").unwrap();
 
@@ -227,8 +227,8 @@ mod test {
     fn test_bindings_for_triple_1var() {
         let g = data();
 
-        let schema = Namespace::new("http://schema.org/").unwrap();
-        let s_person = schema.get("Person").unwrap();
+        let schema = Iri::<&str>::new("http://schema.org/").unwrap();
+        let s_person = Term::from(schema.with_suffix("Person").unwrap());
 
         let v1 = RcTerm::new_variable("v1").unwrap();
 
@@ -256,8 +256,8 @@ mod test {
     fn test_bindings_for_triple_2var() {
         let g = data();
 
-        let schema = Namespace::new("http://schema.org/").unwrap();
-        let s_name = schema.get("name").unwrap();
+        let schema = Iri::<&str>::new("http://schema.org/").unwrap();
+        let s_name = Term::from(schema.with_suffix("name").unwrap());
 
         let v1 = RcTerm::new_variable("v1").unwrap();
         let v2 = RcTerm::new_variable("v2").unwrap();
@@ -295,9 +295,9 @@ mod test {
     fn test_query_triples() {
         let g = data();
 
-        let schema = Namespace::new("http://schema.org/").unwrap();
-        let s_person = schema.get("Person").unwrap();
-        let s_name = schema.get("name").unwrap();
+        let schema = Iri::<&str>::new("http://schema.org/").unwrap();
+        let s_person = Term::from(schema.with_suffix("Person").unwrap());
+        let s_name = Term::from(schema.with_suffix("name").unwrap());
 
         let v1 = RcTerm::new_variable("v1").unwrap();
         let v2 = RcTerm::new_variable("v2").unwrap();
@@ -332,18 +332,18 @@ mod test {
     }
 
     fn data() -> FastGraph {
-        let schema = Namespace::new("http://schema.org/").unwrap();
-        let s_person = schema.get("Person").unwrap();
-        let s_organization = schema.get("Organization").unwrap();
-        let s_name = schema.get("name").unwrap();
-        let s_member = schema.get("member").unwrap();
+        let schema = Iri::<&str>::new("http://schema.org/").unwrap();
+        let s_person = Term::from(schema.with_suffix("Person").unwrap());
+        let s_organization = Term::from(schema.with_suffix("Organization").unwrap());
+        let s_name = Term::from(schema.with_suffix("name").unwrap());
+        let s_member = Term::from(schema.with_suffix("member").unwrap());
 
-        let example = Namespace::new("http://example.org/").unwrap();
-        let x_alice = example.get("alice").unwrap();
-        let x_bob = example.get("bob").unwrap();
-        let x_charlie = example.get("charlie").unwrap();
-        let x_dan = example.get("dan").unwrap();
-        let x_alice_n_bob = example.get("alice_n_bob").unwrap();
+        let example = Iri::<&str>::new("http://example.org/").unwrap();
+        let x_alice = Term::from(example.with_suffix("alice").unwrap());
+        let x_bob = Term::from(example.with_suffix("bob").unwrap());
+        let x_charlie = Term::from(example.with_suffix("charlie").unwrap());
+        let x_dan = Term::from(example.with_suffix("dan").unwrap());
+        let x_alice_n_bob = Term::from(example.with_suffix("alice_n_bob").unwrap());
 
         let mut g = FastGraph::new();
         g.insert(&x_alice, &rdf::type_, &s_person).unwrap();

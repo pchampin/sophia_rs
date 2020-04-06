@@ -195,6 +195,38 @@ where
         }
     }
 
+    /// Create a new suffixed IRI where `self` is used as the namespace.
+    ///
+    /// # Errors
+    ///
+    /// This method fails if `self` is itself suffixed or if the resulting IRI
+    /// is not valid.
+    ///
+    /// _Note:_ It can be enforced that an IRI is not suffixed with the
+    /// [`clone_no_suffix()`](#method.clone_no_suffix) method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use sophia_term::iri::Iri;
+    /// let ex = Iri::<&str>::new("http://example.org/").unwrap();
+    /// let alice = ex.with_suffix("alice").unwrap();
+    ///
+    /// assert_eq!(&ex, "http://example.org/");
+    /// assert_eq!(&alice, "http://example.org/alice");
+    /// ```
+    pub fn with_suffix<V>(&self, suffix: V) -> Result<Self>
+    where
+        V: AsRef<str>,
+        TD: From<V>,
+    {
+        if self.suffix.is_some() {
+            Err(TermError::IsSuffixed)
+        } else {
+            Iri::new_suffixed(self.ns.clone(), suffix)
+        }
+    }
+
     /// The namespace of the IRI.
     ///
     /// If the IRI has no suffix this is the whole IRI.
@@ -627,6 +659,7 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::rc::Rc;
     use test_case::test_case;
 
     #[cfg(debug_assertions)]
@@ -721,6 +754,45 @@ mod test {
         if let Some(MownStr::Own(_)) = suffix {
             assert!(false, "suffix has been allocated");
         }
+    }
+
+    #[test]
+    fn test_same_term() {
+        let ns1 = Iri::<&str>::new("http://schema.org/").unwrap();
+        let ns2 = Iri::<Rc<str>>::new(Rc::from("http://schema.org/")).unwrap();
+
+        assert_eq!(
+            ns1.with_suffix("name").unwrap(),
+            ns1.with_suffix("name").unwrap()
+        );
+        assert_eq!(
+            ns2.with_suffix("name").unwrap(),
+            ns2.with_suffix("name").unwrap()
+        );
+        assert_eq!(
+            ns1.with_suffix("name").unwrap(),
+            ns2.with_suffix("name").unwrap()
+        );
+    }
+
+    #[test]
+    fn test_different_terms() {
+        let ns1 = Iri::<&str>::new("http://schema.org/").unwrap();
+        assert_ne!(
+            ns1.with_suffix("name").unwrap(),
+            ns1.with_suffix("nam").unwrap()
+        );
+    }
+
+    #[test]
+    fn test_invalid_namespace() {
+        assert!(Iri::<&str>::new("http://schema.org ").is_err());
+    }
+
+    #[test]
+    fn test_invalid_suffix() {
+        let ns1 = Iri::<&str>::new("http://schema.org/").unwrap();
+        assert!(ns1.with_suffix("name ").is_err());
     }
 
     pub const POSITIVE_IRIS: &[(

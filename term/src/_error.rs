@@ -14,9 +14,10 @@ pub enum TermError {
     /// The IRI of a term must apply to [RFC 3987](https://tools.ietf.org/html/rfc3987).
     #[error("The given IRI '{0}' is not valid according to RFC3987")]
     InvalidIri(String),
-    /// An IRI must be represented by one `TermData` to be able to parse its components.
-    #[error("IRI components could not be parsed in one as it has a suffix")]
-    IriParse,
+    /// An IRI must be represented by one `TermData` to be able to execute this
+    /// operation.
+    #[error("For this operation the IRI must not be suffixed")]
+    IsSuffixed,
     /// The language tags of literals must apply to [BCP47](https://tools.ietf.org/html/bcp47).
     #[error("The given language tag '{tag}' is not valid according to BCP47: {err}")]
     InvalidLanguageTag {
@@ -25,7 +26,7 @@ pub enum TermError {
         /// What is wrong with `tag`.
         err: String,
     },
-    /// The lexical value of a literal can not be interpreted accortding to its datatype
+    /// The lexical value of a literal can not be interpreted according to its datatype
     #[error("The given lexical value '{lex}' is invalid for datatype {dt}")]
     InvalidLexicalValue {
         /// The faulty lexical value.

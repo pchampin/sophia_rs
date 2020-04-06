@@ -6,9 +6,9 @@ type ScopeResult<T, E = RdfError> = std::result::Result<T, E>;
 #[derive(Debug)]
 pub struct Scope<F: TermFactory> {
     /// The XML namespaces declared in this scope.
-    pub(super) ns: HashMap<String, Namespace<F::TermData>>,
+    pub(super) ns: HashMap<String, Iri<F::TermData>>,
     /// The default XML namespace to expand tags without namespaces with.
-    pub(super) default: Option<Namespace<F::TermData>>,
+    pub(super) default: Option<Iri<F::TermData>>,
     /// The base IRI namespace to expand `rdf:ID`, `rdf:resource` and `rdf:about`.
     pub(super) base: Option<Url>,
     /// The term factory used to create new terms.
@@ -79,10 +79,8 @@ impl<F: TermFactory> Scope<F> {
             Err(RdfError::InvalidPrefixBlank)
         } else {
             let mut f = self.factory.borrow_mut();
-            self.ns.insert(
-                String::from(prefix),
-                Namespace::new(f.get_term_data(value))?,
-            );
+            self.ns
+                .insert(String::from(prefix), Iri::new(f.get_term_data(value))?);
             Ok(())
         }
     }
@@ -90,7 +88,7 @@ impl<F: TermFactory> Scope<F> {
     /// Set the default XML prefix.
     pub fn set_default(&mut self, default: &str) -> ScopeResult<()> {
         let mut f = self.factory.borrow_mut();
-        self.default = Some(Namespace::new(f.get_term_data(default))?);
+        self.default = Some(Iri::new(f.get_term_data(default))?);
         Ok(())
     }
 
@@ -126,12 +124,16 @@ impl<F: TermFactory> Scope<F> {
             let prefix = &attr[..separator_idx];
             let reference = &attr[separator_idx + 1..];
             if let Some(ns) = self.ns.get(prefix) {
-                Ok(ns.get(self.factory.borrow_mut().get_term_data(reference))?)
+                Ok(ns
+                    .with_suffix(self.factory.borrow_mut().get_term_data(reference))?
+                    .into())
             } else {
                 Err(RdfError::UnknownNamespace(prefix.to_owned()))
             }
         } else if let Some(ns) = &self.default {
-            Ok(ns.get(self.factory.borrow_mut().get_term_data(attr))?)
+            Ok(ns
+                .with_suffix(self.factory.borrow_mut().get_term_data(attr))?
+                .into())
         } else {
             Err(RdfError::UnknownNamespace("_".to_owned()))
         }
@@ -202,7 +204,11 @@ impl<F: TermFactory> Scope<F> {
     pub fn new_li(&self) -> ScopeResult<Term<F::TermData>> {
         if let Some(ns) = self.ns.get("rdf") {
             let mut f = self.factory.borrow_mut();
-            Ok(ns.get(f.get_term_data(&format!("_{}", self.li.fetch_add(1, Ordering::Relaxed))))?)
+            Ok(ns
+                .with_suffix(
+                    f.get_term_data(&format!("_{}", self.li.fetch_add(1, Ordering::Relaxed))),
+                )?
+                .into())
         } else {
             Err(RdfError::UnknownNamespace("rdf".to_owned()))
         }
@@ -212,7 +218,9 @@ impl<F: TermFactory> Scope<F> {
     pub fn current_li(&self) -> ScopeResult<Term<F::TermData>> {
         if let Some(ns) = self.ns.get("rdf") {
             let mut f = self.factory.borrow_mut();
-            Ok(ns.get(f.get_term_data(&format!("_{}", self.li.load(Ordering::Relaxed) - 1)))?)
+            Ok(ns
+                .with_suffix(f.get_term_data(&format!("_{}", self.li.load(Ordering::Relaxed) - 1)))?
+                .into())
         } else {
             Err(RdfError::UnknownNamespace("rdf".to_owned()))
         }

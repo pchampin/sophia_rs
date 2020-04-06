@@ -1,49 +1,14 @@
-//! Standard and custom namespaces.
+//! # Standard and custom namespaces
 //!
 //! This module provides:
-//! * the [`Namespace`](struct.Namespace.html) type for defining custom namespace;
-//! * modules corresponding to the most common namespaces.
+//! * exported macros for defining custom namespace;
+//! * and modules using these macros to define the most common namespaces.
 //!
-//! # Example
-//! ```
-//! use sophia_term::ns::{Namespace, rdf, rdfs, xsd};
+//! If you want to create new IRIs based on a namespace you can use [`Iri`]
+//! directly. An example is given at the [`with_suffix()`] method.
 //!
-//! let schema = Namespace::new("http://schema.org/").unwrap();
-//! let s_name = schema.get("name").unwrap();
-//! // and then, given a graph:
-//! //g.insert(&s_name, &rdf::type_, &rdf::Property);
-//! //g.insert(&s_name, &rdfs::range, &xsd::string);
-//! ```
-
-use crate::{iri::is_valid_iri_ref, Result, Term, TermData, TermError};
-
-/// A custom namespace.
-#[derive(Clone, Debug)]
-pub struct Namespace<T: TermData>(T);
-
-impl<T: TermData> Namespace<T> {
-    /// Build a custom namespace based on the given IRI.
-    ///
-    /// `iri` must be a valid IRI, otherwise this constructor returns an error.
-    pub fn new(iri: T) -> Result<Namespace<T>> {
-        if is_valid_iri_ref(iri.as_ref()) {
-            Ok(Namespace(iri))
-        } else {
-            Err(TermError::InvalidIri(iri.as_ref().to_string()))
-        }
-    }
-
-    /// Build an IRI term by appending `suffix` to this namespace.
-    ///
-    /// Return an error if the concatenation produces an invalid IRI.
-    pub fn get<U>(&self, suffix: U) -> Result<Term<T>>
-    where
-        U: AsRef<str>,
-        T: From<U>,
-    {
-        Term::new_iri_suffixed(self.0.clone(), suffix)
-    }
-}
+//! [`Iri`]: (../iri/struct.Iri.html)
+//! [`with_suffix()`]: (../iri/struct.Iri.html#method.with_suffix)
 
 /// Helper for creating a "namespace module"
 /// defining a set of terms within a given IRI space.
@@ -317,33 +282,4 @@ pub mod owl {
 #[cfg(test)]
 mod test {
     // Nothing really worth testing here
-    use super::*;
-    use std::rc::Rc;
-
-    #[test]
-    fn test_same_term() {
-        let ns1 = Namespace::new("http://schema.org/").unwrap();
-        let ns2 = Namespace::new(Rc::from("http://schema.org/")).unwrap();
-
-        assert_eq!(ns1.get("name").unwrap(), ns1.get("name").unwrap());
-        assert_eq!(ns2.get("name").unwrap(), ns2.get("name").unwrap());
-        assert_eq!(ns1.get("name").unwrap(), ns2.get("name").unwrap());
-    }
-
-    #[test]
-    fn test_different_terms() {
-        let ns1 = Namespace::new("http://schema.org/").unwrap();
-        assert_ne!(ns1.get("name").unwrap(), ns1.get("nam").unwrap());
-    }
-
-    #[test]
-    fn test_invalid_namespace() {
-        assert!(Namespace::new("http://schema.org ").is_err());
-    }
-
-    #[test]
-    fn test_invalid_suffix() {
-        let ns1 = Namespace::new("http://schema.org/").unwrap();
-        assert!(ns1.get("name ").is_err());
-    }
 }

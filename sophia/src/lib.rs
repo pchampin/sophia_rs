@@ -32,11 +32,11 @@
 //!
 //! ```
 //! use sophia::graph::{*, inmem::LightGraph};
-//! use sophia::ns::Namespace;
 //! use sophia::parser;
 //! use sophia::serializer::*;
 //! use sophia::serializer::nt::NtSerializer;
 //! use sophia::triple::stream::TripleSource;
+//! use sophia_term::{Term, iri::Iri};
 //!
 //! let example = r#"
 //!     @prefix : <http://example.org/>.
@@ -50,11 +50,11 @@
 //! let mut graph = LightGraph::new();
 //! parser::turtle::parse_str(example).in_graph(&mut graph);
 //!
-//! let ex = Namespace::new("http://example.org/").unwrap();
-//! let foaf = Namespace::new("http://xmlns.com/foaf/0.1/").unwrap();
-//! let bob = ex.get("bob").unwrap();
-//! let knows = foaf.get("known").unwrap();
-//! let alice = ex.get("alice").unwrap();
+//! let ex = Iri::<&str>::new("http://example.org/").unwrap();
+//! let foaf = Iri::<&str>::new("http://xmlns.com/foaf/0.1/").unwrap();
+//! let bob = Term::from(ex.with_suffix("bob").unwrap());
+//! let knows = Term::from(foaf.with_suffix("known").unwrap());
+//! let alice = Term::from(ex.with_suffix("alice").unwrap());
 //! graph.insert(&bob, &knows, &alice).unwrap();
 //!
 //! let mut nt_stringifier = NtSerializer::new_stringifier();

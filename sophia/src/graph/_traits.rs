@@ -197,13 +197,15 @@ pub trait Graph {
     /// ```
     /// # use sophia::graph::{*, inmem::LightGraph};
     /// # use sophia::triple::Triple;
-    /// use sophia_term::ns::{Namespace, rdf};
+    /// use sophia_term::Term;
+    /// use sophia_term::ns::rdf;
+    /// use sophia_term::iri::Iri;
     /// use sophia_term::matcher::{ANY, TermMatcher};
     ///
     /// # let mut graph = LightGraph::new();
-    /// let s = Namespace::new("http://schema.org/").unwrap();
-    /// let city = s.get("City").unwrap();
-    /// let country = s.get("Country").unwrap();
+    /// let s = Iri::<&str>::new("http://schema.org/").unwrap();
+    /// let city = Term::from(s.with_suffix("City").unwrap());
+    /// let country = Term::from(s.with_suffix("Country").unwrap());
     ///
     /// for t in graph.triples_matching(&ANY, &rdf::type_, &[city, country]) {
     ///     let t = t.unwrap();
@@ -398,15 +400,17 @@ pub trait MutableGraph: Graph {
     /// only that the graph now has one more occurrence of it.
     ///
     /// # Usage
+    ///
     /// ```
-    /// # use sophia_term::BoxTerm;
-    /// # use sophia_term::ns::{Namespace, rdf, rdfs, xsd};
+    /// # use sophia_term::{Term, BoxTerm};
+    /// # use sophia_term::iri::Iri;
+    /// # use sophia_term::ns::{rdf, rdfs, xsd};
     /// # use sophia::graph::MutableGraph;
     /// # use std::collections::HashSet;
     ///
     /// fn populate<G: MutableGraph>(graph: &mut G) {
-    ///     let schema = Namespace::new("http://schema.org/").unwrap();
-    ///     let s_name = schema.get("name").unwrap();
+    ///     let schema = Iri::<&str>::new("http://schema.org/").unwrap();
+    ///     let s_name = Term::from(schema.with_suffix("name").unwrap());
     ///
     ///     graph.insert(&s_name, &rdf::type_, &rdf::Property);
     ///     graph.insert(&s_name, &rdfs::range, &xsd::string);
