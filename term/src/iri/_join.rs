@@ -6,8 +6,8 @@
 
 use super::{Iri, IRELATIVE_REF_REGEX, IRI_REGEX};
 use crate::mown_str::MownStr;
-use crate::{Literal, MownTerm, Result, Term, TermData, TermError};
 use crate::ns::Namespace;
+use crate::{Literal, MownTerm, Result, Term, TermData, TermError};
 use std::fmt;
 
 /// Resolve some kind of IRI with `self` as the base.
