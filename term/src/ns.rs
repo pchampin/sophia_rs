@@ -15,11 +15,14 @@
 //! //g.insert(&s_name, &rdfs::range, &xsd::string);
 //! ```
 
-use crate::{iri::is_valid_iri_ref, Result, Term, TermData, TermError};
+use crate::{
+    iri::{is_valid_iri_ref, Iri},
+    Result, Term, TermData, TermError,
+};
 
 /// A custom namespace.
 #[derive(Clone, Debug)]
-pub struct Namespace<T: TermData>(T);
+pub struct Namespace<T: TermData>(pub(crate) T);
 
 impl<T: TermData> Namespace<T> {
     /// Build a custom namespace based on the given IRI.
@@ -36,12 +39,43 @@ impl<T: TermData> Namespace<T> {
     /// Build an IRI term by appending `suffix` to this namespace.
     ///
     /// Return an error if the concatenation produces an invalid IRI.
+    ///
+    /// Internally this method calls [`get_iri()`](#method.get_iri).
     pub fn get<U>(&self, suffix: U) -> Result<Term<T>>
     where
         U: AsRef<str>,
         T: From<U>,
     {
-        Term::new_iri_suffixed(self.0.clone(), suffix)
+        self.get_iri(suffix).map(Into::into)
+    }
+
+    /// Build an IRI by appending `suffix` to this namespace.
+    ///
+    /// Return an error if the concatenation produces an invalid IRI.
+    pub fn get_iri<U>(&self, suffix: U) -> Result<Iri<T>>
+    where
+        U: AsRef<str>,
+        T: From<U>,
+    {
+        Iri::new_suffixed(self.0.clone(), suffix)
+    }
+}
+
+impl<TD> std::convert::TryFrom<Iri<TD>> for Namespace<TD>
+where
+    TD: TermData,
+{
+    type Error = TermError;
+
+    /// Requires that the given `Iri` has no suffix. This can be enforced with
+    /// the [`clone_no_suffix()`](../iri/struct.Iri.html#method.clone_no_suffix)
+    /// method.
+    fn try_from(iri: Iri<TD>) -> Result<Self, Self::Error> {
+        if iri.suffix().is_some() {
+            Err(TermError::IsSuffixed)
+        } else {
+            Ok(Namespace(iri.ns))
+        }
     }
 }
 

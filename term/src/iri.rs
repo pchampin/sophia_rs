@@ -22,6 +22,7 @@ pub use self::_join::*;
 
 use super::{Result, Term, TermData, TermError};
 use crate::mown_str::MownStr;
+use crate::ns::Namespace;
 use std::convert::TryFrom;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -586,6 +587,20 @@ where
         state.write(self.ns.as_ref().as_bytes());
         state.write(self.suffix_as_str().as_bytes());
         state.write_u8(0xff);
+    }
+}
+
+impl<TD> From<Namespace<TD>> for Iri<TD>
+where
+    TD: TermData,
+{
+    fn from(ns: Namespace<TD>) -> Self {
+        // Already checked if its a valid IRI
+        Iri {
+            absolute: is_absolute_iri_ref(ns.0.as_ref()),
+            ns: ns.0,
+            suffix: None,
+        }
     }
 }
 

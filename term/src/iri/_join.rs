@@ -7,6 +7,7 @@
 use super::{Iri, IRELATIVE_REF_REGEX, IRI_REGEX};
 use crate::mown_str::MownStr;
 use crate::{Literal, MownTerm, Result, Term, TermData, TermError};
+use crate::ns::Namespace;
 use std::fmt;
 
 /// Resolve some kind of IRI with `self` as the base.
@@ -176,14 +177,12 @@ impl<'a, 'b, TD> Resolve<&'a Iri<TD>, Iri<MownStr<'a>>> for IriParsed<'b>
 where
     TD: TermData,
 {
-    //impl<'a> IriParsed<'a> {
     /// Resolve the given IRI.
     ///
     /// # Performance
     ///
     /// May allocate an intermediate IRI if `other` is suffixed.
     fn resolve(&self, other: &'a Iri<TD>) -> Iri<MownStr<'a>> {
-        //pub fn resolve_mown<'b, TD: TermData>(&self, other: &Iri<TD>) -> Iri<MownStr<'b>> {
         if other.absolute {
             return other.clone_into();
         }
@@ -191,6 +190,31 @@ where
         let parsed = other.parse_components(&mut buffer);
         let joined = self.join(&parsed);
         Iri::new_unchecked(joined.to_string(), joined.is_absolute())
+    }
+}
+
+impl<'o, 'base, TD, TD2> Resolve<&'o Namespace<TD>, Namespace<TD2>> for IriParsed<'base>
+where
+    TD: TermData,
+    TD2: TermData + for<'x> From<&'x str>,
+{
+    /// Resolve the IRI of the given `Namespace`.
+    fn resolve(&self, other: &'o Namespace<TD>) -> Namespace<TD2> {
+        let resolved: Namespace<MownStr> = self.resolve(other);
+        let resolved = TD2::from(resolved.0.as_ref());
+        Namespace(resolved)
+    }
+}
+
+impl<'td, 'base, TD> Resolve<&'td Namespace<TD>, Namespace<MownStr<'td>>> for IriParsed<'base>
+where
+    TD: 'td + TermData,
+{
+    /// Resolve the IRI of the given `Namespace`.
+    fn resolve(&self, other: &'td Namespace<TD>) -> Namespace<MownStr<'td>> {
+        let iri = other.0.as_ref();
+        let resolved: MownStr = self.resolve(iri).expect("Is valid as from Namespace");
+        Namespace(resolved)
     }
 }
 
