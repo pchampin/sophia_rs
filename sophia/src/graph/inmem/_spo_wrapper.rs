@@ -154,7 +154,12 @@ where
     impl_mutable_graph_for_indexed_graph!();
 }
 
-impl<T> SetGraph for SpoWrapper<T> where T: IndexedGraph + SetGraph {}
+impl<T> SetGraph for SpoWrapper<T>
+where
+    T: IndexedGraph + Graph<Triple = ByTermRefs<<T as IndexedGraph>::TermData>>,
+    T: SetGraph,
+{
+}
 
 #[cfg(test)]
 type SpoGraph = super::SpoWrapper<super::LightGraph>;

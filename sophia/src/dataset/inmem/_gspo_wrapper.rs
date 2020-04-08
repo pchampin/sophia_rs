@@ -200,7 +200,12 @@ where
     impl_mutable_dataset_for_indexed_dataset!();
 }
 
-impl<T> SetDataset for GspoWrapper<T> where T: IndexedDataset + SetDataset {}
+impl<T> SetDataset for GspoWrapper<T>
+where
+    T: IndexedDataset + Dataset<Quad = ByTermRefs<<T as IndexedDataset>::TermData>>,
+    T: SetDataset,
+{
+}
 
 #[cfg(test)]
 type GspoDataset = GspoWrapper<LightDataset>;

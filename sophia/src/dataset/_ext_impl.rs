@@ -11,7 +11,6 @@ use super::*;
 use crate::quad::stream::AsQuadSource;
 use crate::quad::streaming_mode::*;
 use crate::quad::*;
-use crate::triple::*;
 use sophia_term::*;
 
 impl<Q> Dataset for [Q]
@@ -145,7 +144,7 @@ impl<S: ::std::hash::BuildHasher> MutableDataset for HashSet<([BoxTerm; 3], Opti
     }
 }
 
-impl<T, S: ::std::hash::BuildHasher> SetDataset for HashSet<T, S> where T: Eq + Hash + Triple {}
+impl<T, S: ::std::hash::BuildHasher> SetDataset for HashSet<T, S> where T: Eq + Hash + Quad {}
 
 #[cfg(test)]
 mod test {

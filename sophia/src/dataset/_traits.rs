@@ -579,12 +579,17 @@ pub trait MutableDataset: Dataset {
 
     /// Insert the given quad in this dataset.
     ///
-    /// Return `true` iff the quad was actually inserted.
+    /// # Return value
+    /// The `bool` value returned in case of success is
+    /// **not significant unless** this dataset also implements [`SetDataset`].
     ///
-    /// NB: unless this dataset also implements [`SetDataset`](trait.SetDataset.html),
-    /// a return value of `true` does *not* mean that the quad was not already in the dataset,
-    /// only that the dataset now has one more occurrence of it.
+    /// If it does,
+    /// `true` is returned iff the insertion actually changed the dataset.
+    /// In other words,
+    /// a return value of `false` means that the dataset was not changed,
+    /// because the quad was already present in this [`SetDataset`].
     ///
+    /// [`SetDataset`]: trait.SetDataset.html
     fn insert<T, U, V, W>(
         &mut self,
         s: &Term<T>,
@@ -598,14 +603,19 @@ pub trait MutableDataset: Dataset {
         V: TermData,
         W: TermData;
 
-    /// Remove the given quad in this dataset.
+    /// Remove the given quad from this dataset.
     ///
-    /// Return `true` iff the quad was actually removed.
+    /// # Return value
+    /// The `bool` value returned in case of success is
+    /// **not significant unless** this dataset also implements [`SetDataset`].
     ///
-    /// NB: unless this dataset also implements [`SetDataset`](trait.SetDataset.html),
-    /// a return value of `true` does *not* mean that the quad is not still contained in the dataset,
-    /// only that the dataset now has one less occurrence of it.
+    /// If it does,
+    /// `true` is returned iff the removal actually changed the dataset.
+    /// In other words,
+    /// a return value of `false` means that the dataset was not changed,
+    /// because the quad was already absent from this [`SetDataset`].
     ///
+    /// [`SetDataset`]: trait.SetDataset.html
     fn remove<T, U, V, W>(
         &mut self,
         s: &Term<T>,
@@ -620,6 +630,17 @@ pub trait MutableDataset: Dataset {
         W: TermData;
 
     /// Insert into this dataset all quads from the given source.
+    ///
+    /// # Return value
+    /// The `usize` value returned in case of success is
+    /// **not significant unless** this dataset also implements [`SetDataset`].
+    ///
+    /// If it does,
+    /// the number of quads that were *actually* inserted
+    /// (i.e. that were not already present in this [`SetDataset`])
+    /// is returned.
+    ///
+    /// [`SetDataset`]: trait.SetDataset.html
     #[inline]
     fn insert_all<TS>(
         &mut self,
@@ -639,6 +660,17 @@ pub trait MutableDataset: Dataset {
     }
 
     /// Remove from this dataset all quads from the given source.
+    ///
+    /// # Return value
+    /// The `usize` value returned in case of success is
+    /// **not significant unless** this dataset also implements [`SetDataset`].
+    ///
+    /// If it does,
+    /// the number of quads that were *actually* removed
+    /// (i.e. that were not already absent from this [`SetDataset`])
+    /// is returned.
+    ///
+    /// [`SetDataset`]: trait.SetDataset.html
     #[inline]
     fn remove_all<TS>(
         &mut self,
@@ -659,8 +691,20 @@ pub trait MutableDataset: Dataset {
 
     /// Remove all quads matching the given matchers.
     ///
-    /// Note that the default implementation is rather naive,
+    /// # Return value
+    /// The `usize` value returned in case of success is
+    /// **not significant unless** this dataset also implements [`SetDataset`].
+    ///
+    /// If it does,
+    /// the number of quads that were *actually* removed
+    /// (i.e. that were not already absent from this [`SetDataset`])
+    /// is returned.
+    ///
+    /// # Note to implementors
+    /// The default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
+    ///
+    /// [`SetDataset`]: trait.SetDataset.html
     fn remove_matching<S, P, O, G>(
         &mut self,
         ms: &S,
@@ -698,9 +742,9 @@ pub trait MutableDataset: Dataset {
 
     /// Keep only the quads matching the given matchers.
     ///
-    /// Note that the default implementation is rather naive,
+    /// # Note to implementors
+    /// The default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
-    ///
     fn retain_matching<S, P, O, G>(&mut self, ms: &S, mp: &P, mo: &O, mg: &G) -> MDResult<Self, ()>
     where
         S: TermMatcher + ?Sized,
@@ -735,9 +779,25 @@ pub trait MutableDataset: Dataset {
 }
 
 /// Marker trait constraining the semantics of
-/// [`Dataset`](trait.Dataset.html) and [`MutableDataset`](trait.MutableDataset.html),
-/// by guaranteeing that quads will never be returned / stored multiple times.
-pub trait SetDataset {}
+/// [`Dataset`] and [`MutableDataset`].
+///
+/// It guarantees that
+/// (1) quads will never be returned / stored multiple times.
+///
+/// If the type also implements [`MutableDataset`],
+/// it must also ensure that
+/// (2) the `bool` or `usize` values returned by [`MutableDataset`]
+/// methods accurately describe how many quads were actually added/removed.
+///
+/// # Note to implementors
+/// A type implementing both [`Dataset`] and [`MutableDataset`],
+/// enforcing (1) but failing to enforce (2)
+/// *must not* implement this trait.
+///
+/// [`Dataset`]: trait.Dataset.html
+/// [`MutableDataset`]: trait.MutableDataset.html
+
+pub trait SetDataset: Dataset {}
 
 #[cfg(test)]
 mod test {

@@ -391,41 +391,53 @@ pub trait MutableGraph: Graph {
 
     /// Insert the given triple in this graph.
     ///
-    /// Return `true` iff the triple was actually inserted.
+    /// # Return value
+    /// The `bool` value returned in case of success is
+    /// **not significant unless** this graph also implements [`SetGraph`].
     ///
-    /// NB: unless this graph also implements [`SetGraph`](trait.SetGraph.html),
-    /// a return value of `true` does *not* mean that the triple was not already in the graph,
-    /// only that the graph now has one more occurrence of it.
+    /// If it does,
+    /// `true` is returned iff the insertion actually changed the graph.
+    /// In other words,
+    /// a return value of `false` means that the graph was not changed,
+    /// because the triple was already present in this [`SetGraph`].
     ///
     /// # Usage
     /// ```
     /// # use sophia_term::BoxTerm;
     /// # use sophia_term::ns::{Namespace, rdf, rdfs, xsd};
-    /// # use sophia::graph::MutableGraph;
+    /// # use sophia::graph::{MutableGraph, MGResult};
     /// # use std::collections::HashSet;
     ///
-    /// fn populate<G: MutableGraph>(graph: &mut G) {
-    ///     let schema = Namespace::new("http://schema.org/").unwrap();
-    ///     let s_name = schema.get("name").unwrap();
+    /// # fn populate<G: MutableGraph>(graph: &mut G) -> MGResult<G, ()> {
+    /// let schema = Namespace::new("http://schema.org/").unwrap();
+    /// let s_name = schema.get("name").unwrap();
     ///
-    ///     graph.insert(&s_name, &rdf::type_, &rdf::Property);
-    ///     graph.insert(&s_name, &rdfs::range, &xsd::string);
-    /// }
+    /// graph.insert(&s_name, &rdf::type_, &rdf::Property)?;
+    /// graph.insert(&s_name, &rdfs::range, &xsd::string)?;
+    /// # Ok(())
+    /// # }
     /// ```
+    ///
+    /// [`SetGraph`]: trait.SetGraph.html
     fn insert<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
     where
         T: TermData,
         U: TermData,
         V: TermData;
 
-    /// Insert the given triple in this graph.
+    /// Remove the given triple from this graph.
     ///
-    /// Return `true` iff the triple was actually removed.
+    /// # Return value
+    /// The `bool` value returned in case of success is
+    /// **not significant unless** this graph also implements [`SetGraph`].
     ///
-    /// NB: unless this graph also implements [`SetGraph`](trait.SetGraph.html),
-    /// a return value of `true` does *not* mean that the triple is not still contained in the graph,
-    /// only that the graph now has one less occurrence of it.
+    /// If it does,
+    /// `true` is returned iff the removal actually changed the graph.
+    /// In other words,
+    /// a return value of `false` means that the graph was not changed,
+    /// because the triple was already absent from this [`SetGraph`].
     ///
+    /// [`SetGraph`]: trait.SetGraph.html
     fn remove<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
     where
         T: TermData,
@@ -433,6 +445,17 @@ pub trait MutableGraph: Graph {
         V: TermData;
 
     /// Insert into this graph all triples from the given source.
+    ///
+    /// # Return value
+    /// The `usize` value returned in case of success is
+    /// **not significant unless** this graph also implements [`SetGraph`].
+    ///
+    /// If it does,
+    /// the number of triples that were *actually* inserted
+    /// (i.e. that were not already present in this [`SetGraph`])
+    /// is returned.
+    ///
+    /// [`SetGraph`]: trait.SetGraph.html
     #[inline]
     fn insert_all<TS>(
         &mut self,
@@ -452,6 +475,17 @@ pub trait MutableGraph: Graph {
     }
 
     /// Remove from this graph all triples from the given source.
+    ///
+    /// # Return value
+    /// The `usize` value returned in case of success is
+    /// **not significant unless** this graph also implements [`SetGraph`].
+    ///
+    /// If it does,
+    /// the number of triples that were *actually* removed
+    /// (i.e. that were not already absent from this [`SetGraph`])
+    /// is returned.
+    ///
+    /// [`SetGraph`]: trait.SetGraph.html
     #[inline]
     fn remove_all<TS>(
         &mut self,
@@ -472,8 +506,20 @@ pub trait MutableGraph: Graph {
 
     /// Remove all triples matching the given matchers.
     ///
-    /// Note that the default implementation is rather naive,
+    /// # Return value
+    /// The `usize` value returned in case of success is
+    /// **not significant unless** this graph also implements [`SetGraph`].
+    ///
+    /// If it does,
+    /// the number of triples that were *actually* removed
+    /// (i.e. that were not already absent from this [`SetGraph`])
+    /// is returned.
+    ///
+    /// # Note to implementors
+    /// The default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
+    ///
+    /// [`SetGraph`]: trait.SetGraph.html
     fn remove_matching<S, P, O>(
         &mut self,
         ms: &S,
@@ -506,9 +552,9 @@ pub trait MutableGraph: Graph {
 
     /// Keep only the triples matching the given matchers.
     ///
-    /// Note that the default implementation is rather naive,
+    /// # Note to implementors
+    /// The default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
-    ///
     fn retain_matching<S, P, O>(
         &mut self,
         ms: &S,
@@ -542,9 +588,25 @@ pub trait MutableGraph: Graph {
 }
 
 /// Marker trait constraining the semantics of
-/// [`Graph`](trait.Graph.html) and [`MutableGraph`](trait.MutableGraph.html),
-/// by guaranteeing that triples will never be returned / stored multiple times.
-pub trait SetGraph {}
+/// [`Graph`] and [`MutableGraph`].
+///
+/// It guarantees that
+/// (1) triples will never be returned / stored multiple times.
+///
+/// If the type also implements [`MutableGraph`],
+/// it must also ensure that
+/// (2) the `bool` or `usize` values returned by [`MutableGraph`]
+/// methods accurately describe how many triples were actually added/removed.
+///
+/// # Note to implementors
+/// A type implementing both [`Graph`] and [`MutableGraph`],
+/// enforcing (1) but failing to enforce (2)
+/// *must not* implement this trait.
+///
+/// [`Graph`]: trait.Graph.html
+/// [`MutableGraph`]: trait.MutableGraph.html
+
+pub trait SetGraph: Graph {}
 
 #[inline]
 pub(crate) fn insert_if_absent<T: Clone + Eq + Hash>(set: &mut HashSet<T>, val: &T) {

@@ -170,7 +170,7 @@ where
 
 impl<D, E, F> SetGraph for DatasetGraph<D, E, Option<Term<F>>>
 where
-    D: SetDataset,
+    D: Dataset + SetDataset,
     E: Borrow<D>,
     F: TermData,
 {
