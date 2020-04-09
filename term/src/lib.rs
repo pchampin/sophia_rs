@@ -280,18 +280,18 @@ where
         self.clone_map(Into::into)
     }
 
-    /// Transforms the underlying IRIs according to the given policy.
+    /// Return a term equivalent to this one,
+    /// with all IRIs (if any)
+    /// internally represented with all its data in `ns`, and an empty `suffix`.
     ///
-    /// If the policy already applies the Term is returned unchanged.
-    pub fn clone_normalized_with<F, U>(&self, policy: Normalization, factory: F) -> Term<U>
-    where
-        F: FnMut(&str) -> U,
-        U: TermData,
-    {
+    /// # Performances
+    /// The returned term will borrow data from this one as much as possible,
+    /// but strings may be allocated in case a concatenation is required.
+    pub fn normalized(&self, policy: Normalization) -> MownTerm {
         match self {
-            Term::Iri(iri) => iri.clone_normalized_with(policy, factory).into(),
-            Term::Literal(lit) => lit.clone_normalized_with(policy, factory).into(),
-            _ => self.clone_map(factory),
+            Term::Iri(iri) => iri.normalized(policy).into(),
+            Term::Literal(lit) => lit.normalized(policy).into(),
+            _ => self.as_ref_str().map_into(),
         }
     }
 
@@ -321,11 +321,15 @@ where
     ///
     /// # Pre-conditions
     ///
-    /// This function conducts no checks if the resulting IRI is valid. This is
-    /// a contract that is generally assumed. Breaking it could result in
-    /// unexpected behavior.
+    /// It is expected that
     ///
-    /// However, in `debug` builds assertions that perform checks are enabled.
+    /// * the resulting IRI is valid per RFC3987,
+    /// * `suffix` is not the empty string
+    ///   (otherwise, [`new_iri_unchecked`](#method.new_iri_unchecked) should be used instead).
+    ///
+    /// This is a contract that is generally assumed.
+    /// Breaking it could result in unexpected behavior.
+    /// However in `debug` mode, assertions that perform checks are enabled.
     pub fn new_iri_suffixed_unchecked<U, V>(ns: U, suffix: V, absolute: bool) -> Term<T>
     where
         T: From<U> + From<V>,

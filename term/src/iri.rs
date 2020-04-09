@@ -129,9 +129,14 @@ where
         let full = format!("{}{}", ns.as_ref(), suffix.as_ref());
         let absolute = is_absolute_iri_ref(&full);
         if absolute || is_relative_iri_ref(&full) {
+            let suffix = if !suffix.as_ref().is_empty() {
+                Some(suffix.into())
+            } else {
+                None
+            };
             Ok(Iri {
                 ns: ns.into(),
-                suffix: Some(suffix.into()),
+                suffix,
                 absolute,
             })
         } else {
@@ -174,13 +179,17 @@ where
     /// As it is not checked if absolute or relative this property must be
     /// entered as well.
     ///
-    /// # Pre-condition
+    /// # Pre-conditions
     ///
-    /// This function conducts no checks if the resulting IRI is valid. This is
-    /// a contract that is generally assumed. Breaking it could result in
-    /// unexpected behavior.
+    /// It is expected that
     ///
-    /// However, in `debug` builds assertions that perform checks are enabled.
+    /// * the resulting IRI is valid per RFC3987,
+    /// * `suffix` is not the empty string
+    ///   (otherwise, [`new_unchecked`](#method.new_unchecked) should be used instead).
+    ///
+    /// This is a contract that is generally assumed.
+    /// Breaking it could result in unexpected behavior.
+    /// However in `debug` mode, assertions that perform checks are enabled.
     pub fn new_suffixed_unchecked<U, V>(ns: U, suffix: V, absolute: bool) -> Self
     where
         TD: From<U> + From<V>,
@@ -192,6 +201,7 @@ where
             let iri = format!("{}{}", ns.as_ref(), sf.as_ref());
             debug_assert!(is_valid_iri_ref(&iri), "invalid IRI {:?}", iri);
             debug_assert_eq!(absolute, is_absolute_iri_ref(&iri));
+            debug_assert!(!sf.as_ref().is_empty());
         }
         Iri {
             ns,
@@ -310,100 +320,109 @@ where
         self.suffix.is_some()
     }
 
-    /// Transforms the IRI according to the given policy.
+    /// Return an IRI equivalent to this one,
+    /// internally represented with all its data in `ns`, and an empty `suffix`.
     ///
-    /// If the policy already applies the IRI is returned unchanged.
-    pub fn clone_normalized_with<F, U>(&self, policy: Normalization, factory: F) -> Iri<U>
-    where
-        F: FnMut(&str) -> U,
-        U: TermData,
-    {
+    /// # Performances
+    /// The returned IRI will borrow data from this one as much as possible,
+    /// but strings may be allocated in case a concatenation is required.
+    pub fn normalized(&self, policy: Normalization) -> Iri<MownStr> {
         match policy {
-            Normalization::NoSuffix => self.clone_no_suffix(factory),
-            Normalization::LastGenDelim => self.clone_suffixed_at_last_gen_delim(factory),
+            Normalization::NoSuffix => self.normalized_no_suffix(),
+            Normalization::LastGenDelim => self.normalized_suffixed_at_last_gen_delim(),
         }
     }
 
-    /// If the given IRI has a suffix it is appended to the namespace and a new
-    /// IRI is returned else the IRI is returned unchanged.
-    pub fn clone_no_suffix<F, U>(&self, factory: F) -> Iri<U>
-    where
-        // TODO: New string is created anyway -> save copy by a second factory? (FnMut(String) -> U)
-        F: FnMut(&str) -> U,
-        U: TermData,
-    {
+    /// Return an IRI equivalent to this one,
+    /// internally represented with all its data in `ns`, and an empty `suffix`.
+    ///
+    /// # Performances
+    /// If this IRI has an empty suffix, the returned IRI simply borrows its `ns`.
+    /// Otherwise, a new string is allocated for the returned IRI.
+    pub fn normalized_no_suffix(&self) -> Iri<MownStr> {
         match &self.suffix {
             Some(s) => {
                 let mut full = String::with_capacity(self.len());
                 full.push_str(self.ns.as_ref());
                 full.push_str(s.as_ref());
                 // Okay as derived from existing IRI.
-                let mut factory = factory;
-                Iri::new_unchecked(factory(&full), self.absolute)
+                Iri {
+                    ns: MownStr::from(full),
+                    suffix: None,
+                    absolute: self.absolute,
+                }
             }
-            None => self.clone_map(factory),
+            None => self.as_ref_str().map_into(),
         }
     }
 
-    /// Separates the IRI into namespace and suffix at the last hash `#` or
-    /// slash `/` in the IRI.
+    /// Return an IRI equivalent to this one,
+    /// internally represented with `ns` extending to the last gen-delims characters
+    /// (i.e. ":" / "/" / "?" / "#" / "[" / "]" / "@"`).
+    /// and `suffix` containing the rest.
     ///
-    /// 1. If this already applies the IRI is returned unchanged.
-    /// 1. If the IRI none of the separators contains the no suffix policy is
-    /// applied.
-    /// 1. In every other case a new IRI is allocated and the policy is
-    ///   applied.
-    pub fn clone_suffixed_at_last_gen_delim<F, U>(&self, factory: F) -> Iri<U>
-    where
-        F: FnMut(&str) -> U,
-        U: TermData,
-    {
-        let mut factory = factory;
+    /// # Performances
+    /// The returned IRI will borrow data from this one as much as possible,
+    /// but strings may be allocated in case a concatenation is required.
+    pub fn normalized_suffixed_at_last_gen_delim(&self) -> Iri<MownStr> {
         let ns = self.ns.as_ref();
         match &self.suffix {
             Some(suf) => {
                 let suf = suf.as_ref();
                 if let Some(pos) = suf.rfind(GEN_DELIMS) {
-                    // case: suffix with separator
+                    // case: suffix with separator in it
                     let mut new_ns = String::with_capacity(ns.len() + pos + 1);
                     new_ns.push_str(ns);
                     new_ns.push_str(&suf[..=pos]);
+                    let suffix = if pos < suf.len() - 1 {
+                        Some(MownStr::from(&suf[pos + 1..]))
+                    } else {
+                        None
+                    };
                     Iri {
-                        ns: factory(&new_ns),
-                        suffix: Some(factory(&suf[pos + 1..])),
+                        ns: MownStr::from(new_ns),
+                        suffix,
                         absolute: self.absolute,
                     }
                 } else if ns.ends_with(GEN_DELIMS) {
                     // case: ns does end with separator
-                    self.clone_map(factory)
+                    self.as_ref_str().map_into()
                 } else if let Some(pos) = ns.rfind(GEN_DELIMS) {
                     // case: ns does not end with separator but contains one
                     let mut new_suffix = String::with_capacity(ns.len() - pos - 1 + suf.len());
                     new_suffix.push_str(&ns[pos + 1..]);
                     new_suffix.push_str(suf);
                     Iri {
-                        ns: factory(&ns[..=pos]),
-                        suffix: Some(factory(&new_suffix)),
+                        ns: MownStr::from(&ns[..=pos]),
+                        suffix: Some(MownStr::from(new_suffix)),
                         absolute: self.absolute,
                     }
                 } else {
                     // case: neither contains a separator
-                    self.clone_no_suffix(factory)
+                    let mut full = String::with_capacity(self.len());
+                    full.push_str(self.ns.as_ref());
+                    full.push_str(suf.as_ref());
+                    // Okay as derived from existing IRI.
+                    Iri {
+                        ns: MownStr::from(full),
+                        suffix: None,
+                        absolute: self.absolute,
+                    }
                 }
             }
             None => {
-                match ns.rfind(GEN_DELIMS) {
+                match ns[..ns.len() - 1].rfind(GEN_DELIMS) {
                     Some(pos) => {
-                        // case: no suffix
+                        // case: no suffix, ns must be split
                         Iri {
-                            ns: factory(&ns[..=pos]),
-                            suffix: Some(factory(&ns[pos + 1..])),
+                            ns: MownStr::from(&ns[..=pos]),
+                            suffix: Some(MownStr::from(&ns[pos + 1..])),
                             absolute: self.absolute,
                         }
                     }
                     None => {
-                        // case: no separators
-                        self.clone_map(factory)
+                        // case: no suffix, borrow ns as is
+                        self.as_ref_str().map_into()
                     }
                 }
             }
