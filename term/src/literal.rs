@@ -210,6 +210,22 @@ where
         self.clone_map(Into::into)
     }
 
+    /// Return a literal equivalent to this one,
+    /// with its datatype (if any)
+    /// is internally represented with all its data in `ns`, and an empty `suffix`.
+    ///
+    /// # Performances
+    /// The returned literal will borrow data from this one as much as possible,
+    /// but strings may be allocated in case a concatenation is required.
+    pub fn normalized(&self, policy: Normalization) -> Literal<MownStr> {
+        let txt = MownStr::from(self.txt.as_ref());
+        let kind = match &self.kind {
+            Lang(tag) => Lang(MownStr::from(tag.as_ref())),
+            Dt(iri) => Dt(iri.normalized(policy)),
+        };
+        Literal { txt, kind }
+    }
+
     /// If the literal is typed transform the IRI according to the given
     /// policy.
     ///
@@ -221,13 +237,7 @@ where
         U: TermData,
     {
         let mut factory = factory;
-        let txt = factory(self.txt.as_ref());
-        let kind = match &self.kind {
-            Lang(tag) => Lang(factory(tag.as_ref())),
-            Dt(iri) => Dt(iri.clone_normalized_with(policy, factory)),
-        };
-
-        Literal { txt, kind }
+        self.normalized(policy).map(|m| factory(m.as_ref()))
     }
 
     /// Writes the literal to the `fmt::Write` using the NTriples syntax.

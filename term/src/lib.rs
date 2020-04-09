@@ -280,6 +280,21 @@ where
         self.clone_map(Into::into)
     }
 
+    /// Return a term equivalent to this one,
+    /// with all IRIs (if any)
+    /// internally represented with all its data in `ns`, and an empty `suffix`.
+    ///
+    /// # Performances
+    /// The returned term will borrow data from this one as much as possible,
+    /// but strings may be allocated in case a concatenation is required.
+    pub fn normalized(&self, policy: Normalization) -> MownTerm {
+        match self {
+            Term::Iri(iri) => iri.normalized(policy).into(),
+            Term::Literal(lit) => lit.normalized(policy).into(),
+            _ => self.as_ref_str().map_into(),
+        }
+    }
+
     /// Transforms the underlying IRIs according to the given policy.
     ///
     /// If the policy already applies the Term is returned unchanged.
@@ -288,11 +303,8 @@ where
         F: FnMut(&str) -> U,
         U: TermData,
     {
-        match self {
-            Term::Iri(iri) => iri.clone_normalized_with(policy, factory).into(),
-            Term::Literal(lit) => lit.clone_normalized_with(policy, factory).into(),
-            _ => self.clone_map(factory),
-        }
+        let mut factory = factory;
+        self.normalized(policy).map(|m| factory(m.as_ref()))
     }
 
     /// Create a new IRI-term from a given IRI without checking its validity.
