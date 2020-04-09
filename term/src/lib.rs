@@ -321,11 +321,15 @@ where
     ///
     /// # Pre-conditions
     ///
-    /// This function conducts no checks if the resulting IRI is valid. This is
-    /// a contract that is generally assumed. Breaking it could result in
-    /// unexpected behavior.
+    /// It is expected that
     ///
-    /// However, in `debug` builds assertions that perform checks are enabled.
+    /// * the resulting IRI is valid per RFC3987,
+    /// * `suffix` is not the empty string
+    ///   (otherwise, [`new_iri_unchecked`](#method.new_iri_unchecked) should be used instead).
+    ///
+    /// This is a contract that is generally assumed.
+    /// Breaking it could result in unexpected behavior.
+    /// However in `debug` mode, assertions that perform checks are enabled.
     pub fn new_iri_suffixed_unchecked<U, V>(ns: U, suffix: V, absolute: bool) -> Term<T>
     where
         T: From<U> + From<V>,

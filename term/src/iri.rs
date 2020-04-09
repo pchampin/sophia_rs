@@ -129,9 +129,14 @@ where
         let full = format!("{}{}", ns.as_ref(), suffix.as_ref());
         let absolute = is_absolute_iri_ref(&full);
         if absolute || is_relative_iri_ref(&full) {
+            let suffix = if !suffix.as_ref().is_empty() {
+                Some(suffix.into())
+            } else {
+                None
+            };
             Ok(Iri {
                 ns: ns.into(),
-                suffix: Some(suffix.into()),
+                suffix,
                 absolute,
             })
         } else {
@@ -174,13 +179,17 @@ where
     /// As it is not checked if absolute or relative this property must be
     /// entered as well.
     ///
-    /// # Pre-condition
+    /// # Pre-conditions
     ///
-    /// This function conducts no checks if the resulting IRI is valid. This is
-    /// a contract that is generally assumed. Breaking it could result in
-    /// unexpected behavior.
+    /// It is expected that
     ///
-    /// However, in `debug` builds assertions that perform checks are enabled.
+    /// * the resulting IRI is valid per RFC3987,
+    /// * `suffix` is not the empty string
+    ///   (otherwise, [`new_unchecked`](#method.new_unchecked) should be used instead).
+    ///
+    /// This is a contract that is generally assumed.
+    /// Breaking it could result in unexpected behavior.
+    /// However in `debug` mode, assertions that perform checks are enabled.
     pub fn new_suffixed_unchecked<U, V>(ns: U, suffix: V, absolute: bool) -> Self
     where
         TD: From<U> + From<V>,
@@ -192,6 +201,7 @@ where
             let iri = format!("{}{}", ns.as_ref(), sf.as_ref());
             debug_assert!(is_valid_iri_ref(&iri), "invalid IRI {:?}", iri);
             debug_assert_eq!(absolute, is_absolute_iri_ref(&iri));
+            debug_assert!(!sf.as_ref().is_empty());
         }
         Iri {
             ns,
