@@ -156,7 +156,11 @@ where
         TD: From<U>,
     {
         let ns: TD = iri.into();
-        debug_assert!(is_valid_iri_ref(ns.as_ref()), "invalid IRI {:?}", ns.as_ref());
+        debug_assert!(
+            is_valid_iri_ref(ns.as_ref()),
+            "invalid IRI {:?}",
+            ns.as_ref()
+        );
         debug_assert_eq!(absolute, is_absolute_iri_ref(ns.as_ref()));
         Iri {
             ns,

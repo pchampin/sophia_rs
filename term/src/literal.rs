@@ -127,7 +127,11 @@ where
         V: AsRef<str>,
         TD: From<U> + From<V>,
     {
-        debug_assert!(tag.as_ref().parse::<LangTag>().is_ok(), "invalid language tag {:?}", tag.as_ref());
+        debug_assert!(
+            tag.as_ref().parse::<LangTag>().is_ok(),
+            "invalid language tag {:?}",
+            tag.as_ref()
+        );
 
         Self {
             txt: txt.into(),

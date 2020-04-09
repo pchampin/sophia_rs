@@ -147,7 +147,12 @@ where
 
 pub fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
     assert!(hint.0 <= val, "hint {:?} not consistent with {}", hint, val);
-    assert!(val <= hint.1.unwrap_or(val), "hint {:?} not consistent with {}", hint, val)
+    assert!(
+        val <= hint.1.unwrap_or(val),
+        "hint {:?} not consistent with {}",
+        hint,
+        val
+    )
 }
 
 pub fn make_quad_source() -> impl QuadSource {

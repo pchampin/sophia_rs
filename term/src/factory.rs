@@ -20,9 +20,9 @@ pub trait TermFactory {
     /// Data used by terms created by the factory.
     type TermData: TermData;
 
-    /// Get new `TermData`.
+    /// Get a `TermData` equal to `txt`.
     ///
-    /// Mostly used internal to create new terms.
+    /// Mostly used internally to create new terms.
     fn get_term_data(&mut self, txt: &str) -> Self::TermData;
 
     /// Get a new IRI without suffix.
