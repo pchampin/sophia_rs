@@ -137,11 +137,7 @@ fn iri_normalized_last_hash_or_slash() {
         assert_eq!(i1, i2);
         if let Iri(i2) = i2 {
             assert_eq!(&i2.ns[..], *ns2);
-            let sf2 = if sf2.len() == 0 {
-                None
-            } else {
-                Some(*sf2)
-            };
+            let sf2 = if sf2.len() == 0 { None } else { Some(*sf2) };
             assert_eq!(i2.suffix.as_ref().map(AsRef::as_ref), sf2);
         }
     }

@@ -126,12 +126,12 @@ impl<F: TermFactory> Scope<F> {
             let prefix = &attr[..separator_idx];
             let reference = &attr[separator_idx + 1..];
             if let Some(ns) = self.ns.get(prefix) {
-                Ok(ns.get(self.factory.borrow_mut().get_term_data(reference))?)
+                Ok(self.factory.borrow_mut().convert_term(ns.get(reference)?))
             } else {
                 Err(RdfError::UnknownNamespace(prefix.to_owned()))
             }
         } else if let Some(ns) = &self.default {
-            Ok(ns.get(self.factory.borrow_mut().get_term_data(attr))?)
+            Ok(self.factory.borrow_mut().convert_term(ns.get(attr)?))
         } else {
             Err(RdfError::UnknownNamespace("_".to_owned()))
         }
@@ -160,8 +160,8 @@ impl<F: TermFactory> Scope<F> {
 
             if let Some(url) = &self.base {
                 match url.join(iri) {
-                    Ok(u) if ascii => Ok(factory.iri(u)?),
-                    Ok(u) => Ok(factory.iri(decode(u.as_ref()))?),
+                    Ok(u) if ascii => Ok(factory.iri(u.as_ref())?),
+                    Ok(u) => Ok(factory.iri(decode(u.as_ref()).as_ref())?),
                     Err(e) => Err(e.into()),
                 }
             } else {
@@ -191,9 +191,18 @@ impl<F: TermFactory> Scope<F> {
     /// Create a new literal with the `rdf:type` and `xml:lang` in scope.
     pub fn new_literal(&self, text: String) -> ScopeResult<Term<F::TermData>> {
         let term = match (&self.datatype, &self.lang) {
-            (Some(dt), _) => self.factory.borrow_mut().literal_dt(text, dt.clone())?,
-            (None, Some(l)) => self.factory.borrow_mut().literal_lang(text, l.clone())?,
-            _ => self.factory.borrow_mut().literal_dt(text, xsd::string)?,
+            (Some(dt), _) => self
+                .factory
+                .borrow_mut()
+                .literal_dt(text.as_str(), dt.clone())?,
+            (None, Some(l)) => self
+                .factory
+                .borrow_mut()
+                .literal_lang(text.as_str(), l.clone())?,
+            _ => self
+                .factory
+                .borrow_mut()
+                .literal_dt(text.as_str(), xsd::string)?,
         };
         Ok(term)
     }
@@ -202,7 +211,10 @@ impl<F: TermFactory> Scope<F> {
     pub fn new_li(&self) -> ScopeResult<Term<F::TermData>> {
         if let Some(ns) = self.ns.get("rdf") {
             let mut f = self.factory.borrow_mut();
-            Ok(ns.get(f.get_term_data(&format!("_{}", self.li.fetch_add(1, Ordering::Relaxed))))?)
+            Ok(ns.get(
+                f.get_term_data(format!("_{}", self.li.fetch_add(1, Ordering::Relaxed)).as_str())
+                    .as_ref(),
+            )?)
         } else {
             Err(RdfError::UnknownNamespace("rdf".to_owned()))
         }
@@ -212,7 +224,10 @@ impl<F: TermFactory> Scope<F> {
     pub fn current_li(&self) -> ScopeResult<Term<F::TermData>> {
         if let Some(ns) = self.ns.get("rdf") {
             let mut f = self.factory.borrow_mut();
-            Ok(ns.get(f.get_term_data(&format!("_{}", self.li.load(Ordering::Relaxed) - 1)))?)
+            Ok(ns.get(
+                f.get_term_data(format!("_{}", self.li.load(Ordering::Relaxed) - 1).as_str())
+                    .as_ref(),
+            )?)
         } else {
             Err(RdfError::UnknownNamespace("rdf".to_owned()))
         }

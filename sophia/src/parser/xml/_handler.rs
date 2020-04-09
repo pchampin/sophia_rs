@@ -121,7 +121,7 @@ where
                     let v = &a
                         .unescape_and_decode_value(&self.reader)
                         .locate_err_with(&self.reader)?;
-                    self.factory.borrow_mut().get_term_data(v).into()
+                    self.factory.borrow_mut().get_term_data(v.as_str()).into()
                 };
             }
         }
@@ -142,7 +142,7 @@ where
     fn new_bnode(&self) -> Term<F::TermData> {
         self.factory
             .borrow_mut()
-            .bnode(&format!("n{}", self.bnodes.fetch_add(1, Ordering::Relaxed)))
+            .bnode(format!("n{}", self.bnodes.fetch_add(1, Ordering::Relaxed)).as_str())
             .expect("always produces a correct BNode")
     }
 
@@ -151,7 +151,7 @@ where
         if xmlname::is_valid_xmlname(id) {
             self.factory
                 .borrow_mut()
-                .bnode(&format!("o{}", id))
+                .bnode(format!("o{}", id).as_str())
                 .map_err(|e| RdfError::from(e).locate_with(&self.reader))
         } else {
             Err(RdfError::InvalidXmlName(id.to_owned())).locate_err_with(&self.reader)
