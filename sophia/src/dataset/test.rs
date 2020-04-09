@@ -55,13 +55,44 @@ pub fn populate<D: MutableDataset>(d: &mut D) -> MDResult<D, ()> {
     Ok(())
 }
 
-pub fn populate_nodes_types<D: MutableDataset>(d: &mut D) -> MDResult<D, ()> {
+pub fn populate_strict<D: MutableDataset>(d: &mut D) -> MDResult<D, ()> {
     d.insert(&rdf::type_, &rdf::type_, &rdf::Property, Some(&rdf::type_))?;
     d.insert(
-        &StaticTerm::new_bnode("b1").unwrap(),
-        &StaticTerm::new_bnode("b2").unwrap(),
-        &StaticTerm::new_bnode("b1").unwrap(),
-        Some(StaticTerm::new_bnode("b2").unwrap()).as_ref(),
+        &StaticTerm::new_bnode("1").unwrap(),
+        &rdf::type_,
+        &StaticTerm::from("lit1"),
+        Some(StaticTerm::new_bnode("2").unwrap()).as_ref(),
+    )?;
+    d.insert(
+        &StaticTerm::new_bnode("2").unwrap(),
+        &rdf::type_,
+        &StaticTerm::new_bnode("1").unwrap(),
+        *DG,
+    )?;
+    d.insert(
+        &StaticTerm::new_bnode("2").unwrap(),
+        &rdf::type_,
+        &StaticTerm::from("lit2"),
+        *DG,
+    )?;
+    d.insert(
+        &StaticTerm::new_bnode("2").unwrap(),
+        &rdf::type_,
+        &StaticTerm::new_literal_lang("lit2", "en").unwrap(),
+        *DG,
+    )?;
+
+    assert_consistent_hint(5, d.quads().size_hint());
+    Ok(())
+}
+
+pub fn populate_generalized<D: MutableDataset>(d: &mut D) -> MDResult<D, ()> {
+    d.insert(&rdf::type_, &rdf::type_, &rdf::Property, Some(&rdf::type_))?;
+    d.insert(
+        &StaticTerm::new_bnode("1").unwrap(),
+        &StaticTerm::new_bnode("2").unwrap(),
+        &StaticTerm::new_bnode("1").unwrap(),
+        Some(StaticTerm::new_bnode("2").unwrap()).as_ref(),
     )?;
     d.insert(
         &StaticTerm::from("lit2"),
@@ -76,7 +107,7 @@ pub fn populate_nodes_types<D: MutableDataset>(d: &mut D) -> MDResult<D, ()> {
         Some(StaticTerm::new_variable("v3").unwrap()).as_ref(),
     )?;
     d.insert(
-        &StaticTerm::new_bnode("b2").unwrap(),
+        &StaticTerm::new_bnode("2").unwrap(),
         &StaticTerm::new_variable("v1").unwrap(),
         &StaticTerm::new_literal_lang("lit2", "en").unwrap(),
         *DG,
@@ -115,8 +146,8 @@ where
 }
 
 pub fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
-    assert!(hint.0 <= val);
-    assert!(val <= hint.1.or(Some(val)).unwrap())
+    assert!(hint.0 <= val, "hint {:?} not consistent with {}", hint, val);
+    assert!(val <= hint.1.unwrap_or(val), "hint {:?} not consistent with {}", hint, val)
 }
 
 pub fn make_quad_source() -> impl QuadSource {
@@ -131,8 +162,21 @@ pub fn make_quad_source() -> impl QuadSource {
 /// Generates a test suite for [`Dataset`] and [`MutableDataset`] implementations.
 ///
 /// This macro is only available when the feature `test_macros` is enabled.
+///
+/// It accepts the following parameters:
+/// * `module_name`: the name of the module to generate (defaults to `test`);
+/// * `mutable_dataset_impl`: the type to test, implementing [`Dataset`] and [`MutableDataset`];
+/// * `is_set`: a boolean, indicating if `mutable_dataset_impl` implements [`SetDataset`]
+///   (defaults to `true`);
+/// * `mutable_dataset_factory`: a function used to create an empy instance of `mutable_dataset_impl`
+///   (defaults to `mutable_dataset_impl::new`);
+/// * `is_gen`: a boolean, indicating if `mutable_dataset_impl` supports the [generalized model]
+///   (defaults to `true`).
+///
 /// [`Dataset`]: dataset/trait.Dataset.html
 /// [`MutableDataset`]: dataset/trait.MutableDataset.html
+/// [`SetDataset`]: dataset/trait.SetDataset.html
+/// [generalized model]: ./index.html
 #[macro_export]
 macro_rules! test_dataset_impl {
     ($mutable_dataset_impl:ident) => {
@@ -150,6 +194,15 @@ macro_rules! test_dataset_impl {
         );
     };
     ($module_name: ident, $mutable_dataset_impl: ident, $is_set: expr, $mutable_dataset_factory: path) => {
+        test_dataset_impl!(
+            $module_name,
+            $mutable_dataset_impl,
+            $is_set,
+            $mutable_dataset_factory,
+            true
+        );
+    };
+    ($module_name: ident, $mutable_dataset_impl: ident, $is_set: expr, $mutable_dataset_factory: path, $is_gen: expr) => {
         #[cfg(test)]
         mod $module_name {
             use sophia_term::{matcher::ANY, *};
@@ -289,15 +342,17 @@ macro_rules! test_dataset_impl {
                 let mut d = $mutable_dataset_factory();
                 assert_eq!(d.quads().count(), 0);
                 assert_eq!(d.insert_all(&mut make_quad_source()).unwrap(), 2);
-                assert_eq!(d.quads().count(), 2);
+                assert_eq!(d.quads().count(), 2, "after insert");
                 if $is_set {
                     assert_eq!(d.insert_all(&mut make_quad_source()).unwrap(), 0);
-                    assert_eq!(d.quads().count(), 2);
+                    assert_eq!(d.quads().count(), 2, "after insert_all again");
                 }
                 assert_eq!(d.remove_all(&mut make_quad_source()).unwrap(), 2);
-                assert_eq!(d.quads().count(), 0);
-                assert_eq!(d.remove_all(&mut make_quad_source()).unwrap(), 0);
-                assert_eq!(d.quads().count(), 0);
+                assert_eq!(d.quads().count(), 0, "after remove_all");
+                if $is_set {
+                    assert_eq!(d.remove_all(&mut make_quad_source()).unwrap(), 0);
+                    assert_eq!(d.quads().count(), 0, "after remove_all again");
+                }
             }
 
             #[test]
@@ -799,7 +854,11 @@ macro_rules! test_dataset_impl {
             #[test]
             fn test_iris() -> MDResult<$mutable_dataset_impl, ()> {
                 let mut d = $mutable_dataset_factory();
-                populate_nodes_types(&mut d)?;
+                if $is_gen {
+                    populate_generalized(&mut d)?;
+                } else {
+                    populate_strict(&mut d)?;
+                }
 
                 let iris = d.iris().unwrap();
                 assert_eq!(iris.len(), 2);
@@ -814,22 +873,30 @@ macro_rules! test_dataset_impl {
             #[test]
             fn test_bnodes() -> MDResult<$mutable_dataset_impl, ()> {
                 let mut d = $mutable_dataset_factory();
-                populate_nodes_types(&mut d)?;
+                if $is_gen {
+                    populate_generalized(&mut d)?;
+                } else {
+                    populate_strict(&mut d)?;
+                }
 
                 let bnodes = d.bnodes().unwrap();
                 assert_eq!(bnodes.len(), 2);
 
                 let rbnodes: std::collections::HashSet<_> =
                     bnodes.iter().map(|t| t.value()).collect();
-                assert!(rbnodes.contains("b1"));
-                assert!(rbnodes.contains("b2"));
+                assert!(rbnodes.contains("1"));
+                assert!(rbnodes.contains("2"));
                 Ok(())
             }
 
             #[test]
             fn test_literals() -> MDResult<$mutable_dataset_impl, ()> {
                 let mut d = $mutable_dataset_factory();
-                populate_nodes_types(&mut d)?;
+                if $is_gen {
+                    populate_generalized(&mut d)?;
+                } else {
+                    populate_strict(&mut d)?;
+                }
 
                 let literals = d.literals().unwrap();
                 assert_eq!(literals.len(), 3);
@@ -845,16 +912,23 @@ macro_rules! test_dataset_impl {
             #[test]
             fn test_variables() -> MDResult<$mutable_dataset_impl, ()> {
                 let mut d = $mutable_dataset_factory();
-                populate_nodes_types(&mut d)?;
+                if $is_gen {
+                    populate_generalized(&mut d)?;
 
-                let variables = d.variables().unwrap();
-                assert_eq!(variables.len(), 3);
+                    let variables = d.variables().unwrap();
+                    assert_eq!(variables.len(), 3);
 
-                let rvariables: std::collections::HashSet<_> =
-                    variables.iter().map(|t| t.value()).collect();
-                assert!(rvariables.contains("v1"));
-                assert!(rvariables.contains("v2"));
-                assert!(rvariables.contains("v3"));
+                    let rvariables: std::collections::HashSet<_> =
+                        variables.iter().map(|t| t.value()).collect();
+                    assert!(rvariables.contains("v1"));
+                    assert!(rvariables.contains("v2"));
+                    assert!(rvariables.contains("v3"));
+                } else {
+                    populate_strict(&mut d)?;
+
+                    let variables = d.variables().unwrap();
+                    assert_eq!(variables.len(), 0);
+                }
                 Ok(())
             }
         }

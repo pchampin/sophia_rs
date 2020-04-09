@@ -99,7 +99,7 @@ where
         U: AsRef<str>,
         TD: From<U>,
     {
-        debug_assert!(BLANK_NODE_LABEL.is_match(id.as_ref()));
+        debug_assert!(BLANK_NODE_LABEL.is_match(id.as_ref()), "invalid bnode label {:?}", id.as_ref());
 
         BlankNode(id.into())
     }

@@ -145,7 +145,7 @@ fn triples_matching<'a, G>(g: &'a G, tm: &'a [Binding]) -> GTripleSource<'a, G>
 where
     G: Graph,
 {
-    debug_assert_eq!(tm.len(), 3);
+    debug_assert_eq!(tm.len(), 3, "tm.len() = {}", tm.len());
     let s = &tm[0];
     let p = &tm[1];
     let o = &tm[2];

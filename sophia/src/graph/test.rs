@@ -51,12 +51,37 @@ pub fn populate<G: MutableGraph>(g: &mut G) -> MGResult<G, ()> {
     Ok(())
 }
 
-pub fn populate_nodes_types<G: MutableGraph>(g: &mut G) -> MGResult<G, ()> {
+pub fn populate_strict<G: MutableGraph>(g: &mut G) -> MGResult<G, ()> {
     g.insert(&rdf::type_, &rdf::type_, &rdf::Property)?;
     g.insert(
-        &StaticTerm::new_bnode("b1").unwrap(),
-        &StaticTerm::new_bnode("b2").unwrap(),
-        &StaticTerm::new_bnode("b1").unwrap(),
+        &StaticTerm::new_bnode("1").unwrap(),
+        &rdf::type_,
+        &StaticTerm::from("lit1"),
+    )?;
+    g.insert(
+        &StaticTerm::new_bnode("2").unwrap(),
+        &rdf::type_,
+        &StaticTerm::new_bnode("1").unwrap(),
+    )?;
+    g.insert(
+        &StaticTerm::new_bnode("2").unwrap(),
+        &rdf::type_,
+        &StaticTerm::from("lit2"),
+    )?;
+    g.insert(
+        &StaticTerm::new_bnode("2").unwrap(),
+        &rdf::type_,
+        &StaticTerm::new_literal_lang("lit2", "en").unwrap(),
+    )?;
+    Ok(())
+}
+
+pub fn populate_generalized<G: MutableGraph>(g: &mut G) -> MGResult<G, ()> {
+    g.insert(&rdf::type_, &rdf::type_, &rdf::Property)?;
+    g.insert(
+        &StaticTerm::new_bnode("1").unwrap(),
+        &StaticTerm::new_bnode("2").unwrap(),
+        &StaticTerm::new_bnode("1").unwrap(),
     )?;
     g.insert(
         &StaticTerm::from("lit2"),
@@ -69,7 +94,7 @@ pub fn populate_nodes_types<G: MutableGraph>(g: &mut G) -> MGResult<G, ()> {
         &StaticTerm::new_variable("v3").unwrap(),
     )?;
     g.insert(
-        &StaticTerm::new_bnode("b2").unwrap(),
+        &StaticTerm::new_bnode("2").unwrap(),
         &StaticTerm::new_variable("v1").unwrap(),
         &StaticTerm::new_literal_lang("lit2", "en").unwrap(),
     )?;
@@ -104,8 +129,8 @@ where
 }
 
 pub fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
-    assert!(hint.0 <= val);
-    assert!(val <= hint.1.or(Some(val)).unwrap())
+    assert!(hint.0 <= val, "hint {:?} not consistent with {}", hint, val);
+    assert!(val <= hint.1.unwrap_or(val), "hint {:?} not consistent with {}", hint, val)
 }
 
 pub fn make_triple_source() -> impl TripleSource {
@@ -120,8 +145,21 @@ pub fn make_triple_source() -> impl TripleSource {
 /// Generates a test suite for [`Graph`] and [`MutableGraph`] implementations.
 ///
 /// This macro is only available when the feature `test_macros` is enabled.
+///
+/// It accepts the following parameters:
+/// * `module_name`: the name of the module to generate (defaults to `test`);
+/// * `mutable_graph_impl`: the type to test, implementing [`Graph`] and [`MutableGraph`];
+/// * `is_set`: a boolean, indicating if `mutable_graph_impl` implements [`SetGraph`]
+///   (defaults to `true`);
+/// * `mutable_graph_factory`: a function used to create an empy instance of `mutable_graph_impl`
+///   (defaults to `mutable_graph_impl::new`);
+/// * `is_gen`: a boolean, indicating if `mutable_graph_impl` supports the [generalized model]
+///   (defaults to `true`).
+///
 /// [`Graph`]: graph/trait.Graph.html
 /// [`MutableGraph`]: graph/trait.MutableGraph.html
+/// [`SetGraph`]: graph/trait.SetGraph.html
+/// [generalized model]: ./index.html
 #[macro_export]
 macro_rules! test_graph_impl {
     ($mutable_graph_impl: ident) => {
@@ -139,6 +177,15 @@ macro_rules! test_graph_impl {
         );
     };
     ($module_name: ident, $mutable_graph_impl: ident, $is_set: expr, $mutable_graph_factory: path) => {
+        test_graph_impl!(
+            $module_name,
+            $mutable_graph_impl,
+            $is_set,
+            $mutable_graph_factory,
+            true
+        );
+    };
+    ($module_name: ident, $mutable_graph_impl: ident, $is_set: expr, $mutable_graph_factory: path, $is_gen: expr) => {
         #[cfg(test)]
         mod $module_name {
             use sophia_term::matcher::ANY;
@@ -221,15 +268,17 @@ macro_rules! test_graph_impl {
                 let mut g = $mutable_graph_factory();
                 assert_eq!(g.triples().count(), 0);
                 assert_eq!(g.insert_all(&mut make_triple_source()).unwrap(), 2);
-                assert_eq!(g.triples().count(), 2);
+                assert_eq!(g.triples().count(), 2, "after insert_all");
                 if $is_set {
                     assert_eq!(g.insert_all(&mut make_triple_source()).unwrap(), 0);
-                    assert_eq!(g.triples().count(), 2);
+                    assert_eq!(g.triples().count(), 2, "after insert_all again");
                 }
                 assert_eq!(g.remove_all(&mut make_triple_source()).unwrap(), 2);
-                assert_eq!(g.triples().count(), 0);
-                assert_eq!(g.remove_all(&mut make_triple_source()).unwrap(), 0);
-                assert_eq!(g.triples().count(), 0);
+                assert_eq!(g.triples().count(), 0, "after remove_all");
+                if $is_set {
+                    assert_eq!(g.remove_all(&mut make_triple_source()).unwrap(), 0);
+                    assert_eq!(g.triples().count(), 0, "after remove_all again");
+                }
             }
 
             #[test]
@@ -503,7 +552,11 @@ macro_rules! test_graph_impl {
             #[test]
             fn test_iris() -> MGResult<$mutable_graph_impl, ()> {
                 let mut g = $mutable_graph_factory();
-                populate_nodes_types(&mut g)?;
+                if $is_gen {
+                    populate_generalized(&mut g)?;
+                } else {
+                    populate_strict(&mut g)?;
+                }
 
                 let iris = g.iris().unwrap();
                 assert_eq!(iris.len(), 2);
@@ -518,22 +571,30 @@ macro_rules! test_graph_impl {
             #[test]
             fn test_bnodes() -> MGResult<$mutable_graph_impl, ()> {
                 let mut g = $mutable_graph_factory();
-                populate_nodes_types(&mut g)?;
+                if $is_gen {
+                    populate_generalized(&mut g)?;
+                } else {
+                    populate_strict(&mut g)?;
+                }
 
                 let bnodes = g.bnodes().unwrap();
                 assert_eq!(bnodes.len(), 2);
 
                 let rbnodes: std::collections::HashSet<_> =
                     bnodes.iter().map(|t| t.value()).collect();
-                assert!(rbnodes.contains("b1"));
-                assert!(rbnodes.contains("b2"));
+                assert!(rbnodes.contains("1"));
+                assert!(rbnodes.contains("2"));
                 Ok(())
             }
 
             #[test]
             fn test_literals() -> MGResult<$mutable_graph_impl, ()> {
                 let mut g = $mutable_graph_factory();
-                populate_nodes_types(&mut g)?;
+                if $is_gen {
+                    populate_generalized(&mut g)?;
+                } else {
+                    populate_strict(&mut g)?;
+                }
 
                 let literals = g.literals().unwrap();
                 assert_eq!(literals.len(), 3);
@@ -549,16 +610,23 @@ macro_rules! test_graph_impl {
             #[test]
             fn test_variables() -> MGResult<$mutable_graph_impl, ()> {
                 let mut g = $mutable_graph_factory();
-                populate_nodes_types(&mut g)?;
+                if $is_gen {
+                    populate_generalized(&mut g)?;
 
-                let variables = g.variables().unwrap();
-                assert_eq!(variables.len(), 3);
+                    let variables = g.variables().unwrap();
+                    assert_eq!(variables.len(), 3);
 
-                let rvariables: std::collections::HashSet<_> =
-                    variables.iter().map(|t| t.value()).collect();
-                assert!(rvariables.contains("v1"));
-                assert!(rvariables.contains("v2"));
-                assert!(rvariables.contains("v3"));
+                    let rvariables: std::collections::HashSet<_> =
+                        variables.iter().map(|t| t.value()).collect();
+                    assert!(rvariables.contains("v1"));
+                    assert!(rvariables.contains("v2"));
+                    assert!(rvariables.contains("v3"));
+                } else {
+                    populate_strict(&mut g)?;
+
+                    let variables = g.variables().unwrap();
+                    assert_eq!(variables.len(), 0);
+                }
                 Ok(())
             }
         }

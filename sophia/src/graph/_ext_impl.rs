@@ -154,4 +154,8 @@ mod test {
 
     type HashSetAsGraph = HashSet<[BoxTerm; 3]>;
     test_graph_impl!(hashset, HashSetAsGraph);
+
+    // only for the purpose of testing the test macro:
+    //test_graph_impl!(vec_strict, VecAsGraph, false, VecAsGraph::new, false);
+    //test_graph_impl!(hashset_strict, HashSetAsGraph, true, HashSetAsGraph::new, false);
 }

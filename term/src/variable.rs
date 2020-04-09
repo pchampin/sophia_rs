@@ -68,7 +68,7 @@ where
         U: AsRef<str>,
         TD: From<U>,
     {
-        debug_assert!(VARNAME.is_match(name.as_ref()));
+        debug_assert!(VARNAME.is_match(name.as_ref()), "invalid variable name {:?}", name.as_ref());
 
         Variable(name.into())
     }
