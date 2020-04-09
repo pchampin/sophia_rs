@@ -93,14 +93,18 @@ pub trait TermFactory {
         other.clone_map(|txt| self.get_term_data(txt))
     }
 
-    /// Clones the given term.
+    /// Clones the given term, applying the given normalization policy for IRIs.
     ///
-    /// The data is derived from the factory.
+    /// See also [`Iri::normalized`](../iri/Iri.html#method.noramlized)
+    ///
+    /// The `TermData` of the clone is derived from the factory.
     fn clone_normalized<T>(&mut self, other: &Term<T>, norm: Normalization) -> FTerm<Self>
     where
         T: TermData,
     {
-        other.clone_normalized_with(norm, |txt| self.get_term_data(txt))
+        other
+            .normalized(norm)
+            .map(|txt| self.get_term_data(txt.as_ref()))
     }
 
     /// Release memory that the factory no longer uses.

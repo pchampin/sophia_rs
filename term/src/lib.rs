@@ -295,18 +295,6 @@ where
         }
     }
 
-    /// Transforms the underlying IRIs according to the given policy.
-    ///
-    /// If the policy already applies the Term is returned unchanged.
-    pub fn clone_normalized_with<F, U>(&self, policy: Normalization, factory: F) -> Term<U>
-    where
-        F: FnMut(&str) -> U,
-        U: TermData,
-    {
-        let mut factory = factory;
-        self.normalized(policy).map(|m| factory(m.as_ref()))
-    }
-
     /// Create a new IRI-term from a given IRI without checking its validity.
     ///
     /// As it is not checked if absolute or relative this property must be

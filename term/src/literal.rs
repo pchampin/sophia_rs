@@ -226,20 +226,6 @@ where
         Literal { txt, kind }
     }
 
-    /// If the literal is typed transform the IRI according to the given
-    /// policy.
-    ///
-    /// If the policy already applies or it is language tagged the literal is
-    /// returned unchanged.
-    pub fn clone_normalized_with<F, U>(&self, policy: Normalization, factory: F) -> Literal<U>
-    where
-        F: FnMut(&str) -> U,
-        U: TermData,
-    {
-        let mut factory = factory;
-        self.normalized(policy).map(|m| factory(m.as_ref()))
-    }
-
     /// Writes the literal to the `fmt::Write` using the NTriples syntax.
     pub fn write_fmt<W>(&self, w: &mut W) -> fmt::Result
     where

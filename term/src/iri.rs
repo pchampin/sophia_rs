@@ -429,42 +429,6 @@ where
         }
     }
 
-    /// Return an IRI equivalent to this one,
-    /// with an internal representation complying with the given policy.
-    pub fn clone_normalized_with<F, U>(&self, policy: Normalization, factory: F) -> Iri<U>
-    where
-        F: FnMut(&str) -> U,
-        U: TermData,
-    {
-        let mut factory = factory;
-        self.normalized(policy).map(|m| factory(m.as_ref()))
-    }
-
-    /// Return an IRI equivalent to this one,
-    /// internally represented with all its data in `ns`, and an empty `suffix`.
-    pub fn clone_no_suffix<F, U>(&self, factory: F) -> Iri<U>
-    where
-        F: FnMut(&str) -> U,
-        U: TermData,
-    {
-        let mut factory = factory;
-        self.normalized_no_suffix().map(|m| factory(m.as_ref()))
-    }
-
-    /// Return an IRI equivalent to this one,
-    /// internally represented with `ns` extending to the last gen-delims characters
-    /// (i.e. ":" / "/" / "?" / "#" / "[" / "]" / "@"`).
-    /// and `suffix` containing the rest.
-    pub fn clone_suffixed_at_last_gen_delim<F, U>(&self, factory: F) -> Iri<U>
-    where
-        F: FnMut(&str) -> U,
-        U: TermData,
-    {
-        let mut factory = factory;
-        self.normalized_suffixed_at_last_gen_delim()
-            .map(|m| factory(m.as_ref()))
-    }
-
     /// Checks if the IRI matches a namespace.
     ///
     /// If it does the remaining suffix is returned as iterator of `char`s.

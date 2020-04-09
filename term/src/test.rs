@@ -103,7 +103,7 @@ fn iri_similar_but_not_eq() {
 fn iri_normalized_no_suffix() {
     let norm = Normalization::NoSuffix;
     let i1 = BoxTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
-    let i2 = i1.clone_normalized_with(norm, |s| Box::from(s));
+    let i2 = i1.normalized(norm);
     assert_eq!(i1, i2);
     if let Iri(i2) = i2 {
         assert!(i2.suffix.is_none());
@@ -133,16 +133,16 @@ fn iri_normalized_last_hash_or_slash() {
         } else {
             BoxTerm::new_iri_suffixed(*ns1, *sf1).unwrap()
         };
-        let i2 = i1.clone_normalized_with(norm, |s| Box::from(s));
+        let i2 = i1.normalized(norm);
         assert_eq!(i1, i2);
         if let Iri(i2) = i2 {
             assert_eq!(&i2.ns[..], *ns2);
             let sf2 = if sf2.len() == 0 {
                 None
             } else {
-                Some(Box::from(*sf2))
+                Some(*sf2)
             };
-            assert_eq!(i2.suffix, sf2);
+            assert_eq!(i2.suffix.as_ref().map(AsRef::as_ref), sf2);
         }
     }
 }
@@ -352,7 +352,7 @@ fn literal_normalized_no_suffix() {
     let norm = Normalization::NoSuffix;
     let dt = BoxTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
     let l1 = BoxTerm::new_literal_dt("hello", dt).unwrap();
-    let l2 = l1.clone_normalized_with(norm, |s| Box::from(s));
+    let l2 = l1.normalized(norm);
     assert_eq!(l1, l2);
 
     if let Literal(l2) = l2 {
@@ -382,7 +382,7 @@ fn literal_normalized_last_hash_or_slash() {
             BoxTerm::new_iri_suffixed(*ns1, *sf1).unwrap()
         };
         let l1 = BoxTerm::new_literal_dt("hello", dt).unwrap();
-        let l2 = l1.clone_normalized_with(norm, |s| Box::from(s));
+        let l2 = l1.normalized(norm);
         assert_eq!(l1, l2);
         if let Literal(l2) = l2 {
             let i2 = l2.dt();
