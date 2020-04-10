@@ -21,7 +21,7 @@ use crate::{
 };
 
 /// A custom namespace.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct Namespace<T: TermData>(pub(crate) T);
 
 impl<T: TermData> Namespace<T> {
@@ -59,6 +59,24 @@ impl<T: TermData> Namespace<T> {
     {
         Iri::new_suffixed(self.0.clone(), suffix)
     }
+
+    /// Maps this Namespace to another one by applying function `f`.
+    pub fn map<TD2, F>(self, f: F) -> Namespace<TD2>
+    where
+        TD2: TermData,
+        F: FnOnce(T) -> TD2,
+    {
+        Namespace(f(self.0))
+    }
+
+    /// Tries to map this Namespace to another one by applying function `f`.
+    pub fn try_map<TD2, F, E>(self, f: F) -> Result<Namespace<TD2>, E>
+    where
+        TD2: TermData,
+        F: FnOnce(T) -> Result<TD2, E>,
+    {
+        Ok(Namespace(f(self.0)?))
+    }
 }
 
 impl<TD> std::convert::TryFrom<Iri<TD>> for Namespace<TD>
@@ -76,6 +94,20 @@ where
         } else {
             Ok(Namespace(iri.ns))
         }
+    }
+}
+
+impl<TD: TermData> AsRef<str> for Namespace<TD> {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
+    }
+}
+
+impl<TD: TermData> std::ops::Deref for Namespace<TD> {
+    type Target = str;
+
+    fn deref(&self) -> &str {
+        self.0.as_ref()
     }
 }
 
