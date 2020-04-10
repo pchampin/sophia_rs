@@ -2,7 +2,7 @@
 //! [RDF](https://www.w3.org/TR/rdf11-primer/#section-literal).
 //!
 
-use crate::iri::Normalization;
+use crate::iri::{IriParsed, Normalization, Resolve};
 use crate::mown_str::MownStr;
 use crate::ns::{rdf, xsd};
 use crate::{Iri, Result, Term, TermData, TermError};
@@ -396,6 +396,32 @@ impl<TD: TermData> Hash for Literal<TD> {
         match &self.kind {
             Lang(tag) => state.write(tag.as_ref().to_ascii_lowercase().as_bytes()),
             Dt(iri) => iri.hash(state),
+        }
+    }
+}
+
+impl<'a, 'b, TD> Resolve<&'a Literal<TD>, Literal<MownStr<'a>>> for IriParsed<'b>
+where
+    TD: TermData + 'a,
+{
+    /// Resolve the data type's IRI if it is relative.
+    ///
+    /// # Exception
+    ///
+    /// This only changes on `Typed` literals.
+    /// Language-tagged literals are absolute by construction.
+    /// Therefore, those are not affected.
+    ///
+    /// # Performance
+    ///
+    /// May allocate an intermediate IRI if `other.dt()` is suffixed.
+    fn resolve(&self, other: &'a Literal<TD>) -> Literal<MownStr<'a>> {
+        match &other.kind {
+            Dt(dt) => Literal {
+                txt: other.txt.as_ref().into(),
+                kind: Dt(self.resolve(dt)),
+            },
+            _ => other.clone_into(),
         }
     }
 }

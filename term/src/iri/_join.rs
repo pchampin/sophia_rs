@@ -244,36 +244,6 @@ where
     }
 }
 
-impl<'a, 'b, TD> Resolve<&'a Literal<TD>, Literal<MownStr<'a>>> for IriParsed<'b>
-where
-    TD: TermData + 'a,
-{
-    /// Resolve the data type's IRI if it is relative.
-    ///
-    /// # Exception
-    ///
-    /// This only changes on `Typed` literals.
-    /// Language-tagged literals are absolute by construction.
-    /// Therefore, those are not affected.
-    ///
-    /// # Performance
-    ///
-    /// May allocate an intermediate IRI if `other.dt()` is suffixed.
-    fn resolve(&self, other: &'a Literal<TD>) -> Literal<MownStr<'a>> {
-        if other.is_absolute() {
-            other.clone_into()
-        } else {
-            let dt = Iri::<MownStr>::new_unchecked(
-                self.resolve(other.dt().value().as_ref())
-                    .unwrap()
-                    .to_string(),
-                self.is_absolute(),
-            );
-            Literal::new_dt(other.txt().as_ref(), dt)
-        }
-    }
-}
-
 impl<'a, 'b, TD, TD2> Resolve<&'a Term<TD>, Term<TD2>> for IriParsed<'b>
 where
     TD: TermData,
