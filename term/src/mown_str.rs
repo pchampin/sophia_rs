@@ -6,7 +6,7 @@ use std::fmt;
 use std::hash;
 use std::ops::Deref;
 
-/// "Maybe own str":
+/// "Maybe own str":Option
 /// either a borrowed reference to a `str` or an own `Box<str>`.
 ///
 /// It does not try to be mutable, nor generic,
@@ -167,6 +167,34 @@ impl<'a> From<MownStr<'a>> for Cow<'a, str> {
         match other {
             Ref(r) => Cow::Borrowed(r),
             Own(b) => Cow::Owned(b.into()),
+        }
+    }
+}
+
+impl<'a> MownStr<'a> {
+    /// Convert this `MownStr` to ant type `T`
+    /// that can be created from either a `&str` or a `Box<str>`.
+    ///
+    /// This can not be implemented as with the `From` trait,
+    /// because this would conflict with `From<MownStr<'a>>`.
+    ///
+    /// # Usage
+    /// ```
+    /// # use sophia_term::mown_str::MownStr;
+    /// # use std::rc::Rc;
+    /// let ms = MownStr::from("hello world");
+    /// let rc = ms.to::<Rc<str>>();
+    ///
+    /// let o1 = Some(MownStr::from("hi there"));
+    /// let o2 = o1.map(MownStr::to::<Rc<str>>);
+    /// ```
+    pub fn to<T>(self) -> T
+    where
+        T: From<&'a str> + From<Box<str>>,
+    {
+        match self {
+            Ref(r) => T::from(r),
+            Own(b) => T::from(b),
         }
     }
 }
