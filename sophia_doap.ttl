@@ -1,0 +1,37 @@
+@prefix dc: <http://purl.org/dc/terms/> .
+@prefix earl: <http://www.w3.org/ns/earl#> .
+@prefix doap: <http://usefulinc.com/ns/doap#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://github.com/pchampin/sophia_rs> a doap:Project;
+   dc:creator <http://champin.net/#pa>;
+   doap:blog <http://champin.net/blog>;
+   doap:bug-database <https://github.com/pchampin/sophia_rs/issues>;
+   doap:created "2018-06-07"^^xsd:date;
+   doap:description "A Rust toolkit for RDF and Linked Data."@en;
+   doap:developer <http://champin.net/#pa>;
+   doap:documenter <http://champin.net/#pa>;
+   doap:homepage <https://github.com/pchampin/sophia_rs>;
+   doap:implements <https://www.w3.org/TR/json-ld11/>,
+     <https://www.w3.org/TR/json-ld11-api/>;
+   doap:license <http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.html>;
+   doap:maintainer <http://champin.net/#pa>;
+   doap:name "Sophia";
+   doap:programming-language "Rust";
+   doap:shortdesc "A Rust toolkit for RDF and Linked Data."@en;
+   foaf:maker <http://champin.net/#pa> .
+
+<http://champin.net/#pa> a foaf:Person;
+   rdfs:isDefinedBy <http://champin.net/>;
+   foaf:made <https://github.com/pchampin/sophia_rs>;
+   foaf:mbox <mailto:pchampin@liris.cnrs.fr>;
+   foaf:name "Pierre-Antoine Champin".
+
+<https://github.com/pchampin/sophia_rs> doap:release [
+  doap:name "sophia-0.4.0";
+  doap:revision "0.4.0";
+  doap:created "2020-04-08"^^xsd:date;
+] .

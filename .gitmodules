@@ -1,3 +1,6 @@
 [submodule "rdf-tests"]
 	path = rdf-tests
 	url = https://github.com/w3c/rdf-tests.git
+[submodule "json-ld-api"]
+	path = json-ld-api
+	url = https://github.com/w3c/json-ld-api

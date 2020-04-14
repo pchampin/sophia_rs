@@ -214,10 +214,13 @@ pub mod rdf {
         Statement,
         // datatypes
         HTML,
+        JSON,
         langString,
         XMLLiteral,
         // properties
+        direction,
         first,
+        language,
         object,
         predicate,
         rest,
@@ -238,6 +241,7 @@ pub mod rdf {
         bagID,
         aboutEach,
         aboutEachPrefix;
+        // 'type' is a Rust keyword, so we use 'type_' instead
         type_, "type"
     );
 }
