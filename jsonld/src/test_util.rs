@@ -7,7 +7,7 @@ use json::JsonValue;
 use sophia::dataset::MutableDataset;
 use sophia::serializer::QuadSerializer;
 use sophia::triple::stream::SinkError;
-use sophia_term::iri::Iri;
+use sophia_term::iri::{Iri, Resolve};
 use sophia_term::BoxTerm;
 use std::collections::HashSet;
 use std::fs;
@@ -15,6 +15,7 @@ use std::path::{Path, PathBuf};
 
 pub struct Manifest {
     base: PathBuf,
+    iri: Iri<Box<str>>,
     json: JsonValue,
 }
 
@@ -27,11 +28,16 @@ impl Manifest {
         let data = fs::read(path).expect("manifest could not be read");
         let data = String::from_utf8_lossy(&data);
         let json = json::parse(&data).expect("manifest could not be parsed");
-        Self { base, json }
+        let iri = Iri::new_suffixed(
+            json["baseIri"].as_str().expect("no baseIri"),
+            json["@context"][1]["@base"].as_str().expect("no @base"),
+        )
+        .expect("could not resolve manifest IRI");
+        Self { base, json, iri }
     }
 
-    pub fn base_iri(&self) -> &str {
-        self.json["baseIri"].as_str().unwrap()
+    pub fn iri(&self) -> &Iri<Box<str>> {
+        &self.iri
     }
 
     pub fn tests<'s>(&'s self) -> impl Iterator<Item = Test<'s>> + 's {
@@ -69,8 +75,13 @@ impl<'a> Test<'a> {
         self.json["@id"].as_str().unwrap()
     }
 
-    pub fn iri(&self) -> Iri<&str> {
-        Iri::new_suffixed(self.manifest.base_iri(), self.id()).unwrap()
+    pub fn iri(&self) -> Iri<Box<str>> {
+        let test_iri = Iri::<&str>::new(self.id()).expect("test has invalid IRI");
+        let mut buffer = String::new();
+        self.manifest
+            .iri()
+            .parse_components(&mut buffer)
+            .resolve(&test_iri)
     }
 
     pub fn positive(&self) -> bool {
