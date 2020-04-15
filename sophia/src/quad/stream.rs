@@ -19,7 +19,7 @@ use std::error::Error;
 use crate::dataset::*;
 use crate::quad::streaming_mode::*;
 use crate::quad::*;
-use crate::triple::stream::{SinkError, SourceError, StreamError, StreamResult};
+pub use crate::triple::stream::{SinkError, SourceError, StreamError, StreamResult};
 
 mod _filter;
 pub use _filter::*;
@@ -92,19 +92,6 @@ pub trait QuadSource {
         while self.for_some_quad(&mut f)? {}
         Ok(())
     }
-    /// Insert all quads from this source into the given [dataset](../../dataset/trait.MutableDataset.html).
-    ///
-    /// Stop on the first error (in the source or in the dataset).
-    #[inline]
-    fn in_dataset<D: MutableDataset>(
-        self,
-        dataset: &mut D,
-    ) -> StreamResult<usize, Self::Error, <D as MutableDataset>::MutationError>
-    where
-        Self: Sized,
-    {
-        dataset.insert_all(self)
-    }
     /// Creates a quad source which uses a closure to determine if a quad should be yielded.
     #[inline]
     fn filter_quads<F>(self, filter: F) -> FilterSource<Self, F>
@@ -138,7 +125,6 @@ pub trait QuadSource {
     {
         MapSource { source: self, map }
     }
-
     /// Returns the bounds on the remaining length of the quad source.
     ///
     /// This method has the same contract as [`Iterator::size_hint`].
@@ -146,6 +132,27 @@ pub trait QuadSource {
     /// [`Iterator::size_hint`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.size_hint
     fn size_hint_quads(&self) -> (usize, Option<usize>) {
         (0, None)
+    }
+    /// Collect these quads into a new dataset.
+    fn collect_quads<D>(self) -> StreamResult<D, Self::Error, <D as Dataset>::Error>
+    where
+        Self: Sized,
+        D: CollectibleDataset<Self>,
+    {
+        D::from_quad_source(self)
+    }
+    /// Insert all quads from this source into the given [dataset](../../dataset/trait.MutableDataset.html).
+    ///
+    /// Stop on the first error (in the source or in the dataset).
+    #[inline]
+    fn add_to_dataset<D: MutableDataset>(
+        self,
+        dataset: &mut D,
+    ) -> StreamResult<usize, Self::Error, <D as MutableDataset>::MutationError>
+    where
+        Self: Sized,
+    {
+        dataset.insert_all(self)
     }
 }
 

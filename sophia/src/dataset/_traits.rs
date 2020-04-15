@@ -565,6 +565,15 @@ pub trait Dataset {
     }
 }
 
+/// A dataset that can be constructed from a
+/// [`QuadSource`](../quad/stream/trait.QuadSource.html)
+pub trait CollectibleDataset<QS>: Dataset + Sized
+where
+    QS: QuadSource,
+{
+    fn from_quad_source(quad: QS) -> StreamResult<Self, QS::Error, Self::Error>;
+}
+
 /// Type alias for results produced by a mutable dataset.
 pub type MDResult<D, T> = std::result::Result<T, <D as MutableDataset>::MutationError>;
 

@@ -3,12 +3,12 @@
 
 use std::collections::HashSet;
 use std::convert::Infallible;
-use std::hash::Hash;
+use std::hash::{BuildHasher, Hash};
 
 use resiter::oks::*;
 
 use super::*;
-use crate::quad::stream::AsQuadSource;
+use crate::quad::stream::{AsQuadSource, QuadSource, StreamError, StreamResult};
 use crate::quad::streaming_mode::*;
 use crate::quad::*;
 use sophia_term::*;
@@ -39,7 +39,31 @@ where
     }
 }
 
-impl MutableDataset for Vec<([BoxTerm; 3], Option<BoxTerm>)> {
+impl<QS, TD> CollectibleDataset<QS> for Vec<([Term<TD>; 3], Option<Term<TD>>)>
+where
+    QS: QuadSource,
+    TD: TermData + 'static,
+    TD: for<'x> From<&'x str>,
+{
+    fn from_quad_source(quads: QS) -> StreamResult<Self, QS::Error, Infallible> {
+        quads
+            .map_quads(|q| {
+                (
+                    [q.s().clone_into(), q.p().clone_into(), q.o().clone_into()],
+                    q.g().map(Term::clone_into),
+                )
+            })
+            .into_iter()
+            .collect::<Result<Self, QS::Error>>()
+            .map_err(StreamError::SourceError)
+    }
+}
+
+impl<TD> MutableDataset for Vec<([Term<TD>; 3], Option<Term<TD>>)>
+where
+    TD: TermData + 'static,
+    TD: for<'x> From<&'x str>,
+{
     type MutationError = Infallible;
 
     fn insert<T, U, V, W>(
@@ -88,7 +112,7 @@ impl MutableDataset for Vec<([BoxTerm; 3], Option<BoxTerm>)> {
     }
 }
 
-impl<Q, S: ::std::hash::BuildHasher> Dataset for HashSet<Q, S>
+impl<Q, S: BuildHasher> Dataset for HashSet<Q, S>
 where
     Q: Eq + Hash + Quad,
 {
@@ -101,7 +125,33 @@ where
     }
 }
 
-impl<S: ::std::hash::BuildHasher> MutableDataset for HashSet<([BoxTerm; 3], Option<BoxTerm>), S> {
+impl<QS, TD, S> CollectibleDataset<QS> for HashSet<([Term<TD>; 3], Option<Term<TD>>), S>
+where
+    QS: QuadSource,
+    TD: TermData + 'static,
+    TD: for<'x> From<&'x str>,
+    S: BuildHasher + Default,
+{
+    fn from_quad_source(quads: QS) -> StreamResult<Self, QS::Error, Infallible> {
+        quads
+            .map_quads(|q| {
+                (
+                    [q.s().clone_into(), q.p().clone_into(), q.o().clone_into()],
+                    q.g().map(Term::clone_into),
+                )
+            })
+            .into_iter()
+            .collect::<Result<Self, QS::Error>>()
+            .map_err(StreamError::SourceError)
+    }
+}
+
+impl<TD, S> MutableDataset for HashSet<([Term<TD>; 3], Option<Term<TD>>), S>
+where
+    TD: TermData + 'static,
+    TD: for<'x> From<&'x str>,
+    S: BuildHasher,
+{
     type MutationError = Infallible;
 
     fn insert<T, U, V, W>(
@@ -144,7 +194,7 @@ impl<S: ::std::hash::BuildHasher> MutableDataset for HashSet<([BoxTerm; 3], Opti
     }
 }
 
-impl<T, S: ::std::hash::BuildHasher> SetDataset for HashSet<T, S> where T: Eq + Hash + Quad {}
+impl<T, S: BuildHasher> SetDataset for HashSet<T, S> where T: Eq + Hash + Quad {}
 
 #[cfg(test)]
 mod test {

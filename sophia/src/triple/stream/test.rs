@@ -161,7 +161,7 @@ fn filter_map_triples_to_quads() {
                 None
             }
         })
-        .in_dataset(&mut d)
+        .add_to_dataset(&mut d)
         .unwrap();
     let g = &g[2..];
     assert_eq!(g.len(), d.len());
@@ -225,7 +225,7 @@ fn map_triples_to_quads() {
                 t.s().clone_into(),
             ]
         })
-        .in_dataset(&mut d)
+        .add_to_dataset(&mut d)
         .unwrap();
     assert_eq!(g.len(), d.len());
     for i in 0..g.len() {

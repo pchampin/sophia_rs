@@ -91,10 +91,10 @@ fn for_each_quads() {
 }
 
 #[test]
-fn in_dataset() {
+fn add_to_dataset() {
     let d = make_dataset();
     let mut e: Vec<([BoxTerm; 3], Option<BoxTerm>)> = vec![];
-    d.quads().in_dataset(&mut e).unwrap();
+    d.quads().add_to_dataset(&mut e).unwrap();
     assert_eq!(d.len(), e.len());
     for i in 0..d.len() {
         assert_eq!(d[i].s(), e[i].s());
