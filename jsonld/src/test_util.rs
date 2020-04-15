@@ -82,6 +82,7 @@ impl<'a> Test<'a> {
             .iri()
             .parse_components(&mut buffer)
             .resolve(&test_iri)
+            .map_into()
     }
 
     pub fn positive(&self) -> bool {
