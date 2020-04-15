@@ -186,12 +186,12 @@ where
     }
 }
 
-impl<'td, 'base, TD> Resolve<&'td Namespace<TD>, Namespace<MownStr<'td>>> for IriParsed<'base>
+impl<'a, 'b, TD> Resolve<&'a Namespace<TD>, Namespace<MownStr<'a>>> for IriParsed<'b>
 where
-    TD: 'td + TermData,
+    TD: TermData,
 {
     /// Resolve the IRI of the given `Namespace`.
-    fn resolve(&self, other: &'td Namespace<TD>) -> Namespace<MownStr<'td>> {
+    fn resolve(&self, other: &'a Namespace<TD>) -> Namespace<MownStr<'a>> {
         let iri = other.0.as_ref();
         let resolved: MownStr = self.resolve(iri).expect("Is valid as from Namespace");
         Namespace(resolved)
@@ -200,15 +200,12 @@ where
 
 impl<'a, 'b, TD> Resolve<&'a Literal<TD>, Literal<MownStr<'a>>> for IriParsed<'b>
 where
-    TD: TermData + 'a,
+    TD: TermData,
 {
     /// Resolve the data type's IRI if it is relative.
     ///
-    /// # Exception
-    ///
-    /// This only changes on `Typed` literals.
-    /// Language-tagged literals are absolute by construction.
-    /// Therefore, those are not affected.
+    /// Note that this only affects datatyped literals;
+    /// language-tagged literals are absolute by construction.
     ///
     /// # Performance
     ///
@@ -217,8 +214,6 @@ where
         if other.is_absolute() {
             other.clone_into()
         } else {
-            // other is necessarily a datatype literal
-            // (because language tagged literals are always absolute)
             Literal::new_dt(other.txt().as_ref(), self.resolve(other.dt()))
         }
     }
