@@ -155,6 +155,23 @@ impl<'a> Resolve<&'a IriParsed<'a>, IriParsed<'a>> for IriParsed<'a> {
     }
 }
 
+impl<'a, 'b> Resolve<Iri<&'a str>, Iri<MownStr<'a>>> for IriParsed<'b> {
+    /// Resolve the given IRI.
+    ///
+    /// # Performance
+    ///
+    /// May allocate an intermediate IRI if `other` is suffixed.
+    fn resolve(&self, other: Iri<&'a str>) -> Iri<MownStr<'a>> {
+        if other.absolute {
+            return other.map_into();
+        }
+        let mut buffer = String::new();
+        let parsed = other.parse_components(&mut buffer);
+        let joined = self.join(&parsed);
+        Iri::new_unchecked(joined.to_string(), joined.is_absolute())
+    }
+}
+
 impl<'a, 'b, TD> Resolve<&'a Iri<TD>, Iri<MownStr<'a>>> for IriParsed<'b>
 where
     TD: TermData,
@@ -165,13 +182,7 @@ where
     ///
     /// May allocate an intermediate IRI if `other` is suffixed.
     fn resolve(&self, other: &'a Iri<TD>) -> Iri<MownStr<'a>> {
-        if other.absolute {
-            return other.clone_into();
-        }
-        let mut buffer = String::new();
-        let parsed = other.parse_components(&mut buffer);
-        let joined = self.join(&parsed);
-        Iri::new_unchecked(joined.to_string(), joined.is_absolute())
+        self.resolve(other.as_ref_str())
     }
 }
 
@@ -206,13 +217,9 @@ where
         if other.is_absolute() {
             other.clone_into()
         } else {
-            let dt = Iri::<MownStr>::new_unchecked(
-                self.resolve(other.dt().value().as_ref())
-                    .unwrap()
-                    .to_string(),
-                self.is_absolute(),
-            );
-            Literal::new_dt(other.txt().as_ref(), dt)
+            // other is necessarily a datatype literal
+            // (because language tagged literals are always absolute)
+            Literal::new_dt(other.txt().as_ref(), self.resolve(other.dt()))
         }
     }
 }
