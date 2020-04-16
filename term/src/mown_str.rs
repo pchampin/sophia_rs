@@ -197,6 +197,13 @@ impl<'a> MownStr<'a> {
             Own(b) => T::from(b),
         }
     }
+    /// Makes a new MownStr that owns a copy if this one
+    pub fn as_own<'b>(&self) -> MownStr<'b> {
+        match self {
+            Ref(r) => Box::<str>::from(*r).into(),
+            Own(b) => b.clone().into(),
+        }
+    }
 }
 
 #[cfg(test)]

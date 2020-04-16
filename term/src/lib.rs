@@ -71,6 +71,7 @@ use self::mown_str::MownStr;
 mod _display;
 mod _error;
 mod _graph_name_matcher; // is 'pub use'd by module 'matcher'
+mod _trait;
 pub use self::_error::*;
 
 /// Generic type for RDF terms.
