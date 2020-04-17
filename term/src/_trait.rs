@@ -1,14 +1,52 @@
 //! Experimenting with a `Term` trait#[derive(Eq, PartialEq)]
-
-
 use crate::mown_str::MownStr;
 
-/// A trait for types that can be used as terms
-pub trait Term: std::fmt::Debug {
+pub mod simple;
+use simple::SimpleTerm;
+
+/// A trait for types that can be used as terms in RDF graphs and datasets
+///
+/// The returned MownStr should borrow existing data as much as possible;
+/// when no such data exists, MownStr still can own data produced on demand.
+///
+/// As a consequence, all methods from `Term` returning `MownStr`
+/// should in general be assumed to be expensive.
+/// An exception to this rule is the `SimpleTerm` type,
+/// and will always return *borrowing* `MownStr`.
+///
+/// For this reason, this trait provides a `as_simple` method,
+/// returning a `SimpleTerm`
+/// constructed once and for all from return values of other methods
+/// (a kind of "cache" of the data from this term).
+///
+/// This also allows for any two terms to be comparable,
+/// provided that one of them is converted to a `SimpleTerm`.
+pub trait Term: std::fmt::Debug + for <'x> PartialEq<SimpleTerm<'x>> {
+    /// The kind of term (IRI, blank node, literal or variable)
     fn kind(&self) -> TermKind;
+    /// The value of that term
+    ///
+    /// * the IRI itself for IRIs
+    /// * the name/identifier for blank nodes or variable
+    /// * the lexical value for literals
     fn value(&self) -> MownStr;
+    /// If this term is a literal, return its datatype IRI
     fn datatype(&self) -> Option<MownStr>;
+    /// If this term is a language-tagged literal, return its language tag
     fn language(&self) -> Option<MownStr>;
+    /// cheap conversion to SimpleTerm
+    fn as_simple(&self) -> SimpleTerm {
+        match self.kind() {
+            TermKind::Iri => SimpleTerm::new_iri_unchecked(self.value()),
+            TermKind::Literal => match self.language() {
+                Some(tag) => SimpleTerm::new_literal_lang(self.value(), tag),
+                None => SimpleTerm::new_literal_dt(self.value(), self.datatype().unwrap()),
+            }
+            TermKind::BNode => SimpleTerm::new_bnode_unchecked(self.value()),
+            TermKind::Variable => SimpleTerm::new_variable_unchecked(self.value()),
+        }
+    }
+    /// All terms are absolute, except relative IRIs, and literals with a relative datatype IRI.
     fn absolute(&self) -> bool {
         todo!()
         // provide default impl here,
@@ -23,19 +61,6 @@ pub enum TermKind {
     Literal,
     BNode,
     Variable,
-}
-
-/// A function that can compare any two terms
-///
-/// If you want to avoid monomorphization, use term_eq_dyn instead
-pub fn term_eq<T1: Term + ?Sized, T2: Term + ?Sized>(t1: &T1, t2: &T2) -> bool {
-    t1.kind() == t2.kind() && t1.value() == t2.value() && (t1.kind() != TermKind::Literal || t1.language() == t2.language() && t1.datatype() == t2.datatype())
-}
-/// A function that can compare any two terms
-///
-/// If you want to avoid trait objects, use term_eq instead
-pub fn term_eq_dyn(t1: &dyn Term, t2: &dyn Term) -> bool {
-    term_eq(t1, t2)
 }
 
 /// A trait for types that can be created from any term
@@ -76,6 +101,13 @@ impl TryFromTerm for i32 {
         }
     }
 }
+
+impl<'a> PartialEq<SimpleTerm<'a>> for i32 {
+    fn eq(&self, other: &SimpleTerm<'a>) -> bool {
+        other.kind() == TermKind::Literal && other.datatype() == Some(XSD_INTEGER) && other.value().parse::<i32>().map(|v| v==*self).unwrap_or(false)
+    }
+}
+
 const XSD_INTEGER: MownStr = MownStr::Ref("http://www.w3.org/2001/XMLSchema#integer");
 
 //
@@ -96,13 +128,11 @@ impl<'a> Term for SuffixedIri<'a> {
     fn language(&self) -> Option<MownStr> { None }
 }
 
-//
-
-/// Simple type implemeting 
-pub enum MyTerm {
-    Iri(Box<str>),
-    BNode(Box<str>),
-    Literal(Box<str>, Box<str>),
-    Variable(Box<str>),
+impl<'a, 'b> PartialEq<SimpleTerm<'a>> for SuffixedIri<'b> {
+    fn eq(&self, other: &SimpleTerm<'a>) -> bool {
+        other.kind() == TermKind::Iri && {
+            let iri = other.value();
+            iri.starts_with(self.ns) && &iri[self.ns.len()..] == self.suffix.as_ref()
+        }
+    }
 }
-// TODO impl Term
