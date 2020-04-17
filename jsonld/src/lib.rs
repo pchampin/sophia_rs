@@ -1,11 +1,11 @@
 //! Serializer and parser for the [JSON-LD] concrete syntax of RDF.
 //!
-//! NB: this implementation only supports the [flattened document form] of [JSON-LD].
+//! NB: this implementation only supports the [expanded document form] of [JSON-LD].
 //!
 //! NB2: currently, only the serializer part is implemented.
 //!
 //! [JSON-LD]: https://www.w3.org/TR/json-ld11/
-//! [flattened document form]: https://www.w3.org/TR/json-ld11/#flattened-document-form
+//! [expanded document form]: https://www.w3.org/TR/json-ld11/#expanded-document-form
 
 pub mod config;
 pub use config::*;
