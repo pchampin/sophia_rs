@@ -67,6 +67,7 @@ pub mod literal;
 use self::literal::{AsLiteral, Literal};
 pub mod mown_str;
 use self::mown_str::MownStr;
+pub mod traits;
 
 mod _display;
 mod _error;
