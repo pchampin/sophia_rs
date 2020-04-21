@@ -181,11 +181,10 @@ pub trait Graph {
         p: &'s dyn traits::Term,
         o: &'s dyn traits::Term,
     ) -> GTripleSource<'s, Self> {
-        Box::new(self.triples().filter_ok(move |tri| {
-            tri.s() as &dyn traits::Term == s // explicit annotation needed to compare trait objects
-                && tri.p() as &dyn traits::Term == p
-                && tri.o() as &dyn traits::Term == o
-        }))
+        Box::new(
+            self.triples()
+                .filter_ok(move |tri| s == tri.s() && p == tri.p() && o == tri.o()),
+        )
     }
 
     /// Return `true` if this graph contains the given triple.
