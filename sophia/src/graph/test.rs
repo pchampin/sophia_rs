@@ -466,6 +466,31 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
+            fn test_poc_triples_with_spo() -> MGResult<$mutable_graph_impl, ()> {
+                let mut g = $mutable_graph_factory();
+                populate(&mut g)?;
+
+                let triples = g.poc_triples_with_spo(&*C2, &rdf::type_, &rdfs::Resource);
+                let hint = triples.size_hint();
+                for iter in vec![
+                    triples,
+                    g.triples_matching(&*C2, &rdf::type_, &rdfs::Resource),
+                ] {
+                    let v: Vec<_> = iter.map(as_box_t).collect();
+                    assert_eq!(v.len(), 1);
+                    assert_consistent_hint(v.len(), hint);
+                    assert!(Graph::contains(&v, &C2, &rdf::type_, &rdfs::Resource)?);
+                    assert!(!Graph::contains(
+                        &v,
+                        &C1,
+                        &rdfs::subClassOf,
+                        &rdfs::Resource
+                    )?);
+                }
+                Ok(())
+            }
+
+            #[test]
             fn test_contains() -> MGResult<$mutable_graph_impl, ()> {
                 let mut g = $mutable_graph_factory();
                 populate(&mut g)?;
