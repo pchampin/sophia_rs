@@ -173,6 +173,20 @@ pub trait Graph {
     {
         Box::new(self.triples_with_sp(s, p).filter_ok(move |t| t.o() == o))
     }
+    /// Same as `Graph::triples_with_spo()` but with trait objects as a
+    /// Proof of Concept.
+    fn poc_triples_with_spo<'s>(
+        &'s self,
+        s: &'s dyn traits::Term,
+        p: &'s dyn traits::Term,
+        o: &'s dyn traits::Term,
+    ) -> GTripleSource<'s, Self> {
+        Box::new(self.triples().filter_ok(move |tri| {
+            tri.s() as &dyn traits::Term == s // explicit annotation needed to compare trait objects
+                && tri.p() as &dyn traits::Term == p
+                && tri.o() as &dyn traits::Term == o
+        }))
+    }
 
     /// Return `true` if this graph contains the given triple.
     fn contains<T, U, V>(&self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> GResult<Self, bool>

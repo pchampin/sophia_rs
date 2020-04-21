@@ -5,8 +5,8 @@
 use crate::iri::Normalization;
 use crate::mown_str::MownStr;
 use crate::ns::{rdf, xsd};
-use crate::{Iri, Result, Term, TermData, TermError};
 use crate::traits;
+use crate::{Iri, Result, Term, TermData, TermError};
 use language_tag::LangTag;
 use std::convert::TryFrom;
 use std::fmt;
@@ -401,7 +401,7 @@ impl<TD: TermData> Hash for Literal<TD> {
     }
 }
 
-impl<TD> traits::Literal for Literal<TD> 
+impl<TD> traits::Literal for Literal<TD>
 where
     TD: TermData,
 {
@@ -424,7 +424,7 @@ where
 }
 
 impl<TD> traits::Term for Literal<TD>
-where 
+where
     TD: TermData,
 {
     fn as_literal(&self) -> Option<&dyn traits::Literal> {

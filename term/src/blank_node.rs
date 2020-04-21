@@ -287,7 +287,7 @@ where
     }
 }
 
-impl<TD> traits::Term for BlankNode<TD> 
+impl<TD> traits::Term for BlankNode<TD>
 where
     TD: TermData,
 {

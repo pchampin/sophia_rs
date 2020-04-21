@@ -556,12 +556,16 @@ where
     fn as_literal(&self) -> Option<&dyn traits::Literal> {
         if let Term::Literal(lit) = self {
             Some(lit)
-        } else { None }
+        } else {
+            None
+        }
     }
     fn as_blank_node(&self) -> Option<&dyn traits::BlankNode> {
         if let Term::BNode(bn) = self {
             Some(bn)
-        } else { None }
+        } else {
+            None
+        }
     }
 }
 
