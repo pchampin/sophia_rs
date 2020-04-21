@@ -23,6 +23,7 @@ pub use self::_join::*;
 use super::{Result, Term, TermData, TermError};
 use crate::mown_str::MownStr;
 use crate::ns::Namespace;
+use crate::traits;
 use std::convert::TryFrom;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -659,6 +660,34 @@ where
                 expect: "IRI".to_owned(),
             }),
         }
+    }
+}
+
+impl<TD> traits::Iri for Iri<TD>
+where
+    TD: TermData,
+{
+    fn ns(&self) -> &str {
+        self.ns.as_ref()
+    }
+    fn suffix(&self) -> Option<&str> {
+        self.suffix.as_ref().map(AsRef::as_ref)
+    }
+    fn whole(&self) -> MownStr<'_> {
+        if let Some(_) = self.suffix {
+            self.value().into()
+        } else {
+            self.ns.as_ref().into()
+        }
+    }
+}
+
+impl<TD> traits::Term for Iri<TD>
+where
+    TD: TermData,
+{
+    fn as_iri(&self) -> Option<&dyn traits::Iri> {
+        Some(self as _)
     }
 }
 

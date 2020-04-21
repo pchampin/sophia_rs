@@ -6,6 +6,7 @@ use crate::iri::Normalization;
 use crate::mown_str::MownStr;
 use crate::ns::{rdf, xsd};
 use crate::{Iri, Result, Term, TermData, TermError};
+use crate::traits;
 use language_tag::LangTag;
 use std::convert::TryFrom;
 use std::fmt;
@@ -397,6 +398,37 @@ impl<TD: TermData> Hash for Literal<TD> {
             Lang(tag) => state.write(tag.as_ref().to_ascii_lowercase().as_bytes()),
             Dt(iri) => iri.hash(state),
         }
+    }
+}
+
+impl<TD> traits::Literal for Literal<TD> 
+where
+    TD: TermData,
+{
+    fn txt(&self) -> &str {
+        self.txt.as_ref()
+    }
+    fn dt(&self) -> &dyn traits::Iri {
+        match &self.kind {
+            Dt(dt) => dt,
+            Lang(_) => &rdf::iri::langString,
+        }
+    }
+    fn lang(&self) -> Option<&str> {
+        if let Lang(tag) = &self.kind {
+            Some(tag.as_ref())
+        } else {
+            None
+        }
+    }
+}
+
+impl<TD> traits::Term for Literal<TD>
+where 
+    TD: TermData,
+{
+    fn as_literal(&self) -> Option<&dyn traits::Literal> {
+        Some(self as _)
     }
 }
 

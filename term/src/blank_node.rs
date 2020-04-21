@@ -3,6 +3,7 @@
 
 use super::{Result, Term, TermData, TermError};
 use crate::mown_str::MownStr;
+use crate::traits;
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::convert::TryFrom;
@@ -274,6 +275,24 @@ where
                 expect: "blank node".to_owned(),
             }),
         }
+    }
+}
+
+impl<TD> traits::BlankNode for BlankNode<TD>
+where
+    TD: TermData,
+{
+    fn id(&self) -> &str {
+        self.as_str()
+    }
+}
+
+impl<TD> traits::Term for BlankNode<TD> 
+where
+    TD: TermData,
+{
+    fn as_blank_node(&self) -> Option<&dyn traits::BlankNode> {
+        Some(self as _)
     }
 }
 

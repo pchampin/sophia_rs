@@ -542,6 +542,29 @@ impl<'a> From<&'a str> for RefTerm<'a> {
     }
 }
 
+impl<TD> traits::Term for Term<TD>
+where
+    TD: TermData,
+{
+    fn as_iri(&self) -> Option<&dyn traits::Iri> {
+        if let Term::Iri(iri) = self {
+            Some(iri)
+        } else {
+            None
+        }
+    }
+    fn as_literal(&self) -> Option<&dyn traits::Literal> {
+        if let Term::Literal(lit) = self {
+            Some(lit)
+        } else { None }
+    }
+    fn as_blank_node(&self) -> Option<&dyn traits::BlankNode> {
+        if let Term::BNode(bn) = self {
+            Some(bn)
+        } else { None }
+    }
+}
+
 /// Check the equality of two graph names (`Option<&Term>`)
 /// using possibly different `TermData`.
 pub fn same_graph_name<T, U>(g1: Option<&Term<T>>, g2: Option<&Term<U>>) -> bool
