@@ -38,6 +38,7 @@
 //! use sophia::serializer::nt::NtSerializer;
 //! use sophia::triple::stream::TripleSource;
 //!
+//! # fn main() -> Result<(), CatchAll> {
 //! let example = r#"
 //!     @prefix : <http://example.org/>.
 //!     @prefix foaf: <http://xmlns.com/foaf/0.1/>.
@@ -50,16 +51,22 @@
 //! let mut graph = LightGraph::new();
 //! parser::turtle::parse_str(example).in_graph(&mut graph);
 //!
-//! let ex = Namespace::new("http://example.org/").unwrap();
-//! let foaf = Namespace::new("http://xmlns.com/foaf/0.1/").unwrap();
-//! let bob = ex.get("bob").unwrap();
-//! let knows = foaf.get("known").unwrap();
-//! let alice = ex.get("alice").unwrap();
-//! graph.insert(&bob, &knows, &alice).unwrap();
+//! let ex = Namespace::new("http://example.org/")?;
+//! let foaf = Namespace::new("http://xmlns.com/foaf/0.1/")?;
+//! graph.insert(
+//!     &ex.get("bob")?,
+//!     &foaf.get("knows")?,
+//!     &ex.get("alice")?,
+//! )?;
 //!
 //! let mut nt_stringifier = NtSerializer::new_stringifier();
-//! let example2 = nt_stringifier.serialize_graph(&mut graph).unwrap().as_str();
+//! let example2 = nt_stringifier.serialize_graph(&mut graph)?.as_str();
 //! println!("The resulting graph\n{}", example2);
+//! # Ok(())}
+//! #
+//! # #[derive(Debug)]
+//! # pub struct CatchAll();
+//! # impl<T: std::error::Error> From<T> for CatchAll { fn from(_: T) -> Self {CatchAll()}}
 //! ```
 
 pub mod dataset;
