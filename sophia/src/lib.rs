@@ -38,7 +38,6 @@
 //! use sophia::serializer::nt::NtSerializer;
 //! use sophia::triple::stream::TripleSource;
 //!
-//! # fn main() -> Result<(), CatchAll> {
 //! let example = r#"
 //!     @prefix : <http://example.org/>.
 //!     @prefix foaf: <http://xmlns.com/foaf/0.1/>.
@@ -62,11 +61,7 @@
 //! let mut nt_stringifier = NtSerializer::new_stringifier();
 //! let example2 = nt_stringifier.serialize_graph(&mut graph)?.as_str();
 //! println!("The resulting graph\n{}", example2);
-//! # Ok(())}
-//! #
-//! # #[derive(Debug)]
-//! # pub struct CatchAll();
-//! # impl<T: std::error::Error> From<T> for CatchAll { fn from(_: T) -> Self {CatchAll()}}
+//! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 
 pub mod dataset;
