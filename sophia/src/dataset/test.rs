@@ -23,98 +23,72 @@ lazy_static! {
     pub static ref I1B: StaticTerm = StaticTerm::new_iri_suffixed(NS, "I1B").unwrap();
     pub static ref I2A: StaticTerm = StaticTerm::new_iri_suffixed(NS, "I2A").unwrap();
     pub static ref I2B: StaticTerm = StaticTerm::new_iri_suffixed(NS, "I2B").unwrap();
+    //
     pub static ref DG: Option<&'static StaticTerm> = None;
     pub static ref GN1: Option<&'static StaticTerm> = Some(&G1);
     pub static ref GN2: Option<&'static StaticTerm> = Some(&G2);
+    //
+    pub static ref B1: StaticTerm = StaticTerm::new_bnode("1").unwrap();
+    pub static ref B2: StaticTerm = StaticTerm::new_bnode("2").unwrap();
+    pub static ref L1: StaticTerm = StaticTerm::from("lit1");
+    pub static ref L2: StaticTerm = StaticTerm::from("lit2");
+    pub static ref L2E: StaticTerm = StaticTerm::new_literal_lang("lit2", "en").unwrap();
+    pub static ref V1: StaticTerm = StaticTerm::new_variable("v1").unwrap();
+    pub static ref V2: StaticTerm = StaticTerm::new_variable("v2").unwrap();
+    pub static ref V3: StaticTerm = StaticTerm::new_variable("v3").unwrap();
 }
 
-pub fn populate<D: MutableDataset>(d: &mut D) -> MDResult<D, ()> {
-    d.insert(&C1, &rdf::type_, &rdfs::Class, *DG)?;
-    d.insert(&C1, &rdf::type_, &rdfs::Class, *GN1)?;
-
-    d.insert(&C2, &rdf::type_, &rdfs::Class, *DG)?;
-    d.insert(&C2, &rdfs::subClassOf, &C1, *GN1)?;
-
-    d.insert(&P1, &rdf::type_, &rdf::Property, *DG)?;
-    d.insert(&P1, &rdfs::domain, &C1, *GN1)?;
-    d.insert(&P1, &rdfs::range, &C2, *GN1)?;
-
-    d.insert(&P2, &rdf::type_, &rdf::Property, *DG)?;
-    d.insert(&P2, &rdfs::domain, &C2, *GN1)?;
-    d.insert(&P2, &rdfs::range, &C2, *GN1)?;
-
-    d.insert(&I1A, &rdf::type_, &C1, *GN2)?;
-    d.insert(&I1B, &rdf::type_, &C1, *GN2)?;
-    d.insert(&I2A, &rdf::type_, &C2, *GN2)?;
-    d.insert(&I2B, &rdf::type_, &C2, *GN2)?;
-    d.insert(&I1A, &P1, &I2A, *GN2)?;
-    d.insert(&I1B, &P1, &I2B, *GN2)?;
-    d.insert(&I2A, &P2, &I2B, *GN2)?;
-
-    assert_consistent_hint(17, d.quads().size_hint());
-    Ok(())
+pub fn no_quad() -> impl QuadSource {
+    let v = Vec::<([StaticTerm; 3], Option<StaticTerm>)>::new();
+    v.into_iter().as_quad_source()
 }
 
-pub fn populate_strict<D: MutableDataset>(d: &mut D) -> MDResult<D, ()> {
-    d.insert(&rdf::type_, &rdf::type_, &rdf::Property, Some(&rdf::type_))?;
-    d.insert(
-        &StaticTerm::new_bnode("1").unwrap(),
-        &rdf::type_,
-        &StaticTerm::from("lit1"),
-        Some(StaticTerm::new_bnode("2").unwrap()).as_ref(),
-    )?;
-    d.insert(
-        &StaticTerm::new_bnode("2").unwrap(),
-        &rdf::type_,
-        &StaticTerm::new_bnode("1").unwrap(),
-        *DG,
-    )?;
-    d.insert(
-        &StaticTerm::new_bnode("2").unwrap(),
-        &rdf::type_,
-        &StaticTerm::from("lit2"),
-        *DG,
-    )?;
-    d.insert(
-        &StaticTerm::new_bnode("2").unwrap(),
-        &rdf::type_,
-        &StaticTerm::new_literal_lang("lit2", "en").unwrap(),
-        *DG,
-    )?;
+pub fn some_quads() -> impl QuadSource {
+    let v = vec![
+        ([*C1, rdf::type_, rdfs::Class], *DG),
+        ([*C1, rdf::type_, rdfs::Class], *GN1),
+        ([*C2, rdf::type_, rdfs::Class], *DG),
+        ([*C2, rdfs::subClassOf, *C1], *GN1),
+        ([*P1, rdf::type_, rdf::Property], *DG),
+        ([*P1, rdfs::domain, *C1], *GN1),
+        ([*P1, rdfs::range, *C2], *GN1),
+        ([*P2, rdf::type_, rdf::Property], *DG),
+        ([*P2, rdfs::domain, *C2], *GN1),
+        ([*P2, rdfs::range, *C2], *GN1),
+        ([*I1A, rdf::type_, *C1], *GN2),
+        ([*I1B, rdf::type_, *C1], *GN2),
+        ([*I2A, rdf::type_, *C2], *GN2),
+        ([*I2B, rdf::type_, *C2], *GN2),
+        ([*I1A, *P1, *I2A], *GN2),
+        ([*I1B, *P1, *I2B], *GN2),
+        ([*I2A, *P2, *I2B], *GN2),
+    ];
 
-    assert_consistent_hint(5, d.quads().size_hint());
-    Ok(())
+    v.into_iter().as_quad_source()
 }
 
-pub fn populate_generalized<D: MutableDataset>(d: &mut D) -> MDResult<D, ()> {
-    d.insert(&rdf::type_, &rdf::type_, &rdf::Property, Some(&rdf::type_))?;
-    d.insert(
-        &StaticTerm::new_bnode("1").unwrap(),
-        &StaticTerm::new_bnode("2").unwrap(),
-        &StaticTerm::new_bnode("1").unwrap(),
-        Some(StaticTerm::new_bnode("2").unwrap()).as_ref(),
-    )?;
-    d.insert(
-        &StaticTerm::from("lit2"),
-        &StaticTerm::from("lit1"),
-        &StaticTerm::from("lit1"),
-        Some(StaticTerm::from("lit2")).as_ref(),
-    )?;
-    d.insert(
-        &StaticTerm::new_variable("v1").unwrap(),
-        &StaticTerm::new_variable("v2").unwrap(),
-        &StaticTerm::new_variable("v3").unwrap(),
-        Some(StaticTerm::new_variable("v3").unwrap()).as_ref(),
-    )?;
-    d.insert(
-        &StaticTerm::new_bnode("2").unwrap(),
-        &StaticTerm::new_variable("v1").unwrap(),
-        &StaticTerm::new_literal_lang("lit2", "en").unwrap(),
-        *DG,
-    )?;
+pub fn strict_node_types_quads() -> impl QuadSource {
+    vec![
+        ([rdf::type_, rdf::type_, rdf::Property], Some(&rdf::type_)),
+        ([*B1, rdf::type_, *L1], Some(&B2)),
+        ([*B2, rdf::type_, *B1], None),
+        ([*B2, rdf::type_, *L2], None),
+        ([*B2, rdf::type_, *L2E], None),
+    ]
+    .into_iter()
+    .as_quad_source()
+}
 
-    assert_consistent_hint(5, d.quads().size_hint());
-    Ok(())
+pub fn generalized_node_types_quads() -> impl QuadSource {
+    vec![
+        ([rdf::type_, rdf::type_, rdf::Property], Some(&rdf::type_)),
+        ([*B1, *B2, *B1], Some(&B2)),
+        ([*L2, *L1, *L1], Some(&L2)),
+        ([*V1, *V2, *V3], Some(&V3)),
+        ([*B2, *V1, *L2E], None),
+    ]
+    .into_iter()
+    .as_quad_source()
 }
 
 pub fn as_box_q<Q: Quad, E>(quad: Result<Q, E>) -> ([BoxTerm; 3], Option<BoxTerm>)
@@ -164,50 +138,52 @@ pub fn make_quad_source() -> impl QuadSource {
     .as_quad_source()
 }
 
-/// Generates a test suite for [`Dataset`] and [`MutableDataset`] implementations.
+/// Generates a test suite for implementations of
+/// [`Dataset`], [`CollectibleDataset`] and [`MutableDataset`].
 ///
 /// This macro is only available when the feature `test_macros` is enabled.
 ///
 /// It accepts the following parameters:
 /// * `module_name`: the name of the module to generate (defaults to `test`);
-/// * `mutable_dataset_impl`: the type to test, implementing [`Dataset`] and [`MutableDataset`];
-/// * `is_set`: a boolean, indicating if `mutable_dataset_impl` implements [`SetDataset`]
+/// * `dataset_impl`: the type to test, implementing [`Dataset`], [`CollectibleDataset`] and [`MutableDataset`];
+/// * `is_set`: a boolean, indicating if `dataset_impl` implements [`SetDataset`]
 ///   (defaults to `true`);
-/// * `mutable_dataset_factory`: a function used to create an empy instance of `mutable_dataset_impl`
-///   (defaults to `mutable_dataset_impl::new`);
-/// * `is_gen`: a boolean, indicating if `mutable_dataset_impl` supports the [generalized model]
+/// * `dataset_collector`: a function used to create an empy instance of `dataset_impl`
+///   (defaults to `dataset_impl::from_quad_source`);
+/// * `is_gen`: a boolean, indicating if `dataset_impl` supports the [generalized model]
 ///   (defaults to `true`).
 ///
 /// [`Dataset`]: dataset/trait.Dataset.html
+/// [`CollectibleDataset`]: dataset/trait.CollectibleDataset.html
 /// [`MutableDataset`]: dataset/trait.MutableDataset.html
 /// [`SetDataset`]: dataset/trait.SetDataset.html
 /// [generalized model]: ./index.html
 #[macro_export]
 macro_rules! test_dataset_impl {
-    ($mutable_dataset_impl:ident) => {
-        test_dataset_impl!(test, $mutable_dataset_impl);
+    ($dataset_impl:ident) => {
+        test_dataset_impl!(test, $dataset_impl);
     };
-    ($module_name: ident, $mutable_dataset_impl: ident) => {
-        test_dataset_impl!($module_name, $mutable_dataset_impl, true);
+    ($module_name: ident, $dataset_impl: ident) => {
+        test_dataset_impl!($module_name, $dataset_impl, true);
     };
-    ($module_name: ident, $mutable_dataset_impl: ident, $is_set: expr) => {
+    ($module_name: ident, $dataset_impl: ident, $is_set: expr) => {
         test_dataset_impl!(
             $module_name,
-            $mutable_dataset_impl,
+            $dataset_impl,
             $is_set,
-            $mutable_dataset_impl::new
+            $dataset_impl::from_quad_source
         );
     };
-    ($module_name: ident, $mutable_dataset_impl: ident, $is_set: expr, $mutable_dataset_factory: path) => {
+    ($module_name: ident, $dataset_impl: ident, $is_set: expr, $dataset_collector: path) => {
         test_dataset_impl!(
             $module_name,
-            $mutable_dataset_impl,
+            $dataset_impl,
             $is_set,
-            $mutable_dataset_factory,
+            $dataset_collector,
             true
         );
     };
-    ($module_name: ident, $mutable_dataset_impl: ident, $is_set: expr, $mutable_dataset_factory: path, $is_gen: expr) => {
+    ($module_name: ident, $dataset_impl: ident, $is_set: expr, $dataset_collector: path, $is_gen: expr) => {
         #[cfg(test)]
         mod $module_name {
             use sophia_term::{matcher::ANY, *};
@@ -221,8 +197,8 @@ macro_rules! test_dataset_impl {
             // test MutableDataset + SetGraph
 
             #[test]
-            fn test_simple_mutations() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
+            fn test_simple_mutations() -> MDResult<$dataset_impl, ()> {
+                let mut d = $dataset_collector(no_quad()).unwrap();
                 assert_eq!(d.quads().count(), 0);
                 assert!(MutableDataset::insert(
                     &mut d,
@@ -260,9 +236,9 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_no_duplicate() -> MDResult<$mutable_dataset_impl, ()> {
+            fn test_no_duplicate() -> MDResult<$dataset_impl, ()> {
                 if $is_set {
-                    let mut d = $mutable_dataset_factory();
+                    let mut d = $dataset_collector(no_quad()).unwrap();
                     assert_eq!(d.quads().count(), 0);
                     assert!(MutableDataset::insert(
                         &mut d,
@@ -303,9 +279,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_different_graphs_do_not_count_as_duplicate(
-            ) -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
+            fn test_different_graphs_do_not_count_as_duplicate() -> MDResult<$dataset_impl, ()> {
+                let mut d = $dataset_collector(no_quad()).unwrap();
                 assert_eq!(d.quads().count(), 0);
                 assert!(MutableDataset::insert(
                     &mut d,
@@ -344,7 +319,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_x_all_mutations() {
-                let mut d = $mutable_dataset_factory();
+                let mut d = $dataset_collector(no_quad()).unwrap();
                 assert_eq!(d.quads().count(), 0);
                 assert_eq!(d.insert_all(make_quad_source()).unwrap(), 2);
                 assert_eq!(d.quads().count(), 2, "after insert_all");
@@ -359,9 +334,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_remove_matching() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_remove_matching() -> MDResult<$dataset_impl, ()> {
+                let mut d = $dataset_collector(some_quads()).unwrap();
 
                 let o_matcher = [C1.clone(), C2.clone()];
                 d.remove_matching(&ANY, &rdf::type_, &o_matcher[..], &ANY)?;
@@ -370,9 +344,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_retain_matching() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_retain_matching() -> MDResult<$dataset_impl, ()> {
+                let mut d = $dataset_collector(some_quads()).unwrap();
 
                 let o_matcher = [C1.clone(), C2.clone()];
                 d.retain_matching(&ANY, &rdf::type_, &o_matcher[..], &ANY)?;
@@ -384,9 +357,8 @@ macro_rules! test_dataset_impl {
             // Test Dataset
 
             #[test]
-            fn test_quads() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_quads() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads();
                 let hint = quads.size_hint();
@@ -402,9 +374,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_s() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_quads_with_s() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_s(&C2);
                 let hint = quads.size_hint();
@@ -432,9 +403,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_p() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_quads_with_p() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_p(&rdfs::subClassOf);
                 let hint = quads.size_hint();
@@ -456,9 +426,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_o() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_quads_with_o() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_o(&I2B);
                 let hint = quads.size_hint();
@@ -474,9 +443,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_g() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_quads_with_g() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_g(*GN1);
                 let hint = quads.size_hint();
@@ -492,9 +460,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_sp() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_quads_with_sp() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_sp(&C2, &rdf::type_);
                 let hint = quads.size_hint();
@@ -516,9 +483,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_so() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_quads_with_so() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_so(&C2, &C1);
                 let hint = quads.size_hint();
@@ -534,9 +500,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_po() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_quads_with_po() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_po(&rdf::type_, &rdfs::Class);
                 let hint = quads.size_hint();
@@ -567,9 +532,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_sg() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_quads_with_sg() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_sg(&C2, *GN1);
                 let hint = quads.size_hint();
@@ -585,9 +549,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_pg() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_quads_with_pg() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_pg(&rdf::type_, *GN1);
                 let hint = quads.size_hint();
@@ -603,9 +566,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_og() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_quads_with_og() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_og(&C1, *GN1);
                 let hint = quads.size_hint();
@@ -621,9 +583,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_spo() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_quads_with_spo() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_spo(&C1, &rdf::type_, &rdfs::Class);
                 let hint = quads.size_hint();
@@ -642,9 +603,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_spg() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_quads_with_spg() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_spg(&C1, &rdf::type_, *DG);
                 let hint = quads.size_hint();
@@ -666,9 +626,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_sog() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_quads_with_sog() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_sog(&C1, &rdfs::Class, *DG);
                 let hint = quads.size_hint();
@@ -690,9 +649,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_pog() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_quads_with_pog() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_pog(&rdf::type_, &rdfs::Class, *DG);
                 let hint = quads.size_hint();
@@ -717,9 +675,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_spog() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_quads_with_spog() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_spog(&C1, &rdf::type_, &rdfs::Class, *DG);
                 let hint = quads.size_hint();
@@ -744,18 +701,16 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_contains() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_contains() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
                 assert!(Dataset::contains(&d, &C2, &rdfs::subClassOf, &C1, *GN1)?);
                 assert!(!Dataset::contains(&d, &C1, &rdfs::subClassOf, &C2, *GN1)?);
                 Ok(())
             }
 
             #[test]
-            fn test_quads_matching() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_quads_matching() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
 
                 let p_matcher: [StaticTerm; 2] = [rdf::type_.clone(), rdfs::domain.clone()];
                 let o_matcher: [StaticTerm; 2] = [C1.clone(), C2.clone()];
@@ -781,9 +736,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_subjects() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_subjects() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
 
                 let subjects = d.subjects().unwrap();
                 assert_eq!(subjects.len(), 8);
@@ -802,9 +756,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_predicates() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_predicates() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
 
                 let predicates = d.predicates().unwrap();
                 assert_eq!(predicates.len(), 6);
@@ -821,9 +774,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_objects() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_objects() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
 
                 let objects = d.objects().unwrap();
                 assert_eq!(objects.len(), 6);
@@ -840,9 +792,8 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_graph_names() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                populate(&mut d)?;
+            fn test_graph_names() -> MDResult<$dataset_impl, ()> {
+                let d = $dataset_collector(some_quads()).unwrap();
 
                 let graph_names = d.graph_names().unwrap();
                 assert_eq!(graph_names.len(), 2);
@@ -855,13 +806,12 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_iris() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                if $is_gen {
-                    populate_generalized(&mut d)?;
+            fn test_iris() -> MDResult<$dataset_impl, ()> {
+                let d = if $is_gen {
+                    $dataset_collector(generalized_node_types_quads()).unwrap()
                 } else {
-                    populate_strict(&mut d)?;
-                }
+                    $dataset_collector(strict_node_types_quads()).unwrap()
+                };
 
                 let iris = d.iris().unwrap();
                 assert_eq!(iris.len(), 2);
@@ -874,13 +824,12 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_bnodes() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                if $is_gen {
-                    populate_generalized(&mut d)?;
+            fn test_bnodes() -> MDResult<$dataset_impl, ()> {
+                let d = if $is_gen {
+                    $dataset_collector(generalized_node_types_quads()).unwrap()
                 } else {
-                    populate_strict(&mut d)?;
-                }
+                    $dataset_collector(strict_node_types_quads()).unwrap()
+                };
 
                 let bnodes = d.bnodes().unwrap();
                 assert_eq!(bnodes.len(), 2);
@@ -893,13 +842,12 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_literals() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
-                if $is_gen {
-                    populate_generalized(&mut d)?;
+            fn test_literals() -> MDResult<$dataset_impl, ()> {
+                let d = if $is_gen {
+                    $dataset_collector(generalized_node_types_quads()).unwrap()
                 } else {
-                    populate_strict(&mut d)?;
-                }
+                    $dataset_collector(strict_node_types_quads()).unwrap()
+                };
 
                 let literals = d.literals().unwrap();
                 assert_eq!(literals.len(), 3);
@@ -913,10 +861,9 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_variables() -> MDResult<$mutable_dataset_impl, ()> {
-                let mut d = $mutable_dataset_factory();
+            fn test_variables() -> MDResult<$dataset_impl, ()> {
                 if $is_gen {
-                    populate_generalized(&mut d)?;
+                    let d = $dataset_collector(generalized_node_types_quads()).unwrap();
 
                     let variables = d.variables().unwrap();
                     assert_eq!(variables.len(), 3);
@@ -927,7 +874,7 @@ macro_rules! test_dataset_impl {
                     assert!(rvariables.contains("v2"));
                     assert!(rvariables.contains("v3"));
                 } else {
-                    populate_strict(&mut d)?;
+                    let d = $dataset_collector(strict_node_types_quads()).unwrap();
 
                     let variables = d.variables().unwrap();
                     assert_eq!(variables.len(), 0);

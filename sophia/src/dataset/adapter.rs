@@ -187,6 +187,7 @@ pub(crate) mod test {
     use crate::dataset::MDResult;
     use crate::dataset::*;
     use crate::ns::rdfs;
+    use crate::quad::stream::QuadSource;
     use crate::triple::stream::TripleSource;
     use sophia_term::BoxTerm;
     use std::collections::HashSet;
@@ -226,8 +227,7 @@ pub(crate) mod test {
 
     #[test]
     fn test_graph_default() -> MDResult<MyDataset, ()> {
-        let mut d = MyDataset::new();
-        populate(&mut d)?;
+        let d: MyDataset = some_quads().collect_quads().unwrap();
         assert_eq!(d.graph(*DG).triples().count(), 4);
         assert_eq!(d.graph(*GN1).triples().count(), 6);
         assert_eq!(d.graph(*GN2).triples().count(), 7);
