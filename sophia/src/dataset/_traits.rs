@@ -640,6 +640,16 @@ pub trait MutableDataset: Dataset {
 
     /// Insert into this dataset all quads from the given source.
     ///
+    /// # Blank node scope
+    /// The blank nodes contained in the quad source will be inserted as is.
+    /// If they happen to have the same identifier as blank nodes already present,
+    /// they will be considered equal.
+    /// This might *not* be what you want,
+    /// especially if the dataset contains data from a file,
+    /// and you are inserting data from a different file.
+    /// In that case, you should first transform the quad source,
+    /// in order to get fresh blank node identifiers.
+    ///
     /// # Return value
     /// The `usize` value returned in case of success is
     /// **not significant unless** this dataset also implements [`SetDataset`].
