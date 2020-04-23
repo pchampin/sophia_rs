@@ -228,6 +228,8 @@ mod test {
     test_dataset_impl!(hashset, HashSetAsDataset);
 
     // only for the purpose of testing the test macro with is_set and is_gen set to false
-    //test_dataset_impl!(vec_strict, VecAsDataset, false, VecAsDataset::new, false);
-    //test_dataset_impl!(hashset_strict, HashSetAsDataset, true, HashSetAsDataset::new, false);
+    //test_dataset_impl!(vec_strict, VecAsDataset, false, false);
+    //test_dataset_impl!(hashset_strict, HashSetAsDataset, true, false);
+    // only for the purpose of testing test_immutable_dataset_impl
+    //test_immutable_dataset_impl!(immutable, HashSetAsDataset);
 }

@@ -141,6 +141,9 @@ pub fn make_quad_source() -> impl QuadSource {
 /// Generates a test suite for implementations of
 /// [`Dataset`], [`CollectibleDataset`] and [`MutableDataset`].
 ///
+/// If your type only implements [`Dataset`] and [`CollectibleDataset`],
+/// you should use [`test_immutable_dataset_impl`] instead.
+///
 /// This macro is only available when the feature `test_macros` is enabled.
 ///
 /// It accepts the following parameters:
@@ -148,54 +151,35 @@ pub fn make_quad_source() -> impl QuadSource {
 /// * `dataset_impl`: the type to test, implementing [`Dataset`], [`CollectibleDataset`] and [`MutableDataset`];
 /// * `is_set`: a boolean, indicating if `dataset_impl` implements [`SetDataset`]
 ///   (defaults to `true`);
-/// * `dataset_collector`: a function used to create an empy instance of `dataset_impl`
-///   (defaults to `dataset_impl::from_quad_source`);
 /// * `is_gen`: a boolean, indicating if `dataset_impl` supports the [generalized model]
 ///   (defaults to `true`).
+/// * `dataset_collector`: a function used to create an empy instance of `dataset_impl`
+///   (defaults to `dataset_impl::from_quad_source`);
+/// * `mt` is used internally, do not touch it...
 ///
 /// [`Dataset`]: dataset/trait.Dataset.html
 /// [`CollectibleDataset`]: dataset/trait.CollectibleDataset.html
 /// [`MutableDataset`]: dataset/trait.MutableDataset.html
+/// [`test_immutable_dataset_impl`]: ./macro.test_immutable_dataset_impl
 /// [`SetDataset`]: dataset/trait.SetDataset.html
 /// [generalized model]: ./index.html
 #[macro_export]
 macro_rules! test_dataset_impl {
-    ($dataset_impl:ident) => {
+    ($dataset_impl: ident) => {
         test_dataset_impl!(test, $dataset_impl);
     };
     ($module_name: ident, $dataset_impl: ident) => {
         test_dataset_impl!($module_name, $dataset_impl, true);
     };
     ($module_name: ident, $dataset_impl: ident, $is_set: expr) => {
-        test_dataset_impl!(
-            $module_name,
-            $dataset_impl,
-            $is_set,
-            $dataset_impl::from_quad_source
-        );
+        test_dataset_impl!($module_name, $dataset_impl, $is_set, true);
     };
-    ($module_name: ident, $dataset_impl: ident, $is_set: expr, $dataset_collector: path) => {
-        test_dataset_impl!(
-            $module_name,
-            $dataset_impl,
-            $is_set,
-            $dataset_collector,
-            true
-        );
+    ($module_name: ident, $dataset_impl: ident, $is_set: expr, $is_gen: expr) => {
+        test_dataset_impl!($module_name, $dataset_impl, $is_set, $is_gen, $dataset_impl::from_quad_source);
     };
-    ($module_name: ident, $dataset_impl: ident, $is_set: expr, $dataset_collector: path, $is_gen: expr) => {
-        #[cfg(test)]
-        mod $module_name {
-            use sophia_term::{matcher::ANY, *};
-            use $crate::dataset::test::*;
-            use $crate::dataset::*;
-            use $crate::ns::*;
-
-            #[allow(unused_imports)]
-            use super::*;
-
-            // test MutableDataset + SetGraph
-
+    ($module_name: ident, $dataset_impl: ident, $is_set: expr, $is_gen: expr, $dataset_collector: path) => {
+        test_dataset_impl!($module_name, $dataset_impl, $is_set, $is_gen, $dataset_collector, {
+            // these tests will only be performed for implementations of `MutableDataset`
             #[test]
             fn test_simple_mutations() -> MDResult<$dataset_impl, ()> {
                 let mut d = $dataset_collector(no_quad()).unwrap();
@@ -353,8 +337,18 @@ macro_rules! test_dataset_impl {
                 assert_consistent_hint(4, d.quads().size_hint());
                 Ok(())
             }
+        });
+    };
+    ($module_name: ident, $dataset_impl: ident, $is_set: expr, $is_gen: expr, $dataset_collector: path, { $($mt:tt)* }) => {
+        #[cfg(test)]
+        mod $module_name {
+            use sophia_term::matcher::ANY;
+            use $crate::dataset::test::*;
+            use $crate::dataset::*;
+            use $crate::ns::*;
 
-            // Test Dataset
+            #[allow(unused_imports)]
+            use super::*;
 
             #[test]
             fn test_quads() -> MDResult<$dataset_impl, ()> {
@@ -881,6 +875,66 @@ macro_rules! test_dataset_impl {
                 }
                 Ok(())
             }
+
+            // Tests for MutableGraph only, if enabled:
+            $($mt)*
         }
+    };
+}
+
+/// Generates a test suite for implementations of
+/// [`Dataset`], [`CollectibleDataset`].
+///
+/// If your type also implements [`MutableDataset`],
+/// you should use [`test_dataset_impl`] instead.
+///
+/// This macro is only available when the feature `test_macros` is enabled.
+///
+/// It accepts the following parameters:
+/// * `module_name`: the name of the module to generate (defaults to `test`);
+/// * `dataset_impl`: the type to test, implementing [`Dataset`] and [`CollectibleDataset`];
+/// * `is_set`: a boolean, indicating if `dataset_impl` implements [`SetDataset`]
+///   (defaults to `true`);
+/// * `is_gen`: a boolean, indicating if `dataset_impl` supports the [generalized model]
+///   (defaults to `true`);
+/// * `dataset_collector`: a function used to collect quads into an instance of `dataset_impl`
+///   (defaults to `dataset_impl::from_quad_source`);
+///
+/// [`Dataset`]: dataset/trait.Dataset.html
+/// [`CollectibleDataset`]: dataset/trait.CollectibleDataset.html
+/// [`MutableDataset`]: dataset/trait.MutableDataset.html
+/// [`test_dataset_impl`]: ./macro.test_dataset_impl
+/// [`SetDataset`]: dataset/trait.SetDataset.html
+/// [generalized model]: ./index.html
+#[macro_export]
+macro_rules! test_immutable_dataset_impl {
+    ($dataset_impl: ident) => {
+        test_immutable_dataset_impl!(test, $dataset_impl);
+    };
+    ($module_name: ident, $dataset_impl: ident) => {
+        test_immutable_dataset_impl!($module_name, $dataset_impl, true);
+    };
+    ($module_name: ident, $dataset_impl: ident, $is_set: expr) => {
+        test_immutable_dataset_impl!($module_name, $dataset_impl, $is_set, true);
+    };
+    ($module_name: ident, $dataset_impl: ident, $is_set: expr, $is_gen: expr) => {
+        test_immutable_dataset_impl!(
+            $module_name,
+            $dataset_impl,
+            $is_set,
+            $is_gen,
+            $dataset_impl::from_quad_source
+        );
+    };
+    ($module_name: ident, $dataset_impl: ident, $is_set: expr, $is_gen: expr, $dataset_collector: path) => {
+        // calling test_dataset_impl, but passing an empty block as mt (the mutability tests)
+        test_dataset_impl!(
+            $module_name,
+            $dataset_impl,
+            $is_set,
+            $is_gen,
+            $dataset_collector,
+            {}
+        );
     };
 }

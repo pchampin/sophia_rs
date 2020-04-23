@@ -203,6 +203,8 @@ mod test {
     }
 
     // only for the purpose of testing the test macro with is_set and is_gen set to false
-    //test_graph_impl!(vec_strict, VecAsGraph, false, VecAsGraph::from_triple_source, false);
-    //test_graph_impl!(hashset_strict, HashSetAsGraph, true, HashSetAsGraph::from_triple_source, false);
+    //test_graph_impl!(vec_strict, VecAsGraph, false, false);
+    //test_graph_impl!(hashset_strict, HashSetAsGraph, false, false);
+    // only for the purpose of testing test_immutable_graph_impl
+    //test_immutable_graph_impl!(immutable, HashSetAsGraph);
 }

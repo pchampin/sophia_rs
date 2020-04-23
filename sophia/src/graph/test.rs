@@ -127,21 +127,26 @@ pub fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
 /// Generates a test suite for implementations of
 /// [`Graph`], [`CollectibleGraph`] and [`MutableGraph`].
 ///
+/// If your type only implements [`Graph`] and [`CollectibleGraph`],
+/// you should use [`test_immutable_graph_impl`] instead.
+///
 /// This macro is only available when the feature `test_macros` is enabled.
 ///
 /// It accepts the following parameters:
 /// * `module_name`: the name of the module to generate (defaults to `test`);
 /// * `graph_impl`: the type to test, implementing [`Graph`], [`CollectibleGraph`] and [`MutableGraph`];
-/// * `is_set`: a boolean, indicating if `mutable_graph_impl` implements [`SetGraph`]
+/// * `is_set`: a boolean, indicating if `graph_impl` implements [`SetGraph`]
+///   (defaults to `true`);
+/// * `is_gen`: a boolean, indicating if `graph_impl` supports the [generalized model]
 ///   (defaults to `true`);
 /// * `graph_collector`: a function used to collect triples into an instance of `graph_impl`
 ///   (defaults to `graph_impl::from_triple_source`);
-/// * `is_gen`: a boolean, indicating if `mutable_graph_impl` supports the [generalized model]
-///   (defaults to `true`).
+/// * `mt` is used internally, do not touch it...
 ///
 /// [`Graph`]: graph/trait.Graph.html
 /// [`CollectibleGraph`]: graph/trait.CollectibleGraph.html
 /// [`MutableGraph`]: graph/trait.MutableGraph.html
+/// [`test_immutable_graph_impl`]: ./macro.test_immutable_graph_impl
 /// [`SetGraph`]: graph/trait.SetGraph.html
 /// [generalized model]: ./index.html
 #[macro_export]
@@ -153,30 +158,14 @@ macro_rules! test_graph_impl {
         test_graph_impl!($module_name, $graph_impl, true);
     };
     ($module_name: ident, $graph_impl: ident, $is_set: expr) => {
-        test_graph_impl!(
-            $module_name,
-            $graph_impl,
-            $is_set,
-            $graph_impl::from_triple_source
-        );
+        test_graph_impl!($module_name, $graph_impl, $is_set, true);
     };
-    ($module_name: ident, $graph_impl: ident, $is_set: expr, $graph_collector: path) => {
-        test_graph_impl!($module_name, $graph_impl, $is_set, $graph_collector, true);
+    ($module_name: ident, $graph_impl: ident, $is_set: expr, $is_gen: expr) => {
+        test_graph_impl!($module_name, $graph_impl, $is_set, $is_gen, $graph_impl::from_triple_source);
     };
-    ($module_name: ident, $graph_impl: ident, $is_set: expr, $graph_collector: path, $is_gen: expr) => {
-        #[cfg(test)]
-        mod $module_name {
-            use sophia_term::matcher::ANY;
-            use sophia_term::*;
-            use $crate::graph::test::*;
-            use $crate::graph::*;
-            use $crate::ns::*;
-
-            #[allow(unused_imports)]
-            use super::*;
-
-            // test MutableGraph + SetGraph
-
+    ($module_name: ident, $graph_impl: ident, $is_set: expr, $is_gen: expr, $graph_collector: path) => {
+        test_graph_impl!($module_name, $graph_impl, $is_set, $is_gen, $graph_collector, {
+            // these tests will only be performed for implementations of `MutableGraph`
             #[test]
             fn test_simple_mutations() -> MGResult<$graph_impl, ()> {
                 let mut g = $graph_collector(no_triple()).unwrap();
@@ -286,8 +275,19 @@ macro_rules! test_graph_impl {
                 assert_consistent_hint(4, g.triples().size_hint());
                 Ok(())
             }
+        });
+    };
+    ($module_name: ident, $graph_impl: ident, $is_set: expr, $is_gen: expr, $graph_collector: path, { $($mt:tt)* }) => {
+        #[cfg(test)]
+        mod $module_name {
+            use sophia_term::matcher::ANY;
+            use sophia_term::*;
+            use $crate::graph::test::*;
+            use $crate::graph::*;
+            use $crate::ns::*;
 
-            // Test Graph
+            #[allow(unused_imports)]
+            use super::*;
 
             #[test]
             fn test_triples() -> MGResult<$graph_impl, ()> {
@@ -597,6 +597,66 @@ macro_rules! test_graph_impl {
                 }
                 Ok(())
             }
+
+            // Tests for MutableGraph only, if enabled:
+            $($mt)*
         }
+    };
+}
+
+/// Generates a test suite for implementations of
+/// [`Graph`], [`CollectibleGraph`].
+///
+/// If your type also implements [`MutableGraph`],
+/// you should use [`test_graph_impl`] instead.
+///
+/// This macro is only available when the feature `test_macros` is enabled.
+///
+/// It accepts the following parameters:
+/// * `module_name`: the name of the module to generate (defaults to `test`);
+/// * `graph_impl`: the type to test, implementing [`Graph`] and [`CollectibleGraph`];
+/// * `is_set`: a boolean, indicating if `graph_impl` implements [`SetGraph`]
+///   (defaults to `true`);
+/// * `is_gen`: a boolean, indicating if `graph_impl` supports the [generalized model]
+///   (defaults to `true`);
+/// * `graph_collector`: a function used to collect triples into an instance of `graph_impl`
+///   (defaults to `graph_impl::from_triple_source`);
+///
+/// [`Graph`]: graph/trait.Graph.html
+/// [`CollectibleGraph`]: graph/trait.CollectibleGraph.html
+/// [`MutableGraph`]: graph/trait.MutableGraph.html
+/// [`test_graph_impl`]: ./macro.test_graph_impl
+/// [`SetGraph`]: graph/trait.SetGraph.html
+/// [generalized model]: ./index.html
+#[macro_export]
+macro_rules! test_immutable_graph_impl {
+    ($graph_impl: ident) => {
+        test_immutable_graph_impl!(test, $graph_impl);
+    };
+    ($module_name: ident, $graph_impl: ident) => {
+        test_immutable_graph_impl!($module_name, $graph_impl, true);
+    };
+    ($module_name: ident, $graph_impl: ident, $is_set: expr) => {
+        test_immutable_graph_impl!($module_name, $graph_impl, $is_set, true);
+    };
+    ($module_name: ident, $graph_impl: ident, $is_set: expr, $is_gen: expr) => {
+        test_immutable_graph_impl!(
+            $module_name,
+            $graph_impl,
+            $is_set,
+            $is_gen,
+            $graph_impl::from_triple_source
+        );
+    };
+    ($module_name: ident, $graph_impl: ident, $is_set: expr, $is_gen: expr, $graph_collector: path) => {
+        // calling test_graph_impl, but passing an empty block as mt (the mutability tests)
+        test_graph_impl!(
+            $module_name,
+            $graph_impl,
+            $is_set,
+            $is_gen,
+            $graph_collector,
+            {}
+        );
     };
 }
