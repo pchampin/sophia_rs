@@ -30,6 +30,10 @@ where
         self.source
             .try_for_some_triple(&mut |t| f(StreamedTriple::by_value((map)(t))))
     }
+
+    fn size_hint_triples(&self) -> (usize, Option<usize>) {
+        self.source.size_hint_triples()
+    }
 }
 
 impl<S, F, T> crate::quad::stream::QuadSource for MapSource<S, F>
@@ -48,6 +52,10 @@ where
         let map = &mut self.map;
         self.source
             .try_for_some_triple(&mut |t| f(StreamedQuad::by_value((map)(t))))
+    }
+
+    fn size_hint_quads(&self) -> (usize, Option<usize>) {
+        self.source.size_hint_triples()
     }
 }
 
@@ -103,5 +111,9 @@ where
         }
         std::mem::swap(&mut self.buffer, &mut buffer);
         self.buffer.pop_front()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.source.size_hint_triples()
     }
 }

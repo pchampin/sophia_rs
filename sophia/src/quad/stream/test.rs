@@ -91,10 +91,10 @@ fn for_each_quads() {
 }
 
 #[test]
-fn in_dataset() {
+fn add_to_dataset() {
     let d = make_dataset();
     let mut e: Vec<([BoxTerm; 3], Option<BoxTerm>)> = vec![];
-    d.quads().in_dataset(&mut e).unwrap();
+    d.quads().add_to_dataset(&mut e).unwrap();
     assert_eq!(d.len(), e.len());
     for i in 0..d.len() {
         assert_eq!(d[i].s(), e[i].s());
@@ -158,7 +158,7 @@ fn filter_map_quads_to_triples() {
                 None
             }
         })
-        .in_graph(&mut g)
+        .add_to_graph(&mut g)
         .unwrap();
     let d = &d[2..];
     assert_eq!(d.len(), g.len());
@@ -222,7 +222,7 @@ fn map_quads_to_triple() {
         .map_quads(|q| -> [BoxTerm; 3] {
             [q.s().clone_into(), q.p().clone_into(), q.o().clone_into()]
         })
-        .in_graph(&mut g)
+        .add_to_graph(&mut g)
         .unwrap();
     assert_eq!(d.len(), g.len());
     for i in 0..d.len() {

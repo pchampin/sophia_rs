@@ -46,7 +46,7 @@ mod test {
 
         let mut g = FastGraph::new();
         let p = NTriplesParser {};
-        let c = p.parse_str(&turtle).in_graph(&mut g)?;
+        let c = p.parse_str(&turtle).add_to_graph(&mut g)?;
         assert_eq!(c, 3);
         assert!(g
             .triples_matching(

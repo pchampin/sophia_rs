@@ -6,6 +6,7 @@ use std::hash::Hash;
 
 use crate::graph::indexed::IndexedGraph;
 use crate::graph::*;
+use crate::triple::stream::{StreamResult, TripleSource};
 use crate::triple::streaming_mode::{ByTermRefs, StreamedTriple};
 use sophia_term::factory::TermFactory;
 use sophia_term::index_map::TermIndexMap;
@@ -59,6 +60,20 @@ where
 {
     type Index = I::Index;
     type TermData = <I::Factory as TermFactory>::TermData;
+
+    #[inline]
+    fn with_capacity(capacity: usize) -> Self {
+        HashGraph {
+            terms: I::default(),
+            triples: HashSet::with_capacity(capacity),
+        }
+    }
+
+    #[inline]
+    fn shrink_to_fit(&mut self) {
+        self.terms.shrink_to_fit();
+        self.triples.shrink_to_fit();
+    }
 
     #[inline]
     fn get_index<T>(&self, t: &Term<T>) -> Option<Self::Index>
@@ -123,11 +138,6 @@ where
         }
         None
     }
-
-    fn shrink_to_fit(&mut self) {
-        self.terms.shrink_to_fit();
-        self.triples.shrink_to_fit();
-    }
 }
 
 impl<I> Graph for HashGraph<I>
@@ -147,6 +157,28 @@ where
                 self.terms.get_term(*oi).unwrap(),
             ))
         }))
+    }
+}
+
+impl<TS, I> CollectibleGraph<TS> for HashGraph<I>
+where
+    TS: TripleSource,
+    I: TermIndexMap,
+    I::Index: Hash,
+    <I::Factory as TermFactory>::TermData: 'static,
+{
+    fn from_triple_source(triples: TS) -> StreamResult<Self, TS::Error, Infallible> {
+        let (tmin, tmax) = triples.size_hint_triples();
+        let cap = tmax.unwrap_or(tmin);
+        let mut hash_graph = HashGraph {
+            terms: I::default(),
+            triples: if cap > 0 || tmax == Some(0) {
+                HashSet::with_capacity(cap)
+            } else {
+                HashSet::default()
+            },
+        };
+        hash_graph.insert_all(triples).map(|_| hash_graph)
     }
 }
 

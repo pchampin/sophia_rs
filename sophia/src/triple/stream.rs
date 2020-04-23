@@ -120,19 +120,6 @@ pub trait TripleSource {
         while self.for_some_triple(&mut f)? {}
         Ok(())
     }
-    /// Insert all triples from this source into the given [graph](../../graph/trait.MutableGraph.html).
-    ///
-    /// Stop on the first error (in the source or in the graph).
-    #[inline]
-    fn in_graph<G: MutableGraph>(
-        &mut self,
-        graph: &mut G,
-    ) -> StreamResult<usize, Self::Error, <G as MutableGraph>::MutationError>
-    where
-        Self: Sized,
-    {
-        graph.insert_all(self)
-    }
     /// Creates a triple source which uses a closure to determine if a triple should be yielded.
     #[inline]
     fn filter_triples<F>(self, filter: F) -> FilterSource<Self, F>
@@ -165,6 +152,35 @@ pub trait TripleSource {
         F: FnMut(StreamedTriple<Self::Triple>) -> T,
     {
         MapSource { source: self, map }
+    }
+    /// Returns the bounds on the remaining length of the triple source.
+    ///
+    /// This method has the same contract as [`Iterator::size_hint`].
+    ///
+    /// [`Iterator::size_hint`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.size_hint
+    fn size_hint_triples(&self) -> (usize, Option<usize>) {
+        (0, None)
+    }
+    /// Collect these triples into a new graph.
+    fn collect_triples<G>(self) -> StreamResult<G, Self::Error, <G as Graph>::Error>
+    where
+        Self: Sized,
+        G: CollectibleGraph<Self>,
+    {
+        G::from_triple_source(self)
+    }
+    /// Insert all triples from this source into the given [graph](../../graph/trait.MutableGraph.html).
+    ///
+    /// Stop on the first error (in the source or in the graph).
+    #[inline]
+    fn add_to_graph<G: MutableGraph>(
+        self,
+        graph: &mut G,
+    ) -> StreamResult<usize, Self::Error, <G as MutableGraph>::MutationError>
+    where
+        Self: Sized,
+    {
+        graph.insert_all(self)
     }
 }
 

@@ -31,9 +31,9 @@
 //! back.
 //!
 //! ```
-//! use sophia::graph::{*, inmem::LightGraph};
+//! use sophia::graph::{*, inmem::FastGraph};
 //! use sophia::ns::Namespace;
-//! use sophia::parser;
+//! use sophia::parser::turtle;
 //! use sophia::serializer::*;
 //! use sophia::serializer::nt::NtSerializer;
 //! use sophia::triple::stream::TripleSource;
@@ -47,8 +47,7 @@
 //!
 //!     :bob foaf:name "Bob".
 //! "#;
-//! let mut graph = LightGraph::new();
-//! parser::turtle::parse_str(example).in_graph(&mut graph);
+//! let mut graph: FastGraph = turtle::parse_str(example).collect_triples()?;
 //!
 //! let ex = Namespace::new("http://example.org/")?;
 //! let foaf = Namespace::new("http://xmlns.com/foaf/0.1/")?;

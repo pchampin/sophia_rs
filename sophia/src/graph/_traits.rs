@@ -377,6 +377,15 @@ pub trait Graph {
     }
 }
 
+/// A graph that can be constructed from a
+/// [`TripleSource`](../triple/stream/trait.TripleSource.html)
+pub trait CollectibleGraph<TS>: Graph + Sized
+where
+    TS: TripleSource,
+{
+    fn from_triple_source(triples: TS) -> StreamResult<Self, TS::Error, Self::Error>;
+}
+
 /// Type alias for results produced by a mutable graph.
 pub type MGResult<G, T> = std::result::Result<T, <G as MutableGraph>::MutationError>;
 
@@ -446,6 +455,16 @@ pub trait MutableGraph: Graph {
 
     /// Insert into this graph all triples from the given source.
     ///
+    /// # Blank node scope
+    /// The blank nodes contained in the triple source will be inserted as is.
+    /// If they happen to have the same identifier as blank nodes already present,
+    /// they will be considered equal.
+    /// This might *not* be what you want,
+    /// especially if the graph contains data from a file,
+    /// and you are inserting data from a different file.
+    /// In that case, you should first transform the triple source,
+    /// in order to get fresh blank node identifiers.
+    ///
     /// # Return value
     /// The `usize` value returned in case of success is
     /// **not significant unless** this graph also implements [`SetGraph`].
@@ -459,11 +478,12 @@ pub trait MutableGraph: Graph {
     #[inline]
     fn insert_all<TS>(
         &mut self,
-        src: &mut TS,
+        src: TS,
     ) -> StreamResult<usize, TS::Error, <Self as MutableGraph>::MutationError>
     where
         TS: TripleSource,
     {
+        let mut src = src;
         let mut c = 0;
         src.try_for_each_triple(|t| -> MGResult<Self, ()> {
             if self.insert(t.s(), t.p(), t.o())? {
@@ -489,11 +509,12 @@ pub trait MutableGraph: Graph {
     #[inline]
     fn remove_all<TS>(
         &mut self,
-        src: &mut TS,
+        src: TS,
     ) -> StreamResult<usize, TS::Error, <Self as MutableGraph>::MutationError>
     where
         TS: TripleSource,
     {
+        let mut src = src;
         let mut c = 0;
         src.try_for_each_triple(|t| -> MGResult<Self, ()> {
             if self.remove(t.s(), t.p(), t.o())? {

@@ -5,7 +5,9 @@ use std::hash::Hash;
 
 use crate::dataset::indexed::IndexedDataset;
 use crate::dataset::*;
+use crate::quad::stream::QuadSource;
 use crate::quad::streaming_mode::{ByTermRefs, StreamedQuad};
+use crate::triple::stream::StreamResult;
 use sophia_term::factory::TermFactory;
 use sophia_term::index_map::TermIndexMap;
 use sophia_term::*;
@@ -60,6 +62,20 @@ where
 {
     type Index = I::Index;
     type TermData = <I::Factory as TermFactory>::TermData;
+
+    #[inline]
+    fn with_capacity(capacity: usize) -> Self {
+        HashDataset {
+            terms: I::default(),
+            quads: HashSet::with_capacity(capacity),
+        }
+    }
+
+    #[inline]
+    fn shrink_to_fit(&mut self) {
+        self.terms.shrink_to_fit();
+        self.quads.shrink_to_fit();
+    }
 
     #[inline]
     fn get_index<T>(&self, t: &Term<T>) -> Option<Self::Index>
@@ -148,12 +164,6 @@ where
         }
         None
     }
-
-    #[inline]
-    fn shrink_to_fit(&mut self) {
-        self.terms.shrink_to_fit();
-        self.quads.shrink_to_fit();
-    }
 }
 
 impl<I> Dataset for HashDataset<I>
@@ -175,6 +185,28 @@ where
                 self.get_graph_name(*gi).unwrap(),
             ))
         }))
+    }
+}
+
+impl<TS, I> CollectibleDataset<TS> for HashDataset<I>
+where
+    TS: QuadSource,
+    I: TermIndexMap,
+    I::Index: Hash,
+    <I::Factory as TermFactory>::TermData: 'static,
+{
+    fn from_quad_source(quads: TS) -> StreamResult<Self, TS::Error, Infallible> {
+        let (tmin, tmax) = quads.size_hint_quads();
+        let cap = tmax.unwrap_or(tmin);
+        let mut hash_dataset = HashDataset {
+            terms: I::default(),
+            quads: if cap > 0 || tmax == Some(0) {
+                HashSet::with_capacity(cap)
+            } else {
+                HashSet::default()
+            },
+        };
+        hash_dataset.insert_all(quads).map(|_| hash_dataset)
     }
 }
 

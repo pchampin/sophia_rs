@@ -21,6 +21,12 @@ pub trait IndexedDataset {
     type Index: Copy + Eq + Hash;
     type TermData: TermData + 'static;
 
+    /// Construct a new empty dataset, provisioning for storing `capacity` quads.
+    fn with_capacity(capacity: usize) -> Self;
+
+    /// Shrink the memory consumption of the dataset as much as possible.
+    fn shrink_to_fit(&mut self);
+
     /// Return the index for the given term, if it exists.
     fn get_index<T>(&self, t: &Term<T>) -> Option<Self::Index>
     where
@@ -73,8 +79,38 @@ pub trait IndexedDataset {
         U: TermData,
         V: TermData,
         W: TermData;
+}
 
-    fn shrink_to_fit(&mut self);
+/// Defines the implementation of [`CollectibleDataset`] for [`IndexedDataset`].
+///
+/// [`CollectibleDataset`]: dataset/trait.CollectibleDataset.html
+/// [`IndexedDataset`]: dataset/indexed/trait.IndexedGraph.html
+#[macro_export]
+macro_rules! impl_collectible_dataset_for_indexed_dataset {
+    ($indexed_mutable_dataset: ty) => {
+        impl CollectibleDataset<QS> for $indexed_mutable_dataset
+        where
+            QS: $crate::quad::stream::QuadSource,
+        {
+            impl_collectible_dataset_for_indexed_dataset!();
+        }
+    };
+    () => {
+        fn from_quad_source(
+            mut quads: QS,
+        ) -> $crate::quad::stream::StreamResult<Self, QS::Error, Self::Error> {
+            use $crate::quad::Quad;
+            let (tmin, tmax) = quads.size_hint_quads();
+            let cap = tmax.unwrap_or(tmin);
+            let mut g = Self::with_capacity(cap);
+            quads
+                .try_for_each_quad(|q| -> Result<(), Self::Error> {
+                    g.insert_indexed(q.s(), q.p(), q.o(), q.g());
+                    Ok(())
+                })
+                .map(|_| g)
+        }
+    };
 }
 
 /// Defines the implementation of [`MutableDataset`] for [`IndexedDataset`].

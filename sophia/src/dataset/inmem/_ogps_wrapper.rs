@@ -5,6 +5,7 @@ use std::iter::empty;
 
 use super::*;
 use crate::graph::indexed::*;
+use crate::quad::stream::QuadSource;
 use crate::quad::streaming_mode::{ByTermRefs, StreamedQuad};
 
 /// A [`DatasetWrapper`](trait.DatasetWrapper.html)
@@ -146,6 +147,16 @@ impl<T> IndexedDatasetWrapper<T> for OgpsWrapper<T>
 where
     T: IndexedDataset,
 {
+    #[inline]
+    unsafe fn idw_wrap_empty(dataset: T) -> Self {
+        OgpsWrapper {
+            wrapped: dataset,
+            o2g: HashMap::default(),
+            og2p: HashMap::default(),
+            ogp2s: HashMap::default(),
+        }
+    }
+
     #[allow(clippy::collapsible_if)] // it is more regular that way
     #[inline]
     fn idw_hook_insert_indexed(&mut self, modified: &Option<[T::Index; 4]>) {
@@ -190,6 +201,14 @@ where
     T: IndexedDataset + Dataset<Quad = ByTermRefs<<T as IndexedDataset>::TermData>>,
 {
     impl_indexed_dataset_for_wrapper!();
+}
+
+impl<QS, T> CollectibleDataset<QS> for OgpsWrapper<T>
+where
+    QS: QuadSource,
+    T: IndexedDataset + Dataset<Quad = ByTermRefs<<T as IndexedDataset>::TermData>>,
+{
+    impl_collectible_dataset_for_indexed_dataset!();
 }
 
 impl<T> MutableDataset for OgpsWrapper<T>

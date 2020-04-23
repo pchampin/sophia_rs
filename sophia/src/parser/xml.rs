@@ -334,12 +334,12 @@ mod test {
                     ))
                     .unwrap()
                     .parse(std::io::BufReader::new(xmlfile))
-                    .in_graph(&mut xml)
+                    .add_to_graph(&mut xml)
                     .expect("failed parsing XML file");
 
                 let mut nt = TestGraph::new();
                 $crate::parser::nt::parse_bufread(std::io::BufReader::new(ntfile))
-                    .in_graph(&mut nt)
+                    .add_to_graph(&mut nt)
                     .expect("failed parsing N-Triples file");
 
                 use std::rc::Rc;
@@ -396,7 +396,7 @@ mod test {
                     ))
                     .unwrap()
                     .parse(std::io::BufReader::new(xmlfile))
-                    .in_graph(&mut xml)
+                    .add_to_graph(&mut xml)
                     .is_err()
                 );
             }
@@ -409,12 +409,12 @@ mod test {
             fn $name() {
                 let mut xml = TestGraph::new();
                 $crate::parser::xml::parse_str($xml)
-                    .in_graph(&mut xml)
+                    .add_to_graph(&mut xml)
                     .expect("failed parsing XML file");
 
                 let mut nt = TestGraph::new();
                 $crate::parser::nt::parse_str($nt)
-                    .in_graph(&mut nt)
+                    .add_to_graph(&mut nt)
                     .expect("failed parsing N-Triples file");
 
                 assert_graph_eq!(xml, nt);

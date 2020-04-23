@@ -565,6 +565,15 @@ pub trait Dataset {
     }
 }
 
+/// A dataset that can be constructed from a
+/// [`QuadSource`](../quad/stream/trait.QuadSource.html)
+pub trait CollectibleDataset<QS>: Dataset + Sized
+where
+    QS: QuadSource,
+{
+    fn from_quad_source(quad: QS) -> StreamResult<Self, QS::Error, Self::Error>;
+}
+
 /// Type alias for results produced by a mutable dataset.
 pub type MDResult<D, T> = std::result::Result<T, <D as MutableDataset>::MutationError>;
 
@@ -631,6 +640,16 @@ pub trait MutableDataset: Dataset {
 
     /// Insert into this dataset all quads from the given source.
     ///
+    /// # Blank node scope
+    /// The blank nodes contained in the quad source will be inserted as is.
+    /// If they happen to have the same identifier as blank nodes already present,
+    /// they will be considered equal.
+    /// This might *not* be what you want,
+    /// especially if the dataset contains data from a file,
+    /// and you are inserting data from a different file.
+    /// In that case, you should first transform the quad source,
+    /// in order to get fresh blank node identifiers.
+    ///
     /// # Return value
     /// The `usize` value returned in case of success is
     /// **not significant unless** this dataset also implements [`SetDataset`].
@@ -642,13 +661,14 @@ pub trait MutableDataset: Dataset {
     ///
     /// [`SetDataset`]: trait.SetDataset.html
     #[inline]
-    fn insert_all<TS>(
+    fn insert_all<QS>(
         &mut self,
-        src: &mut TS,
-    ) -> StreamResult<usize, TS::Error, <Self as MutableDataset>::MutationError>
+        src: QS,
+    ) -> StreamResult<usize, QS::Error, <Self as MutableDataset>::MutationError>
     where
-        TS: QuadSource,
+        QS: QuadSource,
     {
+        let mut src = src;
         let mut c = 0;
         src.try_for_each_quad(|q| -> MDResult<Self, ()> {
             if self.insert(q.s(), q.p(), q.o(), q.g())? {
@@ -672,13 +692,14 @@ pub trait MutableDataset: Dataset {
     ///
     /// [`SetDataset`]: trait.SetDataset.html
     #[inline]
-    fn remove_all<TS>(
+    fn remove_all<QS>(
         &mut self,
-        src: &mut TS,
-    ) -> StreamResult<usize, TS::Error, <Self as MutableDataset>::MutationError>
+        src: QS,
+    ) -> StreamResult<usize, QS::Error, <Self as MutableDataset>::MutationError>
     where
-        TS: QuadSource,
+        QS: QuadSource,
     {
+        let mut src = src;
         let mut c = 0;
         src.try_for_each_quad(|q| -> MDResult<Self, ()> {
             if self.remove(q.s(), q.p(), q.o(), q.g())? {

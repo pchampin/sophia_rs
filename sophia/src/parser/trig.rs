@@ -42,7 +42,7 @@ mod test {
 
     #[test]
     fn test_simple_trig_string() -> std::result::Result<(), Box<dyn std::error::Error>> {
-        let turtle = r#"
+        let trig = r#"
             @prefix : <http://example.org/ns/> .
 
             <#g1> {
@@ -57,7 +57,7 @@ mod test {
         let p = TriGParser {
             base: Some("http://localhost/ex".into()),
         };
-        let c = p.parse_str(&turtle).in_dataset(&mut d)?;
+        let c = p.parse_str(&trig).add_to_dataset(&mut d)?;
         assert_eq!(c, 3);
         assert!(d
             .quads_matching(

@@ -97,10 +97,10 @@ fn for_each_triple() {
 }
 
 #[test]
-fn in_graph() {
+fn add_to_graph() {
     let g = make_graph();
     let mut h: Vec<[BoxTerm; 3]> = vec![];
-    g.triples().in_graph(&mut h).unwrap();
+    g.triples().add_to_graph(&mut h).unwrap();
     assert_eq!(g.len(), h.len());
     for i in 0..g.len() {
         assert_eq!(g[i].s(), h[i].s());
@@ -161,7 +161,7 @@ fn filter_map_triples_to_quads() {
                 None
             }
         })
-        .in_dataset(&mut d)
+        .add_to_dataset(&mut d)
         .unwrap();
     let g = &g[2..];
     assert_eq!(g.len(), d.len());
@@ -225,7 +225,7 @@ fn map_triples_to_quads() {
                 t.s().clone_into(),
             ]
         })
-        .in_dataset(&mut d)
+        .add_to_dataset(&mut d)
         .unwrap();
     assert_eq!(g.len(), d.len());
     for i in 0..g.len() {
