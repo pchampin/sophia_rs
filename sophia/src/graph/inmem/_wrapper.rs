@@ -342,9 +342,9 @@ where
 {
     /// Wrap the given graph.
     ///
-    /// # Safety
+    /// # Pre-conditions
     /// This method requires that the given graph is empty.
-    unsafe fn igw_wrap_empty(graph: T) -> Self;
+    fn igw_wrap_empty(graph: T) -> Self;
 
     /// Hook to be executed at the end of
     /// [`IndexedGraph::insert_indexed`](../indexed/trait.IndexedGraph.html#tymethod.insert_indexed).
@@ -371,7 +371,7 @@ macro_rules! impl_indexed_graph_for_wrapper {
 
         #[inline]
         fn with_capacity(capacity: usize) -> Self {
-            unsafe { Self::igw_wrap_empty(T::with_capacity(capacity)) }
+            Self::igw_wrap_empty(T::with_capacity(capacity))
         }
 
         #[inline]

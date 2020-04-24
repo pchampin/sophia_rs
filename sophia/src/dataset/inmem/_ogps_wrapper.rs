@@ -148,7 +148,7 @@ where
     T: IndexedDataset,
 {
     #[inline]
-    unsafe fn idw_wrap_empty(dataset: T) -> Self {
+    fn idw_wrap_empty(dataset: T) -> Self {
         OgpsWrapper {
             wrapped: dataset,
             o2g: HashMap::default(),

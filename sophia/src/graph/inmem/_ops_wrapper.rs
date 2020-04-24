@@ -110,7 +110,7 @@ where
     T: IndexedGraph,
 {
     #[inline]
-    unsafe fn igw_wrap_empty(graph: T) -> Self {
+    fn igw_wrap_empty(graph: T) -> Self {
         OpsWrapper {
             wrapped: graph,
             o2p: HashMap::default(),

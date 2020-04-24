@@ -563,7 +563,7 @@ where
     ///
     /// # Safety
     /// This method requires that the given dataset is empty.
-    unsafe fn idw_wrap_empty(dataset: T) -> Self;
+    fn idw_wrap_empty(dataset: T) -> Self;
 
     /// Hook to be executed at the end of
     /// [`IndexedDataset::insert_indexed`](../indexed/trait.IndexedDataset.html#tymethod.insert_indexed).
@@ -590,7 +590,7 @@ macro_rules! impl_indexed_dataset_for_wrapper {
 
         #[inline]
         fn with_capacity(capacity: usize) -> Self {
-            unsafe { Self::idw_wrap_empty(T::with_capacity(capacity)) }
+            Self::idw_wrap_empty(T::with_capacity(capacity))
         }
 
         #[inline]

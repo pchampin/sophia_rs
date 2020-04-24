@@ -149,7 +149,7 @@ where
     T: IndexedDataset,
 {
     #[inline]
-    unsafe fn idw_wrap_empty(dataset: T) -> Self {
+    fn idw_wrap_empty(dataset: T) -> Self {
         GspoWrapper {
             wrapped: dataset,
             g2s: HashMap::default(),
