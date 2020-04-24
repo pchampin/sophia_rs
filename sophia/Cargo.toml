@@ -1,6 +1,6 @@
 [package]
 name = "sophia"
-version = "0.5.1"
+version = "0.5.2"
 authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
 description = "A Rust toolkit for RDF and Linked Data"
 repository = "https://github.com/pchampin/sophia_rs"
@@ -21,7 +21,7 @@ xml = ["lazy_static", "percent-encoding", "quick-xml", "regex", "url"]
 test_macro = ["lazy_static"]
 
 [dependencies]
-sophia_term = { version = "0.5.1", path = "../term" }
+sophia_term = { version = "0.5.2", path = "../term" }
 resiter = "0.4.0"
 rio_api = { version = "0.4.2", features = ["generalized"] }
 rio_turtle = { version = "0.4.2", features = ["generalized"] }

@@ -229,14 +229,14 @@ pub(crate) mod test {
     fn test_graph_default() -> MDResult<MyDataset, ()> {
         let d: MyDataset = some_quads().collect_quads().unwrap();
         assert_eq!(d.graph(*DG).triples().count(), 4);
-        assert_eq!(d.graph(*GN1).triples().count(), 6);
+        assert_eq!(d.graph(*GN1).triples().count(), 7);
         assert_eq!(d.graph(*GN2).triples().count(), 7);
-        assert_eq!(d.union_graph(ANY).triples().count(), 17);
+        assert_eq!(d.union_graph(ANY).triples().count(), 18);
         assert_eq!(
             d.union_graph(vec![DG.clone(), GN1.clone()])
                 .triples()
                 .count(),
-            10
+            11
         );
         assert_eq!(
             d.union_graph(|x: Option<&Term<&str>>| (x == *DG || x == *GN2))
