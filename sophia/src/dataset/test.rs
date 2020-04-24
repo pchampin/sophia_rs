@@ -314,6 +314,7 @@ macro_rules! test_dataset_impl {
     ($module_name: ident, $dataset_impl: ident, $is_set: expr, $is_gen: expr, $dataset_collector: path, { $($mt:tt)* }) => {
         #[cfg(test)]
         mod $module_name {
+            use sophia_term::{StaticTerm, Term};
             use sophia_term::matcher::ANY;
             use $crate::dataset::test::*;
             use $crate::dataset::*;

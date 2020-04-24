@@ -1,6 +1,6 @@
 [package]
 name = "sophia_term"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
 edition = "2018"
 description = "A Rust toolkit for RDF and Linked Data - Types for RDF terms"
