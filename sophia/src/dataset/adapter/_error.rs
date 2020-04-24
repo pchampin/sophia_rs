@@ -1,3 +1,4 @@
+// this module is transparently re-exported by its parent `adapter`
 use std::error::Error;
 
 /// This error is raised by the [adapter] from [`MutableGraph`] to [`MutableDataset`].

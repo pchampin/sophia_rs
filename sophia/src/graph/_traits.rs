@@ -7,7 +7,7 @@ use std::marker::PhantomData;
 use resiter::filter::*;
 use resiter::map::*;
 
-use crate::graph::adapter::GraphAsDataset;
+use crate::dataset::adapter::GraphAsDataset;
 use crate::triple::stream::*;
 use crate::triple::streaming_mode::*;
 use crate::triple::*;

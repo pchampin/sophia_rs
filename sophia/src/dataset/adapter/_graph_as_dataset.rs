@@ -1,4 +1,4 @@
-//! Adapters for exposing `Graph` as other traits.
+// this module is transparently re-exported by its parent `adapter`
 
 use std::borrow::{Borrow, BorrowMut};
 use std::iter::empty;
@@ -11,17 +11,13 @@ use crate::graph::{Graph, MutableGraph, SetGraph};
 use crate::quad::streaming_mode::{FromTriple, StreamedQuad};
 use sophia_term::{Term, TermData};
 
-mod _error;
-pub use self::_error::*;
+use super::GraphAsDatasetError;
 
 /// The adapter returned by
 /// * [`Graph::borrow_as_dataset`](../trait.Graph.html#method.borrow_as_dataset)
 /// * [`Graph::borrow_mut_as_dataset`](../trait.Graph.html#method.borrow_mut_as_dataset)
 /// * [`Graph::own_as_dataset`](../trait.Graph.html#method.own_as_dataset)
-pub struct GraphAsDataset<G: ?Sized, H>(
-    pub(in crate::graph) H,
-    pub(in crate::graph) PhantomData<G>,
-);
+pub struct GraphAsDataset<G: ?Sized, H>(pub(crate) H, pub(crate) PhantomData<G>);
 
 impl<G: ?Sized, H> GraphAsDataset<G, H> {
     /// Unwrap this adapter to get the original graph back.
