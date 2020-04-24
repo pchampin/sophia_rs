@@ -127,7 +127,14 @@ macro_rules! impl_mutable_dataset_for_indexed_dataset {
     () => {
         type MutationError = std::convert::Infallible;
 
-        fn insert<T_, U_, V_, W_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>, g: Option<&Term<W_>>) -> MDResult< Self, bool> where
+        fn insert<T_, U_, V_, W_>(
+            &mut self,
+            s: &Term<T_>,
+            p: &Term<U_>,
+            o: &Term<V_>,
+            g: Option<&Term<W_>>,
+        ) -> MDResult<Self, bool>
+        where
             T_: sophia_term::TermData,
             U_: sophia_term::TermData,
             V_: sophia_term::TermData,
@@ -135,7 +142,14 @@ macro_rules! impl_mutable_dataset_for_indexed_dataset {
         {
             Ok(self.insert_indexed(s, p, o, g).is_some())
         }
-        fn remove<T_, U_, V_, W_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>, g: Option<&Term<W_>>) -> MDResult< Self, bool> where
+        fn remove<T_, U_, V_, W_>(
+            &mut self,
+            s: &Term<T_>,
+            p: &Term<U_>,
+            o: &Term<V_>,
+            g: Option<&Term<W_>>,
+        ) -> MDResult<Self, bool>
+        where
             T_: sophia_term::TermData,
             U_: sophia_term::TermData,
             V_: sophia_term::TermData,

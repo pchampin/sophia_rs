@@ -590,9 +590,7 @@ macro_rules! impl_indexed_dataset_for_wrapper {
 
         #[inline]
         fn with_capacity(capacity: usize) -> Self {
-            unsafe {
-                Self::idw_wrap_empty(T::with_capacity(capacity))
-            }
+            unsafe { Self::idw_wrap_empty(T::with_capacity(capacity)) }
         }
 
         #[inline]
@@ -612,7 +610,7 @@ macro_rules! impl_indexed_dataset_for_wrapper {
         #[inline]
         fn get_index_for_graph_name<U>(
             &self,
-            g: std::option::Option<&'_ sophia_term::Term<U>>
+            g: std::option::Option<&'_ sophia_term::Term<U>>,
         ) -> Option<Self::Index>
         where
             U: sophia_term::TermData,
@@ -621,7 +619,7 @@ macro_rules! impl_indexed_dataset_for_wrapper {
         }
 
         #[inline]
-        fn get_term(& self, i: Self::Index) -> Option<&Term<Self::TermData>> {
+        fn get_term(&self, i: Self::Index) -> Option<&Term<Self::TermData>> {
             self.get_wrapped().get_term(i)
         }
 
@@ -653,7 +651,7 @@ macro_rules! impl_indexed_dataset_for_wrapper {
             s: &sophia_term::Term<U>,
             p: &sophia_term::Term<V>,
             o: &sophia_term::Term<W>,
-            g: std::option::Option<&'_ sophia_term::Term<X>>
+            g: std::option::Option<&'_ sophia_term::Term<X>>,
         ) -> Option<[Self::Index; 4]>
         where
             U: sophia_term::TermData,

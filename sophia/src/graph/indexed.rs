@@ -110,14 +110,26 @@ macro_rules! impl_mutable_graph_for_indexed_graph {
     () => {
         type MutationError = std::convert::Infallible;
 
-        fn insert<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> MGResult< Self, bool> where
+        fn insert<T_, U_, V_>(
+            &mut self,
+            s: &Term<T_>,
+            p: &Term<U_>,
+            o: &Term<V_>,
+        ) -> MGResult<Self, bool>
+        where
             T_: sophia_term::TermData,
             U_: sophia_term::TermData,
             V_: sophia_term::TermData,
         {
             Ok(self.insert_indexed(s, p, o).is_some())
         }
-        fn remove<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> MGResult< Self, bool> where
+        fn remove<T_, U_, V_>(
+            &mut self,
+            s: &Term<T_>,
+            p: &Term<U_>,
+            o: &Term<V_>,
+        ) -> MGResult<Self, bool>
+        where
             T_: sophia_term::TermData,
             U_: sophia_term::TermData,
             V_: sophia_term::TermData,
