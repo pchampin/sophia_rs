@@ -408,10 +408,10 @@ where
     fn txt(&self) -> &str {
         self.txt.as_ref()
     }
-    fn dt(&self) -> &dyn traits::Iri {
+    fn dt(&self) -> traits::IriView<'_> {
         match &self.kind {
-            Dt(dt) => dt,
-            Lang(_) => &rdf::iri::langString,
+            Dt(dt) => dt.into(),
+            Lang(_) => (&rdf::iri::langString).into(),
         }
     }
     fn lang(&self) -> Option<&str> {

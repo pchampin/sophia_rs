@@ -667,18 +667,8 @@ impl<TD> traits::Iri for Iri<TD>
 where
     TD: TermData,
 {
-    fn ns(&self) -> &str {
-        self.ns.as_ref()
-    }
-    fn suffix(&self) -> Option<&str> {
-        self.suffix.as_ref().map(AsRef::as_ref)
-    }
-    fn whole(&self) -> MownStr<'_> {
-        if let Some(_) = self.suffix {
-            self.value().into()
-        } else {
-            self.ns.as_ref().into()
-        }
+    fn raw(&self) -> traits::RawIri<'_> {
+        (self.ns.as_ref(), self.suffix().as_ref().map(AsRef::as_ref)).into()
     }
 }
 
@@ -686,8 +676,8 @@ impl<TD> traits::Term for Iri<TD>
 where
     TD: TermData,
 {
-    fn as_iri(&self) -> Option<&dyn traits::Iri> {
-        Some(self as _)
+    fn as_iri(&self) -> Option<traits::IriView<'_>> {
+        Some(self.into())
     }
 }
 

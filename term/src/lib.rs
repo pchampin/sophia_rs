@@ -68,6 +68,7 @@ use self::literal::{AsLiteral, Literal};
 pub mod mown_str;
 use self::mown_str::MownStr;
 pub mod traits;
+use traits::IriView;
 
 mod _display;
 mod _error;
@@ -546,9 +547,9 @@ impl<TD> traits::Term for Term<TD>
 where
     TD: TermData,
 {
-    fn as_iri(&self) -> Option<&dyn traits::Iri> {
+    fn as_iri(&self) -> Option<IriView<'_>> {
         if let Term::Iri(iri) = self {
-            Some(iri)
+            Some(iri.into())
         } else {
             None
         }

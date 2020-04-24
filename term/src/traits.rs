@@ -9,7 +9,7 @@ use super::*;
 /// Interface of RDF terms.
 pub trait Term {
     /// Downcast to an IRI.
-    fn as_iri(&self) -> Option<&dyn Iri> {
+    fn as_iri(&self) -> Option<IriView<'_>> {
         None
     }
     /// Downcast to a literal.
@@ -41,24 +41,75 @@ impl<'a> PartialEq for &'a dyn Term {
 /// Applies to `sophia`'s IRIs that are represented as namespace and
 /// (optionally) a suffix.
 pub trait Iri {
-    /// The namespace of the IRI.
-    ///
-    /// The full IRI if suffix is `None`.
-    fn ns(&self) -> &str;
-    /// The suffix of the IRI.
-    fn suffix(&self) -> Option<&str> {
-        None
-    }
     /// The whole IRI.
     ///
     /// If the IRI is suffixed this may allocate a new string.
-    fn whole(&self) -> MownStr<'_>;
+    /// 
+    /// Has a default implementation that builds from [`raw()`](#method.raw).
+    fn value(&self) -> MownStr<'_> {
+        self.raw().into()
+    }
+    /// Returns the raw representation of the IRI that is maybe split into
+    /// namespace and suffix.
+    fn raw(&self) -> RawIri<'_>;
 }
 
 impl<'a> PartialEq for &'a dyn Iri {
     fn eq(&self, other: &Self) -> bool {
         // could be improved
-        self.whole() == other.whole()
+        self.value() == other.value()
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+/// An IRI split into namespace and optional a suffix.
+/// 
+/// This representation of an IRI might be used by some implementations.
+pub struct RawIri<'a>(&'a str, Option<&'a str>);
+
+impl<'a> From<(&'a str, Option<&'a str>)> for RawIri<'a> {
+    fn from(raw: (&'a str, Option<&'a str>)) -> Self {
+        RawIri(raw.0, raw.1)
+    }
+}
+
+impl<'a> Into<MownStr<'a>> for RawIri<'a> {
+    fn into(self) -> MownStr<'a> {
+        if let Some(suffix) = self.1 {
+            format!("{}{}", self.0, suffix).into()
+        } else {
+            self.0.into()
+        }
+    }
+}
+
+impl<'a> Iri for RawIri<'a> {
+    fn raw(&self) -> RawIri<'_> {
+        self.clone()
+    }
+}
+
+/// Result from downcasting a term into an IRI.
+pub struct IriView<'src>(&'src dyn Iri);
+
+impl<'src> Iri for IriView<'src> {
+    fn raw(&self) -> RawIri<'_> {
+        self.0.raw()
+    }
+}
+
+impl<'src, I> From<&'src I> for IriView<'src> 
+where
+    I: Iri,
+{
+    fn from(iri: &'src I) -> Self {
+        IriView(iri)
+    }
+}
+
+impl<'src> PartialEq for IriView<'src> {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
     }
 }
 
@@ -70,7 +121,7 @@ pub trait Literal {
     ///
     /// If the literal is language-tagged the datatype is `rdf:langString` as
     /// defined by the spec.
-    fn dt(&self) -> &dyn Iri;
+    fn dt(&self) -> IriView;
     /// Returns the literals language tag if it is language-tagged.
     fn lang(&self) -> Option<&str>;
 }
