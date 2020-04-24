@@ -16,7 +16,7 @@ keywords = ["rdf", "linked-data", "semantic-web", "json-ld"]
 chrono = { version = "0.4.11", optional = true }
 json = "0.12.4"
 sophia = { version = "0.5.2", path = "../sophia" }
-sophia_term = { version = "0.5.1", path = "../term" }
+sophia_term = { version = "0.5.2", path = "../term" }
 thiserror = "1.0.15"
 
 [[bin]]
