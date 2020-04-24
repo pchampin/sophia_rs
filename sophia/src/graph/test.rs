@@ -164,7 +164,7 @@ macro_rules! test_graph_impl {
         test_graph_impl!($module_name, $graph_impl, $is_set, $is_gen, $graph_impl::from_triple_source);
     };
     ($module_name: ident, $graph_impl: ident, $is_set: expr, $is_gen: expr, $graph_collector: path) => {
-        test_graph_impl!($module_name, $graph_impl, $is_set, $is_gen, $graph_collector, {
+        crate::test_graph_impl!($module_name, $graph_impl, $is_set, $is_gen, $graph_collector, {
             // these tests will only be performed for implementations of `MutableGraph`
             #[test]
             fn test_simple_mutations() -> MGResult<$graph_impl, ()> {

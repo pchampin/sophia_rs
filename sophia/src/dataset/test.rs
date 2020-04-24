@@ -3,6 +3,7 @@
 use std::fmt::Debug;
 
 use crate::dataset::*;
+use crate::graph::test::*;
 use crate::ns::*;
 use crate::quad::stream::*;
 use crate::quad::streaming_mode::{QuadStreamingMode, UnsafeQuad};
@@ -10,32 +11,13 @@ use crate::quad::*;
 use lazy_static::lazy_static;
 use sophia_term::*;
 
-pub const NS: &str = "http://example.org/";
-
 lazy_static! {
     pub static ref G1: StaticTerm = StaticTerm::new_iri_suffixed(NS, "G1").unwrap();
     pub static ref G2: StaticTerm = StaticTerm::new_iri_suffixed(NS, "G2").unwrap();
-    pub static ref C1: StaticTerm = StaticTerm::new_iri_suffixed(NS, "C1").unwrap();
-    pub static ref C2: StaticTerm = StaticTerm::new_iri_suffixed(NS, "C2").unwrap();
-    pub static ref P1: StaticTerm = StaticTerm::new_iri_suffixed(NS, "p1").unwrap();
-    pub static ref P2: StaticTerm = StaticTerm::new_iri_suffixed(NS, "p2").unwrap();
-    pub static ref I1A: StaticTerm = StaticTerm::new_iri_suffixed(NS, "I1A").unwrap();
-    pub static ref I1B: StaticTerm = StaticTerm::new_iri_suffixed(NS, "I1B").unwrap();
-    pub static ref I2A: StaticTerm = StaticTerm::new_iri_suffixed(NS, "I2A").unwrap();
-    pub static ref I2B: StaticTerm = StaticTerm::new_iri_suffixed(NS, "I2B").unwrap();
     //
     pub static ref DG: Option<&'static StaticTerm> = None;
     pub static ref GN1: Option<&'static StaticTerm> = Some(&G1);
     pub static ref GN2: Option<&'static StaticTerm> = Some(&G2);
-    //
-    pub static ref B1: StaticTerm = StaticTerm::new_bnode("1").unwrap();
-    pub static ref B2: StaticTerm = StaticTerm::new_bnode("2").unwrap();
-    pub static ref L1: StaticTerm = StaticTerm::from("lit1");
-    pub static ref L2: StaticTerm = StaticTerm::from("lit2");
-    pub static ref L2E: StaticTerm = StaticTerm::new_literal_lang("lit2", "en").unwrap();
-    pub static ref V1: StaticTerm = StaticTerm::new_variable("v1").unwrap();
-    pub static ref V2: StaticTerm = StaticTerm::new_variable("v2").unwrap();
-    pub static ref V3: StaticTerm = StaticTerm::new_variable("v3").unwrap();
 }
 
 pub fn no_quad() -> impl QuadSource {
@@ -117,16 +99,6 @@ where
         println!("{:?}\n{:?}\n{:?}\n{:?}\n\n", q.s(), q.p(), q.o(), q.g());
     }
     println!(">>>>");
-}
-
-pub fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
-    assert!(hint.0 <= val, "hint {:?} not consistent with {}", hint, val);
-    assert!(
-        val <= hint.1.unwrap_or(val),
-        "hint {:?} not consistent with {}",
-        hint,
-        val
-    )
 }
 
 pub fn make_quad_source() -> impl QuadSource {
@@ -345,6 +317,7 @@ macro_rules! test_dataset_impl {
             use sophia_term::matcher::ANY;
             use $crate::dataset::test::*;
             use $crate::dataset::*;
+            use $crate::graph::test::*;
             use $crate::ns::*;
 
             #[allow(unused_imports)]

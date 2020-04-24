@@ -222,8 +222,8 @@ pub(crate) mod test {
         Ok(g)
     }
 
-    // call to test_impl_graph! has been moved to ::graph::adapter::test::dataset,
-    // because I couldn't call it from this module...
+    crate::test_graph_impl!(dflt_graph, MyDatasetGraph, true, true, make_default_graph);
+    crate::test_graph_impl!(named_graph, MyDatasetGraph, true, true, make_named_graph);
 
     #[test]
     fn test_graph_default() -> MDResult<MyDataset, ()> {
