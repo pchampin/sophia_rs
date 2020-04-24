@@ -1,3 +1,13 @@
+0.5.0
+    New features
+    - new trait CollectibleGraph/CollectibleDataset
+    - new method collect_triples/collect_quads on streams
+    - Term now has its own crate `sophia_term`
+    - preliminary JSON-LD support in crate `sophia_jsonld`
+    Other major changes
+    - Term API and implementation much improved by @MattesWhite
+    - streams (TripleSource, QuadSource) as function arguments are now generally consumed
+
 0.4.0
     New features
     - Turtle, TriG, Generalized TriG parsers

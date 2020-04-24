@@ -8,7 +8,7 @@ use std::hash::{BuildHasher, Hash};
 use resiter::oks::*;
 
 use super::*;
-use crate::triple::stream::AsTripleSource;
+use crate::triple::stream::{AsTripleSource, StreamError, StreamResult, TripleSource};
 use crate::triple::streaming_mode::*;
 use crate::triple::*;
 use sophia_term::*;
@@ -47,7 +47,26 @@ where
     }
 }
 
-impl MutableGraph for Vec<[BoxTerm; 3]> {
+impl<TS, TD> CollectibleGraph<TS> for Vec<[Term<TD>; 3]>
+where
+    TS: TripleSource,
+    TD: TermData + 'static,
+    TD: for<'x> From<&'x str>,
+{
+    fn from_triple_source(triples: TS) -> StreamResult<Self, TS::Error, Infallible> {
+        triples
+            .map_triples(|t| [t.s().clone_into(), t.p().clone_into(), t.o().clone_into()])
+            .into_iter()
+            .collect::<Result<Self, TS::Error>>()
+            .map_err(StreamError::SourceError)
+    }
+}
+
+impl<TD> MutableGraph for Vec<[Term<TD>; 3]>
+where
+    TD: TermData + 'static,
+    TD: for<'x> From<&'x str>,
+{
     type MutationError = Infallible;
 
     fn insert<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
@@ -95,8 +114,26 @@ where
     }
 }
 
-impl<BH> MutableGraph for HashSet<[BoxTerm; 3], BH>
+impl<TS, TD, BH> CollectibleGraph<TS> for HashSet<[Term<TD>; 3], BH>
 where
+    TS: TripleSource,
+    TD: TermData + 'static,
+    TD: for<'x> From<&'x str>,
+    BH: BuildHasher + Default,
+{
+    fn from_triple_source(triples: TS) -> StreamResult<Self, TS::Error, Infallible> {
+        triples
+            .map_triples(|t| [t.s().clone_into(), t.p().clone_into(), t.o().clone_into()])
+            .into_iter()
+            .collect::<Result<Self, TS::Error>>()
+            .map_err(StreamError::SourceError)
+    }
+}
+
+impl<TD, BH> MutableGraph for HashSet<[Term<TD>; 3], BH>
+where
+    TD: TermData + 'static,
+    TD: for<'x> From<&'x str>,
     BH: BuildHasher,
 {
     type MutationError = Infallible;
@@ -125,7 +162,7 @@ where
     }
 }
 
-impl<'a, T, S: ::std::hash::BuildHasher> SetGraph for HashSet<T, S> where T: Eq + Hash + Triple {}
+impl<'a, T, S: BuildHasher> SetGraph for HashSet<T, S> where T: Eq + Hash + Triple {}
 
 #[cfg(test)]
 mod test {
@@ -134,18 +171,20 @@ mod test {
 
     use crate::graph::*;
     use crate::ns::*;
-    use sophia_term::BoxTerm;
+    use crate::triple::stream::TripleSource;
+    use sophia_term::{BoxTerm, StaticTerm};
+
+    static G: [[StaticTerm; 3]; 3] = [
+        [rdf::type_, rdf::type_, rdf::Property],
+        [rdf::Property, rdf::type_, rdfs::Class],
+        [rdfs::Class, rdf::type_, rdfs::Class],
+    ];
 
     #[test]
     fn test_slice() {
-        let g = [
-            [rdf::type_, rdf::type_, rdf::Property],
-            [rdf::Property, rdf::type_, rdfs::Class],
-            [rdfs::Class, rdf::type_, rdfs::Class],
-        ];
-        let len = g.triples().oks().count();
+        let len = G.triples().oks().count();
         assert_eq!(len, 3);
-        let len = g.triples_with_o(&rdfs::Class).oks().count();
+        let len = G.triples_with_o(&rdfs::Class).oks().count();
         assert_eq!(len, 2);
     }
 
@@ -155,7 +194,17 @@ mod test {
     type HashSetAsGraph = HashSet<[BoxTerm; 3]>;
     test_graph_impl!(hashset, HashSetAsGraph);
 
-    // only for the purpose of testing the test macro:
-    //test_graph_impl!(vec_strict, VecAsGraph, false, VecAsGraph::new, false);
-    //test_graph_impl!(hashset_strict, HashSetAsGraph, true, HashSetAsGraph::new, false);
+    #[test]
+    fn test_collect_hashset() {
+        let g: HashSetAsGraph = G.triples().collect_triples().unwrap();
+        assert_eq!(g.len(), 3);
+        let len = g.triples_with_o(&rdfs::Class).oks().count();
+        assert_eq!(len, 2);
+    }
+
+    // only for the purpose of testing the test macro with is_set and is_gen set to false
+    //test_graph_impl!(vec_strict, VecAsGraph, false, false);
+    //test_graph_impl!(hashset_strict, HashSetAsGraph, false, false);
+    // only for the purpose of testing test_immutable_graph_impl
+    //test_immutable_graph_impl!(immutable, HashSetAsGraph);
 }

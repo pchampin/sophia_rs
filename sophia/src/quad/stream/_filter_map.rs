@@ -35,6 +35,10 @@ where
             }
         })
     }
+
+    fn size_hint_quads(&self) -> (usize, Option<usize>) {
+        (0, self.source.size_hint_quads().1)
+    }
 }
 
 impl<S, F, T> crate::triple::stream::TripleSource for FilterMapSource<S, F>
@@ -58,6 +62,10 @@ where
                 Ok(())
             }
         })
+    }
+
+    fn size_hint_triples(&self) -> (usize, Option<usize>) {
+        (0, self.source.size_hint_quads().1)
     }
 }
 
@@ -115,5 +123,9 @@ where
         }
         std::mem::swap(&mut self.buffer, &mut buffer);
         self.buffer.pop_front()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, self.source.size_hint_quads().1)
     }
 }

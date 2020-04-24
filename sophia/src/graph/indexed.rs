@@ -23,6 +23,12 @@ pub trait IndexedGraph {
     type Index: Copy + Eq + Hash;
     type TermData: TermData + 'static;
 
+    /// Construct a new empty graph, provisioning for storing `capacity` triples.
+    fn with_capacity(capacity: usize) -> Self;
+
+    /// Shrink the memory consumption of the graph as much as possible.
+    fn shrink_to_fit(&mut self);
+
     /// Return the index for the given term, if it exists.
     fn get_index<T>(&self, t: &Term<T>) -> Option<Self::Index>
     where
@@ -56,8 +62,38 @@ pub trait IndexedGraph {
         T: TermData,
         U: TermData,
         V: TermData;
+}
 
-    fn shrink_to_fit(&mut self);
+/// Defines the implementation of [`CollectibleGraph`] for [`IndexedGraph`].
+///
+/// [`CollectibleGraph`]: graph/trait.CollectibleGraph.html
+/// [`IndexedGraph`]: graph/indexed/trait.IndexedGraph.html
+#[macro_export]
+macro_rules! impl_collectible_graph_for_indexed_graph {
+    ($indexed_mutable_graph: ty) => {
+        impl CollectibleGraph<TS> for $indexed_mutable_graph
+        where
+            TS: $crate::triple::stream::TripleSource,
+        {
+            impl_collectible_graph_for_indexed_graph!();
+        }
+    };
+    () => {
+        fn from_triple_source(
+            mut triples: TS,
+        ) -> $crate::triple::stream::StreamResult<Self, TS::Error, Self::Error> {
+            use $crate::triple::Triple;
+            let (tmin, tmax) = triples.size_hint_triples();
+            let cap = tmax.unwrap_or(tmin);
+            let mut g = Self::with_capacity(cap);
+            triples
+                .try_for_each_triple(|t| -> Result<(), Self::Error> {
+                    g.insert_indexed(t.s(), t.p(), t.o());
+                    Ok(())
+                })
+                .map(|_| g)
+        }
+    };
 }
 
 /// Defines the implementation of [`MutableGraph`] for [`IndexedGraph`].
@@ -74,14 +110,26 @@ macro_rules! impl_mutable_graph_for_indexed_graph {
     () => {
         type MutationError = std::convert::Infallible;
 
-        fn insert<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> MGResult< Self, bool> where
+        fn insert<T_, U_, V_>(
+            &mut self,
+            s: &Term<T_>,
+            p: &Term<U_>,
+            o: &Term<V_>,
+        ) -> MGResult<Self, bool>
+        where
             T_: sophia_term::TermData,
             U_: sophia_term::TermData,
             V_: sophia_term::TermData,
         {
             Ok(self.insert_indexed(s, p, o).is_some())
         }
-        fn remove<T_, U_, V_> (&mut self, s: &Term<T_>, p: &Term<U_>, o: &Term<V_>) -> MGResult< Self, bool> where
+        fn remove<T_, U_, V_>(
+            &mut self,
+            s: &Term<T_>,
+            p: &Term<U_>,
+            o: &Term<V_>,
+        ) -> MGResult<Self, bool>
+        where
             T_: sophia_term::TermData,
             U_: sophia_term::TermData,
             V_: sophia_term::TermData,

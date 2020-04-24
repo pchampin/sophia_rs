@@ -13,7 +13,7 @@ It comprises the following crates:
   - traits for describing RDF graphs and datasets,
   - implementation of those traits (in-memory),
   - traits for serializing and parsing various RDF formats
-* [`sophia_jsonld`] implements a JSON-LD serializer and parser (flattened form only)
+* [`sophia_jsonld`] preliminary support for JSON-LD
 
 
 ## Performances

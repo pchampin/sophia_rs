@@ -559,6 +559,12 @@ pub trait IndexedDatasetWrapper<T>
 where
     T: IndexedDataset,
 {
+    /// Wrap the given dataset.
+    ///
+    /// # Safety
+    /// This method requires that the given dataset is empty.
+    fn idw_wrap_empty(dataset: T) -> Self;
+
     /// Hook to be executed at the end of
     /// [`IndexedDataset::insert_indexed`](../indexed/trait.IndexedDataset.html#tymethod.insert_indexed).
     fn idw_hook_insert_indexed(&mut self, modified: &Option<[T::Index; 4]>);
@@ -583,6 +589,17 @@ macro_rules! impl_indexed_dataset_for_wrapper {
         type TermData = T::TermData;
 
         #[inline]
+        fn with_capacity(capacity: usize) -> Self {
+            Self::idw_wrap_empty(T::with_capacity(capacity))
+        }
+
+        #[inline]
+        fn shrink_to_fit(&mut self) {
+            self.get_wrapped_mut().shrink_to_fit();
+            self.idw_hook_shrink_to_fit();
+        }
+
+        #[inline]
         fn get_index<U>(&self, t: &sophia_term::Term<U>) -> Option<Self::Index>
         where
             U: sophia_term::TermData,
@@ -593,7 +610,7 @@ macro_rules! impl_indexed_dataset_for_wrapper {
         #[inline]
         fn get_index_for_graph_name<U>(
             &self,
-            g: std::option::Option<&'_ sophia_term::Term<U>>
+            g: std::option::Option<&'_ sophia_term::Term<U>>,
         ) -> Option<Self::Index>
         where
             U: sophia_term::TermData,
@@ -602,7 +619,7 @@ macro_rules! impl_indexed_dataset_for_wrapper {
         }
 
         #[inline]
-        fn get_term(& self, i: Self::Index) -> Option<&Term<Self::TermData>> {
+        fn get_term(&self, i: Self::Index) -> Option<&Term<Self::TermData>> {
             self.get_wrapped().get_term(i)
         }
 
@@ -634,7 +651,7 @@ macro_rules! impl_indexed_dataset_for_wrapper {
             s: &sophia_term::Term<U>,
             p: &sophia_term::Term<V>,
             o: &sophia_term::Term<W>,
-            g: std::option::Option<&'_ sophia_term::Term<X>>
+            g: std::option::Option<&'_ sophia_term::Term<X>>,
         ) -> Option<[Self::Index; 4]>
         where
             U: sophia_term::TermData,
@@ -645,11 +662,6 @@ macro_rules! impl_indexed_dataset_for_wrapper {
             let modified = self.get_wrapped_mut().remove_indexed(s, p, o, g);
             self.idw_hook_remove_indexed(&modified);
             modified
-        }
-
-        fn shrink_to_fit(&mut self) {
-            self.get_wrapped_mut().shrink_to_fit();
-            self.idw_hook_shrink_to_fit();
         }
     };
 }

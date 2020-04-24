@@ -63,7 +63,7 @@ where
 
     fn serialize_quads<QS>(
         &mut self,
-        source: &mut QS,
+        mut source: QS,
     ) -> StreamResult<&mut Self, QS::Error, Self::Error>
     where
         QS: QuadSource,

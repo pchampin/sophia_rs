@@ -45,7 +45,7 @@ impl Engine {
         }
     }
 
-    pub fn process_quads<QS>(&mut self, source: &mut QS) -> StreamResult<(), QS::Error, JsonLdError>
+    pub fn process_quads<QS>(&mut self, mut source: QS) -> StreamResult<(), QS::Error, JsonLdError>
     where
         QS: QuadSource,
     {

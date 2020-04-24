@@ -63,7 +63,7 @@ where
 
     fn serialize_triples<TS>(
         &mut self,
-        source: &mut TS,
+        mut source: TS,
     ) -> StreamResult<&mut Self, TS::Error, Self::Error>
     where
         TS: TripleSource,

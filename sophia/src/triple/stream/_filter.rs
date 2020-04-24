@@ -30,4 +30,8 @@ where
             }
         })
     }
+
+    fn size_hint_triples(&self) -> (usize, Option<usize>) {
+        (0, self.source.size_hint_triples().1)
+    }
 }
