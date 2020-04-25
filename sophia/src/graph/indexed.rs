@@ -71,15 +71,12 @@ pub trait IndexedGraph {
 #[macro_export]
 macro_rules! impl_collectible_graph_for_indexed_graph {
     ($indexed_mutable_graph: ty) => {
-        impl CollectibleGraph<TS> for $indexed_mutable_graph
-        where
-            TS: $crate::triple::stream::TripleSource,
-        {
+        impl CollectibleGraph for $indexed_mutable_graph {
             impl_collectible_graph_for_indexed_graph!();
         }
     };
     () => {
-        fn from_triple_source(
+        fn from_triple_source<TS: $crate::triple::stream::TripleSource>(
             mut triples: TS,
         ) -> $crate::triple::stream::StreamResult<Self, TS::Error, Self::Error> {
             use $crate::triple::Triple;

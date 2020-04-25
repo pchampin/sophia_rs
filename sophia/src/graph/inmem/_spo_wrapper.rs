@@ -3,7 +3,6 @@
 use std::collections::{HashMap, HashSet};
 use std::iter::empty;
 
-use crate::triple::stream::TripleSource;
 use crate::triple::streaming_mode::{ByTermRefs, StreamedTriple};
 
 use super::*;
@@ -157,9 +156,8 @@ where
     impl_indexed_graph_for_wrapper!();
 }
 
-impl<TS, T> CollectibleGraph<TS> for SpoWrapper<T>
+impl<T> CollectibleGraph for SpoWrapper<T>
 where
-    TS: TripleSource,
     T: IndexedGraph + Graph<Triple = ByTermRefs<<T as IndexedGraph>::TermData>>,
 {
     impl_collectible_graph_for_indexed_graph!();

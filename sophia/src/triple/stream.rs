@@ -165,7 +165,7 @@ pub trait TripleSource {
     fn collect_triples<G>(self) -> StreamResult<G, Self::Error, <G as Graph>::Error>
     where
         Self: Sized,
-        G: CollectibleGraph<Self>,
+        G: CollectibleGraph,
     {
         G::from_triple_source(self)
     }

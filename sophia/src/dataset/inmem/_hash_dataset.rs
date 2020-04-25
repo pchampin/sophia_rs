@@ -188,14 +188,13 @@ where
     }
 }
 
-impl<TS, I> CollectibleDataset<TS> for HashDataset<I>
+impl<I> CollectibleDataset for HashDataset<I>
 where
-    TS: QuadSource,
     I: TermIndexMap,
     I::Index: Hash,
     <I::Factory as TermFactory>::TermData: 'static,
 {
-    fn from_quad_source(quads: TS) -> StreamResult<Self, TS::Error, Infallible> {
+    fn from_quad_source<QS: QuadSource>(quads: QS) -> StreamResult<Self, QS::Error, Infallible> {
         let (tmin, tmax) = quads.size_hint_quads();
         let cap = tmax.unwrap_or(tmin);
         let mut hash_dataset = HashDataset {

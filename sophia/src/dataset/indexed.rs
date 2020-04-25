@@ -88,15 +88,12 @@ pub trait IndexedDataset {
 #[macro_export]
 macro_rules! impl_collectible_dataset_for_indexed_dataset {
     ($indexed_mutable_dataset: ty) => {
-        impl CollectibleDataset<QS> for $indexed_mutable_dataset
-        where
-            QS: $crate::quad::stream::QuadSource,
-        {
+        impl CollectibleDataset for $indexed_mutable_dataset {
             impl_collectible_dataset_for_indexed_dataset!();
         }
     };
     () => {
-        fn from_quad_source(
+        fn from_quad_source<QS: $crate::quad::stream::QuadSource>(
             mut quads: QS,
         ) -> $crate::quad::stream::StreamResult<Self, QS::Error, Self::Error> {
             use $crate::quad::Quad;

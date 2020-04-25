@@ -47,13 +47,14 @@ where
     }
 }
 
-impl<TS, TD> CollectibleGraph<TS> for Vec<[Term<TD>; 3]>
+impl<TD> CollectibleGraph for Vec<[Term<TD>; 3]>
 where
-    TS: TripleSource,
     TD: TermData + 'static,
     TD: for<'x> From<&'x str>,
 {
-    fn from_triple_source(triples: TS) -> StreamResult<Self, TS::Error, Infallible> {
+    fn from_triple_source<TS: TripleSource>(
+        triples: TS,
+    ) -> StreamResult<Self, TS::Error, Infallible> {
         triples
             .map_triples(|t| [t.s().clone_into(), t.p().clone_into(), t.o().clone_into()])
             .into_iter()
@@ -114,14 +115,15 @@ where
     }
 }
 
-impl<TS, TD, BH> CollectibleGraph<TS> for HashSet<[Term<TD>; 3], BH>
+impl<TD, BH> CollectibleGraph for HashSet<[Term<TD>; 3], BH>
 where
-    TS: TripleSource,
     TD: TermData + 'static,
     TD: for<'x> From<&'x str>,
     BH: BuildHasher + Default,
 {
-    fn from_triple_source(triples: TS) -> StreamResult<Self, TS::Error, Infallible> {
+    fn from_triple_source<TS: TripleSource>(
+        triples: TS,
+    ) -> StreamResult<Self, TS::Error, Infallible> {
         triples
             .map_triples(|t| [t.s().clone_into(), t.p().clone_into(), t.o().clone_into()])
             .into_iter()

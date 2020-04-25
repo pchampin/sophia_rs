@@ -39,13 +39,12 @@ where
     }
 }
 
-impl<QS, TD> CollectibleDataset<QS> for Vec<([Term<TD>; 3], Option<Term<TD>>)>
+impl<TD> CollectibleDataset for Vec<([Term<TD>; 3], Option<Term<TD>>)>
 where
-    QS: QuadSource,
     TD: TermData + 'static,
     TD: for<'x> From<&'x str>,
 {
-    fn from_quad_source(quads: QS) -> StreamResult<Self, QS::Error, Infallible> {
+    fn from_quad_source<QS: QuadSource>(quads: QS) -> StreamResult<Self, QS::Error, Infallible> {
         quads
             .map_quads(|q| {
                 (
@@ -125,14 +124,13 @@ where
     }
 }
 
-impl<QS, TD, S> CollectibleDataset<QS> for HashSet<([Term<TD>; 3], Option<Term<TD>>), S>
+impl<TD, S> CollectibleDataset for HashSet<([Term<TD>; 3], Option<Term<TD>>), S>
 where
-    QS: QuadSource,
     TD: TermData + 'static,
     TD: for<'x> From<&'x str>,
     S: BuildHasher + Default,
 {
-    fn from_quad_source(quads: QS) -> StreamResult<Self, QS::Error, Infallible> {
+    fn from_quad_source<QS: QuadSource>(quads: QS) -> StreamResult<Self, QS::Error, Infallible> {
         quads
             .map_quads(|q| {
                 (

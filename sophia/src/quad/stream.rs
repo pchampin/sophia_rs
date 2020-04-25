@@ -137,7 +137,7 @@ pub trait QuadSource {
     fn collect_quads<D>(self) -> StreamResult<D, Self::Error, <D as Dataset>::Error>
     where
         Self: Sized,
-        D: CollectibleDataset<Self>,
+        D: CollectibleDataset,
     {
         D::from_quad_source(self)
     }

@@ -5,7 +5,6 @@ use std::iter::empty;
 
 use super::*;
 use crate::graph::indexed::*;
-use crate::quad::stream::QuadSource;
 use crate::quad::streaming_mode::{ByTermRefs, StreamedQuad};
 
 /// A [`DatasetWrapper`](trait.DatasetWrapper.html)
@@ -203,9 +202,8 @@ where
     impl_indexed_dataset_for_wrapper!();
 }
 
-impl<QS, T> CollectibleDataset<QS> for OgpsWrapper<T>
+impl<T> CollectibleDataset for OgpsWrapper<T>
 where
-    QS: QuadSource,
     T: IndexedDataset + Dataset<Quad = ByTermRefs<<T as IndexedDataset>::TermData>>,
 {
     impl_collectible_dataset_for_indexed_dataset!();

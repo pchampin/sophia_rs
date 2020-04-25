@@ -160,14 +160,15 @@ where
     }
 }
 
-impl<TS, I> CollectibleGraph<TS> for HashGraph<I>
+impl<I> CollectibleGraph for HashGraph<I>
 where
-    TS: TripleSource,
     I: TermIndexMap,
     I::Index: Hash,
     <I::Factory as TermFactory>::TermData: 'static,
 {
-    fn from_triple_source(triples: TS) -> StreamResult<Self, TS::Error, Infallible> {
+    fn from_triple_source<TS: TripleSource>(
+        triples: TS,
+    ) -> StreamResult<Self, TS::Error, Infallible> {
         let (tmin, tmax) = triples.size_hint_triples();
         let cap = tmax.unwrap_or(tmin);
         let mut hash_graph = HashGraph {
