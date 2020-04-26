@@ -9,6 +9,7 @@ use crate::quad::stream::*;
 use crate::quad::streaming_mode::{QuadStreamingMode, UnsafeQuad};
 use crate::quad::*;
 use lazy_static::lazy_static;
+pub use sophia_term; // required when test macro is used in other packages
 use sophia_term::*;
 
 lazy_static! {
@@ -133,19 +134,19 @@ where
 #[macro_export]
 macro_rules! test_dataset_impl {
     ($dataset_impl: ident) => {
-        test_dataset_impl!(test, $dataset_impl);
+        $crate::test_dataset_impl!(test, $dataset_impl);
     };
     ($module_name: ident, $dataset_impl: ident) => {
-        test_dataset_impl!($module_name, $dataset_impl, true);
+        $crate::test_dataset_impl!($module_name, $dataset_impl, true);
     };
     ($module_name: ident, $dataset_impl: ident, $is_set: expr) => {
-        test_dataset_impl!($module_name, $dataset_impl, $is_set, true);
+        $crate::test_dataset_impl!($module_name, $dataset_impl, $is_set, true);
     };
     ($module_name: ident, $dataset_impl: ident, $is_set: expr, $is_gen: expr) => {
-        test_dataset_impl!($module_name, $dataset_impl, $is_set, $is_gen, $dataset_impl::from_quad_source);
+        $crate::test_dataset_impl!($module_name, $dataset_impl, $is_set, $is_gen, $dataset_impl::from_quad_source);
     };
     ($module_name: ident, $dataset_impl: ident, $is_set: expr, $is_gen: expr, $dataset_collector: path) => {
-        test_dataset_impl!($module_name, $dataset_impl, $is_set, $is_gen, $dataset_collector, {
+        $crate::test_dataset_impl!($module_name, $dataset_impl, $is_set, $is_gen, $dataset_collector, {
             // these tests will only be performed for implementations of `MutableDataset`
             #[test]
             fn test_simple_mutations() -> MDResult<$dataset_impl, ()> {
@@ -319,12 +320,12 @@ macro_rules! test_dataset_impl {
     ($module_name: ident, $dataset_impl: ident, $is_set: expr, $is_gen: expr, $dataset_collector: path, { $($mt:tt)* }) => {
         #[cfg(test)]
         mod $module_name {
-            use sophia_term::{StaticTerm, Term};
-            use sophia_term::matcher::ANY;
             use $crate::dataset::test::*;
             use $crate::dataset::*;
             use $crate::graph::test::*;
             use $crate::ns::*;
+            use self::sophia_term::{StaticTerm, Term};
+            use self::sophia_term::matcher::ANY;
 
             #[allow(unused_imports)]
             use super::*;
@@ -889,16 +890,16 @@ macro_rules! test_dataset_impl {
 #[macro_export]
 macro_rules! test_immutable_dataset_impl {
     ($dataset_impl: ident) => {
-        test_immutable_dataset_impl!(test, $dataset_impl);
+        $crate::test_immutable_dataset_impl!(test, $dataset_impl);
     };
     ($module_name: ident, $dataset_impl: ident) => {
-        test_immutable_dataset_impl!($module_name, $dataset_impl, true);
+        $crate::test_immutable_dataset_impl!($module_name, $dataset_impl, true);
     };
     ($module_name: ident, $dataset_impl: ident, $is_set: expr) => {
-        test_immutable_dataset_impl!($module_name, $dataset_impl, $is_set, true);
+        $crate::test_immutable_dataset_impl!($module_name, $dataset_impl, $is_set, true);
     };
     ($module_name: ident, $dataset_impl: ident, $is_set: expr, $is_gen: expr) => {
-        test_immutable_dataset_impl!(
+        $crate::test_immutable_dataset_impl!(
             $module_name,
             $dataset_impl,
             $is_set,
@@ -908,7 +909,7 @@ macro_rules! test_immutable_dataset_impl {
     };
     ($module_name: ident, $dataset_impl: ident, $is_set: expr, $is_gen: expr, $dataset_collector: path) => {
         // calling test_dataset_impl, but passing an empty block as mt (the mutability tests)
-        test_dataset_impl!(
+        $crate::test_dataset_impl!(
             $module_name,
             $dataset_impl,
             $is_set,

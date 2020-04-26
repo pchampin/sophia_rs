@@ -8,6 +8,7 @@ use crate::triple::stream::*;
 use crate::triple::streaming_mode::{TripleStreamingMode, UnsafeTriple};
 use crate::triple::*;
 use lazy_static::lazy_static;
+pub use sophia_term; // required when test macro is used in other packages
 use sophia_term::*;
 
 pub const NS: &str = "http://example.org/";
@@ -152,16 +153,16 @@ pub fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
 #[macro_export]
 macro_rules! test_graph_impl {
     ($graph_impl: ident) => {
-        test_graph_impl!(test, $graph_impl);
+        $crate::test_graph_impl!(test, $graph_impl);
     };
     ($module_name: ident, $graph_impl: ident) => {
-        test_graph_impl!($module_name, $graph_impl, true);
+        $crate::test_graph_impl!($module_name, $graph_impl, true);
     };
     ($module_name: ident, $graph_impl: ident, $is_set: expr) => {
-        test_graph_impl!($module_name, $graph_impl, $is_set, true);
+        $crate::test_graph_impl!($module_name, $graph_impl, $is_set, true);
     };
     ($module_name: ident, $graph_impl: ident, $is_set: expr, $is_gen: expr) => {
-        test_graph_impl!($module_name, $graph_impl, $is_set, $is_gen, $graph_impl::from_triple_source);
+        $crate::test_graph_impl!($module_name, $graph_impl, $is_set, $is_gen, $graph_impl::from_triple_source);
     };
     ($module_name: ident, $graph_impl: ident, $is_set: expr, $is_gen: expr, $graph_collector: path) => {
         $crate::test_graph_impl!($module_name, $graph_impl, $is_set, $is_gen, $graph_collector, {
@@ -280,11 +281,11 @@ macro_rules! test_graph_impl {
     ($module_name: ident, $graph_impl: ident, $is_set: expr, $is_gen: expr, $graph_collector: path, { $($mt:tt)* }) => {
         #[cfg(test)]
         mod $module_name {
-            use sophia_term::matcher::ANY;
-            use sophia_term::*;
             use $crate::graph::test::*;
             use $crate::graph::*;
             use $crate::ns::*;
+            use self::sophia_term::*;
+            use self::sophia_term::matcher::ANY;
 
             #[allow(unused_imports)]
             use super::*;
@@ -631,16 +632,16 @@ macro_rules! test_graph_impl {
 #[macro_export]
 macro_rules! test_immutable_graph_impl {
     ($graph_impl: ident) => {
-        test_immutable_graph_impl!(test, $graph_impl);
+        $crate::test_immutable_graph_impl!(test, $graph_impl);
     };
     ($module_name: ident, $graph_impl: ident) => {
-        test_immutable_graph_impl!($module_name, $graph_impl, true);
+        $crate::test_immutable_graph_impl!($module_name, $graph_impl, true);
     };
     ($module_name: ident, $graph_impl: ident, $is_set: expr) => {
-        test_immutable_graph_impl!($module_name, $graph_impl, $is_set, true);
+        $crate::test_immutable_graph_impl!($module_name, $graph_impl, $is_set, true);
     };
     ($module_name: ident, $graph_impl: ident, $is_set: expr, $is_gen: expr) => {
-        test_immutable_graph_impl!(
+        $crate::test_immutable_graph_impl!(
             $module_name,
             $graph_impl,
             $is_set,
@@ -650,7 +651,7 @@ macro_rules! test_immutable_graph_impl {
     };
     ($module_name: ident, $graph_impl: ident, $is_set: expr, $is_gen: expr, $graph_collector: path) => {
         // calling test_graph_impl, but passing an empty block as mt (the mutability tests)
-        test_graph_impl!(
+        $crate::test_graph_impl!(
             $module_name,
             $graph_impl,
             $is_set,
