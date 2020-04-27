@@ -150,7 +150,7 @@ macro_rules! test_dataset_impl {
             // these tests will only be performed for implementations of `MutableDataset`
             #[test]
             fn test_simple_mutations() -> MDResult<$dataset_impl, ()> {
-                let mut d = $dataset_collector(no_quad()).unwrap();
+                let mut d: $dataset_impl = $dataset_collector(no_quad()).unwrap();
                 assert_eq!(d.quads().count(), 0);
                 assert!(MutableDataset::insert(
                     &mut d,
@@ -190,7 +190,7 @@ macro_rules! test_dataset_impl {
             #[test]
             fn test_no_duplicate() -> MDResult<$dataset_impl, ()> {
                 if $is_set {
-                    let mut d = $dataset_collector(no_quad()).unwrap();
+                    let mut d: $dataset_impl = $dataset_collector(no_quad()).unwrap();
                     assert_eq!(d.quads().count(), 0);
                     assert!(MutableDataset::insert(
                         &mut d,
@@ -232,7 +232,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_different_graphs_do_not_count_as_duplicate() -> MDResult<$dataset_impl, ()> {
-                let mut d = $dataset_collector(no_quad()).unwrap();
+                let mut d: $dataset_impl = $dataset_collector(no_quad()).unwrap();
                 assert_eq!(d.quads().count(), 0);
                 assert!(MutableDataset::insert(
                     &mut d,
@@ -271,7 +271,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_x_all_mutations() {
-                let mut d = $dataset_collector(no_quad()).unwrap();
+                let mut d: $dataset_impl = $dataset_collector(no_quad()).unwrap();
                 assert_eq!(d.quads().count(), 0);
                 let inserted = d.insert_all(some_quads()).unwrap();
                 if $is_set {
@@ -297,7 +297,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_remove_matching() -> MDResult<$dataset_impl, ()> {
-                let mut d = $dataset_collector(some_quads()).unwrap();
+                let mut d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let o_matcher = [C1.clone(), C2.clone()];
                 d.remove_matching(&ANY, &rdf::type_, &o_matcher[..], &ANY)?;
@@ -307,7 +307,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_retain_matching() -> MDResult<$dataset_impl, ()> {
-                let mut d = $dataset_collector(some_quads()).unwrap();
+                let mut d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let o_matcher = [C1.clone(), C2.clone()];
                 d.retain_matching(&ANY, &rdf::type_, &o_matcher[..], &ANY)?;
@@ -332,7 +332,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads();
                 let hint = quads.size_hint();
@@ -349,7 +349,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_s() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_s(&C2);
                 let hint = quads.size_hint();
@@ -378,7 +378,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_p() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_p(&rdfs::subClassOf);
                 let hint = quads.size_hint();
@@ -401,7 +401,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_o() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_o(&I2B);
                 let hint = quads.size_hint();
@@ -418,7 +418,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_g() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_g(*GN1);
                 let hint = quads.size_hint();
@@ -435,7 +435,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_sp() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_sp(&C2, &rdf::type_);
                 let hint = quads.size_hint();
@@ -458,7 +458,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_so() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_so(&C2, &C1);
                 let hint = quads.size_hint();
@@ -475,7 +475,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_po() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_po(&rdf::type_, &rdfs::Class);
                 let hint = quads.size_hint();
@@ -507,7 +507,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_sg() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_sg(&C2, *GN1);
                 let hint = quads.size_hint();
@@ -524,7 +524,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_pg() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_pg(&rdf::type_, *GN1);
                 let hint = quads.size_hint();
@@ -541,7 +541,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_og() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_og(&C1, *GN1);
                 let hint = quads.size_hint();
@@ -558,7 +558,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_spo() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_spo(&C1, &rdf::type_, &rdfs::Class);
                 let hint = quads.size_hint();
@@ -578,7 +578,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_spg() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_spg(&C1, &rdf::type_, *DG);
                 let hint = quads.size_hint();
@@ -601,7 +601,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_sog() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_sog(&C1, &rdfs::Class, *DG);
                 let hint = quads.size_hint();
@@ -624,7 +624,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_pog() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_pog(&rdf::type_, &rdfs::Class, *DG);
                 let hint = quads.size_hint();
@@ -650,7 +650,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_with_spog() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_spog(&C1, &rdf::type_, &rdfs::Class, *DG);
                 let hint = quads.size_hint();
@@ -676,7 +676,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_contains() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
                 assert!(Dataset::contains(&d, &C2, &rdfs::subClassOf, &C1, *GN1)?);
                 assert!(!Dataset::contains(&d, &C1, &rdfs::subClassOf, &C2, *GN1)?);
                 Ok(())
@@ -684,7 +684,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_quads_matching() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let p_matcher: [StaticTerm; 2] = [rdf::type_.clone(), rdfs::domain.clone()];
                 let o_matcher: [StaticTerm; 2] = [C1.clone(), C2.clone()];
@@ -711,7 +711,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_subjects() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let subjects = d.subjects().unwrap();
                 assert_eq!(subjects.len(), 8);
@@ -731,7 +731,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_predicates() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let predicates = d.predicates().unwrap();
                 assert_eq!(predicates.len(), 6);
@@ -749,7 +749,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_objects() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let objects = d.objects().unwrap();
                 assert_eq!(objects.len(), 7);
@@ -768,7 +768,7 @@ macro_rules! test_dataset_impl {
 
             #[test]
             fn test_graph_names() -> MDResult<$dataset_impl, ()> {
-                let d = $dataset_collector(some_quads()).unwrap();
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let graph_names = d.graph_names().unwrap();
                 assert_eq!(graph_names.len(), 2);
@@ -838,7 +838,7 @@ macro_rules! test_dataset_impl {
             #[test]
             fn test_variables() -> MDResult<$dataset_impl, ()> {
                 if $is_gen {
-                    let d = $dataset_collector(generalized_node_types_quads()).unwrap();
+                    let d: $dataset_impl = $dataset_collector(generalized_node_types_quads()).unwrap();
 
                     let variables = d.variables().unwrap();
                     assert_eq!(variables.len(), 3);
@@ -849,7 +849,7 @@ macro_rules! test_dataset_impl {
                     assert!(rvariables.contains("v2"));
                     assert!(rvariables.contains("v3"));
                 } else {
-                    let d = $dataset_collector(strict_node_types_quads()).unwrap();
+                    let d: $dataset_impl = $dataset_collector(strict_node_types_quads()).unwrap();
 
                     let variables = d.variables().unwrap();
                     assert_eq!(variables.len(), 0);
