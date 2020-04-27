@@ -14,9 +14,9 @@ use sophia_term::{Term, TermData};
 use super::GraphAsDatasetError;
 
 /// The adapter returned by
-/// * [`Graph::borrow_as_dataset`](../trait.Graph.html#method.borrow_as_dataset)
-/// * [`Graph::borrow_mut_as_dataset`](../trait.Graph.html#method.borrow_mut_as_dataset)
-/// * [`Graph::own_as_dataset`](../trait.Graph.html#method.own_as_dataset)
+/// * [`Graph::as_dataset`](../trait.Graph.html#method.as_dataset)
+/// * [`Graph::as_dataset_mut`](../trait.Graph.html#method.as_dataset_mut)
+/// * [`Graph::into_dataset`](../trait.Graph.html#method.into_dataset)
 pub struct GraphAsDataset<G: ?Sized, H = G>(H, PhantomData<G>);
 
 impl<G: ?Sized, H> GraphAsDataset<G, H> {
@@ -387,27 +387,27 @@ mod test {
     type MyGraph = HashSet<[BoxTerm; 3]>;
 
     #[test]
-    fn test_borrow() -> Result<(), Box<dyn Error>> {
+    fn as_dataset() -> Result<(), Box<dyn Error>> {
         let mut g = MyGraph::new();
         <MyGraph as MutableGraph>::insert(&mut g, &rdfs::Resource, &rdf::type_, &rdfs::Class)?;
 
-        let d = g.borrow_as_dataset();
+        let d = g.as_dataset();
         assert_eq!(d.quads().count(), 1);
         Ok(())
     }
 
     #[test]
-    fn test_borrow_mut() -> Result<(), Box<dyn Error>> {
+    fn as_dataset_mut() -> Result<(), Box<dyn Error>> {
         let mut g = MyGraph::new();
 
-        let mut d = g.borrow_mut_as_dataset();
+        let mut d = g.as_dataset_mut();
         assert_eq!(d.quads().count(), 0);
         d.insert(&rdfs::Resource, &rdf::type_, &rdfs::Class, DG)?;
         assert_eq!(d.quads().count(), 1);
         // borrow stops here
         assert_eq!(g.len(), 1);
 
-        let mut d = g.borrow_mut_as_dataset();
+        let mut d = g.as_dataset_mut();
         assert_eq!(d.quads().count(), 1);
         d.remove(&rdfs::Resource, &rdf::type_, &rdfs::Class, DG)?;
         assert_eq!(d.quads().count(), 0);
@@ -417,10 +417,10 @@ mod test {
     }
 
     #[test]
-    fn test_owned() -> Result<(), Box<dyn Error>> {
+    fn into_dataset() -> Result<(), Box<dyn Error>> {
         let g = MyGraph::new();
 
-        let mut d = g.as_dataset();
+        let mut d = g.into_dataset();
         assert_eq!(d.quads().count(), 0);
         d.insert(&rdfs::Resource, &rdf::type_, &rdfs::Class, DG)?;
         assert_eq!(d.quads().count(), 1);
@@ -428,7 +428,7 @@ mod test {
         let g = d.unwrap();
         assert_eq!(g.len(), 1);
 
-        let mut d = g.as_dataset();
+        let mut d = g.into_dataset();
         assert_eq!(d.quads().count(), 1);
         d.remove(&rdfs::Resource, &rdf::type_, &rdfs::Class, DG)?;
         assert_eq!(d.quads().count(), 0);
@@ -442,7 +442,7 @@ mod test {
     fn test_invalid_graph_name() {
         let mut g = MyGraph::new();
 
-        let mut d = g.borrow_mut_as_dataset();
+        let mut d = g.as_dataset_mut();
         let ret = d.insert(
             &rdfs::Class,
             &rdfs::subClassOf,
@@ -457,7 +457,7 @@ mod test {
 
     fn make_gdg<TS: TripleSource>(ts: TS) -> Result<GDG, Infallible> {
         Ok(DatasetGraph::new(
-            ts.collect_triples::<MyGraph>().unwrap().as_dataset(),
+            ts.collect_triples::<MyGraph>().unwrap().into_dataset(),
             None,
         ))
     }

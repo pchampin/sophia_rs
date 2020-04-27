@@ -358,17 +358,17 @@ pub trait Graph {
     }
 
     /// [`Dataset`](../dataset/trait.Dataset.html) adapter borrowing this graph
-    fn borrow_as_dataset(&self) -> GraphAsDataset<Self, &Self> {
+    fn as_dataset(&self) -> GraphAsDataset<Self, &Self> {
         GraphAsDataset::new(self)
     }
 
     /// [`Dataset`](../dataset/trait.Dataset.html) adapter borrowing this graph mutably
-    fn borrow_mut_as_dataset(&mut self) -> GraphAsDataset<Self, &mut Self> {
+    fn as_dataset_mut(&mut self) -> GraphAsDataset<Self, &mut Self> {
         GraphAsDataset::new(self)
     }
 
     /// [`Dataset`](../dataset/trait.Dataset.html) adapter taking ownership of this graph
-    fn as_dataset(self) -> GraphAsDataset<Self, Self>
+    fn into_dataset(self) -> GraphAsDataset<Self>
     where
         Self: Sized,
     {
