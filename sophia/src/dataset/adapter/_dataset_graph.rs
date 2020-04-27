@@ -14,9 +14,25 @@ use sophia_term::{Term, TermData};
 /// The adapter returned by
 /// [`Dataset::union_graph`](../trait.Dataset.html#method.union_graph)
 pub struct DatasetGraph<D: ?Sized, E, M: GraphNameMatcher> {
-    pub(in crate::dataset) dataset: E,
-    pub(in crate::dataset) gmatcher: M,
-    pub(in crate::dataset) _phantom: PhantomData<D>,
+    dataset: E,
+    gmatcher: M,
+    _phantom: PhantomData<D>,
+}
+
+impl<D: ?Sized, E, M: GraphNameMatcher> DatasetGraph<D, E, M> {
+    /// Wrap a dataset as a graph
+    pub fn new(dataset: E, gmatcher: M) -> DatasetGraph<D, E, M> {
+        DatasetGraph {
+            dataset,
+            gmatcher,
+            _phantom: PhantomData,
+        }
+    }
+
+    /// Unwrap this adapter to get the original graph.
+    pub fn unwrap(self) -> E {
+        self.dataset
+    }
 }
 
 impl<D, E, M> Graph for DatasetGraph<D, E, M>
@@ -177,11 +193,7 @@ where
 }
 
 #[cfg(test)]
-pub(crate) mod test {
-    // for some reason, test_graph_impl! only works in mod graph,
-    // so this macro invocation is done in ::graph::adapter::test::dataset.
-    //
-    // the boiler plate code is still defined here, and made visible for that module.
+mod test {
     use super::*;
     use crate::dataset::test::*;
     use crate::dataset::MDResult;
@@ -192,11 +204,11 @@ pub(crate) mod test {
     use sophia_term::BoxTerm;
     use std::collections::HashSet;
 
-    pub type MyQuad = ([BoxTerm; 3], Option<BoxTerm>);
-    pub type MyDataset = HashSet<MyQuad>;
-    pub type MyDatasetGraph = DatasetGraph<MyDataset, MyDataset, Option<BoxTerm>>;
+    type MyQuad = ([BoxTerm; 3], Option<BoxTerm>);
+    type MyDataset = HashSet<MyQuad>;
+    type MyDatasetGraph = DatasetGraph<MyDataset, MyDataset, Option<BoxTerm>>;
 
-    pub fn make_default_graph<TS>(ts: TS) -> Result<MyDatasetGraph, ()>
+    fn make_default_graph<TS>(ts: TS) -> Result<MyDatasetGraph, ()>
     where
         TS: TripleSource,
     {
@@ -209,7 +221,7 @@ pub(crate) mod test {
         Ok(g)
     }
 
-    pub fn make_named_graph<TS>(ts: TS) -> Result<MyDatasetGraph, ()>
+    fn make_named_graph<TS>(ts: TS) -> Result<MyDatasetGraph, ()>
     where
         TS: TripleSource,
     {

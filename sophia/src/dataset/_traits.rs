@@ -3,7 +3,6 @@
 use std::collections::HashSet;
 use std::convert::Infallible;
 use std::error::Error;
-use std::marker::PhantomData;
 
 use resiter::filter::*;
 use resiter::map::*;
@@ -530,11 +529,7 @@ pub trait Dataset {
     where
         T: TermData,
     {
-        DatasetGraph {
-            dataset: self,
-            gmatcher: graph_name.map(|n| n.clone_into()),
-            _phantom: PhantomData,
-        }
+        DatasetGraph::new(self, graph_name.map(|n| n.clone_into()))
     }
 
     /// Borrows mutably one of the graphs of this dataset
@@ -545,11 +540,7 @@ pub trait Dataset {
     where
         T: TermData,
     {
-        DatasetGraph {
-            dataset: self,
-            gmatcher: graph_name.map(|n| n.clone_into()),
-            _phantom: PhantomData,
-        }
+        DatasetGraph::new(self, graph_name.map(|n| n.clone_into()))
     }
 
     /// Borrows a graph containing the union of all graphs matched by `gmatcher`
@@ -557,11 +548,7 @@ pub trait Dataset {
     where
         T: GraphNameMatcher,
     {
-        DatasetGraph {
-            dataset: self,
-            gmatcher,
-            _phantom: PhantomData,
-        }
+        DatasetGraph::new(self, gmatcher)
     }
 }
 

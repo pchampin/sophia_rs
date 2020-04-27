@@ -17,10 +17,15 @@ use super::GraphAsDatasetError;
 /// * [`Graph::borrow_as_dataset`](../trait.Graph.html#method.borrow_as_dataset)
 /// * [`Graph::borrow_mut_as_dataset`](../trait.Graph.html#method.borrow_mut_as_dataset)
 /// * [`Graph::own_as_dataset`](../trait.Graph.html#method.own_as_dataset)
-pub struct GraphAsDataset<G: ?Sized, H>(pub(crate) H, pub(crate) PhantomData<G>);
+pub struct GraphAsDataset<G: ?Sized, H = G>(H, PhantomData<G>);
 
 impl<G: ?Sized, H> GraphAsDataset<G, H> {
-    /// Unwrap this adapter to get the original graph back.
+    /// Wrap a graph as a dataset
+    pub fn new(graph: H) -> GraphAsDataset<G, H> {
+        GraphAsDataset(graph, PhantomData)
+    }
+
+    /// Unwrap this adapter to get the original graph.
     pub fn unwrap(self) -> H {
         self.0
     }
@@ -366,11 +371,15 @@ where
 
 #[cfg(test)]
 mod test {
+    use super::*;
+    use crate::dataset::adapter::DatasetGraph;
     use crate::dataset::{Dataset, MutableDataset};
     use crate::graph::*;
     use crate::ns::{rdf, rdfs};
+    use crate::triple::stream::TripleSource;
     use sophia_term::{BoxTerm, StaticTerm};
     use std::collections::HashSet;
+    use std::convert::Infallible;
     use std::error::Error;
 
     const DG: Option<&'static StaticTerm> = None;
@@ -442,4 +451,16 @@ mod test {
         );
         assert!(ret.is_err());
     }
+
+    /// A DatasetAsGraph wrapped as a graph so that we can test it
+    type GDG = DatasetGraph<GraphAsDataset<MyGraph>, GraphAsDataset<MyGraph>, Option<BoxTerm>>;
+
+    fn make_gdg<TS: TripleSource>(ts: TS) -> Result<GDG, Infallible> {
+        Ok(DatasetGraph::new(
+            ts.collect_triples::<MyGraph>().unwrap().as_dataset(),
+            None,
+        ))
+    }
+
+    crate::test_immutable_graph_impl!(gdg, GDG, true, true, make_gdg);
 }
