@@ -411,8 +411,8 @@ where
                 }
             }
             None => {
-                match ns[..ns.len() - 1].rfind(GEN_DELIMS) {
-                    Some(pos) => {
+                match ns[..ns.len()].rfind(GEN_DELIMS) {
+                    Some(pos) if !ns[pos + 1..].is_empty() => {
                         // case: no suffix, ns must be split
                         Iri {
                             ns: MownStr::from(&ns[..=pos]),
@@ -420,7 +420,7 @@ where
                             absolute: self.absolute,
                         }
                     }
-                    None => {
+                    _ => {
                         // case: no suffix, borrow ns as is
                         self.as_ref_str().map_into()
                     }

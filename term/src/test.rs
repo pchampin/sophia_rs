@@ -111,7 +111,7 @@ fn iri_normalized_no_suffix() {
 }
 
 #[test]
-fn iri_normalized_last_hash_or_slash() {
+fn iri_normalized_last_gen_delim() {
     let norm = Normalization::LastGenDelim;
     for (ns1, sf1, ns2, sf2) in &[
         ("http://champin.net/#pa", "", "http://champin.net/#", "pa"),
@@ -127,6 +127,20 @@ fn iri_normalized_last_hash_or_slash() {
         ("tag:", "foo", "tag:", "foo"),
         ("tag?foo", "", "tag?", "foo"),
         ("tag?", "foo", "tag?", "foo"),
+        ("http://champin.net/foo/", "", "http://champin.net/foo/", ""),
+        ("http://champin.net/", "foo/", "http://champin.net/foo/", ""),
+        (
+            "http://example.org/i18ñ#ê",
+            "",
+            "http://example.org/i18ñ#",
+            "ê",
+        ),
+        (
+            "http://example.org/i18ñ#",
+            "ê",
+            "http://example.org/i18ñ#",
+            "ê",
+        ),
     ] {
         let i1 = if sf1.len() == 0 {
             BoxTerm::new_iri(*ns1).unwrap()
@@ -357,7 +371,7 @@ fn literal_normalized_no_suffix() {
 }
 
 #[test]
-fn literal_normalized_last_hash_or_slash() {
+fn literal_normalized_last_gen_delim() {
     let norm = Normalization::LastGenDelim;
     for (ns1, sf1, ns2, sf2) in &[
         ("http://champin.net/#pa", "", "http://champin.net/#", "pa"),
