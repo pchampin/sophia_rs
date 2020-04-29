@@ -158,6 +158,10 @@ where
             ))
         }))
     }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
 }
 
 impl<TS, I> CollectibleGraph<TS> for HashGraph<I>

@@ -167,6 +167,12 @@ pub trait GraphWrapper {
     fn gw_variables(&self) -> GResultTermSet<Self::Wrapped> {
         self.get_wrapped().variables()
     }
+
+    #[inline]
+    /// Mimic the [`len`](../trait.Graph.html#method.len) method.
+    fn gw_len(&self) -> usize {
+        self.get_wrapped().len()
+    }
 }
 
 /// Defines the implementation of [`Graph`] for [`GraphWrapper`].
@@ -323,6 +329,11 @@ macro_rules! impl_graph_for_wrapper {
             &self,
         ) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>> {
             $crate::graph::inmem::GraphWrapper::gw_variables(self)
+        }
+
+        #[inline]
+        fn len(&self) -> usize {
+            $crate::graph::inmem::GraphWrapper::gw_len(self)
         }
     };
 }

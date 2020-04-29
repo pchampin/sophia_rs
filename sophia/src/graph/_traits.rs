@@ -358,6 +358,9 @@ pub trait Graph {
         Ok(res)
     }
 
+    /// Number of triples stored in the graph.
+    fn len(&self) -> usize;
+
     /// [`Dataset`](../dataset/trait.Dataset.html) adapter borrowing this graph
     fn borrow_as_dataset(&self) -> GraphAsDataset<Self, &Self> {
         GraphAsDataset(self, PhantomData)
