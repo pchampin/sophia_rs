@@ -38,6 +38,29 @@ $ git submodule update
 * [CECILL-C] (compatible with GNU LGPL) for other components
 
 
+## Citation
+
+When using Sophia, please use the following citation:
+
+
+> Champin, P.-A. (2020) ‘Sophia: A Linked Data and Semantic Web toolkit for Rust’, in Wilde, E. and Amundsen, M. (eds). The Web Conference 2020: Developers Track, Taipei, TW. Available at: https://www2020devtrack.github.io/site/schedule.
+
+Bibtex:
+```bibtex
+@misc{champin_sophia_2020,
+        title = {{Sophia: A Linked Data and Semantic Web toolkit for Rust},
+        author = {Champin, Pierre-Antoine},
+        howpublished = {{The Web Conference 2020: Developers Track}},
+        address = {Taipei, TW},
+        editor = {Wilde, Erik and Amundsen, Mike},
+        month = apr,
+        year = {2020},
+        language = {en},
+        url = {https://www2020devtrack.github.io/site/schedule}
+}
+```
+
+
 [`sophia_term`]: https://crates.io/crates/sophia_term
 [`sophia`]: https://crates.io/crates/sophia
 [`sophia_jsonld`]: https://crates.io/crates/sophia_jsonld
