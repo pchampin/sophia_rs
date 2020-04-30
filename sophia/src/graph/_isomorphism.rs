@@ -5,7 +5,7 @@
 
 use crate::graph::{GTerm, GTriple, Graph};
 use crate::triple::stream::{
-    SinkError, SinkResult as _, SourceError, SourceResult as _, StreamResult,
+    SinkError, SinkResult as _, SourceError, SourceResult as _, StreamError, StreamResult,
 };
 use crate::triple::Triple;
 use sophia_term::{RefTerm, Term, TermData};
@@ -54,6 +54,26 @@ impl Error for AlgorithmFailure {}
 /// # Performance
 ///
 /// Gets quickly very expensive.
+///
+/// # Known issues
+///
+/// The current implementation fails if the graphs contain _redundant_ blank 
+/// nodes. Lets assume following graphs (prefix declaration omitted):
+/// 
+/// ```text
+/// # g1
+/// _:a :p _:b.
+/// _:c :p _:d.
+///
+/// # g2
+/// _:a2 :p _:b2.
+/// _:c2 :p _:d2.
+/// ```
+///
+/// `g1` and `g2` are clearly isomorphic equivalent. However, the current 
+/// hashing strategy would always calculate the same hashes for every triple
+/// and it is not possible to further improve the hashes. Therefore, this
+/// implementation would fail as no distinct hashes could be calculated.
 pub fn isomorphic_graphs<G1, G2, E1, E2>(g1: &G1, g2: &G2) -> StreamResult<bool, E1, E2>
 where
     E1: 'static + std::error::Error,
@@ -63,6 +83,8 @@ where
 {
     // quick return conditions
     // -----------------------
+    dbg!("# Quick return");
+    
     let (min1, max1) = g1.triples().size_hint();
     let (min2, max2) = g2.triples().size_hint();
     if let Some(max1) = max1 {
@@ -84,25 +106,34 @@ where
         return Ok(false);
     }
 
-    // check if each triple in g1 is also in g2
-    // ----------------------------------------
-    // regardless of blank nodes
-    if !check_for_equal_triples_regardless_bns(g1, g2)? {
+    // check for same triples in both graphs
+    // -------------------------------------
+    // - regardless of blank nodes
+    // - implicitly checks that g1 and g2 have the same length
+    dbg!("# Check length and triples");
+    let g1_in_g2 = check_for_equal_triples_regardless_bns(g1, g2)?;
+    let g2_in_g1 = check_for_equal_triples_regardless_bns(g2, g1).map_err(StreamError::reverse)?;
+
+    if !(g1_in_g2 && g2_in_g1) {
         return Ok(false);
     }
 
     // Create hashes
+    dbg!("# Calc hashes");
+    dbg!("## g1");
     let bn_hashes1 = match calc_bn_hashes::<G1, E1, IsoHasher>(g1) {
         Ok(map) => map,
         Err(SourceError(e)) => return Err(SourceError(e)),
         Err(SinkError(_)) => return Ok(false), // Not the best solution
     };
+    dbg!("## g1");
     let bn_hashes2 = match calc_bn_hashes::<G2, E2, IsoHasher>(g2) {
         Ok(map) => map,
         Err(SourceError(e)) => return Err(SinkError(e)),
         Err(SinkError(_)) => return Ok(false), // Not the best solution
     };
 
+    dbg!("# Create mapping");
     let mut bn_mapping = HashMap::new();
     for (hash, bn1) in bn_hashes1 {
         let bn2 = match bn_hashes2.get(&hash) {
@@ -112,6 +143,7 @@ where
         bn_mapping.insert(bn1, bn2);
     }
 
+    dbg!("# Equal with mapping");
     isomorphic_graphs_with_mapping(g1, g2, bn_mapping)
 }
 
@@ -500,11 +532,11 @@ where
 mod test {
     use super::*;
     use crate::graph::inmem::FastGraph;
-    use crate::parser::turtle;
+    use crate::parser::{turtle, nt};
     use crate::triple::stream::TripleSource;
 
     #[test]
-    fn simple_iso() -> Result<(), Box<dyn Error>> {
+    fn simple() -> Result<(), Box<dyn Error>> {
         let g1 = r#"
             @prefix foaf: <http://xmlns.com/foaf/0.1/>.
 
@@ -541,5 +573,89 @@ mod test {
         Ok(())
     }
 
-    // TODO: Add test with bigger and more complex graphs
+    #[test]
+    fn different_parsers() -> Result<(), Box<dyn Error>> {
+        let ttl = r#"
+            @prefix foaf: <http://xmlns.com/foaf/0.1/>.
+
+            [] foaf:name "Alice";
+                   foaf:mbox <mailto:alice@work.example> ;
+                   foaf:knows [foaf:name "Bob"] .
+        "#;
+        let nt = r#"
+            _:alice <http://xmlns.com/foaf/0.1/name> "Alice".
+            _:alice <http://xmlns.com/foaf/0.1/mbox> <mailto:alice@work.example>.
+            _:alice <http://xmlns.com/foaf/0.1/knows> _:bob.
+            _:bob <http://xmlns.com/foaf/0.1/name> "Bob".
+        "#;
+        let ttl: FastGraph = turtle::parse_str(ttl).collect_triples()?;
+        let nt: FastGraph = nt::parse_str(nt).collect_triples()?;
+
+        assert!(isomorphic_graphs(&nt, &ttl)?);
+        assert!(isomorphic_graphs(&ttl, &nt)?);
+
+        Ok(())
+    }
+
+    /// Every subject and object is a blank node with the a different predicate.
+    #[test]
+    fn heterogeneous_grid() -> Result<(), Box<dyn Error>> {
+        let g1 = r#"
+            @prefix : <http://example.org/>.
+
+            _:a :p1 _:b, _:d .
+            _:c :p2 _:b, _:f .
+            _:e :p3 _:b, _:d, _:f, _:h .
+            _:g :p4 _:d, _:h .
+            _:i :p5 _:f, _:h .
+        "#;
+        let g2 = r#"
+            @prefix : <http://example.org/>.
+
+            _:a2 :p1 _:b2, _:d2 .
+            _:c2 :p2 _:b2, _:f2 .
+            _:e2 :p3 _:b2, _:d2, _:f2, _:h2 .
+            _:g2 :p4 _:d2, _:h2 .
+            _:i2 :p5 _:f2, _:h2 .
+        "#;
+        let g1: FastGraph = turtle::parse_str(g1).collect_triples()?;
+        let g2: FastGraph = turtle::parse_str(g2).collect_triples()?;
+
+        assert!(isomorphic_graphs(&g1, &g2)?);
+        assert!(isomorphic_graphs(&g2, &g1)?);
+
+        Ok(())
+    }
+
+    // TODO: Implement an algorithm aware of redundant blank nodes.
+    // TODO: Candidate -> http://aidanhogan.com/docs/rdf-canonicalisation.pdf
+    // /// Every subject and object is a blank node with the same predicate.
+    // #[test]
+    // fn homogeneous_grid() -> Result<(), Box<dyn Error>> {
+    //     let g1 = r#"
+    //         @prefix : <http://example.org/>.
+
+    //         _:a :p _:b, _:d .
+    //         _:c :p _:b, _:f .
+    //         _:e :p _:b, _:d, _:f, _:h .
+    //         _:g :p _:d, _:h .
+    //         _:i :p _:f, _:h .
+    //     "#;
+    //     let g2 = r#"
+    //         @prefix : <http://example.org/>.
+
+    //         _:a2 :p _:b2, _:d2 .
+    //         _:c2 :p _:b2, _:f2 .
+    //         _:e2 :p _:b2, _:d2, _:f2, _:h2 .
+    //         _:g2 :p _:d2, _:h2 .
+    //         _:i2 :p _:f2, _:h2 .
+    //     "#;
+    //     let g1: FastGraph = turtle::parse_str(g1).collect_triples()?;
+    //     let g2: FastGraph = turtle::parse_str(g2).collect_triples()?;
+
+    //     assert!(isomorphic_graphs(&g1, &g2)?);
+    //     assert!(isomorphic_graphs(&g2, &g1)?);
+
+    //     Ok(())
+    // }
 }
