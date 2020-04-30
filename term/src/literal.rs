@@ -3,10 +3,10 @@
 //!
 
 use crate::iri::Normalization;
-use crate::mown_str::MownStr;
 use crate::ns::{rdf, xsd};
 use crate::{Iri, Result, Term, TermData, TermError};
 use language_tag::LangTag;
+use mownstr::MownStr;
 use std::convert::TryFrom;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -480,24 +480,22 @@ mod test {
 
     #[test]
     fn convert_to_mown_does_not_allocate() {
-        use crate::mown_str::MownStr;
         let lit1 = Literal::<Box<str>>::new_dt("hello", xsd::iri::string.clone());
-        let lit2 = lit1.clone_into();
+        let lit2: Literal<MownStr> = lit1.clone_into();
         let Literal { txt, .. } = lit2;
-        assert!(!matches!(txt, MownStr::Own(_)), "txt has been allocated");
+        assert!(txt.is_borrowed(), "txt has been allocated");
     }
 
     #[test]
     fn resolve_to_mown_does_not_allocate_txt() {
         use crate::iri::{IriParsed, Resolve};
-        use crate::mown_str::MownStr;
         let dt1 = Iri::<Box<str>>::new("").unwrap();
         let lit1 = Literal::<Box<str>>::new_dt("hello", dt1);
         let xsd_string = &xsd::iri::string.value();
         let base = IriParsed::new(&xsd_string).unwrap();
         let lit2: Literal<MownStr> = base.resolve(&lit1);
         let Literal { txt, .. } = lit2;
-        assert!(!matches!(txt, MownStr::Own(_)), "txt has been allocated");
+        assert!(txt.is_borrowed(), "txt has been allocated");
     }
 
     #[test]

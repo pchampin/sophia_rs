@@ -16,6 +16,7 @@ keywords = ["rdf", "linked-data", "semantic-web"]
 [dependencies]
 language-tag = "0.9.0"
 lazy_static = "1.4.0"
+mownstr = "0.1.1"
 regex = "1.3.7"
 weak-table = "0.2.3"
 thiserror = "1.0.15"

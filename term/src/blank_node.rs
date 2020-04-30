@@ -2,8 +2,8 @@
 //!
 
 use super::{Result, Term, TermData, TermError};
-use crate::mown_str::MownStr;
 use lazy_static::lazy_static;
+use mownstr::MownStr;
 use regex::Regex;
 use std::convert::TryFrom;
 use std::fmt;

@@ -46,6 +46,7 @@
 
 #![deny(missing_docs)]
 
+use mownstr::MownStr;
 use std::convert::TryInto;
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -65,8 +66,6 @@ pub mod iri;
 use self::iri::{Iri, Normalization};
 pub mod literal;
 use self::literal::{AsLiteral, Literal};
-pub mod mown_str;
-use self::mown_str::MownStr;
 
 mod _display;
 mod _error;

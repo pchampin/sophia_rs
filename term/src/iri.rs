@@ -21,8 +21,8 @@ mod _join;
 pub use self::_join::*;
 
 use super::{Result, Term, TermData, TermError};
-use crate::mown_str::MownStr;
 use crate::ns::Namespace;
+use mownstr::MownStr;
 use std::convert::TryFrom;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -749,15 +749,12 @@ mod test {
 
     #[test]
     fn convert_to_mown_does_not_allocate() {
-        use crate::mown_str::MownStr;
         let iri1 = Iri::<Box<str>>::new_suffixed("http://example.org/", "foo").unwrap();
-        let iri2 = iri1.clone_map(Into::into);
+        let iri2: Iri<MownStr> = iri1.clone_into();
         let Iri { ns, suffix, .. } = iri2;
-        if let MownStr::Own(_) = ns {
-            assert!(false, "ns has been allocated");
-        }
-        if let Some(MownStr::Own(_)) = suffix {
-            assert!(false, "suffix has been allocated");
+        assert!(ns.is_borrowed(), "ns has been allocated");
+        if let Some(suffix) = suffix {
+            assert!(suffix.is_borrowed(), "suffix has been allocated");
         }
     }
 
