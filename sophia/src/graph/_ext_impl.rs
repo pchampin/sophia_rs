@@ -28,10 +28,6 @@ where
                 .as_triple_source(),
         )
     }
-
-    fn len(&self) -> usize {
-        self.len()
-    }
 }
 
 impl<T> Graph for Vec<T>
@@ -48,10 +44,6 @@ where
                 .map(StreamedTriple::by_ref)
                 .as_triple_source(),
         )
-    }
-
-    fn len(&self) -> usize {
-        self.len()
     }
 }
 
@@ -119,10 +111,6 @@ where
     #[inline]
     fn triples(&self) -> GTripleSource<Self> {
         Box::from(self.iter().map(StreamedTriple::by_ref).as_triple_source())
-    }
-
-    fn len(&self) -> usize {
-        self.len()
     }
 }
 

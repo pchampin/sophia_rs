@@ -135,13 +135,6 @@ where
                 .map_ok(StreamedTriple::from_quad),
         )
     }
-
-    fn len(&self) -> usize {
-        self.dataset
-            .borrow()
-            .quads_matching(&ANY, &ANY, &ANY, &self.gmatcher)
-            .count()
-    }
 }
 
 impl<D, E, F> MutableGraph for DatasetGraph<D, E, Option<Term<F>>>

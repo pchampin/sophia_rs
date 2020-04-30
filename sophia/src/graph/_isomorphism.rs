@@ -5,7 +5,7 @@
 
 use crate::graph::{GTerm, GTriple, Graph};
 use crate::triple::stream::{
-    SinkError, SinkResult as _, SourceError, SourceResult as _, StreamResult,
+    SinkError, SinkResult as _, SourceError, SourceResult as _, StreamError, StreamResult,
 };
 use crate::triple::Triple;
 use sophia_term::{RefTerm, Term, TermData};
@@ -63,9 +63,6 @@ where
 {
     // quick return conditions
     // -----------------------
-    if g1.len() != g2.len() {
-        return Ok(false);
-    }
 
     // blank nodes in the respective graph
     let bns1 = g1.bnodes().source_err()?;
@@ -75,10 +72,14 @@ where
         return Ok(false);
     }
 
-    // check if each triple in g1 is also in g2
-    // ----------------------------------------
-    // regardless of blank nodes
-    if !check_for_equal_triples_regardless_bns(g1, g2)? {
+    // check for same triples in both graphs
+    // -------------------------------------
+    // - regardless of blank nodes
+    // - implicitly checks that g1 and g2 have the same length
+    let g1_in_g2 = check_for_equal_triples_regardless_bns(g1, g2)?;
+    let g2_in_g1 = check_for_equal_triples_regardless_bns(g2, g1).map_err(StreamError::reverse)?;
+
+    if !(g1_in_g2 && g2_in_g1) {
         return Ok(false);
     }
 
@@ -523,7 +524,7 @@ mod test {
         let g1: FastGraph = turtle::parse_str(g1).collect_triples()?;
         let g2: FastGraph = turtle::parse_str(g2).collect_triples()?;
         let g3: FastGraph = turtle::parse_str(g3).collect_triples()?;
-        
+
         assert!(isomorphic_graphs(&g1, &g2)?);
         assert!(isomorphic_graphs(&g2, &g1)?);
         assert!(!isomorphic_graphs(&g1, &g3)?);
