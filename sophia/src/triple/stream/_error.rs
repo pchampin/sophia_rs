@@ -87,6 +87,13 @@ where
             SinkError(err) => err,
         }
     }
+    /// Switch source and sink error.
+    pub fn reverse(self) -> StreamError<SinkErr, SourceErr> {
+        match self {
+            SourceError(e) => SinkError(e),
+            SinkError(e) => SourceError(e),
+        }
+    }
 }
 
 /// Convenient type alias
