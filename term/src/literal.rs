@@ -5,8 +5,8 @@
 use crate::iri::Normalization;
 use crate::ns::{rdf, xsd};
 use crate::{Iri, Result, Term, TermData, TermError};
-use language_tag::LangTag;
 use mownstr::MownStr;
+use oxilangtag::LanguageTag;
 use std::convert::TryFrom;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -85,10 +85,10 @@ where
         V: AsRef<str>,
         TD: From<U> + From<V>,
     {
-        if let Err(err) = tag.as_ref().parse::<LangTag>() {
+        if let Err(err) = LanguageTag::parse(tag.as_ref()) {
             return Err(TermError::InvalidLanguageTag {
                 tag: tag.as_ref().to_string(),
-                err,
+                err: err.to_string(),
             });
         }
 
@@ -128,7 +128,7 @@ where
         TD: From<U> + From<V>,
     {
         debug_assert!(
-            tag.as_ref().parse::<LangTag>().is_ok(),
+            LanguageTag::parse(tag.as_ref()).is_ok(),
             "invalid language tag {:?}",
             tag.as_ref()
         );
