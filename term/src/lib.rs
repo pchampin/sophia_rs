@@ -66,6 +66,8 @@ pub mod iri;
 use self::iri::{Iri, Normalization};
 pub mod literal;
 use self::literal::{AsLiteral, Literal};
+mod _trait;
+pub use _trait::*;
 
 mod _display;
 mod _error;
