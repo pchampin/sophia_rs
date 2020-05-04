@@ -7,7 +7,7 @@ use json::JsonValue;
 use sophia::ns::{rdf, xsd};
 use sophia::quad::{stream::*, Quad};
 use sophia::triple::stream::{SinkError, StreamResult};
-use sophia_term::{Term, TermData};
+use sophia_term::{TTerm, Term, TermData};
 use std::collections::hash_map::Entry::*;
 use std::collections::{HashMap, HashSet};
 

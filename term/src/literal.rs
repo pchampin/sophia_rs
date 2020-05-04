@@ -4,7 +4,7 @@
 
 use crate::iri::Normalization;
 use crate::ns::{rdf, xsd};
-use crate::{Iri, Result, Term, TermData, TermError};
+use crate::{Iri, Result, TTerm, Term, TermData, TermError};
 use mownstr::MownStr;
 use oxilangtag::LanguageTag;
 use std::convert::TryFrom;

@@ -20,7 +20,7 @@ pub use self::_regex::*;
 mod _join;
 pub use self::_join::*;
 
-use super::{Result, Term, TermData, TermError};
+use super::*;
 use crate::ns::Namespace;
 use mownstr::MownStr;
 use std::convert::TryFrom;
@@ -67,7 +67,7 @@ pub enum Normalization {
 /// methods produce valid output. Note that the creation of invalid IRIs may
 /// lead to unexpected errors in other places.
 ///
-#[derive(Clone, Copy, Debug, Eq)]
+#[derive(Clone, Copy, Debug, Eq, Ord)]
 pub struct Iri<TD: TermData> {
     /// The namespace of the IRI.
     ///
@@ -309,11 +309,6 @@ where
         self.ns.as_ref().chars().chain(self.suffix_as_str().chars())
     }
 
-    /// Whether this IRI is absolute or relative.
-    pub fn is_absolute(&self) -> bool {
-        self.absolute
-    }
-
     /// Whether this IRI is is composed of a whole IRI (`false`) or a namespace
     /// and a suffix (`true`).
     pub fn has_suffix(&self) -> bool {
@@ -513,14 +508,6 @@ where
         w.write_all(b">")
     }
 
-    /// Return this IRI as text.
-    pub fn value(&self) -> MownStr {
-        match &self.suffix {
-            None => self.ns.as_ref().into(),
-            Some(s) => format!("{}{}", self.ns.as_ref(), s.as_ref()).into(),
-        }
-    }
-
     /// Returns either the suffix if existent or an empty string.
     fn suffix_as_str(&self) -> &str {
         match &self.suffix {
@@ -552,6 +539,21 @@ impl Iri<&'static str> {
     }
 }
 
+impl<TD: TermData> TTerm for Iri<TD> {
+    fn kind(&self) -> TermKind {
+        TermKind::Iri
+    }
+    fn value_raw(&self) -> (&str, Option<&str>) {
+        (
+            self.ns.as_ref(),
+            (&self.suffix).as_ref().map(|td| td.as_ref()),
+        )
+    }
+    fn is_absolute(&self) -> bool {
+        self.absolute
+    }
+}
+
 impl<TD> fmt::Display for Iri<TD>
 where
     TD: TermData,
@@ -561,13 +563,13 @@ where
     }
 }
 
-impl<T, U> PartialEq<Iri<U>> for Iri<T>
+impl<TD, TE> PartialEq<TE> for Iri<TD>
 where
-    T: TermData,
-    U: TermData,
+    TD: TermData,
+    TE: TTerm,
 {
-    fn eq(&self, other: &Iri<U>) -> bool {
-        self.len() == other.len() && !self.bytes().zip(other.bytes()).any(|(bs, bo)| bs != bo)
+    fn eq(&self, other: &TE) -> bool {
+        term_eq(self, other)
     }
 }
 
@@ -588,17 +590,13 @@ where
     }
 }
 
-impl<T, U> PartialEq<Term<U>> for Iri<T>
+impl<TD, TE> PartialOrd<TE> for Iri<TD>
 where
-    T: TermData,
-    U: TermData,
+    TD: TermData,
+    TE: TTerm,
 {
-    #[inline]
-    fn eq(&self, other: &Term<U>) -> bool {
-        match other {
-            Term::Iri(other_iri) => other_iri == self,
-            _ => false,
-        }
+    fn partial_cmp(&self, other: &TE) -> Option<std::cmp::Ordering> {
+        Some(term_cmp(self, other))
     }
 }
 
@@ -607,9 +605,7 @@ where
     TD: TermData,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write(self.ns.as_ref().as_bytes());
-        state.write(self.suffix_as_str().as_bytes());
-        state.write_u8(0xff);
+        term_hash(self, state)
     }
 }
 
@@ -658,6 +654,29 @@ where
                 term: term.to_string(),
                 expect: "IRI".to_owned(),
             }),
+        }
+    }
+}
+
+impl<TD> TryCopyTerm for Iri<TD>
+where
+    TD: TermData + for<'x> From<&'x str>,
+{
+    type Error = TermError;
+
+    fn try_copy<T: TTerm>(term: &T) -> Result<Self, Self::Error> {
+        if term.kind() == TermKind::Iri {
+            let (ns, suffix) = term.value_raw();
+            let abs = term.is_absolute();
+            Ok(match suffix {
+                None => Self::new_unchecked(ns, abs),
+                Some(suffix) => Self::new_suffixed_unchecked(ns, suffix, abs),
+            })
+        } else {
+            Err(TermError::UnexpectedKindOfTerm {
+                term: term_to_string(term),
+                expect: "IRI".to_owned(),
+            })
         }
     }
 }
@@ -756,6 +775,32 @@ mod test {
         if let Some(suffix) = suffix {
             assert!(suffix.is_borrowed(), "suffix has been allocated");
         }
+    }
+
+    #[test]
+    fn eq_different_cut() {
+        let i1 = Iri::<&str>::new("http://champin.net/#pa").unwrap();
+        let i2 = Iri::<&str>::new_suffixed("http://champin.net/#", "pa").unwrap();
+        let i3 = Iri::<&str>::new_suffixed("http://champin.net/", "#pa").unwrap();
+        let i4 = Iri::<&str>::new_suffixed("http://champin.", "net/#pa").unwrap();
+        assert_eq!(i1, i2);
+        assert_eq!(h(&i1), h(&i2));
+        assert_eq!(i1, i3);
+        assert_eq!(h(&i1), h(&i3));
+        assert_eq!(i1, i4);
+        assert_eq!(h(&i1), h(&i4));
+        assert_eq!(i2, i3);
+        assert_eq!(h(&i2), h(&i3));
+        assert_eq!(i2, i4);
+        assert_eq!(h(&i2), h(&i4));
+        assert_eq!(i3, i4);
+        assert_eq!(h(&i3), h(&i4));
+    }
+
+    fn h<H: std::hash::Hash>(x: &H) -> u64 {
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        x.hash(&mut hasher);
+        hasher.finish()
     }
 
     pub const POSITIVE_IRIS: &[(

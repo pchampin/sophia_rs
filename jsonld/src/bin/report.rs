@@ -4,6 +4,7 @@
 
 use chrono::Utc;
 use sophia_jsonld::test_util::*;
+use sophia_term::TTerm;
 use std::path::Path;
 
 const MAKER: &str = "http://champin.net/#pa";

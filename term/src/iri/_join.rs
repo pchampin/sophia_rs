@@ -289,7 +289,7 @@ fn remove_dot_segments(path: &mut Vec<&str>) {
 mod test {
     use super::super::test::{NEGATIVE_IRIS, POSITIVE_IRIS, RELATIVE_IRIS};
     use super::*;
-    use crate::RefTerm;
+    use crate::{RefTerm, TTerm};
 
     #[test]
     fn positive() {
