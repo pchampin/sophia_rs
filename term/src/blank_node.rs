@@ -1,12 +1,12 @@
 //! Blank node like specified in [RDF](https://www.w3.org/TR/rdf11-primer/#section-blank-node).
 //!
 
-use super::{Result, Term, TermData, TermError};
+use super::*;
 use lazy_static::lazy_static;
-use mownstr::MownStr;
 use regex::Regex;
 use std::convert::TryFrom;
 use std::fmt;
+use std::hash::Hasher;
 use std::io;
 use std::ops::Deref;
 
@@ -65,7 +65,7 @@ lazy_static! {
 ///
 /// See [module documentation](index.html)
 /// for more detail.
-#[derive(Clone, Copy, Debug, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, Ord)]
 pub struct BlankNode<TD: TermData>(TD);
 
 impl<TD> BlankNode<TD>
@@ -182,10 +182,15 @@ where
         w.write_all(b"_:")?;
         w.write_all(self.as_str().as_bytes())
     }
+}
 
-    /// Return this blank nodes's identifier as text.
-    pub fn value(&self) -> MownStr {
-        self.as_str().into()
+impl<TD: TermData> TTerm for BlankNode<TD> {
+    fn kind(&self) -> TermKind {
+        TermKind::BlankNode
+    }
+
+    fn value_raw(&self) -> (&str, Option<&str>) {
+        (self.0.as_ref(), None)
     }
 }
 
@@ -209,13 +214,13 @@ where
     }
 }
 
-impl<T, U> PartialEq<BlankNode<U>> for BlankNode<T>
+impl<TD, TE> PartialEq<TE> for BlankNode<TD>
 where
-    T: TermData,
-    U: TermData,
+    TD: TermData,
+    TE: TTerm,
 {
-    fn eq(&self, other: &BlankNode<U>) -> bool {
-        self.as_str() == other.as_str()
+    fn eq(&self, other: &TE) -> bool {
+        term_eq(self, other)
     }
 }
 
@@ -239,6 +244,25 @@ where
         } else {
             false
         }
+    }
+}
+
+impl<TD, TE> PartialOrd<TE> for BlankNode<TD>
+where
+    TD: TermData,
+    TE: TTerm,
+{
+    fn partial_cmp(&self, other: &TE) -> Option<std::cmp::Ordering> {
+        Some(term_cmp(self, other))
+    }
+}
+
+impl<TD> Hash for BlankNode<TD>
+where
+    TD: TermData,
+{
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        term_hash(self, state)
     }
 }
 
@@ -273,6 +297,24 @@ where
                 term: term.to_string(),
                 expect: "blank node".to_owned(),
             }),
+        }
+    }
+}
+
+impl<TD> TryCopyTerm for BlankNode<TD>
+where
+    TD: TermData + for<'x> From<&'x str>,
+{
+    type Error = TermError;
+
+    fn try_copy<T: TTerm>(term: &T) -> Result<Self, Self::Error> {
+        if term.kind() == TermKind::BlankNode {
+            Ok(Self::new_unchecked(term.value_raw().0))
+        } else {
+            Err(TermError::UnexpectedKindOfTerm {
+                term: term_to_string(term),
+                expect: "blank node".to_owned(),
+            })
         }
     }
 }
