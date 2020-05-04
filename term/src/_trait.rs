@@ -23,8 +23,8 @@ use std::hash::{Hash, Hasher};
 /// * it is rather opinionated on how implementation should store their data internally,
 ///   and has a very constrained contract (see below);
 ///
-/// * it defines a few "semi-abstract" methods (`value_raw` and `datatype_raw`),
-///   exposing internal representation of IRIs.
+/// * it relies on the "semi-abstract" methods `value_raw`,
+///   which mostly makes sense for the default implementation of other methods.
 ///
 /// These choices were made to allow for efficient implementations of the overall API.
 ///
@@ -70,16 +70,10 @@ pub trait TTerm {
 
     /// Return the datatype IRI of this term if it is a literal.
     ///
-    /// # Performance
-    /// This method *may* allocate a new string (depending on implementations).
-    /// If this allocation is undesirable, use [`datatype_raw`] instead.
-    ///
     /// # Note to implementors
     /// Should not be overridden; must be consistent with [`datatype_raw`].
-    ///
-    /// [`datatype_raw`]: #tymethod.datatype_raw
-    fn datatype(&self) -> Option<MownStr> {
-        self.datatype_raw().map(raw_to_mownstr)
+    fn datatype(&self) -> Option<crate::Iri<&str>> {
+        None
     }
 
     /// Return the language tag of this term if it is a language-tagged literal.
@@ -103,26 +97,16 @@ pub trait TTerm {
     /// For other kinds of term, the second part must always be None.
     fn value_raw(&self) -> (&str, Option<&str>);
 
-    /// Return the datatype IRI of this term, if it is a literal,
-    /// possibly split in two substrings.
-    ///
-    /// See also [`datatype`](#method.datatype).
-    ///
-    /// # Note to implementors
-    /// The default implementation always return `None`,
-    /// so unless your type may represent a language-tagged literal,
-    /// you do not need to override it.
-    fn datatype_raw(&self) -> Option<(&str, Option<&str>)> {
-        None
-    }
-
     /// All terms are absolute, except for:
     /// * relative IRI references,
     /// * literals whose datatype is a relative IRI reference.
     fn is_absolute(&self) -> bool {
         match self.kind() {
             Iri => raw_absolute(self.value_raw()),
-            Literal => raw_absolute(self.datatype_raw().unwrap()),
+            Literal => match self.language() {
+                None => raw_absolute(self.datatype().unwrap().value_raw()),
+                Some(_) => true,
+            },
             _ => true,
         }
     }
@@ -241,7 +225,7 @@ where
         Iri => raw_hash(&v, state),
         Literal => {
             match term.language() {
-                None => raw_hash(&term.datatype_raw().unwrap(), state),
+                None => raw_hash(&term.datatype().unwrap().value_raw(), state),
                 Some(tag) => {
                     for b in tag.bytes() {
                         state.write_u8(b.to_ascii_uppercase());
@@ -277,7 +261,9 @@ where
                     match (t1.language(), t2.language()) {
                         (Some(tag1), Some(tag2)) => tag1.eq_ignore_ascii_case(tag2),
                         (None, None) => {
-                            raw_eq(&t1.datatype_raw().unwrap(), &t2.datatype_raw().unwrap())
+                            let dt1 = t1.datatype().unwrap();
+                            let dt2 = t2.datatype().unwrap();
+                            raw_eq(&dt1.value_raw(), &dt2.value_raw())
                         }
                         _ => false,
                     }
@@ -318,10 +304,10 @@ where
                         .cmp(&tag2.to_uppercase())
                         .then_with(|| v1.0.cmp(&v2.0))
                 } else {
-                    let dt1 = t1.datatype_raw().unwrap();
-                    let dt2 = t2.datatype_raw().unwrap();
-                    raw_to_bytes(&dt1)
-                        .cmp(raw_to_bytes(&dt2))
+                    let dt1 = t1.datatype().unwrap();
+                    let dt2 = t2.datatype().unwrap();
+                    raw_to_bytes(&dt1.value_raw())
+                        .cmp(raw_to_bytes(&dt2.value_raw()))
                         .then_with(|| v1.0.cmp(&v2.0))
                 }
             }
@@ -351,13 +337,8 @@ where
             if let Some(tag) = term.language() {
                 write!(w, "@\"{}\"", tag)
             } else {
-                let dt = term.datatype_raw().unwrap();
-                w.write_str("^^<")?;
-                w.write_str(&dt.0)?;
-                if let Some(suffix) = dt.1 {
-                    w.write_str(suffix)?;
-                }
-                w.write_char('>')
+                w.write_str("^^")?;
+                term_format(&term.datatype().unwrap(), w)
             }
         }
         BlankNode => write!(w, "_:{}", v.0),
