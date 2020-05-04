@@ -233,20 +233,6 @@ where
     }
 }
 
-impl<T, U> PartialEq<Term<U>> for BlankNode<T>
-where
-    T: TermData,
-    U: TermData,
-{
-    fn eq(&self, other: &Term<U>) -> bool {
-        if let Term::BNode(other) = other {
-            self == other
-        } else {
-            false
-        }
-    }
-}
-
 impl<TD, TE> PartialOrd<TE> for BlankNode<TD>
 where
     TD: TermData,

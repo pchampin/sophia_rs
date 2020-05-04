@@ -384,20 +384,6 @@ where
     }
 }
 
-impl<T, U> PartialEq<Term<U>> for Literal<T>
-where
-    T: TermData,
-    U: TermData,
-{
-    fn eq(&self, other: &Term<U>) -> bool {
-        if let Term::Literal(other) = other {
-            self == other
-        } else {
-            false
-        }
-    }
-}
-
 impl<T: TermData> Eq for Literal<T> {}
 
 impl<TD, TE> PartialOrd<TE> for Literal<TD>

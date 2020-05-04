@@ -49,7 +49,7 @@
 use mownstr::MownStr;
 use std::convert::TryInto;
 use std::fmt::Debug;
-use std::hash::Hash;
+use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -79,7 +79,7 @@ pub use self::_error::*;
 ///
 /// See [module documentation](index.html) for more detail.
 ///
-#[derive(Clone, Copy, Debug, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, Ord)]
 pub enum Term<TD>
 where
     TD: TermData,
@@ -386,103 +386,68 @@ where
     {
         Variable::<T>::new_unchecked(name).into()
     }
+}
 
-    /// Return this term's value as text.
-    ///
-    /// NB: for literals, the value only conveys the literal value,
-    /// *not* the datatype or the language tag.error
-    pub fn value(&self) -> MownStr {
-        use self::Term::*;
-
+impl<T: TermData> TTerm for Term<T> {
+    fn kind(&self) -> TermKind {
+        use Term::*;
         match self {
-            Iri(iri) => iri.value(),
-            BNode(bn) => bn.value(),
-            Literal(lit) => lit.value(),
-            Variable(var) => var.value(),
+            Iri(_) => TermKind::Iri,
+            Literal(_) => TermKind::Literal,
+            BNode(_) => TermKind::BlankNode,
+            Variable(_) => TermKind::Variable,
         }
     }
-
-    /// Return whether this term is absolute.
-    ///
-    /// * An IRI is absolute iff it is an absolute IRI.
-    /// * A typed literal is absolute iff its datatype is absolute.
-    /// * Any other term is always absolute.
-    pub fn is_absolute(&self) -> bool {
+    fn value_raw(&self) -> (&str, Option<&str>) {
+        use Term::*;
         match self {
-            Term::Iri(iri) => iri.is_absolute(),
-            Term::Literal(lit) => lit.is_absolute(),
-            _ => true,
+            Iri(i) => i.value_raw(),
+            Literal(l) => l.value_raw(),
+            BNode(b) => b.value_raw(),
+            Variable(v) => v.value_raw(),
+        }
+    }
+    fn datatype(&self) -> Option<Iri<&str>> {
+        if let Term::Literal(lit) = self {
+            lit.datatype()
+        } else {
+            None
+        }
+    }
+    fn language(&self) -> Option<&str> {
+        if let Term::Literal(lit) = self {
+            lit.language()
+        } else {
+            None
         }
     }
 }
 
-impl<T, U> PartialEq<Term<U>> for Term<T>
+impl<TD, TE> PartialEq<TE> for Term<TD>
 where
-    T: TermData,
-    U: TermData,
+    TD: TermData,
+    TE: TTerm,
 {
-    fn eq(&self, other: &Term<U>) -> bool {
-        use self::Term::*;
-
-        match (self, other) {
-            (Iri(iri1), Iri(iri2)) => iri1 == iri2,
-            (BNode(id1), BNode(id2)) => id1 == id2,
-            (Literal(l1), Literal(l2)) => l1 == l2,
-            (Variable(var1), Variable(var2)) => var1 == var2,
-            _ => false,
-        }
+    fn eq(&self, other: &TE) -> bool {
+        term_eq(self, other)
+    }
+}
+impl<TD, TE> PartialOrd<TE> for Term<TD>
+where
+    TD: TermData,
+    TE: TTerm,
+{
+    fn partial_cmp(&self, other: &TE) -> Option<std::cmp::Ordering> {
+        Some(term_cmp(self, other))
     }
 }
 
-impl<T, U> PartialEq<Iri<U>> for Term<T>
+impl<TD> Hash for Term<TD>
 where
-    T: TermData,
-    U: TermData,
+    TD: TermData,
 {
-    fn eq(&self, other: &Iri<U>) -> bool {
-        match self {
-            Term::Iri(iri) => iri == other,
-            _ => false,
-        }
-    }
-}
-
-impl<T, U> PartialEq<Literal<U>> for Term<T>
-where
-    T: TermData,
-    U: TermData,
-{
-    fn eq(&self, other: &Literal<U>) -> bool {
-        match self {
-            Term::Literal(lit) => lit == other,
-            _ => false,
-        }
-    }
-}
-
-impl<T, U> PartialEq<BlankNode<U>> for Term<T>
-where
-    T: TermData,
-    U: TermData,
-{
-    fn eq(&self, other: &BlankNode<U>) -> bool {
-        match self {
-            Term::BNode(bn) => bn == other,
-            _ => false,
-        }
-    }
-}
-
-impl<T, U> PartialEq<Variable<U>> for Term<T>
-where
-    T: TermData,
-    U: TermData,
-{
-    fn eq(&self, other: &Variable<U>) -> bool {
-        match self {
-            Term::Variable(var) => var == other,
-            _ => false,
-        }
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        term_hash(self, state)
     }
 }
 
@@ -534,6 +499,20 @@ where
 impl<'a> From<&'a str> for RefTerm<'a> {
     fn from(txt: &'a str) -> Self {
         txt.as_term()
+    }
+}
+
+impl<TD> CopyTerm for Term<TD>
+where
+    TD: TermData + for<'x> From<&'x str>,
+{
+    fn copy<T: TTerm>(term: &T) -> Self {
+        match term.kind() {
+            TermKind::Iri => Term::Iri(Iri::try_copy(term).unwrap()),
+            TermKind::Literal => Term::Literal(Literal::try_copy(term).unwrap()),
+            TermKind::BlankNode => Term::BNode(BlankNode::try_copy(term).unwrap()),
+            TermKind::Variable => Term::Variable(Variable::try_copy(term).unwrap()),
+        }
     }
 }
 

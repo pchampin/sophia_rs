@@ -3,7 +3,6 @@ use super::*;
 use crate::ns::xsd;
 
 fn h<H: std::hash::Hash>(x: &H) -> u64 {
-    use std::hash::Hasher;
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     x.hash(&mut hasher);
     hasher.finish()
