@@ -299,9 +299,6 @@ where
 
     /// Create a new IRI-term from a given IRI without checking its validity.
     ///
-    /// As it is not checked if absolute or relative this property must be
-    /// entered as well.
-    ///
     /// # Pre-conditions
     ///
     /// This function conducts no checks if the resulting IRI is valid. This is
@@ -309,17 +306,14 @@ where
     /// unexpected behavior.
     ///
     /// However, in `debug` builds assertions that perform checks are enabled.
-    pub fn new_iri_unchecked<U>(iri: U, absolute: bool) -> Term<T>
+    pub fn new_iri_unchecked<U>(iri: U) -> Term<T>
     where
         T: From<U>,
     {
-        Iri::<T>::new_unchecked(iri, absolute).into()
+        Iri::<T>::new_unchecked(iri).into()
     }
 
     /// Create a new IRI-term from a given namespace and suffix.
-    ///
-    /// As it is not checked if absolute or relative this property must be
-    /// entered as well.
     ///
     /// # Pre-conditions
     ///
@@ -332,11 +326,11 @@ where
     /// This is a contract that is generally assumed.
     /// Breaking it could result in unexpected behavior.
     /// However in `debug` mode, assertions that perform checks are enabled.
-    pub fn new_iri_suffixed_unchecked<U, V>(ns: U, suffix: V, absolute: bool) -> Term<T>
+    pub fn new_iri_suffixed_unchecked<U, V>(ns: U, suffix: V) -> Term<T>
     where
         T: From<U> + From<V>,
     {
-        Iri::<T>::new_suffixed_unchecked(ns, suffix, absolute).into()
+        Iri::<T>::new_suffixed_unchecked(ns, suffix).into()
     }
 
     /// Return a new blank node term.

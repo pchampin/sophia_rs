@@ -77,12 +77,6 @@ pub struct Iri<TD: TermData> {
     ///
     /// IRIs with namespace and suffix are typical derived from CURIs.
     pub(crate) suffix: Option<TD>,
-    /// Determine if its an absolute or relative IRI.
-    ///
-    /// Including this is an optimization as it requires the allocation of a
-    /// new string to check this property (see
-    /// [`new_suffixed`](#method.new_suffixed.html)).
-    pub(crate) absolute: bool,
 }
 
 impl<TD> Iri<TD>
@@ -98,12 +92,10 @@ where
         U: AsRef<str>,
         TD: From<U>,
     {
-        let absolute = is_absolute_iri_ref(iri.as_ref());
-        if absolute || is_relative_iri_ref(iri.as_ref()) {
+        if is_absolute_iri_ref(iri.as_ref()) || is_relative_iri_ref(iri.as_ref()) {
             Ok(Iri {
                 ns: iri.into(),
                 suffix: None,
-                absolute,
             })
         } else {
             Err(TermError::InvalidIri(iri.as_ref().to_string()))
@@ -127,8 +119,7 @@ where
         TD: From<U> + From<V>,
     {
         let full = format!("{}{}", ns.as_ref(), suffix.as_ref());
-        let absolute = is_absolute_iri_ref(&full);
-        if absolute || is_relative_iri_ref(&full) {
+        if is_absolute_iri_ref(&full) || is_relative_iri_ref(&full) {
             let suffix = if !suffix.as_ref().is_empty() {
                 Some(suffix.into())
             } else {
@@ -137,7 +128,6 @@ where
             Ok(Iri {
                 ns: ns.into(),
                 suffix,
-                absolute,
             })
         } else {
             Err(TermError::InvalidIri(full))
@@ -146,9 +136,6 @@ where
 
     /// Create a new IRI-term from a given IRI without checking its validity.
     ///
-    /// As it is not checked if absolute or relative this property must be
-    /// entered as well.
-    ///
     /// # Pre-condition
     ///
     /// This function conducts no checks if the resulting IRI is valid. This is
@@ -156,7 +143,7 @@ where
     /// unexpected behavior.
     ///
     /// However, in `debug` builds assertions that perform checks are enabled.
-    pub fn new_unchecked<U>(iri: U, absolute: bool) -> Self
+    pub fn new_unchecked<U>(iri: U) -> Self
     where
         TD: From<U>,
     {
@@ -166,18 +153,10 @@ where
             "invalid IRI {:?}",
             ns.as_ref()
         );
-        debug_assert_eq!(absolute, is_absolute_iri_ref(ns.as_ref()));
-        Iri {
-            ns,
-            suffix: None,
-            absolute,
-        }
+        Iri { ns, suffix: None }
     }
 
     /// Create a new IRI-term from a given namespace and suffix.
-    ///
-    /// As it is not checked if absolute or relative this property must be
-    /// entered as well.
     ///
     /// # Pre-conditions
     ///
@@ -190,7 +169,7 @@ where
     /// This is a contract that is generally assumed.
     /// Breaking it could result in unexpected behavior.
     /// However in `debug` mode, assertions that perform checks are enabled.
-    pub fn new_suffixed_unchecked<U, V>(ns: U, suffix: V, absolute: bool) -> Self
+    pub fn new_suffixed_unchecked<U, V>(ns: U, suffix: V) -> Self
     where
         TD: From<U> + From<V>,
     {
@@ -200,13 +179,11 @@ where
         {
             let iri = format!("{}{}", ns.as_ref(), sf.as_ref());
             debug_assert!(is_valid_iri_ref(&iri), "invalid IRI {:?}", iri);
-            debug_assert_eq!(absolute, is_absolute_iri_ref(&iri));
             debug_assert!(!sf.as_ref().is_empty());
         }
         Iri {
             ns,
             suffix: Some(sf),
-            absolute,
         }
     }
 
@@ -227,7 +204,6 @@ where
         Iri {
             ns: &self.ns,
             suffix: self.suffix.as_ref(),
-            absolute: self.absolute,
         }
     }
 
@@ -236,7 +212,6 @@ where
         Iri {
             ns: self.ns.as_ref(),
             suffix: self.suffix.as_ref().map(|td| td.as_ref()),
-            absolute: self.absolute,
         }
     }
 
@@ -250,7 +225,6 @@ where
         Iri {
             ns: f(self.ns),
             suffix: self.suffix.map(f),
-            absolute: self.absolute,
         }
     }
 
@@ -276,7 +250,6 @@ where
         Iri {
             ns: factory(self.ns.as_ref()),
             suffix: self.suffix.as_ref().map(|td| factory(td.as_ref())),
-            absolute: self.absolute,
         }
     }
 
@@ -344,7 +317,6 @@ where
                 Iri {
                     ns: MownStr::from(full),
                     suffix: None,
-                    absolute: self.absolute,
                 }
             }
             None => self.as_ref_str().map_into(),
@@ -377,7 +349,6 @@ where
                     Iri {
                         ns: MownStr::from(new_ns),
                         suffix,
-                        absolute: self.absolute,
                     }
                 } else if ns.ends_with(GEN_DELIMS) {
                     // case: ns does end with separator
@@ -390,7 +361,6 @@ where
                     Iri {
                         ns: MownStr::from(&ns[..=pos]),
                         suffix: Some(MownStr::from(new_suffix)),
-                        absolute: self.absolute,
                     }
                 } else {
                     // case: neither contains a separator
@@ -401,7 +371,6 @@ where
                     Iri {
                         ns: MownStr::from(full),
                         suffix: None,
-                        absolute: self.absolute,
                     }
                 }
             }
@@ -412,7 +381,6 @@ where
                         Iri {
                             ns: MownStr::from(&ns[..=pos]),
                             suffix: Some(MownStr::from(&ns[pos + 1..])),
-                            absolute: self.absolute,
                         }
                     }
                     _ => {
@@ -526,16 +494,8 @@ impl Iri<&'static str> {
     /// # Pre-condition
     ///
     /// The resulting IRI may be invalid.
-    pub const fn from_raw_parts_unchecked(
-        ns: &'static str,
-        suffix: Option<&'static str>,
-        absolute: bool,
-    ) -> Self {
-        Iri {
-            ns,
-            suffix,
-            absolute,
-        }
+    pub const fn from_raw_parts_unchecked(ns: &'static str, suffix: Option<&'static str>) -> Self {
+        Iri { ns, suffix }
     }
 }
 
@@ -548,9 +508,6 @@ impl<TD: TermData> TTerm for Iri<TD> {
             self.ns.as_ref(),
             (&self.suffix).as_ref().map(|td| td.as_ref()),
         )
-    }
-    fn is_absolute(&self) -> bool {
-        self.absolute
     }
 }
 
@@ -616,7 +573,6 @@ where
     fn from(ns: Namespace<TD>) -> Self {
         // Already checked if its a valid IRI
         Iri {
-            absolute: is_absolute_iri_ref(ns.0.as_ref()),
             ns: ns.0,
             suffix: None,
         }
@@ -667,10 +623,9 @@ where
     fn try_copy<T: TTerm>(term: &T) -> Result<Self, Self::Error> {
         if term.kind() == TermKind::Iri {
             let (ns, suffix) = term.value_raw();
-            let abs = term.is_absolute();
             Ok(match suffix {
-                None => Self::new_unchecked(ns, abs),
-                Some(suffix) => Self::new_suffixed_unchecked(ns, suffix, abs),
+                None => Self::new_unchecked(ns),
+                Some(suffix) => Self::new_suffixed_unchecked(ns, suffix),
             })
         } else {
             Err(TermError::UnexpectedKindOfTerm {
@@ -693,23 +648,23 @@ mod test {
         #[test]
         #[should_panic]
         fn check_unchecked_negative() {
-            let _ = Iri::<&'static str>::new_unchecked("[]", true);
+            let _ = Iri::<&'static str>::new_unchecked("[]");
         }
 
         #[test]
         fn check_unchecked_positive() {
-            let _ = Iri::<&'static str>::new_unchecked("foo", false);
+            let _ = Iri::<&'static str>::new_unchecked("foo");
         }
 
         #[test]
         #[should_panic]
         fn check_unchecked_suffixed_negative() {
-            let _ = Iri::<&'static str>::new_suffixed_unchecked("foo#", "[]", false);
+            let _ = Iri::<&'static str>::new_suffixed_unchecked("foo#", "[]");
         }
 
         #[test]
         fn check_unchecked_suffixed_positive() {
-            let _ = Iri::<&'static str>::new_suffixed_unchecked("foo#", "bar", false);
+            let _ = Iri::<&'static str>::new_suffixed_unchecked("foo#", "bar");
         }
     }
 

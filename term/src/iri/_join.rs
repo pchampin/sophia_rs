@@ -6,7 +6,7 @@
 
 use super::{Iri, IRELATIVE_REF_REGEX, IRI_REGEX};
 use crate::ns::Namespace;
-use crate::{Literal, MownTerm, Result, Term, TermData, TermError};
+use crate::{Literal, MownTerm, Result, TTerm, Term, TermData, TermError};
 use mownstr::MownStr;
 use std::fmt;
 
@@ -162,13 +162,13 @@ impl<'a, 'b> Resolve<Iri<&'a str>, Iri<MownStr<'a>>> for IriParsed<'b> {
     ///
     /// May allocate an intermediate IRI if `other` is suffixed.
     fn resolve(&self, other: Iri<&'a str>) -> Iri<MownStr<'a>> {
-        if other.absolute {
+        if other.is_absolute() {
             return other.map_into();
         }
         let mut buffer = String::new();
         let parsed = other.parse_components(&mut buffer);
         let joined = self.join(&parsed);
-        Iri::new_unchecked(joined.to_string(), joined.is_absolute())
+        Iri::new_unchecked(joined.to_string())
     }
 }
 

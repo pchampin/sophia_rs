@@ -170,7 +170,7 @@ macro_rules! ns_term {
         /// Generated term.
         #[allow(non_upper_case_globals)]
         pub static $ident: $crate::StaticTerm = $crate::Term::Iri(
-            $crate::iri::Iri::from_raw_parts_unchecked($prefix, Some($suffix), true),
+            $crate::iri::Iri::from_raw_parts_unchecked($prefix, Some($suffix)),
         );
     };
 }
@@ -190,7 +190,7 @@ macro_rules! ns_iri {
         /// Generated IRI.
         #[allow(non_upper_case_globals)]
         pub static $ident: $crate::iri::Iri<&'static str> =
-            $crate::iri::Iri::from_raw_parts_unchecked($prefix, Some($suffix), true);
+            $crate::iri::Iri::from_raw_parts_unchecked($prefix, Some($suffix));
     };
 }
 
