@@ -4,7 +4,7 @@
 
 use crate::iri::Normalization;
 use crate::ns::{rdf, xsd};
-use crate::{Iri, Result, TTerm, Term, TermData, TermError};
+use crate::*;
 use mownstr::MownStr;
 use oxilangtag::LanguageTag;
 use std::convert::TryFrom;
@@ -18,7 +18,7 @@ pub use self::_convert::*;
 /// Internal distinction of literals.
 ///
 /// Opaque to users.
-#[derive(Clone, Copy, Debug, Eq)]
+#[derive(Clone, Copy, Debug)]
 enum Kind<TD: TermData> {
     /// Something representing a language tag.
     ///
@@ -29,20 +29,6 @@ enum Kind<TD: TermData> {
 }
 
 use self::Kind::*;
-
-impl<T, U> PartialEq<Kind<U>> for Kind<T>
-where
-    T: TermData,
-    U: TermData,
-{
-    fn eq(&self, other: &Kind<U>) -> bool {
-        match (self, other) {
-            (Lang(stag), Lang(otag)) => stag.as_ref().eq_ignore_ascii_case(otag.as_ref()),
-            (Dt(sdt), Dt(odt)) => sdt == odt,
-            _ => false,
-        }
-    }
-}
 
 /// An RDF literal.
 ///
@@ -64,7 +50,7 @@ where
 /// [RDF specification](https://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/#section-Graph-Literal)
 /// explicitly requires implementations to accept those literals. In the end
 /// such malformed literals lead to logical inconsistency in a graph.
-#[derive(Clone, Copy, Debug, Eq)]
+#[derive(Clone, Copy, Debug)]
 pub struct Literal<TD: TermData> {
     txt: TD,
     kind: Kind<TD>,
@@ -274,11 +260,6 @@ where
         }
     }
 
-    /// Return this literal's lexical value as text.
-    pub fn value(&self) -> MownStr {
-        self.txt().as_ref().into()
-    }
-
     /// Returns the literal's lexical value.
     pub fn txt(&self) -> &TD {
         &self.txt
@@ -303,22 +284,27 @@ where
         }
     }
 
-    /// Check if the datatype IRI is absolute.
-    pub fn is_absolute(&self) -> bool {
-        if let Dt(dt) = &self.kind {
-            dt.is_absolute()
-        } else {
-            // other datatype `rdf:langString` is absolute
-            true
-        }
-    }
-
     /// Check if both literals have the same lexical value.
     pub fn eq_txt<U>(&self, other: Literal<U>) -> bool
     where
         U: TermData,
     {
         self.txt().as_ref() == other.txt().as_ref()
+    }
+}
+
+impl<TD: TermData> TTerm for Literal<TD> {
+    fn kind(&self) -> TermKind {
+        TermKind::Literal
+    }
+    fn value_raw(&self) -> (&str, Option<&str>) {
+        (self.txt.as_ref(), None)
+    }
+    fn datatype(&self) -> Option<Iri<&str>> {
+        Some(self.dt())
+    }
+    fn language(&self) -> Option<&str> {
+        self.lang().map(|td| td.as_ref())
     }
 }
 
@@ -366,13 +352,35 @@ where
     }
 }
 
-impl<T, U> PartialEq<Literal<U>> for Literal<T>
+impl<TD> TryCopyTerm for Literal<TD>
 where
-    T: TermData,
-    U: TermData,
+    TD: TermData + for<'x> From<&'x str>,
 {
-    fn eq(&self, other: &Literal<U>) -> bool {
-        self.txt.as_ref() == other.txt.as_ref() && self.kind == other.kind
+    type Error = TermError;
+
+    fn try_copy<T: TTerm>(term: &T) -> Result<Self, Self::Error> {
+        if term.kind() == TermKind::Literal {
+            let txt = term.value_raw().0;
+            Ok(match term.language() {
+                None => Self::new_dt(txt, term.datatype().unwrap()),
+                Some(tag) => Self::new_lang_unchecked(txt, tag),
+            })
+        } else {
+            Err(TermError::UnexpectedKindOfTerm {
+                term: term_to_string(term),
+                expect: "literal".to_owned(),
+            })
+        }
+    }
+}
+
+impl<TD, TE> PartialEq<TE> for Literal<TD>
+where
+    TD: TermData,
+    TE: TTerm,
+{
+    fn eq(&self, other: &TE) -> bool {
+        term_eq(self, other)
     }
 }
 
@@ -390,13 +398,30 @@ where
     }
 }
 
-impl<TD: TermData> Hash for Literal<TD> {
+impl<T: TermData> Eq for Literal<T> {}
+
+impl<TD, TE> PartialOrd<TE> for Literal<TD>
+where
+    TD: TermData,
+    TE: TTerm,
+{
+    fn partial_cmp(&self, other: &TE) -> Option<std::cmp::Ordering> {
+        Some(term_cmp(self, other))
+    }
+}
+
+impl<TD: TermData> Ord for Literal<TD> {
+    fn cmp(&self, other: &Literal<TD>) -> std::cmp::Ordering {
+        term_cmp(self, other)
+    }
+}
+
+impl<TD> Hash for Literal<TD>
+where
+    TD: TermData,
+{
     fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write(self.txt.as_ref().as_bytes());
-        match &self.kind {
-            Lang(tag) => state.write(tag.as_ref().to_ascii_lowercase().as_bytes()),
-            Dt(iri) => iri.hash(state),
-        }
+        term_hash(self, state)
     }
 }
 
