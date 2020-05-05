@@ -53,38 +53,18 @@ impl Error for AlgorithmFailure {}
 ///
 /// # Performance
 ///
-/// Gets quickly very expensive.
-///
-/// # Known issues
-///
-/// The current implementation fails if the graphs contain _redundant_ blank 
-/// nodes. Lets assume following graphs (prefix declaration omitted):
-/// 
-/// ´´´text
-/// # g1
-/// _:a :p _:b.
-/// _:c :p _:d.
-///
-/// # g2
-/// _:a2 :p _:b2.
-/// _:c2 :p _:d2.
-/// ```
-///
-/// `g1` and `g2` are clearly isomorphic equivalent. However, the current 
-/// hashing strategy would always calculate the same hashes for every triple
-/// and it is not possible to further improve the hashes. Therefore, this
-/// implementation would fail as no distinct hashes could be calculated.
+/// As this algorithm has to traverse each graph several times the algorithm
+/// gets way more expensive with bigger numbers of triples. In the same way
+/// the number of blank nodes contributes to the costs.
 pub fn isomorphic_graphs<G1, G2, E1, E2>(g1: &G1, g2: &G2) -> StreamResult<bool, E1, E2>
 where
-    E1: 'static + std::error::Error,
-    E2: 'static + std::error::Error,
+    E1: 'static + Error,
+    E2: 'static + Error,
     G1: Graph<Error = E1>,
     G2: Graph<Error = E2>,
 {
     // quick return conditions
     // -----------------------
-    dbg!("# Quick return");
-    
     // blank nodes in the respective graph
     let bns1 = g1.bnodes().source_err()?;
     let bns2 = g2.bnodes().sink_err()?;
@@ -97,7 +77,6 @@ where
     // -------------------------------------
     // - regardless of blank nodes
     // - implicitly checks that g1 and g2 have the same length
-    dbg!("# Check length and triples");
     let g1_in_g2 = check_for_equal_triples_regardless_bns(g1, g2)?;
     let g2_in_g1 = check_for_equal_triples_regardless_bns(g2, g1).map_err(StreamError::reverse)?;
 
@@ -106,32 +85,61 @@ where
     }
 
     // Create hashes
-    dbg!("# Calc hashes");
-    dbg!("## g1");
     let bn_hashes1 = match calc_bn_hashes::<G1, E1, IsoHasher>(g1) {
         Ok(map) => map,
         Err(SourceError(e)) => return Err(SourceError(e)),
         Err(SinkError(_)) => return Ok(false), // Not the best solution
     };
-    dbg!("## g1");
     let bn_hashes2 = match calc_bn_hashes::<G2, E2, IsoHasher>(g2) {
         Ok(map) => map,
         Err(SourceError(e)) => return Err(SinkError(e)),
         Err(SinkError(_)) => return Ok(false), // Not the best solution
     };
 
-    dbg!("# Create mapping");
+    // Create mapping
     let mut bn_mapping = HashMap::new();
-    for (hash, bn1) in bn_hashes1 {
-        let bn2 = match bn_hashes2.get(&hash) {
-            Some(bn) => bn,
-            None => return Ok(false), // No matching blank node in g2!
-        };
-        bn_mapping.insert(bn1, bn2);
+    for (hash, bns1) in bn_hashes1 {
+        for bn1 in bns1 {
+            let bn2 = match bn_hashes2.get(&hash) {
+                Some(bn) => bn,
+                None => return Ok(false), // No matching blank node in g2!
+            };
+            bn_mapping.insert(bn1, bn2);
+        }
     }
 
-    dbg!("# Equal with mapping");
+    // Apply mapping
     isomorphic_graphs_with_mapping(g1, g2, bn_mapping)
+}
+
+/// Builds a `TermMatcher` by using the blank node mapping provided.
+///
+/// If the given term is a blank node the matcher will match all possible
+/// mappings for that blank node, i.e. included redundant blank nodes. If the
+/// given term is not a blank node the matcher will only match the given term.
+///
+/// This aligns with the description of bijection _M_ described in the
+/// [RDF specs](https://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/#graph-isomorphism).
+fn bn_mapper<'m, G1, G2>(
+    mapping: &'m HashMap<GTerm<G1>, &Vec<GTerm<G2>>>,
+    t: &'m GTerm<G1>,
+) -> Box<dyn 'm + Fn(&RefTerm) -> bool>
+where
+    G1: Graph,
+    G2: Graph,
+{
+    if let Term::BNode(_) = t {
+        Box::new(move |other: &RefTerm| {
+            let mapped = match mapping.get(t) {
+                Some(bns) => bns,
+                None => return false,
+            };
+
+            mapped.iter().any(|t| t == other)
+        }) as _
+    } else {
+        Box::new(move |other: &RefTerm| t == other) as _
+    }
 }
 
 /// Checks for each triple in `g1` with at least one blank node if it is also
@@ -139,87 +147,28 @@ where
 fn isomorphic_graphs_with_mapping<G1, G2, E1, E2>(
     g1: &G1,
     g2: &G2,
-    mapping: HashMap<GTerm<G1>, &GTerm<G2>>,
+    mapping: HashMap<GTerm<G1>, &Vec<GTerm<G2>>>,
 ) -> StreamResult<bool, E1, E2>
 where
-    E1: 'static + std::error::Error,
-    E2: 'static + std::error::Error,
+    E1: 'static + Error,
+    E2: 'static + Error,
     G1: Graph<Error = E1>,
     G2: Graph<Error = E2>,
 {
-    // each `get()` on map is unwrapped as it is assumed that the mapping is
-    // complete.
     for t in g1.triples() {
         let t = t.source_err()?;
-        match (t.s(), t.p(), t.o()) {
-            (Term::BNode(_), Term::BNode(_), Term::BNode(_)) => {
-                if g2
-                    .triples_with_spo(
-                        mapping.get(t.s()).unwrap(),
-                        mapping.get(t.p()).unwrap(),
-                        mapping.get(t.o()).unwrap(),
-                    )
-                    .next()
-                    .is_none()
-                {
-                    return Ok(false);
-                }
+
+        if matches!(t.s(), Term::BNode(_))
+            || matches!(t.p(), Term::BNode(_))
+            || matches!(t.o(), Term::BNode(_))
+        {
+            let ms = bn_mapper::<G1, G2>(&mapping, t.s());
+            let mp = bn_mapper::<G1, G2>(&mapping, t.p());
+            let mo = bn_mapper::<G1, G2>(&mapping, t.o());
+
+            if g2.triples_matching(&ms, &mp, &mo).next().is_none() {
+                return Ok(false);
             }
-            (Term::BNode(_), Term::BNode(_), o) => {
-                if g2
-                    .triples_with_spo(mapping.get(t.s()).unwrap(), mapping.get(t.p()).unwrap(), o)
-                    .next()
-                    .is_none()
-                {
-                    return Ok(false);
-                }
-            }
-            (s, Term::BNode(_), Term::BNode(_)) => {
-                if g2
-                    .triples_with_spo(s, mapping.get(t.p()).unwrap(), mapping.get(t.o()).unwrap())
-                    .next()
-                    .is_none()
-                {
-                    return Ok(false);
-                }
-            }
-            (Term::BNode(_), p, Term::BNode(_)) => {
-                if g2
-                    .triples_with_spo(mapping.get(t.s()).unwrap(), p, mapping.get(t.o()).unwrap())
-                    .next()
-                    .is_none()
-                {
-                    return Ok(false);
-                }
-            }
-            (Term::BNode(_), p, o) => {
-                if g2
-                    .triples_with_spo(mapping.get(t.s()).unwrap(), p, o)
-                    .next()
-                    .is_none()
-                {
-                    return Ok(false);
-                }
-            }
-            (s, Term::BNode(_), o) => {
-                if g2
-                    .triples_with_spo(s, mapping.get(t.p()).unwrap(), o)
-                    .next()
-                    .is_none()
-                {
-                    return Ok(false);
-                }
-            }
-            (s, p, Term::BNode(_)) => {
-                if g2
-                    .triples_with_spo(s, p, mapping.get(t.o()).unwrap())
-                    .next()
-                    .is_none()
-                {
-                    return Ok(false);
-                }
-            }
-            _ => continue,
         }
     }
 
@@ -254,8 +203,8 @@ fn check_for_equal_triples_regardless_bns<G1, G2, E1, E2>(
     g2: &G2,
 ) -> StreamResult<bool, E1, E2>
 where
-    E1: 'static + std::error::Error,
-    E2: 'static + std::error::Error,
+    E1: 'static + Error,
+    E2: 'static + Error,
     G1: Graph<Error = E1>,
     G2: Graph<Error = E2>,
 {
@@ -325,11 +274,12 @@ where
 ///
 /// The hashes are distinct if every 'bucket', i.e. the `Vec` in the returning
 /// `HashMap` has only one element.
-fn calc_bn_hashes<'g, G, E, H>(
-    g: &'g G,
-) -> StreamResult<HashMap<u64, GTerm<G>>, E, AlgorithmFailure>
+///
+/// An exception are redundant blank nodes. If the algorithm detects such nodes
+/// they will share the same hash.
+fn calc_bn_hashes<G, E, H>(g: &G) -> StreamResult<HashMap<u64, Vec<GTerm<G>>>, E, AlgorithmFailure>
 where
-    E: 'static + std::error::Error,
+    E: 'static + Error,
     G: Graph<Error = E>,
     H: Hasher + Default,
 {
@@ -352,9 +302,18 @@ where
     while !last_map.is_empty() && i < MAX_DISTANCE {
         for (hash, bns) in last_map.into_iter() {
             if bns.len() == 1 {
+                // Distinct hash.
                 let (bn, _, _) = bns.into_iter().next().expect("len == 1");
-                res_map.insert(hash, bn);
+                res_map.insert(hash, vec![bn]);
+            } else if bns
+                .iter()
+                .all(|(_, upstream, downstream)| upstream.is_empty() && downstream.is_empty())
+            {
+                // Can no longer traverse graph to distinguish nodes, i.e. they must be redundant.
+                let redundants = bns.into_iter().map(|(bn, _, _)| bn).collect();
+                res_map.insert(hash, redundants);
             } else {
+                // improve hash by further traversing.
                 for (bn, upstream, downstream) in bns {
                     let (better_hash, upstream, downstream) =
                         improve_hash_by_increasing_distance::<H, G, E>(
@@ -387,27 +346,33 @@ where
 /// Calculate the blank node's initial hash in the graph, i.e. for distance 0.
 ///
 /// Returns the initial hash, the upstream nodes and the downstream nodes.
-fn calc_bns_init_hash<'g, G, E, H>(
-    bn: &'g GTerm<G>,
+#[allow(clippy::type_complexity)]
+fn calc_bns_init_hash<G, E, H>(
+    bn: &GTerm<G>,
     g: &G,
 ) -> Result<(u64, Vec<GTerm<G>>, Vec<GTerm<G>>), E>
 where
-    E: 'static + std::error::Error,
+    E: 'static + Error,
     G: Graph<Error = E>,
     H: Hasher + Default,
 {
     // for same hashing result we need to order the triples' hashes.
     let mut triple_hashes = BTreeSet::new();
 
-    let mut upstream = traverse_upstream::<H, G, E>(&[bn.clone()], g, &mut triple_hashes)?;
-    let mut downstream = traverse_downstream::<H, G, E>(&[bn.clone()], g, &mut triple_hashes)?;
+    let mut upstream = vec![];
+    let mut downstream = vec![];
 
-    // required for the generalized model of sophia.
-    for tri in g.triples_with_p(bn) {
+    for tri in g.triples() {
         let tri = tri?;
-        triple_hashes.insert(hash_triple_without_bn::<H, GTriple<G>>(&tri));
-        upstream.push(tri.s().clone());
-        downstream.push(tri.o().clone());
+        if tri.s() == bn || tri.p() == bn || tri.o() == bn {
+            triple_hashes.insert(hash_triple_without_bn::<H, GTriple<G>>(&tri));
+            if tri.o() != bn {
+                upstream.push(tri.o().clone())
+            };
+            if tri.s() != bn {
+                downstream.push(tri.s().clone())
+            };
+        }
     }
 
     // hashing
@@ -418,6 +383,7 @@ where
 }
 
 /// Improves an existing hash by further traversing the graph.
+#[allow(clippy::type_complexity)]
 fn improve_hash_by_increasing_distance<H, G, E>(
     hash: u64,
     upstream: &[GTerm<G>],
@@ -427,13 +393,13 @@ fn improve_hash_by_increasing_distance<H, G, E>(
 where
     H: Hasher + Default,
     G: Graph<Error = E>,
-    E: 'static + std::error::Error,
+    E: 'static + Error,
 {
     // for same hashing result we need to order the triples' hashes.
     let mut triple_hashes = BTreeSet::new();
 
-    let upstream = traverse_upstream::<H, G, E>(upstream, g, &mut triple_hashes)?;
-    let downstream = traverse_downstream::<H, G, E>(downstream, g, &mut triple_hashes)?;
+    let upstream = traverse_from_s_to_o::<H, G, E>(upstream, g, &mut triple_hashes)?;
+    let downstream = traverse_from_o_to_s::<H, G, E>(downstream, g, &mut triple_hashes)?;
 
     // hashing
     let mut hasher = H::default();
@@ -470,14 +436,14 @@ where
 /// Looks for triples where the given terms are objects.
 /// Those triples' hashes are inserted into the list and a list of their
 /// subjects is returned.
-fn traverse_upstream<H, G, E>(
+fn traverse_from_o_to_s<H, G, E>(
     upstream: &[GTerm<G>],
     g: &G,
     hashes: &mut BTreeSet<u64>,
 ) -> Result<Vec<GTerm<G>>, E>
 where
     H: Hasher + Default,
-    E: 'static + std::error::Error,
+    E: 'static + Error,
     G: Graph<Error = E>,
 {
     let mut subjects = vec![];
@@ -494,14 +460,14 @@ where
 /// Looks for triples where the given terms are subjects.
 /// Those triples' hashes are inserted into the list and a list of their
 /// objects is returned.
-fn traverse_downstream<H, G, E>(
+fn traverse_from_s_to_o<H, G, E>(
     downstream: &[GTerm<G>],
     g: &G,
     hashes: &mut BTreeSet<u64>,
 ) -> Result<Vec<GTerm<G>>, E>
 where
     H: Hasher + Default,
-    E: 'static + std::error::Error,
+    E: 'static + Error,
     G: Graph<Error = E>,
 {
     let mut objects = vec![];
@@ -519,7 +485,7 @@ where
 mod test {
     use super::*;
     use crate::graph::inmem::FastGraph;
-    use crate::parser::{turtle, nt};
+    use crate::parser::{nt, turtle};
     use crate::triple::stream::TripleSource;
 
     #[test]
@@ -614,35 +580,107 @@ mod test {
         Ok(())
     }
 
-    // TODO: Implement an algorithm aware of redundant blank nodes.
-    // TODO: Candidate -> http://aidanhogan.com/docs/rdf-canonicalisation.pdf
-    // /// Every subject and object is a blank node with the same predicate.
-    // #[test]
-    // fn homogeneous_grid() -> Result<(), Box<dyn Error>> {
-    //     let g1 = r#"
-    //         @prefix : <http://example.org/>.
+    /// Every subject and object is a blank node with the same predicate.
+    /// Source of test: http://aidanhogan.com/docs/rdf-canonicalisation.pdf
+    #[test]
+    fn homogeneous_grid() -> Result<(), Box<dyn Error>> {
+        let g1 = r#"
+            @prefix : <http://example.org/>.
 
-    //         _:a :p _:b, _:d .
-    //         _:c :p _:b, _:f .
-    //         _:e :p _:b, _:d, _:f, _:h .
-    //         _:g :p _:d, _:h .
-    //         _:i :p _:f, _:h .
-    //     "#;
-    //     let g2 = r#"
-    //         @prefix : <http://example.org/>.
+            _:a :p _:b, _:d .
+            _:c :p _:b, _:f .
+            _:e :p _:b, _:d, _:f, _:h .
+            _:g :p _:d, _:h .
+            _:i :p _:f, _:h .
+        "#;
+        let g2 = r#"
+            @prefix : <http://example.org/>.
 
-    //         _:a2 :p _:b2, _:d2 .
-    //         _:c2 :p _:b2, _:f2 .
-    //         _:e2 :p _:b2, _:d2, _:f2, _:h2 .
-    //         _:g2 :p _:d2, _:h2 .
-    //         _:i2 :p _:f2, _:h2 .
-    //     "#;
-    //     let g1: FastGraph = turtle::parse_str(g1).collect_triples()?;
-    //     let g2: FastGraph = turtle::parse_str(g2).collect_triples()?;
+            _:a2 :p _:b2, _:d2 .
+            _:c2 :p _:b2, _:f2 .
+            _:e2 :p _:b2, _:d2, _:f2, _:h2 .
+            _:g2 :p _:d2, _:h2 .
+            _:i2 :p _:f2, _:h2 .
+        "#;
+        let g1: FastGraph = turtle::parse_str(g1).collect_triples()?;
+        let g2: FastGraph = turtle::parse_str(g2).collect_triples()?;
 
-    //     assert!(isomorphic_graphs(&g1, &g2)?);
-    //     assert!(isomorphic_graphs(&g2, &g1)?);
+        assert!(isomorphic_graphs(&g1, &g2)?);
+        assert!(isomorphic_graphs(&g2, &g1)?);
 
-    //     Ok(())
-    // }
+        Ok(())
+    }
+
+    /// Like homogeneous grid but with redundant nodes removed in the second graph.
+    #[test]
+    fn truncated_grid() -> Result<(), Box<dyn Error>> {
+        let g1 = r#"
+            @prefix : <http://example.org/>.
+
+            _:a :p _:b, _:d .
+            _:c :p _:b, _:f .
+            _:e :p _:b, _:d, _:f, _:h .
+            _:g :p _:d, _:h .
+            _:i :p _:f, _:h .
+        "#;
+        let g2 = r#"
+            @prefix : <http://example.org/>.
+
+            _:a2 :p _:b2 .
+        "#;
+        let g1: FastGraph = turtle::parse_str(g1).collect_triples()?;
+        let g2: FastGraph = turtle::parse_str(g2).collect_triples()?;
+
+        assert!(!isomorphic_graphs(&g1, &g2)?);
+        assert!(!isomorphic_graphs(&g2, &g1)?);
+
+        Ok(())
+    }
+    /// Source of test: http://aidanhogan.com/docs/rdf-canonicalisation.pdf
+    #[test]
+    fn spider_like() -> Result<(), Box<dyn Error>> {
+        let g1 = r#"
+            @prefix : <http://example.org/>.
+
+            :Chile :cabinet _:b1, [
+                :members 23
+              ], [
+                :members 23
+              ], _:b4 ;
+              :presidency _:a1, _:a2, _:a3, _:a4 .
+            
+            _:a1 :next _:a2 .
+            _:a2 :next _:a3 ;
+              :president :MBachelet .
+            _:a3 :next _:a4.
+            _:a4 :president :MBachelet .
+
+            :MBachelet :spouse _:c .
+        "#;
+        let g2 = r#"
+            @prefix : <http://example.org/>.
+
+            :Chile :cabinet _:b12, [
+                :members 23
+            ], [
+                :members 23
+            ], _:b42 ;
+            :presidency _:a12, _:a22, _:a32, _:a42 .
+            
+            _:a12 :next _:a22 .
+            _:a22 :next _:a32 ;
+            :president :MBachelet .
+            _:a32 :next _:a42.
+            _:a42 :president :MBachelet .
+
+            :MBachelet :spouse _:c2 .
+        "#;
+        let g1: FastGraph = turtle::parse_str(g1).collect_triples()?;
+        let g2: FastGraph = turtle::parse_str(g2).collect_triples()?;
+
+        assert!(isomorphic_graphs(&g1, &g2)?);
+        assert!(isomorphic_graphs(&g2, &g1)?);
+
+        Ok(())
+    }
 }
