@@ -300,8 +300,8 @@ impl<TD: TermData> TTerm for Literal<TD> {
     fn value_raw(&self) -> (&str, Option<&str>) {
         (self.txt.as_ref(), None)
     }
-    fn datatype(&self) -> Option<Iri<&str>> {
-        Some(self.dt())
+    fn datatype(&self) -> Option<SimpleIri> {
+        Some(self.dt().into())
     }
     fn language(&self) -> Option<&str> {
         self.lang().map(|td| td.as_ref())
@@ -362,7 +362,7 @@ where
         if term.kind() == TermKind::Literal {
             let txt = term.value_raw().0;
             Ok(match term.language() {
-                None => Self::new_dt(txt, term.datatype().unwrap()),
+                None => Self::new_dt(txt, term.datatype().unwrap().into()),
                 Some(tag) => Self::new_lang_unchecked(txt, tag),
             })
         } else {

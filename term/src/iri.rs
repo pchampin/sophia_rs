@@ -566,6 +566,24 @@ where
     }
 }
 
+impl<'a, TD> From<SimpleIri<'a>> for Iri<TD>
+where
+    TD: TermData + From<&'a str>,
+{
+    fn from(iri: SimpleIri<'a>) -> Self {
+        let (ns, suffix) = iri.destruct();
+        let ns = ns.into();
+        let suffix = suffix.map(TD::from);
+        Iri { ns, suffix }
+    }
+}
+
+impl<'a> From<Iri<&'a str>> for SimpleIri<'a> {
+    fn from(iri: Iri<&'a str>) -> Self {
+        SimpleIri::new_unchecked(iri.ns, iri.suffix)
+    }
+}
+
 impl<TD> From<Namespace<TD>> for Iri<TD>
 where
     TD: TermData,

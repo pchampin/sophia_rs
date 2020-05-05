@@ -1,6 +1,6 @@
-use sophia_term::TTerm;
 use super::*;
 use crate::parser::LocatableResult;
+use sophia_term::TTerm;
 
 /// The state of the parser.
 #[derive(Debug, Clone, Copy)]

@@ -270,7 +270,7 @@ mod test {
     use crate::triple::stream::TripleSource;
     use crate::triple::Triple;
     use sophia_term::factory::RcTermFactory;
-    use sophia_term::Term;
+    use sophia_term::{TTerm, Term};
 
     type TestGraph = HashGraph<TermIndexMapU<u16, RcTermFactory>>;
 

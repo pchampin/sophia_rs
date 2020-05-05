@@ -66,11 +66,13 @@ pub mod iri;
 use self::iri::{Iri, Normalization};
 pub mod literal;
 use self::literal::{AsLiteral, Literal};
+pub mod simple_iri;
+pub use simple_iri::SimpleIri;
 mod _trait;
 pub use _trait::*;
-mod _dyn_term;
 
 mod _display;
+mod _dyn_term;
 mod _error;
 mod _graph_name_matcher; // is 'pub use'd by module 'matcher'
 pub use self::_error::*;
@@ -407,7 +409,7 @@ impl<T: TermData> TTerm for Term<T> {
             Variable(v) => v.value_raw(),
         }
     }
-    fn datatype(&self) -> Option<Iri<&str>> {
+    fn datatype(&self) -> Option<SimpleIri> {
         if let Term::Literal(lit) = self {
             lit.datatype()
         } else {

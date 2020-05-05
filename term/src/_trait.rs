@@ -72,7 +72,7 @@ pub trait TTerm {
     ///
     /// # Note to implementors
     /// Should not be overridden; must be consistent with [`datatype_raw`].
-    fn datatype(&self) -> Option<crate::Iri<&str>> {
+    fn datatype(&self) -> Option<crate::SimpleIri> {
         None
     }
 
