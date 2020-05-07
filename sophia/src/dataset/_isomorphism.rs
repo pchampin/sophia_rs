@@ -48,21 +48,15 @@ impl Error for AlgorithmFailure {}
 /// accordingly, a `StreamError` returned where `SourceError`s originate from
 /// `g1` and `SinkError`s originate from `g2`
 ///
-/// _TODO:_ In this case the notion of `source` and `sink` is not fitting.
-/// Still this requires two different error types. Maybe we should turn
-/// `StreamError` into `EitherError`?
-///
 /// # Performance
 ///
 /// As this algorithm has to traverse each graph several times the algorithm
 /// gets way more expensive with bigger numbers of triples. In the same way
 /// the number of blank nodes contributes to the costs.
-pub fn isomorphic_datasets<D1, D2, E1, E2>(d1: &D1, d2: &D2) -> StreamResult<bool, E1, E2>
+pub fn isomorphic_datasets<D1, D2>(d1: &D1, d2: &D2) -> StreamResult<bool, D1::Error, D2::Error>
 where
-    E1: 'static + Error,
-    E2: 'static + Error,
-    D1: Dataset<Error = E1>,
-    D2: Dataset<Error = E2>,
+    D1: Dataset,
+    D2: Dataset,
 {
     // quick return conditions
     // -----------------------
@@ -86,12 +80,12 @@ where
     }
 
     // Create hashes
-    let bn_hashes1 = match calc_bn_hashes::<D1, E1, IsoHasher>(d1) {
+    let bn_hashes1 = match calc_bn_hashes::<D1, IsoHasher>(d1) {
         Ok(map) => map,
         Err(SourceError(e)) => return Err(SourceError(e)),
         Err(SinkError(_)) => return Ok(false), // Not the best solution
     };
-    let bn_hashes2 = match calc_bn_hashes::<D2, E2, IsoHasher>(d2) {
+    let bn_hashes2 = match calc_bn_hashes::<D2, IsoHasher>(d2) {
         Ok(map) => map,
         Err(SourceError(e)) => return Err(SinkError(e)),
         Err(SinkError(_)) => return Ok(false), // Not the best solution
@@ -146,16 +140,14 @@ where
 
 /// Checks for each triple in `g1` with at least one blank node if it is also
 /// contained in `g2` if the blank node `mapping` is applied.
-fn isomorphic_datasets_with_mapping<D1, D2, E1, E2>(
+fn isomorphic_datasets_with_mapping<D1, D2>(
     d1: &D1,
     d2: &D2,
     mapping: HashMap<DTerm<D1>, &Vec<DTerm<D2>>>,
-) -> StreamResult<bool, E1, E2>
+) -> StreamResult<bool, D1::Error, D2::Error>
 where
-    E1: 'static + Error,
-    E2: 'static + Error,
-    D1: Dataset<Error = E1>,
-    D2: Dataset<Error = E2>,
+    D1: Dataset,
+    D2: Dataset,
 {
     for q in d1.quads() {
         let q = q.source_err()?;
@@ -216,15 +208,13 @@ where
 /// predicate `:p` and object `:o` in `g2`. The second triple fails.
 ///
 /// However, this is still not enough to proof isomorphism.
-fn check_for_equal_quads_regardless_bns<D1, D2, E1, E2>(
+fn check_for_equal_quads_regardless_bns<D1, D2>(
     d1: &D1,
     d2: &D2,
-) -> StreamResult<bool, E1, E2>
+) -> StreamResult<bool, D1::Error, D2::Error>
 where
-    E1: 'static + Error,
-    E2: 'static + Error,
-    D1: Dataset<Error = E1>,
-    D2: Dataset<Error = E2>,
+    D1: Dataset,
+    D2: Dataset,
 {
     for q in d1.quads() {
         let q = q.source_err()?;
@@ -257,17 +247,16 @@ where
 ///
 /// An exception are redundant blank nodes. If the algorithm detects such nodes
 /// they will share the same hash.
-fn calc_bn_hashes<D, E, H>(d: &D) -> StreamResult<HashMap<u64, Vec<DTerm<D>>>, E, AlgorithmFailure>
+fn calc_bn_hashes<D, H>(d: &D) -> StreamResult<HashMap<u64, Vec<DTerm<D>>>, D::Error, AlgorithmFailure>
 where
-    E: 'static + Error,
-    D: Dataset<Error = E>,
+    D: Dataset,
     H: Hasher + Default,
 {
     let mut res_map = HashMap::new();
     let mut unresolved_map = HashMap::new();
 
     for bn in d.bnodes().source_err()?.into_iter() {
-        let (hash, upstream, downstream) = calc_bns_init_hash::<D, E, H>(&bn, d).source_err()?;
+        let (hash, upstream, downstream) = calc_bns_init_hash::<D, H>(&bn, d).source_err()?;
         unresolved_map
             .entry(hash)
             .or_insert_with(Vec::new)
@@ -296,7 +285,7 @@ where
                 // improve hash by further traversing.
                 for (bn, upstream, downstream) in bns {
                     let (better_hash, upstream, downstream) =
-                        improve_hash_by_increasing_distance::<H, D, E>(
+                        improve_hash_by_increasing_distance::<H, D>(
                             hash,
                             &upstream,
                             &downstream,
@@ -327,13 +316,12 @@ where
 ///
 /// Returns the initial hash, the upstream nodes and the downstream nodes.
 #[allow(clippy::type_complexity)]
-fn calc_bns_init_hash<D, E, H>(
+fn calc_bns_init_hash<D, H>(
     bn: &DTerm<D>,
     d: &D,
-) -> Result<(u64, Vec<DTerm<D>>, Vec<DTerm<D>>), E>
+) -> Result<(u64, Vec<DTerm<D>>, Vec<DTerm<D>>), D::Error>
 where
-    E: 'static + Error,
-    D: Dataset<Error = E>,
+    D: Dataset,
     H: Hasher + Default,
 {
     // for same hashing result we need to order the triples' hashes.
@@ -364,22 +352,21 @@ where
 
 /// Improves an existing hash by further traversing the graph.
 #[allow(clippy::type_complexity)]
-fn improve_hash_by_increasing_distance<H, D, E>(
+fn improve_hash_by_increasing_distance<H, D>(
     hash: u64,
     upstream: &[DTerm<D>],
     downstream: &[DTerm<D>],
     d: &D,
-) -> Result<(u64, Vec<DTerm<D>>, Vec<DTerm<D>>), E>
+) -> Result<(u64, Vec<DTerm<D>>, Vec<DTerm<D>>), D::Error>
 where
     H: Hasher + Default,
-    D: Dataset<Error = E>,
-    E: 'static + Error,
+    D: Dataset,
 {
     // for same hashing result we need to order the triples' hashes.
     let mut hashes = BTreeSet::new();
 
-    let upstream = traverse_from_s_to_o::<H, D, E>(upstream, d, &mut hashes)?;
-    let downstream = traverse_from_o_to_s::<H, D, E>(downstream, d, &mut hashes)?;
+    let upstream = traverse_from_s_to_o::<H, D>(upstream, d, &mut hashes)?;
+    let downstream = traverse_from_o_to_s::<H, D>(downstream, d, &mut hashes)?;
 
     // hashing
     let mut hasher = H::default();
@@ -408,15 +395,14 @@ where
 /// Looks for triples where the given terms are objects.
 /// Those triples' hashes are inserted into the list and a list of their
 /// subjects is returned.
-fn traverse_from_o_to_s<H, D, E>(
+fn traverse_from_o_to_s<H, D>(
     objects: &[DTerm<D>],
     d: &D,
     hashes: &mut BTreeSet<u64>,
-) -> Result<Vec<DTerm<D>>, E>
+) -> Result<Vec<DTerm<D>>, D::Error>
 where
     H: Hasher + Default,
-    E: 'static + Error,
-    D: Dataset<Error = E>,
+    D: Dataset,
 {
     let mut subjects = vec![];
     for o in objects {
@@ -432,15 +418,14 @@ where
 /// Looks for triples where the given terms are subjects.
 /// Those triples' hashes are inserted into the list and a list of their
 /// objects is returned.
-fn traverse_from_s_to_o<H, D, E>(
+fn traverse_from_s_to_o<H, D>(
     subjects: &[DTerm<D>],
     d: &D,
     hashes: &mut BTreeSet<u64>,
-) -> Result<Vec<DTerm<D>>, E>
+) -> Result<Vec<DTerm<D>>, D::Error>
 where
     H: Hasher + Default,
-    E: 'static + Error,
-    D: Dataset<Error = E>,
+    D: Dataset,
 {
     let mut objects = vec![];
     for s in subjects {

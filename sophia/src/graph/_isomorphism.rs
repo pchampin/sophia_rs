@@ -47,21 +47,15 @@ impl Error for AlgorithmFailure {}
 /// accordingly, a `StreamError` returned where `SourceError`s originate from
 /// `g1` and `SinkError`s originate from `g2`
 ///
-/// _TODO:_ In this case the notion of `source` and `sink` is not fitting.
-/// Still this requires two different error types. Maybe we should turn
-/// `StreamError` into `EitherError`?
-///
 /// # Performance
 ///
 /// As this algorithm has to traverse each graph several times the algorithm
 /// gets way more expensive with bigger numbers of triples. In the same way
 /// the number of blank nodes contributes to the costs.
-pub fn isomorphic_graphs<G1, G2, E1, E2>(g1: &G1, g2: &G2) -> StreamResult<bool, E1, E2>
+pub fn isomorphic_graphs<G1, G2>(g1: &G1, g2: &G2) -> StreamResult<bool, G1::Error, G2::Error>
 where
-    E1: 'static + Error,
-    E2: 'static + Error,
-    G1: Graph<Error = E1>,
-    G2: Graph<Error = E2>,
+    G1: Graph,
+    G2: Graph,
 {
     // quick return conditions
     // -----------------------
@@ -85,12 +79,12 @@ where
     }
 
     // Create hashes
-    let bn_hashes1 = match calc_bn_hashes::<G1, E1, IsoHasher>(g1) {
+    let bn_hashes1 = match calc_bn_hashes::<G1, IsoHasher>(g1) {
         Ok(map) => map,
         Err(SourceError(e)) => return Err(SourceError(e)),
         Err(SinkError(_)) => return Ok(false), // Not the best solution
     };
-    let bn_hashes2 = match calc_bn_hashes::<G2, E2, IsoHasher>(g2) {
+    let bn_hashes2 = match calc_bn_hashes::<G2, IsoHasher>(g2) {
         Ok(map) => map,
         Err(SourceError(e)) => return Err(SinkError(e)),
         Err(SinkError(_)) => return Ok(false), // Not the best solution
@@ -251,17 +245,16 @@ where
 ///
 /// An exception are redundant blank nodes. If the algorithm detects such nodes
 /// they will share the same hash.
-fn calc_bn_hashes<G, E, H>(g: &G) -> StreamResult<HashMap<u64, Vec<GTerm<G>>>, E, AlgorithmFailure>
+fn calc_bn_hashes<G, H>(g: &G) -> StreamResult<HashMap<u64, Vec<GTerm<G>>>, G::Error, AlgorithmFailure>
 where
-    E: 'static + Error,
-    G: Graph<Error = E>,
+    G: Graph,
     H: Hasher + Default,
 {
     let mut res_map = HashMap::new();
     let mut unresolved_map = HashMap::new();
 
     for bn in g.bnodes().source_err()?.into_iter() {
-        let (hash, upstream, downstream) = calc_bns_init_hash::<G, E, H>(&bn, g).source_err()?;
+        let (hash, upstream, downstream) = calc_bns_init_hash::<G, H>(&bn, g).source_err()?;
         unresolved_map
             .entry(hash)
             .or_insert_with(Vec::new)
@@ -290,7 +283,7 @@ where
                 // improve hash by further traversing.
                 for (bn, upstream, downstream) in bns {
                     let (better_hash, upstream, downstream) =
-                        improve_hash_by_increasing_distance::<H, G, E>(
+                        improve_hash_by_increasing_distance::<H, G>(
                             hash,
                             &upstream,
                             &downstream,
@@ -321,13 +314,12 @@ where
 ///
 /// Returns the initial hash, the upstream nodes and the downstream nodes.
 #[allow(clippy::type_complexity)]
-fn calc_bns_init_hash<G, E, H>(
+fn calc_bns_init_hash<G, H>(
     bn: &GTerm<G>,
     g: &G,
-) -> Result<(u64, Vec<GTerm<G>>, Vec<GTerm<G>>), E>
+) -> Result<(u64, Vec<GTerm<G>>, Vec<GTerm<G>>), G::Error>
 where
-    E: 'static + Error,
-    G: Graph<Error = E>,
+    G: Graph,
     H: Hasher + Default,
 {
     // for same hashing result we need to order the triples' hashes.
@@ -358,22 +350,21 @@ where
 
 /// Improves an existing hash by further traversing the graph.
 #[allow(clippy::type_complexity)]
-fn improve_hash_by_increasing_distance<H, G, E>(
+fn improve_hash_by_increasing_distance<H, G>(
     hash: u64,
     upstream: &[GTerm<G>],
     downstream: &[GTerm<G>],
     g: &G,
-) -> Result<(u64, Vec<GTerm<G>>, Vec<GTerm<G>>), E>
+) -> Result<(u64, Vec<GTerm<G>>, Vec<GTerm<G>>), G::Error>
 where
     H: Hasher + Default,
-    G: Graph<Error = E>,
-    E: 'static + Error,
+    G: Graph,
 {
     // for same hashing result we need to order the triples' hashes.
     let mut triple_hashes = BTreeSet::new();
 
-    let upstream = traverse_from_s_to_o::<H, G, E>(upstream, g, &mut triple_hashes)?;
-    let downstream = traverse_from_o_to_s::<H, G, E>(downstream, g, &mut triple_hashes)?;
+    let upstream = traverse_from_s_to_o::<H, G>(upstream, g, &mut triple_hashes)?;
+    let downstream = traverse_from_o_to_s::<H, G>(downstream, g, &mut triple_hashes)?;
 
     // hashing
     let mut hasher = H::default();
@@ -410,15 +401,14 @@ where
 /// Looks for triples where the given terms are objects.
 /// Those triples' hashes are inserted into the list and a list of their
 /// subjects is returned.
-fn traverse_from_o_to_s<H, G, E>(
+fn traverse_from_o_to_s<H, G>(
     upstream: &[GTerm<G>],
     g: &G,
     hashes: &mut BTreeSet<u64>,
-) -> Result<Vec<GTerm<G>>, E>
+) -> Result<Vec<GTerm<G>>, G::Error>
 where
     H: Hasher + Default,
-    E: 'static + Error,
-    G: Graph<Error = E>,
+    G: Graph,
 {
     let mut subjects = vec![];
     for o in upstream {
@@ -434,15 +424,14 @@ where
 /// Looks for triples where the given terms are subjects.
 /// Those triples' hashes are inserted into the list and a list of their
 /// objects is returned.
-fn traverse_from_s_to_o<H, G, E>(
+fn traverse_from_s_to_o<H, G>(
     downstream: &[GTerm<G>],
     g: &G,
     hashes: &mut BTreeSet<u64>,
-) -> Result<Vec<GTerm<G>>, E>
+) -> Result<Vec<GTerm<G>>, G::Error>
 where
     H: Hasher + Default,
-    E: 'static + Error,
-    G: Graph<Error = E>,
+    G: Graph,
 {
     let mut objects = vec![];
     for s in downstream {
