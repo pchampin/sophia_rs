@@ -70,28 +70,28 @@ where
 {
     type MutationError = Infallible;
 
-    fn insert<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
+    fn insert<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MGResult<Self, bool>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
-        let s = s.clone_into();
-        let p = p.clone_into();
-        let o = o.clone_into();
+        let s = Term::copy(s);
+        let p = Term::copy(p);
+        let o = Term::copy(o);
         self.push([s, p, o]);
         Ok(true)
     }
-    fn remove<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
+    fn remove<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MGResult<Self, bool>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
         let i = self
             .triples()
             .oks()
-            .position(|t| s == t.s() && p == t.p() && o == t.o());
+            .position(|t| term_eq(s, t.s()) && term_eq(p, t.p()) && term_eq(o, t.o()));
         if let Some(i) = i {
             self.swap_remove(i);
             Ok(true)
@@ -140,26 +140,26 @@ where
 {
     type MutationError = Infallible;
 
-    fn insert<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
+    fn insert<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MGResult<Self, bool>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
-        let s = s.clone_into();
-        let p = p.clone_into();
-        let o = o.clone_into();
+        let s = Term::copy(s);
+        let p = Term::copy(p);
+        let o = Term::copy(o);
         Ok(HashSet::insert(self, [s, p, o]))
     }
-    fn remove<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
+    fn remove<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MGResult<Self, bool>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
-        let s = s.clone_into();
-        let p = p.clone_into();
-        let o = o.clone_into();
+        let s = Term::copy(s);
+        let p = Term::copy(p);
+        let o = Term::copy(o);
         Ok(HashSet::remove(self, &[s, p, o]))
     }
 }

@@ -7,8 +7,8 @@ use crate::*;
 ///
 /// [term]: ../enum.Term.html
 pub trait GraphNameMatcher {
-    /// `TermData` of the term(s) used by this matcher.
-    type TermData: TermData;
+    /// Type of `TTerm` used internally by this matcher.
+    type Term: TTerm + ?Sized;
 
     /// If this matcher matches only one graph name, return it, else `None`.
     ///
@@ -18,41 +18,41 @@ pub trait GraphNameMatcher {
     /// * `Some(None)` means that the matcher matches only the default graph,
     /// * `Some(Some(term))` means that the matcher matches a single proper graph name.
     #[allow(clippy::option_option)]
-    fn constant(&self) -> Option<Option<&Term<Self::TermData>>>;
+    fn constant(&self) -> Option<Option<&Self::Term>>;
 
     /// Check whether this matcher matches `g`.
-    fn matches<T>(&self, g: Option<&Term<T>>) -> bool
+    fn matches<T>(&self, g: Option<&T>) -> bool
     where
-        T: TermData;
+        T: TTerm + ?Sized;
 }
 
 impl GraphNameMatcher for AnyTerm {
-    type TermData = &'static str;
-    fn constant(&self) -> Option<Option<&Term<Self::TermData>>> {
+    type Term = StaticTerm;
+    fn constant(&self) -> Option<Option<&StaticTerm>> {
         None
     }
-    fn matches<T>(&self, _g: Option<&Term<T>>) -> bool
+    fn matches<T>(&self, _g: Option<&T>) -> bool
     where
-        T: TermData,
+        T: TTerm + ?Sized,
     {
         true
     }
 }
 
-impl<U> GraphNameMatcher for AnyOrExactly<Option<Term<U>>>
+impl<U> GraphNameMatcher for AnyOrExactly<Option<U>>
 where
-    U: TermData,
+    U: TTerm + Sized,
 {
-    type TermData = U;
-    fn constant(&self) -> Option<Option<&Term<Self::TermData>>> {
+    type Term = U;
+    fn constant(&self) -> Option<Option<&U>> {
         match self {
             AnyOrExactly::Any => None,
             AnyOrExactly::Exactly(g) => Some(g.as_ref()),
         }
     }
-    fn matches<T>(&self, g: Option<&Term<T>>) -> bool
+    fn matches<T>(&self, g: Option<&T>) -> bool
     where
-        T: TermData,
+        T: TTerm + ?Sized,
     {
         match self {
             AnyOrExactly::Any => true,
@@ -61,101 +61,61 @@ where
     }
 }
 
-impl<U> GraphNameMatcher for Option<&'_ Term<U>>
+impl<U> GraphNameMatcher for Option<&U>
 where
-    U: TermData,
+    U: TTerm + ?Sized,
 {
-    type TermData = U;
-    fn constant(&self) -> Option<Option<&Term<Self::TermData>>> {
+    type Term = U;
+    fn constant(&self) -> Option<Option<&U>> {
         Some(*self)
     }
-    fn matches<T>(&self, g: Option<&Term<T>>) -> bool
+    fn matches<T>(&self, g: Option<&T>) -> bool
     where
-        T: TermData,
+        T: TTerm + ?Sized,
     {
         same_graph_name(*self, g)
     }
 }
 
-impl<U> GraphNameMatcher for Option<Term<U>>
+impl<U> GraphNameMatcher for [Option<&U>]
 where
-    U: TermData,
+    U: TTerm + ?Sized,
 {
-    type TermData = U;
-    fn constant(&self) -> Option<Option<&Term<Self::TermData>>> {
-        Some(self.as_ref())
-    }
-    fn matches<T>(&self, g: Option<&Term<T>>) -> bool
-    where
-        T: TermData,
-    {
-        same_graph_name(self.as_ref(), g)
-    }
-}
-
-impl<U> GraphNameMatcher for Term<U>
-where
-    U: TermData,
-{
-    type TermData = U;
-    fn constant(&self) -> Option<Option<&Term<Self::TermData>>> {
-        Some(Some(self))
-    }
-    fn matches<T>(&self, g: Option<&Term<T>>) -> bool
-    where
-        T: TermData,
-    {
-        same_graph_name(Some(self), g)
-    }
-}
-
-impl<M> GraphNameMatcher for [M]
-where
-    M: GraphNameMatcher,
-{
-    type TermData = M::TermData;
-    fn constant(&self) -> Option<Option<&Term<Self::TermData>>> {
+    type Term = U;
+    fn constant(&self) -> Option<Option<&U>> {
         if self.len() == 1 {
-            self[0].constant()
+            Some(self[0])
         } else {
             None
         }
     }
-    fn matches<T>(&self, g: Option<&Term<T>>) -> bool
+    fn matches<T>(&self, g: Option<&T>) -> bool
     where
-        T: TermData,
+        T: TTerm + ?Sized,
     {
-        for matcher in self {
-            if matcher.matches(g) {
-                return true;
-            }
-        }
-        false
+        self.iter().any(|gself| same_graph_name(*gself, g))
     }
 }
 
-// Also impl'ing on arrays for improving DX
-// (&[T;N] is not automatically cast to &[T] in generic functions...).
 macro_rules! impl_for_array {
     ($n: expr) => {
-        impl<M> GraphNameMatcher for [M; $n]
+        impl<'a, U> GraphNameMatcher for [Option<&U>; $n]
         where
-            M: GraphNameMatcher,
+            U: TTerm + ?Sized,
         {
-            type TermData = M::TermData;
-            fn constant(&self) -> Option<Option<&Term<Self::TermData>>> {
-                None
-            }
-            fn matches<T>(&self, g: Option<&Term<T>>) -> bool
-            where
-                T: TermData,
-            {
-                for matcher in self {
-                    if matcher.matches(g) {
-                        return true;
-                    }
+            type Term = U;
+            fn constant(&self) -> Option<Option<&Self::Term>> {
+                if self.len() == 1 {
+                    Some(self[0])
+                } else {
+                    None
                 }
-                false
+            }
+            fn matches<T>(&self, g: Option<&T>) -> bool
+            where
+                T: TTerm + ?Sized,
+            {
+                self.iter().any(|gself| same_graph_name(*gself, g))
             }
         }
     };
@@ -172,44 +132,39 @@ impl_for_array!(10);
 impl_for_array!(11);
 impl_for_array!(12);
 
-/// This is somewhat redundant with [M],
-/// but it is useful with `Dataset::union_graph`,
-/// were a matcher must be *moved* rather than borrowed.
-impl<M> GraphNameMatcher for Vec<M>
+impl<U> GraphNameMatcher for Vec<Option<&U>>
 where
-    M: GraphNameMatcher,
+    U: TTerm + ?Sized,
 {
-    type TermData = M::TermData;
-    fn constant(&self) -> Option<Option<&Term<Self::TermData>>> {
+    type Term = U;
+    fn constant(&self) -> Option<Option<&U>> {
         if self.len() == 1 {
-            self[0].constant()
+            Some(self[0])
         } else {
             None
         }
     }
-    fn matches<T>(&self, g: Option<&Term<T>>) -> bool
+    fn matches<T>(&self, g: Option<&T>) -> bool
     where
-        T: TermData,
+        T: TTerm + ?Sized,
     {
-        for matcher in self {
-            if matcher.matches(g) {
-                return true;
-            }
-        }
-        false
+        self.iter().any(|gself| same_graph_name(*gself, g))
     }
 }
 
-impl<F: Fn(Option<&Term<&str>>) -> bool> GraphNameMatcher for F {
-    type TermData = &'static str;
-    fn constant(&self) -> Option<Option<&Term<Self::TermData>>> {
+impl<F> GraphNameMatcher for [F; 1]
+where
+    F: Fn(Option<&dyn TTerm>) -> bool,
+{
+    type Term = StaticTerm;
+    fn constant(&self) -> Option<Option<&StaticTerm>> {
         None
     }
-    fn matches<T>(&self, g: Option<&Term<T>>) -> bool
+    fn matches<T>(&self, g: Option<&T>) -> bool
     where
-        T: TermData,
+        T: TTerm + ?Sized,
     {
-        (self)(g.map(|t| t.as_ref_str()).as_ref())
+        (self[0])(g.map(T::as_dyn))
     }
 }
 
@@ -219,56 +174,6 @@ mod test {
     use super::*;
 
     use crate::matcher::{AnyOrExactly, ANY};
-    #[test]
-    fn test_option_ref_term_as_matcher() {
-        let m = Some(BoxTerm::new_iri("http://champin.net/#pa").unwrap());
-        // comparing to a term using a different term data, and differently cut,
-        // to make the test less obvious
-        let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
-        let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
-
-        let mc = GraphNameMatcher::constant(&m);
-        assert!(mc.is_some());
-        assert!(same_graph_name(mc.unwrap(), n1.as_ref()));
-        assert!(!m.matches(n0.as_ref()));
-        assert!(m.matches(n1.as_ref()));
-        assert!(!m.matches(n2.as_ref()));
-    }
-
-    #[test]
-    fn test_option_term_as_matcher() {
-        let m = Some(BoxTerm::new_iri("http://champin.net/#pa").unwrap());
-        // comparing to a term using a different term data, and differently cut,
-        // to make the test less obvious
-        let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
-        let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
-
-        let mc = GraphNameMatcher::constant(&m);
-        assert!(mc.is_some());
-        assert!(same_graph_name(mc.unwrap(), n1.as_ref()));
-        assert!(!m.matches(n0.as_ref()));
-        assert!(m.matches(n1.as_ref()));
-        assert!(!m.matches(n2.as_ref()));
-    }
-
-    #[test]
-    fn test_term_as_matcher() {
-        let m = BoxTerm::new_iri("http://champin.net/#pa").unwrap();
-        // comparing to a term using a different term data, and differently cut,
-        // to make the test less obvious
-        let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
-        let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
-
-        let mc = GraphNameMatcher::constant(&m);
-        assert!(mc.is_some());
-        assert!(same_graph_name(mc.unwrap(), n1.as_ref()));
-        assert!(!m.matches(n0.as_ref()));
-        assert!(m.matches(n1.as_ref()));
-        assert!(!m.matches(n2.as_ref()));
-    }
 
     #[test]
     fn test_any_as_matcher() {
@@ -320,11 +225,9 @@ mod test {
     }
 
     #[test]
-    fn test_array2_as_matcher() {
-        let m = [
-            Some(BoxTerm::new_iri("http://champin.net/#pa").unwrap()),
-            None,
-        ];
+    fn test_option_as_matcher() {
+        let b = BoxTerm::new_iri("http://champin.net/#pa").unwrap();
+        let m = Some(&b);
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: Option<RcTerm> = None;
@@ -332,22 +235,6 @@ mod test {
         let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
         let mc = GraphNameMatcher::constant(&m);
-        assert!(mc.is_none());
-        assert!(m.matches(n0.as_ref()));
-        assert!(m.matches(n1.as_ref()));
-        assert!(!m.matches(n2.as_ref()));
-    }
-
-    #[test]
-    fn test_array1_as_matcher() {
-        let m = [Some(BoxTerm::new_iri("http://champin.net/#pa").unwrap())];
-        // comparing to a term using a different term data, and differently cut,
-        // to make the test less obvious
-        let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
-        let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
-
-        let mc = GraphNameMatcher::constant(&m[..]);
         assert!(mc.is_some());
         assert!(same_graph_name(mc.unwrap(), n1.as_ref()));
         assert!(!m.matches(n0.as_ref()));
@@ -356,27 +243,51 @@ mod test {
     }
 
     #[test]
-    fn test_array0_as_matcher() {
-        let m: [BoxTerm; 0] = [];
+    fn test_vec_and_slice_as_matcher() {
+        let g1 = Some(BoxTerm::new_iri("http://champin.net/#pa").unwrap());
+        let g2 = None;
+        let v = [g1.as_ref(), g2.as_ref()];
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: Option<RcTerm> = None;
         let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
         let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
 
-        let mc = GraphNameMatcher::constant(&m[..]);
+        let m = &v[..0];
+        let mc = GraphNameMatcher::constant(m);
         assert!(mc.is_none());
-        assert!(!m.matches(n0.as_ref()));
-        assert!(!m.matches(n1.as_ref()));
-        assert!(!m.matches(n2.as_ref()));
+        assert!(!GraphNameMatcher::matches(m, n0.as_ref()));
+        assert!(!GraphNameMatcher::matches(m, n1.as_ref()));
+        assert!(!GraphNameMatcher::matches(m, n2.as_ref()));
+
+        let m = &v[..1];
+        let mc = GraphNameMatcher::constant(m);
+        assert!(mc.is_some());
+        assert!(same_graph_name(mc.unwrap(), n1.as_ref()));
+        assert!(!GraphNameMatcher::matches(m, n0.as_ref()));
+        assert!(GraphNameMatcher::matches(m, n1.as_ref()));
+        assert!(!GraphNameMatcher::matches(m, n2.as_ref()));
+
+        let m = &v[..];
+        let mc = GraphNameMatcher::constant(m);
+        assert!(mc.is_none());
+        assert!(GraphNameMatcher::matches(m, n0.as_ref()));
+        assert!(GraphNameMatcher::matches(m, n1.as_ref()));
+        assert!(!GraphNameMatcher::matches(m, n2.as_ref()));
+
+        let m = v;
+        let mc = GraphNameMatcher::constant(&m);
+        assert!(mc.is_none());
+        assert!(GraphNameMatcher::matches(&m, n0.as_ref()));
+        assert!(GraphNameMatcher::matches(&m, n1.as_ref()));
+        assert!(!GraphNameMatcher::matches(&m, n2.as_ref()));
     }
 
     #[test]
-    fn test_vec_as_matcher() {
-        let m = vec![
-            Some(BoxTerm::new_iri("http://champin.net/#pa").unwrap()),
-            None,
-        ];
+    fn test_array_as_matcher() {
+        let g1 = Some(BoxTerm::new_iri("http://champin.net/#pa").unwrap());
+        let g2 = None;
+        let m = [g1.as_ref(), g2.as_ref()];
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let n0: Option<RcTerm> = None;
@@ -392,10 +303,10 @@ mod test {
 
     #[test]
     fn test_func_as_matcher() {
-        let m = |t: Option<&Term<&str>>| match t {
+        let m = [|t: Option<&dyn TTerm>| match t {
             None => false,
             Some(t) => t.value().starts_with("http://champin"),
-        };
+        }];
 
         let n0: Option<RcTerm> = None;
         let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());

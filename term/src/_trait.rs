@@ -110,6 +110,19 @@ pub trait TTerm {
             _ => true,
         }
     }
+
+    /// This method ensures that all implementations of `TTerm`
+    /// can be turned into a trait object.
+    ///
+    /// # Why is this required?
+    /// After all, in most cases, passing `&t` instead of `t.as_dyn()`
+    /// will work just as well.
+    ///
+    /// The reason is that most methods of the API will accept *references*
+    /// to terms, as `&T` where `T: TTerm + ?Sized`,
+    /// and such references can *not* be cast to `dyn TTerm`
+    /// (see https://stackoverflow.com/a/57432042/1235487 for more details).
+    fn as_dyn(&self) -> &dyn TTerm;
 }
 
 /// Any [`TTerm`](./trait.TTerm.html) belongs to one those kinds.
@@ -129,9 +142,11 @@ pub enum TermKind {
 use TermKind::*;
 
 /// A term type that can copy any other term.
-pub trait CopyTerm: TTerm {
+pub trait CopyTerm: TTerm + Sized {
     /// Copy `term` into an instance of this type.
-    fn copy<T: TTerm>(term: &T) -> Self;
+    fn copy<T>(term: &T) -> Self
+    where
+        T: TTerm + ?Sized;
 }
 
 /// A term type that can copy some other terms.
@@ -139,7 +154,9 @@ pub trait TryCopyTerm: TTerm + Sized {
     /// The error type produced when failing to copy a given term
     type Error: 'static + Error;
     /// Try to copy `term` into an instance of this type.
-    fn try_copy<T: TTerm>(term: &T) -> Result<Self, Self::Error>;
+    fn try_copy<T>(term: &T) -> Result<Self, Self::Error>
+    where
+        T: TTerm + ?Sized;
 }
 
 fn raw_to_mownstr<'a>(raw: (&'a str, Option<&'a str>)) -> MownStr<'a> {
@@ -347,13 +364,19 @@ where
 }
 
 /// Formats the given term in to a string.
-pub fn term_to_string<T: TTerm>(term: &T) -> String {
+pub fn term_to_string<T>(term: &T) -> String
+where
+    T: TTerm + ?Sized,
+{
     format!("{}", TermFormater(term))
 }
 
-struct TermFormater<'a, T: TTerm>(&'a T);
+struct TermFormater<'a, T: ?Sized>(&'a T);
 
-impl<'a, T: TTerm> std::fmt::Display for TermFormater<'a, T> {
+impl<'a, T> std::fmt::Display for TermFormater<'a, T>
+where
+    T: TTerm + ?Sized,
+{
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
         term_format(self.0, fmt)
     }

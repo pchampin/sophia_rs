@@ -22,16 +22,16 @@ pub use super::_graph_name_matcher::*;
 ///
 /// [term]: ../enum.Term.html
 pub trait TermMatcher {
-    /// `TermData` of the term(s) used by this matcher.
-    type TermData: TermData;
+    /// Type of `TTerm` used internally by this matcher.
+    type Term: TTerm + ?Sized;
 
     /// If this matcher matches only one term, return this term, else `None`.
-    fn constant(&self) -> Option<&Term<Self::TermData>>;
+    fn constant(&self) -> Option<&Self::Term>;
 
     /// Check whether this matcher matches `t`.
-    fn matches<T>(&self, t: &Term<T>) -> bool
+    fn matches<T>(&self, t: &T) -> bool
     where
-        T: TermData;
+        T: TTerm + ?Sized;
 }
 
 /// A universal matcher: it matches any term or graph name (even the default graph).
@@ -41,13 +41,13 @@ pub const ANY: AnyTerm = AnyTerm {};
 pub struct AnyTerm {}
 
 impl TermMatcher for AnyTerm {
-    type TermData = &'static str;
-    fn constant(&self) -> Option<&Term<Self::TermData>> {
+    type Term = StaticTerm;
+    fn constant(&self) -> Option<&StaticTerm> {
         None
     }
-    fn matches<T>(&self, _t: &Term<T>) -> bool
+    fn matches<T>(&self, _t: &T) -> bool
     where
-        T: TermData,
+        T: TTerm + ?Sized,
     {
         true
     }
@@ -61,7 +61,10 @@ pub enum AnyOrExactly<T> {
     Exactly(T),
 }
 
-impl<T> From<Option<T>> for AnyOrExactly<T> {
+impl<T> From<Option<T>> for AnyOrExactly<T>
+where
+    T: TTerm + Sized,
+{
     fn from(other: Option<T>) -> AnyOrExactly<T> {
         match other {
             None => AnyOrExactly::Any,
@@ -70,91 +73,83 @@ impl<T> From<Option<T>> for AnyOrExactly<T> {
     }
 }
 
-impl<U> TermMatcher for AnyOrExactly<Term<U>>
+impl<U> TermMatcher for AnyOrExactly<U>
 where
-    U: TermData,
+    U: TTerm + Sized,
 {
-    type TermData = U;
-    fn constant(&self) -> Option<&Term<Self::TermData>> {
+    type Term = U;
+    fn constant(&self) -> Option<&U> {
         match self {
             AnyOrExactly::Any => None,
             AnyOrExactly::Exactly(t) => Some(t),
         }
     }
-    fn matches<T>(&self, t: &Term<T>) -> bool
+    fn matches<T>(&self, t: &T) -> bool
     where
-        T: TermData,
+        T: TTerm + ?Sized,
     {
         match self {
             AnyOrExactly::Any => true,
-            AnyOrExactly::Exactly(tself) => tself == t,
+            AnyOrExactly::Exactly(tself) => term_eq(tself, t),
         }
     }
 }
 
-impl<U> TermMatcher for Term<U>
+impl<U> TermMatcher for U
 where
-    U: TermData,
+    U: TTerm + ?Sized,
 {
-    type TermData = U;
-    fn constant(&self) -> Option<&Term<Self::TermData>> {
+    type Term = U;
+    fn constant(&self) -> Option<&U> {
         Some(self)
     }
-    fn matches<T>(&self, t: &Term<T>) -> bool
+    fn matches<T>(&self, t: &T) -> bool
     where
-        T: TermData,
+        T: TTerm + ?Sized,
     {
-        t == self
+        term_eq(self, t)
     }
 }
 
-impl<U> TermMatcher for [Term<U>]
+impl<U> TermMatcher for [&U]
 where
-    U: TermData,
+    U: TTerm + ?Sized,
 {
-    type TermData = U;
-    fn constant(&self) -> Option<&Term<Self::TermData>> {
+    type Term = U;
+    fn constant(&self) -> Option<&U> {
         if self.len() == 1 {
             Some(&self[0])
         } else {
             None
         }
     }
-    fn matches<T>(&self, t: &Term<T>) -> bool
+    fn matches<T>(&self, t: &T) -> bool
     where
-        T: TermData,
+        T: TTerm + ?Sized,
     {
-        for term in self {
-            if t == term {
-                return true;
-            }
-        }
-        false
+        self.iter().any(|tself| term_eq(*tself, t))
     }
 }
 
-// Also impl'ing on arrays for improving DX
-// (&[T;N] is not automatically cast to &[T] in generic functions...).
 macro_rules! impl_for_array {
     ($n: expr) => {
-        impl<U> TermMatcher for [Term<U>; $n]
+        impl<U> TermMatcher for [&U; $n]
         where
-            U: TermData,
+            U: TTerm + ?Sized,
         {
-            type TermData = U;
-            fn constant(&self) -> Option<&Term<Self::TermData>> {
-                None
-            }
-            fn matches<T>(&self, t: &Term<T>) -> bool
-            where
-                T: TermData,
-            {
-                for term in self {
-                    if t == term {
-                        return true;
-                    }
+            type Term = U;
+            fn constant(&self) -> Option<&U> {
+                if self.len() == 1 {
+                    Some(self[0])
+                } else {
+                    None
                 }
-                false
+            }
+            fn matches<T>(&self, t: &T) -> bool
+            where
+                T: TTerm + ?Sized,
+            {
+                self.iter().any(|tself| term_eq(*tself, t))
             }
         }
     };
@@ -171,37 +166,45 @@ impl_for_array!(10);
 impl_for_array!(11);
 impl_for_array!(12);
 
-impl<F: Fn(&RefTerm) -> bool> TermMatcher for F {
-    type TermData = &'static str;
-    fn constant(&self) -> Option<&Term<Self::TermData>> {
+impl<U> TermMatcher for Vec<&U>
+where
+    U: TTerm + ?Sized,
+{
+    type Term = U;
+    fn constant(&self) -> Option<&U> {
+        if self.len() == 1 {
+            Some(&self[0])
+        } else {
+            None
+        }
+    }
+    fn matches<T>(&self, t: &T) -> bool
+    where
+        T: TTerm + ?Sized,
+    {
+        self.iter().any(|tself| term_eq(*tself, t))
+    }
+}
+
+impl<F> TermMatcher for [F; 1]
+where
+    F: Fn(&dyn TTerm) -> bool,
+{
+    type Term = StaticTerm;
+    fn constant(&self) -> Option<&StaticTerm> {
         None
     }
-    fn matches<T>(&self, t: &Term<T>) -> bool
+    fn matches<T>(&self, t: &T) -> bool
     where
-        T: TermData,
+        T: TTerm + ?Sized,
     {
-        self(&t.as_ref_str())
+        (self[0])(t.as_dyn())
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
-
-    #[test]
-    fn test_term_as_matcher() {
-        let m = BoxTerm::new_iri("http://champin.net/#pa").unwrap();
-        // comparing to a term using a different term data, and differently cut,
-        // to make the test less obvious
-        let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
-        let t2 = RcTerm::new_iri("http://example.org/").unwrap();
-
-        let mc = TermMatcher::constant(&m);
-        assert!(mc.is_some());
-        assert_eq!(mc.unwrap(), &t1);
-        assert!(TermMatcher::matches(&m, &t1));
-        assert!(!TermMatcher::matches(&m, &t2));
-    }
 
     #[test]
     fn test_any_as_matcher() {
@@ -243,11 +246,67 @@ mod test {
     }
 
     #[test]
-    fn test_array2_as_matcher() {
-        let m = [
-            BoxTerm::new_iri("http://champin.net/#pa").unwrap(),
-            BoxTerm::new_iri("http://example.org/").unwrap(),
-        ];
+    fn test_term_as_matcher() {
+        let m = BoxTerm::new_iri("http://champin.net/#pa").unwrap();
+        // comparing to a term using a different term data, and differently cut,
+        // to make the test less obvious
+        let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
+        let t2 = RcTerm::new_iri("http://example.org/").unwrap();
+
+        let mc = TermMatcher::constant(&m);
+        assert!(mc.is_some());
+        assert_eq!(mc.unwrap(), &t1);
+        assert!(TermMatcher::matches(&m, &t1));
+        assert!(!TermMatcher::matches(&m, &t2));
+    }
+
+    #[test]
+    fn test_vec_and_slice_as_matcher() {
+        let b1 = BoxTerm::new_iri("http://champin.net/#pa").unwrap();
+        let b2 = BoxTerm::new_iri("http://example.org/").unwrap();
+        let v = vec![&b1, &b2];
+
+        // comparing to a term using a different term data, and differently cut,
+        // to make the test less obvious
+        let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
+        let t2 = RcTerm::new_iri("http://example.org/").unwrap();
+        let t3 = RcTerm::new_iri("http://example.org/other").unwrap();
+
+        let m = &v[..0];
+        let mc = TermMatcher::constant(m);
+        assert!(mc.is_none());
+        assert!(!TermMatcher::matches(m, &t1));
+        assert!(!TermMatcher::matches(m, &t2));
+        assert!(!TermMatcher::matches(m, &t3));
+
+        let m = &v[..1];
+        let mc = TermMatcher::constant(m);
+        assert!(mc.is_some());
+        assert_eq!(mc.unwrap(), &t1);
+        assert!(TermMatcher::matches(m, &t1));
+        assert!(!TermMatcher::matches(m, &t2));
+        assert!(!TermMatcher::matches(m, &t3));
+
+        let m = &v[..];
+        let mc = TermMatcher::constant(m);
+        assert!(mc.is_none());
+        assert!(TermMatcher::matches(m, &t1));
+        assert!(TermMatcher::matches(m, &t2));
+        assert!(!TermMatcher::matches(m, &t3));
+
+        let m = v;
+        let mc = TermMatcher::constant(&m);
+        assert!(mc.is_none());
+        assert!(TermMatcher::matches(&m, &t1));
+        assert!(TermMatcher::matches(&m, &t2));
+        assert!(!TermMatcher::matches(&m, &t3));
+    }
+
+    #[test]
+    fn test_array_as_matcher() {
+        let b1 = BoxTerm::new_iri("http://champin.net/#pa").unwrap();
+        let b2 = BoxTerm::new_iri("http://example.org/").unwrap();
+        let m = [&b1, &b2];
         // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
@@ -256,36 +315,9 @@ mod test {
 
         let mc = TermMatcher::constant(&m);
         assert!(mc.is_none());
-        assert!(TermMatcher::matches(&m[..], &t1));
-        assert!(TermMatcher::matches(&m[..], &t2));
-        assert!(!TermMatcher::matches(&m[..], &t3));
-    }
-
-    #[test]
-    fn test_array1_as_matcher() {
-        let m = [BoxTerm::new_iri("http://champin.net/#pa").unwrap()];
-        // comparing to a term using a different term data, and differently cut,
-        // to make the test less obvious
-        let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
-        let t2 = RcTerm::new_iri("http://example.org/").unwrap();
-
-        let mc = TermMatcher::constant(&m[..]);
-        assert!(mc.is_some());
-        assert_eq!(mc.unwrap(), &t1);
-        assert!(TermMatcher::matches(&m[..], &t1));
-        assert!(!TermMatcher::matches(&m[..], &t2));
-    }
-
-    #[test]
-    fn test_array0_as_matcher() {
-        let m: [BoxTerm; 0] = [];
-        // comparing to a term using a different term data, and differently cut,
-        // to make the test less obvious
-        let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
-
-        let mc = TermMatcher::constant(&m[..]);
-        assert!(mc.is_none());
-        assert!(!TermMatcher::matches(&m[..], &t1));
+        assert!(TermMatcher::matches(&m, &t1));
+        assert!(TermMatcher::matches(&m, &t2));
+        assert!(!TermMatcher::matches(&m, &t3));
     }
 
     #[test]
@@ -293,7 +325,7 @@ mod test {
         let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
         let t2 = RcTerm::new_iri("http://example.org/").unwrap();
 
-        let m = |t: &RefTerm| t.value().starts_with("http://champin");
+        let m = [|t: &dyn TTerm| t.value().starts_with("http://champin")];
         assert!(TermMatcher::constant(&m).is_none());
         assert!(TermMatcher::matches(&m, &t1));
         assert!(!TermMatcher::matches(&m, &t2));

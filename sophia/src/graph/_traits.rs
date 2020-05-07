@@ -90,95 +90,83 @@ pub trait Graph {
     /// An iterator visiting all triples with the given subject.
     ///
     /// See also [`triples`](#tymethod.triples).
-    fn triples_with_s<'s, T>(&'s self, s: &'s Term<T>) -> GTripleSource<'s, Self>
+    fn triples_with_s<'s, TS>(&'s self, s: &'s TS) -> GTripleSource<'s, Self>
     where
-        T: TermData,
+        TS: TTerm + ?Sized,
     {
         Box::new(self.triples().filter_ok(move |t| t.s() == s))
     }
     /// An iterator visiting all triples with the given predicate.
     ///
     /// See also [`triples`](#tymethod.triples).
-    fn triples_with_p<'s, T>(&'s self, p: &'s Term<T>) -> GTripleSource<'s, Self>
+    fn triples_with_p<'s, TP>(&'s self, p: &'s TP) -> GTripleSource<'s, Self>
     where
-        T: TermData,
+        TP: TTerm + ?Sized,
     {
         Box::new(self.triples().filter_ok(move |t| t.p() == p))
     }
     /// An iterator visiting all triples with the given object.
     ///
     /// See also [`triples`](#tymethod.triples).
-    fn triples_with_o<'s, T>(&'s self, o: &'s Term<T>) -> GTripleSource<'s, Self>
+    fn triples_with_o<'s, TO>(&'s self, o: &'s TO) -> GTripleSource<'s, Self>
     where
-        T: TermData,
+        TO: TTerm + ?Sized,
     {
         Box::new(self.triples().filter_ok(move |t| t.o() == o))
     }
     /// An iterator visiting all triples with the given subject and predicate.
     ///
     /// See also [`triples`](#tymethod.triples).
-    fn triples_with_sp<'s, T, U>(
-        &'s self,
-        s: &'s Term<T>,
-        p: &'s Term<U>,
-    ) -> GTripleSource<'s, Self>
+    fn triples_with_sp<'s, TS, TP>(&'s self, s: &'s TS, p: &'s TP) -> GTripleSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
     {
         Box::new(self.triples_with_s(s).filter_ok(move |t| t.p() == p))
     }
     /// An iterator visiting all triples with the given subject and object.
     ///
     /// See also [`triples`](#tymethod.triples).
-    fn triples_with_so<'s, T, U>(
-        &'s self,
-        s: &'s Term<T>,
-        o: &'s Term<U>,
-    ) -> GTripleSource<'s, Self>
+    fn triples_with_so<'s, TS, TO>(&'s self, s: &'s TS, o: &'s TO) -> GTripleSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
+        TS: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
         Box::new(self.triples_with_s(s).filter_ok(move |t| t.o() == o))
     }
     /// An iterator visiting all triples with the given predicate and object.
     ///
     /// See also [`triples`](#tymethod.triples).
-    fn triples_with_po<'s, T, U>(
-        &'s self,
-        p: &'s Term<T>,
-        o: &'s Term<U>,
-    ) -> GTripleSource<'s, Self>
+    fn triples_with_po<'s, TP, TO>(&'s self, p: &'s TP, o: &'s TO) -> GTripleSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
         Box::new(self.triples_with_p(p).filter_ok(move |t| t.o() == o))
     }
     /// An iterator visiting all triples with the given subject, predicate and object.
     ///
     /// See also [`triples`](#tymethod.triples).
-    fn triples_with_spo<'s, T, U, V>(
+    fn triples_with_spo<'s, TS, TP, TO>(
         &'s self,
-        s: &'s Term<T>,
-        p: &'s Term<U>,
-        o: &'s Term<V>,
+        s: &'s TS,
+        p: &'s TP,
+        o: &'s TO,
     ) -> GTripleSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
         Box::new(self.triples_with_sp(s, p).filter_ok(move |t| t.o() == o))
     }
 
     /// Return `true` if this graph contains the given triple.
-    fn contains<T, U, V>(&self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> GResult<Self, bool>
+    fn contains<TS, TP, TO>(&self, s: &TS, p: &TP, o: &TO) -> GResult<Self, bool>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
         match self.triples_with_spo(s, p, o).next() {
             None => Ok(false),
@@ -193,21 +181,51 @@ pub trait Graph {
     ///
     /// # Usage
     ///
+    /// Term references or arrays of term references are typically used as term matchers.
+    /// The special `ANY` matcher can also be used to match anything.
+    ///
     /// ```
     /// # use sophia::graph::{*, inmem::LightGraph};
     /// # use sophia::triple::Triple;
-    /// use sophia_term::ns::{Namespace, rdf};
-    /// use sophia_term::matcher::{ANY, TermMatcher};
-    ///
+    /// # use sophia_term::ns::{Namespace, rdf};
+    /// #
+    /// # fn test() -> Result<(), Box<dyn std::error::Error>> {
     /// # let mut graph = LightGraph::new();
-    /// let s = Namespace::new("http://schema.org/").unwrap();
-    /// let city = s.get("City").unwrap();
-    /// let country = s.get("Country").unwrap();
+    /// #
+    /// use sophia_term::matcher::ANY;
     ///
-    /// for t in graph.triples_matching(&ANY, &rdf::type_, &[city, country]) {
-    ///     let t = t.unwrap();
-    ///     println!("{} was found", t.s());
+    /// let s = Namespace::new("http://schema.org/")?;
+    /// let city = s.get("City")?;
+    /// let country = s.get("Country")?;
+    ///
+    /// for t in graph.triples_matching(&ANY, &rdf::type_, &[&city, &country]) {
+    ///     println!("{} was found", t?.s());
     /// }
+    /// # Ok(()) }
+    /// ```
+    ///
+    /// Closures (accepting `&dyn TTerm`) can also be used, but notice that,
+    /// for technical reasons, they must be enclosed in a 1-sized array.
+    ///
+    /// ```
+    /// # use sophia::graph::{*, inmem::LightGraph};
+    /// # use sophia::triple::Triple;
+    /// # use sophia_term::{TTerm, TermKind::Literal};
+    /// # use sophia_term::ns::rdfs;
+    /// #
+    /// # fn test() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let mut graph = LightGraph::new();
+    /// #
+    /// use sophia_term::matcher::ANY;
+    ///
+    /// for t in graph.triples_matching(
+    ///     &ANY,
+    ///     &rdfs::label,
+    ///     &[|t: &dyn TTerm| t.kind() == Literal && t.value().contains("needle")]
+    /// ) {
+    ///     println!("{} was found", t?.s());
+    /// }
+    /// # Ok(()) }
     /// ```
     fn triples_matching<'s, S, P, O>(
         &'s self,
@@ -227,30 +245,30 @@ pub trait Graph {
                 }))
             }
             (Some(s), None, None) => Box::from(
-                self.triples_with_s(s)
+                self.triples_with_s(*s)
                     .filter_ok(move |t| mp.matches(t.p()) && mo.matches(t.o())),
             ),
             (None, Some(p), None) => Box::from(
-                self.triples_with_p(p)
+                self.triples_with_p(*p)
                     .filter_ok(move |t| ms.matches(t.s()) && mo.matches(t.o())),
             ),
             (None, None, Some(o)) => Box::from(
-                self.triples_with_o(o)
+                self.triples_with_o(*o)
                     .filter_ok(move |t| ms.matches(t.s()) && mp.matches(t.p())),
             ),
             (Some(s), Some(p), None) => Box::from(
-                self.triples_with_sp(s, p)
+                self.triples_with_sp(*s, *p)
                     .filter_ok(move |t| mo.matches(t.o())),
             ),
             (Some(s), None, Some(o)) => Box::from(
-                self.triples_with_so(s, o)
+                self.triples_with_so(*s, *o)
                     .filter_ok(move |t| mp.matches(t.p())),
             ),
             (None, Some(p), Some(o)) => Box::from(
-                self.triples_with_po(p, o)
+                self.triples_with_po(*p, *o)
                     .filter_ok(move |t| ms.matches(t.s())),
             ),
-            (Some(s), Some(p), Some(o)) => self.triples_with_spo(s, p, o),
+            (Some(s), Some(p), Some(o)) => self.triples_with_spo(*s, *p, *o),
         }
     }
 
@@ -426,11 +444,11 @@ pub trait MutableGraph: Graph {
     /// ```
     ///
     /// [`SetGraph`]: trait.SetGraph.html
-    fn insert<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
+    fn insert<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MGResult<Self, bool>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData;
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized;
 
     /// Remove the given triple from this graph.
     ///
@@ -445,11 +463,11 @@ pub trait MutableGraph: Graph {
     /// because the triple was already absent from this [`SetGraph`].
     ///
     /// [`SetGraph`]: trait.SetGraph.html
-    fn remove<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
+    fn remove<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MGResult<Self, bool>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData;
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized;
 
     /// Insert into this graph all triples from the given source.
     ///
@@ -539,8 +557,8 @@ pub trait MutableGraph: Graph {
     /// and could be improved in specific implementations of the trait.
     ///
     /// [`SetGraph`]: trait.SetGraph.html
-    fn remove_matching<S, P, O>(
-        &mut self,
+    fn remove_matching<'s, S, P, O>(
+        &'s mut self,
         ms: &S,
         mp: &P,
         mo: &O,
@@ -574,8 +592,8 @@ pub trait MutableGraph: Graph {
     /// # Note to implementors
     /// The default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
-    fn retain_matching<S, P, O>(
-        &mut self,
+    fn retain_matching<'s, S, P, O>(
+        &'s mut self,
         ms: &S,
         mp: &P,
         mo: &O,

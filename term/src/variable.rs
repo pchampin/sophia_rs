@@ -160,12 +160,15 @@ impl<TD: TermData> TTerm for Variable<TD> {
     fn value_raw(&self) -> (&str, Option<&str>) {
         (self.0.as_ref(), None)
     }
+    fn as_dyn(&self) -> &dyn TTerm {
+        self
+    }
 }
 
 impl<TD, TE> PartialEq<TE> for Variable<TD>
 where
     TD: TermData,
-    TE: TTerm,
+    TE: TTerm + ?Sized,
 {
     fn eq(&self, other: &TE) -> bool {
         term_eq(self, other)
@@ -184,7 +187,7 @@ where
 impl<TD, TE> PartialOrd<TE> for Variable<TD>
 where
     TD: TermData,
-    TE: TTerm,
+    TE: TTerm + ?Sized,
 {
     fn partial_cmp(&self, other: &TE) -> Option<std::cmp::Ordering> {
         Some(term_cmp(self, other))
@@ -261,7 +264,10 @@ where
 {
     type Error = TermError;
 
-    fn try_copy<T: TTerm>(term: &T) -> Result<Self, Self::Error> {
+    fn try_copy<T>(term: &T) -> Result<Self, Self::Error>
+    where
+        T: TTerm + ?Sized,
+    {
         if term.kind() == TermKind::Variable {
             Ok(Self::new_unchecked(term.value_raw().0))
         } else {

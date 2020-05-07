@@ -33,95 +33,90 @@ pub trait GraphWrapper {
 
     #[inline]
     /// Mimmic the [`triples_with_s`](../trait.Graph.html#method.triples_with_s) method.
-    fn gw_triples_with_s<'s, T>(&'s self, s: &'s Term<T>) -> GTripleSource<'s, Self::Wrapped>
+    fn gw_triples_with_s<'s, TS>(&'s self, s: &'s TS) -> GTripleSource<'s, Self::Wrapped>
     where
-        T: TermData,
+        TS: TTerm + ?Sized,
     {
         self.get_wrapped().triples_with_s(s)
     }
     #[inline]
     /// Mimmic the [`triples_with_p`](../trait.Graph.html#method.triples_with_p) method.
-    fn gw_triples_with_p<'s, T>(&'s self, p: &'s Term<T>) -> GTripleSource<'s, Self::Wrapped>
+    fn gw_triples_with_p<'s, TP>(&'s self, p: &'s TP) -> GTripleSource<'s, Self::Wrapped>
     where
-        T: TermData,
+        TP: TTerm + ?Sized,
     {
         self.get_wrapped().triples_with_p(p)
     }
     #[inline]
     /// Mimmic the [`triples_with_o`](../trait.Graph.html#method.triples_with_o) method.
-    fn gw_triples_with_o<'s, T>(&'s self, o: &'s Term<T>) -> GTripleSource<'s, Self::Wrapped>
+    fn gw_triples_with_o<'s, TO>(&'s self, o: &'s TO) -> GTripleSource<'s, Self::Wrapped>
     where
-        T: TermData,
+        TO: TTerm + ?Sized,
     {
         self.get_wrapped().triples_with_o(o)
     }
     #[inline]
     /// Mimmic the [`triples_with_sp`](../trait.Graph.html#method.triples_with_sp) method.
-    fn gw_triples_with_sp<'s, T, U>(
+    fn gw_triples_with_sp<'s, TS, TP>(
         &'s self,
-        s: &'s Term<T>,
-        p: &'s Term<U>,
+        s: &'s TS,
+        p: &'s TP,
     ) -> GTripleSource<'s, Self::Wrapped>
     where
-        T: TermData,
-        U: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
     {
         self.get_wrapped().triples_with_sp(s, p)
     }
     #[inline]
     /// Mimmic the [`triples_with_so`](../trait.Graph.html#method.triples_with_so) method.
-    fn gw_triples_with_so<'s, T, U>(
+    fn gw_triples_with_so<'s, TS, TO>(
         &'s self,
-        s: &'s Term<T>,
-        o: &'s Term<U>,
+        s: &'s TS,
+        o: &'s TO,
     ) -> GTripleSource<'s, Self::Wrapped>
     where
-        T: TermData,
-        U: TermData,
+        TS: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
         self.get_wrapped().triples_with_so(s, o)
     }
     #[inline]
     /// Mimmic the [`triples_with_po`](../trait.Graph.html#method.triples_with_po) method.
-    fn gw_triples_with_po<'s, T, U>(
+    fn gw_triples_with_po<'s, TP, TO>(
         &'s self,
-        p: &'s Term<T>,
-        o: &'s Term<U>,
+        p: &'s TP,
+        o: &'s TO,
     ) -> GTripleSource<'s, Self::Wrapped>
     where
-        T: TermData,
-        U: TermData,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
         self.get_wrapped().triples_with_po(p, o)
     }
     #[inline]
     /// Mimmic the [`triples_with_spo`](../trait.Graph.html#method.triples_with_spo) method.
-    fn gw_triples_with_spo<'s, T, U, V>(
+    fn gw_triples_with_spo<'s, TS, TP, TO>(
         &'s self,
-        s: &'s Term<T>,
-        p: &'s Term<U>,
-        o: &'s Term<V>,
+        s: &'s TS,
+        p: &'s TP,
+        o: &'s TO,
     ) -> GTripleSource<'s, Self::Wrapped>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
         self.get_wrapped().triples_with_spo(s, p, o)
     }
 
     #[inline]
     /// Mimmic the [`contains`](../trait.Graph.html#method.contains) method.
-    fn gw_contains<T, U, V>(
-        &self,
-        s: &Term<T>,
-        p: &Term<U>,
-        o: &Term<V>,
-    ) -> GResult<Self::Wrapped, bool>
+    fn gw_contains<TS, TP, TO>(&self, s: &TS, p: &TP, o: &TO) -> GResult<Self::Wrapped, bool>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
         self.get_wrapped().contains(s, p, o)
     }
@@ -191,97 +186,97 @@ macro_rules! impl_graph_for_wrapper {
             $crate::graph::inmem::GraphWrapper::gw_triples(self)
         }
         #[inline]
-        fn triples_with_s<'s_, T_>(
+        fn triples_with_s<'s_, TS_>(
             &'s_ self,
-            s: &'s_ sophia_term::Term<T_>,
+            s: &'s_ TS_,
         ) -> $crate::graph::GTripleSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
+            TS_: sophia_term::TTerm + ?Sized,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_s(self, s)
         }
         #[inline]
-        fn triples_with_p<'s_, T_>(
+        fn triples_with_p<'s_, TP_>(
             &'s_ self,
-            p: &'s_ sophia_term::Term<T_>,
+            p: &'s_ TP_,
         ) -> $crate::graph::GTripleSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
+            TP_: sophia_term::TTerm + ?Sized,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_p(self, p)
         }
         #[inline]
-        fn triples_with_o<'s_, T_>(
+        fn triples_with_o<'s_, TO_>(
             &'s_ self,
-            o: &'s_ sophia_term::Term<T_>,
+            o: &'s_ TO_,
         ) -> $crate::graph::GTripleSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
+            TO_: sophia_term::TTerm + ?Sized,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_o(self, o)
         }
         #[inline]
-        fn triples_with_sp<'s_, T_, U_>(
+        fn triples_with_sp<'s_, TS_, TP_>(
             &'s_ self,
-            s: &'s_ sophia_term::Term<T_>,
-            p: &'s_ sophia_term::Term<U_>,
+            s: &'s_ TS_,
+            p: &'s_ TP_,
         ) -> $crate::graph::GTripleSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
-            U_: sophia_term::TermData,
+            TS_: sophia_term::TTerm + ?Sized,
+            TP_: sophia_term::TTerm + ?Sized,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_sp(self, s, p)
         }
         #[inline]
-        fn triples_with_so<'s_, T_, U_>(
+        fn triples_with_so<'s_, TS_, TO_>(
             &'s_ self,
-            s: &'s_ sophia_term::Term<T_>,
-            o: &'s_ sophia_term::Term<U_>,
+            s: &'s_ TS_,
+            o: &'s_ TO_,
         ) -> $crate::graph::GTripleSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
-            U_: sophia_term::TermData,
+            TS_: sophia_term::TTerm + ?Sized,
+            TO_: sophia_term::TTerm + ?Sized,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_so(self, s, o)
         }
         #[inline]
-        fn triples_with_po<'s_, T_, U_>(
+        fn triples_with_po<'s_, TP_, TO_>(
             &'s_ self,
-            p: &'s_ sophia_term::Term<T_>,
-            o: &'s_ sophia_term::Term<U_>,
+            p: &'s_ TP_,
+            o: &'s_ TO_,
         ) -> $crate::graph::GTripleSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
-            U_: sophia_term::TermData,
+            TP_: sophia_term::TTerm + ?Sized,
+            TO_: sophia_term::TTerm + ?Sized,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_po(self, p, o)
         }
         #[inline]
-        fn triples_with_spo<'s_, T_, U_, V_>(
+        fn triples_with_spo<'s_, TS_, TP_, TO_>(
             &'s_ self,
-            s: &'s_ sophia_term::Term<T_>,
-            p: &'s_ sophia_term::Term<U_>,
-            o: &'s_ sophia_term::Term<V_>,
+            s: &'s_ TS_,
+            p: &'s_ TP_,
+            o: &'s_ TO_,
         ) -> $crate::graph::GTripleSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
-            U_: sophia_term::TermData,
-            V_: sophia_term::TermData,
+            TS_: sophia_term::TTerm + ?Sized,
+            TP_: sophia_term::TTerm + ?Sized,
+            TO_: sophia_term::TTerm + ?Sized,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_spo(self, s, p, o)
         }
 
         #[inline]
-        fn contains<T_, U_, V_>(
+        fn contains<TS_, TP_, TO_>(
             &self,
-            s: &sophia_term::Term<T_>,
-            p: &sophia_term::Term<U_>,
-            o: &sophia_term::Term<V_>,
+            s: &TS_,
+            p: &TP_,
+            o: &TO_,
         ) -> $crate::graph::GResult<Self, bool>
         where
-            T_: sophia_term::TermData,
-            U_: sophia_term::TermData,
-            V_: sophia_term::TermData,
+            TS_: sophia_term::TTerm + ?Sized,
+            TP_: sophia_term::TTerm + ?Sized,
+            TO_: sophia_term::TTerm + ?Sized,
         {
             $crate::graph::inmem::GraphWrapper::gw_contains(self, s, p, o)
         }
@@ -381,9 +376,9 @@ macro_rules! impl_indexed_graph_for_wrapper {
         }
 
         #[inline]
-        fn get_index<U>(&self, t: &sophia_term::Term<U>) -> Option<Self::Index>
+        fn get_index<U_>(&self, t: &U_) -> Option<Self::Index>
         where
-            U: sophia_term::TermData,
+            U_: sophia_term::TTerm + ?Sized,
         {
             self.get_wrapped().get_index(t)
         }
@@ -393,32 +388,32 @@ macro_rules! impl_indexed_graph_for_wrapper {
             self.get_wrapped().get_term(i)
         }
 
-        fn insert_indexed<U, V, W>(
+        fn insert_indexed<TS_, TP_, TO_>(
             &mut self,
-            s: &sophia_term::Term<U>,
-            p: &sophia_term::Term<V>,
-            o: &sophia_term::Term<W>,
+            s: &TS_,
+            p: &TP_,
+            o: &TO_,
         ) -> Option<[Self::Index; 3]>
         where
-            U: sophia_term::TermData,
-            V: sophia_term::TermData,
-            W: sophia_term::TermData,
+            TS_: sophia_term::TTerm + ?Sized,
+            TP_: sophia_term::TTerm + ?Sized,
+            TO_: sophia_term::TTerm + ?Sized,
         {
             let modified = self.get_wrapped_mut().insert_indexed(s, p, o);
             self.igw_hook_insert_indexed(&modified);
             modified
         }
 
-        fn remove_indexed<U, V, W>(
+        fn remove_indexed<TS_, TP_, TO_>(
             &mut self,
-            s: &sophia_term::Term<U>,
-            p: &sophia_term::Term<V>,
-            o: &sophia_term::Term<W>,
+            s: &TS_,
+            p: &TP_,
+            o: &TO_,
         ) -> Option<[Self::Index; 3]>
         where
-            U: sophia_term::TermData,
-            V: sophia_term::TermData,
-            W: sophia_term::TermData,
+            TS_: sophia_term::TTerm + ?Sized,
+            TP_: sophia_term::TTerm + ?Sized,
+            TO_: sophia_term::TTerm + ?Sized,
         {
             let modified = self.get_wrapped_mut().remove_indexed(s, p, o);
             self.igw_hook_remove_indexed(&modified);

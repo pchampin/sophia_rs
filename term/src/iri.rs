@@ -509,6 +509,9 @@ impl<TD: TermData> TTerm for Iri<TD> {
             (&self.suffix).as_ref().map(|td| td.as_ref()),
         )
     }
+    fn as_dyn(&self) -> &dyn TTerm {
+        self
+    }
 }
 
 impl<TD> fmt::Display for Iri<TD>
@@ -523,7 +526,7 @@ where
 impl<TD, TE> PartialEq<TE> for Iri<TD>
 where
     TD: TermData,
-    TE: TTerm,
+    TE: TTerm + ?Sized,
 {
     fn eq(&self, other: &TE) -> bool {
         term_eq(self, other)
@@ -550,7 +553,7 @@ where
 impl<TD, TE> PartialOrd<TE> for Iri<TD>
 where
     TD: TermData,
-    TE: TTerm,
+    TE: TTerm + ?Sized,
 {
     fn partial_cmp(&self, other: &TE) -> Option<std::cmp::Ordering> {
         Some(term_cmp(self, other))
@@ -638,7 +641,10 @@ where
 {
     type Error = TermError;
 
-    fn try_copy<T: TTerm>(term: &T) -> Result<Self, Self::Error> {
+    fn try_copy<T>(term: &T) -> Result<Self, Self::Error>
+    where
+        T: TTerm + ?Sized,
+    {
         if term.kind() == TermKind::Iri {
             let (ns, suffix) = term.value_raw();
             Ok(match suffix {

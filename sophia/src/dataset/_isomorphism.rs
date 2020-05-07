@@ -9,7 +9,8 @@ use crate::quad::Quad;
 use crate::triple::stream::{
     SinkError, SinkResult as _, SourceError, SourceResult as _, StreamError, StreamResult,
 };
-use sophia_term::{same_graph_name, RefTerm, Term, TermData};
+use sophia_term::matcher::AnyOrExactly;
+use sophia_term::{same_graph_name, RefTerm, TTerm, Term, TermData};
 use std::collections::{BTreeSet, HashMap};
 use std::error::Error;
 use std::fmt;
@@ -128,13 +129,13 @@ where
 fn bn_mapper_for_gname<'m, TD1, TD2>(
     mapping: &'m HashMap<Term<TD1>, &Vec<Term<TD2>>>,
     g: Option<&'m Term<TD1>>,
-) -> Box<dyn 'm + Fn(Option<&RefTerm>) -> bool>
+) -> Box<dyn 'm + Fn(Option<&dyn TTerm>) -> bool>
 where
     TD1: TermData,
     TD2: TermData,
 {
     if let Some(Term::BNode(_)) = g {
-        Box::new(move |other: Option<&RefTerm>| {
+        Box::new(move |other: Option<&dyn TTerm>| {
             let mapped = match mapping.get(g.unwrap()) {
                 Some(bns) => bns,
                 None => return false,
@@ -143,7 +144,7 @@ where
             mapped.iter().any(|t| same_graph_name(Some(t), other))
         }) as _
     } else {
-        Box::new(move |other: Option<&RefTerm>| same_graph_name(g, other)) as _
+        Box::new(move |other: Option<&dyn TTerm>| same_graph_name(g, other)) as _
     }
 }
 
@@ -171,7 +172,11 @@ where
             let mo = bn_mapper(&mapping, q.o());
             let mg = bn_mapper_for_gname(&mapping, q.g());
 
-            if d2.quads_matching(&ms, &mp, &mo, &mg).next().is_none() {
+            if d2
+                .quads_matching(&[ms], &[mp], &[mo], &[mg])
+                .next()
+                .is_none()
+            {
                 return Ok(false);
             }
         }
@@ -180,16 +185,14 @@ where
     Ok(true)
 }
 
-fn match_gname_ignore_bns<'t, TD>(
-    t: Option<&'t Term<TD>>,
-) -> Box<dyn 't + Fn(Option<&RefTerm>) -> bool>
+fn match_gname_ignore_bns<'t, TD>(t: Option<&'t Term<TD>>) -> AnyOrExactly<Option<RefTerm>>
 where
     TD: TermData,
 {
     if let Some(Term::BNode(_)) = t {
-        Box::new(move |_: Option<&RefTerm>| true) as _
+        AnyOrExactly::Any
     } else {
-        Box::new(move |other: Option<&RefTerm>| same_graph_name(t, other)) as _
+        AnyOrExactly::Exactly(t.map(Term::as_ref_str))
     }
 }
 

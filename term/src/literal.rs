@@ -306,6 +306,9 @@ impl<TD: TermData> TTerm for Literal<TD> {
     fn language(&self) -> Option<&str> {
         self.lang().map(|td| td.as_ref())
     }
+    fn as_dyn(&self) -> &dyn TTerm {
+        self
+    }
 }
 
 impl<TD> fmt::Display for Literal<TD>
@@ -358,7 +361,10 @@ where
 {
     type Error = TermError;
 
-    fn try_copy<T: TTerm>(term: &T) -> Result<Self, Self::Error> {
+    fn try_copy<T>(term: &T) -> Result<Self, Self::Error>
+    where
+        T: TTerm + ?Sized,
+    {
         if term.kind() == TermKind::Literal {
             let txt = term.value_raw().0;
             Ok(match term.language() {
@@ -377,7 +383,7 @@ where
 impl<TD, TE> PartialEq<TE> for Literal<TD>
 where
     TD: TermData,
-    TE: TTerm,
+    TE: TTerm + ?Sized,
 {
     fn eq(&self, other: &TE) -> bool {
         term_eq(self, other)
@@ -389,7 +395,7 @@ impl<T: TermData> Eq for Literal<T> {}
 impl<TD, TE> PartialOrd<TE> for Literal<TD>
 where
     TD: TermData,
-    TE: TTerm,
+    TE: TTerm + ?Sized,
 {
     fn partial_cmp(&self, other: &TE) -> Option<std::cmp::Ordering> {
         Some(term_cmp(self, other))

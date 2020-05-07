@@ -423,12 +423,15 @@ impl<T: TermData> TTerm for Term<T> {
             None
         }
     }
+    fn as_dyn(&self) -> &dyn TTerm {
+        self
+    }
 }
 
 impl<TD, TE> PartialEq<TE> for Term<TD>
 where
     TD: TermData,
-    TE: TTerm,
+    TE: TTerm + ?Sized,
 {
     fn eq(&self, other: &TE) -> bool {
         term_eq(self, other)
@@ -437,7 +440,7 @@ where
 impl<TD, TE> PartialOrd<TE> for Term<TD>
 where
     TD: TermData,
-    TE: TTerm,
+    TE: TTerm + ?Sized,
 {
     fn partial_cmp(&self, other: &TE) -> Option<std::cmp::Ordering> {
         Some(term_cmp(self, other))
@@ -508,7 +511,10 @@ impl<TD> CopyTerm for Term<TD>
 where
     TD: TermData + for<'x> From<&'x str>,
 {
-    fn copy<T: TTerm>(term: &T) -> Self {
+    fn copy<T>(term: &T) -> Self
+    where
+        T: TTerm + ?Sized,
+    {
         match term.kind() {
             TermKind::Iri => Term::Iri(Iri::try_copy(term).unwrap()),
             TermKind::Literal => Term::Literal(Literal::try_copy(term).unwrap()),
@@ -518,15 +524,39 @@ where
     }
 }
 
+impl<'a, T> From<&'a T> for RefTerm<'a>
+where
+    T: TTerm + ?Sized,
+{
+    fn from(t: &'a T) -> Self {
+        let v = t.value_raw();
+        match t.kind() {
+            TermKind::Iri => Term::Iri(match v.1 {
+                None => Iri::new_unchecked(v.0),
+                Some(suffix) => Iri::new_suffixed_unchecked(v.0, suffix),
+            }),
+            TermKind::Literal => Term::Literal(match t.language() {
+                None => {
+                    let dt: Iri<&'a str> = t.datatype().unwrap().into();
+                    Literal::new_dt(v.0, dt)
+                }
+                Some(tag) => Literal::new_lang_unchecked(v.0, tag),
+            }),
+            TermKind::BlankNode => Term::BNode(BlankNode::new_unchecked(v.0)),
+            TermKind::Variable => Term::Variable(Variable::new_unchecked(v.0)),
+        }
+    }
+}
+
 /// Check the equality of two graph names (`Option<&Term>`)
 /// using possibly different `TermData`.
-pub fn same_graph_name<T, U>(g1: Option<&Term<T>>, g2: Option<&Term<U>>) -> bool
+pub fn same_graph_name<T, U>(g1: Option<&T>, g2: Option<&U>) -> bool
 where
-    T: TermData,
-    U: TermData,
+    T: TTerm + ?Sized,
+    U: TTerm + ?Sized,
 {
     match (g1, g2) {
-        (Some(n1), Some(n2)) => n1 == n2,
+        (Some(n1), Some(n2)) => term_eq(n1, n2),
         (None, None) => true,
         _ => false,
     }

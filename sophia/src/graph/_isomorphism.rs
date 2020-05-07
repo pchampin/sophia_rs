@@ -8,7 +8,8 @@ use crate::triple::stream::{
     SinkError, SinkResult as _, SourceError, SourceResult as _, StreamError, StreamResult,
 };
 use crate::triple::Triple;
-use sophia_term::{RefTerm, Term, TermData};
+use sophia_term::matcher::AnyOrExactly;
+use sophia_term::{RefTerm, TTerm, Term, TermData};
 use std::collections::{BTreeSet, HashMap};
 use std::error::Error;
 use std::fmt;
@@ -130,13 +131,13 @@ where
 pub(crate) fn bn_mapper<'m, TD1, TD2>(
     mapping: &'m HashMap<Term<TD1>, &Vec<Term<TD2>>>,
     t: &'m Term<TD1>,
-) -> Box<dyn 'm + Fn(&RefTerm) -> bool>
+) -> Box<dyn 'm + Fn(&dyn TTerm) -> bool>
 where
     TD1: TermData,
     TD2: TermData,
 {
     if let Term::BNode(_) = t {
-        Box::new(move |other: &RefTerm| {
+        Box::new(move |other: &dyn TTerm| {
             let mapped = match mapping.get(t) {
                 Some(bns) => bns,
                 None => return false,
@@ -145,7 +146,7 @@ where
             mapped.iter().any(|t| t == other)
         }) as _
     } else {
-        Box::new(move |other: &RefTerm| t == other) as _
+        Box::new(move |other: &dyn TTerm| t == other) as _
     }
 }
 
@@ -173,7 +174,7 @@ where
             let mp = bn_mapper(&mapping, t.p());
             let mo = bn_mapper(&mapping, t.o());
 
-            if g2.triples_matching(&ms, &mp, &mo).next().is_none() {
+            if g2.triples_matching(&[ms], &[mp], &[mo]).next().is_none() {
                 return Ok(false);
             }
         }
@@ -182,14 +183,14 @@ where
     Ok(true)
 }
 
-pub(crate) fn match_ignore_bns<'t, TD>(t: &'t Term<TD>) -> Box<dyn 't + Fn(&RefTerm) -> bool>
+pub(crate) fn match_ignore_bns<'t, TD>(t: &'t Term<TD>) -> AnyOrExactly<RefTerm>
 where
     TD: TermData,
 {
     if let Term::BNode(_) = t {
-        Box::new(move |_: &RefTerm| true) as _
+        AnyOrExactly::Any
     } else {
-        Box::new(move |other: &RefTerm| t == other) as _
+        AnyOrExactly::Exactly(t.as_ref_str())
     }
 }
 

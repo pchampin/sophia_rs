@@ -65,43 +65,43 @@ where
 {
     type MutationError = Infallible;
 
-    fn insert<T, U, V, W>(
+    fn insert<TS, TP, TO, TG>(
         &mut self,
-        s: &Term<T>,
-        p: &Term<U>,
-        o: &Term<V>,
-        g: Option<&Term<W>>,
+        s: &TS,
+        p: &TP,
+        o: &TO,
+        g: Option<&TG>,
     ) -> MDResult<Self, bool>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
-        W: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
-        let s = s.clone_into();
-        let p = p.clone_into();
-        let o = o.clone_into();
-        let g = g.map(|n| n.clone_into());
+        let s = Term::copy(s);
+        let p = Term::copy(p);
+        let o = Term::copy(o);
+        let g = g.map(|n| Term::copy(n));
         self.push(([s, p, o], g));
         Ok(true)
     }
-    fn remove<T, U, V, W>(
+    fn remove<TS, TP, TO, TG>(
         &mut self,
-        s: &Term<T>,
-        p: &Term<U>,
-        o: &Term<V>,
-        g: Option<&Term<W>>,
+        s: &TS,
+        p: &TP,
+        o: &TO,
+        g: Option<&TG>,
     ) -> MDResult<Self, bool>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
-        W: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         let item = self
             .quads()
             .oks()
-            .position(|q| s == q.s() && p == q.p() && o == q.o() && same_graph_name(g, q.g()));
+            .position(|q| q.s() == s && q.p() == p && q.o() == o && same_graph_name(g, q.g()));
         if let Some(i) = item {
             self.swap_remove(i);
             Ok(true)
@@ -152,42 +152,42 @@ where
 {
     type MutationError = Infallible;
 
-    fn insert<T, U, V, W>(
+    fn insert<TS, TP, TO, TG>(
         &mut self,
-        s: &Term<T>,
-        p: &Term<U>,
-        o: &Term<V>,
-        g: Option<&Term<W>>,
+        s: &TS,
+        p: &TP,
+        o: &TO,
+        g: Option<&TG>,
     ) -> MDResult<Self, bool>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
-        W: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
-        let s = s.clone_into();
-        let p = p.clone_into();
-        let o = o.clone_into();
-        let g = g.map(|n| n.clone_into());
+        let s = Term::copy(s);
+        let p = Term::copy(p);
+        let o = Term::copy(o);
+        let g = g.map(|n| Term::copy(n));
         Ok(HashSet::insert(self, ([s, p, o], g)))
     }
-    fn remove<T, U, V, W>(
+    fn remove<TS, TP, TO, TG>(
         &mut self,
-        s: &Term<T>,
-        p: &Term<U>,
-        o: &Term<V>,
-        g: Option<&Term<W>>,
+        s: &TS,
+        p: &TP,
+        o: &TO,
+        g: Option<&TG>,
     ) -> MDResult<Self, bool>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
-        W: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
-        let s = s.clone_into();
-        let p = p.clone_into();
-        let o = o.clone_into();
-        let g = g.map(|n| n.clone_into());
+        let s = Term::copy(s);
+        let p = Term::copy(p);
+        let o = Term::copy(o);
+        let g = g.map(|n| Term::copy(n));
         Ok(HashSet::remove(self, &([s, p, o], g)))
     }
 }

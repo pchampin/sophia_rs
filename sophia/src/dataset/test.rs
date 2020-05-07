@@ -154,7 +154,7 @@ macro_rules! test_dataset_impl {
                 assert_eq!(d.quads().count(), 0);
                 assert!(MutableDataset::insert(
                     &mut d,
-                    &C1,
+                    &*C1,
                     &rdf::type_,
                     &rdfs::Class,
                     *DG
@@ -162,15 +162,15 @@ macro_rules! test_dataset_impl {
                 assert_eq!(d.quads().count(), 1);
                 assert!(MutableDataset::insert(
                     &mut d,
-                    &C1,
+                    &*C1,
                     &rdfs::subClassOf,
-                    &C2,
+                    &*C2,
                     *GN1
                 )?);
                 assert_eq!(d.quads().count(), 2);
                 assert!(MutableDataset::remove(
                     &mut d,
-                    &C1,
+                    &*C1,
                     &rdf::type_,
                     &rdfs::Class,
                     *DG
@@ -178,9 +178,9 @@ macro_rules! test_dataset_impl {
                 assert_eq!(d.quads().count(), 1);
                 assert!(MutableDataset::remove(
                     &mut d,
-                    &C1,
+                    &*C1,
                     &rdfs::subClassOf,
-                    &C2,
+                    &*C2,
                     *GN1
                 )?);
                 assert_eq!(d.quads().count(), 0);
@@ -194,7 +194,7 @@ macro_rules! test_dataset_impl {
                     assert_eq!(d.quads().count(), 0);
                     assert!(MutableDataset::insert(
                         &mut d,
-                        &C1,
+                        &*C1,
                         &rdf::type_,
                         &rdfs::Class,
                         *DG
@@ -202,7 +202,7 @@ macro_rules! test_dataset_impl {
                     assert_eq!(d.quads().count(), 1);
                     assert!(!MutableDataset::insert(
                         &mut d,
-                        &C1,
+                        &*C1,
                         &rdf::type_,
                         &rdfs::Class,
                         *DG
@@ -210,7 +210,7 @@ macro_rules! test_dataset_impl {
                     assert_eq!(d.quads().count(), 1);
                     assert!(MutableDataset::remove(
                         &mut d,
-                        &C1,
+                        &*C1,
                         &rdf::type_,
                         &rdfs::Class,
                         *DG
@@ -218,7 +218,7 @@ macro_rules! test_dataset_impl {
                     assert_eq!(d.quads().count(), 0);
                     assert!(!MutableDataset::remove(
                         &mut d,
-                        &C1,
+                        &*C1,
                         &rdf::type_,
                         &rdfs::Class,
                         *DG
@@ -236,7 +236,7 @@ macro_rules! test_dataset_impl {
                 assert_eq!(d.quads().count(), 0);
                 assert!(MutableDataset::insert(
                     &mut d,
-                    &C1,
+                    &*C1,
                     &rdf::type_,
                     &rdfs::Class,
                     *DG
@@ -244,7 +244,7 @@ macro_rules! test_dataset_impl {
                 assert_eq!(d.quads().count(), 1);
                 assert!(MutableDataset::insert(
                     &mut d,
-                    &C1,
+                    &*C1,
                     &rdf::type_,
                     &rdfs::Class,
                     *GN1
@@ -252,7 +252,7 @@ macro_rules! test_dataset_impl {
                 assert_eq!(d.quads().count(), 2);
                 assert!(MutableDataset::remove(
                     &mut d,
-                    &C1,
+                    &*C1,
                     &rdf::type_,
                     &rdfs::Class,
                     *DG
@@ -260,7 +260,7 @@ macro_rules! test_dataset_impl {
                 assert_eq!(d.quads().count(), 1);
                 assert!(MutableDataset::remove(
                     &mut d,
-                    &C1,
+                    &*C1,
                     &rdf::type_,
                     &rdfs::Class,
                     *GN1
@@ -299,8 +299,8 @@ macro_rules! test_dataset_impl {
             fn test_remove_matching() -> MDResult<$dataset_impl, ()> {
                 let mut d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
-                let o_matcher = [C1.clone(), C2.clone()];
-                d.remove_matching(&ANY, &rdf::type_, &o_matcher[..], &ANY)?;
+                let o_matcher = [&*C1, &*C2];
+                d.remove_matching(&ANY, &rdf::type_, &o_matcher, &ANY)?;
                 assert_consistent_hint(14, d.quads().size_hint());
                 Ok(())
             }
@@ -309,8 +309,8 @@ macro_rules! test_dataset_impl {
             fn test_retain_matching() -> MDResult<$dataset_impl, ()> {
                 let mut d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
-                let o_matcher = [C1.clone(), C2.clone()];
-                d.retain_matching(&ANY, &rdf::type_, &o_matcher[..], &ANY)?;
+                let o_matcher = [&*C1, &*C2];
+                d.retain_matching(&ANY, &rdf::type_, &o_matcher, &ANY)?;
                 print!("{:?}", d.quads().size_hint());
                 assert_consistent_hint(4, d.quads().size_hint());
                 Ok(())
@@ -324,7 +324,7 @@ macro_rules! test_dataset_impl {
             use $crate::dataset::*;
             use $crate::graph::test::*;
             use $crate::ns::*;
-            use self::sophia_term::{StaticTerm, Term};
+            use self::sophia_term::*;
             use self::sophia_term::matcher::ANY;
 
             #[allow(unused_imports)]
@@ -340,9 +340,9 @@ macro_rules! test_dataset_impl {
                     let v: Vec<_> = iter.map(as_box_q).collect();
                     assert_eq!(v.len(), d.quads().count());
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Dataset::contains(&v, &C1, &rdf::type_, &rdfs::Class, *DG)?);
-                    assert!(Dataset::contains(&v, &C1, &rdf::type_, &rdfs::Class, *GN1)?);
-                    assert!(!Dataset::contains(&v, &P1, &rdf::type_, &rdfs::Class, *DG)?);
+                    assert!(Dataset::contains(&v, &*C1, &rdf::type_, &rdfs::Class, *DG)?);
+                    assert!(Dataset::contains(&v, &*C1, &rdf::type_, &rdfs::Class, *GN1)?);
+                    assert!(!Dataset::contains(&v, &*P1, &rdf::type_, &rdfs::Class, *DG)?);
                 }
                 Ok(())
             }
@@ -351,23 +351,23 @@ macro_rules! test_dataset_impl {
             fn test_quads_with_s() -> MDResult<$dataset_impl, ()> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
-                let quads = d.quads_with_s(&C2);
+                let quads = d.quads_with_s(&*C2);
                 let hint = quads.size_hint();
                 for iter in vec![quads, d.quads_matching(&*C2, &ANY, &ANY, &ANY)] {
                     let v: Vec<_> = iter.map(as_box_q).collect();
                     assert_eq!(v.len(), 3);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Dataset::contains(&v, &C2, &rdf::type_, &rdfs::Class, *DG)?);
+                    assert!(Dataset::contains(&v, &*C2, &rdf::type_, &rdfs::Class, *DG)?);
                     assert!(!Dataset::contains(
                         &v,
-                        &C2,
+                        &*C2,
                         &rdf::type_,
                         &rdfs::Class,
                         *GN1
                     )?);
                     assert!(!Dataset::contains(
                         &v,
-                        &C2,
+                        &*C2,
                         &rdf::type_,
                         &rdf::Property,
                         *DG
@@ -386,11 +386,11 @@ macro_rules! test_dataset_impl {
                     let v: Vec<_> = iter.map(as_box_q).collect();
                     assert_eq!(v.len(), 2);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Dataset::contains(&v, &C2, &rdfs::subClassOf, &C1, *GN1)?);
-                    assert!(!Dataset::contains(&v, &C2, &rdfs::subClassOf, &C1, *DG)?);
+                    assert!(Dataset::contains(&v, &*C2, &rdfs::subClassOf, &*C1, *GN1)?);
+                    assert!(!Dataset::contains(&v, &*C2, &rdfs::subClassOf, &*C1, *DG)?);
                     assert!(!Dataset::contains(
                         &v,
-                        &C2,
+                        &*C2,
                         &rdfs::subClassOf,
                         &rdfs::Class,
                         *DG
@@ -403,15 +403,15 @@ macro_rules! test_dataset_impl {
             fn test_quads_with_o() -> MDResult<$dataset_impl, ()> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
-                let quads = d.quads_with_o(&I2B);
+                let quads = d.quads_with_o(&*I2B);
                 let hint = quads.size_hint();
                 for iter in vec![quads, d.quads_matching(&ANY, &ANY, &*I2B, &ANY)] {
                     let v: Vec<_> = iter.map(as_box_q).collect();
                     assert_eq!(v.len(), 2);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Dataset::contains(&v, &I1B, &P1, &I2B, *GN2)?);
-                    assert!(!Dataset::contains(&v, &I1B, &P1, &I2B, *GN1)?);
-                    assert!(!Dataset::contains(&v, &I2A, &P1, &I2B, *GN2)?);
+                    assert!(Dataset::contains(&v, &*I1B, &*P1, &*I2B, *GN2)?);
+                    assert!(!Dataset::contains(&v, &*I1B, &*P1, &*I2B, *GN1)?);
+                    assert!(!Dataset::contains(&v, &*I2A, &*P1, &*I2B, *GN2)?);
                 }
                 Ok(())
             }
@@ -426,9 +426,9 @@ macro_rules! test_dataset_impl {
                     let v: Vec<_> = iter.map(as_box_q).collect();
                     assert_eq!(v.len(), 7);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Dataset::contains(&v, &C1, &rdf::type_, &rdfs::Class, *GN1)?);
-                    assert!(!Dataset::contains(&v, &C1, &rdf::type_, &rdfs::Class, *DG)?);
-                    assert!(!Dataset::contains(&v, &C2, &rdf::type_, &rdfs::Class, *DG)?);
+                    assert!(Dataset::contains(&v, &*C1, &rdf::type_, &rdfs::Class, *GN1)?);
+                    assert!(!Dataset::contains(&v, &*C1, &rdf::type_, &rdfs::Class, *DG)?);
+                    assert!(!Dataset::contains(&v, &*C2, &rdf::type_, &rdfs::Class, *DG)?);
                 }
                 Ok(())
             }
@@ -437,21 +437,21 @@ macro_rules! test_dataset_impl {
             fn test_quads_with_sp() -> MDResult<$dataset_impl, ()> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
-                let quads = d.quads_with_sp(&C2, &rdf::type_);
+                let quads = d.quads_with_sp(&*C2, &rdf::type_);
                 let hint = quads.size_hint();
                 for iter in vec![quads, d.quads_matching(&*C2, &rdf::type_, &ANY, &ANY)] {
                     let v: Vec<_> = iter.map(as_box_q).collect();
                     assert_eq!(v.len(), 1);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Dataset::contains(&v, &C2, &rdf::type_, &rdfs::Class, *DG)?);
+                    assert!(Dataset::contains(&v, &*C2, &rdf::type_, &rdfs::Class, *DG)?);
                     assert!(!Dataset::contains(
                         &v,
-                        &C2,
+                        &*C2,
                         &rdf::type_,
                         &rdfs::Class,
                         *GN1
                     )?);
-                    assert!(!Dataset::contains(&v, &C1, &rdf::type_, &rdfs::Class, *DG)?);
+                    assert!(!Dataset::contains(&v, &*C1, &rdf::type_, &rdfs::Class, *DG)?);
                 }
                 Ok(())
             }
@@ -460,15 +460,15 @@ macro_rules! test_dataset_impl {
             fn test_quads_with_so() -> MDResult<$dataset_impl, ()> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
-                let quads = d.quads_with_so(&C2, &C1);
+                let quads = d.quads_with_so(&*C2, &*C1);
                 let hint = quads.size_hint();
                 for iter in vec![quads, d.quads_matching(&*C2, &ANY, &*C1, &ANY)] {
                     let v: Vec<_> = iter.map(as_box_q).collect();
                     assert_eq!(v.len(), 1);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Dataset::contains(&v, &C2, &rdfs::subClassOf, &C1, *GN1)?);
-                    assert!(!Dataset::contains(&v, &C2, &rdfs::subClassOf, &C1, *DG)?);
-                    assert!(!Dataset::contains(&v, &C1, &rdf::type_, &rdfs::Class, *DG)?);
+                    assert!(Dataset::contains(&v, &*C2, &rdfs::subClassOf, &*C1, *GN1)?);
+                    assert!(!Dataset::contains(&v, &*C2, &rdfs::subClassOf, &*C1, *DG)?);
+                    assert!(!Dataset::contains(&v, &*C1, &rdf::type_, &rdfs::Class, *DG)?);
                 }
                 Ok(())
             }
@@ -486,17 +486,17 @@ macro_rules! test_dataset_impl {
                     let v: Vec<_> = iter.map(as_box_q).collect();
                     assert_eq!(v.len(), 3);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Dataset::contains(&v, &C1, &rdf::type_, &rdfs::Class, *DG)?);
+                    assert!(Dataset::contains(&v, &*C1, &rdf::type_, &rdfs::Class, *DG)?);
                     assert!(!Dataset::contains(
                         &v,
-                        &C1,
+                        &*C1,
                         &rdf::type_,
                         &rdfs::Class,
                         *GN2
                     )?);
                     assert!(!Dataset::contains(
                         &v,
-                        &P1,
+                        &*P1,
                         &rdf::type_,
                         &rdf::Property,
                         *DG
@@ -509,15 +509,15 @@ macro_rules! test_dataset_impl {
             fn test_quads_with_sg() -> MDResult<$dataset_impl, ()> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
-                let quads = d.quads_with_sg(&C2, *GN1);
+                let quads = d.quads_with_sg(&*C2, *GN1);
                 let hint = quads.size_hint();
                 for iter in vec![quads, d.quads_matching(&*C2, &ANY, &ANY, &*GN1)] {
                     let v: Vec<_> = iter.map(as_box_q).collect();
                     assert_eq!(v.len(), 2);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Dataset::contains(&v, &C2, &rdfs::subClassOf, &C1, *GN1)?);
-                    assert!(!Dataset::contains(&v, &C2, &rdfs::subClassOf, &C1, *DG)?);
-                    assert!(!Dataset::contains(&v, &C2, &rdf::type_, &rdfs::Class, *DG)?);
+                    assert!(Dataset::contains(&v, &*C2, &rdfs::subClassOf, &*C1, *GN1)?);
+                    assert!(!Dataset::contains(&v, &*C2, &rdfs::subClassOf, &*C1, *DG)?);
+                    assert!(!Dataset::contains(&v, &*C2, &rdf::type_, &rdfs::Class, *DG)?);
                 }
                 Ok(())
             }
@@ -532,9 +532,9 @@ macro_rules! test_dataset_impl {
                     let v: Vec<_> = iter.map(as_box_q).collect();
                     assert_eq!(v.len(), 1);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Dataset::contains(&v, &C1, &rdf::type_, &rdfs::Class, *GN1)?);
-                    assert!(!Dataset::contains(&v, &C1, &rdf::type_, &rdfs::Class, *DG)?);
-                    assert!(!Dataset::contains(&v, &C2, &rdfs::subClassOf, &C1, *GN1)?);
+                    assert!(Dataset::contains(&v, &*C1, &rdf::type_, &rdfs::Class, *GN1)?);
+                    assert!(!Dataset::contains(&v, &*C1, &rdf::type_, &rdfs::Class, *DG)?);
+                    assert!(!Dataset::contains(&v, &*C2, &rdfs::subClassOf, &*C1, *GN1)?);
                 }
                 Ok(())
             }
@@ -543,15 +543,15 @@ macro_rules! test_dataset_impl {
             fn test_quads_with_og() -> MDResult<$dataset_impl, ()> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
-                let quads = d.quads_with_og(&C1, *GN1);
+                let quads = d.quads_with_og(&*C1, *GN1);
                 let hint = quads.size_hint();
                 for iter in vec![quads, d.quads_matching(&ANY, &ANY, &*C1, &*GN1)] {
                     let v: Vec<_> = iter.map(as_box_q).collect();
                     assert_eq!(v.len(), 2);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Dataset::contains(&v, &C2, &rdfs::subClassOf, &C1, *GN1)?);
-                    assert!(!Dataset::contains(&v, &C2, &rdfs::subClassOf, &C1, *DG)?);
-                    assert!(!Dataset::contains(&v, &I1A, &rdf::type_, &C1, *GN2)?);
+                    assert!(Dataset::contains(&v, &*C2, &rdfs::subClassOf, &*C1, *GN1)?);
+                    assert!(!Dataset::contains(&v, &*C2, &rdfs::subClassOf, &*C1, *DG)?);
+                    assert!(!Dataset::contains(&v, &*I1A, &rdf::type_, &*C1, *GN2)?);
                 }
                 Ok(())
             }
@@ -560,7 +560,7 @@ macro_rules! test_dataset_impl {
             fn test_quads_with_spo() -> MDResult<$dataset_impl, ()> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
-                let quads = d.quads_with_spo(&C1, &rdf::type_, &rdfs::Class);
+                let quads = d.quads_with_spo(&*C1, &rdf::type_, &rdfs::Class);
                 let hint = quads.size_hint();
                 for iter in vec![
                     quads,
@@ -569,9 +569,9 @@ macro_rules! test_dataset_impl {
                     let v: Vec<_> = iter.map(as_box_q).collect();
                     assert_eq!(v.len(), 2);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Dataset::contains(&v, &C1, &rdf::type_, &rdfs::Class, *DG)?);
-                    assert!(Dataset::contains(&v, &C1, &rdf::type_, &rdfs::Class, *GN1)?);
-                    assert!(!Dataset::contains(&v, &C2, &rdf::type_, &rdfs::Class, *DG)?);
+                    assert!(Dataset::contains(&v, &*C1, &rdf::type_, &rdfs::Class, *DG)?);
+                    assert!(Dataset::contains(&v, &*C1, &rdf::type_, &rdfs::Class, *GN1)?);
+                    assert!(!Dataset::contains(&v, &*C2, &rdf::type_, &rdfs::Class, *DG)?);
                 }
                 Ok(())
             }
@@ -580,17 +580,17 @@ macro_rules! test_dataset_impl {
             fn test_quads_with_spg() -> MDResult<$dataset_impl, ()> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
-                let quads = d.quads_with_spg(&C1, &rdf::type_, *DG);
+                let quads = d.quads_with_spg(&*C1, &rdf::type_, *DG);
                 let hint = quads.size_hint();
                 for iter in vec![quads, d.quads_matching(&*C1, &rdf::type_, &ANY, &*DG)] {
                     let v: Vec<_> = iter.map(as_box_q).collect();
                     assert_eq!(v.len(), 1);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Dataset::contains(&v, &C1, &rdf::type_, &rdfs::Class, *DG)?);
-                    assert!(!Dataset::contains(&v, &C2, &rdf::type_, &rdfs::Class, *DG)?);
+                    assert!(Dataset::contains(&v, &*C1, &rdf::type_, &rdfs::Class, *DG)?);
+                    assert!(!Dataset::contains(&v, &*C2, &rdf::type_, &rdfs::Class, *DG)?);
                     assert!(!Dataset::contains(
                         &v,
-                        &C1,
+                        &*C1,
                         &rdf::type_,
                         &rdfs::Class,
                         *GN1
@@ -603,21 +603,21 @@ macro_rules! test_dataset_impl {
             fn test_quads_with_sog() -> MDResult<$dataset_impl, ()> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
-                let quads = d.quads_with_sog(&C1, &rdfs::Class, *DG);
+                let quads = d.quads_with_sog(&*C1, &rdfs::Class, *DG);
                 let hint = quads.size_hint();
                 for iter in vec![quads, d.quads_matching(&*C1, &ANY, &rdfs::Class, &*DG)] {
                     let v: Vec<_> = iter.map(as_box_q).collect();
                     assert_eq!(v.len(), 1);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Dataset::contains(&v, &C1, &rdf::type_, &rdfs::Class, *DG)?);
+                    assert!(Dataset::contains(&v, &*C1, &rdf::type_, &rdfs::Class, *DG)?);
                     assert!(!Dataset::contains(
                         &v,
-                        &C1,
+                        &*C1,
                         &rdf::type_,
                         &rdfs::Class,
                         *GN1
                     )?);
-                    assert!(!Dataset::contains(&v, &C2, &rdf::type_, &rdfs::Class, *DG)?);
+                    assert!(!Dataset::contains(&v, &*C2, &rdf::type_, &rdfs::Class, *DG)?);
                 }
                 Ok(())
             }
@@ -635,11 +635,11 @@ macro_rules! test_dataset_impl {
                     let v: Vec<_> = iter.map(as_box_q).collect();
                     assert_eq!(v.len(), 2);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Dataset::contains(&v, &C2, &rdf::type_, &rdfs::Class, *DG)?);
-                    assert!(Dataset::contains(&v, &C1, &rdf::type_, &rdfs::Class, *DG)?);
+                    assert!(Dataset::contains(&v, &*C2, &rdf::type_, &rdfs::Class, *DG)?);
+                    assert!(Dataset::contains(&v, &*C1, &rdf::type_, &rdfs::Class, *DG)?);
                     assert!(!Dataset::contains(
                         &v,
-                        &C1,
+                        &*C1,
                         &rdf::type_,
                         &rdfs::Class,
                         *GN1
@@ -652,7 +652,7 @@ macro_rules! test_dataset_impl {
             fn test_quads_with_spog() -> MDResult<$dataset_impl, ()> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
-                let quads = d.quads_with_spog(&C1, &rdf::type_, &rdfs::Class, *DG);
+                let quads = d.quads_with_spog(&*C1, &rdf::type_, &rdfs::Class, *DG);
                 let hint = quads.size_hint();
                 for iter in vec![
                     quads,
@@ -661,15 +661,15 @@ macro_rules! test_dataset_impl {
                     let v: Vec<_> = iter.map(as_box_q).collect();
                     assert_eq!(v.len(), 1);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Dataset::contains(&v, &C1, &rdf::type_, &rdfs::Class, *DG)?);
+                    assert!(Dataset::contains(&v, &*C1, &rdf::type_, &rdfs::Class, *DG)?);
                     assert!(!Dataset::contains(
                         &v,
-                        &C1,
+                        &*C1,
                         &rdf::type_,
                         &rdfs::Class,
                         *GN1
                     )?);
-                    assert!(!Dataset::contains(&v, &C2, &rdf::type_, &rdfs::Class, *DG)?);
+                    assert!(!Dataset::contains(&v, &*C2, &rdf::type_, &rdfs::Class, *DG)?);
                 }
                 Ok(())
             }
@@ -677,8 +677,8 @@ macro_rules! test_dataset_impl {
             #[test]
             fn test_contains() -> MDResult<$dataset_impl, ()> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
-                assert!(Dataset::contains(&d, &C2, &rdfs::subClassOf, &C1, *GN1)?);
-                assert!(!Dataset::contains(&d, &C1, &rdfs::subClassOf, &C2, *GN1)?);
+                assert!(Dataset::contains(&d, &*C2, &rdfs::subClassOf, &*C1, *GN1)?);
+                assert!(!Dataset::contains(&d, &*C1, &rdfs::subClassOf, &*C2, *GN1)?);
                 Ok(())
             }
 
@@ -686,22 +686,22 @@ macro_rules! test_dataset_impl {
             fn test_quads_matching() -> MDResult<$dataset_impl, ()> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
-                let p_matcher: [StaticTerm; 2] = [rdf::type_.clone(), rdfs::domain.clone()];
-                let o_matcher: [StaticTerm; 2] = [C1.clone(), C2.clone()];
-                let g_matcher = |g: Option<&Term<&str>>| g.is_some();
+                let p_matcher = [&rdf::type_, &rdfs::domain];
+                let o_matcher = [&*C1, &*C2];
+                let g_matcher = [|g: Option<&dyn TTerm>| g.is_some()];
                 let v: Vec<_> = d
-                    .quads_matching(&ANY, &p_matcher[..], &o_matcher[..], &g_matcher)
+                    .quads_matching(&ANY, &p_matcher, &o_matcher, &g_matcher)
                     .map(as_box_q)
                     .collect();
                 assert_eq!(v.len(), 6);
-                assert!(Dataset::contains(&v, &P1, &rdfs::domain, &C1, *GN1)?);
-                assert!(Dataset::contains(&v, &P2, &rdfs::domain, &C2, *GN1)?);
-                assert!(Dataset::contains(&v, &I1A, &rdf::type_, &C1, *GN2)?);
-                assert!(Dataset::contains(&v, &I2A, &rdf::type_, &C2, *GN2)?);
-                assert!(!Dataset::contains(&v, &C2, &rdfs::subClassOf, &C1, *GN1)?);
+                assert!(Dataset::contains(&v, &*P1, &rdfs::domain, &*C1, *GN1)?);
+                assert!(Dataset::contains(&v, &*P2, &rdfs::domain, &*C2, *GN1)?);
+                assert!(Dataset::contains(&v, &*I1A, &rdf::type_, &*C1, *GN2)?);
+                assert!(Dataset::contains(&v, &*I2A, &rdf::type_, &*C2, *GN2)?);
+                assert!(!Dataset::contains(&v, &*C2, &rdfs::subClassOf, &*C1, *GN1)?);
                 assert!(!Dataset::contains(
                     &v,
-                    &C1,
+                    &*C1,
                     &rdf::type_,
                     &rdfs::Class,
                     *GN1

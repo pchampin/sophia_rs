@@ -28,14 +28,14 @@ pub trait IndexedDataset {
     fn shrink_to_fit(&mut self);
 
     /// Return the index for the given term, if it exists.
-    fn get_index<T>(&self, t: &Term<T>) -> Option<Self::Index>
+    fn get_index<T>(&self, t: &T) -> Option<Self::Index>
     where
-        T: TermData;
+        T: TTerm + ?Sized;
 
     /// Return the index for the given graph name, if it exists.
-    fn get_index_for_graph_name<T>(&self, g: Option<&Term<T>>) -> Option<Self::Index>
+    fn get_index_for_graph_name<T>(&self, g: Option<&T>) -> Option<Self::Index>
     where
-        T: TermData;
+        T: TTerm + ?Sized;
 
     /// Return the term for the given index, if it exists.
     fn get_term(&self, i: Self::Index) -> Option<&Term<Self::TermData>>;
@@ -52,33 +52,33 @@ pub trait IndexedDataset {
 
     /// Insert a triple in this Dataset,
     /// and return the corresponding tuple of indices.
-    fn insert_indexed<T, U, V, W>(
+    fn insert_indexed<TS, TP, TO, TG>(
         &mut self,
-        s: &Term<T>,
-        p: &Term<U>,
-        o: &Term<V>,
-        g: Option<&Term<W>>,
+        s: &TS,
+        p: &TP,
+        o: &TO,
+        g: Option<&TG>,
     ) -> Option<[Self::Index; 4]>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
-        W: TermData;
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized;
 
     /// Remove a triple from this Dataset,
     /// and return the corresponding tuple of indices.
-    fn remove_indexed<T, U, V, W>(
+    fn remove_indexed<TS, TP, TO, TG>(
         &mut self,
-        s: &Term<T>,
-        p: &Term<U>,
-        o: &Term<V>,
-        g: Option<&Term<W>>,
+        s: &TS,
+        p: &TP,
+        o: &TO,
+        g: Option<&TG>,
     ) -> Option<[Self::Index; 4]>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
-        W: TermData;
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized;
 }
 
 /// Defines the implementation of [`CollectibleDataset`] for [`IndexedDataset`].
@@ -124,33 +124,33 @@ macro_rules! impl_mutable_dataset_for_indexed_dataset {
     () => {
         type MutationError = std::convert::Infallible;
 
-        fn insert<T_, U_, V_, W_>(
+        fn insert<TS_, TP_, TO_, TG_>(
             &mut self,
-            s: &Term<T_>,
-            p: &Term<U_>,
-            o: &Term<V_>,
-            g: Option<&Term<W_>>,
-        ) -> MDResult<Self, bool>
+            s: &TS_,
+            p: &TP_,
+            o: &TO_,
+            g: Option<&TG_>,
+        ) -> $crate::dataset::MDResult<Self, bool>
         where
-            T_: sophia_term::TermData,
-            U_: sophia_term::TermData,
-            V_: sophia_term::TermData,
-            W_: sophia_term::TermData,
+            TS_: sophia_term::TTerm + ?Sized,
+            TP_: sophia_term::TTerm + ?Sized,
+            TO_: sophia_term::TTerm + ?Sized,
+            TG_: sophia_term::TTerm + ?Sized,
         {
             Ok(self.insert_indexed(s, p, o, g).is_some())
         }
-        fn remove<T_, U_, V_, W_>(
+        fn remove<TS_, TP_, TO_, TG_>(
             &mut self,
-            s: &Term<T_>,
-            p: &Term<U_>,
-            o: &Term<V_>,
-            g: Option<&Term<W_>>,
-        ) -> MDResult<Self, bool>
+            s: &TS_,
+            p: &TP_,
+            o: &TO_,
+            g: Option<&TG_>,
+        ) -> $crate::dataset::MDResult<Self, bool>
         where
-            T_: sophia_term::TermData,
-            U_: sophia_term::TermData,
-            V_: sophia_term::TermData,
-            W_: sophia_term::TermData,
+            TS_: sophia_term::TTerm + ?Sized,
+            TP_: sophia_term::TTerm + ?Sized,
+            TO_: sophia_term::TTerm + ?Sized,
+            TG_: sophia_term::TTerm + ?Sized,
         {
             Ok(self.remove_indexed(s, p, o, g).is_some())
         }

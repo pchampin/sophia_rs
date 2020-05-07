@@ -90,207 +90,195 @@ pub trait Dataset {
     /// An iterator visiting all quads with the given subject.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_s<'s, T>(&'s self, s: &'s Term<T>) -> DQuadSource<'s, Self>
+    fn quads_with_s<'s, TS>(&'s self, s: &'s TS) -> DQuadSource<'s, Self>
     where
-        T: TermData,
+        TS: TTerm + ?Sized,
     {
         Box::new(self.quads().filter_ok(move |q| q.s() == s))
     }
     /// An iterator visiting all quads with the given predicate.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_p<'s, T>(&'s self, p: &'s Term<T>) -> DQuadSource<'s, Self>
+    fn quads_with_p<'s, TP>(&'s self, p: &'s TP) -> DQuadSource<'s, Self>
     where
-        T: TermData,
+        TP: TTerm + ?Sized,
     {
         Box::new(self.quads().filter_ok(move |q| q.p() == p))
     }
     /// An iterator visiting add quads with the given object.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_o<'s, T>(&'s self, o: &'s Term<T>) -> DQuadSource<'s, Self>
+    fn quads_with_o<'s, TS>(&'s self, o: &'s TS) -> DQuadSource<'s, Self>
     where
-        T: TermData,
+        TS: TTerm + ?Sized,
     {
         Box::new(self.quads().filter_ok(move |q| q.o() == o))
     }
     /// An iterator visiting add quads with the given graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_g<'s, T>(&'s self, g: Option<&'s Term<T>>) -> DQuadSource<'s, Self>
+    fn quads_with_g<'s, TS>(&'s self, g: Option<&'s TS>) -> DQuadSource<'s, Self>
     where
-        T: TermData,
+        TS: TTerm + ?Sized,
     {
         Box::new(self.quads().filter_ok(move |q| same_graph_name(q.g(), g)))
     }
     /// An iterator visiting add quads with the given subject and predicate.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_sp<'s, T, U>(&'s self, s: &'s Term<T>, p: &'s Term<U>) -> DQuadSource<'s, Self>
+    fn quads_with_sp<'s, TS, TP>(&'s self, s: &'s TS, p: &'s TP) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
     {
         Box::new(self.quads_with_s(s).filter_ok(move |q| q.p() == p))
     }
     /// An iterator visiting add quads with the given subject and object.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_so<'s, T, U>(&'s self, s: &'s Term<T>, o: &'s Term<U>) -> DQuadSource<'s, Self>
+    fn quads_with_so<'s, TS, TO>(&'s self, s: &'s TS, o: &'s TO) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
+        TS: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
         Box::new(self.quads_with_s(s).filter_ok(move |q| q.o() == o))
     }
     /// An iterator visiting add quads with the given subject and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_sg<'s, T, U>(
-        &'s self,
-        s: &'s Term<T>,
-        g: Option<&'s Term<U>>,
-    ) -> DQuadSource<'s, Self>
+    fn quads_with_sg<'s, TS, TG>(&'s self, s: &'s TS, g: Option<&'s TG>) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
+        TS: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         Box::new(self.quads_with_g(g).filter_ok(move |q| q.s() == s))
     }
     /// An iterator visiting add quads with the given predicate and object.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_po<'s, T, U>(&'s self, p: &'s Term<T>, o: &'s Term<U>) -> DQuadSource<'s, Self>
+    fn quads_with_po<'s, TP, TO>(&'s self, p: &'s TP, o: &'s TO) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
         Box::new(self.quads_with_p(p).filter_ok(move |q| q.o() == o))
     }
     /// An iterator visiting add quads with the given predicate and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_pg<'s, T, U>(
-        &'s self,
-        p: &'s Term<T>,
-        g: Option<&'s Term<U>>,
-    ) -> DQuadSource<'s, Self>
+    fn quads_with_pg<'s, TP, TG>(&'s self, p: &'s TP, g: Option<&'s TG>) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
+        TP: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         Box::new(self.quads_with_g(g).filter_ok(move |q| q.p() == p))
     }
     /// An iterator visiting add quads with the given object and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_og<'s, T, U>(
-        &'s self,
-        o: &'s Term<T>,
-        g: Option<&'s Term<U>>,
-    ) -> DQuadSource<'s, Self>
+    fn quads_with_og<'s, TO, TG>(&'s self, o: &'s TO, g: Option<&'s TG>) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         Box::new(self.quads_with_g(g).filter_ok(move |q| q.o() == o))
     }
     /// An iterator visiting add quads with the given subject, predicate and object.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_spo<'s, T, U, V>(
+    fn quads_with_spo<'s, TS, TP, TO>(
         &'s self,
-        s: &'s Term<T>,
-        p: &'s Term<U>,
-        o: &'s Term<V>,
+        s: &'s TS,
+        p: &'s TP,
+        o: &'s TO,
     ) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
         Box::new(self.quads_with_sp(s, p).filter_ok(move |q| q.o() == o))
     }
     /// An iterator visiting add quads with the given subject, predicate and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_spg<'s, T, U, V>(
+    fn quads_with_spg<'s, TS, TP, TG>(
         &'s self,
-        s: &'s Term<T>,
-        p: &'s Term<U>,
-        g: Option<&'s Term<V>>,
+        s: &'s TS,
+        p: &'s TP,
+        g: Option<&'s TG>,
     ) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         Box::new(self.quads_with_sg(s, g).filter_ok(move |q| q.p() == p))
     }
     /// An iterator visiting add quads with the given subject, object and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_sog<'s, T, U, V>(
+    fn quads_with_sog<'s, TS, TO, TG>(
         &'s self,
-        s: &'s Term<T>,
-        o: &'s Term<U>,
-        g: Option<&'s Term<V>>,
+        s: &'s TS,
+        o: &'s TO,
+        g: Option<&'s TG>,
     ) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         Box::new(self.quads_with_sg(s, g).filter_ok(move |q| q.o() == o))
     }
     /// An iterator visiting add quads with the given predicate, object and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_pog<'s, T, U, V>(
+    fn quads_with_pog<'s, TP, TO, TG>(
         &'s self,
-        p: &'s Term<T>,
-        o: &'s Term<U>,
-        g: Option<&'s Term<V>>,
+        p: &'s TP,
+        o: &'s TO,
+        g: Option<&'s TG>,
     ) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         Box::new(self.quads_with_pg(p, g).filter_ok(move |q| q.o() == o))
     }
     /// An iterator visiting add quads with the given subject, predicate, object and graph name.
     ///
     /// See also [`quads`](#tymethod.quads).
-    fn quads_with_spog<'s, T, U, V, W>(
+    fn quads_with_spog<'s, TS, TP, TO, TG>(
         &'s self,
-        s: &'s Term<T>,
-        p: &'s Term<U>,
-        o: &'s Term<V>,
-        g: Option<&'s Term<W>>,
+        s: &'s TS,
+        p: &'s TP,
+        o: &'s TO,
+        g: Option<&'s TG>,
     ) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
-        W: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         Box::new(self.quads_with_spg(s, p, g).filter_ok(move |q| q.o() == o))
     }
 
     /// Return `true` if this dataset contains the given quad.
-    fn contains<T, U, V, W>(
-        &self,
-        s: &Term<T>,
-        p: &Term<U>,
-        o: &Term<V>,
-        g: Option<&Term<W>>,
+    fn contains<'s, TS, TP, TO, TG>(
+        &'s self,
+        s: &'s TS,
+        p: &'s TP,
+        o: &'s TO,
+        g: Option<&'s TG>,
     ) -> DResult<Self, bool>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
-        W: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         match self.quads_with_spog(s, p, o, g).next() {
             None => Ok(false),
@@ -315,12 +303,7 @@ pub trait Dataset {
         O: TermMatcher + ?Sized,
         G: GraphNameMatcher + ?Sized,
     {
-        match (
-            &ms.constant(),
-            &mp.constant(),
-            &mo.constant(),
-            &mg.constant(),
-        ) {
+        match (ms.constant(), mp.constant(), mo.constant(), mg.constant()) {
             (None, None, None, None) => Box::from(self.quads().filter_ok(move |q| {
                 ms.matches(q.s()) && mp.matches(q.p()) && mo.matches(q.o()) && mg.matches(q.g())
             })),
@@ -340,7 +323,7 @@ pub trait Dataset {
                 }))
             }
             (None, None, None, Some(g)) => {
-                Box::from(self.quads_with_g(*g).filter_ok(move |q| {
+                Box::from(self.quads_with_g(g).filter_ok(move |q| {
                     ms.matches(q.s()) && mp.matches(q.p()) && mo.matches(q.o())
                 }))
             }
@@ -353,7 +336,7 @@ pub trait Dataset {
                     .filter_ok(move |q| mp.matches(q.p()) && mg.matches(q.g())),
             ),
             (Some(s), None, None, Some(g)) => Box::from(
-                self.quads_with_sg(s, *g)
+                self.quads_with_sg(s, g)
                     .filter_ok(move |q| mp.matches(q.p()) && mo.matches(q.o())),
             ),
             (None, Some(p), Some(o), None) => Box::from(
@@ -361,11 +344,11 @@ pub trait Dataset {
                     .filter_ok(move |q| ms.matches(q.s()) && mg.matches(q.g())),
             ),
             (None, Some(p), None, Some(g)) => Box::from(
-                self.quads_with_pg(p, *g)
+                self.quads_with_pg(p, g)
                     .filter_ok(move |q| ms.matches(q.s()) && mo.matches(q.o())),
             ),
             (None, None, Some(o), Some(g)) => Box::from(
-                self.quads_with_og(o, *g)
+                self.quads_with_og(o, g)
                     .filter_ok(move |q| ms.matches(q.s()) && mp.matches(q.p())),
             ),
             (Some(s), Some(p), Some(o), None) => Box::from(
@@ -373,18 +356,18 @@ pub trait Dataset {
                     .filter_ok(move |q| mg.matches(q.g())),
             ),
             (Some(s), Some(p), None, Some(g)) => Box::from(
-                self.quads_with_spg(s, p, *g)
+                self.quads_with_spg(s, p, g)
                     .filter_ok(move |q| mo.matches(q.o())),
             ),
             (Some(s), None, Some(o), Some(g)) => Box::from(
-                self.quads_with_sog(s, o, *g)
+                self.quads_with_sog(s, o, g)
                     .filter_ok(move |q| mp.matches(q.p())),
             ),
             (None, Some(p), Some(o), Some(g)) => Box::from(
-                self.quads_with_pog(p, o, *g)
+                self.quads_with_pog(p, o, g)
                     .filter_ok(move |q| ms.matches(q.s())),
             ),
-            (Some(s), Some(p), Some(o), Some(g)) => self.quads_with_spog(s, p, o, *g),
+            (Some(s), Some(p), Some(o), Some(g)) => self.quads_with_spog(s, p, o, g),
         }
     }
 
@@ -525,28 +508,30 @@ pub trait Dataset {
     }
 
     /// Borrows one of the graphs of this dataset
-    fn graph<T>(&self, graph_name: Option<&Term<T>>) -> DatasetGraph<Self, &Self, Option<BoxTerm>>
+    fn graph<'s, T>(
+        &'s self,
+        graph_name: Option<&'s T>,
+    ) -> DatasetGraph<Self, &'s Self, Option<&'s T>>
     where
-        T: TermData,
+        T: TTerm + ?Sized,
     {
-        DatasetGraph::new(self, graph_name.map(|n| n.clone_into()))
+        DatasetGraph::new(self, graph_name)
     }
 
     /// Borrows mutably one of the graphs of this dataset
-    fn graph_mut<T>(
-        &mut self,
-        graph_name: Option<&Term<T>>,
-    ) -> DatasetGraph<Self, &mut Self, Option<BoxTerm>>
+    fn graph_mut<'s, T>(
+        &'s mut self,
+        graph_name: Option<&'s T>,
+    ) -> DatasetGraph<Self, &'s mut Self, Option<&'s T>>
     where
-        T: TermData,
+        T: TTerm + ?Sized,
     {
-        DatasetGraph::new(self, graph_name.map(|n| n.clone_into()))
+        DatasetGraph::new(self, graph_name)
     }
 
-    /// Borrows a graph containing the union of all graphs matched by `gmatcher`
-    fn union_graph<T>(&self, gmatcher: T) -> DatasetGraph<Self, &Self, T>
+    fn union_graph<'s, T>(&'s self, gmatcher: T) -> DatasetGraph<Self, &'s Self, T>
     where
-        T: GraphNameMatcher,
+        T: GraphNameMatcher + 's,
     {
         DatasetGraph::new(self, gmatcher)
     }
@@ -583,18 +568,18 @@ pub trait MutableDataset: Dataset {
     /// because the quad was already present in this [`SetDataset`].
     ///
     /// [`SetDataset`]: trait.SetDataset.html
-    fn insert<T, U, V, W>(
+    fn insert<TS, TP, TO, TG>(
         &mut self,
-        s: &Term<T>,
-        p: &Term<U>,
-        o: &Term<V>,
-        g: Option<&Term<W>>,
+        s: &TS,
+        p: &TP,
+        o: &TO,
+        g: Option<&TG>,
     ) -> MDResult<Self, bool>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
-        W: TermData;
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized;
 
     /// Remove the given quad from this dataset.
     ///
@@ -609,18 +594,18 @@ pub trait MutableDataset: Dataset {
     /// because the quad was already absent from this [`SetDataset`].
     ///
     /// [`SetDataset`]: trait.SetDataset.html
-    fn remove<T, U, V, W>(
+    fn remove<TS, TP, TO, TG>(
         &mut self,
-        s: &Term<T>,
-        p: &Term<U>,
-        o: &Term<V>,
-        g: Option<&Term<W>>,
+        s: &TS,
+        p: &TP,
+        o: &TO,
+        g: Option<&TG>,
     ) -> MDResult<Self, bool>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
-        W: TermData;
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized;
 
     /// Insert into this dataset all quads from the given source.
     ///

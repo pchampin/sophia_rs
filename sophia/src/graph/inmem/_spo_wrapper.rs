@@ -50,9 +50,9 @@ where
         &mut self.wrapped
     }
 
-    fn gw_triples_with_s<'s, U>(&'s self, s: &'s Term<U>) -> GTripleSource<'s, Self::Wrapped>
+    fn gw_triples_with_s<'s, TS>(&'s self, s: &'s TS) -> GTripleSource<'s, Self::Wrapped>
     where
-        U: TermData,
+        TS: TTerm + ?Sized,
     {
         if let Some(si) = self.wrapped.get_index(s) {
             if let Some(pis) = self.s2p.get(&si) {
@@ -70,14 +70,14 @@ where
         Box::new(empty())
     }
 
-    fn gw_triples_with_sp<'s, U, V>(
+    fn gw_triples_with_sp<'s, TS, TP>(
         &'s self,
-        s: &'s Term<U>,
-        p: &'s Term<V>,
+        s: &'s TS,
+        p: &'s TP,
     ) -> GTripleSource<'s, Self::Wrapped>
     where
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
     {
         if let Some(si) = self.wrapped.get_index(s) {
             if let Some(pi) = self.wrapped.get_index(p) {

@@ -35,6 +35,9 @@ impl<'a> TTerm for SimpleIri<'a> {
     fn value_raw(&self) -> (&str, Option<&str>) {
         (self.ns, self.suffix)
     }
+    fn as_dyn(&self) -> &dyn TTerm {
+        self
+    }
 }
 
 impl<'a> fmt::Display for SimpleIri<'a> {
@@ -43,13 +46,19 @@ impl<'a> fmt::Display for SimpleIri<'a> {
     }
 }
 
-impl<'a, T: TTerm> PartialEq<T> for SimpleIri<'a> {
+impl<'a, T> PartialEq<T> for SimpleIri<'a>
+where
+    T: TTerm + ?Sized,
+{
     fn eq(&self, other: &T) -> bool {
         term_eq(self, other)
     }
 }
 
-impl<'a, T: TTerm> PartialOrd<T> for SimpleIri<'a> {
+impl<'a, T> PartialOrd<T> for SimpleIri<'a>
+where
+    T: TTerm + ?Sized,
+{
     fn partial_cmp(&self, other: &T) -> Option<std::cmp::Ordering> {
         Some(term_cmp(self, other))
     }

@@ -10,7 +10,7 @@ use crate::triple::stream::{StreamResult, TripleSource};
 use crate::triple::streaming_mode::{ByTermRefs, StreamedTriple};
 use sophia_term::factory::TermFactory;
 use sophia_term::index_map::TermIndexMap;
-use sophia_term::{Term, TermData};
+use sophia_term::{RefTerm, TTerm, Term};
 
 /// A generic implementation of [`Graph`] and [`MutableGraph`],
 /// storing its terms in a [`TermIndexMap`],
@@ -76,11 +76,11 @@ where
     }
 
     #[inline]
-    fn get_index<T>(&self, t: &Term<T>) -> Option<Self::Index>
+    fn get_index<T>(&self, t: &T) -> Option<Self::Index>
     where
-        T: TermData,
+        T: TTerm + ?Sized,
     {
-        self.terms.get_index(&t.as_ref_str())
+        self.terms.get_index(&RefTerm::from(t))
     }
 
     #[inline]
@@ -88,20 +88,15 @@ where
         self.terms.get_term(i)
     }
 
-    fn insert_indexed<T, U, V>(
-        &mut self,
-        s: &Term<T>,
-        p: &Term<U>,
-        o: &Term<V>,
-    ) -> Option<[I::Index; 3]>
+    fn insert_indexed<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> Option<[Self::Index; 3]>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
-        let si = self.terms.make_index(&s.as_ref_str());
-        let pi = self.terms.make_index(&p.as_ref_str());
-        let oi = self.terms.make_index(&o.as_ref_str());
+        let si = self.terms.make_index(&RefTerm::from(s));
+        let pi = self.terms.make_index(&RefTerm::from(p));
+        let oi = self.terms.make_index(&RefTerm::from(o));
         let modified = self.triples.insert([si, pi, oi]);
         if modified {
             Some([si, pi, oi])
@@ -113,20 +108,15 @@ where
         }
     }
 
-    fn remove_indexed<T, U, V>(
-        &mut self,
-        s: &Term<T>,
-        p: &Term<U>,
-        o: &Term<V>,
-    ) -> Option<[I::Index; 3]>
+    fn remove_indexed<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> Option<[Self::Index; 3]>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
-        let si = self.terms.get_index(&s.as_ref_str());
-        let pi = self.terms.get_index(&p.as_ref_str());
-        let oi = self.terms.get_index(&o.as_ref_str());
+        let si = self.terms.get_index(&RefTerm::from(s));
+        let pi = self.terms.get_index(&RefTerm::from(p));
+        let oi = self.terms.get_index(&RefTerm::from(o));
         if let (Some(si), Some(pi), Some(oi)) = (si, pi, oi) {
             let modified = self.triples.remove(&[si, pi, oi]);
             if modified {

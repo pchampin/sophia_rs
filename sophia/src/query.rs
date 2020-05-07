@@ -170,6 +170,7 @@ mod test {
 
     use crate::graph::inmem::FastGraph;
     use crate::ns::{rdf, Namespace};
+    use sophia_term::literal::AsLiteral;
     use sophia_term::RcTerm;
 
     #[test]
@@ -346,16 +347,17 @@ mod test {
         let x_alice_n_bob = example.get("alice_n_bob").unwrap();
 
         let mut g = FastGraph::new();
+        let lit = |txt| AsLiteral::<&str>::as_literal(&txt);
         g.insert(&x_alice, &rdf::type_, &s_person).unwrap();
-        g.insert(&x_alice, &s_name, &"Alice".into()).unwrap();
+        g.insert(&x_alice, &s_name, &lit("Alice")).unwrap();
         g.insert(&x_bob, &rdf::type_, &s_person).unwrap();
-        g.insert(&x_bob, &s_name, &"Bob".into()).unwrap();
+        g.insert(&x_bob, &s_name, &lit("Bob")).unwrap();
         g.insert(&x_charlie, &rdf::type_, &s_person).unwrap();
-        g.insert(&x_charlie, &s_name, &"Charlie".into()).unwrap();
-        g.insert(&x_dan, &s_name, &"Dan".into()).unwrap();
+        g.insert(&x_charlie, &s_name, &lit("Charlie")).unwrap();
+        g.insert(&x_dan, &s_name, &lit("Dan")).unwrap();
         g.insert(&x_alice_n_bob, &rdf::type_, &s_organization)
             .unwrap();
-        g.insert(&x_alice_n_bob, &s_name, &"Alice & Bob".into())
+        g.insert(&x_alice_n_bob, &s_name, &lit("Alice & Bob"))
             .unwrap();
         g.insert(&x_alice_n_bob, &s_member, &x_alice).unwrap();
         g.insert(&x_alice_n_bob, &s_member, &x_bob).unwrap();

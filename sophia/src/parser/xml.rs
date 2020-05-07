@@ -40,34 +40,38 @@ use self::_handler::*;
 
 const DEFAULT_BUFFER_SIZE: usize = 8 * 1024;
 
-static RESERVED_NODE_NAMES: &[StaticTerm] = &[
-    rdf::RDF,
-    rdf::ID,
-    rdf::about,
-    rdf::bagID,
-    rdf::parseType,
-    rdf::resource,
-    rdf::nodeID,
-    rdf::li,
-    rdf::aboutEach,
-    rdf::aboutEachPrefix,
+static RESERVED_NODE_NAMES: &[&StaticTerm] = &[
+    &rdf::RDF,
+    &rdf::ID,
+    &rdf::about,
+    &rdf::bagID,
+    &rdf::parseType,
+    &rdf::resource,
+    &rdf::nodeID,
+    &rdf::li,
+    &rdf::aboutEach,
+    &rdf::aboutEachPrefix,
 ];
 
-static RESERVED_PROPERTY_NAMES: &[StaticTerm] = &[
-    rdf::Description,
-    rdf::RDF,
-    rdf::ID,
-    rdf::about,
-    rdf::bagID,
-    rdf::parseType,
-    rdf::resource,
-    rdf::nodeID,
-    rdf::aboutEach,
-    rdf::aboutEachPrefix,
+static RESERVED_PROPERTY_NAMES: &[&StaticTerm] = &[
+    &rdf::Description,
+    &rdf::RDF,
+    &rdf::ID,
+    &rdf::about,
+    &rdf::bagID,
+    &rdf::parseType,
+    &rdf::resource,
+    &rdf::nodeID,
+    &rdf::aboutEach,
+    &rdf::aboutEachPrefix,
 ];
 
-static RESERVED_ATTRIBUTES_NAMES: &[StaticTerm] =
-    &[rdf::li, rdf::aboutEach, rdf::aboutEachPrefix, rdf::bagID];
+static RESERVED_ATTRIBUTES_NAMES: &[&StaticTerm] = &[
+    &rdf::li,
+    &rdf::aboutEach,
+    &rdf::aboutEachPrefix,
+    &rdf::bagID,
+];
 
 mod xmlname {
 
