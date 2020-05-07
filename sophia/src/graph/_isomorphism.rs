@@ -120,13 +120,13 @@ where
 ///
 /// This aligns with the description of bijection _M_ described in the
 /// [RDF specs](https://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/#graph-isomorphism).
-fn bn_mapper<'m, G1, G2>(
-    mapping: &'m HashMap<GTerm<G1>, &Vec<GTerm<G2>>>,
-    t: &'m GTerm<G1>,
+pub(crate) fn bn_mapper<'m, TD1, TD2>(
+    mapping: &'m HashMap<Term<TD1>, &Vec<Term<TD2>>>,
+    t: &'m Term<TD1>,
 ) -> Box<dyn 'm + Fn(&RefTerm) -> bool>
 where
-    G1: Graph,
-    G2: Graph,
+    TD1: TermData,
+    TD2: TermData,
 {
     if let Term::BNode(_) = t {
         Box::new(move |other: &RefTerm| {
@@ -162,9 +162,9 @@ where
             || matches!(t.p(), Term::BNode(_))
             || matches!(t.o(), Term::BNode(_))
         {
-            let ms = bn_mapper::<G1, G2>(&mapping, t.s());
-            let mp = bn_mapper::<G1, G2>(&mapping, t.p());
-            let mo = bn_mapper::<G1, G2>(&mapping, t.o());
+            let ms = bn_mapper(&mapping, t.s());
+            let mp = bn_mapper(&mapping, t.p());
+            let mo = bn_mapper(&mapping, t.o());
 
             if g2.triples_matching(&ms, &mp, &mo).next().is_none() {
                 return Ok(false);
@@ -173,6 +173,19 @@ where
     }
 
     Ok(true)
+}
+
+pub(crate) fn match_ignore_bns<'t, TD>(
+    t: &'t Term<TD>,
+) -> Box<dyn 't + Fn(&RefTerm) -> bool>
+where
+    TD: TermData,
+{
+    if let Term::BNode(_) = t {
+        Box::new(move |_: &RefTerm| true) as _
+    } else {
+        Box::new(move |other: &RefTerm| t == other) as _
+    }
 }
 
 /// Checks is each triple in `g1` is also in `g2` regardless of blank node
@@ -210,52 +223,13 @@ where
 {
     for t in g1.triples() {
         let t = t.source_err()?;
-        match (t.s(), t.p(), t.o()) {
-            (Term::BNode(_), Term::BNode(_), Term::BNode(_)) => {
-                let check_bn = |t: &RefTerm| matches!(t, Term::BNode(_));
-                if g2
-                    .triples_matching(&check_bn, &check_bn, &check_bn)
-                    .next()
-                    .is_none()
-                {
-                    return Ok(false);
-                }
-            }
-            (Term::BNode(_), Term::BNode(_), o) => {
-                if g2.triples_with_o(o).next().is_none() {
-                    return Ok(false);
-                }
-            }
-            (s, Term::BNode(_), Term::BNode(_)) => {
-                if g2.triples_with_s(s).next().is_none() {
-                    return Ok(false);
-                }
-            }
-            (Term::BNode(_), p, Term::BNode(_)) => {
-                if g2.triples_with_p(p).next().is_none() {
-                    return Ok(false);
-                }
-            }
-            (Term::BNode(_), p, o) => {
-                if g2.triples_with_po(p, o).next().is_none() {
-                    return Ok(false);
-                }
-            }
-            (s, Term::BNode(_), o) => {
-                if g2.triples_with_so(s, o).next().is_none() {
-                    return Ok(false);
-                }
-            }
-            (s, p, Term::BNode(_)) => {
-                if g2.triples_with_sp(s, p).next().is_none() {
-                    return Ok(false);
-                }
-            }
-            (s, p, o) => {
-                if !g2.contains(s, p, o).sink_err()? {
-                    return Ok(false);
-                }
-            }
+
+        let ms = match_ignore_bns(t.s());
+        let mp = match_ignore_bns(t.p());
+        let mo = match_ignore_bns(t.o());
+
+        if g2.triples_matching(&ms, &mp, &mo).next().is_none() {
+            return Ok(false);
         }
     }
 
@@ -411,7 +385,7 @@ where
 }
 
 // utility
-fn hash_if_not_bn<TD, H>(t: &Term<TD>, h: &mut H)
+pub(crate) fn hash_if_not_bn<TD, H>(t: &Term<TD>, h: &mut H)
 where
     TD: TermData,
     H: Hasher,
