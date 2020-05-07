@@ -9,7 +9,7 @@ use crate::triple::stream::{
 };
 use crate::triple::Triple;
 use sophia_term::matcher::AnyOrExactly;
-use sophia_term::{RefTerm, TTerm, Term, TermData};
+use sophia_term::{term_hash, RefTerm, TTerm, TermKind};
 use std::collections::{BTreeSet, HashMap};
 use std::error::Error;
 use std::fmt;
@@ -57,6 +57,8 @@ pub fn isomorphic_graphs<G1, G2>(g1: &G1, g2: &G2) -> StreamResult<bool, G1::Err
 where
     G1: Graph,
     G2: Graph,
+    GTerm<G1>: Clone + Eq + Hash,
+    GTerm<G2>: Clone + Eq + Hash,
 {
     // quick return conditions
     // -----------------------
@@ -128,25 +130,21 @@ where
 ///
 /// This aligns with the description of bijection _M_ described in the
 /// [RDF specs](https://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/#graph-isomorphism).
-pub(crate) fn bn_mapper<'m, TD1, TD2>(
-    mapping: &'m HashMap<Term<TD1>, &Vec<Term<TD2>>>,
-    t: &'m Term<TD1>,
-) -> Box<dyn 'm + Fn(&dyn TTerm) -> bool>
+pub(crate) fn bn_mapper<'m, T1, T2>(
+    mapping: &'m HashMap<T1, &Vec<T2>>,
+    t: &'m T1,
+) -> Vec<&'m dyn TTerm>
 where
-    TD1: TermData,
-    TD2: TermData,
+    T1: TTerm + Hash + Eq,
+    T2: TTerm + Hash + Eq,
 {
-    if let Term::BNode(_) = t {
-        Box::new(move |other: &dyn TTerm| {
-            let mapped = match mapping.get(t) {
-                Some(bns) => bns,
-                None => return false,
-            };
-
-            mapped.iter().any(|t| t == other)
-        }) as _
+    if t.kind() == TermKind::BlankNode {
+        match mapping.get(t) {
+            None => vec![],
+            Some(bns) => bns.iter().map(TTerm::as_dyn).collect(),
+        }
     } else {
-        Box::new(move |other: &dyn TTerm| t == other) as _
+        vec![t.as_dyn()]
     }
 }
 
@@ -162,19 +160,21 @@ where
     E2: 'static + Error,
     G1: Graph<Error = E1>,
     G2: Graph<Error = E2>,
+    GTerm<G1>: Clone + Eq + Hash,
+    GTerm<G2>: Clone + Eq + Hash,
 {
     for t in g1.triples() {
         let t = t.source_err()?;
 
-        if matches!(t.s(), Term::BNode(_))
-            || matches!(t.p(), Term::BNode(_))
-            || matches!(t.o(), Term::BNode(_))
+        if t.s().kind() == TermKind::BlankNode
+            || t.p().kind() == TermKind::BlankNode
+            || t.o().kind() == TermKind::BlankNode
         {
             let ms = bn_mapper(&mapping, t.s());
             let mp = bn_mapper(&mapping, t.p());
             let mo = bn_mapper(&mapping, t.o());
 
-            if g2.triples_matching(&[ms], &[mp], &[mo]).next().is_none() {
+            if g2.triples_matching(&ms, &mp, &mo).next().is_none() {
                 return Ok(false);
             }
         }
@@ -183,14 +183,14 @@ where
     Ok(true)
 }
 
-pub(crate) fn match_ignore_bns<'t, TD>(t: &'t Term<TD>) -> AnyOrExactly<RefTerm>
+pub(crate) fn match_ignore_bns<T>(t: &T) -> AnyOrExactly<RefTerm>
 where
-    TD: TermData,
+    T: TTerm + ?Sized,
 {
-    if let Term::BNode(_) = t {
+    if t.kind() == TermKind::BlankNode {
         AnyOrExactly::Any
     } else {
-        AnyOrExactly::Exactly(t.as_ref_str())
+        AnyOrExactly::Exactly(RefTerm::from(t))
     }
 }
 
@@ -262,6 +262,7 @@ fn calc_bn_hashes<G, H>(
 ) -> StreamResult<HashMap<u64, Vec<GTerm<G>>>, G::Error, AlgorithmFailure>
 where
     G: Graph,
+    GTerm<G>: Clone + Eq + Hash,
     H: Hasher + Default,
 {
     let mut res_map = HashMap::new();
@@ -334,6 +335,7 @@ fn calc_bns_init_hash<G, H>(
 ) -> Result<(u64, Vec<GTerm<G>>, Vec<GTerm<G>>), G::Error>
 where
     G: Graph,
+    GTerm<G>: Clone + Eq + Hash,
     H: Hasher + Default,
 {
     // for same hashing result we need to order the triples' hashes.
@@ -371,8 +373,9 @@ fn improve_hash_by_increasing_distance<H, G>(
     g: &G,
 ) -> Result<(u64, Vec<GTerm<G>>, Vec<GTerm<G>>), G::Error>
 where
-    H: Hasher + Default,
     G: Graph,
+    GTerm<G>: Clone + Eq + Hash,
+    H: Hasher + Default,
 {
     // for same hashing result we need to order the triples' hashes.
     let mut triple_hashes = BTreeSet::new();
@@ -390,13 +393,13 @@ where
 }
 
 // utility
-pub(crate) fn hash_if_not_bn<TD, H>(t: &Term<TD>, h: &mut H)
+pub(crate) fn hash_if_not_bn<T, H>(t: &T, h: &mut H)
 where
-    TD: TermData,
+    T: TTerm + ?Sized,
     H: Hasher,
 {
-    if !matches!(t, Term::BNode(_)) {
-        t.hash(h)
+    if t.kind() != TermKind::BlankNode {
+        term_hash(t, h)
     }
 }
 
@@ -421,8 +424,9 @@ fn traverse_from_o_to_s<H, G>(
     hashes: &mut BTreeSet<u64>,
 ) -> Result<Vec<GTerm<G>>, G::Error>
 where
-    H: Hasher + Default,
     G: Graph,
+    GTerm<G>: Clone + Eq + Hash,
+    H: Hasher + Default,
 {
     let mut subjects = vec![];
     for o in upstream {
@@ -444,8 +448,9 @@ fn traverse_from_s_to_o<H, G>(
     hashes: &mut BTreeSet<u64>,
 ) -> Result<Vec<GTerm<G>>, G::Error>
 where
-    H: Hasher + Default,
     G: Graph,
+    GTerm<G>: Clone + Eq + Hash,
+    H: Hasher + Default,
 {
     let mut objects = vec![];
     for s in downstream {

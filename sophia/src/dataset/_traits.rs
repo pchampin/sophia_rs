@@ -3,6 +3,7 @@
 use std::collections::HashSet;
 use std::convert::Infallible;
 use std::error::Error;
+use std::hash::Hash;
 
 use resiter::filter::*;
 use resiter::map::*;
@@ -18,8 +19,7 @@ use sophia_term::*;
 use crate::graph::insert_if_absent;
 
 /// Type alias for the terms returned by a dataset.
-pub type DTerm<D> =
-    Term<<<<D as Dataset>::Quad as QuadStreamingMode>::UnsafeQuad as UnsafeQuad>::TermData>;
+pub type DTerm<D> = <<<D as Dataset>::Quad as QuadStreamingMode>::UnsafeQuad as UnsafeQuad>::Term;
 /// Type alias for the quads returned by a dataset.
 pub type DQuad<'a, D> = StreamedQuad<'a, <D as Dataset>::Quad>;
 /// Type alias for results iterators produced by a dataset.
@@ -94,7 +94,7 @@ pub trait Dataset {
     where
         TS: TTerm + ?Sized,
     {
-        Box::new(self.quads().filter_ok(move |q| q.s() == s))
+        Box::new(self.quads().filter_ok(move |q| term_eq(q.s(), s)))
     }
     /// An iterator visiting all quads with the given predicate.
     ///
@@ -103,7 +103,7 @@ pub trait Dataset {
     where
         TP: TTerm + ?Sized,
     {
-        Box::new(self.quads().filter_ok(move |q| q.p() == p))
+        Box::new(self.quads().filter_ok(move |q| term_eq(q.p(), p)))
     }
     /// An iterator visiting add quads with the given object.
     ///
@@ -112,7 +112,7 @@ pub trait Dataset {
     where
         TS: TTerm + ?Sized,
     {
-        Box::new(self.quads().filter_ok(move |q| q.o() == o))
+        Box::new(self.quads().filter_ok(move |q| term_eq(q.o(), o)))
     }
     /// An iterator visiting add quads with the given graph name.
     ///
@@ -131,7 +131,7 @@ pub trait Dataset {
         TS: TTerm + ?Sized,
         TP: TTerm + ?Sized,
     {
-        Box::new(self.quads_with_s(s).filter_ok(move |q| q.p() == p))
+        Box::new(self.quads_with_s(s).filter_ok(move |q| term_eq(q.p(), p)))
     }
     /// An iterator visiting add quads with the given subject and object.
     ///
@@ -141,7 +141,7 @@ pub trait Dataset {
         TS: TTerm + ?Sized,
         TO: TTerm + ?Sized,
     {
-        Box::new(self.quads_with_s(s).filter_ok(move |q| q.o() == o))
+        Box::new(self.quads_with_s(s).filter_ok(move |q| term_eq(q.o(), o)))
     }
     /// An iterator visiting add quads with the given subject and graph name.
     ///
@@ -151,7 +151,7 @@ pub trait Dataset {
         TS: TTerm + ?Sized,
         TG: TTerm + ?Sized,
     {
-        Box::new(self.quads_with_g(g).filter_ok(move |q| q.s() == s))
+        Box::new(self.quads_with_g(g).filter_ok(move |q| term_eq(q.s(), s)))
     }
     /// An iterator visiting add quads with the given predicate and object.
     ///
@@ -161,7 +161,7 @@ pub trait Dataset {
         TP: TTerm + ?Sized,
         TO: TTerm + ?Sized,
     {
-        Box::new(self.quads_with_p(p).filter_ok(move |q| q.o() == o))
+        Box::new(self.quads_with_p(p).filter_ok(move |q| term_eq(q.o(), o)))
     }
     /// An iterator visiting add quads with the given predicate and graph name.
     ///
@@ -171,7 +171,7 @@ pub trait Dataset {
         TP: TTerm + ?Sized,
         TG: TTerm + ?Sized,
     {
-        Box::new(self.quads_with_g(g).filter_ok(move |q| q.p() == p))
+        Box::new(self.quads_with_g(g).filter_ok(move |q| term_eq(q.p(), p)))
     }
     /// An iterator visiting add quads with the given object and graph name.
     ///
@@ -181,7 +181,7 @@ pub trait Dataset {
         TO: TTerm + ?Sized,
         TG: TTerm + ?Sized,
     {
-        Box::new(self.quads_with_g(g).filter_ok(move |q| q.o() == o))
+        Box::new(self.quads_with_g(g).filter_ok(move |q| term_eq(q.o(), o)))
     }
     /// An iterator visiting add quads with the given subject, predicate and object.
     ///
@@ -197,7 +197,10 @@ pub trait Dataset {
         TP: TTerm + ?Sized,
         TO: TTerm + ?Sized,
     {
-        Box::new(self.quads_with_sp(s, p).filter_ok(move |q| q.o() == o))
+        Box::new(
+            self.quads_with_sp(s, p)
+                .filter_ok(move |q| term_eq(q.o(), o)),
+        )
     }
     /// An iterator visiting add quads with the given subject, predicate and graph name.
     ///
@@ -213,7 +216,10 @@ pub trait Dataset {
         TP: TTerm + ?Sized,
         TG: TTerm + ?Sized,
     {
-        Box::new(self.quads_with_sg(s, g).filter_ok(move |q| q.p() == p))
+        Box::new(
+            self.quads_with_sg(s, g)
+                .filter_ok(move |q| term_eq(q.p(), p)),
+        )
     }
     /// An iterator visiting add quads with the given subject, object and graph name.
     ///
@@ -229,7 +235,10 @@ pub trait Dataset {
         TO: TTerm + ?Sized,
         TG: TTerm + ?Sized,
     {
-        Box::new(self.quads_with_sg(s, g).filter_ok(move |q| q.o() == o))
+        Box::new(
+            self.quads_with_sg(s, g)
+                .filter_ok(move |q| term_eq(q.o(), o)),
+        )
     }
     /// An iterator visiting add quads with the given predicate, object and graph name.
     ///
@@ -245,7 +254,10 @@ pub trait Dataset {
         TO: TTerm + ?Sized,
         TG: TTerm + ?Sized,
     {
-        Box::new(self.quads_with_pg(p, g).filter_ok(move |q| q.o() == o))
+        Box::new(
+            self.quads_with_pg(p, g)
+                .filter_ok(move |q| term_eq(q.o(), o)),
+        )
     }
     /// An iterator visiting add quads with the given subject, predicate, object and graph name.
     ///
@@ -263,7 +275,10 @@ pub trait Dataset {
         TO: TTerm + ?Sized,
         TG: TTerm + ?Sized,
     {
-        Box::new(self.quads_with_spg(s, p, g).filter_ok(move |q| q.o() == o))
+        Box::new(
+            self.quads_with_spg(s, p, g)
+                .filter_ok(move |q| term_eq(q.o(), o)),
+        )
     }
 
     /// Return `true` if this dataset contains the given quad.
@@ -372,7 +387,10 @@ pub trait Dataset {
     }
 
     /// Build a Hashset of all the terms used as subject in this Dataset.
-    fn subjects(&self) -> DResultTermSet<Self> {
+    fn subjects(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             insert_if_absent(&mut res, q?.s());
@@ -381,7 +399,10 @@ pub trait Dataset {
     }
 
     /// Build a Hashset of all the terms used as predicate in this Dataset.
-    fn predicates(&self) -> DResultTermSet<Self> {
+    fn predicates(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             insert_if_absent(&mut res, q?.p());
@@ -390,7 +411,10 @@ pub trait Dataset {
     }
 
     /// Build a Hashset of all the terms used as object in this Dataset.
-    fn objects(&self) -> DResultTermSet<Self> {
+    fn objects(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             insert_if_absent(&mut res, q?.o());
@@ -399,7 +423,10 @@ pub trait Dataset {
     }
 
     /// Build a Hashset of all the terms used as graph names in this Dataset.
-    fn graph_names(&self) -> DResultTermSet<Self> {
+    fn graph_names(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
             let q = q?;
@@ -412,23 +439,15 @@ pub trait Dataset {
     }
 
     /// Build a Hashset of all the IRIs used in this Dataset.
-    fn iris(&self) -> DResultTermSet<Self> {
+    fn iris(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
-            let q = q?;
-            let (s, p, o) = (q.s(), q.p(), q.o());
-            if let Term::Iri(_) = s {
-                insert_if_absent(&mut res, s)
-            }
-            if let Term::Iri(_) = p {
-                insert_if_absent(&mut res, p)
-            }
-            if let Term::Iri(_) = o {
-                insert_if_absent(&mut res, o)
-            }
-            if let Some(gn) = q.g() {
-                if let Term::Iri(_) = gn {
-                    insert_if_absent(&mut res, &gn)
+            for i in q?.components() {
+                if matches!(i.kind(), TermKind::Iri) {
+                    insert_if_absent(&mut res, i)
                 }
             }
         }
@@ -436,23 +455,15 @@ pub trait Dataset {
     }
 
     /// Build a Hashset of all the BNodes used in this Dataset.
-    fn bnodes(&self) -> DResultTermSet<Self> {
+    fn bnodes(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
-            let q = q?;
-            let (s, p, o) = (q.s(), q.p(), q.o());
-            if let Term::BNode(_) = s {
-                insert_if_absent(&mut res, s)
-            }
-            if let Term::BNode(_) = p {
-                insert_if_absent(&mut res, p)
-            }
-            if let Term::BNode(_) = o {
-                insert_if_absent(&mut res, o)
-            }
-            if let Some(gn) = q.g() {
-                if let Term::BNode(_) = gn {
-                    insert_if_absent(&mut res, &gn)
+            for i in q?.components() {
+                if matches!(i.kind(), TermKind::BlankNode) {
+                    insert_if_absent(&mut res, i)
                 }
             }
         }
@@ -460,23 +471,15 @@ pub trait Dataset {
     }
 
     /// Build a Hashset of all the Literals used in this Dataset.
-    fn literals(&self) -> DResultTermSet<Self> {
+    fn literals(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
-            let q = q?;
-            let (s, p, o) = (q.s(), q.p(), q.o());
-            if let Term::Literal(_) = s {
-                insert_if_absent(&mut res, s)
-            }
-            if let Term::Literal(_) = p {
-                insert_if_absent(&mut res, p)
-            }
-            if let Term::Literal(_) = o {
-                insert_if_absent(&mut res, o)
-            }
-            if let Some(gn) = q.g() {
-                if let Term::Literal(_) = gn {
-                    insert_if_absent(&mut res, &gn)
+            for i in q?.components() {
+                if matches!(i.kind(), TermKind::Literal) {
+                    insert_if_absent(&mut res, i)
                 }
             }
         }
@@ -484,23 +487,15 @@ pub trait Dataset {
     }
 
     /// Build a Hashset of all the variables used in this Dataset.
-    fn variables(&self) -> DResultTermSet<Self> {
+    fn variables(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         let mut res = std::collections::HashSet::new();
         for q in self.quads() {
-            let q = q?;
-            let (s, p, o) = (q.s(), q.p(), q.o());
-            if let Term::Variable(_) = s {
-                insert_if_absent(&mut res, s)
-            }
-            if let Term::Variable(_) = p {
-                insert_if_absent(&mut res, p)
-            }
-            if let Term::Variable(_) = o {
-                insert_if_absent(&mut res, o)
-            }
-            if let Some(gn) = q.g() {
-                if let Term::Variable(_) = gn {
-                    insert_if_absent(&mut res, &gn)
+            for i in q?.components() {
+                if matches!(i.kind(), TermKind::Variable) {
+                    insert_if_absent(&mut res, i)
                 }
             }
         }
@@ -715,11 +710,11 @@ pub trait MutableDataset: Dataset {
             .map_ok(|q| {
                 (
                     [
-                        q.s().clone_into::<Box<str>>(),
-                        q.p().clone_into::<Box<str>>(),
-                        q.o().clone_into::<Box<str>>(),
+                        BoxTerm::copy(q.s()),
+                        BoxTerm::copy(q.p()),
+                        BoxTerm::copy(q.o()),
                     ],
-                    q.g().map(|g| g.clone_into::<Box<str>>()),
+                    q.g().map(BoxTerm::copy),
                 )
             })
             .collect::<std::result::Result<Vec<_>, _>>()
@@ -752,11 +747,11 @@ pub trait MutableDataset: Dataset {
             .map_ok(|q| {
                 (
                     [
-                        q.s().clone_into::<Box<str>>(),
-                        q.p().clone_into::<Box<str>>(),
-                        q.o().clone_into::<Box<str>>(),
+                        BoxTerm::copy(q.s()),
+                        BoxTerm::copy(q.p()),
+                        BoxTerm::copy(q.o()),
                     ],
-                    q.g().map(|g| g.clone_into::<Box<str>>()),
+                    q.g().map(BoxTerm::copy),
                 )
             })
             .collect::<std::result::Result<Vec<_>, _>>()

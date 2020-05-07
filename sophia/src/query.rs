@@ -118,13 +118,13 @@ where
     triples_matching(g, unsafe { &*(&tm[..] as *const [Binding]) }).map_ok(move |tr| {
         let mut b2 = b.clone();
         if tm[0].is_free() {
-            b2.insert(tq.s().value().to_string(), tr.s().clone_into());
+            b2.insert(tq.s().value().to_string(), RcTerm::copy(tr.s()));
         }
         if tm[1].is_free() {
-            b2.insert(tq.p().value().to_string(), tr.p().clone_into());
+            b2.insert(tq.p().value().to_string(), RcTerm::copy(tr.p()));
         }
         if tm[2].is_free() {
-            b2.insert(tq.o().value().to_string(), tr.o().clone_into());
+            b2.insert(tq.o().value().to_string(), RcTerm::copy(tr.o()));
         }
         b2
     })

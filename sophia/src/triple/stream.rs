@@ -58,9 +58,9 @@ pub use self::_iterator::*;
 mod _map;
 pub use self::_map::*;
 
-/// Type alias for referencing the `TermData` used in a `TripleSource`.
-pub type TSData<S> =
-    <<<S as TripleSource>::Triple as TripleStreamingMode>::UnsafeTriple as UnsafeTriple>::TermData;
+/// Type alias for referencing the `Term` used in a `TripleSoDataurce`.
+pub type TSTerm<S> =
+    <<<S as TripleSource>::Triple as TripleStreamingMode>::UnsafeTriple as UnsafeTriple>::Term;
 
 /// A triple source produces [triples], and may also fail in the process.
 ///

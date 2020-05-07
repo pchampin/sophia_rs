@@ -1,6 +1,7 @@
 // this module is transparently re-exported by its parent `adapter`
 
 use std::borrow::{Borrow, BorrowMut};
+use std::hash::Hash;
 use std::iter::empty;
 use std::marker::PhantomData;
 
@@ -271,35 +272,59 @@ where
         self.0.borrow().contains(s, p, o)
     }
     #[inline]
-    fn subjects(&self) -> DResultTermSet<Self> {
+    fn subjects(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         self.0.borrow().subjects()
     }
     #[inline]
-    fn predicates(&self) -> DResultTermSet<Self> {
+    fn predicates(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         self.0.borrow().predicates()
     }
     #[inline]
-    fn objects(&self) -> DResultTermSet<Self> {
+    fn objects(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         self.0.borrow().objects()
     }
     #[inline]
-    fn graph_names(&self) -> DResultTermSet<Self> {
+    fn graph_names(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         Ok(std::collections::HashSet::new())
     }
     #[inline]
-    fn iris(&self) -> DResultTermSet<Self> {
+    fn iris(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         self.0.borrow().iris()
     }
     #[inline]
-    fn bnodes(&self) -> DResultTermSet<Self> {
+    fn bnodes(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         self.0.borrow().bnodes()
     }
     #[inline]
-    fn literals(&self) -> DResultTermSet<Self> {
+    fn literals(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         self.0.borrow().literals()
     }
     #[inline]
-    fn variables(&self) -> DResultTermSet<Self> {
+    fn variables(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         self.0.borrow().variables()
     }
 }

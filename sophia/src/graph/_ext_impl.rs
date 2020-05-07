@@ -56,7 +56,7 @@ where
         triples: TS,
     ) -> StreamResult<Self, TS::Error, Infallible> {
         triples
-            .map_triples(|t| [t.s().clone_into(), t.p().clone_into(), t.o().clone_into()])
+            .map_triples(|t| [Term::copy(t.s()), Term::copy(t.p()), Term::copy(t.o())])
             .into_iter()
             .collect::<Result<Self, TS::Error>>()
             .map_err(StreamError::SourceError)
@@ -125,7 +125,7 @@ where
         triples: TS,
     ) -> StreamResult<Self, TS::Error, Infallible> {
         triples
-            .map_triples(|t| [t.s().clone_into(), t.p().clone_into(), t.o().clone_into()])
+            .map_triples(|t| [Term::copy(t.s()), Term::copy(t.p()), Term::copy(t.o())])
             .into_iter()
             .collect::<Result<Self, TS::Error>>()
             .map_err(StreamError::SourceError)
@@ -168,13 +168,9 @@ impl<'a, T, S: BuildHasher> SetGraph for HashSet<T, S> where T: Eq + Hash + Trip
 
 #[cfg(test)]
 mod test {
-    use resiter::oks::*;
-    use std::collections::HashSet;
-
-    use crate::graph::*;
+    use super::*;
     use crate::ns::*;
-    use crate::triple::stream::TripleSource;
-    use sophia_term::{BoxTerm, StaticTerm};
+    use sophia_term::StaticTerm;
 
     static G: [[StaticTerm; 3]; 3] = [
         [rdf::type_, rdf::type_, rdf::Property],
@@ -190,10 +186,20 @@ mod test {
         assert_eq!(len, 2);
     }
 
-    type VecAsGraph = Vec<[BoxTerm; 3]>;
+    type VecAsGraph = Vec<[sophia_term::BoxTerm; 3]>;
+
     test_graph_impl!(vec, VecAsGraph, false);
 
-    type HashSetAsGraph = HashSet<[BoxTerm; 3]>;
+    #[test]
+    fn test_collect_vec() {
+        let g: VecAsGraph = G.triples().collect_triples().unwrap();
+        assert_eq!(g.len(), 3);
+        let len = g.triples_with_o(&rdfs::Class).oks().count();
+        assert_eq!(len, 2);
+    }
+
+    type HashSetAsGraph = HashSet<[sophia_term::BoxTerm; 3]>;
+
     test_graph_impl!(hashset, HashSetAsGraph);
 
     #[test]

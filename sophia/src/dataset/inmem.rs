@@ -72,9 +72,9 @@ pub mod small {
     /// Fast to load but slow to query, with a relatively low memory footprint.
     pub type LightDataset = GenericDataset<u16, RcTermFactory>;
 
-    #[cfg(test)]
+    #[cfg(all(test, feature = "all_tests"))]
     test_dataset_impl!(test_fastd, FastDataset);
-    #[cfg(test)]
+    #[cfg(all(test, feature = "all_tests"))]
     test_dataset_impl!(test_lightd, LightDataset);
 }
 
@@ -89,8 +89,8 @@ pub mod sync {
     /// Fast to load but slow to query, with a relatively low memory footprint.
     pub type LightDataset = GenericDataset<u32, ArcTermFactory>;
 
-    #[cfg(test)]
+    #[cfg(all(test, feature = "all_tests"))]
     test_dataset_impl!(test_fastd, FastDataset);
-    #[cfg(test)]
+    #[cfg(all(test, feature = "all_tests"))]
     test_dataset_impl!(test_lightd, LightDataset);
 }

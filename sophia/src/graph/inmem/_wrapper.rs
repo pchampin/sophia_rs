@@ -1,6 +1,7 @@
 // this module is transparently re-exported by its parent `graph::inmem`
 
 use super::*;
+use std::hash::Hash;
 
 /// A graph wrapper wraps a [`Graph`] and overrides some of its methods.
 ///
@@ -123,43 +124,64 @@ pub trait GraphWrapper {
 
     #[inline]
     /// Mimmic the [`subjects`](../trait.Graph.html#method.subjects) method.
-    fn gw_subjects(&self) -> GResultTermSet<Self::Wrapped> {
+    fn gw_subjects(&self) -> GResultTermSet<Self::Wrapped>
+    where
+        GTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().subjects()
     }
 
     #[inline]
     /// Mimmic the [`predicates`](../trait.Graph.html#method.predicates) method.
-    fn gw_predicates(&self) -> GResultTermSet<Self::Wrapped> {
+    fn gw_predicates(&self) -> GResultTermSet<Self::Wrapped>
+    where
+        GTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().predicates()
     }
 
     #[inline]
     /// Mimmic the [`objects`](../trait.Graph.html#method.objects) method.
-    fn gw_objects(&self) -> GResultTermSet<Self::Wrapped> {
+    fn gw_objects(&self) -> GResultTermSet<Self::Wrapped>
+    where
+        GTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().objects()
     }
 
     #[inline]
     /// Mimmic the [`iris`](../trait.Graph.html#method.iris) method.
-    fn gw_iris(&self) -> GResultTermSet<Self::Wrapped> {
+    fn gw_iris(&self) -> GResultTermSet<Self::Wrapped>
+    where
+        GTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().iris()
     }
 
     #[inline]
     /// Mimmic the [`bnodes`](../trait.Graph.html#method.bnodes) method.
-    fn gw_bnodes(&self) -> GResultTermSet<Self::Wrapped> {
+    fn gw_bnodes(&self) -> GResultTermSet<Self::Wrapped>
+    where
+        GTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().bnodes()
     }
 
     #[inline]
     /// Mimmic the [`literals`](../trait.Graph.html#method.literals) method.
-    fn gw_literals(&self) -> GResultTermSet<Self::Wrapped> {
+    fn gw_literals(&self) -> GResultTermSet<Self::Wrapped>
+    where
+        GTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().literals()
     }
 
     #[inline]
     /// Mimmic the [`variables`](../trait.Graph.html#method.variables) method.
-    fn gw_variables(&self) -> GResultTermSet<Self::Wrapped> {
+    fn gw_variables(&self) -> GResultTermSet<Self::Wrapped>
+    where
+        GTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().variables()
     }
 }
@@ -282,41 +304,58 @@ macro_rules! impl_graph_for_wrapper {
         }
 
         #[inline]
-        fn subjects(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>> {
+        fn subjects(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>>
+        where
+            $crate::graph::GTerm<Self>: Clone + Eq + std::hash::Hash,
+        {
             $crate::graph::inmem::GraphWrapper::gw_subjects(self)
         }
 
         #[inline]
-        fn predicates(
-            &self,
-        ) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>> {
+        fn predicates(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>>
+        where
+            $crate::graph::GTerm<Self>: Clone + Eq + std::hash::Hash,
+        {
             $crate::graph::inmem::GraphWrapper::gw_predicates(self)
         }
 
         #[inline]
-        fn objects(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>> {
+        fn objects(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>>
+        where
+            $crate::graph::GTerm<Self>: Clone + Eq + std::hash::Hash,
+        {
             $crate::graph::inmem::GraphWrapper::gw_objects(self)
         }
 
         #[inline]
-        fn iris(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>> {
+        fn iris(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>>
+        where
+            $crate::graph::GTerm<Self>: Clone + Eq + std::hash::Hash,
+        {
             $crate::graph::inmem::GraphWrapper::gw_iris(self)
         }
 
         #[inline]
-        fn bnodes(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>> {
+        fn bnodes(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>>
+        where
+            $crate::graph::GTerm<Self>: Clone + Eq + std::hash::Hash,
+        {
             $crate::graph::inmem::GraphWrapper::gw_bnodes(self)
         }
 
         #[inline]
-        fn literals(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>> {
+        fn literals(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>>
+        where
+            $crate::graph::GTerm<Self>: Clone + Eq + std::hash::Hash,
+        {
             $crate::graph::inmem::GraphWrapper::gw_literals(self)
         }
 
         #[inline]
-        fn variables(
-            &self,
-        ) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>> {
+        fn variables(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>>
+        where
+            $crate::graph::GTerm<Self>: Clone + Eq + std::hash::Hash,
+        {
             $crate::graph::inmem::GraphWrapper::gw_variables(self)
         }
     };

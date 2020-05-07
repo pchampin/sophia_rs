@@ -7,7 +7,8 @@ use json::JsonValue;
 use sophia::ns::{rdf, xsd};
 use sophia::quad::{stream::*, Quad};
 use sophia::triple::stream::{SinkError, StreamResult};
-use sophia_term::{TTerm, Term, TermData};
+use sophia_term::literal::Literal;
+use sophia_term::{TTerm, TermKind, TryCopyTerm};
 use std::collections::hash_map::Entry::*;
 use std::collections::{HashMap, HashSet};
 
@@ -69,10 +70,10 @@ impl Engine {
             self.node[is].push_if_new(q.p().as_id(), obj);
 
             if q.s().is_bnode() {
-                if q.p() == &rdf::rest && q.o() == &rdf::nil {
+                if &rdf::rest == q.p() && &rdf::nil == q.o() {
                     self.list_seeds.push_if_new(is);
                 } else if self.config.rdf_direction == Some(RdfDirectionMode::CompoundLiteral)
-                    && q.p() == &rdf::direction
+                    && &rdf::direction == q.p()
                 {
                     self.compound_literals.insert(is);
                 }
@@ -109,9 +110,12 @@ impl Engine {
         }
     }
 
-    fn make_rdf_object<T: TermData>(&mut self, o: &Term<T>, g_id: &str) -> RdfObject {
-        match o {
-            Term::Literal(lit) => RdfObject::Literal(lit.clone_map(Box::from)),
+    fn make_rdf_object<T>(&mut self, o: &T, g_id: &str) -> RdfObject
+    where
+        T: TTerm + ?Sized,
+    {
+        match o.kind() {
+            TermKind::Literal => RdfObject::Literal(Literal::try_copy(o).unwrap()),
             _ => {
                 let o_id = o.as_id();
                 RdfObject::Node(self.index(g_id.to_string(), o_id.clone()), o_id)

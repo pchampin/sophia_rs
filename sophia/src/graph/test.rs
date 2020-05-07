@@ -96,16 +96,16 @@ where
 {
     let triple = triple.unwrap();
     [
-        triple.s().clone_into(),
-        triple.p().clone_into(),
-        triple.o().clone_into(),
+        BoxTerm::copy(triple.s()),
+        BoxTerm::copy(triple.p()),
+        BoxTerm::copy(triple.o()),
     ]
 }
 
 #[allow(dead_code)]
 pub fn dump_graph<G: Graph>(g: &G)
 where
-    <<G::Triple as TripleStreamingMode>::UnsafeTriple as UnsafeTriple>::TermData: Debug,
+    <<G::Triple as TripleStreamingMode>::UnsafeTriple as UnsafeTriple>::Term: Debug,
 {
     println!("<<<<");
     for t in g.triples() {
@@ -131,7 +131,7 @@ pub fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
 /// If your type only implements [`Graph`] and [`CollectibleGraph`],
 /// you should use [`test_immutable_graph_impl`] instead.
 ///
-/// This macro is only available when the feature `test_macros` is enabled.
+/// This macro is only available when the feature `test_macro` is enabled.
 ///
 /// It accepts the following parameters:
 /// * `module_name`: the name of the module to generate (defaults to `test`);
@@ -611,7 +611,7 @@ macro_rules! test_graph_impl {
 /// If your type also implements [`MutableGraph`],
 /// you should use [`test_graph_impl`] instead.
 ///
-/// This macro is only available when the feature `test_macros` is enabled.
+/// This macro is only available when the feature `test_macro` is enabled.
 ///
 /// It accepts the following parameters:
 /// * `module_name`: the name of the module to generate (defaults to `test`);

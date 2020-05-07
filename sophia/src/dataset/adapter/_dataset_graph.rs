@@ -226,22 +226,21 @@ mod test {
     #[test]
     fn test_graph_default() -> MDResult<MyDataset, ()> {
         let d: MyDataset = some_quads().collect_quads().unwrap();
-        assert_eq!(d.graph(*DG).triples().count(), 4);
-        assert_eq!(d.graph(*GN1).triples().count(), 7);
-        assert_eq!(d.graph(*GN2).triples().count(), 7);
+        assert_eq!(d.graph(DG.as_ref()).triples().count(), 4);
+        assert_eq!(d.graph(GN1.as_ref()).triples().count(), 7);
+        assert_eq!(d.graph(GN2.as_ref()).triples().count(), 7);
         assert_eq!(d.union_graph(ANY).triples().count(), 18);
         assert_eq!(
-            d.union_graph(vec![DG.clone(), GN1.clone()])
+            d.union_graph(vec![DG.as_ref(), GN1.as_ref()])
                 .triples()
                 .count(),
             11
         );
         assert_eq!(
-            d.union_graph([
-                |x: Option<&dyn TTerm>| same_graph_name(x, *DG) || same_graph_name(x, *GN2)
-            ])
-            .triples()
-            .count(),
+            d.union_graph([|x: Option<&dyn TTerm>| same_graph_name(x, DG.as_ref())
+                || same_graph_name(x, GN2.as_ref())])
+                .triples()
+                .count(),
             11
         );
         Ok(())

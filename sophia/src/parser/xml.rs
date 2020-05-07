@@ -274,7 +274,7 @@ mod test {
     use crate::triple::stream::TripleSource;
     use crate::triple::Triple;
     use sophia_term::factory::RcTermFactory;
-    use sophia_term::{TTerm, Term};
+    use sophia_term::{BoxTerm, CopyTerm, TTerm, Term};
 
     type TestGraph = HashGraph<TermIndexMapU<u16, RcTermFactory>>;
 
@@ -282,7 +282,12 @@ mod test {
         fn fmt(&self, f: &mut Formatter) -> FmtResult {
             let mut v = Vec::new();
             for t in self.triples() {
-                v.push(t.unwrap());
+                let t = t.unwrap();
+                v.push([
+                    BoxTerm::copy(t.s()),
+                    BoxTerm::copy(t.p()),
+                    BoxTerm::copy(t.o()),
+                ]);
             }
             v.sort_by_key(|t| {
                 (

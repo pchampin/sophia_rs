@@ -26,13 +26,13 @@ lazy_static! {
     pub static ref PERSON_REF: StaticTerm = StaticTerm::new_iri("Person").unwrap();
 }
 
-fn make_graph() -> Vec<[&'static StaticTerm; 3]> {
+fn make_graph() -> Vec<[StaticTerm; 3]> {
     vec![
-        [&ALICE, &rdf::type_, &PERSON],
-        [&ALICE, &NAME, &ALICE_LIT],
-        [&BOB, &rdf::type_, &PERSON],
-        [&BOB, &NAME, &BOB_LIT],
-        [&BOB, &KNOWS, &ALICE],
+        [*ALICE, rdf::type_, *PERSON],
+        [*ALICE, *NAME, *ALICE_LIT],
+        [*BOB, rdf::type_, *PERSON],
+        [*BOB, *NAME, *BOB_LIT],
+        [*BOB, *KNOWS, *ALICE],
     ]
 }
 
@@ -44,13 +44,13 @@ fn map_term(t: &StaticTerm) -> StaticTerm {
     }
 }
 
-fn make_mapped_graph() -> Vec<[&'static StaticTerm; 3]> {
+fn make_mapped_graph() -> Vec<[StaticTerm; 3]> {
     vec![
-        [&CHARLIE, &rdf::type_, &PERSON],
-        [&CHARLIE, &NAME, &ALICE_LIT],
-        [&BOB, &rdf::type_, &PERSON],
-        [&BOB, &NAME, &BOB_LIT],
-        [&BOB, &KNOWS, &CHARLIE],
+        [*CHARLIE, rdf::type_, *PERSON],
+        [*CHARLIE, *NAME, *ALICE_LIT],
+        [*BOB, rdf::type_, *PERSON],
+        [*BOB, *NAME, *BOB_LIT],
+        [*BOB, *KNOWS, *CHARLIE],
     ]
 }
 

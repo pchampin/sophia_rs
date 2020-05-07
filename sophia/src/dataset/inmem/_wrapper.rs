@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::dataset::indexed::IndexedDataset;
+use std::hash::Hash;
 
 /// A dataset wrapper wraps a [`Dataset`] and overrides some of its methods.
 ///
@@ -240,49 +241,73 @@ pub trait DatasetWrapper {
 
     #[inline]
     /// Mimmic the [`subjects`](../trait.Dataset.html#method.subjects) method.
-    fn dw_subjects(&self) -> DResultTermSet<Self::Wrapped> {
+    fn dw_subjects(&self) -> DResultTermSet<Self::Wrapped>
+    where
+        DTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().subjects()
     }
 
     #[inline]
     /// Mimmic the [`predicates`](../trait.Dataset.html#method.predicates) method.
-    fn dw_predicates(&self) -> DResultTermSet<Self::Wrapped> {
+    fn dw_predicates(&self) -> DResultTermSet<Self::Wrapped>
+    where
+        DTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().predicates()
     }
 
     #[inline]
     /// Mimmic the [`objects`](../trait.Dataset.html#method.objects) method.
-    fn dw_objects(&self) -> DResultTermSet<Self::Wrapped> {
+    fn dw_objects(&self) -> DResultTermSet<Self::Wrapped>
+    where
+        DTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().objects()
     }
 
     #[inline]
     /// Mimmic the [`graph_names`](../trait.Dataset.html#method.graph_names) method.
-    fn dw_graph_names(&self) -> DResultTermSet<Self::Wrapped> {
+    fn dw_graph_names(&self) -> DResultTermSet<Self::Wrapped>
+    where
+        DTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().graph_names()
     }
 
     #[inline]
     /// Mimmic the [`iris`](../trait.Dataset.html#method.iris) method.
-    fn dw_iris(&self) -> DResultTermSet<Self::Wrapped> {
+    fn dw_iris(&self) -> DResultTermSet<Self::Wrapped>
+    where
+        DTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().iris()
     }
 
     #[inline]
     /// Mimmic the [`bnodes`](../trait.Dataset.html#method.bnodes) method.
-    fn dw_bnodes(&self) -> DResultTermSet<Self::Wrapped> {
+    fn dw_bnodes(&self) -> DResultTermSet<Self::Wrapped>
+    where
+        DTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().bnodes()
     }
 
     #[inline]
     /// Mimmic the [`literals`](../trait.Dataset.html#method.literals) method.
-    fn dw_literals(&self) -> DResultTermSet<Self::Wrapped> {
+    fn dw_literals(&self) -> DResultTermSet<Self::Wrapped>
+    where
+        DTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().literals()
     }
 
     #[inline]
     /// Mimmic the [`variables`](../trait.Dataset.html#method.variables) method.
-    fn dw_variables(&self) -> DResultTermSet<Self::Wrapped> {
+    fn dw_variables(&self) -> DResultTermSet<Self::Wrapped>
+    where
+        DTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().variables()
     }
 }

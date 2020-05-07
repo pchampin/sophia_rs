@@ -48,8 +48,8 @@ where
         quads
             .map_quads(|q| {
                 (
-                    [q.s().clone_into(), q.p().clone_into(), q.o().clone_into()],
-                    q.g().map(Term::clone_into),
+                    [Term::copy(q.s()), Term::copy(q.p()), Term::copy(q.o())],
+                    q.g().map(Term::copy),
                 )
             })
             .into_iter()
@@ -134,8 +134,8 @@ where
         quads
             .map_quads(|q| {
                 (
-                    [q.s().clone_into(), q.p().clone_into(), q.o().clone_into()],
-                    q.g().map(Term::clone_into),
+                    [Term::copy(q.s()), Term::copy(q.p()), Term::copy(q.o())],
+                    q.g().map(Term::copy),
                 )
             })
             .into_iter()
@@ -196,34 +196,50 @@ impl<T, S: BuildHasher> SetDataset for HashSet<T, S> where T: Eq + Hash + Quad {
 
 #[cfg(test)]
 mod test {
-    use resiter::oks::*;
-    use std::collections::HashSet;
-
-    use crate::dataset::*;
+    use super::*;
     use crate::ns::*;
-    use sophia_term::*;
+    use crate::quad::TupleQuad;
+
+    static D: [TupleQuad<StaticTerm>; 3] = [
+        ([rdf::type_, rdf::type_, rdf::Property], None),
+        ([rdf::Property, rdf::type_, rdfs::Class], None),
+        ([rdfs::Class, rdf::type_, rdfs::Class], Some(rdfs::Resource)),
+    ];
 
     #[test]
     fn test_slice() {
-        let gn = Some(StaticTerm::new_bnode("x").unwrap());
-        let d = [
-            ([rdf::type_, rdf::type_, rdf::Property], None),
-            ([rdf::Property, rdf::type_, rdfs::Class], None),
-            ([rdfs::Class, rdf::type_, rdfs::Class], gn.as_ref()),
-        ];
-        let len = d.quads().oks().count();
+        let gn = Some(rdfs::Resource);
+        let len = D.quads().oks().count();
         assert_eq!(len, 3);
-        let len = d.quads_with_o(&rdfs::Class).oks().count();
+        let len = D.quads_with_o(&rdfs::Class).oks().count();
         assert_eq!(len, 2);
-        let len = d.quads_with_g(gn.as_ref()).oks().count();
+        let len = D.quads_with_g(gn.as_ref()).oks().count();
         assert_eq!(len, 1);
     }
 
     type VecAsDataset = Vec<([BoxTerm; 3], Option<BoxTerm>)>;
+
     test_dataset_impl!(vec, VecAsDataset, false);
 
+    #[test]
+    fn test_collect_vec() {
+        let d: VecAsDataset = D.quads().collect_quads().unwrap();
+        assert_eq!(d.len(), 3);
+        let len = d.quads_with_o(&rdfs::Class).oks().count();
+        assert_eq!(len, 2);
+    }
+
     type HashSetAsDataset = HashSet<([BoxTerm; 3], Option<BoxTerm>)>;
+
     test_dataset_impl!(hashset, HashSetAsDataset);
+
+    #[test]
+    fn test_collect_hashset() {
+        let d: HashSetAsDataset = D.quads().collect_quads().unwrap();
+        assert_eq!(d.len(), 3);
+        let len = d.quads_with_o(&rdfs::Class).oks().count();
+        assert_eq!(len, 2);
+    }
 
     // only for the purpose of testing the test macro with is_set and is_gen set to false
     //test_dataset_impl!(vec_strict, VecAsDataset, false, false);

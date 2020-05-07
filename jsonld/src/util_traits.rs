@@ -1,6 +1,6 @@
 //! Utility traits used internally by JsonLdSerializer
 use sophia::quad::Quad;
-use sophia_term::{TTerm, Term, TermData};
+use sophia_term::{TTerm, TermKind::*};
 use std::collections::hash_map::Entry::*;
 use std::collections::HashMap;
 
@@ -13,32 +13,32 @@ pub trait TermJsonLdUtil {
     fn as_id(&self) -> String;
 }
 
-impl<TD: TermData> TermJsonLdUtil for Term<TD> {
+impl<T: TTerm + ?Sized> TermJsonLdUtil for T {
     #[inline]
     fn is_subject(&self) -> bool {
-        matches!(self, Term::Iri(_) | Term::BNode(_))
+        matches!(self.kind(), Iri | BlankNode)
     }
     #[inline]
     fn is_object(&self) -> bool {
-        matches!(self, Term::Iri(_) | Term::BNode(_) | Term::Literal(_))
+        matches!(self.kind(), Iri | BlankNode | Literal)
     }
     #[inline]
     fn is_iri(&self) -> bool {
-        matches!(self, Term::Iri(_))
+        matches!(self.kind(), Iri)
     }
     #[inline]
     fn is_bnode(&self) -> bool {
-        matches!(self, Term::BNode(_))
+        matches!(self.kind(), BlankNode)
     }
     #[inline]
     fn is_literal(&self) -> bool {
-        matches!(self, Term::Literal(_))
+        matches!(self.kind(), Literal)
     }
     #[inline]
     fn as_id(&self) -> String {
-        match self {
-            Term::Iri(i) => i.value().into(),
-            Term::BNode(b) => format!("{}", b),
+        match self.kind() {
+            Iri => self.value().into(),
+            BlankNode => format!("_:{}", self.value_raw().0),
             _ => panic!("not a subject term"),
         }
     }

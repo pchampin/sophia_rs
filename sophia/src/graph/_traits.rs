@@ -18,7 +18,7 @@ use std::error::Error;
 
 /// Type alias for the terms returned by a graph.
 pub type GTerm<G> =
-    Term<<<<G as Graph>::Triple as TripleStreamingMode>::UnsafeTriple as UnsafeTriple>::TermData>;
+    <<<G as Graph>::Triple as TripleStreamingMode>::UnsafeTriple as UnsafeTriple>::Term;
 /// Type alias for the triples returned by a graph.
 pub type GTriple<'a, G> = StreamedTriple<'a, <G as Graph>::Triple>;
 /// Type alias for results produced by a graph.
@@ -94,7 +94,7 @@ pub trait Graph {
     where
         TS: TTerm + ?Sized,
     {
-        Box::new(self.triples().filter_ok(move |t| t.s() == s))
+        Box::new(self.triples().filter_ok(move |t| term_eq(t.s(), s)))
     }
     /// An iterator visiting all triples with the given predicate.
     ///
@@ -103,7 +103,7 @@ pub trait Graph {
     where
         TP: TTerm + ?Sized,
     {
-        Box::new(self.triples().filter_ok(move |t| t.p() == p))
+        Box::new(self.triples().filter_ok(move |t| term_eq(t.p(), p)))
     }
     /// An iterator visiting all triples with the given object.
     ///
@@ -112,7 +112,7 @@ pub trait Graph {
     where
         TO: TTerm + ?Sized,
     {
-        Box::new(self.triples().filter_ok(move |t| t.o() == o))
+        Box::new(self.triples().filter_ok(move |t| term_eq(t.o(), o)))
     }
     /// An iterator visiting all triples with the given subject and predicate.
     ///
@@ -122,7 +122,7 @@ pub trait Graph {
         TS: TTerm + ?Sized,
         TP: TTerm + ?Sized,
     {
-        Box::new(self.triples_with_s(s).filter_ok(move |t| t.p() == p))
+        Box::new(self.triples_with_s(s).filter_ok(move |t| term_eq(t.p(), p)))
     }
     /// An iterator visiting all triples with the given subject and object.
     ///
@@ -132,7 +132,7 @@ pub trait Graph {
         TS: TTerm + ?Sized,
         TO: TTerm + ?Sized,
     {
-        Box::new(self.triples_with_s(s).filter_ok(move |t| t.o() == o))
+        Box::new(self.triples_with_s(s).filter_ok(move |t| term_eq(t.o(), o)))
     }
     /// An iterator visiting all triples with the given predicate and object.
     ///
@@ -142,7 +142,7 @@ pub trait Graph {
         TP: TTerm + ?Sized,
         TO: TTerm + ?Sized,
     {
-        Box::new(self.triples_with_p(p).filter_ok(move |t| t.o() == o))
+        Box::new(self.triples_with_p(p).filter_ok(move |t| term_eq(t.o(), o)))
     }
     /// An iterator visiting all triples with the given subject, predicate and object.
     ///
@@ -158,7 +158,10 @@ pub trait Graph {
         TP: TTerm + ?Sized,
         TO: TTerm + ?Sized,
     {
-        Box::new(self.triples_with_sp(s, p).filter_ok(move |t| t.o() == o))
+        Box::new(
+            self.triples_with_sp(s, p)
+                .filter_ok(move |t| term_eq(t.o(), o)),
+        )
     }
 
     /// Return `true` if this graph contains the given triple.
@@ -273,7 +276,10 @@ pub trait Graph {
     }
 
     /// Build a Hashset of all the terms used as subject in this Graph.
-    fn subjects(&self) -> GResultTermSet<Self> {
+    fn subjects(&self) -> GResultTermSet<Self>
+    where
+        GTerm<Self>: Clone + Eq + Hash,
+    {
         let mut res = std::collections::HashSet::new();
         for t in self.triples() {
             insert_if_absent(&mut res, t?.s());
@@ -282,7 +288,10 @@ pub trait Graph {
     }
 
     /// Build a Hashset of all the terms used as predicate in this Graph.
-    fn predicates(&self) -> GResultTermSet<Self> {
+    fn predicates(&self) -> GResultTermSet<Self>
+    where
+        GTerm<Self>: Clone + Eq + Hash,
+    {
         let mut res = std::collections::HashSet::new();
         for t in self.triples() {
             insert_if_absent(&mut res, t?.p());
@@ -291,7 +300,10 @@ pub trait Graph {
     }
 
     /// Build a Hashset of all the terms used as object in this Graph.
-    fn objects(&self) -> GResultTermSet<Self> {
+    fn objects(&self) -> GResultTermSet<Self>
+    where
+        GTerm<Self>: Clone + Eq + Hash,
+    {
         let mut res = std::collections::HashSet::new();
         for t in self.triples() {
             insert_if_absent(&mut res, t?.o());
@@ -300,76 +312,64 @@ pub trait Graph {
     }
 
     /// Build a Hashset of all the IRIs used in this Graph.
-    fn iris(&self) -> GResultTermSet<Self> {
+    fn iris(&self) -> GResultTermSet<Self>
+    where
+        GTerm<Self>: Clone + Eq + Hash,
+    {
         let mut res = std::collections::HashSet::new();
         for t in self.triples() {
-            let t = t?;
-            let (s, p, o) = (t.s(), t.p(), t.o());
-            if let Term::Iri(_) = s {
-                insert_if_absent(&mut res, s)
-            }
-            if let Term::Iri(_) = p {
-                insert_if_absent(&mut res, p)
-            }
-            if let Term::Iri(_) = o {
-                insert_if_absent(&mut res, o)
+            for i in t?.components() {
+                if matches!(i.kind(), TermKind::Iri) {
+                    insert_if_absent(&mut res, i)
+                }
             }
         }
         Ok(res)
     }
 
     /// Build a Hashset of all the BNodes used in this Graph.
-    fn bnodes(&self) -> GResultTermSet<Self> {
+    fn bnodes(&self) -> GResultTermSet<Self>
+    where
+        GTerm<Self>: Clone + Eq + Hash,
+    {
         let mut res = std::collections::HashSet::new();
         for t in self.triples() {
-            let t = t?;
-            let (s, p, o) = (t.s(), t.p(), t.o());
-            if let Term::BNode(_) = s {
-                insert_if_absent(&mut res, s)
-            }
-            if let Term::BNode(_) = p {
-                insert_if_absent(&mut res, p)
-            }
-            if let Term::BNode(_) = o {
-                insert_if_absent(&mut res, o)
+            for i in t?.components() {
+                if matches!(i.kind(), TermKind::BlankNode) {
+                    insert_if_absent(&mut res, i)
+                }
             }
         }
         Ok(res)
     }
 
     /// Build a Hashset of all the Literals used in this Graph.
-    fn literals(&self) -> GResultTermSet<Self> {
+    fn literals(&self) -> GResultTermSet<Self>
+    where
+        GTerm<Self>: Clone + Eq + Hash,
+    {
         let mut res = std::collections::HashSet::new();
         for t in self.triples() {
-            let t = t?;
-            let (s, p, o) = (t.s(), t.p(), t.o());
-            if let Term::Literal(_) = s {
-                insert_if_absent(&mut res, s)
-            }
-            if let Term::Literal(_) = p {
-                insert_if_absent(&mut res, p)
-            }
-            if let Term::Literal(_) = o {
-                insert_if_absent(&mut res, o)
+            for i in t?.components() {
+                if matches!(i.kind(), TermKind::Literal) {
+                    insert_if_absent(&mut res, i)
+                }
             }
         }
         Ok(res)
     }
 
     /// Build a Hashset of all the variables used in this Graph.
-    fn variables(&self) -> GResultTermSet<Self> {
+    fn variables(&self) -> GResultTermSet<Self>
+    where
+        GTerm<Self>: Clone + Eq + Hash,
+    {
         let mut res = std::collections::HashSet::new();
         for t in self.triples() {
-            let t = t?;
-            let (s, p, o) = (t.s(), t.p(), t.o());
-            if let Term::Variable(_) = s {
-                insert_if_absent(&mut res, s)
-            }
-            if let Term::Variable(_) = p {
-                insert_if_absent(&mut res, p)
-            }
-            if let Term::Variable(_) = o {
-                insert_if_absent(&mut res, o)
+            for i in t?.components() {
+                if matches!(i.kind(), TermKind::Variable) {
+                    insert_if_absent(&mut res, i)
+                }
             }
         }
         Ok(res)
@@ -574,9 +574,9 @@ pub trait MutableGraph: Graph {
             .triples_matching(ms, mp, mo)
             .map_ok(|t| {
                 [
-                    t.s().clone_into::<Box<str>>(),
-                    t.p().clone_into::<Box<str>>(),
-                    t.o().clone_into::<Box<str>>(),
+                    BoxTerm::copy(t.s()),
+                    BoxTerm::copy(t.p()),
+                    BoxTerm::copy(t.o()),
                 ]
             })
             .collect::<std::result::Result<Vec<_>, _>>()
@@ -610,9 +610,9 @@ pub trait MutableGraph: Graph {
             .filter_ok(|t| !(ms.matches(t.s()) && mp.matches(t.p()) && mo.matches(t.o())))
             .map_ok(|t| {
                 [
-                    t.s().clone_into::<Box<str>>(),
-                    t.p().clone_into::<Box<str>>(),
-                    t.o().clone_into::<Box<str>>(),
+                    BoxTerm::copy(t.s()),
+                    BoxTerm::copy(t.p()),
+                    BoxTerm::copy(t.o()),
                 ]
             })
             .collect::<std::result::Result<Vec<_>, _>>()
