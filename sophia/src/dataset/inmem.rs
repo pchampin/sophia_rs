@@ -55,7 +55,7 @@ pub type LightDataset = GenericDataset<u32, RcTermFactory>;
 #[cfg(test)]
 test_dataset_impl!(test_fastd, FastDataset);
 
-#[cfg(test)]
+#[cfg(all(test, feature = "all_tests"))]
 test_dataset_impl!(test_lightd, LightDataset);
 
 /// Flavours of Dataset implementations with a smaller memory-footprint.

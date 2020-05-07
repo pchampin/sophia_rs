@@ -224,7 +224,7 @@ where
 {
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "all_tests"))]
 type GspoDataset = GspoWrapper<LightDataset>;
-#[cfg(test)]
+#[cfg(all(test, feature = "all_tests"))]
 test_dataset_impl!(GspoDataset);

@@ -186,10 +186,13 @@ mod test {
         assert_eq!(len, 2);
     }
 
+    #[cfg(feature = "all_tests")]
     type VecAsGraph = Vec<[sophia_term::BoxTerm; 3]>;
 
+    #[cfg(feature = "all_tests")]
     test_graph_impl!(vec, VecAsGraph, false);
 
+    #[cfg(feature = "all_tests")]
     #[test]
     fn test_collect_vec() {
         let g: VecAsGraph = G.triples().collect_triples().unwrap();
@@ -198,10 +201,13 @@ mod test {
         assert_eq!(len, 2);
     }
 
+    #[cfg(feature = "all_tests")]
     type HashSetAsGraph = HashSet<[sophia_term::BoxTerm; 3]>;
 
+    #[cfg(feature = "all_tests")]
     test_graph_impl!(hashset, HashSetAsGraph);
 
+    #[cfg(feature = "all_tests")]
     #[test]
     fn test_collect_hashset() {
         let g: HashSetAsGraph = G.triples().collect_triples().unwrap();

@@ -15,10 +15,12 @@ all-features = true
 
 [features]
 default = []
+# This feature enables the RDF/XML parser
 xml = ["lazy_static", "percent-encoding", "quick-xml", "regex", "url"]
-
 # This feature enables to use the graph and dataset test macros in other crates
 test_macro = ["lazy_static"]
+# This feature enables a bunch of tests which, otherwise, make compilation really slow
+all_tests = []
 
 [dependencies]
 sophia_term = { version = "0.5.3", path = "../term" }

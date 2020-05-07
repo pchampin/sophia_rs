@@ -223,7 +223,7 @@ where
 {
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "all_tests"))]
 type GspoDataset = OgpsWrapper<LightDataset>;
-#[cfg(test)]
+#[cfg(all(test, feature = "all_tests"))]
 test_dataset_impl!(GspoDataset);

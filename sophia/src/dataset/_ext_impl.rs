@@ -217,10 +217,13 @@ mod test {
         assert_eq!(len, 1);
     }
 
+    #[cfg(feature = "all_tests")]
     type VecAsDataset = Vec<([BoxTerm; 3], Option<BoxTerm>)>;
 
+    #[cfg(feature = "all_tests")]
     test_dataset_impl!(vec, VecAsDataset, false);
 
+    #[cfg(feature = "all_tests")]
     #[test]
     fn test_collect_vec() {
         let d: VecAsDataset = D.quads().collect_quads().unwrap();
@@ -229,10 +232,13 @@ mod test {
         assert_eq!(len, 2);
     }
 
+    #[cfg(feature = "all_tests")]
     type HashSetAsDataset = HashSet<([BoxTerm; 3], Option<BoxTerm>)>;
 
+    #[cfg(feature = "all_tests")]
     test_dataset_impl!(hashset, HashSetAsDataset);
 
+    #[cfg(feature = "all_tests")]
     #[test]
     fn test_collect_hashset() {
         let d: HashSetAsDataset = D.quads().collect_quads().unwrap();

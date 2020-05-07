@@ -177,7 +177,7 @@ where
 {
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "all_tests"))]
 type SpoGraph = super::SpoWrapper<super::LightGraph>;
-#[cfg(test)]
+#[cfg(all(test, feature = "all_tests"))]
 test_graph_impl!(SpoGraph);

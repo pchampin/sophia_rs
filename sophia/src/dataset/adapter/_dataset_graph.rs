@@ -184,7 +184,6 @@ mod test {
     use crate::dataset::test::*;
     use crate::dataset::MDResult;
     use crate::dataset::*;
-    use crate::ns::rdfs;
     use crate::quad::stream::QuadSource;
     use crate::triple::stream::TripleSource;
     use sophia_term::{same_graph_name, BoxTerm, StaticTerm, TTerm};
@@ -207,13 +206,14 @@ mod test {
         Ok(g)
     }
 
+    #[cfg(feature = "all_tests")]
     fn make_named_graph<TS>(ts: TS) -> Result<MyDatasetGraph, ()>
     where
         TS: TripleSource,
     {
         let mut g = DatasetGraph {
             dataset: MyDataset::new(),
-            gmatcher: Some(&rdfs::Resource),
+            gmatcher: Some(&crate::ns::rdfs::Resource),
             _phantom: PhantomData,
         };
         g.insert_all(ts).unwrap();
@@ -221,6 +221,7 @@ mod test {
     }
 
     crate::test_graph_impl!(dflt_graph, MyDatasetGraph, true, true, make_default_graph);
+    #[cfg(feature = "all_tests")]
     crate::test_graph_impl!(named_graph, MyDatasetGraph, true, true, make_named_graph);
 
     #[test]
