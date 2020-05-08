@@ -43,8 +43,8 @@ impl Error for AlgorithmFailure {}
 ///
 /// # Errors
 ///
-/// Both graphs can fail traversing (and this is done several times),
-/// accordingly, a `StreamError` returned where `SourceError`s originate from
+/// Both graphs may fail traversing (and this is done several times).
+/// Accordingly, a `StreamError` returned where `SourceError`s originate from
 /// `g1` and `SinkError`s originate from `g2`
 ///
 /// # Performance
@@ -169,9 +169,7 @@ where
     Ok(true)
 }
 
-pub(crate) fn match_ignore_bns<'t, TD>(
-    t: &'t Term<TD>,
-) -> Box<dyn 't + Fn(&RefTerm) -> bool>
+pub(crate) fn match_ignore_bns<'t, TD>(t: &'t Term<TD>) -> Box<dyn 't + Fn(&RefTerm) -> bool>
 where
     TD: TermData,
 {
@@ -245,7 +243,9 @@ where
 ///
 /// An exception are redundant blank nodes. If the algorithm detects such nodes
 /// they will share the same hash.
-fn calc_bn_hashes<G, H>(g: &G) -> StreamResult<HashMap<u64, Vec<GTerm<G>>>, G::Error, AlgorithmFailure>
+fn calc_bn_hashes<G, H>(
+    g: &G,
+) -> StreamResult<HashMap<u64, Vec<GTerm<G>>>, G::Error, AlgorithmFailure>
 where
     G: Graph,
     H: Hasher + Default,

@@ -3,20 +3,20 @@
 //!
 //! It is publicly exported to `sophia::dataset`.
 
-use crate::dataset::{DTerm, DQuad, Dataset};
+use crate::dataset::{DQuad, DTerm, Dataset};
+use crate::graph::{bn_mapper, hash_if_not_bn, match_ignore_bns};
+use crate::quad::Quad;
 use crate::triple::stream::{
     SinkError, SinkResult as _, SourceError, SourceResult as _, StreamError, StreamResult,
 };
-use crate::quad::Quad;
-use crate::graph::{hash_if_not_bn, match_ignore_bns, bn_mapper};
-use sophia_term::{RefTerm, Term, TermData, same_graph_name};
+use sophia_term::{same_graph_name, RefTerm, Term, TermData};
 use std::collections::{BTreeSet, HashMap};
 use std::error::Error;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-/// Maximal steps a graph is traversed for proofing isomorphism.
-/// If this bound is exceeded the algorithm assumes that the graphs are not
+/// Maximal steps a dataset is traversed for proofing isomorphism.
+/// If this bound is exceeded the algorithm assumes that the datasets are not
 /// isomorphic.
 pub const MAX_DISTANCE: usize = 8;
 
@@ -34,24 +34,24 @@ impl fmt::Display for AlgorithmFailure {
 
 impl Error for AlgorithmFailure {}
 
-/// Checks if both graphs are isomorphic blank node equal.
+/// Checks if both datasets are isomorphic blank node equal.
 ///
 /// According to the [RDF specs](https://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/#graph-isomorphism)
-/// this means that a mapping for blank nodes in `g1` exists so that `g1 == g2`.
+/// this means that a mapping for blank nodes in `d1` exists so that `d1 == d2`.
 ///
 /// The used algorithm was originally implemented for [`Oxigraph`](https://github.com/Tpt/oxigraph)
 /// and is extended for the generalized RDF model of `sophia`.
 ///
 /// # Errors
 ///
-/// Both graphs can fail traversing (and this is done several times),
-/// accordingly, a `StreamError` returned where `SourceError`s originate from
-/// `g1` and `SinkError`s originate from `g2`
+/// Both datasets may fail traversing (and this is done several times).
+/// Accordingly, a `StreamError` returned where `SourceError`s originate from
+/// `d1` and `SinkError`s originate from `d2`
 ///
 /// # Performance
 ///
 /// As this algorithm has to traverse each graph several times the algorithm
-/// gets way more expensive with bigger numbers of triples. In the same way
+/// gets way more expensive with bigger numbers of quads. In the same way
 /// the number of blank nodes contributes to the costs.
 pub fn isomorphic_datasets<D1, D2>(d1: &D1, d2: &D2) -> StreamResult<bool, D1::Error, D2::Error>
 where
@@ -107,14 +107,11 @@ where
     isomorphic_datasets_with_mapping(d1, d2, bn_mapping)
 }
 
-/// Builds a `TermMatcher` by using the blank node mapping provided.
+/// Builds a `GraphNameMatcher` by using the blank node mapping provided.
 ///
 /// If the given term is a blank node the matcher will match all possible
 /// mappings for that blank node, i.e. included redundant blank nodes. If the
 /// given term is not a blank node the matcher will only match the given term.
-///
-/// This aligns with the description of bijection _M_ described in the
-/// [RDF specs](https://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/#graph-isomorphism).
 fn bn_mapper_for_gname<'m, TD1, TD2>(
     mapping: &'m HashMap<Term<TD1>, &Vec<Term<TD2>>>,
     g: Option<&'m Term<TD1>>,
@@ -138,8 +135,8 @@ where
     }
 }
 
-/// Checks for each triple in `g1` with at least one blank node if it is also
-/// contained in `g2` if the blank node `mapping` is applied.
+/// Checks for each quad in `d1` with at least one blank node if it is also
+/// contained in `d2` if the blank node `mapping` is applied.
 fn isomorphic_datasets_with_mapping<D1, D2>(
     d1: &D1,
     d2: &D2,
@@ -185,29 +182,7 @@ where
     }
 }
 
-/// Checks is each triple in `g1` is also in `g2` regardless of blank node
-/// labels.
-///
-/// # Example
-///
-/// Assume there are two graphs `g1`:
-///
-/// ```text
-/// _:s1 :p :o .
-/// _:s1 :p 42 .
-/// ```
-///
-/// and `g2`:
-///
-/// ```text
-/// _:s2 :p :o .
-/// _:s2 :p 21 .
-/// ```
-///
-/// The first triple passes the check as it searches for a triples with
-/// predicate `:p` and object `:o` in `g2`. The second triple fails.
-///
-/// However, this is still not enough to proof isomorphism.
+/// Checks if each quad in `d1` is also in `d2` regardless of blank node labels.
 fn check_for_equal_quads_regardless_bns<D1, D2>(
     d1: &D1,
     d2: &D2,
@@ -234,11 +209,10 @@ where
 
 /// Calculate a hash for each blank node.
 ///
-/// The hash of a blank node in a graph with `distance == 0` is the hash of all
-/// terms in the triples in which the blank node occurs. Should this not be
-/// enough to create distinct hashes, one can increase the distance. Increasing
-/// distance means that beginning from the blank nodes triples the graph is
-/// traversed up and down to add further triples to the hash calculation.
+/// The hash of a blank node in a dataset is the hash of all terms in the quads
+/// in which the blank node occurs. Should this not be enough to create
+/// distinct hashes, the dataset is further traversed starting from the initial
+/// quads.
 ///
 /// Blank nodes are not included in calculating the hashes.
 ///
@@ -247,7 +221,9 @@ where
 ///
 /// An exception are redundant blank nodes. If the algorithm detects such nodes
 /// they will share the same hash.
-fn calc_bn_hashes<D, H>(d: &D) -> StreamResult<HashMap<u64, Vec<DTerm<D>>>, D::Error, AlgorithmFailure>
+fn calc_bn_hashes<D, H>(
+    d: &D,
+) -> StreamResult<HashMap<u64, Vec<DTerm<D>>>, D::Error, AlgorithmFailure>
 where
     D: Dataset,
     H: Hasher + Default,
@@ -278,7 +254,7 @@ where
                 .iter()
                 .all(|(_, upstream, downstream)| upstream.is_empty() && downstream.is_empty())
             {
-                // Can no longer traverse graph to distinguish nodes, i.e. they must be redundant.
+                // Can no longer traverse dataset to distinguish nodes, i.e. they must be redundant.
                 let redundants = bns.into_iter().map(|(bn, _, _)| bn).collect();
                 res_map.insert(hash, redundants);
             } else {
@@ -312,7 +288,7 @@ where
     Ok(res_map)
 }
 
-/// Calculate the blank node's initial hash in the graph, i.e. for distance 0.
+/// Calculate the blank node's initial hash in the dataset.
 ///
 /// Returns the initial hash, the upstream nodes and the downstream nodes.
 #[allow(clippy::type_complexity)]
@@ -324,7 +300,7 @@ where
     D: Dataset,
     H: Hasher + Default,
 {
-    // for same hashing result we need to order the triples' hashes.
+    // for same hashing result we need to order the quads' hashes.
     let mut hashes = BTreeSet::new();
 
     let mut upstream = vec![];
@@ -350,7 +326,7 @@ where
     Ok((hasher.finish(), upstream, downstream))
 }
 
-/// Improves an existing hash by further traversing the graph.
+/// Improves an existing hash by further traversing the dataset.
 #[allow(clippy::type_complexity)]
 fn improve_hash_by_increasing_distance<H, D>(
     hash: u64,
@@ -362,7 +338,7 @@ where
     H: Hasher + Default,
     D: Dataset,
 {
-    // for same hashing result we need to order the triples' hashes.
+    // for same hashing result we need to order the quads' hashes.
     let mut hashes = BTreeSet::new();
 
     let upstream = traverse_from_s_to_o::<H, D>(upstream, d, &mut hashes)?;
@@ -392,8 +368,8 @@ where
     h.finish()
 }
 
-/// Looks for triples where the given terms are objects.
-/// Those triples' hashes are inserted into the list and a list of their
+/// Looks for quads where the given terms are objects.
+/// Those quads' hashes are inserted into the list and a list of their
 /// subjects is returned.
 fn traverse_from_o_to_s<H, D>(
     objects: &[DTerm<D>],
@@ -415,8 +391,8 @@ where
     Ok(subjects)
 }
 
-/// Looks for triples where the given terms are subjects.
-/// Those triples' hashes are inserted into the list and a list of their
+/// Looks for quads where the given terms are subjects.
+/// Those quads' hashes are inserted into the list and a list of their
 /// objects is returned.
 fn traverse_from_s_to_o<H, D>(
     subjects: &[DTerm<D>],
@@ -440,204 +416,195 @@ where
 
 #[cfg(test)]
 mod test {
-    // use super::*;
-    // use crate::graph::inmem::FastGraph;
-    // use crate::parser::{nt, turtle};
-    // use crate::triple::stream::TripleSource;
+    use super::*;
+    use crate::dataset::inmem::FastDataset;
+    use crate::parser::{gtrig, nq};
+    use crate::quad::stream::QuadSource;
 
-    // #[test]
-    // fn simple() -> Result<(), Box<dyn Error>> {
-    //     let g1 = r#"
-    //         @prefix foaf: <http://xmlns.com/foaf/0.1/>.
-
-    //         _:alice foaf:name "Alice";
-    //                foaf:mbox <mailto:alice@work.example> ;
-    //                foaf:knows _:bob .
-    //         _:bob foaf:name "Bob".
-    //     "#;
-    //     let g2 = r#"
-    //         @prefix foaf: <http://xmlns.com/foaf/0.1/>.
-
-    //         _:a foaf:name "Alice";
-    //                foaf:mbox <mailto:alice@work.example> ;
-    //                foaf:knows _:b .
-    //         _:b foaf:name "Bob".
-    //     "#;
-    //     let g3 = r#"
-    //         @prefix foaf: <http://xmlns.com/foaf/0.1/>.
-
-    //         _:a foaf:name "Alice";
-    //                foaf:mbox <mailto:alice@work.example> ;
-    //                foaf:knows _:b .
-    //         _:c foaf:name "Bob".
-    //     "#;
-    //     let g1: FastGraph = turtle::parse_str(g1).collect_triples()?;
-    //     let g2: FastGraph = turtle::parse_str(g2).collect_triples()?;
-    //     let g3: FastGraph = turtle::parse_str(g3).collect_triples()?;
-
-    //     assert!(isomorphic_graphs(&g1, &g2)?);
-    //     assert!(isomorphic_graphs(&g2, &g1)?);
-    //     assert!(!isomorphic_graphs(&g1, &g3)?);
-    //     assert!(!isomorphic_graphs(&g2, &g3)?);
-
-    //     Ok(())
-    // }
-
-    // #[test]
-    // fn different_parsers() -> Result<(), Box<dyn Error>> {
-    //     let ttl = r#"
-    //         @prefix foaf: <http://xmlns.com/foaf/0.1/>.
-
-    //         [] foaf:name "Alice";
-    //                foaf:mbox <mailto:alice@work.example> ;
-    //                foaf:knows [foaf:name "Bob"] .
-    //     "#;
-    //     let nt = r#"
-    //         _:alice <http://xmlns.com/foaf/0.1/name> "Alice".
-    //         _:alice <http://xmlns.com/foaf/0.1/mbox> <mailto:alice@work.example>.
-    //         _:alice <http://xmlns.com/foaf/0.1/knows> _:bob.
-    //         _:bob <http://xmlns.com/foaf/0.1/name> "Bob".
-    //     "#;
-    //     let ttl: FastGraph = turtle::parse_str(ttl).collect_triples()?;
-    //     let nt: FastGraph = nt::parse_str(nt).collect_triples()?;
-
-    //     assert!(isomorphic_graphs(&nt, &ttl)?);
-    //     assert!(isomorphic_graphs(&ttl, &nt)?);
-
-    //     Ok(())
-    // }
-
-    // /// Every subject and object is a blank node with the a different predicate.
-    // #[test]
-    // fn heterogeneous_grid() -> Result<(), Box<dyn Error>> {
-    //     let g1 = r#"
-    //         @prefix : <http://example.org/>.
-
-    //         _:a :p1 _:b, _:d .
-    //         _:c :p2 _:b, _:f .
-    //         _:e :p3 _:b, _:d, _:f, _:h .
-    //         _:g :p4 _:d, _:h .
-    //         _:i :p5 _:f, _:h .
-    //     "#;
-    //     let g2 = r#"
-    //         @prefix : <http://example.org/>.
-
-    //         _:a2 :p1 _:b2, _:d2 .
-    //         _:c2 :p2 _:b2, _:f2 .
-    //         _:e2 :p3 _:b2, _:d2, _:f2, _:h2 .
-    //         _:g2 :p4 _:d2, _:h2 .
-    //         _:i2 :p5 _:f2, _:h2 .
-    //     "#;
-    //     let g1: FastGraph = turtle::parse_str(g1).collect_triples()?;
-    //     let g2: FastGraph = turtle::parse_str(g2).collect_triples()?;
-
-    //     assert!(isomorphic_graphs(&g1, &g2)?);
-    //     assert!(isomorphic_graphs(&g2, &g1)?);
-
-    //     Ok(())
-    // }
-
-    // /// Every subject and object is a blank node with the same predicate.
-    // /// Source of test: http://aidanhogan.com/docs/rdf-canonicalisation.pdf
-    // #[test]
-    // fn homogeneous_grid() -> Result<(), Box<dyn Error>> {
-    //     let g1 = r#"
-    //         @prefix : <http://example.org/>.
-
-    //         _:a :p _:b, _:d .
-    //         _:c :p _:b, _:f .
-    //         _:e :p _:b, _:d, _:f, _:h .
-    //         _:g :p _:d, _:h .
-    //         _:i :p _:f, _:h .
-    //     "#;
-    //     let g2 = r#"
-    //         @prefix : <http://example.org/>.
-
-    //         _:a2 :p _:b2, _:d2 .
-    //         _:c2 :p _:b2, _:f2 .
-    //         _:e2 :p _:b2, _:d2, _:f2, _:h2 .
-    //         _:g2 :p _:d2, _:h2 .
-    //         _:i2 :p _:f2, _:h2 .
-    //     "#;
-    //     let g1: FastGraph = turtle::parse_str(g1).collect_triples()?;
-    //     let g2: FastGraph = turtle::parse_str(g2).collect_triples()?;
-
-    //     assert!(isomorphic_graphs(&g1, &g2)?);
-    //     assert!(isomorphic_graphs(&g2, &g1)?);
-
-    //     Ok(())
-    // }
-
-    // /// Like homogeneous grid but with redundant nodes removed in the second graph.
-    // #[test]
-    // fn truncated_grid() -> Result<(), Box<dyn Error>> {
-    //     let g1 = r#"
-    //         @prefix : <http://example.org/>.
-
-    //         _:a :p _:b, _:d .
-    //         _:c :p _:b, _:f .
-    //         _:e :p _:b, _:d, _:f, _:h .
-    //         _:g :p _:d, _:h .
-    //         _:i :p _:f, _:h .
-    //     "#;
-    //     let g2 = r#"
-    //         @prefix : <http://example.org/>.
-
-    //         _:a2 :p _:b2 .
-    //     "#;
-    //     let g1: FastGraph = turtle::parse_str(g1).collect_triples()?;
-    //     let g2: FastGraph = turtle::parse_str(g2).collect_triples()?;
-
-    //     assert!(!isomorphic_graphs(&g1, &g2)?);
-    //     assert!(!isomorphic_graphs(&g2, &g1)?);
-
-    //     Ok(())
-    // }
-    // /// Source of test: http://aidanhogan.com/docs/rdf-canonicalisation.pdf
-    // #[test]
-    // fn spider_like() -> Result<(), Box<dyn Error>> {
-    //     let g1 = r#"
-    //         @prefix : <http://example.org/>.
-
-    //         :Chile :cabinet _:b1, [
-    //             :members 23
-    //           ], [
-    //             :members 23
-    //           ], _:b4 ;
-    //           :presidency _:a1, _:a2, _:a3, _:a4 .
+    #[test]
+    fn simple() -> Result<(), Box<dyn Error>> {
+        let d1 = r#"
+            @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+            @prefix dc: <http://purl.org/dc/terms/> .
+            @prefix foaf: <http://xmlns.com/foaf/0.1/> .
             
-    //         _:a1 :next _:a2 .
-    //         _:a2 :next _:a3 ;
-    //           :president :MBachelet .
-    //         _:a3 :next _:a4.
-    //         _:a4 :president :MBachelet .
-
-    //         :MBachelet :spouse _:c .
-    //     "#;
-    //     let g2 = r#"
-    //         @prefix : <http://example.org/>.
-
-    //         :Chile :cabinet _:b12, [
-    //             :members 23
-    //         ], [
-    //             :members 23
-    //         ], _:b42 ;
-    //         :presidency _:a12, _:a22, _:a32, _:a42 .
+            {
+                <http://example.org/bob> dc:publisher "Bob" .
+                <http://example.org/alice> dc:publisher "Alice" .
+            }
             
-    //         _:a12 :next _:a22 .
-    //         _:a22 :next _:a32 ;
-    //         :president :MBachelet .
-    //         _:a32 :next _:a42.
-    //         _:a42 :president :MBachelet .
+            <http://example.org/bob>
+            {
+                _:a foaf:name "Bob" .
+                _:a foaf:mbox <mailto:bob@oldcorp.example.org> .
+                _:a foaf:knows _:b .
+            }
+            
+            <http://example.org/alice>
+            {
+                _:b foaf:name "Alice" .
+                _:b foaf:mbox <mailto:alice@work.example.org> .
+            }
+        "#;
+        let d2 = r#"
+            @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+            @prefix dc: <http://purl.org/dc/terms/> .
+            @prefix foaf: <http://xmlns.com/foaf/0.1/> .
+            
+            {
+                <http://example.org/bob> dc:publisher "Bob" .
+                <http://example.org/alice> dc:publisher "Alice" .
+            }
+            
+            <http://example.org/bob>
+            {
+                _:a2 foaf:name "Bob" .
+                _:a2 foaf:mbox <mailto:bob@oldcorp.example.org> .
+                _:a2 foaf:knows _:b2 .
+            }
+            
+            <http://example.org/alice>
+            {
+                _:b2 foaf:name "Alice" .
+                _:b2 foaf:mbox <mailto:alice@work.example.org> .
+            }
+        "#;
+        let d3 = r#"
+            @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+            @prefix dc: <http://purl.org/dc/terms/> .
+            @prefix foaf: <http://xmlns.com/foaf/0.1/> .
+            
+            {
+                <http://example.org/bob> dc:publisher "Bob" .
+                <http://example.org/alice> dc:publisher "Alice" .
+            }
+            
+            <http://example.org/bob>
+            {
+                _:a3 foaf:name "Bob" .
+                _:a3 foaf:mbox <mailto:bob@oldcorp.example.org> .
+                _:a3 foaf:knows _:b3 .
+            }
+            
+            <http://example.org/alice>
+            {
+                _:c3 foaf:name "Alice" .
+                _:c3 foaf:mbox <mailto:alice@work.example.org> .
+            }
+        "#;
+        let d1: FastDataset = gtrig::parse_str(d1).collect_quads()?;
+        let d2: FastDataset = gtrig::parse_str(d2).collect_quads()?;
+        let d3: FastDataset = gtrig::parse_str(d3).collect_quads()?;
 
-    //         :MBachelet :spouse _:c2 .
-    //     "#;
-    //     let g1: FastGraph = turtle::parse_str(g1).collect_triples()?;
-    //     let g2: FastGraph = turtle::parse_str(g2).collect_triples()?;
+        assert!(isomorphic_datasets(&d1, &d2)?);
+        assert!(isomorphic_datasets(&d2, &d1)?);
+        assert!(!isomorphic_datasets(&d1, &d3)?);
+        assert!(!isomorphic_datasets(&d2, &d3)?);
 
-    //     assert!(isomorphic_graphs(&g1, &g2)?);
-    //     assert!(isomorphic_graphs(&g2, &g1)?);
+        Ok(())
+    }
 
-    //     Ok(())
-    // }
+    #[test]
+    fn different_parsers() -> Result<(), Box<dyn Error>> {
+        let trig = r#"
+            @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+            @prefix dc: <http://purl.org/dc/terms/> .
+            @prefix foaf: <http://xmlns.com/foaf/0.1/> .
+            
+            {
+                <http://example.org/bob> dc:publisher "Bob" .
+                <http://example.org/alice> dc:publisher "Alice" .
+            }
+            
+            <http://example.org/bob>
+            {
+                _:a foaf:name "Bob" .
+                _:a foaf:mbox <mailto:bob@oldcorp.example.org> .
+                _:a foaf:knows _:b .
+            }
+            
+            <http://example.org/alice>
+            {
+                _:b foaf:name "Alice" .
+                _:b foaf:mbox <mailto:alice@work.example.org> .
+            }
+        "#;
+        let nq = r#"
+            <http://example.org/bob> <http://purl.org/dc/terms/publisher> "Bob" .
+            <http://example.org/alice> <http://purl.org/dc/terms/publisher> "Alice" .
+        
+            _:a2 <http://xmlns.com/foaf/0.1/name> "Bob" <http://example.org/bob> .
+            _:a2 <http://xmlns.com/foaf/0.1/mbox> <mailto:bob@oldcorp.example.org> <http://example.org/bob> .
+            _:a2 <http://xmlns.com/foaf/0.1/knows> _:b2 <http://example.org/bob> .
+
+            _:b2 <http://xmlns.com/foaf/0.1/name> "Alice" <http://example.org/alice> .
+            _:b2 <http://xmlns.com/foaf/0.1/mbox> <mailto:alice@work.example.org> <http://example.org/alice> .
+        "#;
+        let trig: FastDataset = gtrig::parse_str(trig).collect_quads()?;
+        let nq: FastDataset = nq::parse_str(nq).collect_quads()?;
+
+        assert!(isomorphic_datasets(&nq, &trig)?);
+        assert!(isomorphic_datasets(&trig, &nq)?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn bn_names() -> Result<(), Box<dyn Error>> {
+        let d1 = r#"
+            @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+            @prefix dc: <http://purl.org/dc/terms/> .
+            @prefix foaf: <http://xmlns.com/foaf/0.1/> .
+            
+            <http://example.org/publishers>
+            {
+                _:bob dc:publisher "Bob" .
+                _:alice dc:publisher "Alice" .
+            }
+            
+            _:bob
+            {
+                _:a foaf:name "Bob" .
+                _:a foaf:mbox <mailto:bob@oldcorp.example.org> .
+                _:a foaf:knows _:b .
+            }
+            
+            _:alice
+            {
+                _:b foaf:name "Alice" .
+                _:b foaf:mbox <mailto:alice@work.example.org> .
+            }
+        "#;
+        let d2 = r#"
+            @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+            @prefix dc: <http://purl.org/dc/terms/> .
+            @prefix foaf: <http://xmlns.com/foaf/0.1/> .
+            
+            <http://example.org/publishers>
+            {
+                _:bob2 dc:publisher "Bob" .
+                _:alice2 dc:publisher "Alice" .
+            }
+            
+            _:bob2
+            {
+                _:a2 foaf:name "Bob" .
+                _:a2 foaf:mbox <mailto:bob@oldcorp.example.org> .
+                _:a2 foaf:knows _:b2 .
+            }
+            
+            _:alice2
+            {
+                _:b2 foaf:name "Alice" .
+                _:b2 foaf:mbox <mailto:alice@work.example.org> .
+            }
+        "#;
+        let d1: FastDataset = gtrig::parse_str(d1).collect_quads()?;
+        let d2: FastDataset = gtrig::parse_str(d2).collect_quads()?;
+
+        assert!(isomorphic_datasets(&d1, &d2)?);
+        assert!(isomorphic_datasets(&d2, &d1)?);
+
+        Ok(())
+    }
 }
