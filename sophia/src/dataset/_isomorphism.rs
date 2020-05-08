@@ -143,7 +143,6 @@ where
             mapped.iter().any(|t| same_graph_name(Some(t), other))
         }) as _
     } else {
-        let g = g.clone();
         Box::new(move |other: Option<&RefTerm>| same_graph_name(g, other)) as _
     }
 }
@@ -190,7 +189,6 @@ where
     if let Some(Term::BNode(_)) = t {
         Box::new(move |_: Option<&RefTerm>| true) as _
     } else {
-        let t = t.clone();
         Box::new(move |other: Option<&RefTerm>| same_graph_name(t, other)) as _
     }
 }
