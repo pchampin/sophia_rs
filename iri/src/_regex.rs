@@ -154,7 +154,7 @@ lazy_static! {
         )?
     $").unwrap();
 
-    /// Match a relative IRI.
+    /// Match a relative IRI reference.
     pub(crate) static ref IRELATIVE_REF_REGEX: Regex = Regex::new(r"(?x)^
         #irelative_part
         (?: #iauthority + ipath_abempty
@@ -284,8 +284,8 @@ lazy_static! {
 
 #[cfg(test)]
 mod test {
-    use super::super::test::{NEGATIVE_IRIS, POSITIVE_IRIS};
     use super::*;
+    use crate::test::{NEGATIVE_IRIS, POSITIVE_IRIS};
 
     #[test]
     fn regex_abs() {

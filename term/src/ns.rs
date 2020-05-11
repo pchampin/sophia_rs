@@ -15,10 +15,8 @@
 //! //g.insert(&s_name, &rdfs::range, &xsd::string);
 //! ```
 
-use crate::{
-    iri::{is_valid_iri_ref, Iri},
-    Result, Term, TermData, TermError,
-};
+use crate::{iri::Iri, Result, Term, TermData, TermError};
+use sophia_iri::is_valid_iri_ref;
 
 /// A custom namespace.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]

@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
+    "iri",
     "sophia",
     "term",
     "jsonld",

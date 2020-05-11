@@ -505,7 +505,7 @@ mod test {
 
     #[test]
     fn resolve_to_mown_does_not_allocate_txt() {
-        use crate::iri::{IriParsed, Resolve};
+        use sophia_iri::resolve::{IriParsed, Resolve};
         let dt1 = Iri::<Box<str>>::new("").unwrap();
         let lit1 = Literal::<Box<str>>::new_dt("hello", dt1);
         let xsd_string = &xsd::iri::string.value();

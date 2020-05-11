@@ -1,6 +1,8 @@
 //! Minimal implementation of [`TTerm`](../trait.TTerm.html),
 //! for representing datatype IRIs of literals.
 use super::*;
+use mownstr::MownStr;
+use sophia_iri::is_valid_iri_ref;
 use std::fmt;
 use std::hash;
 
@@ -17,8 +19,23 @@ impl<'a> SimpleIri<'a> {
     /// # Pre-condition
     /// It is the user's responsibility to check that `ns` and `suffix`
     /// concatenate to a valid IRI.
+    ///
+    /// Note that this is nonetheless checked in `debug` mode.
     pub fn new_unchecked(ns: &'a str, suffix: Option<&'a str>) -> Self {
         debug_assert!(suffix.map(|txt| txt.len()).unwrap_or(1) > 0);
+        debug_assert!(is_valid_iri_ref(
+            match suffix {
+                None => MownStr::from(ns),
+                Some(suffix) => {
+                    let mut buffer = String::with_capacity(ns.len() + suffix.len());
+                    buffer.push_str(ns);
+                    buffer.push_str(suffix);
+                    MownStr::from(buffer)
+                }
+            }
+            .as_ref()
+        ));
+
         Self { ns, suffix }
     }
 

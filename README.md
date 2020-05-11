@@ -8,6 +8,7 @@ A Rust toolkit for RDF and Linked Data.
 
 It comprises the following crates:
 
+* [`sophia_iri`] provides functions for validating and resolving IRIs
 * [`sophia_term`] defines types and traits for basic RDF terms
 * [`sophia`] will later be split into separate crates, but currently contains
   - traits for describing RDF graphs and datasets,
