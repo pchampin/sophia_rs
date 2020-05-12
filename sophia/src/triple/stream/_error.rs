@@ -87,7 +87,54 @@ where
             SinkError(err) => err,
         }
     }
+    /// Switch source and sink error.
+    pub fn reverse(self) -> StreamError<SinkErr, SourceErr> {
+        match self {
+            SourceError(e) => SinkError(e),
+            SinkError(e) => SourceError(e),
+        }
+    }
 }
 
 /// Convenient type alias
 pub type StreamResult<T, E1, E2> = Result<T, StreamError<E1, E2>>;
+
+/// Extension trait for `SourceError`s.
+pub trait SourceResult<T, E1, E2>
+where
+    E1: 'static + Error,
+    E2: 'static + Error,
+{
+    /// Map an error to a `SourceError`.
+    fn source_err(self) -> StreamResult<T, E1, E2>;
+}
+
+impl<T, E1, E2> SourceResult<T, E1, E2> for Result<T, E1>
+where
+    E1: 'static + Error,
+    E2: 'static + Error,
+{
+    fn source_err(self) -> StreamResult<T, E1, E2> {
+        self.map_err(SourceError)
+    }
+}
+
+/// Extension trait for `SinkError`s.
+pub trait SinkResult<T, E1, E2>
+where
+    E1: 'static + Error,
+    E2: 'static + Error,
+{
+    /// Map an error to a `SinkError`.
+    fn sink_err(self) -> StreamResult<T, E1, E2>;
+}
+
+impl<T, E1, E2> SinkResult<T, E1, E2> for Result<T, E2>
+where
+    E1: 'static + Error,
+    E2: 'static + Error,
+{
+    fn sink_err(self) -> StreamResult<T, E1, E2> {
+        self.map_err(SinkError)
+    }
+}
