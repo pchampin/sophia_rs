@@ -352,10 +352,14 @@ where
         Literal => {
             write!(w, "{:?}", v.0)?;
             if let Some(tag) = term.language() {
-                write!(w, "@\"{}\"", tag)
+                write!(w, "@{}", tag)
             } else {
-                w.write_str("^^")?;
-                term_format(&term.datatype().unwrap(), w)
+                let dt = term.datatype().unwrap();
+                if !term_eq(&dt, &crate::ns::xsd::string) {
+                    w.write_str("^^")?;
+                    term_format(&term.datatype().unwrap(), w)?;
+                }
+                Ok(())
             }
         }
         BlankNode => write!(w, "_:{}", v.0),

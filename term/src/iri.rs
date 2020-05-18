@@ -465,7 +465,7 @@ where
         write!(w, "<{}{}>", self.ns.as_ref(), self.suffix_as_str())
     }
 
-    /// Writes the blank node to the `io::Write` using the N3 syntax.
+    /// Writes the IRI to the `io::Write` using the N3 syntax.
     pub fn write_io<W>(&self, w: &mut W) -> io::Result<()>
     where
         W: io::Write,
