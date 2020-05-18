@@ -1,8 +1,8 @@
 //! Minimal implementation of [`TTerm`](../trait.TTerm.html),
 //! for representing datatype IRIs of literals.
 use super::*;
-use mownstr::MownStr;
-use sophia_iri::is_valid_iri_ref;
+use sophia_iri::error::{InvalidIri, Result};
+use sophia_iri::is_valid_suffixed_iri_ref;
 use std::fmt;
 use std::hash;
 
@@ -14,6 +14,15 @@ pub struct SimpleIri<'a> {
 }
 
 impl<'a> SimpleIri<'a> {
+    /// Build a SimpleIri, checking that it is a valid IRI reference.
+    pub fn new(ns: &'a str, suffix: Option<&'a str>) -> Result<Self> {
+        if is_valid_suffixed_iri_ref(ns, suffix) {
+            Ok(Self { ns, suffix })
+        } else {
+            Err(InvalidIri(format!("{}{}", ns, suffix.unwrap_or(""))))
+        }
+    }
+
     /// Build a SimpleIri from its raw components.
     ///
     /// # Pre-condition
@@ -23,18 +32,7 @@ impl<'a> SimpleIri<'a> {
     /// Note that this is nonetheless checked in `debug` mode.
     pub fn new_unchecked(ns: &'a str, suffix: Option<&'a str>) -> Self {
         debug_assert!(suffix.map(|txt| txt.len()).unwrap_or(1) > 0);
-        debug_assert!(is_valid_iri_ref(
-            match suffix {
-                None => MownStr::from(ns),
-                Some(suffix) => {
-                    let mut buffer = String::with_capacity(ns.len() + suffix.len());
-                    buffer.push_str(ns);
-                    buffer.push_str(suffix);
-                    MownStr::from(buffer)
-                }
-            }
-            .as_ref()
-        ));
+        debug_assert!(is_valid_suffixed_iri_ref(ns, suffix));
 
         Self { ns, suffix }
     }

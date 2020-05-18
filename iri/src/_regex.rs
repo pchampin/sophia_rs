@@ -1,6 +1,25 @@
 use lazy_static::lazy_static;
 use regex::Regex;
 
+/// Check whether `ns` and `suffix` concatenate into a valid (absolute or relative) IRI reference.
+///
+/// # Performances
+/// In the current implementation, a new String is allocated if `suffix`
+/// is not `None`.
+/// Future implementations may be smarter about this.
+#[inline]
+pub fn is_valid_suffixed_iri_ref(ns: &str, suffix: Option<&str>) -> bool {
+    match suffix {
+        None => is_valid_iri_ref(ns),
+        Some(suffix) => {
+            let mut buffer = String::with_capacity(ns.len() + suffix.len());
+            buffer.push_str(ns);
+            buffer.push_str(suffix);
+            is_valid_iri_ref(&buffer)
+        }
+    }
+}
+
 /// Check whether `txt` is a valid (absolute or relative) IRI reference.
 #[inline]
 pub fn is_valid_iri_ref(txt: &str) -> bool {
