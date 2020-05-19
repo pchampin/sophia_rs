@@ -702,6 +702,7 @@ pub trait MutableDataset: Dataset {
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
         G: GraphNameMatcher + ?Sized,
+        DTerm<Self>: Clone,
         <Self as Dataset>::Error: Into<Self::MutationError>,
         Infallible: Into<Self::MutationError>,
     {
@@ -709,12 +710,8 @@ pub trait MutableDataset: Dataset {
             .quads_matching(ms, mp, mo, mg)
             .map_ok(|q| {
                 (
-                    [
-                        BoxTerm::copy(q.s()),
-                        BoxTerm::copy(q.p()),
-                        BoxTerm::copy(q.o()),
-                    ],
-                    q.g().map(BoxTerm::copy),
+                    [q.s().clone(), q.p().clone(), q.o().clone()],
+                    q.g().map(Clone::clone),
                 )
             })
             .collect::<std::result::Result<Vec<_>, _>>()
@@ -736,6 +733,7 @@ pub trait MutableDataset: Dataset {
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
         G: GraphNameMatcher + ?Sized,
+        DTerm<Self>: Clone,
         <Self as Dataset>::Error: Into<Self::MutationError>,
         Infallible: Into<Self::MutationError>,
     {
@@ -746,12 +744,8 @@ pub trait MutableDataset: Dataset {
             })
             .map_ok(|q| {
                 (
-                    [
-                        BoxTerm::copy(q.s()),
-                        BoxTerm::copy(q.p()),
-                        BoxTerm::copy(q.o()),
-                    ],
-                    q.g().map(BoxTerm::copy),
+                    [q.s().clone(), q.p().clone(), q.o().clone()],
+                    q.g().map(Clone::clone),
                 )
             })
             .collect::<std::result::Result<Vec<_>, _>>()

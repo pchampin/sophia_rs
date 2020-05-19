@@ -567,18 +567,13 @@ pub trait MutableGraph: Graph {
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
+        GTerm<Self>: Clone,
         <Self as Graph>::Error: Into<Self::MutationError>,
         Infallible: Into<Self::MutationError>,
     {
         let to_remove = self
             .triples_matching(ms, mp, mo)
-            .map_ok(|t| {
-                [
-                    BoxTerm::copy(t.s()),
-                    BoxTerm::copy(t.p()),
-                    BoxTerm::copy(t.o()),
-                ]
-            })
+            .map_ok(|t| [t.s().clone(), t.p().clone(), t.o().clone()])
             .collect::<std::result::Result<Vec<_>, _>>()
             .map_err(Into::into)?;
         let mut to_remove = to_remove.into_iter().as_triple_source();
@@ -602,19 +597,14 @@ pub trait MutableGraph: Graph {
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
         O: TermMatcher + ?Sized,
+        GTerm<Self>: Clone,
         <Self as Graph>::Error: Into<Self::MutationError>,
         Infallible: Into<Self::MutationError>,
     {
         let to_remove = self
             .triples()
             .filter_ok(|t| !(ms.matches(t.s()) && mp.matches(t.p()) && mo.matches(t.o())))
-            .map_ok(|t| {
-                [
-                    BoxTerm::copy(t.s()),
-                    BoxTerm::copy(t.p()),
-                    BoxTerm::copy(t.o()),
-                ]
-            })
+            .map_ok(|t| [t.s().clone(), t.p().clone(), t.o().clone()])
             .collect::<std::result::Result<Vec<_>, _>>()
             .map_err(Into::into)?;
         let mut to_remove = to_remove.into_iter().as_triple_source();
