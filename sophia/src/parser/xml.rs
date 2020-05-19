@@ -27,6 +27,7 @@ use sophia_iri::is_relative_iri_ref;
 use sophia_term::factory::RcTermFactory;
 use sophia_term::factory::TermFactory;
 use sophia_term::matcher::TermMatcher;
+use sophia_term::SimpleIri;
 use sophia_term::StaticTerm;
 use sophia_term::Term;
 use sophia_term::TermError;
@@ -40,7 +41,7 @@ use self::_handler::*;
 
 const DEFAULT_BUFFER_SIZE: usize = 8 * 1024;
 
-static RESERVED_NODE_NAMES: &[&StaticTerm] = &[
+static RESERVED_NODE_NAMES: &[&SimpleIri] = &[
     &rdf::RDF,
     &rdf::ID,
     &rdf::about,
@@ -53,7 +54,7 @@ static RESERVED_NODE_NAMES: &[&StaticTerm] = &[
     &rdf::aboutEachPrefix,
 ];
 
-static RESERVED_PROPERTY_NAMES: &[&StaticTerm] = &[
+static RESERVED_PROPERTY_NAMES: &[&SimpleIri] = &[
     &rdf::Description,
     &rdf::RDF,
     &rdf::ID,
@@ -66,7 +67,7 @@ static RESERVED_PROPERTY_NAMES: &[&StaticTerm] = &[
     &rdf::aboutEachPrefix,
 ];
 
-static RESERVED_ATTRIBUTES_NAMES: &[&StaticTerm] = &[
+static RESERVED_ATTRIBUTES_NAMES: &[&SimpleIri] = &[
     &rdf::li,
     &rdf::aboutEach,
     &rdf::aboutEachPrefix,

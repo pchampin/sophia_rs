@@ -126,12 +126,12 @@ impl<F: TermFactory> Scope<F> {
             let prefix = &attr[..separator_idx];
             let reference = &attr[separator_idx + 1..];
             if let Some(ns) = self.ns.get(prefix) {
-                Ok(self.factory.borrow_mut().convert_term(ns.get(reference)?))
+                Ok(self.factory.borrow_mut().clone_term(&ns.get(reference)?))
             } else {
                 Err(RdfError::UnknownNamespace(prefix.to_owned()))
             }
         } else if let Some(ns) = &self.default {
-            Ok(self.factory.borrow_mut().convert_term(ns.get(attr)?))
+            Ok(self.factory.borrow_mut().clone_term(&ns.get(attr)?))
         } else {
             Err(RdfError::UnknownNamespace("_".to_owned()))
         }
@@ -202,7 +202,7 @@ impl<F: TermFactory> Scope<F> {
             _ => self
                 .factory
                 .borrow_mut()
-                .literal_dt(text.as_str(), xsd::string)?,
+                .literal_dt(text.as_str(), StaticTerm::from(xsd::string))?,
         };
         Ok(term)
     }
@@ -210,11 +210,10 @@ impl<F: TermFactory> Scope<F> {
     /// Create a new `rdf:li` property by incrementing the scope `li` counter.
     pub fn new_li(&self) -> ScopeResult<Term<F::TermData>> {
         if let Some(ns) = self.ns.get("rdf") {
+            let suffix = format!("_{}", self.li.fetch_add(1, Ordering::Relaxed));
+            let itemprop = ns.get(&suffix)?;
             let mut f = self.factory.borrow_mut();
-            Ok(ns.get(
-                f.get_term_data(format!("_{}", self.li.fetch_add(1, Ordering::Relaxed)).as_str())
-                    .as_ref(),
-            )?)
+            Ok(f.clone_term(&itemprop))
         } else {
             Err(RdfError::UnknownNamespace("rdf".to_owned()))
         }
@@ -223,11 +222,10 @@ impl<F: TermFactory> Scope<F> {
     /// Get the current `rdf:li` property.
     pub fn current_li(&self) -> ScopeResult<Term<F::TermData>> {
         if let Some(ns) = self.ns.get("rdf") {
+            let suffix = format!("_{}", self.li.load(Ordering::Relaxed) - 1);
+            let itemprop = ns.get(&suffix)?;
             let mut f = self.factory.borrow_mut();
-            Ok(ns.get(
-                f.get_term_data(format!("_{}", self.li.load(Ordering::Relaxed) - 1).as_str())
-                    .as_ref(),
-            )?)
+            Ok(f.clone_term(&itemprop))
         } else {
             Err(RdfError::UnknownNamespace("rdf".to_owned()))
         }

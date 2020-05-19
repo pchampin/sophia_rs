@@ -186,12 +186,12 @@ mod test {
     use crate::dataset::*;
     use crate::quad::stream::QuadSource;
     use crate::triple::stream::TripleSource;
-    use sophia_term::{same_graph_name, BoxTerm, StaticTerm, TTerm};
+    use sophia_term::{same_graph_name, BoxTerm, SimpleIri, TTerm};
     use std::collections::HashSet;
 
     type MyQuad = ([BoxTerm; 3], Option<BoxTerm>);
     type MyDataset = HashSet<MyQuad>;
-    type MyDatasetGraph = DatasetGraph<MyDataset, MyDataset, Option<&'static StaticTerm>>;
+    type MyDatasetGraph = DatasetGraph<MyDataset, MyDataset, Option<&'static SimpleIri<'static>>>;
 
     fn make_default_graph<TS>(ts: TS) -> Result<MyDatasetGraph, ()>
     where

@@ -485,20 +485,6 @@ where
     }
 }
 
-impl Iri<&'static str> {
-    /// Build an IRI from its raw components.
-    ///
-    /// This constructor is used by the [`namespace!`](../macro.namespace.html) macro,
-    /// but should not be used directly.
-    ///
-    /// # Pre-condition
-    ///
-    /// The resulting IRI may be invalid.
-    pub const fn from_raw_parts_unchecked(ns: &'static str, suffix: Option<&'static str>) -> Self {
-        Iri { ns, suffix }
-    }
-}
-
 impl<TD: TermData> TTerm for Iri<TD> {
     fn kind(&self) -> TermKind {
         TermKind::Iri
@@ -609,10 +595,7 @@ where
     fn try_from(term: Term<TD>) -> Result<Self, Self::Error> {
         match term {
             Term::Iri(iri) => Ok(iri),
-            _ => Err(TermError::UnexpectedKindOfTerm {
-                term: term.to_string(),
-                expect: "IRI".to_owned(),
-            }),
+            _ => Err(TermError::UnsupportedKind(term.to_string())),
         }
     }
 }
@@ -627,10 +610,7 @@ where
     fn try_from(term: &'a Term<U>) -> Result<Self, Self::Error> {
         match term {
             Term::Iri(iri) => Ok(iri.clone_map(T::from)),
-            _ => Err(TermError::UnexpectedKindOfTerm {
-                term: term.to_string(),
-                expect: "IRI".to_owned(),
-            }),
+            _ => Err(TermError::UnsupportedKind(term.to_string())),
         }
     }
 }
@@ -652,10 +632,7 @@ where
                 Some(suffix) => Self::new_suffixed_unchecked(ns, suffix),
             })
         } else {
-            Err(TermError::UnexpectedKindOfTerm {
-                term: term_to_string(term),
-                expect: "IRI".to_owned(),
-            })
+            Err(TermError::UnsupportedKind(term_to_string(term)))
         }
     }
 }

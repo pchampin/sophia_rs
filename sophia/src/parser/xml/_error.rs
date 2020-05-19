@@ -84,6 +84,8 @@ pub enum RdfError {
     InvalidUrl(#[from] url::ParseError),
     #[error("The given base IRI `{0}` is not a valid IRI")]
     InvalidBaseIri(String),
+    #[error("Invalid IRI: {0}")]
+    InvalidIri(#[from] sophia_iri::error::InvalidIri),
 }
 
 impl<'a, BR> LocatableError<&'a Reader<BR>> for RdfError

@@ -170,9 +170,8 @@ impl<'a, T, S: BuildHasher> SetGraph for HashSet<T, S> where T: Eq + Hash + Trip
 mod test {
     use super::*;
     use crate::ns::*;
-    use sophia_term::StaticTerm;
 
-    static G: [[StaticTerm; 3]; 3] = [
+    static G: [[SimpleIri; 3]; 3] = [
         [rdf::type_, rdf::type_, rdf::Property],
         [rdf::Property, rdf::type_, rdfs::Class],
         [rdfs::Class, rdf::type_, rdfs::Class],

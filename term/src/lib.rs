@@ -65,7 +65,8 @@ use self::blank_node::BlankNode;
 pub mod iri;
 use self::iri::{Iri, Normalization};
 pub mod literal;
-use self::literal::{AsLiteral, Literal};
+use literal::convert::{AsLiteral, DataType, NativeLiteral};
+use literal::Literal;
 pub mod simple_iri;
 pub use simple_iri::SimpleIri;
 mod _trait;
@@ -494,16 +495,33 @@ where
 
 impl<TD> From<String> for Term<TD>
 where
-    TD: TermData + From<String> + From<&'static str>,
+    TD: TermData + From<Box<str>> + From<&'static str>,
 {
     fn from(txt: String) -> Self {
-        txt.as_term()
+        txt.as_literal().into()
     }
 }
 
 impl<'a> From<&'a str> for RefTerm<'a> {
     fn from(txt: &'a str) -> Self {
-        txt.as_term()
+        Literal::<&'a str>::new_dt(txt, Iri::<&'a str>::from(ns::xsd::string)).into()
+    }
+}
+
+impl<'a> From<SimpleIri<'a>> for RefTerm<'a> {
+    fn from(other: SimpleIri<'a>) -> Self {
+        Iri::from(other).into()
+    }
+}
+
+impl<T, U, TD> From<NativeLiteral<T, U>> for Term<TD>
+where
+    T: DataType + ?Sized,
+    U: AsRef<str>,
+    TD: TermData + From<U> + From<&'static str>,
+{
+    fn from(other: NativeLiteral<T, U>) -> Self {
+        Literal::from(other).into()
     }
 }
 

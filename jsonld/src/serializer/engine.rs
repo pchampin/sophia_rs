@@ -274,11 +274,11 @@ impl Engine {
                         let dt_str = dt.value();
                         let mut obj = Object::new();
                         if self.config.use_native_types {
-                            if dt == xsd::iri::integer || dt == xsd::iri::double {
+                            if dt == xsd::integer || dt == xsd::double {
                                 if let Ok(val) = txt.parse::<f64>() {
                                     obj.insert("@value", val.into());
                                 }
-                            } else if dt == xsd::iri::boolean {
+                            } else if dt == xsd::boolean {
                                 if let Ok(val) = txt.parse::<bool>() {
                                     obj.insert("@value", val.into());
                                 }
@@ -300,7 +300,7 @@ impl Engine {
                                 }
                             }
                         }
-                        if dt == rdf::iri::JSON {
+                        if dt == rdf::JSON {
                             let json_value = json::parse(&txt)?;
                             obj.insert("@value", json_value);
                             obj.insert("@type", "@json".into());
@@ -308,7 +308,7 @@ impl Engine {
                         if obj.is_empty() {
                             // useNativeTypes is false, or conversion failed
                             obj.insert("@value", txt.to_string().into());
-                            if dt != xsd::iri::string {
+                            if dt != xsd::string {
                                 obj.insert("@type", dt.value().to_string().into());
                             }
                         }

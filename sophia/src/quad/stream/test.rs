@@ -22,9 +22,9 @@ lazy_static! {
 
 fn make_dataset() -> Vec<[StaticTerm; 4]> {
     vec![
-        [*ALICE, rdf::type_, *PERSON, *ALICE],
+        [*ALICE, rdf::type_.into(), *PERSON, *ALICE],
         [*ALICE, *NAME, *ALICE_LIT, *ALICE],
-        [*BOB, rdf::type_, *PERSON, *BOB],
+        [*BOB, rdf::type_.into(), *PERSON, *BOB],
         [*BOB, *NAME, *BOB_LIT, *BOB],
         [*BOB, *KNOWS, *ALICE, *ALICE],
     ]
@@ -40,9 +40,9 @@ fn map_term(t: &StaticTerm) -> StaticTerm {
 
 fn make_mapped_dataset() -> Vec<[StaticTerm; 4]> {
     vec![
-        [*CHARLIE, rdf::type_, *PERSON, *CHARLIE],
+        [*CHARLIE, rdf::type_.into(), *PERSON, *CHARLIE],
         [*CHARLIE, *NAME, *ALICE_LIT, *CHARLIE],
-        [*BOB, rdf::type_, *PERSON, *BOB],
+        [*BOB, rdf::type_.into(), *PERSON, *BOB],
         [*BOB, *NAME, *BOB_LIT, *BOB],
         [*BOB, *KNOWS, *CHARLIE, *CHARLIE],
     ]

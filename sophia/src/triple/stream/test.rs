@@ -28,9 +28,9 @@ lazy_static! {
 
 fn make_graph() -> Vec<[StaticTerm; 3]> {
     vec![
-        [*ALICE, rdf::type_, *PERSON],
+        [*ALICE, rdf::type_.into(), *PERSON],
         [*ALICE, *NAME, *ALICE_LIT],
-        [*BOB, rdf::type_, *PERSON],
+        [*BOB, rdf::type_.into(), *PERSON],
         [*BOB, *NAME, *BOB_LIT],
         [*BOB, *KNOWS, *ALICE],
     ]
@@ -46,9 +46,9 @@ fn map_term(t: &StaticTerm) -> StaticTerm {
 
 fn make_mapped_graph() -> Vec<[StaticTerm; 3]> {
     vec![
-        [*CHARLIE, rdf::type_, *PERSON],
+        [*CHARLIE, rdf::type_.into(), *PERSON],
         [*CHARLIE, *NAME, *ALICE_LIT],
-        [*BOB, rdf::type_, *PERSON],
+        [*BOB, rdf::type_.into(), *PERSON],
         [*BOB, *NAME, *BOB_LIT],
         [*BOB, *KNOWS, *CHARLIE],
     ]

@@ -170,7 +170,7 @@ mod test {
 
     use crate::graph::inmem::FastGraph;
     use crate::ns::{rdf, Namespace};
-    use sophia_term::literal::AsLiteral;
+    use sophia_term::literal::convert::AsLiteral;
     use sophia_term::RcTerm;
 
     #[test]
@@ -181,7 +181,7 @@ mod test {
         let s_event = schema.get("Event").unwrap();
         let x_alice = RcTerm::new_iri("http://example.org/alice").unwrap();
 
-        let tq: [RcTerm; 3] = [x_alice.clone(), rdf::type_.map_into(), s_event.map_into()];
+        let tq: [RcTerm; 3] = [x_alice.clone(), rdf::type_.copied(), s_event.copied()];
 
         let results: Result<Vec<_>, _> = bindings_for_triple(&g, &tq, BindingMap::new()).collect();
         let results = results.unwrap();
@@ -196,7 +196,7 @@ mod test {
         let s_person = schema.get("Person").unwrap();
         let x_alice = RcTerm::new_iri("http://example.org/alice").unwrap();
 
-        let tq: [RcTerm; 3] = [x_alice.clone(), rdf::type_.map_into(), s_person.map_into()];
+        let tq: [RcTerm; 3] = [x_alice.clone(), rdf::type_.copied(), s_person.copied()];
 
         let results: Result<Vec<BindingMap>, _> =
             bindings_for_triple(&g, &tq, BindingMap::new()).collect();
@@ -216,7 +216,7 @@ mod test {
 
         let v1 = RcTerm::new_variable("v1").unwrap();
 
-        let tq: [RcTerm; 3] = [v1.clone(), rdf::type_.map_into(), s_event.map_into()];
+        let tq: [RcTerm; 3] = [v1.clone(), rdf::type_.copied(), s_event.copied()];
 
         let results: Result<Vec<BindingMap>, _> =
             bindings_for_triple(&g, &tq, BindingMap::new()).collect();
@@ -233,7 +233,7 @@ mod test {
 
         let v1 = RcTerm::new_variable("v1").unwrap();
 
-        let tq: [RcTerm; 3] = [v1.clone(), rdf::type_.map_into(), s_person.map_into()];
+        let tq: [RcTerm; 3] = [v1.clone(), rdf::type_.copied(), s_person.copied()];
 
         let results: Result<Vec<BindingMap>, _> =
             bindings_for_triple(&g, &tq, BindingMap::new()).collect();
@@ -263,7 +263,7 @@ mod test {
         let v1 = RcTerm::new_variable("v1").unwrap();
         let v2 = RcTerm::new_variable("v2").unwrap();
 
-        let tq: [RcTerm; 3] = [v1.clone(), s_name.map_into(), v2.clone()];
+        let tq: [RcTerm; 3] = [v1.clone(), s_name.copied(), v2.clone()];
 
         let results: Result<Vec<BindingMap>, _> =
             bindings_for_triple(&g, &tq, BindingMap::new()).collect();
@@ -304,8 +304,8 @@ mod test {
         let v2 = RcTerm::new_variable("v2").unwrap();
 
         let mut q = Query::Triples(vec![
-            [v1.clone(), s_name.map_into(), v2.clone()],
-            [v1.clone(), rdf::type_.map_into(), s_person.map_into()],
+            [v1.clone(), s_name.copied(), v2.clone()],
+            [v1.clone(), rdf::type_.copied(), s_person.copied()],
         ]);
 
         let results: Result<Vec<BindingMap>, _> = q.process(&g).collect();
@@ -347,7 +347,7 @@ mod test {
         let x_alice_n_bob = example.get("alice_n_bob").unwrap();
 
         let mut g = FastGraph::new();
-        let lit = |txt| AsLiteral::<&str>::as_literal(&txt);
+        let lit = |txt| AsLiteral::as_literal(&txt);
         g.insert(&x_alice, &rdf::type_, &s_person).unwrap();
         g.insert(&x_alice, &s_name, &lit("Alice")).unwrap();
         g.insert(&x_bob, &rdf::type_, &s_person).unwrap();

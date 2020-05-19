@@ -208,7 +208,7 @@ pub(crate) mod test {
         let g = vec![
             [
                 me,
-                rdf::type_,
+                rdf::type_.into(),
                 StaticTerm::new_iri("http://schema.org/Person").unwrap(),
             ],
             [

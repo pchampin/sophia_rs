@@ -40,24 +40,24 @@ pub fn no_triple() -> impl TripleSource {
 
 pub fn some_triples() -> impl TripleSource {
     vec![
-        [*C1, rdf::type_, rdfs::Class],
-        [*C2, rdf::type_, rdfs::Class],
-        [*C2, rdf::type_, rdfs::Resource],
-        [*C2, rdfs::subClassOf, *C1],
-        [*C2, rdfs::subClassOf, rdfs::Resource],
+        [*C1, rdf::type_.into(), rdfs::Class.into()],
+        [*C2, rdf::type_.into(), rdfs::Class.into()],
+        [*C2, rdf::type_.into(), rdfs::Resource.into()],
+        [*C2, rdfs::subClassOf.into(), *C1],
+        [*C2, rdfs::subClassOf.into(), rdfs::Resource.into()],
         //
-        [*P1, rdf::type_, rdf::Property],
-        [*P1, rdfs::domain, *C1],
-        [*P1, rdfs::range, *C2],
+        [*P1, rdf::type_.into(), rdf::Property.into()],
+        [*P1, rdfs::domain.into(), *C1],
+        [*P1, rdfs::range.into(), *C2],
         //
-        [*P2, rdf::type_, rdf::Property],
-        [*P2, rdfs::domain, *C2],
-        [*P2, rdfs::range, *C2],
+        [*P2, rdf::type_.into(), rdf::Property.into()],
+        [*P2, rdfs::domain.into(), *C2],
+        [*P2, rdfs::range.into(), *C2],
         //
-        [*I1A, rdf::type_, *C1],
-        [*I1B, rdf::type_, *C1],
-        [*I2A, rdf::type_, *C2],
-        [*I2B, rdf::type_, *C2],
+        [*I1A, rdf::type_.into(), *C1],
+        [*I1B, rdf::type_.into(), *C1],
+        [*I2A, rdf::type_.into(), *C2],
+        [*I2B, rdf::type_.into(), *C2],
         [*I1A, *P1, *I2A],
         [*I1B, *P1, *I2B],
         [*I2A, *P2, *I2B],
@@ -68,11 +68,11 @@ pub fn some_triples() -> impl TripleSource {
 
 pub fn strict_node_types_triples() -> impl TripleSource {
     vec![
-        [rdf::type_, rdf::type_, rdf::Property],
-        [*B1, rdf::type_, *L1],
-        [*B2, rdf::type_, *B1],
-        [*B2, rdf::type_, *L2],
-        [*B2, rdf::type_, *L2E],
+        [rdf::type_.into(), rdf::type_.into(), rdf::Property.into()],
+        [*B1, rdf::type_.into(), *L1],
+        [*B2, rdf::type_.into(), *B1],
+        [*B2, rdf::type_.into(), *L2],
+        [*B2, rdf::type_.into(), *L2E],
     ]
     .into_iter()
     .as_triple_source()
@@ -80,7 +80,7 @@ pub fn strict_node_types_triples() -> impl TripleSource {
 
 pub fn generalized_node_types_triples() -> impl TripleSource {
     vec![
-        [rdf::type_, rdf::type_, rdf::Property],
+        [rdf::type_.into(), rdf::type_.into(), rdf::Property.into()],
         [*B1, *B2, *B1],
         [*L2, *L1, *L1],
         [*V1, *V2, *V3],
@@ -451,7 +451,7 @@ macro_rules! test_graph_impl {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
                 let p_matcher = [&rdf::type_, &rdfs::domain];
-                let o_matcher = [&*C2, &rdfs::Class];
+                let o_matcher = [&*C2, &rdfs::Class.into()];
                 let v: Vec<_> = g
                     .triples_matching(&ANY, &p_matcher, &o_matcher)
                     .map(as_box_t)
@@ -494,10 +494,10 @@ macro_rules! test_graph_impl {
 
                 let rpredicates: std::collections::HashSet<_> =
                     predicates.iter().map(|t| t.as_ref_str()).collect();
-                assert!(rpredicates.contains(&rdf::type_));
-                assert!(rpredicates.contains(&rdfs::subClassOf));
-                assert!(rpredicates.contains(&rdfs::domain));
-                assert!(rpredicates.contains(&rdfs::range));
+                assert!(rpredicates.contains(&rdf::type_.into()));
+                assert!(rpredicates.contains(&rdfs::subClassOf.into()));
+                assert!(rpredicates.contains(&rdfs::domain.into()));
+                assert!(rpredicates.contains(&rdfs::range.into()));
                 assert!(rpredicates.contains(&P1));
                 assert!(rpredicates.contains(&P2));
                 Ok(())
@@ -512,9 +512,9 @@ macro_rules! test_graph_impl {
 
                 let robjects: std::collections::HashSet<_> =
                     objects.iter().map(|t| t.as_ref_str()).collect();
-                assert!(robjects.contains(&rdf::Property));
-                assert!(robjects.contains(&rdfs::Class));
-                assert!(robjects.contains(&rdfs::Resource));
+                assert!(robjects.contains(&rdf::Property.into()));
+                assert!(robjects.contains(&rdfs::Class.into()));
+                assert!(robjects.contains(&rdfs::Resource.into()));
                 assert!(robjects.contains(&C1));
                 assert!(robjects.contains(&C2));
                 assert!(robjects.contains(&I2A));
@@ -535,8 +535,8 @@ macro_rules! test_graph_impl {
 
                 let riris: std::collections::HashSet<_> =
                     iris.iter().map(|t| t.as_ref_str()).collect();
-                assert!(riris.contains(&rdf::Property));
-                assert!(riris.contains(&rdf::type_));
+                assert!(riris.contains(&rdf::Property.into()));
+                assert!(riris.contains(&rdf::type_.into()));
                 Ok(())
             }
 

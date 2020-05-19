@@ -200,7 +200,7 @@ mod test {
     use crate::ns::*;
     use crate::quad::TupleQuad;
 
-    static D: [TupleQuad<StaticTerm>; 3] = [
+    static D: [TupleQuad<SimpleIri>; 3] = [
         ([rdf::type_, rdf::type_, rdf::Property], None),
         ([rdf::Property, rdf::type_, rdfs::Class], None),
         ([rdfs::Class, rdf::type_, rdfs::Class], Some(rdfs::Resource)),

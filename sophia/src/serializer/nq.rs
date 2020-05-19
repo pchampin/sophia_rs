@@ -129,7 +129,7 @@ pub(crate) mod test {
             (
                 [
                     me,
-                    rdf::type_,
+                    rdf::type_.into(),
                     StaticTerm::new_iri("http://schema.org/Person").unwrap(),
                 ],
                 None,

@@ -28,24 +28,24 @@ pub fn no_quad() -> impl QuadSource {
 
 pub fn some_quads() -> impl QuadSource {
     let v = vec![
-        ([*C1, rdf::type_, rdfs::Class], *DG),
-        ([*C1, rdf::type_, rdfs::Class], *GN1),
-        ([*C2, rdf::type_, rdfs::Class], *DG),
-        ([*C2, rdfs::subClassOf, *C1], *GN1),
-        ([*C2, rdfs::subClassOf, rdfs::Resource], *GN1),
+        ([*C1, rdf::type_.into(), rdfs::Class.into()], *DG),
+        ([*C1, rdf::type_.into(), rdfs::Class.into()], *GN1),
+        ([*C2, rdf::type_.into(), rdfs::Class.into()], *DG),
+        ([*C2, rdfs::subClassOf.into(), *C1], *GN1),
+        ([*C2, rdfs::subClassOf.into(), rdfs::Resource.into()], *GN1),
         //
-        ([*P1, rdf::type_, rdf::Property], *DG),
-        ([*P1, rdfs::domain, *C1], *GN1),
-        ([*P1, rdfs::range, *C2], *GN1),
+        ([*P1, rdf::type_.into(), rdf::Property.into()], *DG),
+        ([*P1, rdfs::domain.into(), *C1], *GN1),
+        ([*P1, rdfs::range.into(), *C2], *GN1),
         //
-        ([*P2, rdf::type_, rdf::Property], *DG),
-        ([*P2, rdfs::domain, *C2], *GN1),
-        ([*P2, rdfs::range, *C2], *GN1),
+        ([*P2, rdf::type_.into(), rdf::Property.into()], *DG),
+        ([*P2, rdfs::domain.into(), *C2], *GN1),
+        ([*P2, rdfs::range.into(), *C2], *GN1),
         //
-        ([*I1A, rdf::type_, *C1], *GN2),
-        ([*I1B, rdf::type_, *C1], *GN2),
-        ([*I2A, rdf::type_, *C2], *GN2),
-        ([*I2B, rdf::type_, *C2], *GN2),
+        ([*I1A, rdf::type_.into(), *C1], *GN2),
+        ([*I1B, rdf::type_.into(), *C1], *GN2),
+        ([*I2A, rdf::type_.into(), *C2], *GN2),
+        ([*I2B, rdf::type_.into(), *C2], *GN2),
         ([*I1A, *P1, *I2A], *GN2),
         ([*I1B, *P1, *I2B], *GN2),
         ([*I2A, *P2, *I2B], *GN2),
@@ -56,11 +56,14 @@ pub fn some_quads() -> impl QuadSource {
 
 pub fn strict_node_types_quads() -> impl QuadSource {
     vec![
-        ([rdf::type_, rdf::type_, rdf::Property], Some(rdf::type_)),
-        ([*B1, rdf::type_, *L1], Some(*B2)),
-        ([*B2, rdf::type_, *B1], None),
-        ([*B2, rdf::type_, *L2], None),
-        ([*B2, rdf::type_, *L2E], None),
+        (
+            [rdf::type_.into(), rdf::type_.into(), rdf::Property.into()],
+            Some(rdf::type_.into()),
+        ),
+        ([*B1, rdf::type_.into(), *L1], Some(*B2)),
+        ([*B2, rdf::type_.into(), *B1], None),
+        ([*B2, rdf::type_.into(), *L2], None),
+        ([*B2, rdf::type_.into(), *L2E], None),
     ]
     .into_iter()
     .as_quad_source()
@@ -68,7 +71,10 @@ pub fn strict_node_types_quads() -> impl QuadSource {
 
 pub fn generalized_node_types_quads() -> impl QuadSource {
     vec![
-        ([rdf::type_, rdf::type_, rdf::Property], Some(rdf::type_)),
+        (
+            [rdf::type_.into(), rdf::type_.into(), rdf::Property.into()],
+            Some(rdf::type_.into()),
+        ),
         ([*B1, *B2, *B1], Some(*B2)),
         ([*L2, *L1, *L1], Some(*L2)),
         ([*V1, *V2, *V3], Some(*V3)),
@@ -738,10 +744,10 @@ macro_rules! test_dataset_impl {
 
                 let rpredicates: std::collections::HashSet<_> =
                     predicates.iter().map(|t| t.as_ref_str()).collect();
-                assert!(rpredicates.contains(&rdf::type_));
-                assert!(rpredicates.contains(&rdfs::subClassOf));
-                assert!(rpredicates.contains(&rdfs::domain));
-                assert!(rpredicates.contains(&rdfs::range));
+                assert!(rpredicates.contains(&rdf::type_.into()));
+                assert!(rpredicates.contains(&rdfs::subClassOf.into()));
+                assert!(rpredicates.contains(&rdfs::domain.into()));
+                assert!(rpredicates.contains(&rdfs::range.into()));
                 assert!(rpredicates.contains(&P1));
                 assert!(rpredicates.contains(&P2));
                 Ok(())
@@ -756,9 +762,9 @@ macro_rules! test_dataset_impl {
 
                 let robjects: std::collections::HashSet<_> =
                     objects.iter().map(|t| t.as_ref_str()).collect();
-                assert!(robjects.contains(&rdf::Property));
-                assert!(robjects.contains(&rdfs::Class));
-                assert!(robjects.contains(&rdfs::Resource));
+                assert!(robjects.contains(&rdf::Property.into()));
+                assert!(robjects.contains(&rdfs::Class.into()));
+                assert!(robjects.contains(&rdfs::Resource.into()));
                 assert!(robjects.contains(&C1));
                 assert!(robjects.contains(&C2));
                 assert!(robjects.contains(&I2A));
@@ -793,8 +799,8 @@ macro_rules! test_dataset_impl {
 
                 let riris: std::collections::HashSet<_> =
                     iris.iter().map(|t| t.as_ref_str()).collect();
-                assert!(riris.contains(&rdf::Property));
-                assert!(riris.contains(&rdf::type_));
+                assert!(riris.contains(&rdf::Property.into()));
+                assert!(riris.contains(&rdf::type_.into()));
                 Ok(())
             }
 

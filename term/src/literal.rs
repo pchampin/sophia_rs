@@ -3,6 +3,7 @@
 //!
 
 use crate::iri::Normalization;
+use crate::literal::convert::{DataType, NativeLiteral};
 use crate::ns::{rdf, xsd};
 use crate::*;
 use mownstr::MownStr;
@@ -12,8 +13,7 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::io;
 
-mod _convert;
-pub use self::_convert::*;
+pub mod convert;
 
 /// Internal distinction of literals.
 ///
@@ -270,7 +270,7 @@ where
     /// _Note:_ A language-tagged literal has always the type `rdf:langString`.
     pub fn dt(&self) -> Iri<&str> {
         match &self.kind {
-            Lang(_) => rdf::iri::langString,
+            Lang(_) => rdf::langString.into(),
             Dt(dt) => dt.as_ref_str(),
         }
     }
@@ -320,6 +320,17 @@ where
     }
 }
 
+impl<T, U, TD> From<NativeLiteral<T, U>> for Literal<TD>
+where
+    T: DataType + ?Sized,
+    U: AsRef<str>,
+    TD: TermData + From<U> + From<&'static str>,
+{
+    fn from(other: NativeLiteral<T, U>) -> Literal<TD> {
+        Literal::new_dt(other.lexval, Iri::<&'static str>::from(T::iri()))
+    }
+}
+
 impl<TD> TryFrom<Term<TD>> for Literal<TD>
 where
     TD: TermData,
@@ -329,10 +340,7 @@ where
     fn try_from(term: Term<TD>) -> Result<Self, Self::Error> {
         match term {
             Term::Literal(lit) => Ok(lit),
-            _ => Err(TermError::UnexpectedKindOfTerm {
-                term: term.to_string(),
-                expect: "literal".to_owned(),
-            }),
+            _ => Err(TermError::UnsupportedKind(term.to_string())),
         }
     }
 }
@@ -347,10 +355,7 @@ where
     fn try_from(term: &'a Term<U>) -> Result<Self, Self::Error> {
         match term {
             Term::Literal(lit) => Ok(lit.clone_into()),
-            _ => Err(TermError::UnexpectedKindOfTerm {
-                term: term.to_string(),
-                expect: "literal".to_owned(),
-            }),
+            _ => Err(TermError::UnsupportedKind(term.to_string())),
         }
     }
 }
@@ -372,10 +377,7 @@ where
                 Some(tag) => Self::new_lang_unchecked(txt, tag),
             })
         } else {
-            Err(TermError::UnexpectedKindOfTerm {
-                term: term_to_string(term),
-                expect: "literal".to_owned(),
-            })
+            Err(TermError::UnsupportedKind(term_to_string(term)))
         }
     }
 }
@@ -497,7 +499,8 @@ mod test {
 
     #[test]
     fn convert_to_mown_does_not_allocate() {
-        let lit1 = Literal::<Box<str>>::new_dt("hello", xsd::iri::string.clone());
+        let dt = Iri::<&'static str>::from(xsd::string);
+        let lit1 = Literal::<Box<str>>::new_dt("hello", dt);
         let lit2: Literal<MownStr> = lit1.clone_into();
         let Literal { txt, .. } = lit2;
         assert!(txt.is_borrowed(), "txt has been allocated");
@@ -508,7 +511,7 @@ mod test {
         use sophia_iri::resolve::{IriParsed, Resolve};
         let dt1 = Iri::<Box<str>>::new("").unwrap();
         let lit1 = Literal::<Box<str>>::new_dt("hello", dt1);
-        let xsd_string = &xsd::iri::string.value();
+        let xsd_string = &xsd::string.value();
         let base = IriParsed::new(&xsd_string).unwrap();
         let lit2: Literal<MownStr> = base.resolve(&lit1);
         let Literal { txt, .. } = lit2;

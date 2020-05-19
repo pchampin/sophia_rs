@@ -7,7 +7,7 @@ use std::fmt;
 use std::hash;
 
 /// See [module documentation](./index.html)
-#[derive(Clone, Copy, Eq, Ord)]
+#[derive(Clone, Copy, Debug, Eq, Ord)]
 pub struct SimpleIri<'a> {
     ns: &'a str,
     suffix: Option<&'a str>,
@@ -28,12 +28,7 @@ impl<'a> SimpleIri<'a> {
     /// # Pre-condition
     /// It is the user's responsibility to check that `ns` and `suffix`
     /// concatenate to a valid IRI.
-    ///
-    /// Note that this is nonetheless checked in `debug` mode.
-    pub fn new_unchecked(ns: &'a str, suffix: Option<&'a str>) -> Self {
-        debug_assert!(suffix.map(|txt| txt.len()).unwrap_or(1) > 0);
-        debug_assert!(is_valid_suffixed_iri_ref(ns, suffix));
-
+    pub const fn new_unchecked(ns: &'a str, suffix: Option<&'a str>) -> Self {
         Self { ns, suffix }
     }
 

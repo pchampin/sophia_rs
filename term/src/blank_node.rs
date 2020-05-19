@@ -263,10 +263,7 @@ where
     fn try_from(term: Term<TD>) -> Result<Self, Self::Error> {
         match term {
             Term::BNode(bn) => Ok(bn),
-            _ => Err(TermError::UnexpectedKindOfTerm {
-                term: term.to_string(),
-                expect: "blank node".to_owned(),
-            }),
+            _ => Err(TermError::UnsupportedKind(term.to_string())),
         }
     }
 }
@@ -281,10 +278,7 @@ where
     fn try_from(term: &'a Term<U>) -> Result<Self, Self::Error> {
         match term {
             Term::BNode(bn) => Ok(bn.clone_into()),
-            _ => Err(TermError::UnexpectedKindOfTerm {
-                term: term.to_string(),
-                expect: "blank node".to_owned(),
-            }),
+            _ => Err(TermError::UnsupportedKind(term.to_string())),
         }
     }
 }
@@ -302,10 +296,7 @@ where
         if term.kind() == TermKind::BlankNode {
             Ok(Self::new_unchecked(term.value_raw().0))
         } else {
-            Err(TermError::UnexpectedKindOfTerm {
-                term: term_to_string(term),
-                expect: "blank node".to_owned(),
-            })
+            Err(TermError::UnsupportedKind(term_to_string(term)))
         }
     }
 }

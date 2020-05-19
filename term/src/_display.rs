@@ -53,7 +53,6 @@ where
 
 #[cfg(test)]
 pub(crate) mod test {
-    use crate::literal::AsLiteral;
     use crate::ns::*;
     use crate::*;
     use lazy_static::lazy_static;
@@ -83,7 +82,7 @@ pub(crate) mod test {
                 r#""chat"@fr-FR"#,
             ),
             (
-                "chat".as_term(),
+                StaticTerm::from("chat"),
                 r#""chat""#,
             ),
             (
@@ -91,12 +90,12 @@ pub(crate) mod test {
                 r#""42"^^<http://www.w3.org/2001/XMLSchema#integer>"#,
             ),
             (
-                " \n \r \\ \" hello world".as_term(),
+                StaticTerm::from(" \n \r \\ \" hello world"),
                 r#"" \n \r \\ \" hello world""#,
             ),
             (
                 // Literal with non-ascii characters
-                "é \u{10000}".as_term(),
+                StaticTerm::from("é \u{10000}"),
                 // in canonical form, non-ascii characters are NOT escaped in literals
                 "\"é \u{10000}\"",
             )

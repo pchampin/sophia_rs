@@ -87,11 +87,11 @@ pub trait TermFactory {
     }
 
     /// Clone a term, using `TermData` from this factory.
-    fn clone_term<T>(&mut self, other: &Term<T>) -> FTerm<Self>
+    fn clone_term<T>(&mut self, other: &T) -> FTerm<Self>
     where
-        T: TermData,
+        T: TTerm + ?Sized,
     {
-        other.clone_map(|txt| self.get_term_data(txt.as_ref()))
+        RefTerm::from(other).clone_map(|txt| self.get_term_data(txt.as_ref()))
     }
 
     /// Release memory that the factory no longer uses.

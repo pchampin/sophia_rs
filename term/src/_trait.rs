@@ -141,16 +141,16 @@ pub enum TermKind {
 }
 use TermKind::*;
 
-/// A term type that can copy any other term.
-pub trait CopyTerm: TTerm + Sized {
+/// A type that can copy any term.
+pub trait CopyTerm: Sized {
     /// Copy `term` into an instance of this type.
     fn copy<T>(term: &T) -> Self
     where
         T: TTerm + ?Sized;
 }
 
-/// A term type that can copy some other terms.
-pub trait TryCopyTerm: TTerm + Sized {
+/// A type that can copy some terms.
+pub trait TryCopyTerm: Sized {
     /// The error type produced when failing to copy a given term
     type Error: 'static + Error;
     /// Try to copy `term` into an instance of this type.
@@ -159,8 +159,6 @@ pub trait TryCopyTerm: TTerm + Sized {
         T: TTerm + ?Sized;
 }
 
-/// A term type that can be copied into other types.
-///
 /// This trait is to [`CopyTerm`] and [`TryCopyTerm`]
 /// what `Into` is to `From`.
 /// It is automatically implemented by any implementation of [`TTerm`].
