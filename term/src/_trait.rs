@@ -159,6 +159,34 @@ pub trait TryCopyTerm: TTerm + Sized {
         T: TTerm + ?Sized;
 }
 
+/// A term type that can be copied into other types.
+///
+/// This trait is to [`CopyTerm`] and [`TryCopyTerm`]
+/// what `Into` is to `From`.
+/// It is automatically implemented by any implementation of [`TTerm`].
+///
+/// [`CopyTerm`]: ./trait.CopyTerm.html
+/// [`TryCopyTerm`]: ./trait.TryCopyTerm.html
+/// [`TTerm`]: ./trait.TTerm.html
+pub trait CopiableTerm {
+    /// Copy this IRI into another type.
+    fn copied<T: CopyTerm>(&self) -> T;
+    /// Try to copy this IRI into another type.
+    fn try_copied<T: TryCopyTerm>(&self) -> Result<T, T::Error>;
+}
+
+impl<T> CopiableTerm for T
+where
+    T: TTerm + ?Sized,
+{
+    fn copied<U: CopyTerm>(&self) -> U {
+        U::copy(self)
+    }
+    fn try_copied<U: TryCopyTerm>(&self) -> Result<U, U::Error> {
+        U::try_copy(self)
+    }
+}
+
 fn raw_to_mownstr<'a>(raw: (&'a str, Option<&'a str>)) -> MownStr<'a> {
     match raw {
         (val, None) => MownStr::from(val),
