@@ -11,7 +11,7 @@ use super::*;
 use crate::quad::stream::{AsQuadSource, QuadSource, StreamError, StreamResult};
 use crate::quad::streaming_mode::*;
 use crate::quad::*;
-use sophia_term::*;
+use sophia_term::{same_graph_name, term_eq, CopiableTerm, CopyTerm, TTerm};
 
 impl<Q> Dataset for [Q]
 where
@@ -39,17 +39,16 @@ where
     }
 }
 
-impl<TD> CollectibleDataset for Vec<([Term<TD>; 3], Option<Term<TD>>)>
+impl<T> CollectibleDataset for Vec<([T; 3], Option<T>)>
 where
-    TD: TermData + 'static,
-    TD: for<'x> From<&'x str>,
+    T: TTerm + CopyTerm + 'static,
 {
     fn from_quad_source<QS: QuadSource>(quads: QS) -> StreamResult<Self, QS::Error, Infallible> {
         quads
             .map_quads(|q| {
                 (
-                    [Term::copy(q.s()), Term::copy(q.p()), Term::copy(q.o())],
-                    q.g().map(Term::copy),
+                    [q.s().copied(), q.p().copied(), q.o().copied()],
+                    q.g().map(T::copy),
                 )
             })
             .into_iter()
@@ -58,10 +57,9 @@ where
     }
 }
 
-impl<TD> MutableDataset for Vec<([Term<TD>; 3], Option<Term<TD>>)>
+impl<T> MutableDataset for Vec<([T; 3], Option<T>)>
 where
-    TD: TermData + 'static,
-    TD: for<'x> From<&'x str>,
+    T: TTerm + CopyTerm,
 {
     type MutationError = Infallible;
 
@@ -78,10 +76,10 @@ where
         TO: TTerm + ?Sized,
         TG: TTerm + ?Sized,
     {
-        let s = Term::copy(s);
-        let p = Term::copy(p);
-        let o = Term::copy(o);
-        let g = g.map(|n| Term::copy(n));
+        let s = s.copied();
+        let p = p.copied();
+        let o = o.copied();
+        let g = g.map(T::copy);
         self.push(([s, p, o], g));
         Ok(true)
     }
@@ -98,10 +96,9 @@ where
         TO: TTerm + ?Sized,
         TG: TTerm + ?Sized,
     {
-        let item = self
-            .quads()
-            .oks()
-            .position(|q| q.s() == s && q.p() == p && q.o() == o && same_graph_name(g, q.g()));
+        let item = self.quads().oks().position(|q| {
+            term_eq(q.s(), s) && term_eq(q.p(), p) && term_eq(q.o(), o) && same_graph_name(g, q.g())
+        });
         if let Some(i) = item {
             self.swap_remove(i);
             Ok(true)
@@ -124,18 +121,17 @@ where
     }
 }
 
-impl<TD, S> CollectibleDataset for HashSet<([Term<TD>; 3], Option<Term<TD>>), S>
+impl<T, S> CollectibleDataset for HashSet<([T; 3], Option<T>), S>
 where
-    TD: TermData + 'static,
-    TD: for<'x> From<&'x str>,
+    T: TTerm + CopyTerm + Eq + Hash + 'static,
     S: BuildHasher + Default,
 {
     fn from_quad_source<QS: QuadSource>(quads: QS) -> StreamResult<Self, QS::Error, Infallible> {
         quads
             .map_quads(|q| {
                 (
-                    [Term::copy(q.s()), Term::copy(q.p()), Term::copy(q.o())],
-                    q.g().map(Term::copy),
+                    [q.s().copied(), q.p().copied(), q.o().copied()],
+                    q.g().map(T::copy),
                 )
             })
             .into_iter()
@@ -144,10 +140,9 @@ where
     }
 }
 
-impl<TD, S> MutableDataset for HashSet<([Term<TD>; 3], Option<Term<TD>>), S>
+impl<T, S> MutableDataset for HashSet<([T; 3], Option<T>), S>
 where
-    TD: TermData + 'static,
-    TD: for<'x> From<&'x str>,
+    T: TTerm + CopyTerm + Eq + Hash,
     S: BuildHasher,
 {
     type MutationError = Infallible;
@@ -165,10 +160,10 @@ where
         TO: TTerm + ?Sized,
         TG: TTerm + ?Sized,
     {
-        let s = Term::copy(s);
-        let p = Term::copy(p);
-        let o = Term::copy(o);
-        let g = g.map(|n| Term::copy(n));
+        let s = s.copied();
+        let p = p.copied();
+        let o = o.copied();
+        let g = g.map(T::copy);
         Ok(HashSet::insert(self, ([s, p, o], g)))
     }
     fn remove<TS, TP, TO, TG>(
@@ -184,10 +179,10 @@ where
         TO: TTerm + ?Sized,
         TG: TTerm + ?Sized,
     {
-        let s = Term::copy(s);
-        let p = Term::copy(p);
-        let o = Term::copy(o);
-        let g = g.map(|n| Term::copy(n));
+        let s = s.copied();
+        let p = p.copied();
+        let o = o.copied();
+        let g = g.map(T::copy);
         Ok(HashSet::remove(self, &([s, p, o], g)))
     }
 }
@@ -199,6 +194,7 @@ mod test {
     use super::*;
     use crate::ns::*;
     use crate::quad::TupleQuad;
+    use sophia_term::SimpleIri;
 
     static D: [TupleQuad<SimpleIri>; 3] = [
         ([rdf::type_, rdf::type_, rdf::Property], None),
@@ -218,7 +214,7 @@ mod test {
     }
 
     #[cfg(feature = "all_tests")]
-    type VecAsDataset = Vec<([BoxTerm; 3], Option<BoxTerm>)>;
+    type VecAsDataset = Vec<([sophia_term::BoxTerm; 3], Option<sophia_term::BoxTerm>)>;
 
     #[cfg(feature = "all_tests")]
     test_dataset_impl!(vec, VecAsDataset, false);
@@ -233,7 +229,7 @@ mod test {
     }
 
     #[cfg(feature = "all_tests")]
-    type HashSetAsDataset = HashSet<([BoxTerm; 3], Option<BoxTerm>)>;
+    type HashSetAsDataset = HashSet<([sophia_term::BoxTerm; 3], Option<sophia_term::BoxTerm>)>;
 
     #[cfg(feature = "all_tests")]
     test_dataset_impl!(hashset, HashSetAsDataset);

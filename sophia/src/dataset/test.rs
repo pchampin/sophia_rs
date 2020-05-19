@@ -779,7 +779,7 @@ macro_rules! test_dataset_impl {
                 let graph_names = d.graph_names().unwrap();
                 assert_eq!(graph_names.len(), 2);
 
-                let rgraph_names: std::collections::HashSet<_> =
+                let rgraph_names: std::collections::HashSet<sophia_term::RefTerm> =
                     graph_names.iter().map(|t| t.as_ref_str()).collect();
                 assert!(rgraph_names.contains(&G1));
                 assert!(rgraph_names.contains(&G2));

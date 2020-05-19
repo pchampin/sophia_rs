@@ -11,7 +11,7 @@ use super::*;
 use crate::triple::stream::{AsTripleSource, StreamError, StreamResult, TripleSource};
 use crate::triple::streaming_mode::*;
 use crate::triple::*;
-use sophia_term::*;
+use sophia_term::{term_eq, CopiableTerm, CopyTerm, TTerm};
 
 impl<T> Graph for [T]
 where
@@ -47,26 +47,24 @@ where
     }
 }
 
-impl<TD> CollectibleGraph for Vec<[Term<TD>; 3]>
+impl<T> CollectibleGraph for Vec<[T; 3]>
 where
-    TD: TermData + 'static,
-    TD: for<'x> From<&'x str>,
+    T: TTerm + CopyTerm + 'static,
 {
     fn from_triple_source<TS: TripleSource>(
         triples: TS,
     ) -> StreamResult<Self, TS::Error, Infallible> {
         triples
-            .map_triples(|t| [Term::copy(t.s()), Term::copy(t.p()), Term::copy(t.o())])
+            .map_triples(|t| [t.s().copied(), t.p().copied(), t.o().copied()])
             .into_iter()
             .collect::<Result<Self, TS::Error>>()
             .map_err(StreamError::SourceError)
     }
 }
 
-impl<TD> MutableGraph for Vec<[Term<TD>; 3]>
+impl<T> MutableGraph for Vec<[T; 3]>
 where
-    TD: TermData + 'static,
-    TD: for<'x> From<&'x str>,
+    T: TTerm + CopyTerm,
 {
     type MutationError = Infallible;
 
@@ -76,9 +74,9 @@ where
         TP: TTerm + ?Sized,
         TO: TTerm + ?Sized,
     {
-        let s = Term::copy(s);
-        let p = Term::copy(p);
-        let o = Term::copy(o);
+        let s = s.copied();
+        let p = p.copied();
+        let o = o.copied();
         self.push([s, p, o]);
         Ok(true)
     }
@@ -115,27 +113,25 @@ where
     }
 }
 
-impl<TD, BH> CollectibleGraph for HashSet<[Term<TD>; 3], BH>
+impl<T, BH> CollectibleGraph for HashSet<[T; 3], BH>
 where
-    TD: TermData + 'static,
-    TD: for<'x> From<&'x str>,
+    T: TTerm + CopyTerm + Eq + Hash + 'static,
     BH: BuildHasher + Default,
 {
     fn from_triple_source<TS: TripleSource>(
         triples: TS,
     ) -> StreamResult<Self, TS::Error, Infallible> {
         triples
-            .map_triples(|t| [Term::copy(t.s()), Term::copy(t.p()), Term::copy(t.o())])
+            .map_triples(|t| [t.s().copied(), t.p().copied(), t.o().copied()])
             .into_iter()
             .collect::<Result<Self, TS::Error>>()
             .map_err(StreamError::SourceError)
     }
 }
 
-impl<TD, BH> MutableGraph for HashSet<[Term<TD>; 3], BH>
+impl<T, BH> MutableGraph for HashSet<[T; 3], BH>
 where
-    TD: TermData + 'static,
-    TD: for<'x> From<&'x str>,
+    T: TTerm + CopyTerm + Eq + Hash,
     BH: BuildHasher,
 {
     type MutationError = Infallible;
@@ -146,9 +142,9 @@ where
         TP: TTerm + ?Sized,
         TO: TTerm + ?Sized,
     {
-        let s = Term::copy(s);
-        let p = Term::copy(p);
-        let o = Term::copy(o);
+        let s = s.copied();
+        let p = p.copied();
+        let o = o.copied();
         Ok(HashSet::insert(self, [s, p, o]))
     }
     fn remove<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MGResult<Self, bool>
@@ -157,9 +153,9 @@ where
         TP: TTerm + ?Sized,
         TO: TTerm + ?Sized,
     {
-        let s = Term::copy(s);
-        let p = Term::copy(p);
-        let o = Term::copy(o);
+        let s = s.copied();
+        let p = p.copied();
+        let o = o.copied();
         Ok(HashSet::remove(self, &[s, p, o]))
     }
 }
@@ -170,6 +166,7 @@ impl<'a, T, S: BuildHasher> SetGraph for HashSet<T, S> where T: Eq + Hash + Trip
 mod test {
     use super::*;
     use crate::ns::*;
+    use sophia_term::SimpleIri;
 
     static G: [[SimpleIri; 3]; 3] = [
         [rdf::type_, rdf::type_, rdf::Property],
