@@ -1,6 +1,7 @@
 // this module is transparently re-exported by its parent `adapter`
 
 use std::borrow::{Borrow, BorrowMut};
+use std::hash::Hash;
 use std::iter::empty;
 use std::marker::PhantomData;
 
@@ -9,7 +10,7 @@ use resiter::Map;
 use crate::dataset::*;
 use crate::graph::{Graph, MutableGraph, SetGraph};
 use crate::quad::streaming_mode::{FromTriple, StreamedQuad};
-use sophia_term::{Term, TermData};
+use sophia_api::term::TTerm;
 
 use super::GraphAsDatasetError;
 
@@ -44,9 +45,9 @@ where
         Box::new(self.0.borrow().triples().map_ok(StreamedQuad::from_triple))
     }
     #[inline]
-    fn quads_with_s<'s, T>(&'s self, s: &'s Term<T>) -> DQuadSource<'s, Self>
+    fn quads_with_s<'s, TS>(&'s self, s: &'s TS) -> DQuadSource<'s, Self>
     where
-        T: TermData,
+        TS: TTerm + ?Sized,
     {
         Box::new(
             self.0
@@ -56,9 +57,9 @@ where
         )
     }
     #[inline]
-    fn quads_with_p<'s, T>(&'s self, p: &'s Term<T>) -> DQuadSource<'s, Self>
+    fn quads_with_p<'s, TP>(&'s self, p: &'s TP) -> DQuadSource<'s, Self>
     where
-        T: TermData,
+        TP: TTerm + ?Sized,
     {
         Box::new(
             self.0
@@ -68,9 +69,9 @@ where
         )
     }
     #[inline]
-    fn quads_with_o<'s, T>(&'s self, o: &'s Term<T>) -> DQuadSource<'s, Self>
+    fn quads_with_o<'s, TO>(&'s self, o: &'s TO) -> DQuadSource<'s, Self>
     where
-        T: TermData,
+        TO: TTerm + ?Sized,
     {
         Box::new(
             self.0
@@ -80,9 +81,9 @@ where
         )
     }
     #[inline]
-    fn quads_with_g<'s, T>(&'s self, g: Option<&'s Term<T>>) -> DQuadSource<'s, Self>
+    fn quads_with_g<'s, TG>(&'s self, g: Option<&'s TG>) -> DQuadSource<'s, Self>
     where
-        T: TermData,
+        TG: TTerm + ?Sized,
     {
         if g.is_some() {
             return Box::new(empty());
@@ -90,10 +91,10 @@ where
         self.quads()
     }
     #[inline]
-    fn quads_with_sp<'s, T, U>(&'s self, s: &'s Term<T>, p: &'s Term<U>) -> DQuadSource<'s, Self>
+    fn quads_with_sp<'s, TS, TP>(&'s self, s: &'s TS, p: &'s TP) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
     {
         Box::new(
             self.0
@@ -103,10 +104,10 @@ where
         )
     }
     #[inline]
-    fn quads_with_so<'s, T, U>(&'s self, s: &'s Term<T>, o: &'s Term<U>) -> DQuadSource<'s, Self>
+    fn quads_with_so<'s, TS, TO>(&'s self, s: &'s TS, o: &'s TO) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
+        TS: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
         Box::new(
             self.0
@@ -116,14 +117,10 @@ where
         )
     }
     #[inline]
-    fn quads_with_sg<'s, T, U>(
-        &'s self,
-        s: &'s Term<T>,
-        g: Option<&'s Term<U>>,
-    ) -> DQuadSource<'s, Self>
+    fn quads_with_sg<'s, TS, TG>(&'s self, s: &'s TS, g: Option<&'s TG>) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
+        TS: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         if g.is_some() {
             return Box::new(empty());
@@ -131,10 +128,10 @@ where
         self.quads_with_s(s)
     }
     #[inline]
-    fn quads_with_po<'s, T, U>(&'s self, p: &'s Term<T>, o: &'s Term<U>) -> DQuadSource<'s, Self>
+    fn quads_with_po<'s, TP, TO>(&'s self, p: &'s TP, o: &'s TO) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
         Box::new(
             self.0
@@ -144,14 +141,10 @@ where
         )
     }
     #[inline]
-    fn quads_with_pg<'s, T, U>(
-        &'s self,
-        p: &'s Term<T>,
-        g: Option<&'s Term<U>>,
-    ) -> DQuadSource<'s, Self>
+    fn quads_with_pg<'s, TP, TG>(&'s self, p: &'s TP, g: Option<&'s TG>) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
+        TP: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         if g.is_some() {
             return Box::new(empty());
@@ -159,14 +152,10 @@ where
         self.quads_with_p(p)
     }
     #[inline]
-    fn quads_with_og<'s, T, U>(
-        &'s self,
-        o: &'s Term<T>,
-        g: Option<&'s Term<U>>,
-    ) -> DQuadSource<'s, Self>
+    fn quads_with_og<'s, TO, TG>(&'s self, o: &'s TO, g: Option<&'s TG>) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         if g.is_some() {
             return Box::new(empty());
@@ -174,16 +163,16 @@ where
         self.quads_with_o(o)
     }
     #[inline]
-    fn quads_with_spo<'s, T, U, V>(
+    fn quads_with_spo<'s, TS, TP, TO>(
         &'s self,
-        s: &'s Term<T>,
-        p: &'s Term<U>,
-        o: &'s Term<V>,
+        s: &'s TS,
+        p: &'s TP,
+        o: &'s TO,
     ) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
         Box::new(
             self.0
@@ -193,16 +182,16 @@ where
         )
     }
     #[inline]
-    fn quads_with_spg<'s, T, U, V>(
+    fn quads_with_spg<'s, TS, TP, TG>(
         &'s self,
-        s: &'s Term<T>,
-        p: &'s Term<U>,
-        g: Option<&'s Term<V>>,
+        s: &'s TS,
+        p: &'s TP,
+        g: Option<&'s TG>,
     ) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         if g.is_some() {
             return Box::new(empty());
@@ -210,16 +199,16 @@ where
         self.quads_with_sp(s, p)
     }
     #[inline]
-    fn quads_with_sog<'s, T, U, V>(
+    fn quads_with_sog<'s, TS, TO, TG>(
         &'s self,
-        s: &'s Term<T>,
-        o: &'s Term<U>,
-        g: Option<&'s Term<V>>,
+        s: &'s TS,
+        o: &'s TO,
+        g: Option<&'s TG>,
     ) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         if g.is_some() {
             return Box::new(empty());
@@ -227,16 +216,16 @@ where
         self.quads_with_so(s, o)
     }
     #[inline]
-    fn quads_with_pog<'s, T, U, V>(
+    fn quads_with_pog<'s, TP, TO, TG>(
         &'s self,
-        p: &'s Term<T>,
-        o: &'s Term<U>,
-        g: Option<&'s Term<V>>,
+        p: &'s TP,
+        o: &'s TO,
+        g: Option<&'s TG>,
     ) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         if g.is_some() {
             return Box::new(empty());
@@ -244,18 +233,18 @@ where
         self.quads_with_po(p, o)
     }
     #[inline]
-    fn quads_with_spog<'s, T, U, V, W>(
+    fn quads_with_spog<'s, TS, TP, TO, TG>(
         &'s self,
-        s: &'s Term<T>,
-        p: &'s Term<U>,
-        o: &'s Term<V>,
-        g: Option<&'s Term<W>>,
+        s: &'s TS,
+        p: &'s TP,
+        o: &'s TO,
+        g: Option<&'s TG>,
     ) -> DQuadSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
-        W: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         if g.is_some() {
             return Box::new(empty());
@@ -264,18 +253,18 @@ where
     }
 
     #[inline]
-    fn contains<T, U, V, W>(
-        &self,
-        s: &Term<T>,
-        p: &Term<U>,
-        o: &Term<V>,
-        g: Option<&Term<W>>,
+    fn contains<'s, TS, TP, TO, TG>(
+        &'s self,
+        s: &'s TS,
+        p: &'s TP,
+        o: &'s TO,
+        g: Option<&'s TG>,
     ) -> DResult<Self, bool>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
-        W: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         if g.is_some() {
             return Ok(false);
@@ -283,35 +272,59 @@ where
         self.0.borrow().contains(s, p, o)
     }
     #[inline]
-    fn subjects(&self) -> DResultTermSet<Self> {
+    fn subjects(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         self.0.borrow().subjects()
     }
     #[inline]
-    fn predicates(&self) -> DResultTermSet<Self> {
+    fn predicates(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         self.0.borrow().predicates()
     }
     #[inline]
-    fn objects(&self) -> DResultTermSet<Self> {
+    fn objects(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         self.0.borrow().objects()
     }
     #[inline]
-    fn graph_names(&self) -> DResultTermSet<Self> {
+    fn graph_names(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         Ok(std::collections::HashSet::new())
     }
     #[inline]
-    fn iris(&self) -> DResultTermSet<Self> {
+    fn iris(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         self.0.borrow().iris()
     }
     #[inline]
-    fn bnodes(&self) -> DResultTermSet<Self> {
+    fn bnodes(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         self.0.borrow().bnodes()
     }
     #[inline]
-    fn literals(&self) -> DResultTermSet<Self> {
+    fn literals(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         self.0.borrow().literals()
     }
     #[inline]
-    fn variables(&self) -> DResultTermSet<Self> {
+    fn variables(&self) -> DResultTermSet<Self>
+    where
+        DTerm<Self>: Clone + Eq + Hash,
+    {
         self.0.borrow().variables()
     }
 }
@@ -323,18 +336,18 @@ where
 {
     type MutationError = GraphAsDatasetError<G::MutationError>;
 
-    fn insert<T, U, V, W>(
+    fn insert<TS, TP, TO, TG>(
         &mut self,
-        s: &Term<T>,
-        p: &Term<U>,
-        o: &Term<V>,
-        g: Option<&Term<W>>,
+        s: &TS,
+        p: &TP,
+        o: &TO,
+        g: Option<&TG>,
     ) -> MDResult<Self, bool>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
-        W: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         if g.is_some() {
             return Err(GraphAsDatasetError::GraphNamesNotSupported);
@@ -342,18 +355,18 @@ where
         Ok(self.0.borrow_mut().insert(s, p, o)?)
     }
 
-    fn remove<T, U, V, W>(
+    fn remove<TS, TP, TO, TG>(
         &mut self,
-        s: &Term<T>,
-        p: &Term<U>,
-        o: &Term<V>,
-        g: Option<&Term<W>>,
+        s: &TS,
+        p: &TP,
+        o: &TO,
+        g: Option<&TG>,
     ) -> MDResult<Self, bool>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
-        W: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         if g.is_some() {
             return Ok(false);
@@ -375,8 +388,8 @@ mod test {
     use crate::dataset::adapter::DatasetGraph;
     use crate::dataset::{Dataset, MutableDataset};
     use crate::graph::*;
-    use crate::ns::{rdf, rdfs};
     use crate::triple::stream::TripleSource;
+    use sophia_api::ns::{rdf, rdfs};
     use sophia_term::{BoxTerm, StaticTerm};
     use std::collections::HashSet;
     use std::convert::Infallible;
@@ -453,7 +466,8 @@ mod test {
     }
 
     /// A DatasetAsGraph wrapped as a graph so that we can test it
-    type GDG = DatasetGraph<GraphAsDataset<MyGraph>, GraphAsDataset<MyGraph>, Option<BoxTerm>>;
+    type GDG =
+        DatasetGraph<GraphAsDataset<MyGraph>, GraphAsDataset<MyGraph>, Option<&'static StaticTerm>>;
 
     fn make_gdg<TS: TripleSource>(ts: TS) -> Result<GDG, Infallible> {
         Ok(DatasetGraph::new(

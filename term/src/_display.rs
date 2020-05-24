@@ -3,6 +3,7 @@
 // Implement the Display trait for Term, using the Turtle family of syntax.
 
 use std::fmt;
+use std::io;
 
 use crate::*;
 
@@ -11,40 +12,50 @@ where
     T: TermData,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write_term(f, self)
+        self.write_fmt(f)
     }
 }
 
-/// Write a single RDF term into `w` using the N-Triples syntax.
-fn write_term<T, W>(w: &mut W, t: &Term<T>) -> fmt::Result
+impl<T> Term<T>
 where
     T: TermData,
-    W: fmt::Write,
 {
-    use self::Term::*;
-    match t {
-        Iri(iri) => {
-            iri.write_fmt(w)?;
+    /// Writes the term to the `fmt::Write` using the NTriples syntax.
+    ///
+    /// This means the IRI is in angled brackets and no prefix is used.
+    pub fn write_fmt<W>(&self, w: &mut W) -> fmt::Result
+    where
+        W: fmt::Write,
+    {
+        use self::Term::*;
+        match self {
+            Iri(iri) => iri.write_fmt(w),
+            BNode(bn) => bn.write_fmt(w),
+            Literal(lit) => lit.write_fmt(w),
+            Variable(var) => var.write_fmt(w),
         }
-        BNode(bn) => {
-            bn.write_fmt(w)?;
+    }
+
+    /// Writes the term to the `io::Write` using the N3 syntax.
+    pub fn write_io<W>(&self, w: &mut W) -> io::Result<()>
+    where
+        W: io::Write,
+    {
+        use self::Term::*;
+        match self {
+            Iri(iri) => iri.write_io(w),
+            BNode(bn) => bn.write_io(w),
+            Literal(lit) => lit.write_io(w),
+            Variable(var) => var.write_io(w),
         }
-        Literal(lit) => {
-            lit.write_fmt(w)?;
-        }
-        Variable(var) => {
-            var.write_fmt(w)?;
-        }
-    };
-    Ok(())
+    }
 }
 
 #[cfg(test)]
 pub(crate) mod test {
-    use crate::literal::AsLiteral;
-    use crate::ns::*;
     use crate::*;
     use lazy_static::lazy_static;
+    use sophia_api::ns::*;
 
     lazy_static! {
         pub(crate) static ref NT_TERMS: Vec<(StaticTerm, &'static str)> = vec![
@@ -71,7 +82,7 @@ pub(crate) mod test {
                 r#""chat"@fr-FR"#,
             ),
             (
-                "chat".as_term(),
+                StaticTerm::new_literal_dt("chat", xsd::string).unwrap(),
                 r#""chat""#,
             ),
             (
@@ -79,12 +90,12 @@ pub(crate) mod test {
                 r#""42"^^<http://www.w3.org/2001/XMLSchema#integer>"#,
             ),
             (
-                " \n \r \\ \" hello world".as_term(),
+                StaticTerm::new_literal_dt(" \n \r \\ \" hello world", xsd::string).unwrap(),
                 r#"" \n \r \\ \" hello world""#,
             ),
             (
                 // Literal with non-ascii characters
-                "é \u{10000}".as_term(),
+                "é \u{10000}".as_literal().into(),
                 // in canonical form, non-ascii characters are NOT escaped in literals
                 "\"é \u{10000}\"",
             )
@@ -96,6 +107,14 @@ pub(crate) mod test {
         for (term, expected) in NT_TERMS.iter() {
             let got = format!("{}", term);
             assert_eq!(&got, expected);
+
+            let mut got2 = Vec::<u8>::new();
+            term.write_io(&mut got2).unwrap();
+            let got2 = unsafe { String::from_utf8_unchecked(got2) };
+            assert_eq!(&got2, expected);
+
+            let got3 = term_to_string(term);
+            assert_eq!(&got3, expected);
         }
     }
 }

@@ -8,10 +8,12 @@ use resiter::Map;
 use crate::dataset::{Dataset, MutableDataset, SetDataset};
 use crate::graph::*;
 use crate::triple::streaming_mode::{FromQuad, StreamedTriple};
-use sophia_term::matcher::{GraphNameMatcher, ANY};
-use sophia_term::{Term, TermData};
+use sophia_api::term::matcher::{GraphNameMatcher, ANY};
+use sophia_api::term::TTerm;
 
 /// The adapter returned by
+/// [`Dataset::graph`](../trait.Dataset.html#method.graph)
+/// [`Dataset::graph_mut`](../trait.Dataset.html#method.graph_mut)
 /// [`Dataset::union_graph`](../trait.Dataset.html#method.union_graph)
 pub struct DatasetGraph<D: ?Sized, E, M: GraphNameMatcher> {
     dataset: E,
@@ -52,9 +54,9 @@ where
                 .map_ok(StreamedTriple::from_quad),
         )
     }
-    fn triples_with_s<'s, T>(&'s self, s: &'s Term<T>) -> GTripleSource<'s, Self>
+    fn triples_with_s<'s, TS>(&'s self, s: &'s TS) -> GTripleSource<'s, Self>
     where
-        T: TermData,
+        TS: TTerm + ?Sized,
     {
         Box::new(
             self.dataset
@@ -63,9 +65,9 @@ where
                 .map_ok(StreamedTriple::from_quad),
         )
     }
-    fn triples_with_p<'s, T>(&'s self, p: &'s Term<T>) -> GTripleSource<'s, Self>
+    fn triples_with_p<'s, TP>(&'s self, p: &'s TP) -> GTripleSource<'s, Self>
     where
-        T: TermData,
+        TP: TTerm + ?Sized,
     {
         Box::new(
             self.dataset
@@ -74,9 +76,9 @@ where
                 .map_ok(StreamedTriple::from_quad),
         )
     }
-    fn triples_with_o<'s, T>(&'s self, o: &'s Term<T>) -> GTripleSource<'s, Self>
+    fn triples_with_o<'s, TO>(&'s self, o: &'s TO) -> GTripleSource<'s, Self>
     where
-        T: TermData,
+        TO: TTerm + ?Sized,
     {
         Box::new(
             self.dataset
@@ -85,14 +87,10 @@ where
                 .map_ok(StreamedTriple::from_quad),
         )
     }
-    fn triples_with_sp<'s, T, U>(
-        &'s self,
-        s: &'s Term<T>,
-        p: &'s Term<U>,
-    ) -> GTripleSource<'s, Self>
+    fn triples_with_sp<'s, TS, TP>(&'s self, s: &'s TS, p: &'s TP) -> GTripleSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
     {
         Box::new(
             self.dataset
@@ -101,14 +99,10 @@ where
                 .map_ok(StreamedTriple::from_quad),
         )
     }
-    fn triples_with_so<'s, T, U>(
-        &'s self,
-        s: &'s Term<T>,
-        o: &'s Term<U>,
-    ) -> GTripleSource<'s, Self>
+    fn triples_with_so<'s, TS, TO>(&'s self, s: &'s TS, o: &'s TO) -> GTripleSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
+        TS: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
         Box::new(
             self.dataset
@@ -117,14 +111,10 @@ where
                 .map_ok(StreamedTriple::from_quad),
         )
     }
-    fn triples_with_po<'s, T, U>(
-        &'s self,
-        p: &'s Term<T>,
-        o: &'s Term<U>,
-    ) -> GTripleSource<'s, Self>
+    fn triples_with_po<'s, TP, TO>(&'s self, p: &'s TP, o: &'s TO) -> GTripleSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
         Box::new(
             self.dataset
@@ -133,16 +123,16 @@ where
                 .map_ok(StreamedTriple::from_quad),
         )
     }
-    fn triples_with_spo<'s, T, U, V>(
+    fn triples_with_spo<'s, TS, TP, TO>(
         &'s self,
-        s: &'s Term<T>,
-        p: &'s Term<U>,
-        o: &'s Term<V>,
+        s: &'s TS,
+        p: &'s TP,
+        o: &'s TO,
     ) -> GTripleSource<'s, Self>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
         Box::new(
             self.dataset
@@ -153,42 +143,38 @@ where
     }
 }
 
-impl<D, E, F> MutableGraph for DatasetGraph<D, E, Option<Term<F>>>
+impl<D, E, T> MutableGraph for DatasetGraph<D, E, Option<&T>>
 where
     D: MutableDataset,
     E: BorrowMut<D>,
-    F: TermData,
+    T: TTerm + ?Sized,
 {
     type MutationError = D::MutationError;
 
-    fn insert<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
+    fn insert<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MGResult<Self, bool>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
-        self.dataset
-            .borrow_mut()
-            .insert(s, p, o, self.gmatcher.as_ref())
+        self.dataset.borrow_mut().insert(s, p, o, self.gmatcher)
     }
 
-    fn remove<T, U, V>(&mut self, s: &Term<T>, p: &Term<U>, o: &Term<V>) -> MGResult<Self, bool>
+    fn remove<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MGResult<Self, bool>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
-        self.dataset
-            .borrow_mut()
-            .remove(s, p, o, self.gmatcher.as_ref())
+        self.dataset.borrow_mut().remove(s, p, o, self.gmatcher)
     }
 }
 
-impl<D, E, F> SetGraph for DatasetGraph<D, E, Option<Term<F>>>
+impl<D, E, T> SetGraph for DatasetGraph<D, E, Option<&T>>
 where
     D: Dataset + SetDataset,
     E: Borrow<D>,
-    F: TermData,
+    T: TTerm + ?Sized,
 {
 }
 
@@ -198,15 +184,15 @@ mod test {
     use crate::dataset::test::*;
     use crate::dataset::MDResult;
     use crate::dataset::*;
-    use crate::ns::rdfs;
     use crate::quad::stream::QuadSource;
     use crate::triple::stream::TripleSource;
+    use sophia_api::term::{same_graph_name, SimpleIri, TTerm};
     use sophia_term::BoxTerm;
     use std::collections::HashSet;
 
     type MyQuad = ([BoxTerm; 3], Option<BoxTerm>);
     type MyDataset = HashSet<MyQuad>;
-    type MyDatasetGraph = DatasetGraph<MyDataset, MyDataset, Option<BoxTerm>>;
+    type MyDatasetGraph = DatasetGraph<MyDataset, MyDataset, Option<&'static SimpleIri<'static>>>;
 
     fn make_default_graph<TS>(ts: TS) -> Result<MyDatasetGraph, ()>
     where
@@ -221,13 +207,14 @@ mod test {
         Ok(g)
     }
 
+    #[cfg(feature = "all_tests")]
     fn make_named_graph<TS>(ts: TS) -> Result<MyDatasetGraph, ()>
     where
         TS: TripleSource,
     {
         let mut g = DatasetGraph {
             dataset: MyDataset::new(),
-            gmatcher: Some(rdfs::Resource.map_into()),
+            gmatcher: Some(&crate::ns::rdfs::Resource),
             _phantom: PhantomData,
         };
         g.insert_all(ts).unwrap();
@@ -235,23 +222,25 @@ mod test {
     }
 
     crate::test_graph_impl!(dflt_graph, MyDatasetGraph, true, true, make_default_graph);
+    #[cfg(feature = "all_tests")]
     crate::test_graph_impl!(named_graph, MyDatasetGraph, true, true, make_named_graph);
 
     #[test]
     fn test_graph_default() -> MDResult<MyDataset, ()> {
         let d: MyDataset = some_quads().collect_quads().unwrap();
-        assert_eq!(d.graph(*DG).triples().count(), 4);
-        assert_eq!(d.graph(*GN1).triples().count(), 7);
-        assert_eq!(d.graph(*GN2).triples().count(), 7);
+        assert_eq!(d.graph(DG.as_ref()).triples().count(), 4);
+        assert_eq!(d.graph(GN1.as_ref()).triples().count(), 7);
+        assert_eq!(d.graph(GN2.as_ref()).triples().count(), 7);
         assert_eq!(d.union_graph(ANY).triples().count(), 18);
         assert_eq!(
-            d.union_graph(vec![DG.clone(), GN1.clone()])
+            d.union_graph(vec![DG.as_ref(), GN1.as_ref()])
                 .triples()
                 .count(),
             11
         );
         assert_eq!(
-            d.union_graph(|x: Option<&Term<&str>>| (x == *DG || x == *GN2))
+            d.union_graph([|x: Option<&dyn TTerm>| same_graph_name(x, DG.as_ref())
+                || same_graph_name(x, GN2.as_ref())])
                 .triples()
                 .count(),
             11

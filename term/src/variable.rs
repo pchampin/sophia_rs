@@ -2,12 +2,12 @@
 //! Notation3.
 //!
 
-use super::{Result, Term, TermData, TermError};
+use super::*;
 use lazy_static::lazy_static;
-use mownstr::MownStr;
 use regex::Regex;
 use std::convert::TryFrom;
 use std::fmt;
+use std::hash::Hasher;
 use std::io;
 use std::ops::Deref;
 
@@ -35,8 +35,8 @@ lazy_static! {
 /// A variable as an RDF term.
 ///
 /// Defined in SPARQL and Notation3. However, `sophia` allows them generally
-/// everywhere. Serializers and parsers might deny them.
-#[derive(Clone, Copy, Debug, Eq, Hash)]
+/// everywhere. Some serializers and parsers might reject them.
+#[derive(Clone, Copy, Debug, Eq, Ord)]
 pub struct Variable<TD: TermData>(TD);
 
 impl<TD> Variable<TD>
@@ -151,43 +151,46 @@ where
         w.write_all(b"?")?;
         w.write_all(self.as_str().as_bytes())
     }
+}
 
-    /// Return this variables's name as text.
-    pub fn value(&self) -> MownStr {
-        self.as_str().into()
+impl<TD: TermData> TTerm for Variable<TD> {
+    fn kind(&self) -> TermKind {
+        TermKind::Variable
+    }
+    fn value_raw(&self) -> (&str, Option<&str>) {
+        (self.0.as_ref(), None)
+    }
+    fn as_dyn(&self) -> &dyn TTerm {
+        self
     }
 }
 
-impl<T, U> PartialEq<Variable<U>> for Variable<T>
+impl<TD, TE> PartialEq<TE> for Variable<TD>
 where
-    T: TermData,
-    U: TermData,
+    TD: TermData,
+    TE: TTerm + ?Sized,
 {
-    fn eq(&self, other: &Variable<U>) -> bool {
-        self.as_str() == other.as_str()
+    fn eq(&self, other: &TE) -> bool {
+        term_eq(self, other)
     }
 }
 
-impl<TD> PartialEq<str> for Variable<TD>
+impl<TD, TE> PartialOrd<TE> for Variable<TD>
+where
+    TD: TermData,
+    TE: TTerm + ?Sized,
+{
+    fn partial_cmp(&self, other: &TE) -> Option<std::cmp::Ordering> {
+        Some(term_cmp(self, other))
+    }
+}
+
+impl<TD> Hash for Variable<TD>
 where
     TD: TermData,
 {
-    fn eq(&self, other: &str) -> bool {
-        self.as_str() == other
-    }
-}
-
-impl<T, U> PartialEq<Term<U>> for Variable<T>
-where
-    T: TermData,
-    U: TermData,
-{
-    fn eq(&self, other: &Term<U>) -> bool {
-        if let Term::Variable(other) = other {
-            self == other
-        } else {
-            false
-        }
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        term_hash(self, state)
     }
 }
 
@@ -220,10 +223,7 @@ where
     fn try_from(term: Term<TD>) -> Result<Self, Self::Error> {
         match term {
             Term::Variable(var) => Ok(var),
-            _ => Err(TermError::UnexpectedKindOfTerm {
-                term: term.to_string(),
-                expect: "variable".to_owned(),
-            }),
+            _ => Err(TermError::UnsupportedKind(term.to_string())),
         }
     }
 }
@@ -238,10 +238,25 @@ where
     fn try_from(term: &'a Term<U>) -> Result<Self, Self::Error> {
         match term {
             Term::Variable(var) => Ok(var.clone_into()),
-            _ => Err(TermError::UnexpectedKindOfTerm {
-                term: term.to_string(),
-                expect: "variable".to_owned(),
-            }),
+            _ => Err(TermError::UnsupportedKind(term.to_string())),
+        }
+    }
+}
+
+impl<TD> TryCopyTerm for Variable<TD>
+where
+    TD: TermData + for<'x> From<&'x str>,
+{
+    type Error = TermError;
+
+    fn try_copy<T>(term: &T) -> Result<Self, Self::Error>
+    where
+        T: TTerm + ?Sized,
+    {
+        if term.kind() == TermKind::Variable {
+            Ok(Self::new_unchecked(term.value_raw().0))
+        } else {
+            Err(TermError::UnsupportedKind(term_to_string(term)))
         }
     }
 }

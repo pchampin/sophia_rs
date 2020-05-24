@@ -6,6 +6,7 @@ use std::iter::empty;
 use super::*;
 use crate::graph::indexed::*;
 use crate::quad::streaming_mode::{ByTermRefs, StreamedQuad};
+use sophia_api::term::TTerm;
 
 /// A [`DatasetWrapper`](trait.DatasetWrapper.html)
 /// indexing quads by object, then by graph name, then by predicate, then by subject.
@@ -51,9 +52,9 @@ where
         &mut self.wrapped
     }
 
-    fn dw_quads_with_o<'s, U>(&'s self, o: &'s Term<U>) -> DQuadSource<'s, Self::Wrapped>
+    fn dw_quads_with_o<'s, TO>(&'s self, o: &'s TO) -> DQuadSource<'s, Self::Wrapped>
     where
-        U: TermData,
+        TO: TTerm + ?Sized,
     {
         if let Some(oi) = self.wrapped.get_index(o) {
             if let Some(gis) = self.o2g.get(&oi) {
@@ -75,14 +76,14 @@ where
         Box::new(empty())
     }
 
-    fn dw_quads_with_og<'s, U, V>(
+    fn dw_quads_with_og<'s, TO, TG>(
         &'s self,
-        o: &'s Term<U>,
-        g: Option<&'s Term<V>>,
+        o: &'s TO,
+        g: Option<&'s TG>,
     ) -> DQuadSource<'s, Self::Wrapped>
     where
-        U: TermData,
-        V: TermData,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         if let Some(oi) = self.wrapped.get_index(o) {
             if let Some(gi) = self.wrapped.get_index_for_graph_name(g) {
@@ -103,16 +104,16 @@ where
         Box::new(empty())
     }
 
-    fn dw_quads_with_pog<'s, U, V, W>(
+    fn dw_quads_with_pog<'s, TP, TO, TG>(
         &'s self,
-        p: &'s Term<U>,
-        o: &'s Term<V>,
-        g: Option<&'s Term<W>>,
+        p: &'s TP,
+        o: &'s TO,
+        g: Option<&'s TG>,
     ) -> DQuadSource<'s, Self::Wrapped>
     where
-        U: TermData,
-        V: TermData,
-        W: TermData,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         if let Some(pi) = self.wrapped.get_index(p) {
             if let Some(oi) = self.wrapped.get_index(o) {
@@ -223,7 +224,7 @@ where
 {
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "all_tests"))]
 type GspoDataset = OgpsWrapper<LightDataset>;
-#[cfg(test)]
+#[cfg(all(test, feature = "all_tests"))]
 test_dataset_impl!(GspoDataset);

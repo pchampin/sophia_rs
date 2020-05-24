@@ -9,7 +9,9 @@ use crate::quad::Quad;
 use crate::triple::stream::{
     SinkError, SinkResult as _, SourceError, SourceResult as _, StreamError, StreamResult,
 };
-use sophia_term::{same_graph_name, RefTerm, Term, TermData};
+use sophia_api::term::matcher::AnyOrExactly;
+use sophia_api::term::{TTerm, TermKind};
+use sophia_term::RefTerm;
 use std::collections::{BTreeSet, HashMap};
 use std::error::Error;
 use std::fmt;
@@ -57,6 +59,8 @@ pub fn isomorphic_datasets<D1, D2>(d1: &D1, d2: &D2) -> StreamResult<bool, D1::E
 where
     D1: Dataset,
     D2: Dataset,
+    DTerm<D1>: Clone + Eq + Hash,
+    DTerm<D2>: Clone + Eq + Hash,
 {
     // quick return conditions
     // -----------------------
@@ -125,25 +129,21 @@ where
 /// If the given term is a blank node the matcher will match all possible
 /// mappings for that blank node, i.e. included redundant blank nodes. If the
 /// given term is not a blank node the matcher will only match the given term.
-fn bn_mapper_for_gname<'m, TD1, TD2>(
-    mapping: &'m HashMap<Term<TD1>, &Vec<Term<TD2>>>,
-    g: Option<&'m Term<TD1>>,
-) -> Box<dyn 'm + Fn(Option<&RefTerm>) -> bool>
+fn bn_mapper_for_gname<'m, T1, T2>(
+    mapping: &'m HashMap<T1, &Vec<T2>>,
+    g: Option<&'m T1>,
+) -> Vec<Option<&'m dyn TTerm>>
 where
-    TD1: TermData,
-    TD2: TermData,
+    T1: TTerm + Hash + Eq,
+    T2: TTerm + Hash + Eq,
 {
-    if let Some(Term::BNode(_)) = g {
-        Box::new(move |other: Option<&RefTerm>| {
-            let mapped = match mapping.get(g.unwrap()) {
-                Some(bns) => bns,
-                None => return false,
-            };
-
-            mapped.iter().any(|t| same_graph_name(Some(t), other))
-        }) as _
+    if g.map(TTerm::kind) == Some(TermKind::BlankNode) {
+        match mapping.get(g.unwrap()) {
+            None => vec![],
+            Some(bns) => bns.iter().map(|n| Some(n.as_dyn())).collect(),
+        }
     } else {
-        Box::new(move |other: Option<&RefTerm>| same_graph_name(g, other)) as _
+        vec![g.map(TTerm::as_dyn)]
     }
 }
 
@@ -157,14 +157,16 @@ fn isomorphic_datasets_with_mapping<D1, D2>(
 where
     D1: Dataset,
     D2: Dataset,
+    DTerm<D1>: Clone + Eq + Hash,
+    DTerm<D2>: Clone + Eq + Hash,
 {
     for q in d1.quads() {
         let q = q.source_err()?;
 
-        if matches!(q.s(), Term::BNode(_))
-            || matches!(q.p(), Term::BNode(_))
-            || matches!(q.o(), Term::BNode(_))
-            || matches!(q.g(), Option::Some(&Term::BNode(_)))
+        if q.s().kind() == TermKind::BlankNode
+            || q.p().kind() == TermKind::BlankNode
+            || q.o().kind() == TermKind::BlankNode
+            || q.g().map(TTerm::kind) == Some(TermKind::BlankNode)
         {
             let ms = bn_mapper(&mapping, q.s());
             let mp = bn_mapper(&mapping, q.p());
@@ -180,16 +182,14 @@ where
     Ok(true)
 }
 
-fn match_gname_ignore_bns<'t, TD>(
-    t: Option<&'t Term<TD>>,
-) -> Box<dyn 't + Fn(Option<&RefTerm>) -> bool>
+fn match_gname_ignore_bns<T>(t: Option<&T>) -> AnyOrExactly<Option<RefTerm>>
 where
-    TD: TermData,
+    T: TTerm + ?Sized,
 {
-    if let Some(Term::BNode(_)) = t {
-        Box::new(move |_: Option<&RefTerm>| true) as _
+    if t.map(TTerm::kind) == Some(TermKind::BlankNode) {
+        AnyOrExactly::Any
     } else {
-        Box::new(move |other: Option<&RefTerm>| same_graph_name(t, other)) as _
+        AnyOrExactly::Exactly(t.map(RefTerm::from))
     }
 }
 
@@ -237,6 +237,7 @@ fn calc_bn_hashes<D, H>(
 ) -> StreamResult<HashMap<u64, Vec<DTerm<D>>>, D::Error, AlgorithmFailure>
 where
     D: Dataset,
+    DTerm<D>: Clone + Eq + Hash,
     H: Hasher + Default,
 {
     let mut res_map = HashMap::new();
@@ -309,6 +310,7 @@ fn calc_bns_init_hash<D, H>(
 ) -> Result<(u64, Vec<DTerm<D>>, Vec<DTerm<D>>), D::Error>
 where
     D: Dataset,
+    DTerm<D>: Clone + Eq + Hash,
     H: Hasher + Default,
 {
     // for same hashing result we need to order the quads' hashes.
@@ -346,8 +348,9 @@ fn improve_hash_by_increasing_distance<H, D>(
     d: &D,
 ) -> Result<(u64, Vec<DTerm<D>>, Vec<DTerm<D>>), D::Error>
 where
-    H: Hasher + Default,
     D: Dataset,
+    DTerm<D>: Clone + Eq + Hash,
+    H: Hasher + Default,
 {
     // for same hashing result we need to order the quads' hashes.
     let mut hashes = BTreeSet::new();
@@ -388,8 +391,9 @@ fn traverse_from_o_to_s<H, D>(
     hashes: &mut BTreeSet<u64>,
 ) -> Result<Vec<DTerm<D>>, D::Error>
 where
-    H: Hasher + Default,
     D: Dataset,
+    DTerm<D>: Clone + Eq + Hash,
+    H: Hasher + Default,
 {
     let mut subjects = vec![];
     for o in objects {
@@ -411,8 +415,9 @@ fn traverse_from_s_to_o<H, D>(
     hashes: &mut BTreeSet<u64>,
 ) -> Result<Vec<DTerm<D>>, D::Error>
 where
-    H: Hasher + Default,
     D: Dataset,
+    DTerm<D>: Clone + Eq + Hash,
+    H: Hasher + Default,
 {
     let mut objects = vec![];
     for s in subjects {

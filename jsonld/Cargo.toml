@@ -16,6 +16,8 @@ keywords = ["rdf", "linked-data", "semantic-web", "json-ld"]
 chrono = { version = "0.4.11", optional = true }
 json = "0.12.4"
 sophia = { version = "0.5.3", path = "../sophia" }
+sophia_api = { version = "0.5.3", path = "../api" }
+sophia_iri = { version = "0.5.3", path = "../iri" }
 sophia_term = { version = "0.5.3", path = "../term" }
 thiserror = "1.0.15"
 

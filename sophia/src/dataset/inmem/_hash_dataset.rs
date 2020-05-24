@@ -8,6 +8,7 @@ use crate::dataset::*;
 use crate::quad::stream::QuadSource;
 use crate::quad::streaming_mode::{ByTermRefs, StreamedQuad};
 use crate::triple::stream::StreamResult;
+use sophia_api::term::TTerm;
 use sophia_term::factory::TermFactory;
 use sophia_term::index_map::TermIndexMap;
 use sophia_term::*;
@@ -78,20 +79,20 @@ where
     }
 
     #[inline]
-    fn get_index<T>(&self, t: &Term<T>) -> Option<Self::Index>
+    fn get_index<T>(&self, t: &T) -> Option<Self::Index>
     where
-        T: TermData,
+        T: TTerm + ?Sized,
     {
-        self.terms.get_index(&t.clone_into())
+        self.terms.get_index(&t.into())
     }
 
     #[inline]
-    fn get_index_for_graph_name<T>(&self, g: Option<&Term<T>>) -> Option<Self::Index>
+    fn get_index_for_graph_name<T>(&self, g: Option<&T>) -> Option<Self::Index>
     where
-        T: TermData,
+        T: TTerm + ?Sized,
     {
         self.terms
-            .get_index_for_graph_name(g.map(|g| g.as_ref_str()).as_ref())
+            .get_index_for_graph_name(g.map(|g| g.into()).as_ref())
     }
 
     #[inline]
@@ -104,25 +105,25 @@ where
         self.terms.get_graph_name(i)
     }
 
-    fn insert_indexed<T, U, V, W>(
+    fn insert_indexed<TS, TP, TO, TG>(
         &mut self,
-        s: &Term<T>,
-        p: &Term<U>,
-        o: &Term<V>,
-        g: Option<&Term<W>>,
-    ) -> Option<[I::Index; 4]>
+        s: &TS,
+        p: &TP,
+        o: &TO,
+        g: Option<&TG>,
+    ) -> Option<[Self::Index; 4]>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
-        W: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
-        let si = self.terms.make_index(&s.clone_into());
-        let pi = self.terms.make_index(&p.clone_into());
-        let oi = self.terms.make_index(&o.clone_into());
+        let si = self.terms.make_index(&s.into());
+        let pi = self.terms.make_index(&p.into());
+        let oi = self.terms.make_index(&o.into());
         let gi = self
             .terms
-            .make_index_for_graph_name(g.map(|g| g.as_ref_str()).as_ref());
+            .make_index_for_graph_name(g.map(|g| g.into()).as_ref());
         let modified = self.quads.insert([si, pi, oi, gi]);
         if modified {
             Some([si, pi, oi, gi])
@@ -135,18 +136,18 @@ where
         }
     }
 
-    fn remove_indexed<T, U, V, W>(
+    fn remove_indexed<TS, TP, TO, TG>(
         &mut self,
-        s: &Term<T>,
-        p: &Term<U>,
-        o: &Term<V>,
-        g: Option<&Term<W>>,
-    ) -> Option<[I::Index; 4]>
+        s: &TS,
+        p: &TP,
+        o: &TO,
+        g: Option<&TG>,
+    ) -> Option<[Self::Index; 4]>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
-        W: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         let si = self.get_index(s);
         let pi = self.get_index(p);

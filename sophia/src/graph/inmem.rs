@@ -71,7 +71,7 @@ pub type LightGraph = GenericGraph<u32, RcTermFactory>;
 
 #[cfg(test)]
 test_graph_impl!(test_fastg, FastGraph);
-#[cfg(test)]
+#[cfg(all(test, feature = "all_tests"))]
 test_graph_impl!(test_lightg, LightGraph);
 
 /// Flavors of Graph implementations with a smaller memory-footprint.
@@ -88,9 +88,9 @@ pub mod small {
     /// Fast to load but slow to query, with a relatively low memory footprint.
     pub type LightGraph = GenericGraph<u16, RcTermFactory>;
 
-    #[cfg(test)]
+    #[cfg(all(test, feature = "all_tests"))]
     test_graph_impl!(test_fastg, FastGraph);
-    #[cfg(test)]
+    #[cfg(all(test, feature = "all_tests"))]
     test_graph_impl!(test_lightg, LightGraph);
 }
 
@@ -105,8 +105,8 @@ pub mod sync {
     /// Fast to load but slow to query, with a relatively low memory footprint.
     pub type LightGraph = GenericGraph<u32, ArcTermFactory>;
 
-    #[cfg(test)]
+    #[cfg(all(test, feature = "all_tests"))]
     test_graph_impl!(test_fastg, FastGraph);
-    #[cfg(test)]
+    #[cfg(all(test, feature = "all_tests"))]
     test_graph_impl!(test_lightg, LightGraph);
 }

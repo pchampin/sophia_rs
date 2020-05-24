@@ -3,12 +3,15 @@
 use std::fmt::Debug;
 
 use crate::graph::*;
-use crate::ns::*;
 use crate::triple::stream::*;
 use crate::triple::streaming_mode::{TripleStreamingMode, UnsafeTriple};
 use crate::triple::*;
 use lazy_static::lazy_static;
+pub use sophia_api; // required when test macro is used in other packages
+use sophia_api::ns::*;
+use sophia_api::term::CopiableTerm;
 pub use sophia_term; // required when test macro is used in other packages
+use sophia_term::literal::convert::AsLiteral;
 use sophia_term::*;
 
 pub const NS: &str = "http://example.org/";
@@ -25,8 +28,8 @@ lazy_static! {
     //
     pub static ref B1: StaticTerm = StaticTerm::new_bnode("1").unwrap();
     pub static ref B2: StaticTerm = StaticTerm::new_bnode("2").unwrap();
-    pub static ref L1: StaticTerm = StaticTerm::from("lit1");
-    pub static ref L2: StaticTerm = StaticTerm::from("lit2");
+    pub static ref L1: StaticTerm = "lit1".as_literal().into();
+    pub static ref L2: StaticTerm = "lit2".as_literal().into();
     pub static ref L2E: StaticTerm = StaticTerm::new_literal_lang("lit2", "en").unwrap();
     pub static ref V1: StaticTerm = StaticTerm::new_variable("v1").unwrap();
     pub static ref V2: StaticTerm = StaticTerm::new_variable("v2").unwrap();
@@ -40,24 +43,24 @@ pub fn no_triple() -> impl TripleSource {
 
 pub fn some_triples() -> impl TripleSource {
     vec![
-        [*C1, rdf::type_, rdfs::Class],
-        [*C2, rdf::type_, rdfs::Class],
-        [*C2, rdf::type_, rdfs::Resource],
-        [*C2, rdfs::subClassOf, *C1],
-        [*C2, rdfs::subClassOf, rdfs::Resource],
+        [*C1, rdf::type_.into(), rdfs::Class.into()],
+        [*C2, rdf::type_.into(), rdfs::Class.into()],
+        [*C2, rdf::type_.into(), rdfs::Resource.into()],
+        [*C2, rdfs::subClassOf.into(), *C1],
+        [*C2, rdfs::subClassOf.into(), rdfs::Resource.into()],
         //
-        [*P1, rdf::type_, rdf::Property],
-        [*P1, rdfs::domain, *C1],
-        [*P1, rdfs::range, *C2],
+        [*P1, rdf::type_.into(), rdf::Property.into()],
+        [*P1, rdfs::domain.into(), *C1],
+        [*P1, rdfs::range.into(), *C2],
         //
-        [*P2, rdf::type_, rdf::Property],
-        [*P2, rdfs::domain, *C2],
-        [*P2, rdfs::range, *C2],
+        [*P2, rdf::type_.into(), rdf::Property.into()],
+        [*P2, rdfs::domain.into(), *C2],
+        [*P2, rdfs::range.into(), *C2],
         //
-        [*I1A, rdf::type_, *C1],
-        [*I1B, rdf::type_, *C1],
-        [*I2A, rdf::type_, *C2],
-        [*I2B, rdf::type_, *C2],
+        [*I1A, rdf::type_.into(), *C1],
+        [*I1B, rdf::type_.into(), *C1],
+        [*I2A, rdf::type_.into(), *C2],
+        [*I2B, rdf::type_.into(), *C2],
         [*I1A, *P1, *I2A],
         [*I1B, *P1, *I2B],
         [*I2A, *P2, *I2B],
@@ -68,11 +71,11 @@ pub fn some_triples() -> impl TripleSource {
 
 pub fn strict_node_types_triples() -> impl TripleSource {
     vec![
-        [rdf::type_, rdf::type_, rdf::Property],
-        [*B1, rdf::type_, *L1],
-        [*B2, rdf::type_, *B1],
-        [*B2, rdf::type_, *L2],
-        [*B2, rdf::type_, *L2E],
+        [rdf::type_.into(), rdf::type_.into(), rdf::Property.into()],
+        [*B1, rdf::type_.into(), *L1],
+        [*B2, rdf::type_.into(), *B1],
+        [*B2, rdf::type_.into(), *L2],
+        [*B2, rdf::type_.into(), *L2E],
     ]
     .into_iter()
     .as_triple_source()
@@ -80,7 +83,7 @@ pub fn strict_node_types_triples() -> impl TripleSource {
 
 pub fn generalized_node_types_triples() -> impl TripleSource {
     vec![
-        [rdf::type_, rdf::type_, rdf::Property],
+        [rdf::type_.into(), rdf::type_.into(), rdf::Property.into()],
         [*B1, *B2, *B1],
         [*L2, *L1, *L1],
         [*V1, *V2, *V3],
@@ -96,16 +99,16 @@ where
 {
     let triple = triple.unwrap();
     [
-        triple.s().clone_into(),
-        triple.p().clone_into(),
-        triple.o().clone_into(),
+        triple.s().copied(),
+        triple.p().copied(),
+        triple.o().copied(),
     ]
 }
 
 #[allow(dead_code)]
 pub fn dump_graph<G: Graph>(g: &G)
 where
-    <<G::Triple as TripleStreamingMode>::UnsafeTriple as UnsafeTriple>::TermData: Debug,
+    <<G::Triple as TripleStreamingMode>::UnsafeTriple as UnsafeTriple>::Term: Debug,
 {
     println!("<<<<");
     for t in g.triples() {
@@ -131,7 +134,7 @@ pub fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
 /// If your type only implements [`Graph`] and [`CollectibleGraph`],
 /// you should use [`test_immutable_graph_impl`] instead.
 ///
-/// This macro is only available when the feature `test_macros` is enabled.
+/// This macro is only available when the feature `test_macro` is enabled.
 ///
 /// It accepts the following parameters:
 /// * `module_name`: the name of the module to generate (defaults to `test`);
@@ -173,21 +176,21 @@ macro_rules! test_graph_impl {
                 assert_eq!(g.triples().count(), 0);
                 assert!(MutableGraph::insert(
                     &mut g,
-                    &C1,
+                    &*C1,
                     &rdf::type_,
                     &rdfs::Class
                 )?);
                 assert_eq!(g.triples().count(), 1);
-                assert!(MutableGraph::insert(&mut g, &C1, &rdfs::subClassOf, &C2)?);
+                assert!(MutableGraph::insert(&mut g, &*C1, &rdfs::subClassOf, &*C2)?);
                 assert_eq!(g.triples().count(), 2);
                 assert!(MutableGraph::remove(
                     &mut g,
-                    &C1,
+                    &*C1,
                     &rdf::type_,
                     &rdfs::Class
                 )?);
                 assert_eq!(g.triples().count(), 1);
-                assert!(MutableGraph::remove(&mut g, &C1, &rdfs::subClassOf, &C2)?);
+                assert!(MutableGraph::remove(&mut g, &*C1, &rdfs::subClassOf, &*C2)?);
                 assert_eq!(g.triples().count(), 0);
                 Ok(())
             }
@@ -199,28 +202,28 @@ macro_rules! test_graph_impl {
                     assert_eq!(g.triples().count(), 0);
                     assert!(MutableGraph::insert(
                         &mut g,
-                        &C1,
+                        &*C1,
                         &rdf::type_,
                         &rdfs::Class
                     )?);
                     assert_eq!(g.triples().count(), 1);
                     assert!(!MutableGraph::insert(
                         &mut g,
-                        &C1,
+                        &*C1,
                         &rdf::type_,
                         &rdfs::Class
                     )?);
                     assert_eq!(g.triples().count(), 1);
                     assert!(MutableGraph::remove(
                         &mut g,
-                        &C1,
+                        &*C1,
                         &rdf::type_,
                         &rdfs::Class
                     )?);
                     assert_eq!(g.triples().count(), 0);
                     assert!(!MutableGraph::remove(
                         &mut g,
-                        &C1,
+                        &*C1,
                         &rdf::type_,
                         &rdfs::Class
                     )?);
@@ -261,8 +264,8 @@ macro_rules! test_graph_impl {
             fn test_remove_matching() -> MGResult<$graph_impl, ()> {
                 let mut g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
-                let o_matcher = [C1.clone(), C2.clone()];
-                g.remove_matching(&ANY, &rdf::type_, &o_matcher[..])?;
+                let o_matcher = [&*C1, &*C2];
+                g.remove_matching(&ANY, &rdf::type_, &o_matcher)?;
                 assert_consistent_hint(14, g.triples().size_hint());
                 Ok(())
             }
@@ -271,8 +274,8 @@ macro_rules! test_graph_impl {
             fn test_retain_matching() -> MGResult<$graph_impl, ()> {
                 let mut g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
-                let o_matcher = [C1.clone(), C2.clone()];
-                g.retain_matching(&ANY, &rdf::type_, &o_matcher[..])?;
+                let o_matcher = [&*C1, &*C2];
+                g.retain_matching(&ANY, &rdf::type_, &o_matcher)?;
                 assert_consistent_hint(4, g.triples().size_hint());
                 Ok(())
             }
@@ -283,9 +286,11 @@ macro_rules! test_graph_impl {
         mod $module_name {
             use $crate::graph::test::*;
             use $crate::graph::*;
-            use $crate::ns::*;
-            use self::sophia_term::*;
-            use self::sophia_term::matcher::ANY;
+            use self::sophia_api::ns::*;
+            use self::sophia_api::term::TTerm;
+            use self::sophia_api::term::matcher::ANY;
+            use self::sophia_term::StaticTerm;
+            use self::sophia_term::literal::convert::AsLiteral;
 
             #[allow(unused_imports)]
             use super::*;
@@ -300,8 +305,8 @@ macro_rules! test_graph_impl {
                     let v: Vec<_> = iter.map(as_box_t).collect();
                     assert_eq!(v.len(), g.triples().count());
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Graph::contains(&v, &C1, &rdf::type_, &rdfs::Class)?);
-                    assert!(!Graph::contains(&v, &P1, &rdf::type_, &rdfs::Class)?);
+                    assert!(Graph::contains(&v, &*C1, &rdf::type_, &rdfs::Class)?);
+                    assert!(!Graph::contains(&v, &*P1, &rdf::type_, &rdfs::Class)?);
                 }
                 Ok(())
             }
@@ -310,14 +315,14 @@ macro_rules! test_graph_impl {
             fn test_triples_with_s() -> MGResult<$graph_impl, ()> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
-                let triples = g.triples_with_s(&C2);
+                let triples = g.triples_with_s(&*C2);
                 let hint = triples.size_hint();
                 for iter in vec![triples, g.triples_matching(&*C2, &ANY, &ANY)] {
                     let v: Vec<_> = iter.map(as_box_t).collect();
                     assert_eq!(v.len(), 4);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Graph::contains(&v, &C2, &rdf::type_, &rdfs::Class)?);
-                    assert!(!Graph::contains(&v, &C1, &rdf::type_, &rdfs::Class)?);
+                    assert!(Graph::contains(&v, &*C2, &rdf::type_, &rdfs::Class)?);
+                    assert!(!Graph::contains(&v, &*C1, &rdf::type_, &rdfs::Class)?);
                 }
                 Ok(())
             }
@@ -332,10 +337,10 @@ macro_rules! test_graph_impl {
                     let v: Vec<_> = iter.map(as_box_t).collect();
                     assert_eq!(v.len(), 9);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Graph::contains(&v, &C2, &rdf::type_, &rdfs::Resource)?);
+                    assert!(Graph::contains(&v, &*C2, &rdf::type_, &rdfs::Resource)?);
                     assert!(!Graph::contains(
                         &v,
-                        &C2,
+                        &*C2,
                         &rdfs::subClassOf,
                         &rdfs::Resource
                     )?);
@@ -347,14 +352,14 @@ macro_rules! test_graph_impl {
             fn test_triples_with_o() -> MGResult<$graph_impl, ()> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
-                let triples = g.triples_with_o(&C2);
+                let triples = g.triples_with_o(&*C2);
                 let hint = triples.size_hint();
                 for iter in vec![triples, g.triples_matching(&ANY, &ANY, &*C2)] {
                     let v: Vec<_> = iter.map(as_box_t).collect();
                     assert_eq!(v.len(), 5);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Graph::contains(&v, &P2, &rdfs::domain, &C2)?);
-                    assert!(!Graph::contains(&v, &P1, &rdfs::domain, &C1)?);
+                    assert!(Graph::contains(&v, &*P2, &rdfs::domain, &*C2)?);
+                    assert!(!Graph::contains(&v, &*P1, &rdfs::domain, &*C1)?);
                 }
                 Ok(())
             }
@@ -363,14 +368,14 @@ macro_rules! test_graph_impl {
             fn test_triples_with_sp() -> MGResult<$graph_impl, ()> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
-                let triples = g.triples_with_sp(&C2, &rdf::type_);
+                let triples = g.triples_with_sp(&*C2, &rdf::type_);
                 let hint = triples.size_hint();
                 for iter in vec![triples, g.triples_matching(&*C2, &rdf::type_, &ANY)] {
                     let v: Vec<_> = iter.map(as_box_t).collect();
                     assert_eq!(v.len(), 2);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Graph::contains(&v, &C2, &rdf::type_, &rdfs::Class)?);
-                    assert!(!Graph::contains(&v, &C2, &rdfs::subClassOf, &C1)?);
+                    assert!(Graph::contains(&v, &*C2, &rdf::type_, &rdfs::Class)?);
+                    assert!(!Graph::contains(&v, &*C2, &rdfs::subClassOf, &*C1)?);
                 }
                 Ok(())
             }
@@ -379,7 +384,7 @@ macro_rules! test_graph_impl {
             fn test_triples_with_so() -> MGResult<$graph_impl, ()> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
-                let triples = g.triples_with_so(&C2, &rdfs::Resource);
+                let triples = g.triples_with_so(&*C2, &rdfs::Resource);
                 let hint = triples.size_hint();
 
                 for iter in vec![triples, g.triples_matching(&*C2, &ANY, &rdfs::Resource)] {
@@ -388,11 +393,11 @@ macro_rules! test_graph_impl {
                     assert_consistent_hint(v.len(), hint);
                     assert!(Graph::contains(
                         &v,
-                        &C2,
+                        &*C2,
                         &rdfs::subClassOf,
                         &rdfs::Resource
                     )?);
-                    assert!(!Graph::contains(&v, &C2, &rdf::type_, &rdfs::Class)?);
+                    assert!(!Graph::contains(&v, &*C2, &rdf::type_, &rdfs::Class)?);
                 }
                 Ok(())
             }
@@ -407,8 +412,8 @@ macro_rules! test_graph_impl {
                     let v: Vec<_> = iter.map(as_box_t).collect();
                     assert_eq!(v.len(), 2);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Graph::contains(&v, &C2, &rdf::type_, &rdfs::Class)?);
-                    assert!(!Graph::contains(&v, &P2, &rdf::type_, &rdf::Property)?);
+                    assert!(Graph::contains(&v, &*C2, &rdf::type_, &rdfs::Class)?);
+                    assert!(!Graph::contains(&v, &*P2, &rdf::type_, &rdf::Property)?);
                 }
                 Ok(())
             }
@@ -417,7 +422,7 @@ macro_rules! test_graph_impl {
             fn test_triples_with_spo() -> MGResult<$graph_impl, ()> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
-                let triples = g.triples_with_spo(&C2, &rdf::type_, &rdfs::Resource);
+                let triples = g.triples_with_spo(&*C2, &rdf::type_, &rdfs::Resource);
                 let hint = triples.size_hint();
                 for iter in vec![
                     triples,
@@ -426,10 +431,10 @@ macro_rules! test_graph_impl {
                     let v: Vec<_> = iter.map(as_box_t).collect();
                     assert_eq!(v.len(), 1);
                     assert_consistent_hint(v.len(), hint);
-                    assert!(Graph::contains(&v, &C2, &rdf::type_, &rdfs::Resource)?);
+                    assert!(Graph::contains(&v, &*C2, &rdf::type_, &rdfs::Resource)?);
                     assert!(!Graph::contains(
                         &v,
-                        &C1,
+                        &*C1,
                         &rdfs::subClassOf,
                         &rdfs::Resource
                     )?);
@@ -441,8 +446,8 @@ macro_rules! test_graph_impl {
             fn test_contains() -> MGResult<$graph_impl, ()> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
-                assert!(Graph::contains(&g, &C2, &rdfs::subClassOf, &C1)?);
-                assert!(!Graph::contains(&g, &C1, &rdfs::subClassOf, &C2)?);
+                assert!(Graph::contains(&g, &*C2, &rdfs::subClassOf, &*C1)?);
+                assert!(!Graph::contains(&g, &*C1, &rdfs::subClassOf, &*C2)?);
                 Ok(())
             }
 
@@ -450,18 +455,18 @@ macro_rules! test_graph_impl {
             fn test_triples_matching() -> MGResult<$graph_impl, ()> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
-                let p_matcher: [StaticTerm; 2] = [rdf::type_.clone(), rdfs::domain.clone()];
-                let o_matcher: [StaticTerm; 2] = [C2.clone(), rdfs::Class.clone()];
+                let p_matcher = [&rdf::type_, &rdfs::domain];
+                let o_matcher = [&*C2, &rdfs::Class.into()];
                 let v: Vec<_> = g
-                    .triples_matching(&ANY, &p_matcher[..], &o_matcher[..])
+                    .triples_matching(&ANY, &p_matcher, &o_matcher)
                     .map(as_box_t)
                     .collect();
                 assert_eq!(v.len(), 5);
-                assert!(Graph::contains(&v, &C1, &rdf::type_, &rdfs::Class)?);
-                assert!(Graph::contains(&v, &P2, &rdfs::domain, &C2)?);
-                assert!(Graph::contains(&v, &I2A, &rdf::type_, &C2)?);
-                assert!(!Graph::contains(&v, &P1, &rdfs::domain, &C1)?);
-                assert!(!Graph::contains(&v, &I1A, &rdf::type_, &C1)?);
+                assert!(Graph::contains(&v, &*C1, &rdf::type_, &rdfs::Class)?);
+                assert!(Graph::contains(&v, &*P2, &rdfs::domain, &*C2)?);
+                assert!(Graph::contains(&v, &*I2A, &rdf::type_, &*C2)?);
+                assert!(!Graph::contains(&v, &*P1, &rdfs::domain, &*C1)?);
+                assert!(!Graph::contains(&v, &*I1A, &rdf::type_, &*C1)?);
                 Ok(())
             }
 
@@ -494,10 +499,10 @@ macro_rules! test_graph_impl {
 
                 let rpredicates: std::collections::HashSet<_> =
                     predicates.iter().map(|t| t.as_ref_str()).collect();
-                assert!(rpredicates.contains(&rdf::type_));
-                assert!(rpredicates.contains(&rdfs::subClassOf));
-                assert!(rpredicates.contains(&rdfs::domain));
-                assert!(rpredicates.contains(&rdfs::range));
+                assert!(rpredicates.contains(&rdf::type_.into()));
+                assert!(rpredicates.contains(&rdfs::subClassOf.into()));
+                assert!(rpredicates.contains(&rdfs::domain.into()));
+                assert!(rpredicates.contains(&rdfs::range.into()));
                 assert!(rpredicates.contains(&P1));
                 assert!(rpredicates.contains(&P2));
                 Ok(())
@@ -512,9 +517,9 @@ macro_rules! test_graph_impl {
 
                 let robjects: std::collections::HashSet<_> =
                     objects.iter().map(|t| t.as_ref_str()).collect();
-                assert!(robjects.contains(&rdf::Property));
-                assert!(robjects.contains(&rdfs::Class));
-                assert!(robjects.contains(&rdfs::Resource));
+                assert!(robjects.contains(&rdf::Property.into()));
+                assert!(robjects.contains(&rdfs::Class.into()));
+                assert!(robjects.contains(&rdfs::Resource.into()));
                 assert!(robjects.contains(&C1));
                 assert!(robjects.contains(&C2));
                 assert!(robjects.contains(&I2A));
@@ -535,8 +540,8 @@ macro_rules! test_graph_impl {
 
                 let riris: std::collections::HashSet<_> =
                     iris.iter().map(|t| t.as_ref_str()).collect();
-                assert!(riris.contains(&rdf::Property));
-                assert!(riris.contains(&rdf::type_));
+                assert!(riris.contains(&rdf::Property.into()));
+                assert!(riris.contains(&rdf::type_.into()));
                 Ok(())
             }
 
@@ -571,8 +576,8 @@ macro_rules! test_graph_impl {
 
                 let rliterals: std::collections::HashSet<_> =
                     literals.iter().map(|t| t.as_ref_str()).collect();
-                assert!(rliterals.contains(&StaticTerm::from("lit1")));
-                assert!(rliterals.contains(&StaticTerm::from("lit2")));
+                assert!(rliterals.contains(&"lit1".as_literal().into()));
+                assert!(rliterals.contains(&"lit2".as_literal().into()));
                 assert!(rliterals.contains(&StaticTerm::new_literal_lang("lit2", "en").unwrap()));
                 Ok(())
             }
@@ -611,7 +616,7 @@ macro_rules! test_graph_impl {
 /// If your type also implements [`MutableGraph`],
 /// you should use [`test_graph_impl`] instead.
 ///
-/// This macro is only available when the feature `test_macros` is enabled.
+/// This macro is only available when the feature `test_macro` is enabled.
 ///
 /// It accepts the following parameters:
 /// * `module_name`: the name of the module to generate (defaults to `test`);

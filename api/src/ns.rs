@@ -6,7 +6,7 @@
 //!
 //! # Example
 //! ```
-//! use sophia_term::ns::{Namespace, rdf, rdfs, xsd};
+//! use sophia_api::ns::{Namespace, rdf, rdfs, xsd};
 //!
 //! let schema = Namespace::new("http://schema.org/").unwrap();
 //! let s_name = schema.get("name").unwrap();
@@ -15,95 +15,87 @@
 //! //g.insert(&s_name, &rdfs::range, &xsd::string);
 //! ```
 
-use crate::{
-    iri::{is_valid_iri_ref, Iri},
-    Result, Term, TermData, TermError,
-};
+use crate::term::SimpleIri;
+use mownstr::MownStr;
+use sophia_iri::{error::*, is_valid_iri_ref, resolve::*};
 
 /// A custom namespace.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct Namespace<T: TermData>(pub(crate) T);
+pub struct Namespace<T>(pub(crate) T);
 
-impl<T: TermData> Namespace<T> {
+impl<T> Namespace<T>
+where
+    T: AsRef<str>,
+{
     /// Build a custom namespace based on the given IRI.
     ///
     /// `iri` must be a valid IRI, otherwise this constructor returns an error.
     pub fn new(iri: T) -> Result<Namespace<T>> {
         if is_valid_iri_ref(iri.as_ref()) {
-            Ok(Namespace(iri))
+            Ok(Self(iri))
         } else {
-            Err(TermError::InvalidIri(iri.as_ref().to_string()))
+            Err(InvalidIri(String::from(iri.as_ref())))
         }
     }
 
-    /// Build an IRI term by appending `suffix` to this namespace.
+    /// Build a custom namespace, without checking the given IRI.
     ///
-    /// Return an error if the concatenation produces an invalid IRI.
-    ///
-    /// Internally this method calls [`get_iri()`](#method.get_iri).
-    pub fn get<U>(&self, suffix: U) -> Result<Term<T>>
-    where
-        U: AsRef<str>,
-        T: From<U>,
-    {
-        self.get_iri(suffix).map(Into::into)
+    /// # Pre-conditions
+    /// It is the callers responsibility to ensure that `iri` is a valid IRI reference.
+    pub fn new_unchecked(iri: T) -> Namespace<T> {
+        Self(iri)
     }
 
     /// Build an IRI by appending `suffix` to this namespace.
     ///
     /// Return an error if the concatenation produces an invalid IRI.
-    pub fn get_iri<U>(&self, suffix: U) -> Result<Iri<T>>
-    where
-        U: AsRef<str>,
-        T: From<U>,
-    {
-        Iri::new_suffixed(self.0.clone(), suffix)
+    pub fn get<'s>(&'s self, suffix: &'s str) -> Result<SimpleIri<'s>> {
+        SimpleIri::new(self.0.as_ref(), Some(suffix))
     }
 
     /// Maps this Namespace to another one by applying function `f`.
-    pub fn map<TD2, F>(self, f: F) -> Namespace<TD2>
+    pub fn map<U, F>(self, f: F) -> Namespace<U>
     where
-        TD2: TermData,
-        F: FnOnce(T) -> TD2,
+        U: AsRef<str>,
+        F: FnOnce(T) -> U,
     {
         Namespace(f(self.0))
     }
 
     /// Tries to map this Namespace to another one by applying function `f`.
-    pub fn try_map<TD2, F, E>(self, f: F) -> Result<Namespace<TD2>, E>
+    pub fn try_map<U, F, E>(self, f: F) -> Result<Namespace<U>, E>
     where
-        TD2: TermData,
-        F: FnOnce(T) -> Result<TD2, E>,
+        U: AsRef<str>,
+        F: FnOnce(T) -> Result<U, E>,
     {
         Ok(Namespace(f(self.0)?))
     }
-}
 
-impl<TD> std::convert::TryFrom<Iri<TD>> for Namespace<TD>
-where
-    TD: TermData,
-{
-    type Error = TermError;
-
-    /// Requires that the given `Iri` has no suffix. This can be enforced with
-    /// the [`clone_no_suffix()`](../iri/struct.Iri.html#method.clone_no_suffix)
-    /// method.
-    fn try_from(iri: Iri<TD>) -> Result<Self, Self::Error> {
-        if iri.suffix().is_some() {
-            Err(TermError::IsSuffixed)
-        } else {
-            Ok(Namespace(iri.ns))
-        }
+    /// Consume this Namespace and return the inner IRI data.
+    pub fn destruct(self) -> T {
+        self.0
     }
 }
 
-impl<TD: TermData> AsRef<str> for Namespace<TD> {
+impl<'a, 'b, T> Resolve<&'a Namespace<T>, Namespace<MownStr<'a>>> for IriParsed<'b>
+where
+    T: AsRef<str>,
+{
+    /// Resolve the IRI of the given `Namespace`.
+    fn resolve(&self, other: &'a Namespace<T>) -> Namespace<MownStr<'a>> {
+        let iri = other.0.as_ref();
+        let resolved: MownStr = self.resolve(iri).expect("Is valid as from Namespace");
+        Namespace(resolved)
+    }
+}
+
+impl<T: AsRef<str>> AsRef<str> for Namespace<T> {
     fn as_ref(&self) -> &str {
         self.0.as_ref()
     }
 }
 
-impl<TD: TermData> std::ops::Deref for Namespace<TD> {
+impl<T: AsRef<str>> std::ops::Deref for Namespace<T> {
     type Target = str;
 
     fn deref(&self) -> &str {
@@ -114,64 +106,42 @@ impl<TD: TermData> std::ops::Deref for Namespace<TD> {
 /// Helper for creating a "namespace module"
 /// defining a set of terms within a given IRI space.
 ///
-/// # Safety
-/// This macro is conceptually unsafe,
-/// as it is never checked that the prefix IRI is a valid IRI reference.
+/// # Tests
+/// This macro also create a test module to check that all created IRIs are valid.
 #[macro_export]
 macro_rules! namespace {
     ($iri_prefix:expr, $($suffix:ident),*; $($r_id:ident, $r_sf:expr),*) => {
         /// Prefix used in this namespace.
         pub static PREFIX:&'static str = $iri_prefix;
         $(
-            $crate::ns_term!($iri_prefix, $suffix);
+            $crate::ns_iri!($iri_prefix, $suffix);
         )*
         $(
-            $crate::ns_term!($iri_prefix, $r_id, $r_sf);
+            $crate::ns_iri!($iri_prefix, $r_id, $r_sf);
         )*
 
-        /// Version of the terms in this namespace as `Iri`s.
-        pub mod iri {
+        /// Test module for checking tha IRIs are valid
+        #[cfg(test)]
+        mod test_valid_iri {
+            #[test]
             $(
-                $crate::ns_iri!($iri_prefix, $suffix);
+                #[allow(non_snake_case)]
+                #[test]
+                fn $suffix() {
+                    $crate::term::SimpleIri::new($iri_prefix, Some(stringify!($suffix))).expect(stringify!($suffix));
+                }
             )*
             $(
-                $crate::ns_iri!($iri_prefix, $r_id, $r_sf);
+                #[allow(non_snake_case)]
+                #[test]
+                fn $r_id() {
+                    $crate::term::SimpleIri::new($iri_prefix, Some($r_sf)).expect($r_sf);
+                }
             )*
         }
     };
     ($iri_prefix:expr, $($suffix:ident),*) => {
-        /// Prefix used in this namespace.
-        pub static PREFIX:&'static str = $iri_prefix;
-        $(
-            $crate::ns_term!($iri_prefix, $suffix);
-        )*
-
-        /// Version of the terms in this namespace as `Iri`s.
-        pub mod iri {
-            $(
-                $crate::ns_iri!($iri_prefix, $suffix);
-            )*
-        }
-    };
-}
-
-/// Helper for creating a term in a "namespace module".
-/// In general, you should use the [`namespace!`](macro.namespace.html) macro instead.
-///
-/// # Safety
-/// This macro is conceptually unsafe,
-/// as it is never checked that the prefix IRI is a valid IRI reference.
-#[macro_export]
-macro_rules! ns_term {
-    ($prefix:expr, $ident:ident) => {
-        $crate::ns_term!($prefix, $ident, stringify!($ident));
-    };
-    ($prefix:expr, $ident:ident, $suffix:expr) => {
-        /// Generated term.
-        #[allow(non_upper_case_globals)]
-        pub static $ident: $crate::StaticTerm = $crate::Term::Iri(
-            $crate::iri::Iri::from_raw_parts_unchecked($prefix, Some($suffix), true),
-        );
+        namespace!($iri_prefix, $($suffix),*;);
     };
 }
 
@@ -187,14 +157,12 @@ macro_rules! ns_iri {
         $crate::ns_iri!($prefix, $ident, stringify!($ident));
     };
     ($prefix:expr, $ident:ident, $suffix:expr) => {
-        /// Generated IRI.
+        /// Generated term.
         #[allow(non_upper_case_globals)]
-        pub static $ident: $crate::iri::Iri<&'static str> =
-            $crate::iri::Iri::from_raw_parts_unchecked($prefix, Some($suffix), true);
+        pub static $ident: $crate::term::SimpleIri =
+            $crate::term::SimpleIri::new_unchecked($prefix, Some($suffix));
     };
 }
-
-//pub static $ident:term::Term<'static> = term::Term::Iri(term::IriData{ns:$prefix, suffix:$suffix});
 
 /// The standard `rdf:` namespace.
 ///

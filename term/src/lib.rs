@@ -47,16 +47,18 @@
 #![deny(missing_docs)]
 
 use mownstr::MownStr;
+use sophia_api::term::{
+    term_cmp, term_eq, term_format, term_hash, term_to_string, CopyTerm, SimpleIri, TTerm,
+    TermKind, TryCopyTerm,
+};
 use std::convert::TryInto;
 use std::fmt::Debug;
-use std::hash::Hash;
+use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use std::sync::Arc;
 
 pub mod factory;
 pub mod index_map;
-pub mod matcher;
-pub mod ns;
 
 pub mod variable;
 use self::variable::Variable;
@@ -65,18 +67,18 @@ use self::blank_node::BlankNode;
 pub mod iri;
 use self::iri::{Iri, Normalization};
 pub mod literal;
-use self::literal::{AsLiteral, Literal};
+use literal::convert::{AsLiteral, DataType, NativeLiteral};
+use literal::Literal;
 
 mod _display;
 mod _error;
-mod _graph_name_matcher; // is 'pub use'd by module 'matcher'
 pub use self::_error::*;
 
 /// Generic type for RDF terms.
 ///
 /// See [module documentation](index.html) for more detail.
 ///
-#[derive(Clone, Copy, Debug, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, Ord)]
 pub enum Term<TD>
 where
     TD: TermData,
@@ -296,9 +298,6 @@ where
 
     /// Create a new IRI-term from a given IRI without checking its validity.
     ///
-    /// As it is not checked if absolute or relative this property must be
-    /// entered as well.
-    ///
     /// # Pre-conditions
     ///
     /// This function conducts no checks if the resulting IRI is valid. This is
@@ -306,17 +305,14 @@ where
     /// unexpected behavior.
     ///
     /// However, in `debug` builds assertions that perform checks are enabled.
-    pub fn new_iri_unchecked<U>(iri: U, absolute: bool) -> Term<T>
+    pub fn new_iri_unchecked<U>(iri: U) -> Term<T>
     where
         T: From<U>,
     {
-        Iri::<T>::new_unchecked(iri, absolute).into()
+        Iri::<T>::new_unchecked(iri).into()
     }
 
     /// Create a new IRI-term from a given namespace and suffix.
-    ///
-    /// As it is not checked if absolute or relative this property must be
-    /// entered as well.
     ///
     /// # Pre-conditions
     ///
@@ -329,11 +325,11 @@ where
     /// This is a contract that is generally assumed.
     /// Breaking it could result in unexpected behavior.
     /// However in `debug` mode, assertions that perform checks are enabled.
-    pub fn new_iri_suffixed_unchecked<U, V>(ns: U, suffix: V, absolute: bool) -> Term<T>
+    pub fn new_iri_suffixed_unchecked<U, V>(ns: U, suffix: V) -> Term<T>
     where
         T: From<U> + From<V>,
     {
-        Iri::<T>::new_suffixed_unchecked(ns, suffix, absolute).into()
+        Iri::<T>::new_suffixed_unchecked(ns, suffix).into()
     }
 
     /// Return a new blank node term.
@@ -389,103 +385,71 @@ where
     {
         Variable::<T>::new_unchecked(name).into()
     }
+}
 
-    /// Return this term's value as text.
-    ///
-    /// NB: for literals, the value only conveys the literal value,
-    /// *not* the datatype or the language tag.error
-    pub fn value(&self) -> MownStr {
-        use self::Term::*;
-
+impl<T: TermData> TTerm for Term<T> {
+    fn kind(&self) -> TermKind {
+        use Term::*;
         match self {
-            Iri(iri) => iri.value(),
-            BNode(bn) => bn.value(),
-            Literal(lit) => lit.value(),
-            Variable(var) => var.value(),
+            Iri(_) => TermKind::Iri,
+            Literal(_) => TermKind::Literal,
+            BNode(_) => TermKind::BlankNode,
+            Variable(_) => TermKind::Variable,
         }
     }
-
-    /// Return whether this term is absolute.
-    ///
-    /// * An IRI is absolute iff it is an absolute IRI.
-    /// * A typed literal is absolute iff its datatype is absolute.
-    /// * Any other term is always absolute.
-    pub fn is_absolute(&self) -> bool {
+    fn value_raw(&self) -> (&str, Option<&str>) {
+        use Term::*;
         match self {
-            Term::Iri(iri) => iri.is_absolute(),
-            Term::Literal(lit) => lit.is_absolute(),
-            _ => true,
+            Iri(i) => i.value_raw(),
+            Literal(l) => l.value_raw(),
+            BNode(b) => b.value_raw(),
+            Variable(v) => v.value_raw(),
         }
+    }
+    fn datatype(&self) -> Option<SimpleIri> {
+        if let Term::Literal(lit) = self {
+            lit.datatype()
+        } else {
+            None
+        }
+    }
+    fn language(&self) -> Option<&str> {
+        if let Term::Literal(lit) = self {
+            lit.language()
+        } else {
+            None
+        }
+    }
+    fn as_dyn(&self) -> &dyn TTerm {
+        self
     }
 }
 
-impl<T, U> PartialEq<Term<U>> for Term<T>
+impl<TD, TE> PartialEq<TE> for Term<TD>
 where
-    T: TermData,
-    U: TermData,
+    TD: TermData,
+    TE: TTerm + ?Sized,
 {
-    fn eq(&self, other: &Term<U>) -> bool {
-        use self::Term::*;
-
-        match (self, other) {
-            (Iri(iri1), Iri(iri2)) => iri1 == iri2,
-            (BNode(id1), BNode(id2)) => id1 == id2,
-            (Literal(l1), Literal(l2)) => l1 == l2,
-            (Variable(var1), Variable(var2)) => var1 == var2,
-            _ => false,
-        }
+    fn eq(&self, other: &TE) -> bool {
+        term_eq(self, other)
+    }
+}
+impl<TD, TE> PartialOrd<TE> for Term<TD>
+where
+    TD: TermData,
+    TE: TTerm + ?Sized,
+{
+    fn partial_cmp(&self, other: &TE) -> Option<std::cmp::Ordering> {
+        Some(term_cmp(self, other))
     }
 }
 
-impl<T, U> PartialEq<Iri<U>> for Term<T>
+impl<TD> Hash for Term<TD>
 where
-    T: TermData,
-    U: TermData,
+    TD: TermData,
 {
-    fn eq(&self, other: &Iri<U>) -> bool {
-        match self {
-            Term::Iri(iri) => iri == other,
-            _ => false,
-        }
-    }
-}
-
-impl<T, U> PartialEq<Literal<U>> for Term<T>
-where
-    T: TermData,
-    U: TermData,
-{
-    fn eq(&self, other: &Literal<U>) -> bool {
-        match self {
-            Term::Literal(lit) => lit == other,
-            _ => false,
-        }
-    }
-}
-
-impl<T, U> PartialEq<BlankNode<U>> for Term<T>
-where
-    T: TermData,
-    U: TermData,
-{
-    fn eq(&self, other: &BlankNode<U>) -> bool {
-        match self {
-            Term::BNode(bn) => bn == other,
-            _ => false,
-        }
-    }
-}
-
-impl<T, U> PartialEq<Variable<U>> for Term<T>
-where
-    T: TermData,
-    U: TermData,
-{
-    fn eq(&self, other: &Variable<U>) -> bool {
-        match self {
-            Term::Variable(var) => var == other,
-            _ => false,
-        }
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        term_hash(self, state)
     }
 }
 
@@ -527,32 +491,101 @@ where
 
 impl<TD> From<String> for Term<TD>
 where
-    TD: TermData + From<String> + From<&'static str>,
+    TD: TermData + From<Box<str>> + From<&'static str>,
 {
     fn from(txt: String) -> Self {
-        txt.as_term()
+        txt.as_literal().into()
     }
 }
 
-impl<'a> From<&'a str> for RefTerm<'a> {
-    fn from(txt: &'a str) -> Self {
-        txt.as_term()
+impl<'a> From<SimpleIri<'a>> for RefTerm<'a> {
+    fn from(other: SimpleIri<'a>) -> Self {
+        Iri::from(other).into()
     }
 }
 
-/// Check the equality of two graph names (`Option<&Term>`)
-/// using possibly different `TermData`.
-pub fn same_graph_name<T, U>(g1: Option<&Term<T>>, g2: Option<&Term<U>>) -> bool
+impl<T, TD> From<NativeLiteral<T>> for Term<TD>
 where
-    T: TermData,
-    U: TermData,
+    T: DataType + ?Sized,
+    TD: TermData + From<Box<str>> + From<&'static str>,
 {
-    match (g1, g2) {
-        (Some(n1), Some(n2)) => n1 == n2,
-        (None, None) => true,
-        _ => false,
+    fn from(other: NativeLiteral<T>) -> Self {
+        Literal::from(other).into()
+    }
+}
+
+impl<'a, T> From<NativeLiteral<T, &'a str>> for RefTerm<'a>
+where
+    T: DataType + ?Sized,
+{
+    fn from(other: NativeLiteral<T, &'a str>) -> Self {
+        Literal::from(other).into()
+    }
+}
+
+impl<TD> CopyTerm for Term<TD>
+where
+    TD: TermData + for<'x> From<&'x str>,
+{
+    fn copy<T>(term: &T) -> Self
+    where
+        T: TTerm + ?Sized,
+    {
+        match term.kind() {
+            TermKind::Iri => Term::Iri(Iri::try_copy(term).unwrap()),
+            TermKind::Literal => Term::Literal(Literal::try_copy(term).unwrap()),
+            TermKind::BlankNode => Term::BNode(BlankNode::try_copy(term).unwrap()),
+            TermKind::Variable => Term::Variable(Variable::try_copy(term).unwrap()),
+        }
+    }
+}
+
+impl<'a, T> From<&'a T> for RefTerm<'a>
+where
+    T: TTerm + ?Sized,
+{
+    fn from(t: &'a T) -> Self {
+        let v = t.value_raw();
+        match t.kind() {
+            TermKind::Iri => Term::Iri(match v.1 {
+                None => Iri::new_unchecked(v.0),
+                Some(suffix) => Iri::new_suffixed_unchecked(v.0, suffix),
+            }),
+            TermKind::Literal => Term::Literal(match t.language() {
+                None => {
+                    let dt: Iri<&'a str> = t.datatype().unwrap().into();
+                    Literal::new_dt(v.0, dt)
+                }
+                Some(tag) => Literal::new_lang_unchecked(v.0, tag),
+            }),
+            TermKind::BlankNode => Term::BNode(BlankNode::new_unchecked(v.0)),
+            TermKind::Variable => Term::Variable(Variable::new_unchecked(v.0)),
+        }
     }
 }
 
 #[cfg(test)]
 pub(crate) mod test;
+
+/// This line re-exorts `same_graph_name` from `sophia_api::term`,
+/// to ease transition from older versions of Sophia.
+/// It will eventually be deprecated.
+///
+/// See [`sophia_api`](https://docs.rs/sophia_api/latest/sophia_api/)
+pub use sophia_api::term::same_graph_name;
+
+/// This module re-exorts things from `sophia_api::ns`,
+/// to ease transition from older versions of Sophia.
+/// It will eventually be deprecated.
+///
+/// See [`sophia_api`](https://docs.rs/sophia_api/latest/sophia_api/)
+pub mod ns {
+    pub use sophia_api::ns::*;
+}
+
+/// This line re-exorts the module `sophia_api::term::matcher`,
+/// to ease transition from older versions of Sophia.
+/// It will eventually be deprecated.
+///
+/// See [`sophia_api`](https://docs.rs/sophia_api/latest/sophia_api/)
+pub use sophia_api::term::matcher;

@@ -22,11 +22,12 @@ use crate::ns::rdf;
 use crate::ns::xsd;
 use crate::ns::Namespace;
 use crate::parser::{LocatableError, TripleParser};
+use sophia_api::term::matcher::TermMatcher;
+use sophia_api::term::SimpleIri;
+use sophia_iri::is_absolute_iri_ref;
+use sophia_iri::is_relative_iri_ref;
 use sophia_term::factory::RcTermFactory;
 use sophia_term::factory::TermFactory;
-use sophia_term::iri::is_absolute_iri_ref;
-use sophia_term::iri::is_relative_iri_ref;
-use sophia_term::matcher::TermMatcher;
 use sophia_term::StaticTerm;
 use sophia_term::Term;
 use sophia_term::TermError;
@@ -40,34 +41,38 @@ use self::_handler::*;
 
 const DEFAULT_BUFFER_SIZE: usize = 8 * 1024;
 
-static RESERVED_NODE_NAMES: &[StaticTerm] = &[
-    rdf::RDF,
-    rdf::ID,
-    rdf::about,
-    rdf::bagID,
-    rdf::parseType,
-    rdf::resource,
-    rdf::nodeID,
-    rdf::li,
-    rdf::aboutEach,
-    rdf::aboutEachPrefix,
+static RESERVED_NODE_NAMES: &[&SimpleIri] = &[
+    &rdf::RDF,
+    &rdf::ID,
+    &rdf::about,
+    &rdf::bagID,
+    &rdf::parseType,
+    &rdf::resource,
+    &rdf::nodeID,
+    &rdf::li,
+    &rdf::aboutEach,
+    &rdf::aboutEachPrefix,
 ];
 
-static RESERVED_PROPERTY_NAMES: &[StaticTerm] = &[
-    rdf::Description,
-    rdf::RDF,
-    rdf::ID,
-    rdf::about,
-    rdf::bagID,
-    rdf::parseType,
-    rdf::resource,
-    rdf::nodeID,
-    rdf::aboutEach,
-    rdf::aboutEachPrefix,
+static RESERVED_PROPERTY_NAMES: &[&SimpleIri] = &[
+    &rdf::Description,
+    &rdf::RDF,
+    &rdf::ID,
+    &rdf::about,
+    &rdf::bagID,
+    &rdf::parseType,
+    &rdf::resource,
+    &rdf::nodeID,
+    &rdf::aboutEach,
+    &rdf::aboutEachPrefix,
 ];
 
-static RESERVED_ATTRIBUTES_NAMES: &[StaticTerm] =
-    &[rdf::li, rdf::aboutEach, rdf::aboutEachPrefix, rdf::bagID];
+static RESERVED_ATTRIBUTES_NAMES: &[&SimpleIri] = &[
+    &rdf::li,
+    &rdf::aboutEach,
+    &rdf::aboutEachPrefix,
+    &rdf::bagID,
+];
 
 mod xmlname {
 
@@ -269,8 +274,9 @@ mod test {
     use crate::parser::TripleParser;
     use crate::triple::stream::TripleSource;
     use crate::triple::Triple;
+    use sophia_api::term::{CopyTerm, TTerm};
     use sophia_term::factory::RcTermFactory;
-    use sophia_term::Term;
+    use sophia_term::{BoxTerm, Term};
 
     type TestGraph = HashGraph<TermIndexMapU<u16, RcTermFactory>>;
 
@@ -278,7 +284,12 @@ mod test {
         fn fmt(&self, f: &mut Formatter) -> FmtResult {
             let mut v = Vec::new();
             for t in self.triples() {
-                v.push(t.unwrap());
+                let t = t.unwrap();
+                v.push([
+                    BoxTerm::copy(t.s()),
+                    BoxTerm::copy(t.p()),
+                    BoxTerm::copy(t.o()),
+                ]);
             }
             v.sort_by_key(|t| {
                 (

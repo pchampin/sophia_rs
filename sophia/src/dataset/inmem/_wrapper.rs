@@ -2,6 +2,8 @@
 
 use super::*;
 use crate::dataset::indexed::IndexedDataset;
+use sophia_api::term::TTerm;
+use std::hash::Hash;
 
 /// A dataset wrapper wraps a [`Dataset`] and overrides some of its methods.
 ///
@@ -34,255 +36,279 @@ pub trait DatasetWrapper {
 
     #[inline]
     /// Mimmic the [`quads_with_s`](../trait.Dataset.html#method.quads_with_s) method.
-    fn dw_quads_with_s<'s, T>(&'s self, s: &'s Term<T>) -> DQuadSource<'s, Self::Wrapped>
+    fn dw_quads_with_s<'s, TS>(&'s self, s: &'s TS) -> DQuadSource<'s, Self::Wrapped>
     where
-        T: TermData,
+        TS: TTerm + ?Sized,
     {
         self.get_wrapped().quads_with_s(s)
     }
     #[inline]
     /// Mimmic the [`quads_with_p`](../trait.Dataset.html#method.quads_with_p) method.
-    fn dw_quads_with_p<'s, T>(&'s self, p: &'s Term<T>) -> DQuadSource<'s, Self::Wrapped>
+    fn dw_quads_with_p<'s, TP>(&'s self, p: &'s TP) -> DQuadSource<'s, Self::Wrapped>
     where
-        T: TermData,
+        TP: TTerm + ?Sized,
     {
         self.get_wrapped().quads_with_p(p)
     }
     #[inline]
     /// Mimmic the [`quads_with_o`](../trait.Dataset.html#method.quads_with_o) method.
-    fn dw_quads_with_o<'s, T>(&'s self, o: &'s Term<T>) -> DQuadSource<'s, Self::Wrapped>
+    fn dw_quads_with_o<'s, TO>(&'s self, o: &'s TO) -> DQuadSource<'s, Self::Wrapped>
     where
-        T: TermData,
+        TO: TTerm + ?Sized,
     {
         self.get_wrapped().quads_with_o(o)
     }
     #[inline]
     /// Mimmic the [`quads_with_g`](../trait.Dataset.html#method.quads_with_g) method.
-    fn dw_quads_with_g<'s, T>(&'s self, g: Option<&'s Term<T>>) -> DQuadSource<'s, Self::Wrapped>
+    fn dw_quads_with_g<'s, TG>(&'s self, g: Option<&'s TG>) -> DQuadSource<'s, Self::Wrapped>
     where
-        T: TermData,
+        TG: TTerm + ?Sized,
     {
         self.get_wrapped().quads_with_g(g)
     }
     #[inline]
     /// Mimmic the [`quads_with_sp`](../trait.Dataset.html#method.quads_with_sp) method.
-    fn dw_quads_with_sp<'s, T, U>(
+    fn dw_quads_with_sp<'s, TS, TP>(
         &'s self,
-        s: &'s Term<T>,
-        p: &'s Term<U>,
+        s: &'s TS,
+        p: &'s TP,
     ) -> DQuadSource<'s, Self::Wrapped>
     where
-        T: TermData,
-        U: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
     {
         self.get_wrapped().quads_with_sp(s, p)
     }
     #[inline]
     /// Mimmic the [`quads_with_so`](../trait.Dataset.html#method.quads_with_so) method.
-    fn dw_quads_with_so<'s, T, U>(
+    fn dw_quads_with_so<'s, TS, TO>(
         &'s self,
-        s: &'s Term<T>,
-        o: &'s Term<U>,
+        s: &'s TS,
+        o: &'s TO,
     ) -> DQuadSource<'s, Self::Wrapped>
     where
-        T: TermData,
-        U: TermData,
+        TS: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
         self.get_wrapped().quads_with_so(s, o)
     }
     #[inline]
     /// Mimmic the [`quads_with_sg`](../trait.Dataset.html#method.quads_with_sg) method.
-    fn dw_quads_with_sg<'s, T, U>(
+    fn dw_quads_with_sg<'s, TS, TG>(
         &'s self,
-        s: &'s Term<T>,
-        g: Option<&'s Term<U>>,
+        s: &'s TS,
+        g: Option<&'s TG>,
     ) -> DQuadSource<'s, Self::Wrapped>
     where
-        T: TermData,
-        U: TermData,
+        TS: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         self.get_wrapped().quads_with_sg(s, g)
     }
     #[inline]
     /// Mimmic the [`quads_with_po`](../trait.Dataset.html#method.quads_with_po) method.
-    fn dw_quads_with_po<'s, T, U>(
+    fn dw_quads_with_po<'s, TP, TO>(
         &'s self,
-        p: &'s Term<T>,
-        o: &'s Term<U>,
+        p: &'s TP,
+        o: &'s TO,
     ) -> DQuadSource<'s, Self::Wrapped>
     where
-        T: TermData,
-        U: TermData,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
         self.get_wrapped().quads_with_po(p, o)
     }
     #[inline]
     /// Mimmic the [`quads_with_pg`](../trait.Dataset.html#method.quads_with_pg) method.
-    fn dw_quads_with_pg<'s, T, U>(
+    fn dw_quads_with_pg<'s, TP, TG>(
         &'s self,
-        p: &'s Term<T>,
-        g: Option<&'s Term<U>>,
+        p: &'s TP,
+        g: Option<&'s TG>,
     ) -> DQuadSource<'s, Self::Wrapped>
     where
-        T: TermData,
-        U: TermData,
+        TP: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         self.get_wrapped().quads_with_pg(p, g)
     }
     #[inline]
     /// Mimmic the [`quads_with_og`](../trait.Dataset.html#method.quads_with_og) method.
-    fn dw_quads_with_og<'s, T, U>(
+    fn dw_quads_with_og<'s, TO, TG>(
         &'s self,
-        o: &'s Term<T>,
-        g: Option<&'s Term<U>>,
+        o: &'s TO,
+        g: Option<&'s TG>,
     ) -> DQuadSource<'s, Self::Wrapped>
     where
-        T: TermData,
-        U: TermData,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         self.get_wrapped().quads_with_og(o, g)
     }
     #[inline]
     /// Mimmic the [`quads_with_spo`](../trait.Dataset.html#method.quads_with_spo) method.
-    fn dw_quads_with_spo<'s, T, U, V>(
+    fn dw_quads_with_spo<'s, TS, TP, TO>(
         &'s self,
-        s: &'s Term<T>,
-        p: &'s Term<U>,
-        o: &'s Term<V>,
+        s: &'s TS,
+        p: &'s TP,
+        o: &'s TO,
     ) -> DQuadSource<'s, Self::Wrapped>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
     {
         self.get_wrapped().quads_with_spo(s, p, o)
     }
     #[inline]
     /// Mimmic the [`quads_with_spg`](../trait.Dataset.html#method.quads_with_spg) method.
-    fn dw_quads_with_spg<'s, T, U, V>(
+    fn dw_quads_with_spg<'s, TS, TP, TG>(
         &'s self,
-        s: &'s Term<T>,
-        p: &'s Term<U>,
-        g: Option<&'s Term<V>>,
+        s: &'s TS,
+        p: &'s TP,
+        g: Option<&'s TG>,
     ) -> DQuadSource<'s, Self::Wrapped>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         self.get_wrapped().quads_with_spg(s, p, g)
     }
     #[inline]
     /// Mimmic the [`quads_with_sog`](../trait.Dataset.html#method.quads_with_sog) method.
-    fn dw_quads_with_sog<'s, T, U, V>(
+    fn dw_quads_with_sog<'s, TS, TO, TG>(
         &'s self,
-        s: &'s Term<T>,
-        o: &'s Term<U>,
-        g: Option<&'s Term<V>>,
+        s: &'s TS,
+        o: &'s TO,
+        g: Option<&'s TG>,
     ) -> DQuadSource<'s, Self::Wrapped>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         self.get_wrapped().quads_with_sog(s, o, g)
     }
     #[inline]
     /// Mimmic the [`quads_with_pog`](../trait.Dataset.html#method.quads_with_pog) method.
-    fn dw_quads_with_pog<'s, T, U, V>(
+    fn dw_quads_with_pog<'s, TP, TO, TG>(
         &'s self,
-        p: &'s Term<T>,
-        o: &'s Term<U>,
-        g: Option<&'s Term<V>>,
+        p: &'s TP,
+        o: &'s TO,
+        g: Option<&'s TG>,
     ) -> DQuadSource<'s, Self::Wrapped>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         self.get_wrapped().quads_with_pog(p, o, g)
     }
     #[inline]
     /// Mimmic the [`quads_with_spog`](../trait.Dataset.html#method.quads_with_spog) method.
-    fn dw_quads_with_spog<'s, T, U, V, W>(
+    fn dw_quads_with_spog<'s, TS, TP, TO, TG>(
         &'s self,
-        s: &'s Term<T>,
-        p: &'s Term<U>,
-        o: &'s Term<V>,
-        g: Option<&'s Term<W>>,
+        s: &'s TS,
+        p: &'s TP,
+        o: &'s TO,
+        g: Option<&'s TG>,
     ) -> DQuadSource<'s, Self::Wrapped>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
-        W: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         self.get_wrapped().quads_with_spog(s, p, o, g)
     }
 
     #[inline]
     /// Mimmic the [`contains`](../trait.Dataset.html#method.contains) method.
-    fn dw_contains<T, U, V, W>(
+    fn dw_contains<TS, TP, TO, TG>(
         &self,
-        s: &Term<T>,
-        p: &Term<U>,
-        o: &Term<V>,
-        g: Option<&Term<W>>,
+        s: &TS,
+        p: &TP,
+        o: &TO,
+        g: Option<&TG>,
     ) -> DResult<Self::Wrapped, bool>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData,
-        W: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
         self.get_wrapped().contains(s, p, o, g)
     }
 
     #[inline]
     /// Mimmic the [`subjects`](../trait.Dataset.html#method.subjects) method.
-    fn dw_subjects(&self) -> DResultTermSet<Self::Wrapped> {
+    fn dw_subjects(&self) -> DResultTermSet<Self::Wrapped>
+    where
+        DTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().subjects()
     }
 
     #[inline]
     /// Mimmic the [`predicates`](../trait.Dataset.html#method.predicates) method.
-    fn dw_predicates(&self) -> DResultTermSet<Self::Wrapped> {
+    fn dw_predicates(&self) -> DResultTermSet<Self::Wrapped>
+    where
+        DTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().predicates()
     }
 
     #[inline]
     /// Mimmic the [`objects`](../trait.Dataset.html#method.objects) method.
-    fn dw_objects(&self) -> DResultTermSet<Self::Wrapped> {
+    fn dw_objects(&self) -> DResultTermSet<Self::Wrapped>
+    where
+        DTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().objects()
     }
 
     #[inline]
     /// Mimmic the [`graph_names`](../trait.Dataset.html#method.graph_names) method.
-    fn dw_graph_names(&self) -> DResultTermSet<Self::Wrapped> {
+    fn dw_graph_names(&self) -> DResultTermSet<Self::Wrapped>
+    where
+        DTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().graph_names()
     }
 
     #[inline]
     /// Mimmic the [`iris`](../trait.Dataset.html#method.iris) method.
-    fn dw_iris(&self) -> DResultTermSet<Self::Wrapped> {
+    fn dw_iris(&self) -> DResultTermSet<Self::Wrapped>
+    where
+        DTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().iris()
     }
 
     #[inline]
     /// Mimmic the [`bnodes`](../trait.Dataset.html#method.bnodes) method.
-    fn dw_bnodes(&self) -> DResultTermSet<Self::Wrapped> {
+    fn dw_bnodes(&self) -> DResultTermSet<Self::Wrapped>
+    where
+        DTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().bnodes()
     }
 
     #[inline]
     /// Mimmic the [`literals`](../trait.Dataset.html#method.literals) method.
-    fn dw_literals(&self) -> DResultTermSet<Self::Wrapped> {
+    fn dw_literals(&self) -> DResultTermSet<Self::Wrapped>
+    where
+        DTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().literals()
     }
 
     #[inline]
     /// Mimmic the [`variables`](../trait.Dataset.html#method.variables) method.
-    fn dw_variables(&self) -> DResultTermSet<Self::Wrapped> {
+    fn dw_variables(&self) -> DResultTermSet<Self::Wrapped>
+    where
+        DTerm<Self::Wrapped>: Clone + Eq + Hash,
+    {
         self.get_wrapped().variables()
     }
 }
@@ -307,204 +333,204 @@ macro_rules! impl_dataset_for_wrapper {
             DatasetWrapper::dw_quads(self)
         }
         #[inline]
-        fn quads_with_s<'s_, T_>(
+        fn quads_with_s<'s_, TS_>(
             &'s_ self,
-            s: &'s_ sophia_term::Term<T_>
+            s: &'s_ TS_,
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
+            TS_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_s(self, s)
         }
         #[inline]
-        fn quads_with_p<'s_, T_>(
+        fn quads_with_p<'s_, TP_>(
             &'s_ self,
-            p: &'s_ sophia_term::Term<T_>
+            p: &'s_ TP_,
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
+            TP_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_p(self, p)
         }
         #[inline]
-        fn quads_with_o<'s_, T_>(
+        fn quads_with_o<'s_, TO_>(
             &'s_ self,
-            o: &'s_ sophia_term::Term<T_>
+            o: &'s_ TO_
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
+            TO_: sophia_api::term::TTerm + ?Sized,
         {
 
             DatasetWrapper::dw_quads_with_o(self, o)
         }
         #[inline]
-        fn quads_with_g<'s_, T_>(
+        fn quads_with_g<'s_, TG_>(
             &'s_ self,
-            g: std::option::Option<&'s_ sophia_term::Term<T_>>
+            g: std::option::Option<&'s_ TG_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
+            TG_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_g(self, g)
         }
         #[inline]
-        fn quads_with_sp<'s_, T_, U_>(
+        fn quads_with_sp<'s_, TS_, TP_>(
             &'s_ self,
-            s: &'s_ sophia_term::Term<T_>,
-            p: &'s_ sophia_term::Term<U_>
+            s: &'s_ TS_,
+            p: &'s_ TP_
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
-            U_: sophia_term::TermData,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_sp(self, s, p)
         }
         #[inline]
-        fn quads_with_so<'s_, T_, U_>(
+        fn quads_with_so<'s_, TS_, TO_>(
             &'s_ self,
-            s: &'s_ sophia_term::Term<T_>,
-            o: &'s_ sophia_term::Term<U_>
+            s: &'s_ TS_,
+            o: &'s_ TO_
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
-            U_: sophia_term::TermData,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_so(self, s, o)
         }
         #[inline]
-        fn quads_with_sg<'s_, T_, U_>(
+        fn quads_with_sg<'s_, TS_, TG_>(
             &'s_ self,
-            s: &'s_ sophia_term::Term<T_>,
-            g: std::option::Option<&'s_ sophia_term::Term<U_>>
+            s: &'s_ TS_,
+            g: std::option::Option<&'s_ TG_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
-            U_: sophia_term::TermData,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TG_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_sg(self, s, g)
         }
         #[inline]
-        fn quads_with_po<'s_, T_, U_>(
+        fn quads_with_po<'s_, TP_, TO_>(
             &'s_ self,
-            p: &'s_ sophia_term::Term<T_>,
-            o: &'s_ sophia_term::Term<U_>
+            p: &'s_ TP_,
+            o: &'s_ TO_
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
-            U_: sophia_term::TermData,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_po(self, p, o)
         }
         #[inline]
-        fn quads_with_pg<'s_, T_, U_>(
+        fn quads_with_pg<'s_, TP_, TG_>(
             &'s_ self,
-            p: &'s_ sophia_term::Term<T_>,
-            g: std::option::Option<&'s_ sophia_term::Term<U_>>
+            p: &'s_ TP_,
+            g: std::option::Option<&'s_ TG_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
-            U_: sophia_term::TermData,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TG_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_pg(self, p, g)
         }
         #[inline]
-        fn quads_with_og<'s_, T_, U_>(
+        fn quads_with_og<'s_, TO_, TG_>(
             &'s_ self,
-            o: &'s_ sophia_term::Term<T_>,
-            g: std::option::Option<&'s_ sophia_term::Term<U_>>
+            o: &'s_ TO_,
+            g: std::option::Option<&'s_ TG_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
-            U_: sophia_term::TermData,
+            TO_: sophia_api::term::TTerm + ?Sized,
+            TG_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_og(self, o, g)
         }
         #[inline]
-        fn quads_with_spo<'s_, T_, U_, V_>(
+        fn quads_with_spo<'s_, TS_, TP_, TO_>(
             &'s_ self,
-            s: &'s_ sophia_term::Term<T_>,
-            p: &'s_ sophia_term::Term<U_>,
-            o: &'s_ sophia_term::Term<V_>
+            s: &'s_ TS_,
+            p: &'s_ TP_,
+            o: &'s_ TO_
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
-            U_: sophia_term::TermData,
-            V_: sophia_term::TermData,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_spo(self, s, p, o)
         }
         #[inline]
-        fn quads_with_spg<'s_, T_, U_, V_>(
+        fn quads_with_spg<'s_, TS_, TP_, TG_>(
             &'s_ self,
-            s: &'s_ sophia_term::Term<T_>,
-            p: &'s_ sophia_term::Term<U_>,
-            g: std::option::Option<&'s_ sophia_term::Term<V_>>
+            s: &'s_ TS_,
+            p: &'s_ TP_,
+            g: std::option::Option<&'s_ TG_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
-            U_: sophia_term::TermData,
-            V_: sophia_term::TermData,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TG_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_spg(self, s, p, g)
         }
         #[inline]
-        fn quads_with_sog<'s_, T_, U_, V_>(
+        fn quads_with_sog<'s_, TS_, TO_, TG_>(
             &'s_ self,
-            s: &'s_ sophia_term::Term<T_>,
-            o: &'s_ sophia_term::Term<U_>,
-            g: std::option::Option<&'s_ sophia_term::Term<V_>>
+            s: &'s_ TS_,
+            o: &'s_ TO_,
+            g: std::option::Option<&'s_ TG_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
-            U_: sophia_term::TermData,
-            V_: sophia_term::TermData,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
+            TG_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_sog(self, s, o, g)
         }
         #[inline]
-        fn quads_with_pog<'s_, T_, U_, V_>(
+        fn quads_with_pog<'s_, TP_, TO_, TG_>(
             &'s_ self,
-            p: &'s_ sophia_term::Term<T_>,
-            o: &'s_ sophia_term::Term<U_>,
-            g: std::option::Option<&'s_ sophia_term::Term<V_>>
+            p: &'s_ TP_,
+            o: &'s_ TO_,
+            g: std::option::Option<&'s_ TG_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
-            U_: sophia_term::TermData,
-            V_: sophia_term::TermData,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
+            TG_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_pog(self, p, o, g)
         }
         #[inline]
-        fn quads_with_spog<'s_, T_, U_, V_, W_>(
+        fn quads_with_spog<'s_, TS_, TP_, TO_, TG_>(
             &'s_ self,
-            s: &'s_ sophia_term::Term<T_>,
-            p: &'s_ sophia_term::Term<U_>,
-            o: &'s_ sophia_term::Term<V_>,
-            g: std::option::Option<&'s_ sophia_term::Term<W_>>
+            s: &'s_ TS_,
+            p: &'s_ TP_,
+            o: &'s_ TO_,
+            g: std::option::Option<&'s_ TG_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            T_: sophia_term::TermData,
-            U_: sophia_term::TermData,
-            V_: sophia_term::TermData,
-            W_: sophia_term::TermData,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
+            TG_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_spog(self, s, p, o, g)
         }
 
         #[inline]
-        fn contains<T_, U_, V_, W_>(
-            & self,
-            s: &sophia_term::Term<T_>,
-            p: &sophia_term::Term<U_>,
-            o: &sophia_term::Term<V_>,
-            g: std::option::Option<&sophia_term::Term<W_>>
+        fn contains<TS_, TP_, TO_, TG_>(
+            &self,
+            s: &TS_,
+            p: &TP_,
+            o: &TO_,
+            g: std::option::Option<&TG_>
         ) -> $crate::dataset::DResult<Self, bool>
         where
-            T_: sophia_term::TermData,
-            U_: sophia_term::TermData,
-            V_: sophia_term::TermData,
-            W_: sophia_term::TermData,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
+            TG_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_contains(self, s, p, o, g)
         }
@@ -600,20 +626,17 @@ macro_rules! impl_indexed_dataset_for_wrapper {
         }
 
         #[inline]
-        fn get_index<U>(&self, t: &sophia_term::Term<U>) -> Option<Self::Index>
+        fn get_index<U>(&self, t: &U) -> Option<Self::Index>
         where
-            U: sophia_term::TermData,
+            U: sophia_api::term::TTerm + ?Sized,
         {
             self.get_wrapped().get_index(t)
         }
 
         #[inline]
-        fn get_index_for_graph_name<U>(
-            &self,
-            g: std::option::Option<&'_ sophia_term::Term<U>>,
-        ) -> Option<Self::Index>
+        fn get_index_for_graph_name<U>(&self, g: std::option::Option<&'_ U>) -> Option<Self::Index>
         where
-            U: sophia_term::TermData,
+            U: sophia_api::term::TTerm + ?Sized,
         {
             self.get_wrapped().get_index_for_graph_name(g)
         }
@@ -628,36 +651,36 @@ macro_rules! impl_indexed_dataset_for_wrapper {
             self.get_wrapped().get_graph_name(i)
         }
 
-        fn insert_indexed<U, V, W, X>(
+        fn insert_indexed<TS, TP, TO, TG>(
             &mut self,
-            s: &sophia_term::Term<U>,
-            p: &sophia_term::Term<V>,
-            o: &sophia_term::Term<W>,
-            g: std::option::Option<&'_ sophia_term::Term<X>>,
+            s: &TS,
+            p: &TP,
+            o: &TO,
+            g: Option<&TG>,
         ) -> Option<[Self::Index; 4]>
         where
-            U: sophia_term::TermData,
-            V: sophia_term::TermData,
-            W: sophia_term::TermData,
-            X: sophia_term::TermData,
+            TS: sophia_api::term::TTerm + ?Sized,
+            TP: sophia_api::term::TTerm + ?Sized,
+            TO: sophia_api::term::TTerm + ?Sized,
+            TG: sophia_api::term::TTerm + ?Sized,
         {
             let modified = self.get_wrapped_mut().insert_indexed(s, p, o, g);
             self.idw_hook_insert_indexed(&modified);
             modified
         }
 
-        fn remove_indexed<U, V, W, X>(
+        fn remove_indexed<TS, TP, TO, TG>(
             &mut self,
-            s: &sophia_term::Term<U>,
-            p: &sophia_term::Term<V>,
-            o: &sophia_term::Term<W>,
-            g: std::option::Option<&'_ sophia_term::Term<X>>,
+            s: &TS,
+            p: &TP,
+            o: &TO,
+            g: Option<&TG>,
         ) -> Option<[Self::Index; 4]>
         where
-            U: sophia_term::TermData,
-            V: sophia_term::TermData,
-            W: sophia_term::TermData,
-            X: sophia_term::TermData,
+            TS: sophia_api::term::TTerm + ?Sized,
+            TP: sophia_api::term::TTerm + ?Sized,
+            TO: sophia_api::term::TTerm + ?Sized,
+            TG: sophia_api::term::TTerm + ?Sized,
         {
             let modified = self.get_wrapped_mut().remove_indexed(s, p, o, g);
             self.idw_hook_remove_indexed(&modified);

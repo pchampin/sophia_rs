@@ -1,0 +1,21 @@
+[package]
+name = "sophia_api"
+version = "0.5.3"
+authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
+edition = "2018"
+description = "A Rust toolkit for RDF and Linked Data - Core API"
+repository = "https://github.com/pchampin/sophia_rs"
+documentation = "https://docs.rs/sophia_api"
+readme = "../README.md"
+license = "CECILL-B"
+keywords = ["rdf", "linked-data", "semantic-web"]
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sophia_iri = { version = "0.5.3", path = "../iri" }
+mownstr = "0.1.1"
+
+[dev-dependencies]
+sophia_iri = { version = "0.5.3", path = "../iri", features = ["test_data"] }

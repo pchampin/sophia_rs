@@ -44,14 +44,12 @@ pub enum TermError {
         "The identifier '{0}' is not valid for a blank node according to the N3 specification"
     )]
     InvalidBlankNodeId(String),
-    /// Raised when failing to downcast a term.
-    #[error("The term '{term}' is not the expected {expect}")]
-    UnexpectedKindOfTerm {
-        /// The unexpected term.
-        term: String,
-        /// What was expected.
-        expect: String,
-    },
+    /// Raised when failing to convert a term into another type
+    #[error("The term '{0}' has an unsupported kind")]
+    UnsupportedKind(String),
+    /// Raised when failing to convert a literal into a native type
+    #[error("The term '{0}' has an unsupported datatype")]
+    UnsupportedDatatype(String),
 }
 
 impl From<std::convert::Infallible> for TermError {

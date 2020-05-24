@@ -102,7 +102,7 @@ where
     }
 
     fn make_index(&mut self, t: &RefTerm) -> T {
-        let t = self.factory.clone_term(&t);
+        let t = self.factory.clone_term(t);
         let rt = unsafe { fake_static(&t) };
         if let Some(i) = self.get_index(&rt) {
             self.i2c[i.as_usize()].inc();
@@ -236,30 +236,30 @@ mod test {
         assert_eq!(ti.next_free(), 1);
         assert_eq!(ti.i2t.len(), 1);
 
-        use crate::ns::rdf;
+        use sophia_api::ns::rdf;
 
-        assert_eq!(ti.get_index(&rdf::subject), None);
-        assert_eq!(ti.make_index(&rdf::subject), 1);
-        assert_eq!(ti.get_index(&rdf::subject), Some(1));
+        assert_eq!(ti.get_index(&rdf::subject.into()), None);
+        assert_eq!(ti.make_index(&rdf::subject.into()), 1);
+        assert_eq!(ti.get_index(&rdf::subject.into()), Some(1));
         assert_eq!(ti.i2c[1], 1);
         assert_eq!(ti.next_free(), 2);
         assert_eq!(ti.i2t.len(), 2);
 
-        assert_eq!(ti.get_index(&rdf::predicate), None);
-        assert_eq!(ti.make_index(&rdf::predicate), 2);
-        assert_eq!(ti.get_index(&rdf::predicate), Some(2));
+        assert_eq!(ti.get_index(&rdf::predicate.into()), None);
+        assert_eq!(ti.make_index(&rdf::predicate.into()), 2);
+        assert_eq!(ti.get_index(&rdf::predicate.into()), Some(2));
         assert_eq!(ti.i2c[2], 1);
         assert_eq!(ti.next_free(), 3);
         assert_eq!(ti.i2t.len(), 3);
 
-        assert_eq!(ti.get_index(&rdf::object), None);
-        assert_eq!(ti.make_index(&rdf::object), 3);
-        assert_eq!(ti.get_index(&rdf::object), Some(3));
+        assert_eq!(ti.get_index(&rdf::object.into()), None);
+        assert_eq!(ti.make_index(&rdf::object.into()), 3);
+        assert_eq!(ti.get_index(&rdf::object.into()), Some(3));
         assert_eq!(ti.i2c[3], 1);
         assert_eq!(ti.next_free(), 4);
         assert_eq!(ti.i2t.len(), 4);
 
-        assert_eq!(ti.make_index(&rdf::predicate), 2);
+        assert_eq!(ti.make_index(&rdf::predicate.into()), 2);
         assert_eq!(ti.i2c[2], 2);
 
         ti.inc_ref(2);
@@ -274,27 +274,27 @@ mod test {
         assert_eq!(ti.next_free(), 4);
 
         ti.dec_ref(2);
-        assert_eq!(ti.get_index(&rdf::predicate), None);
+        assert_eq!(ti.get_index(&rdf::predicate.into()), None);
         assert_eq!(ti.next_free(), 2);
         assert_eq!(ti.i2c[2], 4); // now the previous version of next_free()
 
         ti.dec_ref(1);
-        assert_eq!(ti.get_index(&rdf::subject), None);
+        assert_eq!(ti.get_index(&rdf::subject.into()), None);
         assert_eq!(ti.next_free(), 1);
         assert_eq!(ti.i2c[1], 2); // now the previous version of next_free()
 
-        assert_eq!(ti.make_index(&rdf::type_), 1);
+        assert_eq!(ti.make_index(&rdf::type_.into()), 1);
         assert_eq!(ti.i2c[1], 1);
         assert_eq!(ti.i2t.len(), 4);
         assert_eq!(ti.next_free(), 2);
 
         // re-inserting rdf::subject, now ends up in a different place
-        assert_eq!(ti.make_index(&rdf::subject), 2);
+        assert_eq!(ti.make_index(&rdf::subject.into()), 2);
         assert_eq!(ti.i2c[2], 1);
         assert_eq!(ti.i2t.len(), 4);
         assert_eq!(ti.next_free(), 4);
 
-        assert_eq!(ti.make_index(&rdf::Property), 4);
+        assert_eq!(ti.make_index(&rdf::Property.into()), 4);
         assert_eq!(ti.i2c[4], 1);
         assert_eq!(ti.i2t.len(), 5);
         assert_eq!(ti.next_free(), 5);

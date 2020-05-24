@@ -39,7 +39,7 @@ impl QuadStreamingMode for ByRefTerms {
 pub struct ByTermRefs<TD: TermData>(PhantomData<TD>);
 impl<TD: TermData> QuadStreamingMode for ByTermRefs<TD> {
     #[allow(clippy::type_complexity)]
-    type UnsafeQuad = ([NonNull<Term<TD>>; 3], Option<NonNull<Term<TD>>>);
+    type UnsafeQuad = TermRefs<([NonNull<Term<TD>>; 3], Option<NonNull<Term<TD>>>)>;
 }
 
 /// See [module](./index.html) documentation.
@@ -117,7 +117,7 @@ where
     ) -> Self {
         StreamedQuad {
             _phantom: PhantomData,
-            wrapped: ([s.into(), p.into(), o.into()], g.map(|g| g.into())),
+            wrapped: TermRefs(([s.into(), p.into(), o.into()], g.map(|g| g.into()))),
         }
     }
 }
@@ -125,17 +125,17 @@ impl<'a, T> Quad for StreamedQuad<'a, T>
 where
     T: QuadStreamingMode,
 {
-    type TermData = <T::UnsafeQuad as UnsafeQuad>::TermData;
-    fn s(&self) -> &Term<Self::TermData> {
+    type Term = <T::UnsafeQuad as UnsafeQuad>::Term;
+    fn s(&self) -> &Self::Term {
         unsafe { self.wrapped.u_s() }
     }
-    fn p(&self) -> &Term<Self::TermData> {
+    fn p(&self) -> &Self::Term {
         unsafe { self.wrapped.u_p() }
     }
-    fn o(&self) -> &Term<Self::TermData> {
+    fn o(&self) -> &Self::Term {
         unsafe { self.wrapped.u_o() }
     }
-    fn g(&self) -> Option<&Term<Self::TermData>> {
+    fn g(&self) -> Option<&Self::Term> {
         unsafe { self.wrapped.u_g() }
     }
 }

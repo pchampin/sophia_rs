@@ -100,7 +100,7 @@ impl TripleStreamingMode for ByRefTerms {
 #[derive(Debug)]
 pub struct ByTermRefs<TD: TermData>(PhantomData<TD>);
 impl<TD: TermData> TripleStreamingMode for ByTermRefs<TD> {
-    type UnsafeTriple = [NonNull<Term<TD>>; 3];
+    type UnsafeTriple = TermRefs<[NonNull<Term<TD>>; 3]>;
 }
 
 /// See [module](./index.html) documentation.
@@ -167,7 +167,7 @@ where
     pub fn by_term_refs(s: &'a Term<T>, p: &'a Term<T>, o: &'a Term<T>) -> Self {
         StreamedTriple {
             _phantom: PhantomData,
-            wrapped: [s.into(), p.into(), o.into()],
+            wrapped: TermRefs([s.into(), p.into(), o.into()]),
         }
     }
 }
@@ -175,14 +175,14 @@ impl<'a, T> Triple for StreamedTriple<'a, T>
 where
     T: TripleStreamingMode,
 {
-    type TermData = <T::UnsafeTriple as UnsafeTriple>::TermData;
-    fn s(&self) -> &Term<Self::TermData> {
+    type Term = <T::UnsafeTriple as UnsafeTriple>::Term;
+    fn s(&self) -> &Self::Term {
         unsafe { self.wrapped.u_s() }
     }
-    fn p(&self) -> &Term<Self::TermData> {
+    fn p(&self) -> &Self::Term {
         unsafe { self.wrapped.u_p() }
     }
-    fn o(&self) -> &Term<Self::TermData> {
+    fn o(&self) -> &Self::Term {
         unsafe { self.wrapped.u_o() }
     }
 }

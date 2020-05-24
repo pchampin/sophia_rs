@@ -35,9 +35,9 @@ mod test {
     use super::*;
     use crate::dataset::inmem::FastDataset;
     use crate::dataset::Dataset;
-    use crate::ns::rdf;
     use crate::quad::stream::QuadSource;
-    use sophia_term::matcher::ANY;
+    use sophia_api::ns::rdf;
+    use sophia_api::term::matcher::ANY;
     use sophia_term::StaticTerm;
 
     #[test]
@@ -62,7 +62,7 @@ mod test {
                 &StaticTerm::new_iri("#me").unwrap(),
                 &StaticTerm::new_iri("http://example.org/ns/knows").unwrap(),
                 &ANY,
-                &StaticTerm::new_iri("#g1").unwrap(),
+                &Some(&StaticTerm::new_iri("#g1").unwrap()),
             )
             .next()
             .is_some());
@@ -71,7 +71,7 @@ mod test {
                 &ANY,
                 &rdf::type_,
                 &StaticTerm::new_iri("http://example.org/ns/Person").unwrap(),
-                &StaticTerm::new_iri("#g2").unwrap(),
+                &Some(&StaticTerm::new_iri("#g2").unwrap()),
             )
             .next()
             .is_some());
@@ -80,7 +80,7 @@ mod test {
                 &ANY,
                 &StaticTerm::new_iri("http://example.org/ns/name").unwrap(),
                 &StaticTerm::new_variable("name").unwrap(),
-                &StaticTerm::new_iri("#g2").unwrap(),
+                &Some(&StaticTerm::new_iri("#g2").unwrap()),
             )
             .next()
             .is_some());

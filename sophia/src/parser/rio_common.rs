@@ -10,6 +10,7 @@ use crate::quad::stream::*;
 use crate::quad::streaming_mode::StreamedQuad;
 use crate::triple::stream::*;
 use crate::triple::streaming_mode::StreamedTriple;
+use sophia_term::literal::convert::AsLiteral;
 use sophia_term::{BoxTerm, RefTerm};
 
 /// TripleSource / QuadSource adapter for RIO TripleParser / QuadParser
@@ -202,7 +203,7 @@ pub fn rio2refterm(t: GeneralizedTerm) -> RefTerm {
         GeneralizedTerm::NamedNode(n) => {
             RefTerm::new_iri(n.iri).expect("Already checked by parser but determine if absolute.")
         }
-        GeneralizedTerm::Literal(Simple { value }) => value.into(),
+        GeneralizedTerm::Literal(Simple { value }) => value.as_literal().into(),
         GeneralizedTerm::Literal(LanguageTaggedString { value, language }) => {
             RefTerm::new_literal_lang_unchecked(value, language)
         }

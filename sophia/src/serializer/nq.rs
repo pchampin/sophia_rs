@@ -13,6 +13,7 @@ use std::io;
 
 use crate::quad::{stream::*, Quad};
 
+use super::nt::write_term;
 use super::*;
 
 /// N-Quads serializer configuration.
@@ -75,9 +76,14 @@ where
             .try_for_each_quad(|q| {
                 {
                     let w = &mut self.write;
-                    write!(w, "{} {} {} ", q.s(), q.p(), q.o())?;
-                    if let Some(g) = q.g() {
-                        write!(w, "{} ", g)?;
+                    write_term(w, q.s())?;
+                    w.write_all(b" ")?;
+                    write_term(w, q.p())?;
+                    w.write_all(b" ")?;
+                    write_term(w, q.o())?;
+                    if let Some(n) = q.g() {
+                        w.write_all(b" ")?;
+                        write_term(w, n)?;
                     }
                     w.write_all(b".\n")
                 }
@@ -113,7 +119,8 @@ impl Stringifier for NqSerializer<Vec<u8>> {
 #[cfg(test)]
 pub(crate) mod test {
     use super::*;
-    use crate::ns::*;
+    use sophia_api::ns::*;
+    use sophia_term::literal::convert::AsLiteral;
     use sophia_term::*;
 
     #[test]
@@ -123,7 +130,7 @@ pub(crate) mod test {
             (
                 [
                     me,
-                    rdf::type_,
+                    rdf::type_.into(),
                     StaticTerm::new_iri("http://schema.org/Person").unwrap(),
                 ],
                 None,
@@ -132,7 +139,7 @@ pub(crate) mod test {
                 [
                     me,
                     StaticTerm::new_iri("http://schema.org/name").unwrap(),
-                    "Pierre-Antoine".into(),
+                    "Pierre-Antoine".as_literal().into(),
                 ],
                 Some(StaticTerm::new_iri("http://champin.net/").unwrap()),
             ),
@@ -143,8 +150,8 @@ pub(crate) mod test {
             .to_string();
         assert_eq!(
             &s,
-            r#"<http://champin.net/#pa> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person> .
-<http://champin.net/#pa> <http://schema.org/name> "Pierre-Antoine" <http://champin.net/> .
+            r#"<http://champin.net/#pa> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person>.
+<http://champin.net/#pa> <http://schema.org/name> "Pierre-Antoine" <http://champin.net/>.
 "#
         );
     }

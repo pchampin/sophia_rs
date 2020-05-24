@@ -7,7 +7,8 @@ use std::collections::HashMap;
 use std::iter::once;
 
 use resiter::map::*;
-use sophia_term::matcher::AnyOrExactly;
+use sophia_api::term::matcher::AnyOrExactly;
+use sophia_api::term::{CopyTerm, TTerm};
 use sophia_term::*;
 
 use crate::graph::*;
@@ -118,13 +119,13 @@ where
     triples_matching(g, unsafe { &*(&tm[..] as *const [Binding]) }).map_ok(move |tr| {
         let mut b2 = b.clone();
         if tm[0].is_free() {
-            b2.insert(tq.s().value().to_string(), tr.s().clone_into());
+            b2.insert(tq.s().value().to_string(), RcTerm::copy(tr.s()));
         }
         if tm[1].is_free() {
-            b2.insert(tq.p().value().to_string(), tr.p().clone_into());
+            b2.insert(tq.p().value().to_string(), RcTerm::copy(tr.p()));
         }
         if tm[2].is_free() {
-            b2.insert(tq.o().value().to_string(), tr.o().clone_into());
+            b2.insert(tq.o().value().to_string(), RcTerm::copy(tr.o()));
         }
         b2
     })
@@ -169,7 +170,9 @@ mod test {
     use super::*;
 
     use crate::graph::inmem::FastGraph;
-    use crate::ns::{rdf, Namespace};
+    use sophia_api::ns::{rdf, Namespace};
+    use sophia_api::term::{CopiableTerm, TTerm};
+    use sophia_term::literal::convert::AsLiteral;
     use sophia_term::RcTerm;
 
     #[test]
@@ -180,7 +183,7 @@ mod test {
         let s_event = schema.get("Event").unwrap();
         let x_alice = RcTerm::new_iri("http://example.org/alice").unwrap();
 
-        let tq: [RcTerm; 3] = [x_alice.clone(), rdf::type_.map_into(), s_event.map_into()];
+        let tq: [RcTerm; 3] = [x_alice.clone(), rdf::type_.copied(), s_event.copied()];
 
         let results: Result<Vec<_>, _> = bindings_for_triple(&g, &tq, BindingMap::new()).collect();
         let results = results.unwrap();
@@ -195,7 +198,7 @@ mod test {
         let s_person = schema.get("Person").unwrap();
         let x_alice = RcTerm::new_iri("http://example.org/alice").unwrap();
 
-        let tq: [RcTerm; 3] = [x_alice.clone(), rdf::type_.map_into(), s_person.map_into()];
+        let tq: [RcTerm; 3] = [x_alice.clone(), rdf::type_.copied(), s_person.copied()];
 
         let results: Result<Vec<BindingMap>, _> =
             bindings_for_triple(&g, &tq, BindingMap::new()).collect();
@@ -215,7 +218,7 @@ mod test {
 
         let v1 = RcTerm::new_variable("v1").unwrap();
 
-        let tq: [RcTerm; 3] = [v1.clone(), rdf::type_.map_into(), s_event.map_into()];
+        let tq: [RcTerm; 3] = [v1.clone(), rdf::type_.copied(), s_event.copied()];
 
         let results: Result<Vec<BindingMap>, _> =
             bindings_for_triple(&g, &tq, BindingMap::new()).collect();
@@ -232,7 +235,7 @@ mod test {
 
         let v1 = RcTerm::new_variable("v1").unwrap();
 
-        let tq: [RcTerm; 3] = [v1.clone(), rdf::type_.map_into(), s_person.map_into()];
+        let tq: [RcTerm; 3] = [v1.clone(), rdf::type_.copied(), s_person.copied()];
 
         let results: Result<Vec<BindingMap>, _> =
             bindings_for_triple(&g, &tq, BindingMap::new()).collect();
@@ -262,7 +265,7 @@ mod test {
         let v1 = RcTerm::new_variable("v1").unwrap();
         let v2 = RcTerm::new_variable("v2").unwrap();
 
-        let tq: [RcTerm; 3] = [v1.clone(), s_name.map_into(), v2.clone()];
+        let tq: [RcTerm; 3] = [v1.clone(), s_name.copied(), v2.clone()];
 
         let results: Result<Vec<BindingMap>, _> =
             bindings_for_triple(&g, &tq, BindingMap::new()).collect();
@@ -303,8 +306,8 @@ mod test {
         let v2 = RcTerm::new_variable("v2").unwrap();
 
         let mut q = Query::Triples(vec![
-            [v1.clone(), s_name.map_into(), v2.clone()],
-            [v1.clone(), rdf::type_.map_into(), s_person.map_into()],
+            [v1.clone(), s_name.copied(), v2.clone()],
+            [v1.clone(), rdf::type_.copied(), s_person.copied()],
         ]);
 
         let results: Result<Vec<BindingMap>, _> = q.process(&g).collect();
@@ -346,16 +349,17 @@ mod test {
         let x_alice_n_bob = example.get("alice_n_bob").unwrap();
 
         let mut g = FastGraph::new();
+        let lit = |txt| AsLiteral::as_literal(&txt);
         g.insert(&x_alice, &rdf::type_, &s_person).unwrap();
-        g.insert(&x_alice, &s_name, &"Alice".into()).unwrap();
+        g.insert(&x_alice, &s_name, &lit("Alice")).unwrap();
         g.insert(&x_bob, &rdf::type_, &s_person).unwrap();
-        g.insert(&x_bob, &s_name, &"Bob".into()).unwrap();
+        g.insert(&x_bob, &s_name, &lit("Bob")).unwrap();
         g.insert(&x_charlie, &rdf::type_, &s_person).unwrap();
-        g.insert(&x_charlie, &s_name, &"Charlie".into()).unwrap();
-        g.insert(&x_dan, &s_name, &"Dan".into()).unwrap();
+        g.insert(&x_charlie, &s_name, &lit("Charlie")).unwrap();
+        g.insert(&x_dan, &s_name, &lit("Dan")).unwrap();
         g.insert(&x_alice_n_bob, &rdf::type_, &s_organization)
             .unwrap();
-        g.insert(&x_alice_n_bob, &s_name, &"Alice & Bob".into())
+        g.insert(&x_alice_n_bob, &s_name, &lit("Alice & Bob"))
             .unwrap();
         g.insert(&x_alice_n_bob, &s_member, &x_alice).unwrap();
         g.insert(&x_alice_n_bob, &s_member, &x_bob).unwrap();

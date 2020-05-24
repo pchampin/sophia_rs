@@ -1,9 +1,9 @@
 use super::*;
 use crate::dataset::Dataset;
-use crate::ns::{rdf, xsd};
 use crate::quad::Quad;
 use crate::triple::stream::TripleSource;
 use lazy_static::lazy_static;
+use sophia_api::ns::{rdf, xsd};
 use sophia_term::BoxTerm;
 
 pub const NS: &'static str = "http://example.org/";
@@ -20,13 +20,13 @@ lazy_static! {
         StaticTerm::new_literal_dt("Bob", xsd::string.clone()).unwrap();
 }
 
-fn make_dataset() -> Vec<[&'static StaticTerm; 4]> {
+fn make_dataset() -> Vec<[StaticTerm; 4]> {
     vec![
-        [&ALICE, &rdf::type_, &PERSON, &ALICE],
-        [&ALICE, &NAME, &ALICE_LIT, &ALICE],
-        [&BOB, &rdf::type_, &PERSON, &BOB],
-        [&BOB, &NAME, &BOB_LIT, &BOB],
-        [&BOB, &KNOWS, &ALICE, &ALICE],
+        [*ALICE, rdf::type_.into(), *PERSON, *ALICE],
+        [*ALICE, *NAME, *ALICE_LIT, *ALICE],
+        [*BOB, rdf::type_.into(), *PERSON, *BOB],
+        [*BOB, *NAME, *BOB_LIT, *BOB],
+        [*BOB, *KNOWS, *ALICE, *ALICE],
     ]
 }
 
@@ -38,13 +38,13 @@ fn map_term(t: &StaticTerm) -> StaticTerm {
     }
 }
 
-fn make_mapped_dataset() -> Vec<[&'static StaticTerm; 4]> {
+fn make_mapped_dataset() -> Vec<[StaticTerm; 4]> {
     vec![
-        [&CHARLIE, &rdf::type_, &PERSON, &CHARLIE],
-        [&CHARLIE, &NAME, &ALICE_LIT, &CHARLIE],
-        [&BOB, &rdf::type_, &PERSON, &BOB],
-        [&BOB, &NAME, &BOB_LIT, &BOB],
-        [&BOB, &KNOWS, &CHARLIE, &CHARLIE],
+        [*CHARLIE, rdf::type_.into(), *PERSON, *CHARLIE],
+        [*CHARLIE, *NAME, *ALICE_LIT, *CHARLIE],
+        [*BOB, rdf::type_.into(), *PERSON, *BOB],
+        [*BOB, *NAME, *BOB_LIT, *BOB],
+        [*BOB, *KNOWS, *CHARLIE, *CHARLIE],
     ]
 }
 

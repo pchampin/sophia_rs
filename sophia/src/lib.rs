@@ -71,10 +71,18 @@ pub mod query;
 pub mod serializer;
 pub mod triple;
 
+/// This module re-exorts things from `sophia_term`,
+/// to ease transition from older versions of Sophia.
+/// It will eventually be deprecated.
+///
 /// See [`sophia_term::ns`](https://docs.rs/sophia_term/latest/sophia_term/ns/index.html)
 pub mod ns {
-    pub use sophia_term::ns::*;
+    pub use sophia_api::ns::*;
 }
+/// This module re-exorts things from `sophia_term`,
+/// to ease transition from older versions of Sophia.
+/// It will eventually be deprecated.
+///
 /// See [`sophia_term`](https://docs.rs/sophia_term/latest/sophia_term/)
 pub mod term {
     pub use sophia_term::*;

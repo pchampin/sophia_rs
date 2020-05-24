@@ -4,6 +4,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::hash::Hash;
 
+use sophia_api::term::TTerm;
 use sophia_term::*;
 
 /// A utility trait for implementing [`Graph`] and [`MutableGraph`]
@@ -30,38 +31,27 @@ pub trait IndexedGraph {
     fn shrink_to_fit(&mut self);
 
     /// Return the index for the given term, if it exists.
-    fn get_index<T>(&self, t: &Term<T>) -> Option<Self::Index>
+    fn get_index<T>(&self, t: &T) -> Option<Self::Index>
     where
-        T: TermData;
+        T: TTerm + ?Sized;
 
     /// Return the term for the given index, if it exists.
     fn get_term(&self, i: Self::Index) -> Option<&Term<Self::TermData>>;
 
     /// Insert a triple in this Graph,
     /// and return the corresponding tuple of indices.
-    fn insert_indexed<T, U, V>(
-        &mut self,
-        s: &Term<T>,
-        p: &Term<U>,
-        o: &Term<V>,
-    ) -> Option<[Self::Index; 3]>
+    fn insert_indexed<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> Option<[Self::Index; 3]>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData;
-
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized;
     /// Remove a triple from this Graph,
     /// and return the corresponding tuple of indices.
-    fn remove_indexed<T, U, V>(
-        &mut self,
-        s: &Term<T>,
-        p: &Term<U>,
-        o: &Term<V>,
-    ) -> Option<[Self::Index; 3]>
+    fn remove_indexed<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> Option<[Self::Index; 3]>
     where
-        T: TermData,
-        U: TermData,
-        V: TermData;
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
+        TO: TTerm + ?Sized;
 }
 
 /// Defines the implementation of [`CollectibleGraph`] for [`IndexedGraph`].
@@ -107,29 +97,19 @@ macro_rules! impl_mutable_graph_for_indexed_graph {
     () => {
         type MutationError = std::convert::Infallible;
 
-        fn insert<T_, U_, V_>(
-            &mut self,
-            s: &Term<T_>,
-            p: &Term<U_>,
-            o: &Term<V_>,
-        ) -> MGResult<Self, bool>
+        fn insert<TS_, TP_, TO_>(&mut self, s: &TS_, p: &TP_, o: &TO_) -> MGResult<Self, bool>
         where
-            T_: sophia_term::TermData,
-            U_: sophia_term::TermData,
-            V_: sophia_term::TermData,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
         {
             Ok(self.insert_indexed(s, p, o).is_some())
         }
-        fn remove<T_, U_, V_>(
-            &mut self,
-            s: &Term<T_>,
-            p: &Term<U_>,
-            o: &Term<V_>,
-        ) -> MGResult<Self, bool>
+        fn remove<TS_, TP_, TO_>(&mut self, s: &TS_, p: &TP_, o: &TO_) -> MGResult<Self, bool>
         where
-            T_: sophia_term::TermData,
-            U_: sophia_term::TermData,
-            V_: sophia_term::TermData,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
         {
             Ok(self.remove_indexed(s, p, o).is_some())
         }

@@ -7,7 +7,8 @@ use json::JsonValue;
 use sophia::ns::{rdf, xsd};
 use sophia::quad::{stream::*, Quad};
 use sophia::triple::stream::{SinkError, StreamResult};
-use sophia_term::{Term, TermData};
+use sophia_api::term::{TTerm, TermKind, TryCopyTerm};
+use sophia_term::literal::Literal;
 use std::collections::hash_map::Entry::*;
 use std::collections::{HashMap, HashSet};
 
@@ -69,10 +70,10 @@ impl Engine {
             self.node[is].push_if_new(q.p().as_id(), obj);
 
             if q.s().is_bnode() {
-                if q.p() == &rdf::rest && q.o() == &rdf::nil {
+                if &rdf::rest == q.p() && &rdf::nil == q.o() {
                     self.list_seeds.push_if_new(is);
                 } else if self.config.rdf_direction == Some(RdfDirectionMode::CompoundLiteral)
-                    && q.p() == &rdf::direction
+                    && &rdf::direction == q.p()
                 {
                     self.compound_literals.insert(is);
                 }
@@ -109,9 +110,12 @@ impl Engine {
         }
     }
 
-    fn make_rdf_object<T: TermData>(&mut self, o: &Term<T>, g_id: &str) -> RdfObject {
-        match o {
-            Term::Literal(lit) => RdfObject::Literal(lit.clone_map(Box::from)),
+    fn make_rdf_object<T>(&mut self, o: &T, g_id: &str) -> RdfObject
+    where
+        T: TTerm + ?Sized,
+    {
+        match o.kind() {
+            TermKind::Literal => RdfObject::Literal(Literal::try_copy(o).unwrap()),
             _ => {
                 let o_id = o.as_id();
                 RdfObject::Node(self.index(g_id.to_string(), o_id.clone()), o_id)
@@ -270,11 +274,11 @@ impl Engine {
                         let dt_str = dt.value();
                         let mut obj = Object::new();
                         if self.config.use_native_types {
-                            if dt == xsd::iri::integer || dt == xsd::iri::double {
+                            if dt == xsd::integer || dt == xsd::double {
                                 if let Ok(val) = txt.parse::<f64>() {
                                     obj.insert("@value", val.into());
                                 }
-                            } else if dt == xsd::iri::boolean {
+                            } else if dt == xsd::boolean {
                                 if let Ok(val) = txt.parse::<bool>() {
                                     obj.insert("@value", val.into());
                                 }
@@ -296,7 +300,7 @@ impl Engine {
                                 }
                             }
                         }
-                        if dt == rdf::iri::JSON {
+                        if dt == rdf::JSON {
                             let json_value = json::parse(&txt)?;
                             obj.insert("@value", json_value);
                             obj.insert("@type", "@json".into());
@@ -304,7 +308,7 @@ impl Engine {
                         if obj.is_empty() {
                             // useNativeTypes is false, or conversion failed
                             obj.insert("@value", txt.to_string().into());
-                            if dt != xsd::iri::string {
+                            if dt != xsd::string {
                                 obj.insert("@type", dt.value().to_string().into());
                             }
                         }

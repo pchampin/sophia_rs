@@ -1,12 +1,12 @@
 //! Blank node like specified in [RDF](https://www.w3.org/TR/rdf11-primer/#section-blank-node).
 //!
 
-use super::{Result, Term, TermData, TermError};
+use super::*;
 use lazy_static::lazy_static;
-use mownstr::MownStr;
 use regex::Regex;
 use std::convert::TryFrom;
 use std::fmt;
+use std::hash::Hasher;
 use std::io;
 use std::ops::Deref;
 
@@ -41,31 +41,11 @@ lazy_static! {
     ").unwrap();
 }
 
-/// Internal representation of a blank node identifier.
-///
-/// May be encountered when pattern-matching on [`Term`](../enum.Term.html)s
-/// of the [`BNode`](../enum.Term.html#variant.BNode) variant.
-/// For that purpose, note that `BlankNode`
-///  - derefs implicitly to its internal type `T`;
-///  - can be directly compared to a `&str` with the `==` operator.
-///
-/// Example :
-/// ```
-/// use sophia_term::*;
-///
-/// fn is_foobar(t: BoxTerm) -> bool {
-///     match t {
-///         Term::BNode(bn) =>
-///             bn.starts_with("foo") || &bn == "bar",
-///         _ =>
-///             false,
-///     }
-/// }
-/// ```
+/// An RDF blank node.
 ///
 /// See [module documentation](index.html)
 /// for more detail.
-#[derive(Clone, Copy, Debug, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, Ord)]
 pub struct BlankNode<TD: TermData>(TD);
 
 impl<TD> BlankNode<TD>
@@ -182,10 +162,17 @@ where
         w.write_all(b"_:")?;
         w.write_all(self.as_str().as_bytes())
     }
+}
 
-    /// Return this blank nodes's identifier as text.
-    pub fn value(&self) -> MownStr {
-        self.as_str().into()
+impl<TD: TermData> TTerm for BlankNode<TD> {
+    fn kind(&self) -> TermKind {
+        TermKind::BlankNode
+    }
+    fn value_raw(&self) -> (&str, Option<&str>) {
+        (self.0.as_ref(), None)
+    }
+    fn as_dyn(&self) -> &dyn TTerm {
+        self
     }
 }
 
@@ -209,36 +196,32 @@ where
     }
 }
 
-impl<T, U> PartialEq<BlankNode<U>> for BlankNode<T>
+impl<TD, TE> PartialEq<TE> for BlankNode<TD>
 where
-    T: TermData,
-    U: TermData,
+    TD: TermData,
+    TE: TTerm + ?Sized,
 {
-    fn eq(&self, other: &BlankNode<U>) -> bool {
-        self.as_str() == other.as_str()
+    fn eq(&self, other: &TE) -> bool {
+        term_eq(self, other)
     }
 }
 
-impl<TD> PartialEq<str> for BlankNode<TD>
+impl<TD, TE> PartialOrd<TE> for BlankNode<TD>
+where
+    TD: TermData,
+    TE: TTerm + ?Sized,
+{
+    fn partial_cmp(&self, other: &TE) -> Option<std::cmp::Ordering> {
+        Some(term_cmp(self, other))
+    }
+}
+
+impl<TD> Hash for BlankNode<TD>
 where
     TD: TermData,
 {
-    fn eq(&self, other: &str) -> bool {
-        self.as_str() == other
-    }
-}
-
-impl<T, U> PartialEq<Term<U>> for BlankNode<T>
-where
-    T: TermData,
-    U: TermData,
-{
-    fn eq(&self, other: &Term<U>) -> bool {
-        if let Term::BNode(other) = other {
-            self == other
-        } else {
-            false
-        }
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        term_hash(self, state)
     }
 }
 
@@ -251,10 +234,7 @@ where
     fn try_from(term: Term<TD>) -> Result<Self, Self::Error> {
         match term {
             Term::BNode(bn) => Ok(bn),
-            _ => Err(TermError::UnexpectedKindOfTerm {
-                term: term.to_string(),
-                expect: "blank node".to_owned(),
-            }),
+            _ => Err(TermError::UnsupportedKind(term.to_string())),
         }
     }
 }
@@ -269,10 +249,25 @@ where
     fn try_from(term: &'a Term<U>) -> Result<Self, Self::Error> {
         match term {
             Term::BNode(bn) => Ok(bn.clone_into()),
-            _ => Err(TermError::UnexpectedKindOfTerm {
-                term: term.to_string(),
-                expect: "blank node".to_owned(),
-            }),
+            _ => Err(TermError::UnsupportedKind(term.to_string())),
+        }
+    }
+}
+
+impl<TD> TryCopyTerm for BlankNode<TD>
+where
+    TD: TermData + for<'x> From<&'x str>,
+{
+    type Error = TermError;
+
+    fn try_copy<T>(term: &T) -> Result<Self, Self::Error>
+    where
+        T: TTerm + ?Sized,
+    {
+        if term.kind() == TermKind::BlankNode {
+            Ok(Self::new_unchecked(term.value_raw().0))
+        } else {
+            Err(TermError::UnsupportedKind(term_to_string(term)))
         }
     }
 }

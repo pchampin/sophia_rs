@@ -1,9 +1,9 @@
 use super::Term::*;
 use super::*;
-use crate::ns::xsd;
+use sophia_api::ns::xsd;
+use sophia_api::term::CopiableTerm;
 
 fn h<H: std::hash::Hash>(x: &H) -> u64 {
-    use std::hash::Hasher;
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     x.hash(&mut hasher);
     hasher.finish()
@@ -17,7 +17,6 @@ fn iri() {
     assert_eq!(format!("{}", i), format!("<{}>", exp));
 
     if let Iri(iri) = i {
-        assert_eq!(&iri, exp);
         assert_eq!(iri.len(), exp.len());
         let s1 = iri.value();
         let s2: String = iri.chars().collect();
@@ -38,7 +37,6 @@ fn iri2() {
     assert_eq!(format!("{}", i), format!("<{}>", exp));
 
     if let Iri(iri) = i {
-        assert_eq!(&iri, exp);
         assert_eq!(iri.len(), exp.len());
         let s1 = iri.value();
         let s2: String = iri.chars().collect();
@@ -160,7 +158,6 @@ fn iri_normalized_last_gen_delim() {
 #[test]
 fn bnode() {
     let b1 = BoxTerm::new_bnode("foo").unwrap();
-    assert_eq!(b1.value(), "foo");
     assert_eq!(&format!("{}", b1), "_:foo");
 
     if let BNode(id1) = b1 {
@@ -210,8 +207,7 @@ fn bnode_id_deref() {
 fn bnode_id_eq_str() {
     let b1 = BoxTerm::new_bnode("foo").unwrap();
     if let BNode(id1) = b1 {
-        assert_eq!(&id1, "foo");
-        assert!(&id1 == "foo");
+        assert_eq!(id1.value(), "foo");
     } else {
         panic!("b1 should be a BNode");
     }
@@ -268,44 +264,33 @@ fn literal_lang() {
 #[test]
 fn literal_dt() {
     // Constructing from str
-    let lit = "hello".as_term();
+    let lit: BoxTerm = "hello".as_literal().copied();
     assert_eq!(lit.value(), "hello");
     assert_eq!(&format!("{}", lit), "\"hello\"");
-    let lit: literal::Literal<&str> = lit.try_into().expect("Should be a literal");
-    assert_eq!(lit.dt(), xsd::iri::string);
-    assert_eq!(*lit.txt(), "hello");
+    let lit: literal::Literal<Box<str>> = lit.try_into().expect("Should be a literal");
+    assert_eq!(lit.dt(), xsd::string);
+    assert_eq!(lit.txt().as_ref(), "hello");
 
     // Constructing from int
-    let lit: Term<Box<str>> = 42_i32.as_term();
+    let lit: BoxTerm = 42_i32.as_literal().copied();
     assert_eq!(lit.value(), "42");
     assert_eq!(
         &format!("{}", lit),
         "\"42\"^^<http://www.w3.org/2001/XMLSchema#int>",
     );
     let lit: literal::Literal<_> = lit.try_into().expect("Should be a literal");
-    assert_eq!(lit.dt(), xsd::iri::int);
+    assert_eq!(lit.dt(), xsd::int);
     assert_eq!(lit.txt().as_ref(), "42");
 
     // Constructing with IRI datatype
-    let lit = RefTerm::new_literal_dt("42", xsd::integer.clone()).unwrap();
+    let lit = RefTerm::new_literal_dt("42", xsd::integer).unwrap();
     assert_eq!(lit.value(), "42");
     assert_eq!(
         &format!("{}", lit),
         "\"42\"^^<http://www.w3.org/2001/XMLSchema#integer>",
     );
     let lit: literal::Literal<_> = lit.try_into().unwrap();
-    assert_eq!(lit.dt(), xsd::iri::integer);
-    assert_eq!(*lit.txt(), "42");
-
-    // Constructing with IRI datatype
-    let lit = RefTerm::new_literal_dt("42", xsd::iri::integer).unwrap();
-    assert_eq!(lit.value(), "42");
-    assert_eq!(
-        &format!("{}", lit),
-        "\"42\"^^<http://www.w3.org/2001/XMLSchema#integer>",
-    );
-    let lit: literal::Literal<_> = lit.try_into().unwrap();
-    assert_eq!(lit.dt(), xsd::iri::integer);
+    assert_eq!(lit.dt(), xsd::integer);
     assert_eq!(*lit.txt(), "42");
 }
 

@@ -3,9 +3,9 @@
 use std::collections::{HashMap, HashSet};
 use std::iter::empty;
 
-use crate::triple::streaming_mode::{ByTermRefs, StreamedTriple};
-
 use super::*;
+use crate::triple::streaming_mode::{ByTermRefs, StreamedTriple};
+use sophia_api::term::TTerm;
 
 /// A [`GraphWrapper`](trait.GraphWrapper.html)
 /// indexing triples by subject, then by predicate, then by object.
@@ -50,9 +50,9 @@ where
         &mut self.wrapped
     }
 
-    fn gw_triples_with_s<'s, U>(&'s self, s: &'s Term<U>) -> GTripleSource<'s, Self::Wrapped>
+    fn gw_triples_with_s<'s, TS>(&'s self, s: &'s TS) -> GTripleSource<'s, Self::Wrapped>
     where
-        U: TermData,
+        TS: TTerm + ?Sized,
     {
         if let Some(si) = self.wrapped.get_index(s) {
             if let Some(pis) = self.s2p.get(&si) {
@@ -70,14 +70,14 @@ where
         Box::new(empty())
     }
 
-    fn gw_triples_with_sp<'s, U, V>(
+    fn gw_triples_with_sp<'s, TS, TP>(
         &'s self,
-        s: &'s Term<U>,
-        p: &'s Term<V>,
+        s: &'s TS,
+        p: &'s TP,
     ) -> GTripleSource<'s, Self::Wrapped>
     where
-        U: TermData,
-        V: TermData,
+        TS: TTerm + ?Sized,
+        TP: TTerm + ?Sized,
     {
         if let Some(si) = self.wrapped.get_index(s) {
             if let Some(pi) = self.wrapped.get_index(p) {
@@ -177,7 +177,7 @@ where
 {
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "all_tests"))]
 type SpoGraph = super::SpoWrapper<super::LightGraph>;
-#[cfg(test)]
+#[cfg(all(test, feature = "all_tests"))]
 test_graph_impl!(SpoGraph);

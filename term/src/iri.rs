@@ -15,14 +15,14 @@
 //! IRI are explicitly mentioned does the difference matter.
 //!
 
-mod _regex;
-pub use self::_regex::*;
 mod _join;
 pub use self::_join::*;
 
-use super::{Result, Term, TermData, TermError};
-use crate::ns::Namespace;
+use super::*;
 use mownstr::MownStr;
+use sophia_api::ns::Namespace;
+pub use sophia_iri::resolve::*; // prefixed with "pub" to ease transition from older versions of Sophia
+pub use sophia_iri::*; // prefixed with "pub" to ease transition from older versions of Sophia
 use std::convert::TryFrom;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -47,27 +47,19 @@ pub enum Normalization {
     LastGenDelim,
 }
 
-/// Representation of an IRI.
-///
-/// May be encountered when pattern-matching on [`Term`](../enum.Term.html)s
-/// of the [`Iri`](../enum.Term.html#variant.Iri) variant.
-/// For that purpose, note that `Iri`
-///  - can be directly compared to a `&str` with the `==` operator;
-///  - can be directly compared to a [`Term`](../enum.Term.html) with the `==` operator;
-///  - provides some identical methods to what `&str` provides (see below);
-///  - can otherwise be converted to a `String` with `to_string`;
+/// An IRI reference.
 ///
 /// # Contract
 ///
 /// Each `Iri` represents a valid IRI reference according to the
 /// [RFC3987](https://tools.ietf.org/html/rfc3987) either relative or absolute.
-/// For building static IRIs an unsafe API is exposed. These do not do anything
-/// actual unsafe. Instead, they do not perform validity checks. It is the
-/// obligation of the user to ensure that invocations of `*_unchecked()`
+/// This is checked by standard constructors (`new` and `new_suffixed`).
+/// On the other hand,
+/// it is the obligation of the user to ensure that invocations of `*_unchecked()`
 /// methods produce valid output. Note that the creation of invalid IRIs may
 /// lead to unexpected errors in other places.
 ///
-#[derive(Clone, Copy, Debug, Eq)]
+#[derive(Clone, Copy, Debug, Eq, Ord)]
 pub struct Iri<TD: TermData> {
     /// The namespace of the IRI.
     ///
@@ -77,12 +69,6 @@ pub struct Iri<TD: TermData> {
     ///
     /// IRIs with namespace and suffix are typical derived from CURIs.
     pub(crate) suffix: Option<TD>,
-    /// Determine if its an absolute or relative IRI.
-    ///
-    /// Including this is an optimization as it requires the allocation of a
-    /// new string to check this property (see
-    /// [`new_suffixed`](#method.new_suffixed.html)).
-    pub(crate) absolute: bool,
 }
 
 impl<TD> Iri<TD>
@@ -98,12 +84,10 @@ where
         U: AsRef<str>,
         TD: From<U>,
     {
-        let absolute = is_absolute_iri_ref(iri.as_ref());
-        if absolute || is_relative_iri_ref(iri.as_ref()) {
+        if is_absolute_iri_ref(iri.as_ref()) || is_relative_iri_ref(iri.as_ref()) {
             Ok(Iri {
                 ns: iri.into(),
                 suffix: None,
-                absolute,
             })
         } else {
             Err(TermError::InvalidIri(iri.as_ref().to_string()))
@@ -127,8 +111,7 @@ where
         TD: From<U> + From<V>,
     {
         let full = format!("{}{}", ns.as_ref(), suffix.as_ref());
-        let absolute = is_absolute_iri_ref(&full);
-        if absolute || is_relative_iri_ref(&full) {
+        if is_absolute_iri_ref(&full) || is_relative_iri_ref(&full) {
             let suffix = if !suffix.as_ref().is_empty() {
                 Some(suffix.into())
             } else {
@@ -137,7 +120,6 @@ where
             Ok(Iri {
                 ns: ns.into(),
                 suffix,
-                absolute,
             })
         } else {
             Err(TermError::InvalidIri(full))
@@ -146,9 +128,6 @@ where
 
     /// Create a new IRI-term from a given IRI without checking its validity.
     ///
-    /// As it is not checked if absolute or relative this property must be
-    /// entered as well.
-    ///
     /// # Pre-condition
     ///
     /// This function conducts no checks if the resulting IRI is valid. This is
@@ -156,7 +135,7 @@ where
     /// unexpected behavior.
     ///
     /// However, in `debug` builds assertions that perform checks are enabled.
-    pub fn new_unchecked<U>(iri: U, absolute: bool) -> Self
+    pub fn new_unchecked<U>(iri: U) -> Self
     where
         TD: From<U>,
     {
@@ -166,18 +145,10 @@ where
             "invalid IRI {:?}",
             ns.as_ref()
         );
-        debug_assert_eq!(absolute, is_absolute_iri_ref(ns.as_ref()));
-        Iri {
-            ns,
-            suffix: None,
-            absolute,
-        }
+        Iri { ns, suffix: None }
     }
 
     /// Create a new IRI-term from a given namespace and suffix.
-    ///
-    /// As it is not checked if absolute or relative this property must be
-    /// entered as well.
     ///
     /// # Pre-conditions
     ///
@@ -190,7 +161,7 @@ where
     /// This is a contract that is generally assumed.
     /// Breaking it could result in unexpected behavior.
     /// However in `debug` mode, assertions that perform checks are enabled.
-    pub fn new_suffixed_unchecked<U, V>(ns: U, suffix: V, absolute: bool) -> Self
+    pub fn new_suffixed_unchecked<U, V>(ns: U, suffix: V) -> Self
     where
         TD: From<U> + From<V>,
     {
@@ -200,13 +171,11 @@ where
         {
             let iri = format!("{}{}", ns.as_ref(), sf.as_ref());
             debug_assert!(is_valid_iri_ref(&iri), "invalid IRI {:?}", iri);
-            debug_assert_eq!(absolute, is_absolute_iri_ref(&iri));
             debug_assert!(!sf.as_ref().is_empty());
         }
         Iri {
             ns,
             suffix: Some(sf),
-            absolute,
         }
     }
 
@@ -227,7 +196,6 @@ where
         Iri {
             ns: &self.ns,
             suffix: self.suffix.as_ref(),
-            absolute: self.absolute,
         }
     }
 
@@ -236,7 +204,6 @@ where
         Iri {
             ns: self.ns.as_ref(),
             suffix: self.suffix.as_ref().map(|td| td.as_ref()),
-            absolute: self.absolute,
         }
     }
 
@@ -250,7 +217,6 @@ where
         Iri {
             ns: f(self.ns),
             suffix: self.suffix.map(f),
-            absolute: self.absolute,
         }
     }
 
@@ -276,7 +242,6 @@ where
         Iri {
             ns: factory(self.ns.as_ref()),
             suffix: self.suffix.as_ref().map(|td| factory(td.as_ref())),
-            absolute: self.absolute,
         }
     }
 
@@ -307,11 +272,6 @@ where
     /// Iterate over the characters representing this IRI.
     pub fn chars(&self) -> impl '_ + Iterator<Item = char> {
         self.ns.as_ref().chars().chain(self.suffix_as_str().chars())
-    }
-
-    /// Whether this IRI is absolute or relative.
-    pub fn is_absolute(&self) -> bool {
-        self.absolute
     }
 
     /// Whether this IRI is is composed of a whole IRI (`false`) or a namespace
@@ -349,7 +309,6 @@ where
                 Iri {
                     ns: MownStr::from(full),
                     suffix: None,
-                    absolute: self.absolute,
                 }
             }
             None => self.as_ref_str().map_into(),
@@ -382,7 +341,6 @@ where
                     Iri {
                         ns: MownStr::from(new_ns),
                         suffix,
-                        absolute: self.absolute,
                     }
                 } else if ns.ends_with(GEN_DELIMS) {
                     // case: ns does end with separator
@@ -395,7 +353,6 @@ where
                     Iri {
                         ns: MownStr::from(&ns[..=pos]),
                         suffix: Some(MownStr::from(new_suffix)),
-                        absolute: self.absolute,
                     }
                 } else {
                     // case: neither contains a separator
@@ -406,7 +363,6 @@ where
                     Iri {
                         ns: MownStr::from(full),
                         suffix: None,
-                        absolute: self.absolute,
                     }
                 }
             }
@@ -417,7 +373,6 @@ where
                         Iri {
                             ns: MownStr::from(&ns[..=pos]),
                             suffix: Some(MownStr::from(&ns[pos + 1..])),
-                            absolute: self.absolute,
                         }
                     }
                     _ => {
@@ -502,7 +457,7 @@ where
         write!(w, "<{}{}>", self.ns.as_ref(), self.suffix_as_str())
     }
 
-    /// Writes the blank node to the `io::Write` using the N3 syntax.
+    /// Writes the IRI to the `io::Write` using the N3 syntax.
     pub fn write_io<W>(&self, w: &mut W) -> io::Result<()>
     where
         W: io::Write,
@@ -511,14 +466,6 @@ where
         w.write_all(self.ns.as_ref().as_bytes())?;
         w.write_all(self.suffix_as_str().as_bytes())?;
         w.write_all(b">")
-    }
-
-    /// Return this IRI as text.
-    pub fn value(&self) -> MownStr {
-        match &self.suffix {
-            None => self.ns.as_ref().into(),
-            Some(s) => format!("{}{}", self.ns.as_ref(), s.as_ref()).into(),
-        }
     }
 
     /// Returns either the suffix if existent or an empty string.
@@ -530,25 +477,18 @@ where
     }
 }
 
-impl Iri<&'static str> {
-    /// Build an IRI from its raw components.
-    ///
-    /// This constructor is used by the [`namespace!`](../macro.namespace.html) macro,
-    /// but should not be used directly.
-    ///
-    /// # Pre-condition
-    ///
-    /// The resulting IRI may be invalid.
-    pub const fn from_raw_parts_unchecked(
-        ns: &'static str,
-        suffix: Option<&'static str>,
-        absolute: bool,
-    ) -> Self {
-        Iri {
-            ns,
-            suffix,
-            absolute,
-        }
+impl<TD: TermData> TTerm for Iri<TD> {
+    fn kind(&self) -> TermKind {
+        TermKind::Iri
+    }
+    fn value_raw(&self) -> (&str, Option<&str>) {
+        (
+            self.ns.as_ref(),
+            (&self.suffix).as_ref().map(|td| td.as_ref()),
+        )
+    }
+    fn as_dyn(&self) -> &dyn TTerm {
+        self
     }
 }
 
@@ -561,44 +501,23 @@ where
     }
 }
 
-impl<T, U> PartialEq<Iri<U>> for Iri<T>
-where
-    T: TermData,
-    U: TermData,
-{
-    fn eq(&self, other: &Iri<U>) -> bool {
-        self.len() == other.len() && !self.bytes().zip(other.bytes()).any(|(bs, bo)| bs != bo)
-    }
-}
-
-impl<TD> PartialEq<str> for Iri<TD>
+impl<TD, TE> PartialEq<TE> for Iri<TD>
 where
     TD: TermData,
+    TE: TTerm + ?Sized,
 {
-    fn eq(&self, other: &str) -> bool {
-        let ns = self.ns.as_ref();
-        let sf = self.suffix_as_str();
-        let ns_len = ns.len();
-        let sf_len = sf.len();
-
-        ns_len + sf_len == other.len()
-            && ns == &other[..ns_len]
-            // prevents panic if not suffixed
-            && (sf.is_empty() || sf == &other[ns_len..])
+    fn eq(&self, other: &TE) -> bool {
+        term_eq(self, other)
     }
 }
 
-impl<T, U> PartialEq<Term<U>> for Iri<T>
+impl<TD, TE> PartialOrd<TE> for Iri<TD>
 where
-    T: TermData,
-    U: TermData,
+    TD: TermData,
+    TE: TTerm + ?Sized,
 {
-    #[inline]
-    fn eq(&self, other: &Term<U>) -> bool {
-        match other {
-            Term::Iri(other_iri) => other_iri == self,
-            _ => false,
-        }
+    fn partial_cmp(&self, other: &TE) -> Option<std::cmp::Ordering> {
+        Some(term_cmp(self, other))
     }
 }
 
@@ -607,9 +526,25 @@ where
     TD: TermData,
 {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        state.write(self.ns.as_ref().as_bytes());
-        state.write(self.suffix_as_str().as_bytes());
-        state.write_u8(0xff);
+        term_hash(self, state)
+    }
+}
+
+impl<'a, TD> From<SimpleIri<'a>> for Iri<TD>
+where
+    TD: TermData + From<&'a str>,
+{
+    fn from(iri: SimpleIri<'a>) -> Self {
+        let (ns, suffix) = iri.destruct();
+        let ns = ns.into();
+        let suffix = suffix.map(TD::from);
+        Iri { ns, suffix }
+    }
+}
+
+impl<'a> From<Iri<&'a str>> for SimpleIri<'a> {
+    fn from(iri: Iri<&'a str>) -> Self {
+        SimpleIri::new_unchecked(iri.ns, iri.suffix)
     }
 }
 
@@ -620,8 +555,7 @@ where
     fn from(ns: Namespace<TD>) -> Self {
         // Already checked if its a valid IRI
         Iri {
-            absolute: is_absolute_iri_ref(ns.0.as_ref()),
-            ns: ns.0,
+            ns: ns.destruct(),
             suffix: None,
         }
     }
@@ -636,10 +570,7 @@ where
     fn try_from(term: Term<TD>) -> Result<Self, Self::Error> {
         match term {
             Term::Iri(iri) => Ok(iri),
-            _ => Err(TermError::UnexpectedKindOfTerm {
-                term: term.to_string(),
-                expect: "IRI".to_owned(),
-            }),
+            _ => Err(TermError::UnsupportedKind(term.to_string())),
         }
     }
 }
@@ -654,10 +585,47 @@ where
     fn try_from(term: &'a Term<U>) -> Result<Self, Self::Error> {
         match term {
             Term::Iri(iri) => Ok(iri.clone_map(T::from)),
-            _ => Err(TermError::UnexpectedKindOfTerm {
-                term: term.to_string(),
-                expect: "IRI".to_owned(),
-            }),
+            _ => Err(TermError::UnsupportedKind(term.to_string())),
+        }
+    }
+}
+
+impl<TD> TryCopyTerm for Iri<TD>
+where
+    TD: TermData + for<'x> From<&'x str>,
+{
+    type Error = TermError;
+
+    fn try_copy<T>(term: &T) -> Result<Self, Self::Error>
+    where
+        T: TTerm + ?Sized,
+    {
+        if term.kind() == TermKind::Iri {
+            let (ns, suffix) = term.value_raw();
+            Ok(match suffix {
+                None => Self::new_unchecked(ns),
+                Some(suffix) => Self::new_suffixed_unchecked(ns, suffix),
+            })
+        } else {
+            Err(TermError::UnsupportedKind(term_to_string(term)))
+        }
+    }
+}
+
+impl<TD> std::convert::TryFrom<Iri<TD>> for sophia_api::ns::Namespace<TD>
+where
+    TD: TermData,
+{
+    type Error = TermError;
+
+    /// Requires that the given `Iri` has no suffix. This can be enforced with
+    /// the [`clone_no_suffix()`](../iri/struct.Iri.html#method.clone_no_suffix)
+    /// method.
+    fn try_from(iri: Iri<TD>) -> Result<Self, Self::Error> {
+        if iri.suffix().is_some() {
+            Err(TermError::IsSuffixed)
+        } else {
+            Ok(sophia_api::ns::Namespace::new_unchecked(iri.ns))
         }
     }
 }
@@ -674,23 +642,23 @@ mod test {
         #[test]
         #[should_panic]
         fn check_unchecked_negative() {
-            let _ = Iri::<&'static str>::new_unchecked("[]", true);
+            let _ = Iri::<&'static str>::new_unchecked("[]");
         }
 
         #[test]
         fn check_unchecked_positive() {
-            let _ = Iri::<&'static str>::new_unchecked("foo", false);
+            let _ = Iri::<&'static str>::new_unchecked("foo");
         }
 
         #[test]
         #[should_panic]
         fn check_unchecked_suffixed_negative() {
-            let _ = Iri::<&'static str>::new_suffixed_unchecked("foo#", "[]", false);
+            let _ = Iri::<&'static str>::new_suffixed_unchecked("foo#", "[]");
         }
 
         #[test]
         fn check_unchecked_suffixed_positive() {
-            let _ = Iri::<&'static str>::new_suffixed_unchecked("foo#", "bar", false);
+            let _ = Iri::<&'static str>::new_suffixed_unchecked("foo#", "bar");
         }
     }
 
@@ -758,273 +726,29 @@ mod test {
         }
     }
 
-    pub const POSITIVE_IRIS: &[(
-        &str,
-        (
-            bool,
-            Option<&str>,
-            Option<&str>,
-            &[&str],
-            Option<&str>,
-            Option<&str>,
-        ),
-    )] = &[
-        ("http:", (true, Some("http"), None, &[], None, None)),
-        (
-            "http://example.org",
-            (true, Some("http"), Some("example.org"), &[], None, None),
-        ),
-        (
-            "http://127.0.0.1",
-            (true, Some("http"), Some("127.0.0.1"), &[], None, None),
-        ),
-        (
-            "http://[::]",
-            (true, Some("http"), Some("[::]"), &[], None, None),
-        ),
-        (
-            "http://%0D",
-            (true, Some("http"), Some("%0D"), &[], None, None),
-        ),
-        (
-            "http://example.org/",
-            (
-                true,
-                Some("http"),
-                Some("example.org"),
-                &["", ""],
-                None,
-                None,
-            ),
-        ),
-        (
-            "http://éxample.org/",
-            (
-                true,
-                Some("http"),
-                Some("éxample.org"),
-                &["", ""],
-                None,
-                None,
-            ),
-        ),
-        (
-            "http://user:pw@example.org:1234/",
-            (
-                true,
-                Some("http"),
-                Some("user:pw@example.org:1234"),
-                &["", ""],
-                None,
-                None,
-            ),
-        ),
-        (
-            "http://example.org/foo/bar/baz",
-            (
-                true,
-                Some("http"),
-                Some("example.org"),
-                &["", "foo", "bar", "baz"],
-                None,
-                None,
-            ),
-        ),
-        (
-            "http://example.org/foo/bar/",
-            (
-                true,
-                Some("http"),
-                Some("example.org"),
-                &["", "foo", "bar", ""],
-                None,
-                None,
-            ),
-        ),
-        (
-            "http://example.org/foo/bar/bàz",
-            (
-                true,
-                Some("http"),
-                Some("example.org"),
-                &["", "foo", "bar", "bàz"],
-                None,
-                None,
-            ),
-        ),
-        (
-            "http://example.org/foo/.././/bar",
-            (
-                true,
-                Some("http"),
-                Some("example.org"),
-                &["", "foo", "..", ".", "", "bar"],
-                None,
-                None,
-            ),
-        ),
-        (
-            "http://example.org/!$&'()*+,=:@/foo%0D",
-            (
-                true,
-                Some("http"),
-                Some("example.org"),
-                &["", "!$&'()*+,=:@", "foo%0D"],
-                None,
-                None,
-            ),
-        ),
-        (
-            "http://example.org/?abc",
-            (
-                true,
-                Some("http"),
-                Some("example.org"),
-                &["", ""],
-                Some("abc"),
-                None,
-            ),
-        ),
-        (
-            "http://example.org/?!$&'()*+,=:@/?\u{E000}",
-            (
-                true,
-                Some("http"),
-                Some("example.org"),
-                &["", ""],
-                Some("!$&'()*+,=:@/?\u{E000}"),
-                None,
-            ),
-        ),
-        (
-            "http://example.org/#def",
-            (
-                true,
-                Some("http"),
-                Some("example.org"),
-                &["", ""],
-                None,
-                Some("def"),
-            ),
-        ),
-        (
-            "http://example.org/?abc#def",
-            (
-                true,
-                Some("http"),
-                Some("example.org"),
-                &["", ""],
-                Some("abc"),
-                Some("def"),
-            ),
-        ),
-        (
-            "tag:abc/def",
-            (true, Some("tag"), None, &["abc", "def"], None, None),
-        ),
-        ("tag:", (true, Some("tag"), None, &[], None, None)),
-        ("foo", (false, None, None, &["foo"], None, None)),
-        ("..", (false, None, None, &[".."], None, None)),
-        (
-            "//example.org",
-            (false, None, Some("example.org"), &[], None, None),
-        ),
-        ("?", (false, None, None, &[], Some(""), None)),
-        ("#", (false, None, None, &[], None, Some(""))),
-        ("?#", (false, None, None, &[], Some(""), Some(""))),
-        (
-            "http://example.org/#Andr%C3%A9",
-            (
-                true,
-                Some("http"),
-                Some("example.org"),
-                &["", ""],
-                None,
-                Some("Andr%C3%A9"),
-            ),
-        ),
-        (
-            "http://example.org/?Andr%C3%A9",
-            (
-                true,
-                Some("http"),
-                Some("example.org"),
-                &["", ""],
-                Some("Andr%C3%A9"),
-                None,
-            ),
-        ),
-        (
-            "?Andr%C3%A9#Andr%C3%A9",
-            (
-                false,
-                None,
-                None,
-                &[],
-                Some("Andr%C3%A9"),
-                Some("Andr%C3%A9"),
-            ),
-        ),
-    ];
+    #[test]
+    fn eq_different_cut() {
+        let i1 = Iri::<&str>::new("http://champin.net/#pa").unwrap();
+        let i2 = Iri::<&str>::new_suffixed("http://champin.net/#", "pa").unwrap();
+        let i3 = Iri::<&str>::new_suffixed("http://champin.net/", "#pa").unwrap();
+        let i4 = Iri::<&str>::new_suffixed("http://champin.", "net/#pa").unwrap();
+        assert_eq!(i1, i2);
+        assert_eq!(h(&i1), h(&i2));
+        assert_eq!(i1, i3);
+        assert_eq!(h(&i1), h(&i3));
+        assert_eq!(i1, i4);
+        assert_eq!(h(&i1), h(&i4));
+        assert_eq!(i2, i3);
+        assert_eq!(h(&i2), h(&i3));
+        assert_eq!(i2, i4);
+        assert_eq!(h(&i2), h(&i4));
+        assert_eq!(i3, i4);
+        assert_eq!(h(&i3), h(&i4));
+    }
 
-    pub const NEGATIVE_IRIS: &[&str] = &[
-        "http://[/",
-        "http://a/[",
-        "http://a/]",
-        "http://a/|",
-        "http://a/ ",
-        "http://a/\u{E000}",
-        "[",
-        "]",
-        "|",
-        " ",
-        "\u{E000}",
-    ];
-
-    pub const RELATIVE_IRIS: &[(&str, &str)] = &[
-        // all relative iris are resolved against http://a/b/c/d;p?q
-        // normal examples from https://tools.ietf.org/html/rfc3986#section-5.4.1
-        ("g:h", "g:h"),
-        ("g", "http://a/b/c/g"),
-        ("./g", "http://a/b/c/g"),
-        ("g/", "http://a/b/c/g/"),
-        ("/g", "http://a/g"),
-        ("//g", "http://g"),
-        ("?y", "http://a/b/c/d;p?y"),
-        ("g?y", "http://a/b/c/g?y"),
-        ("#s", "http://a/b/c/d;p?q#s"),
-        ("g#s", "http://a/b/c/g#s"),
-        ("g?y#s", "http://a/b/c/g?y#s"),
-        (";x", "http://a/b/c/;x"),
-        ("g;x", "http://a/b/c/g;x"),
-        ("g;x?y#s", "http://a/b/c/g;x?y#s"),
-        ("", "http://a/b/c/d;p?q"),
-        (".", "http://a/b/c/"),
-        ("./", "http://a/b/c/"),
-        ("..", "http://a/b/"),
-        ("../", "http://a/b/"),
-        ("../g", "http://a/b/g"),
-        ("../..", "http://a/"),
-        ("../../", "http://a/"),
-        ("../../g", "http://a/g"),
-        // abnormal example from https://tools.ietf.org/html/rfc3986#section-5.4.2
-        ("../../../g", "http://a/g"),
-        ("../../../../g", "http://a/g"),
-        ("/./g", "http://a/g"),
-        ("/../g", "http://a/g"),
-        ("g.", "http://a/b/c/g."),
-        (".g", "http://a/b/c/.g"),
-        ("g..", "http://a/b/c/g.."),
-        ("..g", "http://a/b/c/..g"),
-        ("./../g", "http://a/b/g"),
-        ("./g/.", "http://a/b/c/g/"),
-        ("g/./h", "http://a/b/c/g/h"),
-        ("g/../h", "http://a/b/c/h"),
-        ("g;x=1/./y", "http://a/b/c/g;x=1/y"),
-        ("g;x=1/../y", "http://a/b/c/y"),
-        ("g?y/./x", "http://a/b/c/g?y/./x"),
-        ("g?y/../x", "http://a/b/c/g?y/../x"),
-        ("g#s/./x", "http://a/b/c/g#s/./x"),
-        ("g#s/../x", "http://a/b/c/g#s/../x"),
-    ];
+    fn h<H: std::hash::Hash>(x: &H) -> u64 {
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        x.hash(&mut hasher);
+        hasher.finish()
+    }
 }

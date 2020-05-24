@@ -3,6 +3,7 @@
 //! To run, this requires that the submodule json-ld-api be checked out.
 
 use chrono::Utc;
+use sophia_api::term::TTerm;
 use sophia_jsonld::test_util::*;
 use std::path::Path;
 

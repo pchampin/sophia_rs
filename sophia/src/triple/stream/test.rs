@@ -1,9 +1,9 @@
 use super::*;
 use crate::graph::Graph;
-use crate::ns::rdf;
 use crate::quad::stream::QuadSource;
 use crate::triple::Triple;
 use lazy_static::lazy_static;
+use sophia_api::ns::{rdf, xsd};
 use sophia_term::BoxTerm;
 
 pub const NS: &'static str = "http://example.org/";
@@ -14,8 +14,8 @@ lazy_static! {
     pub static ref KNOWS: StaticTerm = StaticTerm::new_iri_suffixed(NS, "knows").unwrap();
     pub static ref NAME: StaticTerm = StaticTerm::new_iri_suffixed(NS, "name").unwrap();
     pub static ref PERSON: StaticTerm = StaticTerm::new_iri_suffixed(NS, "Person").unwrap();
-    pub static ref ALICE_LIT: StaticTerm = "Alice".into();
-    pub static ref BOB_LIT: StaticTerm = "Bob".into();
+    pub static ref ALICE_LIT: StaticTerm = StaticTerm::new_literal_dt("Alice", xsd::string).unwrap();
+    pub static ref BOB_LIT: StaticTerm = StaticTerm::new_literal_dt("Bob", xsd::string).unwrap();
 
     // Relative IRIs
     pub static ref ALICE_REF: StaticTerm = StaticTerm::new_iri("alice").unwrap();
@@ -26,13 +26,13 @@ lazy_static! {
     pub static ref PERSON_REF: StaticTerm = StaticTerm::new_iri("Person").unwrap();
 }
 
-fn make_graph() -> Vec<[&'static StaticTerm; 3]> {
+fn make_graph() -> Vec<[StaticTerm; 3]> {
     vec![
-        [&ALICE, &rdf::type_, &PERSON],
-        [&ALICE, &NAME, &ALICE_LIT],
-        [&BOB, &rdf::type_, &PERSON],
-        [&BOB, &NAME, &BOB_LIT],
-        [&BOB, &KNOWS, &ALICE],
+        [*ALICE, rdf::type_.into(), *PERSON],
+        [*ALICE, *NAME, *ALICE_LIT],
+        [*BOB, rdf::type_.into(), *PERSON],
+        [*BOB, *NAME, *BOB_LIT],
+        [*BOB, *KNOWS, *ALICE],
     ]
 }
 
@@ -44,13 +44,13 @@ fn map_term(t: &StaticTerm) -> StaticTerm {
     }
 }
 
-fn make_mapped_graph() -> Vec<[&'static StaticTerm; 3]> {
+fn make_mapped_graph() -> Vec<[StaticTerm; 3]> {
     vec![
-        [&CHARLIE, &rdf::type_, &PERSON],
-        [&CHARLIE, &NAME, &ALICE_LIT],
-        [&BOB, &rdf::type_, &PERSON],
-        [&BOB, &NAME, &BOB_LIT],
-        [&BOB, &KNOWS, &CHARLIE],
+        [*CHARLIE, rdf::type_.into(), *PERSON],
+        [*CHARLIE, *NAME, *ALICE_LIT],
+        [*BOB, rdf::type_.into(), *PERSON],
+        [*BOB, *NAME, *BOB_LIT],
+        [*BOB, *KNOWS, *CHARLIE],
     ]
 }
 
