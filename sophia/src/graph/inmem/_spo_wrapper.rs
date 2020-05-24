@@ -38,7 +38,7 @@ where
 
 impl<T> GraphWrapper for SpoWrapper<T>
 where
-    T: IndexedGraph + Graph<Triple = ByTermRefs<<T as IndexedGraph>::TermData>>,
+    T: IndexedGraph + Graph<Triple = ByTermRefs<Term<<T as IndexedGraph>::TermData>>>,
 {
     type Wrapped = T;
 
@@ -144,35 +144,35 @@ where
 
 impl<T> Graph for SpoWrapper<T>
 where
-    T: IndexedGraph + Graph<Triple = ByTermRefs<<T as IndexedGraph>::TermData>>,
+    T: IndexedGraph + Graph<Triple = ByTermRefs<Term<<T as IndexedGraph>::TermData>>>,
 {
     impl_graph_for_wrapper!();
 }
 
 impl<T> IndexedGraph for SpoWrapper<T>
 where
-    T: IndexedGraph + Graph<Triple = ByTermRefs<<T as IndexedGraph>::TermData>>,
+    T: IndexedGraph + Graph<Triple = ByTermRefs<Term<<T as IndexedGraph>::TermData>>>,
 {
     impl_indexed_graph_for_wrapper!();
 }
 
 impl<T> CollectibleGraph for SpoWrapper<T>
 where
-    T: IndexedGraph + Graph<Triple = ByTermRefs<<T as IndexedGraph>::TermData>>,
+    T: IndexedGraph + Graph<Triple = ByTermRefs<Term<<T as IndexedGraph>::TermData>>>,
 {
     impl_collectible_graph_for_indexed_graph!();
 }
 
 impl<T> MutableGraph for SpoWrapper<T>
 where
-    T: IndexedGraph + Graph<Triple = ByTermRefs<<T as IndexedGraph>::TermData>>,
+    T: IndexedGraph + Graph<Triple = ByTermRefs<Term<<T as IndexedGraph>::TermData>>>,
 {
     impl_mutable_graph_for_indexed_graph!();
 }
 
 impl<T> SetGraph for SpoWrapper<T>
 where
-    T: IndexedGraph + Graph<Triple = ByTermRefs<<T as IndexedGraph>::TermData>>,
+    T: IndexedGraph + Graph<Triple = ByTermRefs<Term<<T as IndexedGraph>::TermData>>>,
     T: SetGraph,
 {
 }

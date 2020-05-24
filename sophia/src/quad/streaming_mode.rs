@@ -7,7 +7,8 @@ use std::marker::PhantomData;
 use std::ptr::NonNull;
 
 use crate::quad::Quad;
-use sophia_term::{RefTerm, Term, TermData};
+use sophia_api::term::TTerm;
+use sophia_term::RefTerm;
 
 mod _unsafe_quad;
 pub(crate) use _unsafe_quad::*;
@@ -36,10 +37,10 @@ impl QuadStreamingMode for ByRefTerms {
 }
 /// See [module](./index.html) documentation.
 #[derive(Debug)]
-pub struct ByTermRefs<TD: TermData>(PhantomData<TD>);
-impl<TD: TermData> QuadStreamingMode for ByTermRefs<TD> {
+pub struct ByTermRefs<T: TTerm + ?Sized>(PhantomData<*const T>);
+impl<T: TTerm + ?Sized> QuadStreamingMode for ByTermRefs<T> {
     #[allow(clippy::type_complexity)]
-    type UnsafeQuad = TermRefs<([NonNull<Term<TD>>; 3], Option<NonNull<Term<TD>>>)>;
+    type UnsafeQuad = TermRefs<([NonNull<T>; 3], Option<NonNull<T>>)>;
 }
 
 /// See [module](./index.html) documentation.
@@ -107,13 +108,13 @@ impl<'a> StreamedQuad<'a, ByRefTerms> {
 }
 impl<'a, T> StreamedQuad<'a, ByTermRefs<T>>
 where
-    T: TermData,
+    T: TTerm + ?Sized,
 {
     pub fn by_term_refs(
-        s: &'a Term<T>,
-        p: &'a Term<T>,
-        o: &'a Term<T>,
-        g: Option<&'a Term<T>>,
+        s: &'a T,
+        p: &'a T,
+        o: &'a T,
+        g: Option<&'a T>,
     ) -> Self {
         StreamedQuad {
             _phantom: PhantomData,

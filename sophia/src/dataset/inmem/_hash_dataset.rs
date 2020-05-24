@@ -174,7 +174,7 @@ where
     <I::Factory as TermFactory>::TermData: 'static,
 {
     #[allow(clippy::type_complexity)]
-    type Quad = ByTermRefs<<Self as IndexedDataset>::TermData>;
+    type Quad = ByTermRefs<Term<<Self as IndexedDataset>::TermData>>;
     type Error = Infallible;
 
     fn quads(&self) -> DQuadSource<Self> {

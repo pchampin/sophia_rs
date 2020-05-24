@@ -137,7 +137,7 @@ where
     I::Index: Hash,
     <I::Factory as TermFactory>::TermData: 'static,
 {
-    type Triple = ByTermRefs<<Self as IndexedGraph>::TermData>;
+    type Triple = ByTermRefs<Term<<Self as IndexedGraph>::TermData>>;
     type Error = Infallible;
 
     fn triples(&self) -> GTripleSource<Self> {

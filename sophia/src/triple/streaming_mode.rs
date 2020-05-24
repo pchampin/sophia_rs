@@ -40,7 +40,7 @@
 //!   it is constructed with [`StreamedTriple::by_ref`];
 //! * [`ByRefTerms`]: [`StreamedTriple<'a>`] will wrap an array of 3 [`Term<&'a str>`];
 //!   it is constructed with [`StreamedTriple::by_ref_terms`].
-//! * [`ByTermRefs<TD>`]: [`StreamedTriple<'a>`] will wrap an array of 3 [`Term<TD>`] references,
+//! * [`ByTermRefs<T>`]: [`StreamedTriple<'a>`] will wrap an array of 3 [`&'a T`] references,
 //!   valid as long as `'a`;
 //!   it is constructed with [`StreamedTriple::by_term_refs`].
 //!
@@ -69,7 +69,8 @@ use std::marker::PhantomData;
 use std::ptr::NonNull;
 
 use crate::triple::Triple;
-use sophia_term::{RefTerm, Term, TermData};
+use sophia_api::term::TTerm;
+use sophia_term::RefTerm;
 
 mod _unsafe_triple;
 pub(crate) use _unsafe_triple::*;
@@ -98,9 +99,9 @@ impl TripleStreamingMode for ByRefTerms {
 }
 /// See [module](./index.html) documentation.
 #[derive(Debug)]
-pub struct ByTermRefs<TD: TermData>(PhantomData<TD>);
-impl<TD: TermData> TripleStreamingMode for ByTermRefs<TD> {
-    type UnsafeTriple = TermRefs<[NonNull<Term<TD>>; 3]>;
+pub struct ByTermRefs<T: TTerm + ?Sized>(PhantomData<*const T>);
+impl<T: TTerm + ?Sized> TripleStreamingMode for ByTermRefs<T> {
+    type UnsafeTriple = TermRefs<[NonNull<T>; 3]>;
 }
 
 /// See [module](./index.html) documentation.
@@ -162,9 +163,9 @@ impl<'a> StreamedTriple<'a, ByRefTerms> {
 }
 impl<'a, T> StreamedTriple<'a, ByTermRefs<T>>
 where
-    T: TermData,
+    T: TTerm + ?Sized,
 {
-    pub fn by_term_refs(s: &'a Term<T>, p: &'a Term<T>, o: &'a Term<T>) -> Self {
+    pub fn by_term_refs(s: &'a T, p: &'a T, o: &'a T) -> Self {
         StreamedTriple {
             _phantom: PhantomData,
             wrapped: TermRefs([s.into(), p.into(), o.into()]),

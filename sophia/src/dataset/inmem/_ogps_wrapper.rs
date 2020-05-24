@@ -40,7 +40,7 @@ where
 
 impl<T> DatasetWrapper for OgpsWrapper<T>
 where
-    T: IndexedDataset + Dataset<Quad = ByTermRefs<<T as IndexedDataset>::TermData>>,
+    T: IndexedDataset + Dataset<Quad = ByTermRefs<Term<<T as IndexedDataset>::TermData>>>,
 {
     type Wrapped = T;
 
@@ -191,35 +191,35 @@ where
 
 impl<T> Dataset for OgpsWrapper<T>
 where
-    T: IndexedDataset + Dataset<Quad = ByTermRefs<<T as IndexedDataset>::TermData>>,
+    T: IndexedDataset + Dataset<Quad = ByTermRefs<Term<<T as IndexedDataset>::TermData>>>,
 {
     impl_dataset_for_wrapper!();
 }
 
 impl<T> IndexedDataset for OgpsWrapper<T>
 where
-    T: IndexedDataset + Dataset<Quad = ByTermRefs<<T as IndexedDataset>::TermData>>,
+    T: IndexedDataset + Dataset<Quad = ByTermRefs<Term<<T as IndexedDataset>::TermData>>>,
 {
     impl_indexed_dataset_for_wrapper!();
 }
 
 impl<T> CollectibleDataset for OgpsWrapper<T>
 where
-    T: IndexedDataset + Dataset<Quad = ByTermRefs<<T as IndexedDataset>::TermData>>,
+    T: IndexedDataset + Dataset<Quad = ByTermRefs<Term<<T as IndexedDataset>::TermData>>>,
 {
     impl_collectible_dataset_for_indexed_dataset!();
 }
 
 impl<T> MutableDataset for OgpsWrapper<T>
 where
-    T: IndexedDataset + Dataset<Quad = ByTermRefs<<T as IndexedDataset>::TermData>>,
+    T: IndexedDataset + Dataset<Quad = ByTermRefs<Term<<T as IndexedDataset>::TermData>>>,
 {
     impl_mutable_dataset_for_indexed_dataset!();
 }
 
 impl<T> SetDataset for OgpsWrapper<T>
 where
-    T: IndexedDataset + Dataset<Quad = ByTermRefs<<T as IndexedDataset>::TermData>>,
+    T: IndexedDataset + Dataset<Quad = ByTermRefs<Term<<T as IndexedDataset>::TermData>>>,
     T: IndexedDataset + SetDataset,
 {
 }
