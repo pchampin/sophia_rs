@@ -5,6 +5,7 @@
 //! They are the individual statements of an RDF `dataset`(../dataset/index.html).
 
 use crate::triple::*;
+use sophia_api::term::TTerm;
 use sophia_term::*;
 
 pub mod stream;

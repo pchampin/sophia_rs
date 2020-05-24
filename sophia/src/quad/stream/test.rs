@@ -1,9 +1,9 @@
 use super::*;
 use crate::dataset::Dataset;
-use crate::ns::{rdf, xsd};
 use crate::quad::Quad;
 use crate::triple::stream::TripleSource;
 use lazy_static::lazy_static;
+use sophia_api::ns::{rdf, xsd};
 use sophia_term::BoxTerm;
 
 pub const NS: &'static str = "http://example.org/";

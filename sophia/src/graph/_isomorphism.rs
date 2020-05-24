@@ -8,8 +8,9 @@ use crate::triple::stream::{
     SinkError, SinkResult as _, SourceError, SourceResult as _, StreamError, StreamResult,
 };
 use crate::triple::Triple;
-use sophia_term::matcher::AnyOrExactly;
-use sophia_term::{term_hash, RefTerm, TTerm, TermKind};
+use sophia_api::term::matcher::AnyOrExactly;
+use sophia_api::term::{term_hash, TTerm, TermKind};
+use sophia_term::RefTerm;
 use std::collections::{BTreeSet, HashMap};
 use std::error::Error;
 use std::fmt;

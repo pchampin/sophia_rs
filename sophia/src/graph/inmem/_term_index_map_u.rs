@@ -236,7 +236,7 @@ mod test {
         assert_eq!(ti.next_free(), 1);
         assert_eq!(ti.i2t.len(), 1);
 
-        use crate::ns::rdf;
+        use sophia_api::ns::rdf;
 
         assert_eq!(ti.get_index(&rdf::subject.into()), None);
         assert_eq!(ti.make_index(&rdf::subject.into()), 1);

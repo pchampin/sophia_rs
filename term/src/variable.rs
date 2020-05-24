@@ -35,7 +35,7 @@ lazy_static! {
 /// A variable as an RDF term.
 ///
 /// Defined in SPARQL and Notation3. However, `sophia` allows them generally
-/// everywhere. Serializers and parsers might deny them.
+/// everywhere. Some serializers and parsers might reject them.
 #[derive(Clone, Copy, Debug, Eq, Ord)]
 pub struct Variable<TD: TermData>(TD);
 
@@ -172,15 +172,6 @@ where
 {
     fn eq(&self, other: &TE) -> bool {
         term_eq(self, other)
-    }
-}
-
-impl<TD> PartialEq<str> for Variable<TD>
-where
-    TD: TermData,
-{
-    fn eq(&self, other: &str) -> bool {
-        self.as_str() == other
     }
 }
 

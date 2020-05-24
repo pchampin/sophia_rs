@@ -2,9 +2,8 @@
 //!
 
 use super::*;
-use crate::ns::xsd;
-use crate::simple_iri::SimpleIri;
 use crate::{term_to_string, Result, TermError};
+use sophia_api::ns::xsd;
 use std::error::Error;
 use std::fmt;
 use std::hash;
@@ -176,7 +175,7 @@ where
 macro_rules! impl_datatype {
     ($ty:ty, $iri:expr) => {
         impl $crate::literal::convert::DataType for $ty {
-            fn iri() -> $crate::simple_iri::SimpleIri<'static> {
+            fn iri() -> sophia_api::term::SimpleIri<'static> {
                 $iri
             }
         }

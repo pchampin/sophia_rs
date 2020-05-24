@@ -9,8 +9,8 @@
 //! [`Write`]: https://doc.rust-lang.org/std/io/trait.Write.html
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
-use sophia_term::ns::xsd;
-use sophia_term::{TTerm, TermKind};
+use sophia_api::ns::xsd;
+use sophia_api::term::{TTerm, TermKind};
 use std::io;
 
 use crate::triple::stream::*;
@@ -199,7 +199,8 @@ fn quoted_string<W: io::Write>(w: &mut W, txt: &[u8]) -> io::Result<()> {
 #[cfg(test)]
 pub(crate) mod test {
     use super::*;
-    use crate::ns::*;
+    use sophia_api::ns::*;
+    use sophia_term::literal::convert::AsLiteral;
     use sophia_term::*;
 
     #[test]
@@ -214,7 +215,7 @@ pub(crate) mod test {
             [
                 me,
                 StaticTerm::new_iri("http://schema.org/name").unwrap(),
-                "Pierre-Antoine".into(),
+                "Pierre-Antoine".as_literal().into(),
             ],
         ];
         let s = NtSerializer::new_stringifier()

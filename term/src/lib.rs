@@ -47,6 +47,10 @@
 #![deny(missing_docs)]
 
 use mownstr::MownStr;
+use sophia_api::term::{
+    term_cmp, term_eq, term_format, term_hash, term_to_string, CopyTerm, SimpleIri, TTerm,
+    TermKind, TryCopyTerm,
+};
 use std::convert::TryInto;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
@@ -55,8 +59,6 @@ use std::sync::Arc;
 
 pub mod factory;
 pub mod index_map;
-pub mod matcher;
-pub mod ns;
 
 pub mod variable;
 use self::variable::Variable;
@@ -67,15 +69,9 @@ use self::iri::{Iri, Normalization};
 pub mod literal;
 use literal::convert::{AsLiteral, DataType, NativeLiteral};
 use literal::Literal;
-pub mod simple_iri;
-pub use simple_iri::SimpleIri;
-mod _trait;
-pub use _trait::*;
 
 mod _display;
-mod _dyn_term;
 mod _error;
-mod _graph_name_matcher; // is 'pub use'd by module 'matcher'
 pub use self::_error::*;
 
 /// Generic type for RDF terms.
@@ -502,25 +498,27 @@ where
     }
 }
 
-impl<'a> From<&'a str> for RefTerm<'a> {
-    fn from(txt: &'a str) -> Self {
-        Literal::<&'a str>::new_dt(txt, Iri::<&'a str>::from(ns::xsd::string)).into()
-    }
-}
-
 impl<'a> From<SimpleIri<'a>> for RefTerm<'a> {
     fn from(other: SimpleIri<'a>) -> Self {
         Iri::from(other).into()
     }
 }
 
-impl<T, U, TD> From<NativeLiteral<T, U>> for Term<TD>
+impl<T, TD> From<NativeLiteral<T>> for Term<TD>
 where
     T: DataType + ?Sized,
-    U: AsRef<str>,
-    TD: TermData + From<U> + From<&'static str>,
+    TD: TermData + From<Box<str>> + From<&'static str>,
 {
-    fn from(other: NativeLiteral<T, U>) -> Self {
+    fn from(other: NativeLiteral<T>) -> Self {
+        Literal::from(other).into()
+    }
+}
+
+impl<'a, T> From<NativeLiteral<T, &'a str>> for RefTerm<'a>
+where
+    T: DataType + ?Sized,
+{
+    fn from(other: NativeLiteral<T, &'a str>) -> Self {
         Literal::from(other).into()
     }
 }
@@ -566,19 +564,28 @@ where
     }
 }
 
-/// Check the equality of two graph names (`Option<&Term>`)
-/// using possibly different `TermData`.
-pub fn same_graph_name<T, U>(g1: Option<&T>, g2: Option<&U>) -> bool
-where
-    T: TTerm + ?Sized,
-    U: TTerm + ?Sized,
-{
-    match (g1, g2) {
-        (Some(n1), Some(n2)) => term_eq(n1, n2),
-        (None, None) => true,
-        _ => false,
-    }
-}
-
 #[cfg(test)]
 pub(crate) mod test;
+
+/// This line re-exorts `same_graph_name` from `sophia_api::term`,
+/// to ease transition from older versions of Sophia.
+/// It will eventually be deprecated.
+///
+/// See [`sophia_api`](https://docs.rs/sophia_api/latest/sophia_api/)
+pub use sophia_api::term::same_graph_name;
+
+/// This module re-exorts things from `sophia_api::ns`,
+/// to ease transition from older versions of Sophia.
+/// It will eventually be deprecated.
+///
+/// See [`sophia_api`](https://docs.rs/sophia_api/latest/sophia_api/)
+pub mod ns {
+    pub use sophia_api::ns::*;
+}
+
+/// This line re-exorts the module `sophia_api::term::matcher`,
+/// to ease transition from older versions of Sophia.
+/// It will eventually be deprecated.
+///
+/// See [`sophia_api`](https://docs.rs/sophia_api/latest/sophia_api/)
+pub use sophia_api::term::matcher;

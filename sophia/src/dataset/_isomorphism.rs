@@ -9,8 +9,9 @@ use crate::quad::Quad;
 use crate::triple::stream::{
     SinkError, SinkResult as _, SourceError, SourceResult as _, StreamError, StreamResult,
 };
-use sophia_term::matcher::AnyOrExactly;
-use sophia_term::{RefTerm, TTerm, TermKind};
+use sophia_api::term::matcher::AnyOrExactly;
+use sophia_api::term::{TTerm, TermKind};
+use sophia_term::RefTerm;
 use std::collections::{BTreeSet, HashMap};
 use std::error::Error;
 use std::fmt;

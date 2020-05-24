@@ -8,9 +8,10 @@ use crate::graph::indexed::IndexedGraph;
 use crate::graph::*;
 use crate::triple::stream::{StreamResult, TripleSource};
 use crate::triple::streaming_mode::{ByTermRefs, StreamedTriple};
+use sophia_api::term::TTerm;
 use sophia_term::factory::TermFactory;
 use sophia_term::index_map::TermIndexMap;
-use sophia_term::{RefTerm, TTerm, Term};
+use sophia_term::{RefTerm, Term};
 
 /// A generic implementation of [`Graph`] and [`MutableGraph`],
 /// storing its terms in a [`TermIndexMap`],

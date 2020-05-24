@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::dataset::indexed::IndexedDataset;
+use sophia_api::term::TTerm;
 use std::hash::Hash;
 
 /// A dataset wrapper wraps a [`Dataset`] and overrides some of its methods.
@@ -337,7 +338,7 @@ macro_rules! impl_dataset_for_wrapper {
             s: &'s_ TS_,
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            TS_: sophia_term::TTerm + ?Sized,
+            TS_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_s(self, s)
         }
@@ -347,7 +348,7 @@ macro_rules! impl_dataset_for_wrapper {
             p: &'s_ TP_,
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            TP_: sophia_term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_p(self, p)
         }
@@ -357,7 +358,7 @@ macro_rules! impl_dataset_for_wrapper {
             o: &'s_ TO_
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            TO_: sophia_term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
         {
 
             DatasetWrapper::dw_quads_with_o(self, o)
@@ -368,7 +369,7 @@ macro_rules! impl_dataset_for_wrapper {
             g: std::option::Option<&'s_ TG_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            TG_: sophia_term::TTerm + ?Sized,
+            TG_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_g(self, g)
         }
@@ -379,8 +380,8 @@ macro_rules! impl_dataset_for_wrapper {
             p: &'s_ TP_
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            TS_: sophia_term::TTerm + ?Sized,
-            TP_: sophia_term::TTerm + ?Sized,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_sp(self, s, p)
         }
@@ -391,8 +392,8 @@ macro_rules! impl_dataset_for_wrapper {
             o: &'s_ TO_
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            TS_: sophia_term::TTerm + ?Sized,
-            TO_: sophia_term::TTerm + ?Sized,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_so(self, s, o)
         }
@@ -403,8 +404,8 @@ macro_rules! impl_dataset_for_wrapper {
             g: std::option::Option<&'s_ TG_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            TS_: sophia_term::TTerm + ?Sized,
-            TG_: sophia_term::TTerm + ?Sized,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TG_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_sg(self, s, g)
         }
@@ -415,8 +416,8 @@ macro_rules! impl_dataset_for_wrapper {
             o: &'s_ TO_
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            TP_: sophia_term::TTerm + ?Sized,
-            TO_: sophia_term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_po(self, p, o)
         }
@@ -427,8 +428,8 @@ macro_rules! impl_dataset_for_wrapper {
             g: std::option::Option<&'s_ TG_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            TP_: sophia_term::TTerm + ?Sized,
-            TG_: sophia_term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TG_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_pg(self, p, g)
         }
@@ -439,8 +440,8 @@ macro_rules! impl_dataset_for_wrapper {
             g: std::option::Option<&'s_ TG_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            TO_: sophia_term::TTerm + ?Sized,
-            TG_: sophia_term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
+            TG_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_og(self, o, g)
         }
@@ -452,9 +453,9 @@ macro_rules! impl_dataset_for_wrapper {
             o: &'s_ TO_
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            TS_: sophia_term::TTerm + ?Sized,
-            TP_: sophia_term::TTerm + ?Sized,
-            TO_: sophia_term::TTerm + ?Sized,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_spo(self, s, p, o)
         }
@@ -466,9 +467,9 @@ macro_rules! impl_dataset_for_wrapper {
             g: std::option::Option<&'s_ TG_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            TS_: sophia_term::TTerm + ?Sized,
-            TP_: sophia_term::TTerm + ?Sized,
-            TG_: sophia_term::TTerm + ?Sized,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TG_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_spg(self, s, p, g)
         }
@@ -480,9 +481,9 @@ macro_rules! impl_dataset_for_wrapper {
             g: std::option::Option<&'s_ TG_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            TS_: sophia_term::TTerm + ?Sized,
-            TO_: sophia_term::TTerm + ?Sized,
-            TG_: sophia_term::TTerm + ?Sized,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
+            TG_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_sog(self, s, o, g)
         }
@@ -494,9 +495,9 @@ macro_rules! impl_dataset_for_wrapper {
             g: std::option::Option<&'s_ TG_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            TP_: sophia_term::TTerm + ?Sized,
-            TO_: sophia_term::TTerm + ?Sized,
-            TG_: sophia_term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
+            TG_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_pog(self, p, o, g)
         }
@@ -509,10 +510,10 @@ macro_rules! impl_dataset_for_wrapper {
             g: std::option::Option<&'s_ TG_>
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
-            TS_: sophia_term::TTerm + ?Sized,
-            TP_: sophia_term::TTerm + ?Sized,
-            TO_: sophia_term::TTerm + ?Sized,
-            TG_: sophia_term::TTerm + ?Sized,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
+            TG_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_spog(self, s, p, o, g)
         }
@@ -526,10 +527,10 @@ macro_rules! impl_dataset_for_wrapper {
             g: std::option::Option<&TG_>
         ) -> $crate::dataset::DResult<Self, bool>
         where
-            TS_: sophia_term::TTerm + ?Sized,
-            TP_: sophia_term::TTerm + ?Sized,
-            TO_: sophia_term::TTerm + ?Sized,
-            TG_: sophia_term::TTerm + ?Sized,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
+            TG_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_contains(self, s, p, o, g)
         }
@@ -627,7 +628,7 @@ macro_rules! impl_indexed_dataset_for_wrapper {
         #[inline]
         fn get_index<U>(&self, t: &U) -> Option<Self::Index>
         where
-            U: sophia_term::TTerm + ?Sized,
+            U: sophia_api::term::TTerm + ?Sized,
         {
             self.get_wrapped().get_index(t)
         }
@@ -635,7 +636,7 @@ macro_rules! impl_indexed_dataset_for_wrapper {
         #[inline]
         fn get_index_for_graph_name<U>(&self, g: std::option::Option<&'_ U>) -> Option<Self::Index>
         where
-            U: sophia_term::TTerm + ?Sized,
+            U: sophia_api::term::TTerm + ?Sized,
         {
             self.get_wrapped().get_index_for_graph_name(g)
         }
@@ -658,10 +659,10 @@ macro_rules! impl_indexed_dataset_for_wrapper {
             g: Option<&TG>,
         ) -> Option<[Self::Index; 4]>
         where
-            TS: TTerm + ?Sized,
-            TP: TTerm + ?Sized,
-            TO: TTerm + ?Sized,
-            TG: TTerm + ?Sized,
+            TS: sophia_api::term::TTerm + ?Sized,
+            TP: sophia_api::term::TTerm + ?Sized,
+            TO: sophia_api::term::TTerm + ?Sized,
+            TG: sophia_api::term::TTerm + ?Sized,
         {
             let modified = self.get_wrapped_mut().insert_indexed(s, p, o, g);
             self.idw_hook_insert_indexed(&modified);
@@ -676,10 +677,10 @@ macro_rules! impl_indexed_dataset_for_wrapper {
             g: Option<&TG>,
         ) -> Option<[Self::Index; 4]>
         where
-            TS: TTerm + ?Sized,
-            TP: TTerm + ?Sized,
-            TO: TTerm + ?Sized,
-            TG: TTerm + ?Sized,
+            TS: sophia_api::term::TTerm + ?Sized,
+            TP: sophia_api::term::TTerm + ?Sized,
+            TO: sophia_api::term::TTerm + ?Sized,
+            TG: sophia_api::term::TTerm + ?Sized,
         {
             let modified = self.get_wrapped_mut().remove_indexed(s, p, o, g);
             self.idw_hook_remove_indexed(&modified);

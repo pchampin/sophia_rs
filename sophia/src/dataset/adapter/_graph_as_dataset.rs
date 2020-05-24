@@ -10,7 +10,7 @@ use resiter::Map;
 use crate::dataset::*;
 use crate::graph::{Graph, MutableGraph, SetGraph};
 use crate::quad::streaming_mode::{FromTriple, StreamedQuad};
-use sophia_term::TTerm;
+use sophia_api::term::TTerm;
 
 use super::GraphAsDatasetError;
 
@@ -388,8 +388,8 @@ mod test {
     use crate::dataset::adapter::DatasetGraph;
     use crate::dataset::{Dataset, MutableDataset};
     use crate::graph::*;
-    use crate::ns::{rdf, rdfs};
     use crate::triple::stream::TripleSource;
+    use sophia_api::ns::{rdf, rdfs};
     use sophia_term::{BoxTerm, StaticTerm};
     use std::collections::HashSet;
     use std::convert::Infallible;

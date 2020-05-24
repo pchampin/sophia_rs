@@ -41,27 +41,7 @@ lazy_static! {
     ").unwrap();
 }
 
-/// Internal representation of a blank node identifier.
-///
-/// May be encountered when pattern-matching on [`Term`](../enum.Term.html)s
-/// of the [`BNode`](../enum.Term.html#variant.BNode) variant.
-/// For that purpose, note that `BlankNode`
-///  - derefs implicitly to its internal type `T`;
-///  - can be directly compared to a `&str` with the `==` operator.
-///
-/// Example :
-/// ```
-/// use sophia_term::*;
-///
-/// fn is_foobar(t: BoxTerm) -> bool {
-///     match t {
-///         Term::BNode(bn) =>
-///             bn.starts_with("foo") || &bn == "bar",
-///         _ =>
-///             false,
-///     }
-/// }
-/// ```
+/// An RDF blank node.
 ///
 /// See [module documentation](index.html)
 /// for more detail.
@@ -223,15 +203,6 @@ where
 {
     fn eq(&self, other: &TE) -> bool {
         term_eq(self, other)
-    }
-}
-
-impl<TD> PartialEq<str> for BlankNode<TD>
-where
-    TD: TermData,
-{
-    fn eq(&self, other: &str) -> bool {
-        self.as_str() == other
     }
 }
 

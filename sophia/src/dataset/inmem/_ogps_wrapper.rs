@@ -6,6 +6,7 @@ use std::iter::empty;
 use super::*;
 use crate::graph::indexed::*;
 use crate::quad::streaming_mode::{ByTermRefs, StreamedQuad};
+use sophia_api::term::TTerm;
 
 /// A [`DatasetWrapper`](trait.DatasetWrapper.html)
 /// indexing quads by object, then by graph name, then by predicate, then by subject.

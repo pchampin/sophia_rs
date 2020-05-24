@@ -3,7 +3,7 @@
 use std::ptr::NonNull;
 
 use crate::triple::Triple;
-use sophia_term::TTerm;
+use sophia_api::term::TTerm;
 
 pub trait UnsafeTriple {
     type Term: TTerm + ?Sized;

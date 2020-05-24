@@ -45,9 +45,9 @@ mod test {
     use super::*;
     use crate::graph::inmem::FastGraph;
     use crate::graph::Graph;
-    use crate::ns::{rdf, xsd};
     use crate::triple::stream::TripleSource;
-    use sophia_term::matcher::ANY;
+    use sophia_api::ns::{rdf, xsd};
+    use sophia_api::term::matcher::ANY;
     use sophia_term::StaticTerm;
 
     #[test]

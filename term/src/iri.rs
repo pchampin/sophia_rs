@@ -19,8 +19,8 @@ mod _join;
 pub use self::_join::*;
 
 use super::*;
-use crate::ns::Namespace;
 use mownstr::MownStr;
+use sophia_api::ns::Namespace;
 pub use sophia_iri::resolve::*; // prefixed with "pub" to ease transition from older versions of Sophia
 pub use sophia_iri::*; // prefixed with "pub" to ease transition from older versions of Sophia
 use std::convert::TryFrom;
@@ -47,23 +47,15 @@ pub enum Normalization {
     LastGenDelim,
 }
 
-/// Representation of an IRI.
-///
-/// May be encountered when pattern-matching on [`Term`](../enum.Term.html)s
-/// of the [`Iri`](../enum.Term.html#variant.Iri) variant.
-/// For that purpose, note that `Iri`
-///  - can be directly compared to a `&str` with the `==` operator;
-///  - can be directly compared to a [`Term`](../enum.Term.html) with the `==` operator;
-///  - provides some identical methods to what `&str` provides (see below);
-///  - can otherwise be converted to a `String` with `to_string`;
+/// An IRI reference.
 ///
 /// # Contract
 ///
 /// Each `Iri` represents a valid IRI reference according to the
 /// [RFC3987](https://tools.ietf.org/html/rfc3987) either relative or absolute.
-/// For building static IRIs an unsafe API is exposed. These do not do anything
-/// actual unsafe. Instead, they do not perform validity checks. It is the
-/// obligation of the user to ensure that invocations of `*_unchecked()`
+/// This is checked by standard constructors (`new` and `new_suffixed`).
+/// On the other hand,
+/// it is the obligation of the user to ensure that invocations of `*_unchecked()`
 /// methods produce valid output. Note that the creation of invalid IRIs may
 /// lead to unexpected errors in other places.
 ///
@@ -519,23 +511,6 @@ where
     }
 }
 
-impl<TD> PartialEq<str> for Iri<TD>
-where
-    TD: TermData,
-{
-    fn eq(&self, other: &str) -> bool {
-        let ns = self.ns.as_ref();
-        let sf = self.suffix_as_str();
-        let ns_len = ns.len();
-        let sf_len = sf.len();
-
-        ns_len + sf_len == other.len()
-            && ns == &other[..ns_len]
-            // prevents panic if not suffixed
-            && (sf.is_empty() || sf == &other[ns_len..])
-    }
-}
-
 impl<TD, TE> PartialOrd<TE> for Iri<TD>
 where
     TD: TermData,
@@ -580,7 +555,7 @@ where
     fn from(ns: Namespace<TD>) -> Self {
         // Already checked if its a valid IRI
         Iri {
-            ns: ns.0,
+            ns: ns.destruct(),
             suffix: None,
         }
     }
@@ -633,6 +608,24 @@ where
             })
         } else {
             Err(TermError::UnsupportedKind(term_to_string(term)))
+        }
+    }
+}
+
+impl<TD> std::convert::TryFrom<Iri<TD>> for sophia_api::ns::Namespace<TD>
+where
+    TD: TermData,
+{
+    type Error = TermError;
+
+    /// Requires that the given `Iri` has no suffix. This can be enforced with
+    /// the [`clone_no_suffix()`](../iri/struct.Iri.html#method.clone_no_suffix)
+    /// method.
+    fn try_from(iri: Iri<TD>) -> Result<Self, Self::Error> {
+        if iri.suffix().is_some() {
+            Err(TermError::IsSuffixed)
+        } else {
+            Ok(sophia_api::ns::Namespace::new_unchecked(iri.ns))
         }
     }
 }

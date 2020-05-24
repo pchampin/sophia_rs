@@ -11,7 +11,7 @@ use super::*;
 use crate::quad::stream::{AsQuadSource, QuadSource, StreamError, StreamResult};
 use crate::quad::streaming_mode::*;
 use crate::quad::*;
-use sophia_term::{same_graph_name, term_eq, CopiableTerm, CopyTerm, TTerm};
+use sophia_api::term::{same_graph_name, term_eq, CopiableTerm, CopyTerm, TTerm};
 
 impl<Q> Dataset for [Q]
 where
@@ -192,9 +192,9 @@ impl<T, S: BuildHasher> SetDataset for HashSet<T, S> where T: Eq + Hash + Quad {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::ns::*;
     use crate::quad::TupleQuad;
-    use sophia_term::SimpleIri;
+    use sophia_api::ns::*;
+    use sophia_api::term::SimpleIri;
 
     static D: [TupleQuad<SimpleIri>; 3] = [
         ([rdf::type_, rdf::type_, rdf::Property], None),

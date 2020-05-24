@@ -8,8 +8,8 @@ use resiter::Map;
 use crate::dataset::{Dataset, MutableDataset, SetDataset};
 use crate::graph::*;
 use crate::triple::streaming_mode::{FromQuad, StreamedTriple};
-use sophia_term::matcher::{GraphNameMatcher, ANY};
-use sophia_term::TTerm;
+use sophia_api::term::matcher::{GraphNameMatcher, ANY};
+use sophia_api::term::TTerm;
 
 /// The adapter returned by
 /// [`Dataset::graph`](../trait.Dataset.html#method.graph)
@@ -186,7 +186,8 @@ mod test {
     use crate::dataset::*;
     use crate::quad::stream::QuadSource;
     use crate::triple::stream::TripleSource;
-    use sophia_term::{same_graph_name, BoxTerm, SimpleIri, TTerm};
+    use sophia_api::term::{same_graph_name, SimpleIri, TTerm};
+    use sophia_term::BoxTerm;
     use std::collections::HashSet;
 
     type MyQuad = ([BoxTerm; 3], Option<BoxTerm>);

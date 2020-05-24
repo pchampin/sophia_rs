@@ -22,12 +22,12 @@ use crate::ns::rdf;
 use crate::ns::xsd;
 use crate::ns::Namespace;
 use crate::parser::{LocatableError, TripleParser};
+use sophia_api::term::matcher::TermMatcher;
+use sophia_api::term::SimpleIri;
 use sophia_iri::is_absolute_iri_ref;
 use sophia_iri::is_relative_iri_ref;
 use sophia_term::factory::RcTermFactory;
 use sophia_term::factory::TermFactory;
-use sophia_term::matcher::TermMatcher;
-use sophia_term::SimpleIri;
 use sophia_term::StaticTerm;
 use sophia_term::Term;
 use sophia_term::TermError;
@@ -274,8 +274,9 @@ mod test {
     use crate::parser::TripleParser;
     use crate::triple::stream::TripleSource;
     use crate::triple::Triple;
+    use sophia_api::term::{CopyTerm, TTerm};
     use sophia_term::factory::RcTermFactory;
-    use sophia_term::{BoxTerm, CopyTerm, TTerm, Term};
+    use sophia_term::{BoxTerm, Term};
 
     type TestGraph = HashGraph<TermIndexMapU<u16, RcTermFactory>>;
 

@@ -4,6 +4,7 @@ use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::hash::Hash;
 
+use sophia_api::term::TTerm;
 use sophia_term::*;
 
 /// A utility trait for implementing [`Graph`] and [`MutableGraph`]
@@ -98,17 +99,17 @@ macro_rules! impl_mutable_graph_for_indexed_graph {
 
         fn insert<TS_, TP_, TO_>(&mut self, s: &TS_, p: &TP_, o: &TO_) -> MGResult<Self, bool>
         where
-            TS_: sophia_term::TTerm + ?Sized,
-            TP_: sophia_term::TTerm + ?Sized,
-            TO_: sophia_term::TTerm + ?Sized,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
         {
             Ok(self.insert_indexed(s, p, o).is_some())
         }
         fn remove<TS_, TP_, TO_>(&mut self, s: &TS_, p: &TP_, o: &TO_) -> MGResult<Self, bool>
         where
-            TS_: sophia_term::TTerm + ?Sized,
-            TP_: sophia_term::TTerm + ?Sized,
-            TO_: sophia_term::TTerm + ?Sized,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
         {
             Ok(self.remove_indexed(s, p, o).is_some())
         }

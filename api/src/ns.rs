@@ -6,7 +6,7 @@
 //!
 //! # Example
 //! ```
-//! use sophia_term::ns::{Namespace, rdf, rdfs, xsd};
+//! use sophia_api::ns::{Namespace, rdf, rdfs, xsd};
 //!
 //! let schema = Namespace::new("http://schema.org/").unwrap();
 //! let s_name = schema.get("name").unwrap();
@@ -15,8 +15,9 @@
 //! //g.insert(&s_name, &rdfs::range, &xsd::string);
 //! ```
 
-use crate::{iri::Iri, SimpleIri, TermData, TermError};
-use sophia_iri::{error::*, is_valid_iri_ref};
+use crate::term::SimpleIri;
+use mownstr::MownStr;
+use sophia_iri::{error::*, is_valid_iri_ref, resolve::*};
 
 /// A custom namespace.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -35,6 +36,14 @@ where
         } else {
             Err(InvalidIri(String::from(iri.as_ref())))
         }
+    }
+
+    /// Build a custom namespace, without checking the given IRI.
+    ///
+    /// # Pre-conditions
+    /// It is the callers responsibility to ensure that `iri` is a valid IRI reference.
+    pub fn new_unchecked(iri: T) -> Namespace<T> {
+        Self(iri)
     }
 
     /// Build an IRI by appending `suffix` to this namespace.
@@ -61,23 +70,22 @@ where
     {
         Ok(Namespace(f(self.0)?))
     }
+
+    /// Consume this Namespace and return the inner IRI data.
+    pub fn destruct(self) -> T {
+        self.0
+    }
 }
 
-impl<TD> std::convert::TryFrom<Iri<TD>> for Namespace<TD>
+impl<'a, 'b, T> Resolve<&'a Namespace<T>, Namespace<MownStr<'a>>> for IriParsed<'b>
 where
-    TD: TermData,
+    T: AsRef<str>,
 {
-    type Error = TermError;
-
-    /// Requires that the given `Iri` has no suffix. This can be enforced with
-    /// the [`clone_no_suffix()`](../iri/struct.Iri.html#method.clone_no_suffix)
-    /// method.
-    fn try_from(iri: Iri<TD>) -> Result<Self, Self::Error> {
-        if iri.suffix().is_some() {
-            Err(TermError::IsSuffixed)
-        } else {
-            Ok(Namespace(iri.ns))
-        }
+    /// Resolve the IRI of the given `Namespace`.
+    fn resolve(&self, other: &'a Namespace<T>) -> Namespace<MownStr<'a>> {
+        let iri = other.0.as_ref();
+        let resolved: MownStr = self.resolve(iri).expect("Is valid as from Namespace");
+        Namespace(resolved)
     }
 }
 
@@ -120,14 +128,14 @@ macro_rules! namespace {
                 #[allow(non_snake_case)]
                 #[test]
                 fn $suffix() {
-                    $crate::SimpleIri::new($iri_prefix, Some(stringify!($suffix))).expect(stringify!($suffix));
+                    $crate::term::SimpleIri::new($iri_prefix, Some(stringify!($suffix))).expect(stringify!($suffix));
                 }
             )*
             $(
                 #[allow(non_snake_case)]
                 #[test]
                 fn $r_id() {
-                    $crate::SimpleIri::new($iri_prefix, Some($r_sf)).expect($r_sf);
+                    $crate::term::SimpleIri::new($iri_prefix, Some($r_sf)).expect($r_sf);
                 }
             )*
         }
@@ -151,8 +159,8 @@ macro_rules! ns_iri {
     ($prefix:expr, $ident:ident, $suffix:expr) => {
         /// Generated term.
         #[allow(non_upper_case_globals)]
-        pub static $ident: $crate::simple_iri::SimpleIri =
-            $crate::simple_iri::SimpleIri::new_unchecked($prefix, Some($suffix));
+        pub static $ident: $crate::term::SimpleIri =
+            $crate::term::SimpleIri::new_unchecked($prefix, Some($suffix));
     };
 }
 

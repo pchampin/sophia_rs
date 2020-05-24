@@ -53,9 +53,9 @@ where
 
 #[cfg(test)]
 pub(crate) mod test {
-    use crate::ns::*;
     use crate::*;
     use lazy_static::lazy_static;
+    use sophia_api::ns::*;
 
     lazy_static! {
         pub(crate) static ref NT_TERMS: Vec<(StaticTerm, &'static str)> = vec![
@@ -82,7 +82,7 @@ pub(crate) mod test {
                 r#""chat"@fr-FR"#,
             ),
             (
-                StaticTerm::from("chat"),
+                StaticTerm::new_literal_dt("chat", xsd::string).unwrap(),
                 r#""chat""#,
             ),
             (
@@ -90,12 +90,12 @@ pub(crate) mod test {
                 r#""42"^^<http://www.w3.org/2001/XMLSchema#integer>"#,
             ),
             (
-                StaticTerm::from(" \n \r \\ \" hello world"),
+                StaticTerm::new_literal_dt(" \n \r \\ \" hello world", xsd::string).unwrap(),
                 r#"" \n \r \\ \" hello world""#,
             ),
             (
                 // Literal with non-ascii characters
-                StaticTerm::from("é \u{10000}"),
+                "é \u{10000}".as_literal().into(),
                 // in canonical form, non-ascii characters are NOT escaped in literals
                 "\"é \u{10000}\"",
             )

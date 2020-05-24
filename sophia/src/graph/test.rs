@@ -3,12 +3,15 @@
 use std::fmt::Debug;
 
 use crate::graph::*;
-use crate::ns::*;
 use crate::triple::stream::*;
 use crate::triple::streaming_mode::{TripleStreamingMode, UnsafeTriple};
 use crate::triple::*;
 use lazy_static::lazy_static;
+pub use sophia_api; // required when test macro is used in other packages
+use sophia_api::ns::*;
+use sophia_api::term::CopiableTerm;
 pub use sophia_term; // required when test macro is used in other packages
+use sophia_term::literal::convert::AsLiteral;
 use sophia_term::*;
 
 pub const NS: &str = "http://example.org/";
@@ -25,8 +28,8 @@ lazy_static! {
     //
     pub static ref B1: StaticTerm = StaticTerm::new_bnode("1").unwrap();
     pub static ref B2: StaticTerm = StaticTerm::new_bnode("2").unwrap();
-    pub static ref L1: StaticTerm = StaticTerm::from("lit1");
-    pub static ref L2: StaticTerm = StaticTerm::from("lit2");
+    pub static ref L1: StaticTerm = "lit1".as_literal().into();
+    pub static ref L2: StaticTerm = "lit2".as_literal().into();
     pub static ref L2E: StaticTerm = StaticTerm::new_literal_lang("lit2", "en").unwrap();
     pub static ref V1: StaticTerm = StaticTerm::new_variable("v1").unwrap();
     pub static ref V2: StaticTerm = StaticTerm::new_variable("v2").unwrap();
@@ -96,9 +99,9 @@ where
 {
     let triple = triple.unwrap();
     [
-        BoxTerm::copy(triple.s()),
-        BoxTerm::copy(triple.p()),
-        BoxTerm::copy(triple.o()),
+        triple.s().copied(),
+        triple.p().copied(),
+        triple.o().copied(),
     ]
 }
 
@@ -283,9 +286,11 @@ macro_rules! test_graph_impl {
         mod $module_name {
             use $crate::graph::test::*;
             use $crate::graph::*;
-            use $crate::ns::*;
-            use self::sophia_term::*;
-            use self::sophia_term::matcher::ANY;
+            use self::sophia_api::ns::*;
+            use self::sophia_api::term::TTerm;
+            use self::sophia_api::term::matcher::ANY;
+            use self::sophia_term::StaticTerm;
+            use self::sophia_term::literal::convert::AsLiteral;
 
             #[allow(unused_imports)]
             use super::*;
@@ -571,8 +576,8 @@ macro_rules! test_graph_impl {
 
                 let rliterals: std::collections::HashSet<_> =
                     literals.iter().map(|t| t.as_ref_str()).collect();
-                assert!(rliterals.contains(&StaticTerm::from("lit1")));
-                assert!(rliterals.contains(&StaticTerm::from("lit2")));
+                assert!(rliterals.contains(&"lit1".as_literal().into()));
+                assert!(rliterals.contains(&"lit2".as_literal().into()));
                 assert!(rliterals.contains(&StaticTerm::new_literal_lang("lit2", "en").unwrap()));
                 Ok(())
             }

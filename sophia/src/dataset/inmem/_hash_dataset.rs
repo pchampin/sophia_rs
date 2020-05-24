@@ -8,6 +8,7 @@ use crate::dataset::*;
 use crate::quad::stream::QuadSource;
 use crate::quad::streaming_mode::{ByTermRefs, StreamedQuad};
 use crate::triple::stream::StreamResult;
+use sophia_api::term::TTerm;
 use sophia_term::factory::TermFactory;
 use sophia_term::index_map::TermIndexMap;
 use sophia_term::*;

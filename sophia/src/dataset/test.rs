@@ -4,11 +4,13 @@ use std::fmt::Debug;
 
 use crate::dataset::*;
 use crate::graph::test::*;
-use crate::ns::*;
 use crate::quad::stream::*;
 use crate::quad::streaming_mode::{QuadStreamingMode, UnsafeQuad};
 use crate::quad::*;
 use lazy_static::lazy_static;
+pub use sophia_api; // required when test macro is used in other packages
+use sophia_api::ns::*;
+use sophia_api::term::{CopiableTerm, CopyTerm};
 pub use sophia_term; // required when test macro is used in other packages
 use sophia_term::*;
 
@@ -90,11 +92,7 @@ where
 {
     let quad = quad.unwrap();
     (
-        [
-            BoxTerm::copy(quad.s()),
-            BoxTerm::copy(quad.p()),
-            BoxTerm::copy(quad.o()),
-        ],
+        [quad.s().copied(), quad.p().copied(), quad.o().copied()],
         quad.g().map(BoxTerm::copy),
     )
 }
@@ -329,9 +327,11 @@ macro_rules! test_dataset_impl {
             use $crate::dataset::test::*;
             use $crate::dataset::*;
             use $crate::graph::test::*;
-            use $crate::ns::*;
+            use self::sophia_api::ns::*;
+            use self::sophia_api::term::TTerm;
+            use self::sophia_api::term::matcher::ANY;
             use self::sophia_term::*;
-            use self::sophia_term::matcher::ANY;
+            use self::sophia_term::literal::convert::AsLiteral;
 
             #[allow(unused_imports)]
             use super::*;
@@ -835,8 +835,8 @@ macro_rules! test_dataset_impl {
 
                 let rliterals: std::collections::HashSet<_> =
                     literals.iter().map(|t| t.as_ref_str()).collect();
-                assert!(rliterals.contains(&StaticTerm::from("lit1")));
-                assert!(rliterals.contains(&StaticTerm::from("lit2")));
+                assert!(rliterals.contains(&"lit1".as_literal().into()));
+                assert!(rliterals.contains(&"lit2".as_literal().into()));
                 assert!(rliterals.contains(&StaticTerm::new_literal_lang("lit2", "en").unwrap()));
                 Ok(())
             }

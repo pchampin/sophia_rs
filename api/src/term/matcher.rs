@@ -41,8 +41,10 @@ pub const ANY: AnyTerm = AnyTerm {};
 pub struct AnyTerm {}
 
 impl TermMatcher for AnyTerm {
-    type Term = StaticTerm;
-    fn constant(&self) -> Option<&StaticTerm> {
+    type Term = SimpleIri<'static>;
+    // NB: the type above does not really matter,
+    // since `constant` below always returns None
+    fn constant(&self) -> Option<&SimpleIri<'static>> {
         None
     }
     fn matches<T>(&self, _t: &T) -> bool
@@ -190,8 +192,10 @@ impl<F> TermMatcher for [F; 1]
 where
     F: Fn(&dyn TTerm) -> bool,
 {
-    type Term = StaticTerm;
-    fn constant(&self) -> Option<&StaticTerm> {
+    type Term = SimpleIri<'static>;
+    // NB: the type above does not really matter,
+    // since `constant` below always returns None
+    fn constant(&self) -> Option<&SimpleIri<'static>> {
         None
     }
     fn matches<T>(&self, t: &T) -> bool
@@ -209,9 +213,9 @@ mod test {
     #[test]
     fn test_any_as_matcher() {
         let m = ANY;
-        // comparing to a term using a different term data, and differently cut,
+        // comparing to a term using a differently cut,
         // to make the test less obvious
-        let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
+        let t1 = SimpleIri::new("http://champin.net/#", Some("pa")).unwrap();
 
         let mc = TermMatcher::constant(&m);
         assert!(mc.is_none());
@@ -220,10 +224,10 @@ mod test {
 
     #[test]
     fn test_aoe_any_as_matcher() {
-        let m = AnyOrExactly::<BoxTerm>::Any;
-        // comparing to a term using a different term data, and differently cut,
+        let m = AnyOrExactly::<SimpleIri>::Any;
+        // comparing to a term using a differently cut,
         // to make the test less obvious
-        let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
+        let t1 = SimpleIri::new("http://champin.net/#", Some("pa")).unwrap();
 
         let mc = TermMatcher::constant(&m);
         assert!(mc.is_none());
@@ -232,11 +236,11 @@ mod test {
 
     #[test]
     fn test_aoe_exactly_as_matcher() {
-        let m = AnyOrExactly::Exactly(BoxTerm::new_iri("http://champin.net/#pa").unwrap());
-        // comparing to a term using a different term data, and differently cut,
+        let m = AnyOrExactly::Exactly(SimpleIri::new("http://champin.net/#pa", None).unwrap());
+        // comparing to a term using a difSimferent term data, and differently cut,
         // to make the test less obvious
-        let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
-        let t2 = RcTerm::new_iri("http://example.org/").unwrap();
+        let t1 = SimpleIri::new("http://champin.net/#", Some("pa")).unwrap();
+        let t2 = SimpleIri::new("http://example.org/", None).unwrap();
 
         let mc = TermMatcher::constant(&m);
         assert!(mc.is_some());
@@ -247,11 +251,11 @@ mod test {
 
     #[test]
     fn test_term_as_matcher() {
-        let m = BoxTerm::new_iri("http://champin.net/#pa").unwrap();
-        // comparing to a term using a different term data, and differently cut,
+        let m = SimpleIri::new("http://champin.net/#pa", None).unwrap();
+        // comparing to a term using a differently cut,
         // to make the test less obvious
-        let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
-        let t2 = RcTerm::new_iri("http://example.org/").unwrap();
+        let t1 = SimpleIri::new("http://champin.net/#", Some("pa")).unwrap();
+        let t2 = SimpleIri::new("http://example.org/", None).unwrap();
 
         let mc = TermMatcher::constant(&m);
         assert!(mc.is_some());
@@ -262,15 +266,15 @@ mod test {
 
     #[test]
     fn test_vec_and_slice_as_matcher() {
-        let b1 = BoxTerm::new_iri("http://champin.net/#pa").unwrap();
-        let b2 = BoxTerm::new_iri("http://example.org/").unwrap();
-        let v = vec![&b1, &b2];
+        let m1 = SimpleIri::new("http://champin.net/#pa", None).unwrap();
+        let m2 = SimpleIri::new("http://example.org/", None).unwrap();
+        let v = vec![&m1, &m2];
 
-        // comparing to a term using a different term data, and differently cut,
+        // comparing to a term using a differently cut,
         // to make the test less obvious
-        let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
-        let t2 = RcTerm::new_iri("http://example.org/").unwrap();
-        let t3 = RcTerm::new_iri("http://example.org/other").unwrap();
+        let t1 = SimpleIri::new("http://champin.net/#", Some("pa")).unwrap();
+        let t2 = SimpleIri::new("http://example.org/", None).unwrap();
+        let t3 = SimpleIri::new("http://example.org/other", None).unwrap();
 
         let m = &v[..0];
         let mc = TermMatcher::constant(m);
@@ -304,14 +308,14 @@ mod test {
 
     #[test]
     fn test_array_as_matcher() {
-        let b1 = BoxTerm::new_iri("http://champin.net/#pa").unwrap();
-        let b2 = BoxTerm::new_iri("http://example.org/").unwrap();
-        let m = [&b1, &b2];
-        // comparing to a term using a different term data, and differently cut,
+        let m1 = SimpleIri::new("http://champin.net/#pa", None).unwrap();
+        let m2 = SimpleIri::new("http://example.org/", None).unwrap();
+        let m = [&m1, &m2];
+        // comparing to a term using a differently cut,
         // to make the test less obvious
-        let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
-        let t2 = RcTerm::new_iri("http://example.org/").unwrap();
-        let t3 = RcTerm::new_iri("http://example.org/other").unwrap();
+        let t1 = SimpleIri::new("http://champin.net/#", Some("pa")).unwrap();
+        let t2 = SimpleIri::new("http://example.org/", None).unwrap();
+        let t3 = SimpleIri::new("http://example.org/other", None).unwrap();
 
         let mc = TermMatcher::constant(&m);
         assert!(mc.is_none());
@@ -322,8 +326,8 @@ mod test {
 
     #[test]
     fn test_func_as_matcher() {
-        let t1 = RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap();
-        let t2 = RcTerm::new_iri("http://example.org/").unwrap();
+        let t1 = SimpleIri::new("http://champin.net/#", Some("pa")).unwrap();
+        let t2 = SimpleIri::new("http://example.org/", None).unwrap();
 
         let m = [|t: &dyn TTerm| t.value().starts_with("http://champin")];
         assert!(TermMatcher::constant(&m).is_none());

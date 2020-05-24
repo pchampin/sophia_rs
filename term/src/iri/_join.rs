@@ -5,7 +5,6 @@
 //!
 
 use super::Iri;
-use crate::ns::Namespace;
 use crate::{Literal, MownTerm, TTerm, Term, TermData};
 use mownstr::MownStr;
 use sophia_iri::resolve::*;
@@ -38,18 +37,6 @@ where
     /// May allocate an intermediate IRI if `other` is suffixed.
     fn resolve(&self, other: &'a Iri<TD>) -> Iri<MownStr<'a>> {
         self.resolve(other.as_ref_str())
-    }
-}
-
-impl<'a, 'b, TD> Resolve<&'a Namespace<TD>, Namespace<MownStr<'a>>> for IriParsed<'b>
-where
-    TD: TermData,
-{
-    /// Resolve the IRI of the given `Namespace`.
-    fn resolve(&self, other: &'a Namespace<TD>) -> Namespace<MownStr<'a>> {
-        let iri = other.0.as_ref();
-        let resolved: MownStr = self.resolve(iri).expect("Is valid as from Namespace");
-        Namespace(resolved)
     }
 }
 
@@ -102,7 +89,7 @@ mod test {
     fn resolve_namespace() {
         let base = IriParsed::new("http://a/b/c/d;p?q").unwrap();
         for (rel, abs) in RELATIVE_IRIS {
-            let rel = Namespace::<&str>::new(*rel).unwrap();
+            let rel = sophia_api::ns::Namespace::<&str>::new(*rel).unwrap();
             let got = base.resolve(&rel);
             assert_eq!(&got.as_ref(), abs);
         }

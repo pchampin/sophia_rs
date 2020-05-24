@@ -7,7 +7,8 @@ use std::collections::HashMap;
 use std::iter::once;
 
 use resiter::map::*;
-use sophia_term::matcher::AnyOrExactly;
+use sophia_api::term::matcher::AnyOrExactly;
+use sophia_api::term::{CopyTerm, TTerm};
 use sophia_term::*;
 
 use crate::graph::*;
@@ -169,7 +170,8 @@ mod test {
     use super::*;
 
     use crate::graph::inmem::FastGraph;
-    use crate::ns::{rdf, Namespace};
+    use sophia_api::ns::{rdf, Namespace};
+    use sophia_api::term::{CopiableTerm, TTerm};
     use sophia_term::literal::convert::AsLiteral;
     use sophia_term::RcTerm;
 

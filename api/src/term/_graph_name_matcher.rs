@@ -1,7 +1,7 @@
 // this module is transparently re-exported by its sibling `matcher`
 
-use crate::matcher::{AnyOrExactly, AnyTerm};
-use crate::*;
+use crate::term::matcher::{AnyOrExactly, AnyTerm};
+use crate::term::*;
 
 /// Generic trait for matching graph names, *i.e.* optional [term]s.
 ///
@@ -27,8 +27,10 @@ pub trait GraphNameMatcher {
 }
 
 impl GraphNameMatcher for AnyTerm {
-    type Term = StaticTerm;
-    fn constant(&self) -> Option<Option<&StaticTerm>> {
+    type Term = SimpleIri<'static>;
+    // NB: the type above does not really matter,
+    // since `constant` below always returns None
+    fn constant(&self) -> Option<Option<&SimpleIri<'static>>> {
         None
     }
     fn matches<T>(&self, _g: Option<&T>) -> bool
@@ -156,8 +158,10 @@ impl<F> GraphNameMatcher for [F; 1]
 where
     F: Fn(Option<&dyn TTerm>) -> bool,
 {
-    type Term = StaticTerm;
-    fn constant(&self) -> Option<Option<&StaticTerm>> {
+    type Term = SimpleIri<'static>;
+    // NB: the type above does not really matter,
+    // since `constant` below always returns None
+    fn constant(&self) -> Option<Option<&SimpleIri<'static>>> {
         None
     }
     fn matches<T>(&self, g: Option<&T>) -> bool
@@ -170,19 +174,17 @@ where
 
 #[cfg(test)]
 mod test {
-
     use super::*;
-
-    use crate::matcher::{AnyOrExactly, ANY};
+    use crate::term::matcher::ANY;
 
     #[test]
     fn test_any_as_matcher() {
         let m = ANY;
-        // comparing to a term using a different term data, and differently cut,
+        // comparing to a term using a differently cut,
         // to make the test less obvious
-        let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
-        let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
+        let n0: Option<SimpleIri> = None;
+        let n1 = Some(SimpleIri::new("http://champin.net/#", Some("pa")).unwrap());
+        let n2 = Some(SimpleIri::new("http://example.org/", None).unwrap());
 
         let mc = GraphNameMatcher::constant(&m);
         assert!(mc.is_none());
@@ -193,12 +195,12 @@ mod test {
 
     #[test]
     fn test_aoe_any_as_matcher() {
-        let m = AnyOrExactly::<Option<BoxTerm>>::Any;
-        // comparing to a term using a different term data, and differently cut,
+        let m = AnyOrExactly::<Option<SimpleIri>>::Any;
+        // comparing to a term using a differently cut,
         // to make the test less obvious
-        let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
-        let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
+        let n0: Option<SimpleIri> = None;
+        let n1 = Some(SimpleIri::new("http://champin.net/#", Some("pa")).unwrap());
+        let n2 = Some(SimpleIri::new("http://example.org/", None).unwrap());
 
         let mc = GraphNameMatcher::constant(&m);
         assert!(mc.is_none());
@@ -209,12 +211,14 @@ mod test {
 
     #[test]
     fn test_aoe_explicit_as_matcher() {
-        let m = AnyOrExactly::Exactly(Some(BoxTerm::new_iri("http://champin.net/#pa").unwrap()));
-        // comparing to a term using a different term data, and differently cut,
+        let m = AnyOrExactly::Exactly(Some(
+            SimpleIri::new("http://champin.net/#pa", None).unwrap(),
+        ));
+        // comparing to a term using a differently cut,
         // to make the test less obvious
-        let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
-        let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
+        let n0: Option<SimpleIri> = None;
+        let n1 = Some(SimpleIri::new("http://champin.net/#", Some("pa")).unwrap());
+        let n2 = Some(SimpleIri::new("http://example.org/", None).unwrap());
 
         let mc = GraphNameMatcher::constant(&m);
         assert!(mc.is_some());
@@ -226,13 +230,13 @@ mod test {
 
     #[test]
     fn test_option_as_matcher() {
-        let b = BoxTerm::new_iri("http://champin.net/#pa").unwrap();
-        let m = Some(&b);
-        // comparing to a term using a different term data, and differently cut,
+        let g = SimpleIri::new("http://champin.net/#pa", None).unwrap();
+        let m = Some(&g);
+        // comparing to a term using a differently cut,
         // to make the test less obvious
-        let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
-        let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
+        let n0: Option<SimpleIri> = None;
+        let n1 = Some(SimpleIri::new("http://champin.net/#", Some("pa")).unwrap());
+        let n2 = Some(SimpleIri::new("http://example.org/", None).unwrap());
 
         let mc = GraphNameMatcher::constant(&m);
         assert!(mc.is_some());
@@ -244,14 +248,14 @@ mod test {
 
     #[test]
     fn test_vec_and_slice_as_matcher() {
-        let g1 = Some(BoxTerm::new_iri("http://champin.net/#pa").unwrap());
+        let g1 = Some(SimpleIri::new("http://champin.net/#pa", None).unwrap());
         let g2 = None;
         let v = [g1.as_ref(), g2.as_ref()];
-        // comparing to a term using a different term data, and differently cut,
+        // comparing to a term using a differently cut,
         // to make the test less obvious
-        let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
-        let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
+        let n0: Option<SimpleIri> = None;
+        let n1 = Some(SimpleIri::new("http://champin.net/#", Some("pa")).unwrap());
+        let n2 = Some(SimpleIri::new("http://example.org/", None).unwrap());
 
         let m = &v[..0];
         let mc = GraphNameMatcher::constant(m);
@@ -285,14 +289,14 @@ mod test {
 
     #[test]
     fn test_array_as_matcher() {
-        let g1 = Some(BoxTerm::new_iri("http://champin.net/#pa").unwrap());
+        let g1 = Some(SimpleIri::new("http://champin.net/#pa", None).unwrap());
         let g2 = None;
         let m = [g1.as_ref(), g2.as_ref()];
-        // comparing to a term using a different term data, and differently cut,
+        // comparing to a term using a differently cut,
         // to make the test less obvious
-        let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
-        let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
+        let n0: Option<SimpleIri> = None;
+        let n1 = Some(SimpleIri::new("http://champin.net/#", Some("pa")).unwrap());
+        let n2 = Some(SimpleIri::new("http://example.org/", None).unwrap());
 
         let mc = GraphNameMatcher::constant(&m);
         assert!(mc.is_none());
@@ -308,9 +312,9 @@ mod test {
             Some(t) => t.value().starts_with("http://champin"),
         }];
 
-        let n0: Option<RcTerm> = None;
-        let n1 = Some(RcTerm::new_iri_suffixed("http://champin.net/#", "pa").unwrap());
-        let n2 = Some(RcTerm::new_iri("http://example.org/").unwrap());
+        let n0: Option<SimpleIri> = None;
+        let n1 = Some(SimpleIri::new("http://champin.net/#", Some("pa")).unwrap());
+        let n2 = Some(SimpleIri::new("http://example.org/", None).unwrap());
 
         let mc = GraphNameMatcher::constant(&m);
         assert!(mc.is_none());

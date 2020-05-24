@@ -2,6 +2,7 @@
 
 use std::hash::Hash;
 
+use sophia_api::term::TTerm;
 use sophia_term::*;
 
 /// A utility trait for implementing [`Dataset`] and [`MutableDataset`]
@@ -132,10 +133,10 @@ macro_rules! impl_mutable_dataset_for_indexed_dataset {
             g: Option<&TG_>,
         ) -> $crate::dataset::MDResult<Self, bool>
         where
-            TS_: sophia_term::TTerm + ?Sized,
-            TP_: sophia_term::TTerm + ?Sized,
-            TO_: sophia_term::TTerm + ?Sized,
-            TG_: sophia_term::TTerm + ?Sized,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
+            TG_: sophia_api::term::TTerm + ?Sized,
         {
             Ok(self.insert_indexed(s, p, o, g).is_some())
         }
@@ -147,10 +148,10 @@ macro_rules! impl_mutable_dataset_for_indexed_dataset {
             g: Option<&TG_>,
         ) -> $crate::dataset::MDResult<Self, bool>
         where
-            TS_: sophia_term::TTerm + ?Sized,
-            TP_: sophia_term::TTerm + ?Sized,
-            TO_: sophia_term::TTerm + ?Sized,
-            TG_: sophia_term::TTerm + ?Sized,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
+            TG_: sophia_api::term::TTerm + ?Sized,
         {
             Ok(self.remove_indexed(s, p, o, g).is_some())
         }

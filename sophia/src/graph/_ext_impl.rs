@@ -11,7 +11,7 @@ use super::*;
 use crate::triple::stream::{AsTripleSource, StreamError, StreamResult, TripleSource};
 use crate::triple::streaming_mode::*;
 use crate::triple::*;
-use sophia_term::{term_eq, CopiableTerm, CopyTerm, TTerm};
+use sophia_api::term::{term_eq, CopiableTerm, CopyTerm, TTerm};
 
 impl<T> Graph for [T]
 where
@@ -165,8 +165,8 @@ impl<'a, T, S: BuildHasher> SetGraph for HashSet<T, S> where T: Eq + Hash + Trip
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::ns::*;
-    use sophia_term::SimpleIri;
+    use sophia_api::ns::*;
+    use sophia_api::term::SimpleIri;
 
     static G: [[SimpleIri; 3]; 3] = [
         [rdf::type_, rdf::type_, rdf::Property],

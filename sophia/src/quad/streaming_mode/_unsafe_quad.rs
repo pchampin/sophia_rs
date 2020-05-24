@@ -3,7 +3,7 @@
 use std::ptr::NonNull;
 
 use crate::quad::Quad;
-use sophia_term::TTerm;
+use sophia_api::term::TTerm;
 
 pub trait UnsafeQuad {
     type Term: TTerm + ?Sized;

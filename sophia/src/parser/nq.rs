@@ -31,9 +31,9 @@ mod test {
     use super::*;
     use crate::dataset::inmem::FastDataset;
     use crate::dataset::Dataset;
-    use crate::ns::{rdf, xsd};
     use crate::quad::stream::QuadSource;
-    use sophia_term::matcher::ANY;
+    use sophia_api::ns::{rdf, xsd};
+    use sophia_api::term::matcher::ANY;
     use sophia_term::StaticTerm;
 
     #[test]

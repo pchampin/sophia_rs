@@ -1,6 +1,7 @@
 // this module is transparently re-exported by its parent `graph::inmem`
 
 use super::*;
+use sophia_api::term::TTerm;
 use std::hash::Hash;
 
 /// A graph wrapper wraps a [`Graph`] and overrides some of its methods.
@@ -213,7 +214,7 @@ macro_rules! impl_graph_for_wrapper {
             s: &'s_ TS_,
         ) -> $crate::graph::GTripleSource<'s_, Self>
         where
-            TS_: sophia_term::TTerm + ?Sized,
+            TS_: sophia_api::term::TTerm + ?Sized,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_s(self, s)
         }
@@ -223,7 +224,7 @@ macro_rules! impl_graph_for_wrapper {
             p: &'s_ TP_,
         ) -> $crate::graph::GTripleSource<'s_, Self>
         where
-            TP_: sophia_term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_p(self, p)
         }
@@ -233,7 +234,7 @@ macro_rules! impl_graph_for_wrapper {
             o: &'s_ TO_,
         ) -> $crate::graph::GTripleSource<'s_, Self>
         where
-            TO_: sophia_term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_o(self, o)
         }
@@ -244,8 +245,8 @@ macro_rules! impl_graph_for_wrapper {
             p: &'s_ TP_,
         ) -> $crate::graph::GTripleSource<'s_, Self>
         where
-            TS_: sophia_term::TTerm + ?Sized,
-            TP_: sophia_term::TTerm + ?Sized,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_sp(self, s, p)
         }
@@ -256,8 +257,8 @@ macro_rules! impl_graph_for_wrapper {
             o: &'s_ TO_,
         ) -> $crate::graph::GTripleSource<'s_, Self>
         where
-            TS_: sophia_term::TTerm + ?Sized,
-            TO_: sophia_term::TTerm + ?Sized,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_so(self, s, o)
         }
@@ -268,8 +269,8 @@ macro_rules! impl_graph_for_wrapper {
             o: &'s_ TO_,
         ) -> $crate::graph::GTripleSource<'s_, Self>
         where
-            TP_: sophia_term::TTerm + ?Sized,
-            TO_: sophia_term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_po(self, p, o)
         }
@@ -281,9 +282,9 @@ macro_rules! impl_graph_for_wrapper {
             o: &'s_ TO_,
         ) -> $crate::graph::GTripleSource<'s_, Self>
         where
-            TS_: sophia_term::TTerm + ?Sized,
-            TP_: sophia_term::TTerm + ?Sized,
-            TO_: sophia_term::TTerm + ?Sized,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
         {
             $crate::graph::inmem::GraphWrapper::gw_triples_with_spo(self, s, p, o)
         }
@@ -296,9 +297,9 @@ macro_rules! impl_graph_for_wrapper {
             o: &TO_,
         ) -> $crate::graph::GResult<Self, bool>
         where
-            TS_: sophia_term::TTerm + ?Sized,
-            TP_: sophia_term::TTerm + ?Sized,
-            TO_: sophia_term::TTerm + ?Sized,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
         {
             $crate::graph::inmem::GraphWrapper::gw_contains(self, s, p, o)
         }
@@ -417,7 +418,7 @@ macro_rules! impl_indexed_graph_for_wrapper {
         #[inline]
         fn get_index<U_>(&self, t: &U_) -> Option<Self::Index>
         where
-            U_: sophia_term::TTerm + ?Sized,
+            U_: sophia_api::term::TTerm + ?Sized,
         {
             self.get_wrapped().get_index(t)
         }
@@ -434,9 +435,9 @@ macro_rules! impl_indexed_graph_for_wrapper {
             o: &TO_,
         ) -> Option<[Self::Index; 3]>
         where
-            TS_: sophia_term::TTerm + ?Sized,
-            TP_: sophia_term::TTerm + ?Sized,
-            TO_: sophia_term::TTerm + ?Sized,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
         {
             let modified = self.get_wrapped_mut().insert_indexed(s, p, o);
             self.igw_hook_insert_indexed(&modified);
@@ -450,9 +451,9 @@ macro_rules! impl_indexed_graph_for_wrapper {
             o: &TO_,
         ) -> Option<[Self::Index; 3]>
         where
-            TS_: sophia_term::TTerm + ?Sized,
-            TP_: sophia_term::TTerm + ?Sized,
-            TO_: sophia_term::TTerm + ?Sized,
+            TS_: sophia_api::term::TTerm + ?Sized,
+            TP_: sophia_api::term::TTerm + ?Sized,
+            TO_: sophia_api::term::TTerm + ?Sized,
         {
             let modified = self.get_wrapped_mut().remove_indexed(s, p, o);
             self.igw_hook_remove_indexed(&modified);

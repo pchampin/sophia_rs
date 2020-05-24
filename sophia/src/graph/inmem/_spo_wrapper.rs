@@ -3,9 +3,9 @@
 use std::collections::{HashMap, HashSet};
 use std::iter::empty;
 
-use crate::triple::streaming_mode::{ByTermRefs, StreamedTriple};
-
 use super::*;
+use crate::triple::streaming_mode::{ByTermRefs, StreamedTriple};
+use sophia_api::term::TTerm;
 
 /// A [`GraphWrapper`](trait.GraphWrapper.html)
 /// indexing triples by subject, then by predicate, then by object.

@@ -10,7 +10,8 @@ use crate::dataset::adapter::GraphAsDataset;
 use crate::triple::stream::*;
 use crate::triple::streaming_mode::*;
 use crate::triple::*;
-use sophia_term::matcher::TermMatcher;
+use sophia_api::term::matcher::TermMatcher;
+use sophia_api::term::{term_eq, TTerm, TermKind};
 use sophia_term::*;
 
 use std::convert::Infallible;
@@ -190,12 +191,12 @@ pub trait Graph {
     /// ```
     /// # use sophia::graph::{*, inmem::LightGraph};
     /// # use sophia::triple::Triple;
-    /// # use sophia_term::ns::{Namespace, rdf};
+    /// # use sophia_api::ns::{Namespace, rdf};
     /// #
     /// # fn test() -> Result<(), Box<dyn std::error::Error>> {
     /// # let mut graph = LightGraph::new();
     /// #
-    /// use sophia_term::matcher::ANY;
+    /// use sophia_api::term::matcher::ANY;
     ///
     /// let s = Namespace::new("http://schema.org/")?;
     /// let city = s.get("City")?;
@@ -213,13 +214,13 @@ pub trait Graph {
     /// ```
     /// # use sophia::graph::{*, inmem::LightGraph};
     /// # use sophia::triple::Triple;
-    /// # use sophia_term::{TTerm, TermKind::Literal};
-    /// # use sophia_term::ns::rdfs;
+    /// # use sophia_api::ns::rdfs;
+    /// # use sophia_api::term::{TTerm, TermKind::Literal};
     /// #
     /// # fn test() -> Result<(), Box<dyn std::error::Error>> {
     /// # let mut graph = LightGraph::new();
     /// #
-    /// use sophia_term::matcher::ANY;
+    /// use sophia_api::term::matcher::ANY;
     ///
     /// for t in graph.triples_matching(
     ///     &ANY,
@@ -428,8 +429,8 @@ pub trait MutableGraph: Graph {
     ///
     /// # Usage
     /// ```
+    /// # use sophia_api::ns::{Namespace, rdf, rdfs, xsd};
     /// # use sophia_term::BoxTerm;
-    /// # use sophia_term::ns::{Namespace, rdf, rdfs, xsd};
     /// # use sophia::graph::{MutableGraph, MGResult};
     /// # use std::collections::HashSet;
     ///

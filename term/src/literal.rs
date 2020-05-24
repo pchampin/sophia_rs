@@ -4,10 +4,10 @@
 
 use crate::iri::Normalization;
 use crate::literal::convert::{DataType, NativeLiteral};
-use crate::ns::{rdf, xsd};
 use crate::*;
 use mownstr::MownStr;
 use oxilangtag::LanguageTag;
+use sophia_api::ns::{rdf, xsd};
 use std::convert::TryFrom;
 use std::fmt;
 use std::hash::{Hash, Hasher};
@@ -320,13 +320,21 @@ where
     }
 }
 
-impl<T, U, TD> From<NativeLiteral<T, U>> for Literal<TD>
+impl<T, TD> From<NativeLiteral<T>> for Literal<TD>
 where
     T: DataType + ?Sized,
-    U: AsRef<str>,
-    TD: TermData + From<U> + From<&'static str>,
+    TD: TermData + From<Box<str>> + From<&'static str>,
 {
-    fn from(other: NativeLiteral<T, U>) -> Literal<TD> {
+    fn from(other: NativeLiteral<T>) -> Literal<TD> {
+        Literal::new_dt(other.lexval, Iri::<&'static str>::from(T::iri()))
+    }
+}
+
+impl<'a, T> From<NativeLiteral<T, &'a str>> for Literal<&'a str>
+where
+    T: DataType + ?Sized,
+{
+    fn from(other: NativeLiteral<T, &'a str>) -> Literal<&'a str> {
         Literal::new_dt(other.lexval, Iri::<&'static str>::from(T::iri()))
     }
 }

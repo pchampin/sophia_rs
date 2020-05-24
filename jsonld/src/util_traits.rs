@@ -1,6 +1,6 @@
 //! Utility traits used internally by JsonLdSerializer
 use sophia::quad::Quad;
-use sophia_term::{TTerm, TermKind::*};
+use sophia_api::term::{TTerm, TermKind::*};
 use std::collections::hash_map::Entry::*;
 use std::collections::HashMap;
 

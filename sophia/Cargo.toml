@@ -23,6 +23,7 @@ test_macro = ["lazy_static"]
 all_tests = []
 
 [dependencies]
+sophia_api = { version = "0.5.3", path = "../api" }
 sophia_term = { version = "0.5.3", path = "../term" }
 resiter = "0.4.0"
 rio_api = { version = "0.4.2", features = ["generalized"] }

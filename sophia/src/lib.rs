@@ -77,7 +77,7 @@ pub mod triple;
 ///
 /// See [`sophia_term::ns`](https://docs.rs/sophia_term/latest/sophia_term/ns/index.html)
 pub mod ns {
-    pub use sophia_term::ns::*;
+    pub use sophia_api::ns::*;
 }
 /// This module re-exorts things from `sophia_term`,
 /// to ease transition from older versions of Sophia.

@@ -1,8 +1,26 @@
-//! This module is transparently re-exported by its parent `lib`.
+//! This module defines the API for [RDF] terms.
+//!
+//! Terms are the building blocks of an [RDF] graph.
+//! There are four types of terms: IRIs, blank nodes (BNode for short),
+//! literals and variables.
+//!
+//! NB: variable only exist in [generalized RDF].
+//!
+//! [Sophia]: https://docs.rs/sophia/latest/sophia/
+//! [RDF]: https://www.w3.org/TR/rdf-primer/
+//! [Linked Data]: http://linkeddata.org/
+//! [generalized RDF]: https://docs.rs/sophia/latest/sophia/#generalized-vs-strict-rdf-model
+
 use mownstr::MownStr;
 use std::cmp::Ordering;
 use std::error::Error;
 use std::hash::{Hash, Hasher};
+
+mod _dyn_term;
+mod _graph_name_matcher; // is 'pub use'd by module 'matcher'
+pub mod matcher;
+pub mod simple_iri;
+pub use simple_iri::SimpleIri;
 
 /// Trait for all RDF terms.
 ///
@@ -72,7 +90,7 @@ pub trait TTerm {
     ///
     /// # Note to implementors
     /// Should not be overridden; must be consistent with [`datatype_raw`].
-    fn datatype(&self) -> Option<crate::SimpleIri> {
+    fn datatype(&self) -> Option<SimpleIri> {
         None
     }
 
@@ -399,6 +417,20 @@ where
     T: TTerm + ?Sized,
 {
     format!("{}", TermFormater(term))
+}
+
+/// Check the equality of two graph names (`Option<&Term>`)
+/// possibly of different types.
+pub fn same_graph_name<T, U>(g1: Option<&T>, g2: Option<&U>) -> bool
+where
+    T: TTerm + ?Sized,
+    U: TTerm + ?Sized,
+{
+    match (g1, g2) {
+        (Some(n1), Some(n2)) => term_eq(n1, n2),
+        (None, None) => true,
+        _ => false,
+    }
 }
 
 struct TermFormater<'a, T: ?Sized>(&'a T);

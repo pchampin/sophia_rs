@@ -13,7 +13,8 @@ use crate::quad::stream::*;
 use crate::quad::streaming_mode::*;
 use crate::quad::*;
 use crate::triple::stream::StreamResult;
-use sophia_term::matcher::*;
+use sophia_api::term::matcher::*;
+use sophia_api::term::{same_graph_name, term_eq, TTerm, TermKind};
 use sophia_term::*;
 
 use crate::graph::insert_if_absent;

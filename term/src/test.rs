@@ -1,6 +1,7 @@
 use super::Term::*;
 use super::*;
-use crate::ns::xsd;
+use sophia_api::ns::xsd;
+use sophia_api::term::CopiableTerm;
 
 fn h<H: std::hash::Hash>(x: &H) -> u64 {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
@@ -16,7 +17,6 @@ fn iri() {
     assert_eq!(format!("{}", i), format!("<{}>", exp));
 
     if let Iri(iri) = i {
-        assert_eq!(&iri, exp);
         assert_eq!(iri.len(), exp.len());
         let s1 = iri.value();
         let s2: String = iri.chars().collect();
@@ -37,7 +37,6 @@ fn iri2() {
     assert_eq!(format!("{}", i), format!("<{}>", exp));
 
     if let Iri(iri) = i {
-        assert_eq!(&iri, exp);
         assert_eq!(iri.len(), exp.len());
         let s1 = iri.value();
         let s2: String = iri.chars().collect();
@@ -159,7 +158,6 @@ fn iri_normalized_last_gen_delim() {
 #[test]
 fn bnode() {
     let b1 = BoxTerm::new_bnode("foo").unwrap();
-    assert_eq!(b1.value(), "foo");
     assert_eq!(&format!("{}", b1), "_:foo");
 
     if let BNode(id1) = b1 {
@@ -209,8 +207,7 @@ fn bnode_id_deref() {
 fn bnode_id_eq_str() {
     let b1 = BoxTerm::new_bnode("foo").unwrap();
     if let BNode(id1) = b1 {
-        assert_eq!(&id1, "foo");
-        assert!(&id1 == "foo");
+        assert_eq!(id1.value(), "foo");
     } else {
         panic!("b1 should be a BNode");
     }

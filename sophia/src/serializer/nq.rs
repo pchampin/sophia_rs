@@ -119,7 +119,8 @@ impl Stringifier for NqSerializer<Vec<u8>> {
 #[cfg(test)]
 pub(crate) mod test {
     use super::*;
-    use crate::ns::*;
+    use sophia_api::ns::*;
+    use sophia_term::literal::convert::AsLiteral;
     use sophia_term::*;
 
     #[test]
@@ -138,7 +139,7 @@ pub(crate) mod test {
                 [
                     me,
                     StaticTerm::new_iri("http://schema.org/name").unwrap(),
-                    "Pierre-Antoine".into(),
+                    "Pierre-Antoine".as_literal().into(),
                 ],
                 Some(StaticTerm::new_iri("http://champin.net/").unwrap()),
             ),
