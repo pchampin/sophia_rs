@@ -4,7 +4,7 @@ use crate::quad::Quad;
 use crate::triple::stream::TripleSource;
 use lazy_static::lazy_static;
 use sophia_api::ns::{rdf, xsd};
-use sophia_term::BoxTerm;
+use sophia_term::{BoxTerm, StaticTerm};
 
 pub const NS: &'static str = "http://example.org/";
 lazy_static! {

@@ -8,7 +8,6 @@ use std::ptr::NonNull;
 
 use crate::quad::Quad;
 use sophia_api::term::TTerm;
-use sophia_term::RefTerm;
 
 mod _unsafe_quad;
 pub(crate) use _unsafe_quad::*;
@@ -28,12 +27,6 @@ impl<Q: Quad> QuadStreamingMode for ByValue<Q> {
 pub struct ByRef<Q: Quad>(PhantomData<Q>);
 impl<Q: Quad> QuadStreamingMode for ByRef<Q> {
     type UnsafeQuad = NonNull<Q>;
-}
-/// See [module](./index.html) documentation.
-#[derive(Debug)]
-pub struct ByRefTerms {}
-impl QuadStreamingMode for ByRefTerms {
-    type UnsafeQuad = ([RefTerm<'static>; 3], Option<RefTerm<'static>>);
 }
 /// See [module](./index.html) documentation.
 #[derive(Debug)]
@@ -89,33 +82,11 @@ where
         }
     }
 }
-impl<'a> StreamedQuad<'a, ByRefTerms> {
-    pub fn by_ref_terms(
-        s: RefTerm<'a>,
-        p: RefTerm<'a>,
-        o: RefTerm<'a>,
-        g: Option<RefTerm<'a>>,
-    ) -> Self {
-        let s = unsafe { std::mem::transmute(s) };
-        let p = unsafe { std::mem::transmute(p) };
-        let o = unsafe { std::mem::transmute(o) };
-        let g = unsafe { std::mem::transmute(g) };
-        StreamedQuad {
-            _phantom: PhantomData,
-            wrapped: ([s, p, o], g),
-        }
-    }
-}
 impl<'a, T> StreamedQuad<'a, ByTermRefs<T>>
 where
     T: TTerm + ?Sized,
 {
-    pub fn by_term_refs(
-        s: &'a T,
-        p: &'a T,
-        o: &'a T,
-        g: Option<&'a T>,
-    ) -> Self {
+    pub fn by_term_refs(s: &'a T, p: &'a T, o: &'a T, g: Option<&'a T>) -> Self {
         StreamedQuad {
             _phantom: PhantomData,
             wrapped: TermRefs(([s.into(), p.into(), o.into()], g.map(|g| g.into()))),
@@ -139,6 +110,38 @@ where
     fn g(&self) -> Option<&Self::Term> {
         unsafe { self.wrapped.u_g() }
     }
+}
+
+/// A macro for creating a [streaming mode] for lifetime-parameterized Quad types.
+///
+/// This macro expects two identifiers:
+/// * the first one (`$mode`) will be the identifier of the streaming mode;
+/// * the second one (`$tt`) is the name of a generic type implementing [`Quad`],
+///   and expecting a single lifetime parameter.
+///
+/// It declares the streaming mode type `$mode`,
+/// and add an associated function named`scoped` to `StreamedQuad<'a, $mode>`,
+/// to convert an instance of `$tt<'a>` to a streamed quad.
+///
+/// [streaming mode]: triple/streaming_mode/index.html
+/// [`Quad`]: quad/trait.Quad.html
+#[macro_export]
+macro_rules! make_scoped_quad_streming_mode {
+    ($mode: ident, $qt: ident) => {
+        #[derive(Debug)]
+        pub struct $mode(std::marker::PhantomData<$qt<'static>>);
+        impl $crate::quad::streaming_mode::QuadStreamingMode for $mode {
+            type UnsafeQuad = $qt<'static>;
+        }
+
+        impl<'a> $crate::quad::streaming_mode::StreamedQuad<'a, $mode> {
+            pub fn scoped(quad: $qt<'a>) -> Self {
+                unsafe {
+                    $crate::quad::streaming_mode::StreamedQuad::wrap(std::mem::transmute(quad))
+                }
+            }
+        }
+    };
 }
 
 // adapter

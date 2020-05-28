@@ -38,18 +38,19 @@
 //!   it is constructed with [`StreamedTriple::by_value`];
 //! * [`ByRef<T>`]: [`StreamedTriple<'a>`] will wrap a reference to `T`, valid as long as `'a`;
 //!   it is constructed with [`StreamedTriple::by_ref`];
-//! * [`ByRefTerms`]: [`StreamedTriple<'a>`] will wrap an array of 3 [`Term<&'a str>`];
-//!   it is constructed with [`StreamedTriple::by_ref_terms`].
 //! * [`ByTermRefs<T>`]: [`StreamedTriple<'a>`] will wrap an array of 3 [`&'a T`] references,
 //!   valid as long as `'a`;
 //!   it is constructed with [`StreamedTriple::by_term_refs`].
+//!
+//! In addition, the macro [`make_scoped_triple_streaming_mode`]
+//! allows to create a streaming mode for any lifetime-parameterized type implementing
+//! [`Triple`] (see its documentation for more details).
 //!
 //! NB: actually, another mode exists,
 //! but is specifically designed for the [`graph::adapter`](../../graph/adapter/index.html) module,
 //! should never be needed in other contexts.
 //!
 //! [`ByRef<T>`]: struct.ByRef.html
-//! [`ByRefTerms`]: struct.ByRefTerms.html
 //! [`ByTermRefs<TD>`]: struct.ByTermRefs.html
 //! [`ByValue<T>`]: struct.ByValue.html
 //! [Generic Associated Types]: https://github.com/rust-lang/rust/issues/44265
@@ -64,13 +65,13 @@
 //! [`Triple`]: ../trait.Triple.html
 //! [`triples`]: ../../graph/trait.Graph.html#tymethod.triples
 //! [`TripleStreamingMode`]: trait.TripleStreamingMode.html
+//! [`make_scoped_triple_streaming_mode`]: ../../macro.make_scoped_triple_streming_mode.html
 
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 
 use crate::triple::Triple;
 use sophia_api::term::TTerm;
-use sophia_term::RefTerm;
 
 mod _unsafe_triple;
 pub(crate) use _unsafe_triple::*;
@@ -90,12 +91,6 @@ impl<T: Triple> TripleStreamingMode for ByValue<T> {
 pub struct ByRef<T: Triple>(PhantomData<T>);
 impl<T: Triple> TripleStreamingMode for ByRef<T> {
     type UnsafeTriple = NonNull<T>;
-}
-/// See [module](./index.html) documentation.
-#[derive(Debug)]
-pub struct ByRefTerms {}
-impl TripleStreamingMode for ByRefTerms {
-    type UnsafeTriple = [RefTerm<'static>; 3];
 }
 /// See [module](./index.html) documentation.
 #[derive(Debug)]
@@ -150,17 +145,6 @@ where
         }
     }
 }
-impl<'a> StreamedTriple<'a, ByRefTerms> {
-    pub fn by_ref_terms(s: RefTerm<'a>, p: RefTerm<'a>, o: RefTerm<'a>) -> Self {
-        let s = unsafe { std::mem::transmute(s) };
-        let p = unsafe { std::mem::transmute(p) };
-        let o = unsafe { std::mem::transmute(o) };
-        StreamedTriple {
-            _phantom: PhantomData,
-            wrapped: [s, p, o],
-        }
-    }
-}
 impl<'a, T> StreamedTriple<'a, ByTermRefs<T>>
 where
     T: TTerm + ?Sized,
@@ -186,6 +170,40 @@ where
     fn o(&self) -> &Self::Term {
         unsafe { self.wrapped.u_o() }
     }
+}
+
+/// A macro for creating a [streaming mode] for lifetime-parameterized Triple types.
+///
+/// This macro expects two identifiers:
+/// * the first one (`$mode`) will be the identifier of the streaming mode;
+/// * the second one (`$tt`) is the name of a generic type implementing [`Triple`],
+///   and expecting a single lifetime parameter.
+///
+/// It declares the streaming mode type `$mode`,
+/// and add an associated function named`scoped` to `StreamedTriple<'a, $mode>`,
+/// to convert an instance of `$tt<'a>` to a streamed triple.
+///
+/// [streaming mode]: triple/streaming_mode/index.html
+/// [`Triple`]: triple/trait.Triple.html
+#[macro_export]
+macro_rules! make_scoped_triple_streming_mode {
+    ($mode: ident, $tt: ident) => {
+        #[derive(Debug)]
+        pub struct $mode(std::marker::PhantomData<$tt<'static>>);
+        impl $crate::triple::streaming_mode::TripleStreamingMode for $mode {
+            type UnsafeTriple = $tt<'static>;
+        }
+
+        impl<'a> $crate::triple::streaming_mode::StreamedTriple<'a, $mode> {
+            pub fn scoped(triple: $tt<'a>) -> Self {
+                unsafe {
+                    $crate::triple::streaming_mode::StreamedTriple::wrap(std::mem::transmute(
+                        triple,
+                    ))
+                }
+            }
+        }
+    };
 }
 
 // adapter

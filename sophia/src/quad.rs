@@ -6,7 +6,6 @@
 
 use crate::triple::*;
 use sophia_api::term::TTerm;
-use sophia_term::*;
 
 pub mod stream;
 pub mod streaming_mode;
