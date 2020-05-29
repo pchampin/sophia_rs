@@ -6,12 +6,11 @@
 use crate::dataset::{DQuad, DTerm, Dataset};
 use crate::graph::{bn_mapper, hash_if_not_bn, match_ignore_bns};
 use crate::quad::Quad;
+use crate::term::matcher::AnyOrExactlyRef;
 use crate::triple::stream::{
     SinkError, SinkResult as _, SourceError, SourceResult as _, StreamError, StreamResult,
 };
-use sophia_api::term::matcher::AnyOrExactly;
 use sophia_api::term::{TTerm, TermKind};
-use sophia_term::RefTerm;
 use std::collections::{BTreeSet, HashMap};
 use std::error::Error;
 use std::fmt;
@@ -182,14 +181,14 @@ where
     Ok(true)
 }
 
-fn match_gname_ignore_bns<T>(t: Option<&T>) -> AnyOrExactly<Option<RefTerm>>
+fn match_gname_ignore_bns<T>(g: Option<&T>) -> AnyOrExactlyRef<Option<&T>>
 where
     T: TTerm + ?Sized,
 {
-    if t.map(TTerm::kind) == Some(TermKind::BlankNode) {
-        AnyOrExactly::Any
+    if g.map(TTerm::kind) == Some(TermKind::BlankNode) {
+        AnyOrExactlyRef::Any
     } else {
-        AnyOrExactly::Exactly(t.map(RefTerm::from))
+        AnyOrExactlyRef::Exactly(g)
     }
 }
 

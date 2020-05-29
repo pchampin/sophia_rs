@@ -1,6 +1,6 @@
 // this module is transparently re-exported by its sibling `matcher`
 
-use crate::term::matcher::{AnyOrExactly, AnyTerm};
+use crate::term::matcher::{AnyOrExactly, AnyOrExactlyRef, AnyTerm};
 use crate::term::*;
 
 /// Generic trait for matching graph names, *i.e.* optional [term]s.
@@ -59,6 +59,28 @@ where
         match self {
             AnyOrExactly::Any => true,
             AnyOrExactly::Exactly(gself) => same_graph_name(gself.as_ref(), g),
+        }
+    }
+}
+
+impl<'a, U> GraphNameMatcher for AnyOrExactlyRef<Option<&'a U>>
+where
+    U: TTerm + ?Sized,
+{
+    type Term = U;
+    fn constant(&self) -> Option<Option<&U>> {
+        match self {
+            AnyOrExactlyRef::Any => None,
+            AnyOrExactlyRef::Exactly(g) => Some(*g),
+        }
+    }
+    fn matches<T>(&self, g: Option<&T>) -> bool
+    where
+        T: TTerm + ?Sized,
+    {
+        match self {
+            AnyOrExactlyRef::Any => true,
+            AnyOrExactlyRef::Exactly(gself) => same_graph_name(*gself, g),
         }
     }
 }
@@ -228,6 +250,39 @@ mod test {
         assert!(!m.matches(n2.as_ref()));
     }
 
+    #[test]
+    fn test_aoer_any_as_matcher() {
+        let m = AnyOrExactlyRef::<Option<&SimpleIri>>::Any;
+        // comparing to a term using a differently cut,
+        // to make the test less obvious
+        let n0: Option<SimpleIri> = None;
+        let n1 = Some(SimpleIri::new("http://champin.net/#", Some("pa")).unwrap());
+        let n2 = Some(SimpleIri::new("http://example.org/", None).unwrap());
+
+        let mc = GraphNameMatcher::constant(&m);
+        assert!(mc.is_none());
+        assert!(m.matches(n0.as_ref()));
+        assert!(m.matches(n1.as_ref()));
+        assert!(m.matches(n2.as_ref()));
+    }
+
+    #[test]
+    fn test_aoer_explicit_as_matcher() {
+        let t = SimpleIri::new("http://champin.net/#pa", None).unwrap();
+        let m = AnyOrExactlyRef::Exactly(Some(&t));
+        // comparing to a term using a differently cut,
+        // to make the test less obvious
+        let n0: Option<SimpleIri> = None;
+        let n1 = Some(SimpleIri::new("http://champin.net/#", Some("pa")).unwrap());
+        let n2 = Some(SimpleIri::new("http://example.org/", None).unwrap());
+
+        let mc = GraphNameMatcher::constant(&m);
+        assert!(mc.is_some());
+        assert!(same_graph_name(mc.unwrap(), n1.as_ref()));
+        assert!(!m.matches(n0.as_ref()));
+        assert!(m.matches(n1.as_ref()));
+        assert!(!m.matches(n2.as_ref()));
+    }
     #[test]
     fn test_option_as_matcher() {
         let g = SimpleIri::new("http://champin.net/#pa", None).unwrap();

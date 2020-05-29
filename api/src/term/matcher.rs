@@ -55,7 +55,7 @@ impl TermMatcher for AnyTerm {
     }
 }
 
-/// A matcher matching either any term, or only a specific one.
+/// A matcher matching either any term, or only a specific owned term.
 pub enum AnyOrExactly<T> {
     /// Match any term.
     Any,
@@ -93,6 +93,48 @@ where
         match self {
             AnyOrExactly::Any => true,
             AnyOrExactly::Exactly(tself) => term_eq(tself, t),
+        }
+    }
+}
+
+/// A matcher matching either any term, or only a specific borrowed term.
+pub enum AnyOrExactlyRef<T> {
+    /// Match any term.
+    Any,
+    /// Match only this term.
+    Exactly(T),
+}
+
+impl<T> From<Option<T>> for AnyOrExactlyRef<T>
+where
+    T: Sized,
+{
+    fn from(other: Option<T>) -> AnyOrExactlyRef<T> {
+        match other {
+            None => AnyOrExactlyRef::Any,
+            Some(t) => AnyOrExactlyRef::Exactly(t),
+        }
+    }
+}
+
+impl<'a, U> TermMatcher for AnyOrExactlyRef<&'a U>
+where
+    U: TTerm + ?Sized,
+{
+    type Term = U;
+    fn constant(&self) -> Option<&U> {
+        match self {
+            AnyOrExactlyRef::Any => None,
+            AnyOrExactlyRef::Exactly(t) => Some(t),
+        }
+    }
+    fn matches<T>(&self, t: &T) -> bool
+    where
+        T: TTerm + ?Sized,
+    {
+        match self {
+            AnyOrExactlyRef::Any => true,
+            AnyOrExactlyRef::Exactly(tself) => term_eq(*tself, t),
         }
     }
 }
@@ -237,6 +279,34 @@ mod test {
     #[test]
     fn test_aoe_exactly_as_matcher() {
         let m = AnyOrExactly::Exactly(SimpleIri::new("http://champin.net/#pa", None).unwrap());
+        // comparing to a term using a difSimferent term data, and differently cut,
+        // to make the test less obvious
+        let t1 = SimpleIri::new("http://champin.net/#", Some("pa")).unwrap();
+        let t2 = SimpleIri::new("http://example.org/", None).unwrap();
+
+        let mc = TermMatcher::constant(&m);
+        assert!(mc.is_some());
+        assert_eq!(mc.unwrap(), &t1);
+        assert!(TermMatcher::matches(&m, &t1));
+        assert!(!TermMatcher::matches(&m, &t2));
+    }
+
+    #[test]
+    fn test_aoer_any_as_matcher() {
+        let m = AnyOrExactlyRef::<&SimpleIri>::Any;
+        // comparing to a term using a differently cut,
+        // to make the test less obvious
+        let t1 = SimpleIri::new("http://champin.net/#", Some("pa")).unwrap();
+
+        let mc = TermMatcher::constant(&m);
+        assert!(mc.is_none());
+        assert!(TermMatcher::matches(&m, &t1));
+    }
+
+    #[test]
+    fn test_aoer_exactly_as_matcher() {
+        let t = SimpleIri::new("http://champin.net/#pa", None).unwrap();
+        let m = AnyOrExactlyRef::Exactly(&t);
         // comparing to a term using a difSimferent term data, and differently cut,
         // to make the test less obvious
         let t1 = SimpleIri::new("http://champin.net/#", Some("pa")).unwrap();

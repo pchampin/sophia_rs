@@ -8,9 +8,8 @@ use crate::triple::stream::{
     SinkError, SinkResult as _, SourceError, SourceResult as _, StreamError, StreamResult,
 };
 use crate::triple::Triple;
-use sophia_api::term::matcher::AnyOrExactly;
+use sophia_api::term::matcher::AnyOrExactlyRef;
 use sophia_api::term::{term_hash, TTerm, TermKind};
-use sophia_term::RefTerm;
 use std::collections::{BTreeSet, HashMap};
 use std::error::Error;
 use std::fmt;
@@ -184,14 +183,14 @@ where
     Ok(true)
 }
 
-pub(crate) fn match_ignore_bns<T>(t: &T) -> AnyOrExactly<RefTerm>
+pub(crate) fn match_ignore_bns<T>(t: &T) -> AnyOrExactlyRef<&T>
 where
     T: TTerm + ?Sized,
 {
     if t.kind() == TermKind::BlankNode {
-        AnyOrExactly::Any
+        AnyOrExactlyRef::Any
     } else {
-        AnyOrExactly::Exactly(RefTerm::from(t))
+        AnyOrExactlyRef::Exactly(t)
     }
 }
 
