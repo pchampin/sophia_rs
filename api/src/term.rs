@@ -18,6 +18,8 @@ use std::hash::{Hash, Hasher};
 
 mod _dyn_term;
 mod _graph_name_matcher; // is 'pub use'd by module 'matcher'
+mod _raw_value;
+pub use self::_raw_value::*;
 pub mod matcher;
 pub mod simple_iri;
 pub use simple_iri::SimpleIri;
@@ -111,7 +113,7 @@ pub trait TTerm {
     ///
     /// # Note to implementors
     /// The second part of the raw value is intended for some implementations
-    /// of IRIs, storing both a "namepsace" and a "suffix".
+    /// of IRIs, storing both a "namespace" and a "suffix".
     /// For other kinds of term, the second part must always be None.
     fn value_raw(&self) -> (&str, Option<&str>);
 
