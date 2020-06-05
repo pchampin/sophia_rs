@@ -9,7 +9,7 @@ use std::hash::{Hash, Hasher};
 /// IRIs, storing both a "namespace" and a "suffix". For other kinds of term,
 /// the second part is by default `None`.
 #[derive(Debug, Copy, Clone, Eq)]
-pub struct RawValue<'a>(&'a str, Option<&'a str>);
+pub struct RawValue<'a>(pub &'a str, pub Option<&'a str>);
 
 impl<'a> RawValue<'a> {
     /// A new raw value from namespace and suffix.
