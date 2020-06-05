@@ -297,8 +297,8 @@ impl<TD: TermData> TTerm for Literal<TD> {
     fn kind(&self) -> TermKind {
         TermKind::Literal
     }
-    fn value_raw(&self) -> (&str, Option<&str>) {
-        (self.txt.as_ref(), None)
+    fn value_raw(&self) -> RawValue {
+        self.txt.as_ref().into()
     }
     fn datatype(&self) -> Option<SimpleIri> {
         Some(self.dt().into())

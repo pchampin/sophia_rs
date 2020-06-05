@@ -20,7 +20,7 @@ pub use self::_join::*;
 
 use super::*;
 use mownstr::MownStr;
-use sophia_api::ns::Namespace;
+use sophia_api::{term::RawValue, ns::Namespace};
 pub use sophia_iri::resolve::*; // prefixed with "pub" to ease transition from older versions of Sophia
 pub use sophia_iri::*; // prefixed with "pub" to ease transition from older versions of Sophia
 use std::convert::TryFrom;
@@ -481,8 +481,8 @@ impl<TD: TermData> TTerm for Iri<TD> {
     fn kind(&self) -> TermKind {
         TermKind::Iri
     }
-    fn value_raw(&self) -> (&str, Option<&str>) {
-        (
+    fn value_raw(&self) -> RawValue {
+        RawValue(
             self.ns.as_ref(),
             (&self.suffix).as_ref().map(|td| td.as_ref()),
         )
@@ -601,7 +601,7 @@ where
         T: TTerm + ?Sized,
     {
         if term.kind() == TermKind::Iri {
-            let (ns, suffix) = term.value_raw();
+            let RawValue(ns, suffix) = term.value_raw();
             Ok(match suffix {
                 None => Self::new_unchecked(ns),
                 Some(suffix) => Self::new_suffixed_unchecked(ns, suffix),

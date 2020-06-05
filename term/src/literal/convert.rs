@@ -105,7 +105,7 @@ where
     T: DataType + ?Sized,
     U: AsRef<str>,
 {
-    /// Construct a SimpleLiterla.
+    /// Construct a SimpleLiteral.
     ///
     /// # Pre-conditions
     /// This constructor does not check that `lexval`
@@ -128,8 +128,8 @@ where
         TermKind::Literal
     }
 
-    fn value_raw(&self) -> (&str, Option<&str>) {
-        (&self.lexval.as_ref(), None)
+    fn value_raw(&self) -> RawValue {
+        self.lexval.as_ref().into()
     }
 
     fn datatype(&self) -> Option<SimpleIri> {
