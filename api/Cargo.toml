@@ -19,3 +19,4 @@ mownstr = "0.1.1"
 
 [dev-dependencies]
 sophia_iri = { version = "0.5.3", path = "../iri", features = ["test_data"] }
+test-case = "1.0.0"

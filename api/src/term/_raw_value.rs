@@ -36,8 +36,13 @@ impl<'a> RawValue<'a> {
     pub fn bytes(&'a self) -> impl 'a + Iterator<Item = u8> {
         self.0.bytes().chain(self.1.iter().flat_map(|s| s.bytes()))
     }
+    /// Returns the length of the string, including the length of the second
+    /// if present.
     pub fn len(&self) -> usize {
         self.0.len() + self.1.map(str::len).unwrap_or_default()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }
 
@@ -108,4 +113,46 @@ fn str_absolute(txt: &str) -> Absolute {
         }
     }
     Absolute::Maybe
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use test_case::test_case;
+
+    #[test_case("hello", None, "hello" => true ; "only ns")]
+    #[test_case("hello", None, "Hello" => false ; "not equal")]
+    #[test_case("hel", Some("lo"), "hello" => true ; "mixed")]
+    #[test_case("", Some("hello"), "hello" => true ; "only suffix")]
+    fn bytes(ns: &str, sf: Option<&str>, full: &str) -> bool {
+        let raw = RawValue(ns, sf);
+        let res = raw.bytes().zip(full.bytes()).all(|(r, f)| r == f);
+        res
+    }
+
+    #[test_case("hello", None, 5 => true ; "only ns")]
+    #[test_case("hel", Some("lo"), 5 => true ; "mixed")]
+    #[test_case("", Some("hello"), 5 => true ; "only suffix")]
+    fn len(ns: &str, sf: Option<&str>, len: usize) -> bool {
+        RawValue(ns, sf).len() == len
+    }
+
+    #[test_case("hello", None => false ; "rel only ns")]
+    #[test_case("hel", Some("lo") => false ; "rel mixed")]
+    #[test_case("http://example.org/hello", None => true ; "abs only ns")]
+    #[test_case("http://example.org/", Some("hello") => true ; "abs mixed")]
+    #[test_case("ht", Some("tp://example.org/") => true ; "abs split schema")]
+    #[test_case("/test:number:thing/", Some("hello") => false ; "rel with colon")]
+    fn absolute(ns: &str, sf: Option<&str>) -> bool {
+        RawValue(ns, sf).is_absolute()
+    }
+
+    #[test_case("hello", None, "hello", None => true ; "only ns")]
+    #[test_case("hello", None, "Hello", None => false ; "not equal")]
+    #[test_case("hel", Some("lo"), "hello", None => true ; "mixed")]
+    #[test_case("", Some("hello"), "hello", None => true ; "only suffix")]
+    #[test_case("h", Some("ello"), "hell", Some("o") => true ; "full mixed")]
+    fn eq(ns1: &str, sf1: Option<&str>, ns2: &str, sf2: Option<&str>) -> bool {
+        RawValue(ns1, sf1) == RawValue(ns2, sf2)
+    }
 }
