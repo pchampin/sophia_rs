@@ -63,7 +63,11 @@ impl<'a> From<&'a str> for RawValue<'a> {
 
 impl<'a> PartialEq for RawValue<'a> {
     fn eq(&self, other: &Self) -> bool {
-        self.len() == other.len() && self.bytes().zip(other.bytes()).all(|(s, o)| s == o)
+        self.len() == other.len()
+            && match (self, other) {
+                (RawValue(s, None), RawValue(o, None)) => s == o,
+                _ => self.bytes().zip(other.bytes()).all(|(s, o)| s == o),
+            }
     }
 }
 

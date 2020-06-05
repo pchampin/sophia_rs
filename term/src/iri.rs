@@ -20,7 +20,7 @@ pub use self::_join::*;
 
 use super::*;
 use mownstr::MownStr;
-use sophia_api::{term::RawValue, ns::Namespace};
+use sophia_api::{ns::Namespace, term::RawValue};
 pub use sophia_iri::resolve::*; // prefixed with "pub" to ease transition from older versions of Sophia
 pub use sophia_iri::*; // prefixed with "pub" to ease transition from older versions of Sophia
 use std::convert::TryFrom;

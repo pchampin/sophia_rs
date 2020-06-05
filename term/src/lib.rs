@@ -48,8 +48,8 @@
 
 use mownstr::MownStr;
 use sophia_api::term::{
-    term_cmp, term_eq, term_format, term_hash, term_to_string, CopyTerm, SimpleIri, TTerm,
-    TermKind, TryCopyTerm, RawValue,
+    term_cmp, term_eq, term_format, term_hash, term_to_string, CopyTerm, RawValue, SimpleIri,
+    TTerm, TermKind, TryCopyTerm,
 };
 use std::convert::TryInto;
 use std::fmt::Debug;
