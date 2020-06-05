@@ -55,6 +55,12 @@ impl<'a> From<RawValue<'a>> for MownStr<'a> {
     }
 }
 
+impl<'a> From<&'a str> for RawValue<'a> {
+    fn from(s: &'a str) -> Self {
+        RawValue(s, None)
+    }
+}
+
 impl<'a> PartialEq for RawValue<'a> {
     fn eq(&self, other: &Self) -> bool {
         self.len() == other.len() && self.bytes().zip(other.bytes()).all(|(s, o)| s == o)
