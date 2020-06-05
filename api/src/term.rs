@@ -299,7 +299,8 @@ where
                 } else {
                     let dt1 = t1.datatype().unwrap();
                     let dt2 = t2.datatype().unwrap();
-                    dt1.value_raw().bytes()
+                    dt1.value_raw()
+                        .bytes()
                         .cmp(dt2.value_raw().bytes())
                         .then_with(|| v1.0.cmp(&v2.0))
                 }
