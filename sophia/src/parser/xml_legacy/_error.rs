@@ -27,7 +27,7 @@ pub enum XmlParserError {
 
 impl WithLocation for XmlParserError {
     fn location(&self) -> Location {
-        use crate::parser::xml::XmlParserError::*;
+        use super::XmlParserError::*;
 
         match self {
             Xml { location, .. } | InterpretRdf { location, .. } => location.clone(),

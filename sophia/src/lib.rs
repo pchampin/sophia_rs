@@ -99,6 +99,8 @@ pub mod parser {
     pub mod turtle;
     #[cfg(feature = "xml")]
     pub mod xml;
+    #[cfg(feature = "xml")]
+    pub mod xml_legacy;
 }
 /// This module re-exports symbols from
 /// [`sophia_api::quad`](https://docs.rs/sophia_api/latest/sophia_api/quad/).
