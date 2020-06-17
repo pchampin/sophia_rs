@@ -5,7 +5,7 @@ use std::fmt;
 use std::hash;
 
 /// A naive implementation of TTerm, with no check whatsoever.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct TestTerm<T> {
     kind: TermKind,
     value: T,

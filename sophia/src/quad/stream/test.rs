@@ -4,20 +4,22 @@ use crate::quad::Quad;
 use crate::triple::stream::TripleSource;
 use lazy_static::lazy_static;
 use sophia_api::ns::{rdf, xsd};
-use sophia_term::{BoxTerm, StaticTerm};
+use sophia_api::term::test::TestTerm;
+use sophia_api::term::CopiableTerm;
+
+type BoxTerm = TestTerm<Box<str>>;
+type StaticTerm = TestTerm<&'static str>;
 
 pub const NS: &'static str = "http://example.org/";
 lazy_static! {
-    pub static ref ALICE: StaticTerm = StaticTerm::new_iri_suffixed(NS, "alice").unwrap();
-    pub static ref BOB: StaticTerm = StaticTerm::new_iri_suffixed(NS, "bob").unwrap();
-    pub static ref CHARLIE: StaticTerm = StaticTerm::new_iri_suffixed(NS, "charlie").unwrap();
-    pub static ref KNOWS: StaticTerm = StaticTerm::new_iri_suffixed(NS, "knows").unwrap();
-    pub static ref NAME: StaticTerm = StaticTerm::new_iri_suffixed(NS, "name").unwrap();
-    pub static ref PERSON: StaticTerm = StaticTerm::new_iri_suffixed(NS, "Person").unwrap();
-    pub static ref ALICE_LIT: StaticTerm =
-        StaticTerm::new_literal_dt("Alice", xsd::string.clone()).unwrap();
-    pub static ref BOB_LIT: StaticTerm =
-        StaticTerm::new_literal_dt("Bob", xsd::string.clone()).unwrap();
+    pub static ref ALICE: StaticTerm = StaticTerm::iri2(NS, "alice");
+    pub static ref BOB: StaticTerm = StaticTerm::iri2(NS, "bob");
+    pub static ref CHARLIE: StaticTerm = StaticTerm::iri2(NS, "charlie");
+    pub static ref KNOWS: StaticTerm = StaticTerm::iri2(NS, "knows");
+    pub static ref NAME: StaticTerm = StaticTerm::iri2(NS, "name");
+    pub static ref PERSON: StaticTerm = StaticTerm::iri2(NS, "Person");
+    pub static ref ALICE_LIT: StaticTerm = StaticTerm::lit_dt("Alice", xsd::string);
+    pub static ref BOB_LIT: StaticTerm = StaticTerm::lit_dt("Bob", xsd::string);
 }
 
 fn make_dataset() -> Vec<[StaticTerm; 4]> {
@@ -153,7 +155,7 @@ fn filter_map_quads_to_triples() {
     d.quads()
         .filter_map_quads(|q| -> Option<[BoxTerm; 3]> {
             if q.s() == &BOB as &StaticTerm {
-                Some([q.s().clone_into(), q.p().clone_into(), q.o().clone_into()])
+                Some([q.s().copied(), q.p().copied(), q.o().copied()])
             } else {
                 None
             }
@@ -219,9 +221,7 @@ fn map_quads_to_triple() {
     let d = make_dataset();
     let mut g = Vec::<[BoxTerm; 3]>::new();
     d.quads()
-        .map_quads(|q| -> [BoxTerm; 3] {
-            [q.s().clone_into(), q.p().clone_into(), q.o().clone_into()]
-        })
+        .map_quads(|q| -> [BoxTerm; 3] { [q.s().copied(), q.p().copied(), q.o().copied()] })
         .add_to_graph(&mut g)
         .unwrap();
     assert_eq!(d.len(), g.len());

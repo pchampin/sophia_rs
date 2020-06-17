@@ -4,26 +4,30 @@ use crate::quad::stream::QuadSource;
 use crate::triple::Triple;
 use lazy_static::lazy_static;
 use sophia_api::ns::{rdf, xsd};
-use sophia_term::BoxTerm;
+use sophia_api::term::test::TestTerm;
+use sophia_api::term::CopiableTerm;
+
+type BoxTerm = TestTerm<Box<str>>;
+type StaticTerm = TestTerm<&'static str>;
 
 pub const NS: &'static str = "http://example.org/";
 lazy_static! {
-    pub static ref ALICE: StaticTerm = StaticTerm::new_iri_suffixed(NS, "alice").unwrap();
-    pub static ref BOB: StaticTerm = StaticTerm::new_iri_suffixed(NS, "bob").unwrap();
-    pub static ref CHARLIE: StaticTerm = StaticTerm::new_iri_suffixed(NS, "charlie").unwrap();
-    pub static ref KNOWS: StaticTerm = StaticTerm::new_iri_suffixed(NS, "knows").unwrap();
-    pub static ref NAME: StaticTerm = StaticTerm::new_iri_suffixed(NS, "name").unwrap();
-    pub static ref PERSON: StaticTerm = StaticTerm::new_iri_suffixed(NS, "Person").unwrap();
-    pub static ref ALICE_LIT: StaticTerm = StaticTerm::new_literal_dt("Alice", xsd::string).unwrap();
-    pub static ref BOB_LIT: StaticTerm = StaticTerm::new_literal_dt("Bob", xsd::string).unwrap();
+    pub static ref ALICE: StaticTerm = StaticTerm::iri2(NS, "alice");
+    pub static ref BOB: StaticTerm = StaticTerm::iri2(NS, "bob");
+    pub static ref CHARLIE: StaticTerm = StaticTerm::iri2(NS, "charlie");
+    pub static ref KNOWS: StaticTerm = StaticTerm::iri2(NS, "knows");
+    pub static ref NAME: StaticTerm = StaticTerm::iri2(NS, "name");
+    pub static ref PERSON: StaticTerm = StaticTerm::iri2(NS, "Person");
+    pub static ref ALICE_LIT: StaticTerm = StaticTerm::lit_dt("Alice", xsd::string);
+    pub static ref BOB_LIT: StaticTerm = StaticTerm::lit_dt("Bob", xsd::string);
 
     // Relative IRIs
-    pub static ref ALICE_REF: StaticTerm = StaticTerm::new_iri("alice").unwrap();
-    pub static ref BOB_REF: StaticTerm = StaticTerm::new_iri("bob").unwrap();
-    pub static ref CHARLIE_REF: StaticTerm = StaticTerm::new_iri("charlie").unwrap();
-    pub static ref KNOWS_REF: StaticTerm = StaticTerm::new_iri("knows").unwrap();
-    pub static ref NAME_REF: StaticTerm = StaticTerm::new_iri("name").unwrap();
-    pub static ref PERSON_REF: StaticTerm = StaticTerm::new_iri("Person").unwrap();
+    pub static ref ALICE_REF: StaticTerm = StaticTerm::iri("alice");
+    pub static ref BOB_REF: StaticTerm = StaticTerm::iri("bob");
+    pub static ref CHARLIE_REF: StaticTerm = StaticTerm::iri("charlie");
+    pub static ref KNOWS_REF: StaticTerm = StaticTerm::iri("knows");
+    pub static ref NAME_REF: StaticTerm = StaticTerm::iri("name");
+    pub static ref PERSON_REF: StaticTerm = StaticTerm::iri("Person");
 }
 
 fn make_graph() -> Vec<[StaticTerm; 3]> {
@@ -152,10 +156,10 @@ fn filter_map_triples_to_quads() {
         .filter_map_triples(|t| -> Option<[BoxTerm; 4]> {
             if t.s() == &BOB as &StaticTerm {
                 Some([
-                    t.s().clone_into(),
-                    t.p().clone_into(),
-                    t.o().clone_into(),
-                    t.s().clone_into(),
+                    t.s().copied(),
+                    t.p().copied(),
+                    t.o().copied(),
+                    t.s().copied(),
                 ])
             } else {
                 None
@@ -219,10 +223,10 @@ fn map_triples_to_quads() {
     g.triples()
         .map_triples(|t| -> [BoxTerm; 4] {
             [
-                t.s().clone_into(),
-                t.p().clone_into(),
-                t.o().clone_into(),
-                t.s().clone_into(),
+                t.s().copied(),
+                t.p().copied(),
+                t.o().copied(),
+                t.s().copied(),
             ]
         })
         .add_to_dataset(&mut d)
