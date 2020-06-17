@@ -65,7 +65,7 @@
 //! [`Triple`]: ../trait.Triple.html
 //! [`triples`]: ../../graph/trait.Graph.html#tymethod.triples
 //! [`TripleStreamingMode`]: trait.TripleStreamingMode.html
-//! [`make_scoped_triple_streaming_mode`]: ../../macro.make_scoped_triple_streming_mode.html
+//! [`make_scoped_triple_streaming_mode`]: ../../macro.make_scoped_triple_streaming_mode.html
 
 use std::marker::PhantomData;
 use std::ptr::NonNull;
@@ -156,6 +156,14 @@ where
         }
     }
 }
+impl<'a, T> StreamedTriple<'a, T>
+where
+    T: ScopedTripleMode<'a>,
+{
+    pub fn scoped(triple: T::SourceTriple) -> Self {
+        T::scoped(triple)
+    }
+}
 impl<'a, T> Triple for StreamedTriple<'a, T>
 where
     T: TripleStreamingMode,
@@ -186,7 +194,7 @@ where
 /// [streaming mode]: triple/streaming_mode/index.html
 /// [`Triple`]: triple/trait.Triple.html
 #[macro_export]
-macro_rules! make_scoped_triple_streming_mode {
+macro_rules! make_scoped_triple_streaming_mode {
     ($mode: ident, $tt: ident) => {
         #[derive(Debug)]
         pub struct $mode(std::marker::PhantomData<$tt<'static>>);
@@ -194,8 +202,11 @@ macro_rules! make_scoped_triple_streming_mode {
             type UnsafeTriple = $tt<'static>;
         }
 
-        impl<'a> $crate::triple::streaming_mode::StreamedTriple<'a, $mode> {
-            pub fn scoped(triple: $tt<'a>) -> Self {
+        impl<'a> $crate::triple::streaming_mode::ScopedTripleMode<'a> for $mode {
+            type SourceTriple = $tt<'a>;
+            fn scoped(
+                triple: $tt<'a>,
+            ) -> $crate::triple::streaming_mode::StreamedTriple<'a, $mode> {
                 unsafe {
                     $crate::triple::streaming_mode::StreamedTriple::wrap(std::mem::transmute(
                         triple,
@@ -204,6 +215,16 @@ macro_rules! make_scoped_triple_streming_mode {
             }
         }
     };
+}
+
+/// A utility trait used internally by [`make_scoped_triple_streaming_mode`].
+/// It should not be implemented manually.
+///
+/// [`make_scoped_triple_streaming_mode`]: ../../macro.make_scoped_triple_streaming_mode.html
+pub trait ScopedTripleMode<'a>: TripleStreamingMode + Sized {
+    type SourceTriple: Triple + 'a;
+    /// Convert a triple
+    fn scoped(triple: Self::SourceTriple) -> StreamedTriple<'a, Self>;
 }
 
 // adapter

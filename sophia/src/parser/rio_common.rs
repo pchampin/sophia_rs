@@ -66,7 +66,7 @@ where
 }
 
 pub type RioSourceTriple<'a> = [RefTerm<'a>; 3];
-crate::make_scoped_triple_streming_mode!(ScopedRioSourceTriple, RioSourceTriple);
+crate::make_scoped_triple_streaming_mode!(ScopedRioSourceTriple, RioSourceTriple);
 
 impl<T, E> TripleSource for StrictRioSource<T, E>
 where
@@ -105,7 +105,7 @@ where
 }
 
 pub type RioSourceQuad<'a> = ([RefTerm<'a>; 3], Option<RefTerm<'a>>);
-crate::make_scoped_quad_streming_mode!(ScopedRioSourceQuad, RioSourceQuad);
+crate::make_scoped_quad_streaming_mode!(ScopedRioSourceQuad, RioSourceQuad);
 
 impl<T, E> QuadSource for StrictRioSource<T, E>
 where

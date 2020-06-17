@@ -93,6 +93,14 @@ where
         }
     }
 }
+impl<'a, T> StreamedQuad<'a, T>
+where
+    T: ScopedQuadMode<'a>,
+{
+    pub fn scoped(quad: T::SourceQuad) -> Self {
+        T::scoped(quad)
+    }
+}
 impl<'a, T> Quad for StreamedQuad<'a, T>
 where
     T: QuadStreamingMode,
@@ -126,7 +134,7 @@ where
 /// [streaming mode]: triple/streaming_mode/index.html
 /// [`Quad`]: quad/trait.Quad.html
 #[macro_export]
-macro_rules! make_scoped_quad_streming_mode {
+macro_rules! make_scoped_quad_streaming_mode {
     ($mode: ident, $qt: ident) => {
         #[derive(Debug)]
         pub struct $mode(std::marker::PhantomData<$qt<'static>>);
@@ -134,14 +142,25 @@ macro_rules! make_scoped_quad_streming_mode {
             type UnsafeQuad = $qt<'static>;
         }
 
-        impl<'a> $crate::quad::streaming_mode::StreamedQuad<'a, $mode> {
-            pub fn scoped(quad: $qt<'a>) -> Self {
+        impl<'a> $crate::quad::streaming_mode::ScopedQuadMode<'a> for $mode {
+            type SourceQuad = $qt<'a>;
+            fn scoped(quad: $qt<'a>) -> $crate::quad::streaming_mode::StreamedQuad<'a, $mode> {
                 unsafe {
                     $crate::quad::streaming_mode::StreamedQuad::wrap(std::mem::transmute(quad))
                 }
             }
         }
     };
+}
+
+/// A utility trait used internally by [`make_scoped_quad_streaming_mode`].
+/// It should not be implemented manually.
+///
+/// [`make_scoped_quad_streaming_mode`]: ../../macro.make_scoped_quad_streaming_mode.html
+pub trait ScopedQuadMode<'a>: QuadStreamingMode + Sized {
+    type SourceQuad: Quad + 'a;
+    /// Convert a quad
+    fn scoped(quad: Self::SourceQuad) -> StreamedQuad<'a, Self>;
 }
 
 // adapter
