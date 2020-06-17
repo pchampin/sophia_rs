@@ -10,13 +10,15 @@ use crate::quad::*;
 use lazy_static::lazy_static;
 pub use sophia_api; // required when test macro is used in other packages
 use sophia_api::ns::*;
+use sophia_api::term::test::TestTerm;
 use sophia_api::term::{CopiableTerm, CopyTerm};
-pub use sophia_term; // required when test macro is used in other packages
-use sophia_term::*;
+
+type StaticTerm = TestTerm<&'static str>;
+type BoxTerm = TestTerm<Box<str>>;
 
 lazy_static! {
-    pub static ref G1: StaticTerm = StaticTerm::new_iri_suffixed(NS, "G1").unwrap();
-    pub static ref G2: StaticTerm = StaticTerm::new_iri_suffixed(NS, "G2").unwrap();
+    pub static ref G1: StaticTerm = StaticTerm::iri2(NS, "G1");
+    pub static ref G2: StaticTerm = StaticTerm::iri2(NS, "G2");
     //
     pub static ref DG: Option<StaticTerm> = None;
     pub static ref GN1: Option<StaticTerm> = Some(*G1);
@@ -29,7 +31,7 @@ pub fn no_quad() -> impl QuadSource {
 }
 
 pub fn some_quads() -> impl QuadSource {
-    let v = vec![
+    let v: Vec<([StaticTerm; 3], Option<StaticTerm>)> = vec![
         ([*C1, rdf::type_.into(), rdfs::Class.into()], *DG),
         ([*C1, rdf::type_.into(), rdfs::Class.into()], *GN1),
         ([*C2, rdf::type_.into(), rdfs::Class.into()], *DG),
@@ -52,12 +54,11 @@ pub fn some_quads() -> impl QuadSource {
         ([*I1B, *P1, *I2B], *GN2),
         ([*I2A, *P2, *I2B], *GN2),
     ];
-
     v.into_iter().as_quad_source()
 }
 
 pub fn strict_node_types_quads() -> impl QuadSource {
-    vec![
+    let v: Vec<([StaticTerm; 3], Option<StaticTerm>)> = vec![
         (
             [rdf::type_.into(), rdf::type_.into(), rdf::Property.into()],
             Some(rdf::type_.into()),
@@ -66,13 +67,12 @@ pub fn strict_node_types_quads() -> impl QuadSource {
         ([*B2, rdf::type_.into(), *B1], None),
         ([*B2, rdf::type_.into(), *L2], None),
         ([*B2, rdf::type_.into(), *L2E], None),
-    ]
-    .into_iter()
-    .as_quad_source()
+    ];
+    v.into_iter().as_quad_source()
 }
 
 pub fn generalized_node_types_quads() -> impl QuadSource {
-    vec![
+    let v: Vec<([StaticTerm; 3], Option<StaticTerm>)> = vec![
         (
             [rdf::type_.into(), rdf::type_.into(), rdf::Property.into()],
             Some(rdf::type_.into()),
@@ -81,9 +81,8 @@ pub fn generalized_node_types_quads() -> impl QuadSource {
         ([*L2, *L1, *L1], Some(*L2)),
         ([*V1, *V2, *V3], Some(*V3)),
         ([*B2, *V1, *L2E], None),
-    ]
-    .into_iter()
-    .as_quad_source()
+    ];
+    v.into_iter().as_quad_source()
 }
 
 pub fn as_box_q<Q: Quad, E>(quad: Result<Q, E>) -> ([BoxTerm; 3], Option<BoxTerm>)
@@ -93,7 +92,7 @@ where
     let quad = quad.unwrap();
     (
         [quad.s().copied(), quad.p().copied(), quad.o().copied()],
-        quad.g().map(BoxTerm::copy),
+        quad.g().map(CopyTerm::copy),
     )
 }
 
@@ -330,8 +329,6 @@ macro_rules! test_dataset_impl {
             use self::sophia_api::ns::*;
             use self::sophia_api::term::TTerm;
             use self::sophia_api::term::matcher::ANY;
-            use self::sophia_term::*;
-            use self::sophia_term::literal::convert::AsLiteral;
 
             #[allow(unused_imports)]
             use super::*;
@@ -721,17 +718,14 @@ macro_rules! test_dataset_impl {
 
                 let subjects = d.subjects().unwrap();
                 assert_eq!(subjects.len(), 8);
-
-                let rsubjects: std::collections::HashSet<_> =
-                    subjects.iter().map(|t| t.as_ref_str()).collect();
-                assert!(rsubjects.contains(&C1));
-                assert!(rsubjects.contains(&C2));
-                assert!(rsubjects.contains(&P1));
-                assert!(rsubjects.contains(&P2));
-                assert!(rsubjects.contains(&I1A));
-                assert!(rsubjects.contains(&I1B));
-                assert!(rsubjects.contains(&I2A));
-                assert!(rsubjects.contains(&I2B));
+                assert_contains(&subjects, &*C1);
+                assert_contains(&subjects, &*C2);
+                assert_contains(&subjects, &*P1);
+                assert_contains(&subjects, &*P2);
+                assert_contains(&subjects, &*I1A);
+                assert_contains(&subjects, &*I1B);
+                assert_contains(&subjects, &*I2A);
+                assert_contains(&subjects, &*I2B);
                 Ok(())
             }
 
@@ -741,15 +735,12 @@ macro_rules! test_dataset_impl {
 
                 let predicates = d.predicates().unwrap();
                 assert_eq!(predicates.len(), 6);
-
-                let rpredicates: std::collections::HashSet<_> =
-                    predicates.iter().map(|t| t.as_ref_str()).collect();
-                assert!(rpredicates.contains(&rdf::type_.into()));
-                assert!(rpredicates.contains(&rdfs::subClassOf.into()));
-                assert!(rpredicates.contains(&rdfs::domain.into()));
-                assert!(rpredicates.contains(&rdfs::range.into()));
-                assert!(rpredicates.contains(&P1));
-                assert!(rpredicates.contains(&P2));
+                assert_contains(&predicates, &rdf::type_);
+                assert_contains(&predicates, &rdfs::subClassOf);
+                assert_contains(&predicates, &rdfs::domain);
+                assert_contains(&predicates, &rdfs::range);
+                assert_contains(&predicates, &*P1);
+                assert_contains(&predicates, &*P2);
                 Ok(())
             }
 
@@ -759,16 +750,13 @@ macro_rules! test_dataset_impl {
 
                 let objects = d.objects().unwrap();
                 assert_eq!(objects.len(), 7);
-
-                let robjects: std::collections::HashSet<_> =
-                    objects.iter().map(|t| t.as_ref_str()).collect();
-                assert!(robjects.contains(&rdf::Property.into()));
-                assert!(robjects.contains(&rdfs::Class.into()));
-                assert!(robjects.contains(&rdfs::Resource.into()));
-                assert!(robjects.contains(&C1));
-                assert!(robjects.contains(&C2));
-                assert!(robjects.contains(&I2A));
-                assert!(robjects.contains(&I2B));
+                assert_contains(&objects, &rdf::Property);
+                assert_contains(&objects, &rdfs::Class);
+                assert_contains(&objects, &rdfs::Resource);
+                assert_contains(&objects, &*C1);
+                assert_contains(&objects, &*C2);
+                assert_contains(&objects, &*I2A);
+                assert_contains(&objects, &*I2B);
                 Ok(())
             }
 
@@ -778,11 +766,8 @@ macro_rules! test_dataset_impl {
 
                 let graph_names = d.graph_names().unwrap();
                 assert_eq!(graph_names.len(), 2);
-
-                let rgraph_names: std::collections::HashSet<sophia_term::RefTerm> =
-                    graph_names.iter().map(|t| t.as_ref_str()).collect();
-                assert!(rgraph_names.contains(&G1));
-                assert!(rgraph_names.contains(&G2));
+                assert_contains(&graph_names, &*G1);
+                assert_contains(&graph_names, &*G2);
                 Ok(())
             }
 
@@ -796,11 +781,8 @@ macro_rules! test_dataset_impl {
 
                 let iris = d.iris().unwrap();
                 assert_eq!(iris.len(), 2);
-
-                let riris: std::collections::HashSet<_> =
-                    iris.iter().map(|t| t.as_ref_str()).collect();
-                assert!(riris.contains(&rdf::Property.into()));
-                assert!(riris.contains(&rdf::type_.into()));
+                assert_contains(&iris, &rdf::Property);
+                assert_contains(&iris, &rdf::type_);
                 Ok(())
             }
 
@@ -814,11 +796,8 @@ macro_rules! test_dataset_impl {
 
                 let bnodes = d.bnodes().unwrap();
                 assert_eq!(bnodes.len(), 2);
-
-                let rbnodes: std::collections::HashSet<_> =
-                    bnodes.iter().map(|t| t.value()).collect();
-                assert!(rbnodes.contains("1"));
-                assert!(rbnodes.contains("2"));
+                assert_contains(&bnodes, &*B1);
+                assert_contains(&bnodes, &*B2);
                 Ok(())
             }
 
@@ -832,12 +811,9 @@ macro_rules! test_dataset_impl {
 
                 let literals = d.literals().unwrap();
                 assert_eq!(literals.len(), 3);
-
-                let rliterals: std::collections::HashSet<_> =
-                    literals.iter().map(|t| t.as_ref_str()).collect();
-                assert!(rliterals.contains(&"lit1".as_literal().into()));
-                assert!(rliterals.contains(&"lit2".as_literal().into()));
-                assert!(rliterals.contains(&StaticTerm::new_literal_lang("lit2", "en").unwrap()));
+                assert_contains(&literals, &*L1);
+                assert_contains(&literals, &*L2);
+                assert_contains(&literals, &*L2E);
                 Ok(())
             }
 
@@ -848,12 +824,9 @@ macro_rules! test_dataset_impl {
 
                     let variables = d.variables().unwrap();
                     assert_eq!(variables.len(), 3);
-
-                    let rvariables: std::collections::HashSet<_> =
-                        variables.iter().map(|t| t.value()).collect();
-                    assert!(rvariables.contains("v1"));
-                    assert!(rvariables.contains("v2"));
-                    assert!(rvariables.contains("v3"));
+                    assert_contains(&variables, &*V1);
+                    assert_contains(&variables, &*V2);
+                    assert_contains(&variables, &*V3);
                 } else {
                     let d: $dataset_impl = $dataset_collector(strict_node_types_quads()).unwrap();
 

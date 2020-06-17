@@ -12,7 +12,6 @@ use crate::triple::streaming_mode::*;
 use crate::triple::*;
 use sophia_api::term::matcher::TermMatcher;
 use sophia_api::term::{term_eq, TTerm, TermKind};
-use sophia_term::*;
 
 use std::convert::Infallible;
 use std::error::Error;
@@ -60,9 +59,9 @@ pub trait Graph {
     /// so it can be used in a `for` loop:
     /// ```
     /// # use sophia::graph::Graph;
-    /// # use sophia::term::BoxTerm;
+    /// # use sophia_api::term::simple_iri::SimpleIri;
     /// # fn foo() -> Result<(), std::convert::Infallible> {
-    /// # let graph = Vec::<[BoxTerm;3]>::new();
+    /// # let graph = Vec::<[SimpleIri;3]>::new();
     /// for t in graph.triples() {
     ///     let t = t?; // rethrow error if any
     ///     // do something with t
@@ -76,10 +75,10 @@ pub trait Graph {
     /// for example:
     /// ```
     /// # use sophia::graph::Graph;
-    /// # use sophia::term::BoxTerm;
+    /// # use sophia_api::term::simple_iri::SimpleIri;
     /// # use sophia::triple::stream::TripleSource;
     /// # fn foo() -> Result<(), std::convert::Infallible> {
-    /// # let graph = Vec::<[BoxTerm;3]>::new();
+    /// # let graph = Vec::<[SimpleIri;3]>::new();
     /// graph.triples().for_each_triple(|t| {
     ///     // do something with t
     /// })?; // rethrow error if any
@@ -430,7 +429,6 @@ pub trait MutableGraph: Graph {
     /// # Usage
     /// ```
     /// # use sophia_api::ns::{Namespace, rdf, rdfs, xsd};
-    /// # use sophia_term::BoxTerm;
     /// # use sophia::graph::{MutableGraph, MGResult};
     /// # use std::collections::HashSet;
     ///

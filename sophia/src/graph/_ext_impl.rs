@@ -166,7 +166,11 @@ impl<'a, T, S: BuildHasher> SetGraph for HashSet<T, S> where T: Eq + Hash + Trip
 mod test {
     use super::*;
     use sophia_api::ns::*;
+    use sophia_api::term::test::TestTerm;
     use sophia_api::term::SimpleIri;
+
+    #[allow(dead_code)]
+    type BoxTerm = TestTerm<Box<str>>;
 
     static G: [[SimpleIri; 3]; 3] = [
         [rdf::type_, rdf::type_, rdf::Property],
@@ -183,7 +187,7 @@ mod test {
     }
 
     #[cfg(feature = "all_tests")]
-    type VecAsGraph = Vec<[sophia_term::BoxTerm; 3]>;
+    type VecAsGraph = Vec<[BoxTerm; 3]>;
 
     #[cfg(feature = "all_tests")]
     test_graph_impl!(vec, VecAsGraph, false);
@@ -198,7 +202,7 @@ mod test {
     }
 
     #[cfg(feature = "all_tests")]
-    type HashSetAsGraph = HashSet<[sophia_term::BoxTerm; 3]>;
+    type HashSetAsGraph = HashSet<[BoxTerm; 3]>;
 
     #[cfg(feature = "all_tests")]
     test_graph_impl!(hashset, HashSetAsGraph);

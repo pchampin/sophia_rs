@@ -194,7 +194,11 @@ mod test {
     use super::*;
     use crate::quad::TupleQuad;
     use sophia_api::ns::*;
+    use sophia_api::term::test::TestTerm;
     use sophia_api::term::SimpleIri;
+
+    #[allow(dead_code)]
+    type BoxTerm = TestTerm<Box<str>>;
 
     static D: [TupleQuad<SimpleIri>; 3] = [
         ([rdf::type_, rdf::type_, rdf::Property], None),
@@ -214,7 +218,7 @@ mod test {
     }
 
     #[cfg(feature = "all_tests")]
-    type VecAsDataset = Vec<([sophia_term::BoxTerm; 3], Option<sophia_term::BoxTerm>)>;
+    type VecAsDataset = Vec<([BoxTerm; 3], Option<BoxTerm>)>;
 
     #[cfg(feature = "all_tests")]
     test_dataset_impl!(vec, VecAsDataset, false);
@@ -229,7 +233,7 @@ mod test {
     }
 
     #[cfg(feature = "all_tests")]
-    type HashSetAsDataset = HashSet<([sophia_term::BoxTerm; 3], Option<sophia_term::BoxTerm>)>;
+    type HashSetAsDataset = HashSet<([BoxTerm; 3], Option<BoxTerm>)>;
 
     #[cfg(feature = "all_tests")]
     test_dataset_impl!(hashset, HashSetAsDataset);

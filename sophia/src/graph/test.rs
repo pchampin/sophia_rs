@@ -7,33 +7,33 @@ use crate::triple::stream::*;
 use crate::triple::streaming_mode::{TripleStreamingMode, UnsafeTriple};
 use crate::triple::*;
 use lazy_static::lazy_static;
-pub use sophia_api; // required when test macro is used in other packages
+pub use sophia_api;
 use sophia_api::ns::*;
+use sophia_api::term::test::TestTerm;
 use sophia_api::term::CopiableTerm;
-pub use sophia_term; // required when test macro is used in other packages
-use sophia_term::literal::convert::AsLiteral;
-use sophia_term::*;
+
+type StaticTerm = TestTerm<&'static str>;
+type BoxTerm = TestTerm<Box<str>>;
 
 pub const NS: &str = "http://example.org/";
-
 lazy_static! {
-    pub static ref C1: StaticTerm = StaticTerm::new_iri_suffixed(NS, "C1").unwrap();
-    pub static ref C2: StaticTerm = StaticTerm::new_iri_suffixed(NS, "C2").unwrap();
-    pub static ref P1: StaticTerm = StaticTerm::new_iri_suffixed(NS, "p1").unwrap();
-    pub static ref P2: StaticTerm = StaticTerm::new_iri_suffixed(NS, "p2").unwrap();
-    pub static ref I1A: StaticTerm = StaticTerm::new_iri_suffixed(NS, "I1A").unwrap();
-    pub static ref I1B: StaticTerm = StaticTerm::new_iri_suffixed(NS, "I1B").unwrap();
-    pub static ref I2A: StaticTerm = StaticTerm::new_iri_suffixed(NS, "I2A").unwrap();
-    pub static ref I2B: StaticTerm = StaticTerm::new_iri_suffixed(NS, "I2B").unwrap();
+    pub static ref C1: StaticTerm  = StaticTerm::iri2(NS, "C1");
+    pub static ref C2: StaticTerm = StaticTerm::iri2(NS, "C2");
+    pub static ref P1: StaticTerm = StaticTerm::iri2(NS, "p1");
+    pub static ref P2: StaticTerm = StaticTerm::iri2(NS, "p2");
+    pub static ref I1A: StaticTerm = StaticTerm::iri2(NS, "I1A");
+    pub static ref I1B: StaticTerm = StaticTerm::iri2(NS, "I1B");
+    pub static ref I2A: StaticTerm = StaticTerm::iri2(NS, "I2A");
+    pub static ref I2B: StaticTerm = StaticTerm::iri2(NS, "I2B");
     //
-    pub static ref B1: StaticTerm = StaticTerm::new_bnode("1").unwrap();
-    pub static ref B2: StaticTerm = StaticTerm::new_bnode("2").unwrap();
-    pub static ref L1: StaticTerm = "lit1".as_literal().into();
-    pub static ref L2: StaticTerm = "lit2".as_literal().into();
-    pub static ref L2E: StaticTerm = StaticTerm::new_literal_lang("lit2", "en").unwrap();
-    pub static ref V1: StaticTerm = StaticTerm::new_variable("v1").unwrap();
-    pub static ref V2: StaticTerm = StaticTerm::new_variable("v2").unwrap();
-    pub static ref V3: StaticTerm = StaticTerm::new_variable("v3").unwrap();
+    pub static ref B1: StaticTerm = StaticTerm::bnode("1");
+    pub static ref B2: StaticTerm = StaticTerm::bnode("2");
+    pub static ref L1: StaticTerm = StaticTerm::lit_dt("lit1", xsd::string);
+    pub static ref L2: StaticTerm = StaticTerm::lit_dt("lit2", xsd::string);
+    pub static ref L2E: StaticTerm = StaticTerm::lit_lang("lit2", "en");
+    pub static ref V1: StaticTerm = StaticTerm::var("v1");
+    pub static ref V2: StaticTerm = StaticTerm::var("v2");
+    pub static ref V3: StaticTerm = StaticTerm::var("v3");
 }
 
 pub fn no_triple() -> impl TripleSource {
@@ -42,7 +42,7 @@ pub fn no_triple() -> impl TripleSource {
 }
 
 pub fn some_triples() -> impl TripleSource {
-    vec![
+    let v: Vec<[StaticTerm; 3]> = vec![
         [*C1, rdf::type_.into(), rdfs::Class.into()],
         [*C2, rdf::type_.into(), rdfs::Class.into()],
         [*C2, rdf::type_.into(), rdfs::Resource.into()],
@@ -64,33 +64,30 @@ pub fn some_triples() -> impl TripleSource {
         [*I1A, *P1, *I2A],
         [*I1B, *P1, *I2B],
         [*I2A, *P2, *I2B],
-    ]
-    .into_iter()
-    .as_triple_source()
+    ];
+    v.into_iter().as_triple_source()
 }
 
 pub fn strict_node_types_triples() -> impl TripleSource {
-    vec![
+    let v: Vec<[StaticTerm; 3]> = vec![
         [rdf::type_.into(), rdf::type_.into(), rdf::Property.into()],
         [*B1, rdf::type_.into(), *L1],
         [*B2, rdf::type_.into(), *B1],
         [*B2, rdf::type_.into(), *L2],
         [*B2, rdf::type_.into(), *L2E],
-    ]
-    .into_iter()
-    .as_triple_source()
+    ];
+    v.into_iter().as_triple_source()
 }
 
 pub fn generalized_node_types_triples() -> impl TripleSource {
-    vec![
+    let v: Vec<[StaticTerm; 3]> = vec![
         [rdf::type_.into(), rdf::type_.into(), rdf::Property.into()],
         [*B1, *B2, *B1],
         [*L2, *L1, *L1],
         [*V1, *V2, *V3],
         [*B2, *V1, *L2E],
-    ]
-    .into_iter()
-    .as_triple_source()
+    ];
+    v.into_iter().as_triple_source()
 }
 
 pub fn as_box_t<T: Triple, E>(triple: Result<T, E>) -> [BoxTerm; 3]
@@ -126,6 +123,15 @@ pub fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
         hint,
         val
     )
+}
+
+pub fn assert_contains<'a, I, T, U>(collection: I, item: &U)
+where
+    I: IntoIterator<Item = &'a T>,
+    T: 'a,
+    U: PartialEq<T>,
+{
+    assert!(collection.into_iter().any(|i| item == i))
 }
 
 /// Generates a test suite for implementations of
@@ -286,11 +292,8 @@ macro_rules! test_graph_impl {
         mod $module_name {
             use $crate::graph::test::*;
             use $crate::graph::*;
-            use self::sophia_api::ns::*;
-            use self::sophia_api::term::TTerm;
+            use $crate::ns::*;
             use self::sophia_api::term::matcher::ANY;
-            use self::sophia_term::StaticTerm;
-            use self::sophia_term::literal::convert::AsLiteral;
 
             #[allow(unused_imports)]
             use super::*;
@@ -476,17 +479,14 @@ macro_rules! test_graph_impl {
 
                 let subjects = g.subjects().unwrap();
                 assert_eq!(subjects.len(), 8);
-
-                let rsubjects: std::collections::HashSet<_> =
-                    subjects.iter().map(|t| t.as_ref_str()).collect();
-                assert!(rsubjects.contains(&C1));
-                assert!(rsubjects.contains(&C2));
-                assert!(rsubjects.contains(&P1));
-                assert!(rsubjects.contains(&P2));
-                assert!(rsubjects.contains(&I1A));
-                assert!(rsubjects.contains(&I1B));
-                assert!(rsubjects.contains(&I2A));
-                assert!(rsubjects.contains(&I2B));
+                assert_contains(&subjects, &*C1);
+                assert_contains(&subjects, &*C2);
+                assert_contains(&subjects, &*P1);
+                assert_contains(&subjects, &*P2);
+                assert_contains(&subjects, &*I1A);
+                assert_contains(&subjects, &*I1B);
+                assert_contains(&subjects, &*I2A);
+                assert_contains(&subjects, &*I2B);
                 Ok(())
             }
 
@@ -496,15 +496,12 @@ macro_rules! test_graph_impl {
 
                 let predicates = g.predicates().unwrap();
                 assert_eq!(predicates.len(), 6);
-
-                let rpredicates: std::collections::HashSet<_> =
-                    predicates.iter().map(|t| t.as_ref_str()).collect();
-                assert!(rpredicates.contains(&rdf::type_.into()));
-                assert!(rpredicates.contains(&rdfs::subClassOf.into()));
-                assert!(rpredicates.contains(&rdfs::domain.into()));
-                assert!(rpredicates.contains(&rdfs::range.into()));
-                assert!(rpredicates.contains(&P1));
-                assert!(rpredicates.contains(&P2));
+                assert_contains(&predicates, &rdf::type_);
+                assert_contains(&predicates, &rdfs::subClassOf);
+                assert_contains(&predicates, &rdfs::domain);
+                assert_contains(&predicates, &rdfs::range);
+                assert_contains(&predicates, &*P1);
+                assert_contains(&predicates, &*P2);
                 Ok(())
             }
 
@@ -514,16 +511,13 @@ macro_rules! test_graph_impl {
 
                 let objects = g.objects().unwrap();
                 assert_eq!(objects.len(), 7);
-
-                let robjects: std::collections::HashSet<_> =
-                    objects.iter().map(|t| t.as_ref_str()).collect();
-                assert!(robjects.contains(&rdf::Property.into()));
-                assert!(robjects.contains(&rdfs::Class.into()));
-                assert!(robjects.contains(&rdfs::Resource.into()));
-                assert!(robjects.contains(&C1));
-                assert!(robjects.contains(&C2));
-                assert!(robjects.contains(&I2A));
-                assert!(robjects.contains(&I2B));
+                assert_contains(&objects, &rdf::Property);
+                assert_contains(&objects, &rdfs::Class);
+                assert_contains(&objects, &rdfs::Resource);
+                assert_contains(&objects, &*C1);
+                assert_contains(&objects, &*C2);
+                assert_contains(&objects, &*I2A);
+                assert_contains(&objects, &*I2B);
                 Ok(())
             }
 
@@ -537,11 +531,8 @@ macro_rules! test_graph_impl {
 
                 let iris = g.iris().unwrap();
                 assert_eq!(iris.len(), 2);
-
-                let riris: std::collections::HashSet<_> =
-                    iris.iter().map(|t| t.as_ref_str()).collect();
-                assert!(riris.contains(&rdf::Property.into()));
-                assert!(riris.contains(&rdf::type_.into()));
+                assert_contains(&iris, &rdf::Property);
+                assert_contains(&iris, &rdf::type_);
                 Ok(())
             }
 
@@ -555,11 +546,8 @@ macro_rules! test_graph_impl {
 
                 let bnodes = g.bnodes().unwrap();
                 assert_eq!(bnodes.len(), 2);
-
-                let rbnodes: std::collections::HashSet<_> =
-                    bnodes.iter().map(|t| t.value()).collect();
-                assert!(rbnodes.contains("1"));
-                assert!(rbnodes.contains("2"));
+                assert_contains(&bnodes, &*B1);
+                assert_contains(&bnodes, &*B2);
                 Ok(())
             }
 
@@ -573,12 +561,9 @@ macro_rules! test_graph_impl {
 
                 let literals = g.literals().unwrap();
                 assert_eq!(literals.len(), 3);
-
-                let rliterals: std::collections::HashSet<_> =
-                    literals.iter().map(|t| t.as_ref_str()).collect();
-                assert!(rliterals.contains(&"lit1".as_literal().into()));
-                assert!(rliterals.contains(&"lit2".as_literal().into()));
-                assert!(rliterals.contains(&StaticTerm::new_literal_lang("lit2", "en").unwrap()));
+                assert_contains(&literals, &*L1);
+                assert_contains(&literals, &*L2);
+                assert_contains(&literals, &*L2E);
                 Ok(())
             }
 
@@ -589,12 +574,9 @@ macro_rules! test_graph_impl {
 
                     let variables = g.variables().unwrap();
                     assert_eq!(variables.len(), 3);
-
-                    let rvariables: std::collections::HashSet<_> =
-                        variables.iter().map(|t| t.value()).collect();
-                    assert!(rvariables.contains("v1"));
-                    assert!(rvariables.contains("v2"));
-                    assert!(rvariables.contains("v3"));
+                    assert_contains(&variables, &*V1);
+                    assert_contains(&variables, &*V2);
+                    assert_contains(&variables, &*V3);
                 } else {
                     let g: $graph_impl = $graph_collector(strict_node_types_triples()).unwrap();
 

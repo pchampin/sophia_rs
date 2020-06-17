@@ -390,10 +390,12 @@ mod test {
     use crate::graph::*;
     use crate::triple::stream::TripleSource;
     use sophia_api::ns::{rdf, rdfs};
-    use sophia_term::{BoxTerm, StaticTerm};
     use std::collections::HashSet;
     use std::convert::Infallible;
     use std::error::Error;
+
+    type BoxTerm = sophia_api::term::test::TestTerm<Box<str>>;
+    type StaticTerm = sophia_api::term::test::TestTerm<&'static str>;
 
     const DG: Option<&'static StaticTerm> = None;
 

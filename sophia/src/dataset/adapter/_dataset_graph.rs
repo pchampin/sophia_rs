@@ -187,8 +187,9 @@ mod test {
     use crate::quad::stream::QuadSource;
     use crate::triple::stream::TripleSource;
     use sophia_api::term::{same_graph_name, SimpleIri, TTerm};
-    use sophia_term::BoxTerm;
     use std::collections::HashSet;
+
+    type BoxTerm = sophia_api::term::test::TestTerm<Box<str>>;
 
     type MyQuad = ([BoxTerm; 3], Option<BoxTerm>);
     type MyDataset = HashSet<MyQuad>;
