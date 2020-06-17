@@ -1,11 +1,11 @@
 use super::*;
 use crate::graph::Graph;
+use crate::ns::{rdf, xsd};
 use crate::quad::stream::QuadSource;
+use crate::term::test::TestTerm;
+use crate::term::CopiableTerm;
 use crate::triple::Triple;
 use lazy_static::lazy_static;
-use sophia_api::ns::{rdf, xsd};
-use sophia_api::term::test::TestTerm;
-use sophia_api::term::CopiableTerm;
 
 type BoxTerm = TestTerm<Box<str>>;
 type StaticTerm = TestTerm<&'static str>;

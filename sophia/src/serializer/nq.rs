@@ -11,7 +11,7 @@
 
 use std::io;
 
-use crate::quad::{stream::*, Quad};
+use sophia_api::quad::{stream::*, Quad};
 
 use super::nt::write_term;
 use super::*;

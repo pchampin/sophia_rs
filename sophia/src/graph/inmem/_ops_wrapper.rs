@@ -5,6 +5,7 @@ use std::iter::empty;
 
 use super::*;
 use crate::triple::streaming_mode::{ByTermRefs, StreamedTriple};
+use sophia_api::graph::{GResultTermSet, GTripleSource};
 use sophia_api::term::TTerm;
 
 /// A [`GraphWrapper`](trait.GraphWrapper.html)
@@ -160,14 +161,14 @@ impl<T> CollectibleGraph for OpsWrapper<T>
 where
     T: IndexedGraph + Graph<Triple = ByTermRefs<Term<<T as IndexedGraph>::TermData>>>,
 {
-    impl_collectible_graph_for_indexed_graph!();
+    crate::impl_collectible_graph_for_indexed_graph!();
 }
 
 impl<T> MutableGraph for OpsWrapper<T>
 where
     T: IndexedGraph + Graph<Triple = ByTermRefs<Term<<T as IndexedGraph>::TermData>>>,
 {
-    impl_mutable_graph_for_indexed_graph!();
+    crate::impl_mutable_graph_for_indexed_graph!();
 }
 
 impl<T> SetGraph for OpsWrapper<T>
@@ -180,4 +181,4 @@ where
 #[cfg(all(test, feature = "all_tests"))]
 type OpsGraph = OpsWrapper<LightGraph>;
 #[cfg(all(test, feature = "all_tests"))]
-test_graph_impl!(OpsGraph);
+sophia_api::test_graph_impl!(OpsGraph);

@@ -13,8 +13,6 @@ use sophia_api::ns::xsd;
 use sophia_api::term::{TTerm, TermKind};
 use std::io;
 
-use crate::triple::stream::*;
-
 use super::*;
 
 /// N-Triples serializer configuration.

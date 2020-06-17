@@ -180,7 +180,7 @@ where
     I::Index: Hash,
     <I::Factory as TermFactory>::TermData: 'static,
 {
-    impl_mutable_graph_for_indexed_graph!();
+    crate::impl_mutable_graph_for_indexed_graph!();
 }
 
 impl<I> SetGraph for HashGraph<I>

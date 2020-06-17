@@ -8,10 +8,10 @@ use std::hash::{BuildHasher, Hash};
 use resiter::oks::*;
 
 use super::*;
+use crate::term::{term_eq, CopiableTerm, CopyTerm, TTerm};
 use crate::triple::stream::{AsTripleSource, StreamError, StreamResult, TripleSource};
 use crate::triple::streaming_mode::*;
 use crate::triple::*;
-use sophia_api::term::{term_eq, CopiableTerm, CopyTerm, TTerm};
 
 impl<T> Graph for [T]
 where
@@ -165,12 +165,10 @@ impl<'a, T, S: BuildHasher> SetGraph for HashSet<T, S> where T: Eq + Hash + Trip
 #[cfg(test)]
 mod test {
     use super::*;
-    use sophia_api::ns::*;
-    use sophia_api::term::test::TestTerm;
-    use sophia_api::term::SimpleIri;
-
+    use crate::ns::*;
+    use crate::term::SimpleIri;
     #[allow(dead_code)]
-    type BoxTerm = TestTerm<Box<str>>;
+    type BoxTerm = crate::term::test::TestTerm<Box<str>>;
 
     static G: [[SimpleIri; 3]; 3] = [
         [rdf::type_, rdf::type_, rdf::Property],

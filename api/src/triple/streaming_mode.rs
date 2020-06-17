@@ -70,8 +70,8 @@
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 
+use crate::term::TTerm;
 use crate::triple::Triple;
-use sophia_api::term::TTerm;
 
 mod _unsafe_triple;
 pub(crate) use _unsafe_triple::*;

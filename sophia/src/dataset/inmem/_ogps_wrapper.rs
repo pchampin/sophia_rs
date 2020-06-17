@@ -5,7 +5,8 @@ use std::iter::empty;
 
 use super::*;
 use crate::graph::indexed::*;
-use crate::quad::streaming_mode::{ByTermRefs, StreamedQuad};
+use sophia_api::dataset::{DQuadSource, DResultTermSet};
+use sophia_api::quad::streaming_mode::{ByTermRefs, StreamedQuad};
 use sophia_api::term::TTerm;
 
 /// A [`DatasetWrapper`](trait.DatasetWrapper.html)
@@ -207,14 +208,14 @@ impl<T> CollectibleDataset for OgpsWrapper<T>
 where
     T: IndexedDataset + Dataset<Quad = ByTermRefs<Term<<T as IndexedDataset>::TermData>>>,
 {
-    impl_collectible_dataset_for_indexed_dataset!();
+    crate::impl_collectible_dataset_for_indexed_dataset!();
 }
 
 impl<T> MutableDataset for OgpsWrapper<T>
 where
     T: IndexedDataset + Dataset<Quad = ByTermRefs<Term<<T as IndexedDataset>::TermData>>>,
 {
-    impl_mutable_dataset_for_indexed_dataset!();
+    crate::impl_mutable_dataset_for_indexed_dataset!();
 }
 
 impl<T> SetDataset for OgpsWrapper<T>
@@ -227,4 +228,4 @@ where
 #[cfg(all(test, feature = "all_tests"))]
 type GspoDataset = OgpsWrapper<LightDataset>;
 #[cfg(all(test, feature = "all_tests"))]
-test_dataset_impl!(GspoDataset);
+sophia_api::test_dataset_impl!(GspoDataset);

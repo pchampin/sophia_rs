@@ -12,9 +12,9 @@ use crate::dataset::adapter::DatasetGraph;
 use crate::quad::stream::*;
 use crate::quad::streaming_mode::*;
 use crate::quad::*;
+use crate::term::matcher::*;
+use crate::term::{same_graph_name, term_eq, TTerm, TermKind};
 use crate::triple::stream::StreamResult;
-use sophia_api::term::matcher::*;
-use sophia_api::term::{same_graph_name, term_eq, TTerm, TermKind};
 
 use crate::graph::insert_if_absent;
 
@@ -58,7 +58,7 @@ pub trait Dataset {
     /// The result of this method is an iterator,
     /// so it can be used in a `for` loop:
     /// ```
-    /// # use sophia::dataset::Dataset;
+    /// # use sophia_api::dataset::Dataset;
     /// # use sophia_api::term::simple_iri::SimpleIri;
     /// # fn foo() -> Result<(), std::convert::Infallible> {
     /// # let dataset = Vec::<[SimpleIri;4]>::new();
@@ -74,9 +74,9 @@ pub trait Dataset {
     /// [`QuadSource`](../quad/stream/trait.QuadSource.html),
     /// for example:
     /// ```
-    /// # use sophia::dataset::Dataset;
+    /// # use sophia_api::dataset::Dataset;
+    /// # use sophia_api::quad::stream::QuadSource;
     /// # use sophia_api::term::simple_iri::SimpleIri;
-    /// # use sophia::quad::stream::QuadSource;
     /// # fn foo() -> Result<(), std::convert::Infallible> {
     /// # let dataset = Vec::<[SimpleIri;4]>::new();
     /// dataset.quads().for_each_quad(|q| {

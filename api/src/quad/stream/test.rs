@@ -1,11 +1,11 @@
 use super::*;
 use crate::dataset::Dataset;
+use crate::ns::{rdf, xsd};
 use crate::quad::Quad;
+use crate::term::test::TestTerm;
+use crate::term::CopiableTerm;
 use crate::triple::stream::TripleSource;
 use lazy_static::lazy_static;
-use sophia_api::ns::{rdf, xsd};
-use sophia_api::term::test::TestTerm;
-use sophia_api::term::CopiableTerm;
 
 type BoxTerm = TestTerm<Box<str>>;
 type StaticTerm = TestTerm<&'static str>;

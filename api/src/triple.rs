@@ -13,8 +13,7 @@
 //!
 
 use crate::quad::Quad;
-use sophia_api::term::TTerm;
-use sophia_term::*;
+use crate::term::TTerm;
 
 pub mod stream;
 pub mod streaming_mode;

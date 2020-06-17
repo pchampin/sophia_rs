@@ -7,11 +7,11 @@ use resiter::filter::*;
 use resiter::map::*;
 
 use crate::dataset::adapter::GraphAsDataset;
+use crate::term::matcher::TermMatcher;
+use crate::term::{term_eq, TTerm, TermKind};
 use crate::triple::stream::*;
 use crate::triple::streaming_mode::*;
 use crate::triple::*;
-use sophia_api::term::matcher::TermMatcher;
-use sophia_api::term::{term_eq, TTerm, TermKind};
 
 use std::convert::Infallible;
 use std::error::Error;
@@ -58,7 +58,7 @@ pub trait Graph {
     /// The result of this method is an iterator,
     /// so it can be used in a `for` loop:
     /// ```
-    /// # use sophia::graph::Graph;
+    /// # use sophia_api::graph::Graph;
     /// # use sophia_api::term::simple_iri::SimpleIri;
     /// # fn foo() -> Result<(), std::convert::Infallible> {
     /// # let graph = Vec::<[SimpleIri;3]>::new();
@@ -74,9 +74,9 @@ pub trait Graph {
     /// [`TripleSource`](../triple/stream/trait.TripleSource.html),
     /// for example:
     /// ```
-    /// # use sophia::graph::Graph;
+    /// # use sophia_api::graph::Graph;
     /// # use sophia_api::term::simple_iri::SimpleIri;
-    /// # use sophia::triple::stream::TripleSource;
+    /// # use sophia_api::triple::stream::TripleSource;
     /// # fn foo() -> Result<(), std::convert::Infallible> {
     /// # let graph = Vec::<[SimpleIri;3]>::new();
     /// graph.triples().for_each_triple(|t| {
@@ -188,12 +188,15 @@ pub trait Graph {
     /// The special `ANY` matcher can also be used to match anything.
     ///
     /// ```
-    /// # use sophia::graph::{*, inmem::LightGraph};
-    /// # use sophia::triple::Triple;
+    /// # use sophia_api::graph::{Graph, GTerm};
     /// # use sophia_api::ns::{Namespace, rdf};
+    /// # use sophia_api::triple::Triple;
     /// #
-    /// # fn test() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let mut graph = LightGraph::new();
+    /// # fn test<G>(graph: &G) -> Result<(), Box<dyn std::error::Error>>
+    /// # where
+    /// #     G: Graph,
+    /// #     GTerm<G>: std::fmt::Display,
+    /// # {
     /// #
     /// use sophia_api::term::matcher::ANY;
     ///
@@ -211,13 +214,16 @@ pub trait Graph {
     /// for technical reasons, they must be enclosed in a 1-sized array.
     ///
     /// ```
-    /// # use sophia::graph::{*, inmem::LightGraph};
-    /// # use sophia::triple::Triple;
+    /// # use sophia_api::graph::{Graph, GTerm};
     /// # use sophia_api::ns::rdfs;
     /// # use sophia_api::term::{TTerm, TermKind::Literal};
+    /// # use sophia_api::triple::Triple;
     /// #
-    /// # fn test() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let mut graph = LightGraph::new();
+    /// # fn test<G>(graph: &G) -> Result<(), Box<dyn std::error::Error>>
+    /// # where
+    /// #     G: Graph,
+    /// #     GTerm<G>: std::fmt::Display,
+    /// # {
     /// #
     /// use sophia_api::term::matcher::ANY;
     ///
@@ -429,8 +435,7 @@ pub trait MutableGraph: Graph {
     /// # Usage
     /// ```
     /// # use sophia_api::ns::{Namespace, rdf, rdfs, xsd};
-    /// # use sophia::graph::{MutableGraph, MGResult};
-    /// # use std::collections::HashSet;
+    /// # use sophia_api::graph::{MutableGraph, MGResult};
     ///
     /// # fn populate<G: MutableGraph>(graph: &mut G) -> MGResult<G, ()> {
     /// let schema = Namespace::new("http://schema.org/").unwrap();

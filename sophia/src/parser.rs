@@ -1,7 +1,7 @@
 //! API for parsing RDF syntaxes.
 
-use crate::quad::stream::QuadSource;
-use crate::triple::stream::TripleSource;
+use sophia_api::quad::stream::QuadSource;
+use sophia_api::triple::stream::TripleSource;
 
 mod _location;
 pub use _location::*;

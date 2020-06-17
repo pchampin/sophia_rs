@@ -444,5 +444,5 @@ where
     }
 }
 
-//#[cfg(test)]
+#[cfg(any(test, feature = "test_macro"))]
 pub mod test;

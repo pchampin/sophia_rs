@@ -3,14 +3,13 @@
 use std::fmt::Debug;
 
 use crate::graph::*;
+use crate::ns::*;
+use crate::term::test::TestTerm;
+use crate::term::CopiableTerm;
 use crate::triple::stream::*;
 use crate::triple::streaming_mode::{TripleStreamingMode, UnsafeTriple};
 use crate::triple::*;
 use lazy_static::lazy_static;
-pub use sophia_api;
-use sophia_api::ns::*;
-use sophia_api::term::test::TestTerm;
-use sophia_api::term::CopiableTerm;
 
 type StaticTerm = TestTerm<&'static str>;
 type BoxTerm = TestTerm<Box<str>>;
@@ -293,7 +292,7 @@ macro_rules! test_graph_impl {
             use $crate::graph::test::*;
             use $crate::graph::*;
             use $crate::ns::*;
-            use self::sophia_api::term::matcher::ANY;
+            use $crate::term::matcher::ANY;
 
             #[allow(unused_imports)]
             use super::*;

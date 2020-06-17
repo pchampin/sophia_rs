@@ -1,6 +1,7 @@
 // this module is transparently re-exported by its parent `graph::inmem`
 
 use super::*;
+use sophia_api::graph::{GResult, GResultTermSet, GTerm, GTripleSource};
 use sophia_api::term::TTerm;
 use std::hash::Hash;
 
@@ -305,7 +306,9 @@ macro_rules! impl_graph_for_wrapper {
         }
 
         #[inline]
-        fn subjects(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>>
+        fn subjects(
+            &self,
+        ) -> $crate::graph::GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>>
         where
             $crate::graph::GTerm<Self>: Clone + Eq + std::hash::Hash,
         {
@@ -313,7 +316,9 @@ macro_rules! impl_graph_for_wrapper {
         }
 
         #[inline]
-        fn predicates(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>>
+        fn predicates(
+            &self,
+        ) -> $crate::graph::GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>>
         where
             $crate::graph::GTerm<Self>: Clone + Eq + std::hash::Hash,
         {
@@ -321,7 +326,9 @@ macro_rules! impl_graph_for_wrapper {
         }
 
         #[inline]
-        fn objects(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>>
+        fn objects(
+            &self,
+        ) -> $crate::graph::GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>>
         where
             $crate::graph::GTerm<Self>: Clone + Eq + std::hash::Hash,
         {
@@ -329,7 +336,9 @@ macro_rules! impl_graph_for_wrapper {
         }
 
         #[inline]
-        fn iris(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>>
+        fn iris(
+            &self,
+        ) -> $crate::graph::GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>>
         where
             $crate::graph::GTerm<Self>: Clone + Eq + std::hash::Hash,
         {
@@ -337,7 +346,9 @@ macro_rules! impl_graph_for_wrapper {
         }
 
         #[inline]
-        fn bnodes(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>>
+        fn bnodes(
+            &self,
+        ) -> $crate::graph::GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>>
         where
             $crate::graph::GTerm<Self>: Clone + Eq + std::hash::Hash,
         {
@@ -345,7 +356,9 @@ macro_rules! impl_graph_for_wrapper {
         }
 
         #[inline]
-        fn literals(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>>
+        fn literals(
+            &self,
+        ) -> $crate::graph::GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>>
         where
             $crate::graph::GTerm<Self>: Clone + Eq + std::hash::Hash,
         {
@@ -353,7 +366,9 @@ macro_rules! impl_graph_for_wrapper {
         }
 
         #[inline]
-        fn variables(&self) -> GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>>
+        fn variables(
+            &self,
+        ) -> $crate::graph::GResult<Self, std::collections::HashSet<$crate::graph::GTerm<Self>>>
         where
             $crate::graph::GTerm<Self>: Clone + Eq + std::hash::Hash,
         {

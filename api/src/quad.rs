@@ -4,8 +4,8 @@
 //!
 //! They are the individual statements of an RDF `dataset`(../dataset/index.html).
 
+use crate::term::TTerm;
 use crate::triple::*;
-use sophia_api::term::TTerm;
 
 pub mod stream;
 pub mod streaming_mode;

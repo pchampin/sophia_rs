@@ -17,9 +17,9 @@
 //! [`FastDataset`]: type.FastDataset.html
 //! [`LightDataset`]: type.LightDataset.html
 
-use super::_traits::*;
 use super::indexed::*;
 use crate::graph::inmem::TermIndexMapU;
+use sophia_api::dataset::{CollectibleDataset, Dataset, MutableDataset, SetDataset};
 use sophia_term::{factory::*, *};
 
 #[macro_use]
@@ -53,10 +53,10 @@ pub type FastDataset = FastWrapper<GenericDataset<u32, RcTermFactory>>;
 pub type LightDataset = GenericDataset<u32, RcTermFactory>;
 
 #[cfg(test)]
-test_dataset_impl!(test_fastd, FastDataset);
+sophia_api::test_dataset_impl!(test_fastd, FastDataset);
 
 #[cfg(all(test, feature = "all_tests"))]
-test_dataset_impl!(test_lightd, LightDataset);
+sophia_api::test_dataset_impl!(test_lightd, LightDataset);
 
 /// Flavours of Dataset implementations with a smaller memory-footprint.
 ///
@@ -73,9 +73,9 @@ pub mod small {
     pub type LightDataset = GenericDataset<u16, RcTermFactory>;
 
     #[cfg(all(test, feature = "all_tests"))]
-    test_dataset_impl!(test_fastd, FastDataset);
+    sophia_api::test_dataset_impl!(test_fastd, FastDataset);
     #[cfg(all(test, feature = "all_tests"))]
-    test_dataset_impl!(test_lightd, LightDataset);
+    sophia_api::test_dataset_impl!(test_lightd, LightDataset);
 }
 
 /// Flavours of Dataset implementations which are safe to share across threads.
@@ -90,7 +90,7 @@ pub mod sync {
     pub type LightDataset = GenericDataset<u32, ArcTermFactory>;
 
     #[cfg(all(test, feature = "all_tests"))]
-    test_dataset_impl!(test_fastd, FastDataset);
+    sophia_api::test_dataset_impl!(test_fastd, FastDataset);
     #[cfg(all(test, feature = "all_tests"))]
-    test_dataset_impl!(test_lightd, LightDataset);
+    sophia_api::test_dataset_impl!(test_lightd, LightDataset);
 }

@@ -6,10 +6,10 @@ use std::result::Result as StdResult;
 use rio_api::model::*;
 use rio_api::parser::*;
 
-use crate::quad::stream::*;
-use crate::quad::streaming_mode::StreamedQuad;
-use crate::triple::stream::*;
-use crate::triple::streaming_mode::StreamedTriple;
+use sophia_api::quad::stream::*;
+use sophia_api::quad::streaming_mode::StreamedQuad;
+use sophia_api::triple::stream::*;
+use sophia_api::triple::streaming_mode::StreamedTriple;
 use sophia_term::literal::convert::AsLiteral;
 use sophia_term::{BoxTerm, RefTerm};
 
@@ -66,7 +66,7 @@ where
 }
 
 pub type RioSourceTriple<'a> = [RefTerm<'a>; 3];
-crate::make_scoped_triple_streaming_mode!(ScopedRioSourceTriple, RioSourceTriple);
+sophia_api::make_scoped_triple_streaming_mode!(ScopedRioSourceTriple, RioSourceTriple);
 
 impl<T, E> TripleSource for StrictRioSource<T, E>
 where
@@ -105,7 +105,7 @@ where
 }
 
 pub type RioSourceQuad<'a> = ([RefTerm<'a>; 3], Option<RefTerm<'a>>);
-crate::make_scoped_quad_streaming_mode!(ScopedRioSourceQuad, RioSourceQuad);
+sophia_api::make_scoped_quad_streaming_mode!(ScopedRioSourceQuad, RioSourceQuad);
 
 impl<T, E> QuadSource for StrictRioSource<T, E>
 where

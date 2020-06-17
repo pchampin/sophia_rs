@@ -1,15 +1,15 @@
 //! This module implements check for isomorphic blank node equivalence of RDF
 //! graphs.
 //!
-//! It is publicly exported to `sophia::graph`.
+//! Its public members are transparently re-exported by its [parent module](../index.html).
 
 use crate::graph::{GTerm, GTriple, Graph};
+use crate::term::matcher::AnyOrExactlyRef;
+use crate::term::{term_hash, TTerm, TermKind};
 use crate::triple::stream::{
     SinkError, SinkResult as _, SourceError, SourceResult as _, StreamError, StreamResult,
 };
 use crate::triple::Triple;
-use sophia_api::term::matcher::AnyOrExactlyRef;
-use sophia_api::term::{term_hash, TTerm, TermKind};
 use std::collections::{BTreeSet, HashMap};
 use std::error::Error;
 use std::fmt;
@@ -463,11 +463,12 @@ where
     Ok(objects)
 }
 
+/*
 #[cfg(test)]
 mod test {
     use super::*;
     use crate::graph::inmem::FastGraph;
-    use crate::parser::{nt, turtle};
+    //use crate::parser::{nt, turtle};
     use crate::triple::stream::TripleSource;
 
     #[test]
@@ -630,7 +631,7 @@ mod test {
                 :members 23
               ], _:b4 ;
               :presidency _:a1, _:a2, _:a3, _:a4 .
-            
+
             _:a1 :next _:a2 .
             _:a2 :next _:a3 ;
               :president :MBachelet .
@@ -648,7 +649,7 @@ mod test {
                 :members 23
             ], _:b42 ;
             :presidency _:a12, _:a22, _:a32, _:a42 .
-            
+
             _:a12 :next _:a22 .
             _:a22 :next _:a32 ;
             :president :MBachelet .
@@ -666,3 +667,4 @@ mod test {
         Ok(())
     }
 }
+*/

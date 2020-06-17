@@ -1,16 +1,16 @@
 //! This module implements check for isomorphic blank node equivalence of RDF
 //! datasets.
 //!
-//! It is publicly exported to `sophia::dataset`.
+//! Its public member are transparently re-exported by its [parent module](../index.html).
 
 use crate::dataset::{DQuad, DTerm, Dataset};
 use crate::graph::{bn_mapper, hash_if_not_bn, match_ignore_bns};
 use crate::quad::Quad;
 use crate::term::matcher::AnyOrExactlyRef;
+use crate::term::{TTerm, TermKind};
 use crate::triple::stream::{
     SinkError, SinkResult as _, SourceError, SourceResult as _, StreamError, StreamResult,
 };
-use sophia_api::term::{TTerm, TermKind};
 use std::collections::{BTreeSet, HashMap};
 use std::error::Error;
 use std::fmt;
@@ -429,6 +429,7 @@ where
     Ok(objects)
 }
 
+/*
 #[cfg(test)]
 mod test {
     use super::*;
@@ -442,19 +443,19 @@ mod test {
             @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
             @prefix dc: <http://purl.org/dc/terms/> .
             @prefix foaf: <http://xmlns.com/foaf/0.1/> .
-            
+
             {
                 <http://example.org/bob> dc:publisher "Bob" .
                 <http://example.org/alice> dc:publisher "Alice" .
             }
-            
+
             <http://example.org/bob>
             {
                 _:a foaf:name "Bob" .
                 _:a foaf:mbox <mailto:bob@oldcorp.example.org> .
                 _:a foaf:knows _:b .
             }
-            
+
             <http://example.org/alice>
             {
                 _:b foaf:name "Alice" .
@@ -465,19 +466,19 @@ mod test {
             @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
             @prefix dc: <http://purl.org/dc/terms/> .
             @prefix foaf: <http://xmlns.com/foaf/0.1/> .
-            
+
             {
                 <http://example.org/bob> dc:publisher "Bob" .
                 <http://example.org/alice> dc:publisher "Alice" .
             }
-            
+
             <http://example.org/bob>
             {
                 _:a2 foaf:name "Bob" .
                 _:a2 foaf:mbox <mailto:bob@oldcorp.example.org> .
                 _:a2 foaf:knows _:b2 .
             }
-            
+
             <http://example.org/alice>
             {
                 _:b2 foaf:name "Alice" .
@@ -488,19 +489,19 @@ mod test {
             @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
             @prefix dc: <http://purl.org/dc/terms/> .
             @prefix foaf: <http://xmlns.com/foaf/0.1/> .
-            
+
             {
                 <http://example.org/bob> dc:publisher "Bob" .
                 <http://example.org/alice> dc:publisher "Alice" .
             }
-            
+
             <http://example.org/bob>
             {
                 _:a3 foaf:name "Bob" .
                 _:a3 foaf:mbox <mailto:bob@oldcorp.example.org> .
                 _:a3 foaf:knows _:b3 .
             }
-            
+
             <http://example.org/alice>
             {
                 _:c3 foaf:name "Alice" .
@@ -525,19 +526,19 @@ mod test {
             @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
             @prefix dc: <http://purl.org/dc/terms/> .
             @prefix foaf: <http://xmlns.com/foaf/0.1/> .
-            
+
             {
                 <http://example.org/bob> dc:publisher "Bob" .
                 <http://example.org/alice> dc:publisher "Alice" .
             }
-            
+
             <http://example.org/bob>
             {
                 _:a foaf:name "Bob" .
                 _:a foaf:mbox <mailto:bob@oldcorp.example.org> .
                 _:a foaf:knows _:b .
             }
-            
+
             <http://example.org/alice>
             {
                 _:b foaf:name "Alice" .
@@ -547,7 +548,7 @@ mod test {
         let nq = r#"
             <http://example.org/bob> <http://purl.org/dc/terms/publisher> "Bob" .
             <http://example.org/alice> <http://purl.org/dc/terms/publisher> "Alice" .
-        
+
             _:a2 <http://xmlns.com/foaf/0.1/name> "Bob" <http://example.org/bob> .
             _:a2 <http://xmlns.com/foaf/0.1/mbox> <mailto:bob@oldcorp.example.org> <http://example.org/bob> .
             _:a2 <http://xmlns.com/foaf/0.1/knows> _:b2 <http://example.org/bob> .
@@ -570,20 +571,20 @@ mod test {
             @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
             @prefix dc: <http://purl.org/dc/terms/> .
             @prefix foaf: <http://xmlns.com/foaf/0.1/> .
-            
+
             <http://example.org/publishers>
             {
                 _:bob dc:publisher "Bob" .
                 _:alice dc:publisher "Alice" .
             }
-            
+
             _:bob
             {
                 _:a foaf:name "Bob" .
                 _:a foaf:mbox <mailto:bob@oldcorp.example.org> .
                 _:a foaf:knows _:b .
             }
-            
+
             _:alice
             {
                 _:b foaf:name "Alice" .
@@ -594,20 +595,20 @@ mod test {
             @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
             @prefix dc: <http://purl.org/dc/terms/> .
             @prefix foaf: <http://xmlns.com/foaf/0.1/> .
-            
+
             <http://example.org/publishers>
             {
                 _:bob2 dc:publisher "Bob" .
                 _:alice2 dc:publisher "Alice" .
             }
-            
+
             _:bob2
             {
                 _:a2 foaf:name "Bob" .
                 _:a2 foaf:mbox <mailto:bob@oldcorp.example.org> .
                 _:a2 foaf:knows _:b2 .
             }
-            
+
             _:alice2
             {
                 _:b2 foaf:name "Alice" .
@@ -623,3 +624,4 @@ mod test {
         Ok(())
     }
 }
+*/

@@ -4,14 +4,13 @@ use std::fmt::Debug;
 
 use crate::dataset::*;
 use crate::graph::test::*;
+use crate::ns::*;
 use crate::quad::stream::*;
 use crate::quad::streaming_mode::{QuadStreamingMode, UnsafeQuad};
 use crate::quad::*;
+use crate::term::test::TestTerm;
+use crate::term::{CopiableTerm, CopyTerm};
 use lazy_static::lazy_static;
-pub use sophia_api; // required when test macro is used in other packages
-use sophia_api::ns::*;
-use sophia_api::term::test::TestTerm;
-use sophia_api::term::{CopiableTerm, CopyTerm};
 
 type StaticTerm = TestTerm<&'static str>;
 type BoxTerm = TestTerm<Box<str>>;
@@ -326,9 +325,9 @@ macro_rules! test_dataset_impl {
             use $crate::dataset::test::*;
             use $crate::dataset::*;
             use $crate::graph::test::*;
-            use self::sophia_api::ns::*;
-            use self::sophia_api::term::TTerm;
-            use self::sophia_api::term::matcher::ANY;
+            use $crate::ns::*;
+            use $crate::term::TTerm;
+            use $crate::term::matcher::ANY;
 
             #[allow(unused_imports)]
             use super::*;
