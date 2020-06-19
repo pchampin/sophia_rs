@@ -20,9 +20,9 @@ impl<'a> RawValue<'a> {
     }
     /// If this represents an IRI, check if its an absolute one.
     ///
-    /// _Note:_ This function uses a heuristic that if the string contains a
-    /// colon `:` this might be a schema and therefore an absolute IRI. In
-    /// fact, there is no check that `self` represents a valid IRI.
+    /// _Note:_ This function merely checks that the resulting string starts
+    /// with an IRI scheme. It does *not* further check the validity of the
+    /// full IRI, which is supposed to be done by the TTerm implementation.
     pub fn is_absolute(&self) -> bool {
         match str_absolute(self.0) {
             Absolute::Maybe => self
