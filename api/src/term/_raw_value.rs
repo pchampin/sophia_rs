@@ -7,7 +7,7 @@ use std::hash::{Hash, Hasher};
 ///
 /// The second part of the raw value is intended for some implementations of
 /// IRIs, storing both a "namespace" and a "suffix". For other kinds of term,
-/// the second part is by default `None`.
+/// the second part must be `None`.
 #[derive(Debug, Copy, Clone, Eq)]
 pub struct RawValue<'a>(pub &'a str, pub Option<&'a str>);
 
