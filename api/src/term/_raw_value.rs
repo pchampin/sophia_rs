@@ -29,7 +29,8 @@ impl<'a> RawValue<'a> {
                 .1
                 .map(|txt| str_absolute(txt) == Absolute::Yes)
                 .unwrap_or(false),
-            abs => abs != Absolute::No,
+            Absolute::Yes => true,
+            Absolute::No => false,
         }
     }
     /// Iterator over all bytes of the raw value.
