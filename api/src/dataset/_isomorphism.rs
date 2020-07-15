@@ -4,16 +4,14 @@
 //! Its public member are transparently re-exported by its [parent module](../index.html).
 
 use crate::dataset::{DQuad, DTerm, Dataset};
-use crate::graph::{bn_mapper, hash_if_not_bn, match_ignore_bns};
+use crate::graph::{hash_if_not_bn, match_ignore_bns};
 use crate::quad::Quad;
 use crate::term::matcher::AnyOrExactlyRef;
 use crate::term::{TTerm, TermKind};
 use crate::triple::stream::{
     SinkError, SinkResult as _, SourceError, SourceResult as _, StreamError, StreamResult,
 };
-use std::collections::{BTreeSet, HashMap};
-use std::error::Error;
-use std::fmt;
+use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 
 /// Maximal steps a dataset is traversed for proofing isomorphism.
@@ -24,36 +22,33 @@ pub const MAX_DISTANCE: usize = 8;
 /// The hasher used internally for checking isomorphism.
 pub type IsoHasher = std::collections::hash_map::DefaultHasher;
 
-#[derive(Debug, Clone, Copy)]
-struct AlgorithmFailure;
-
-impl fmt::Display for AlgorithmFailure {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Failed to execute the Algorithm")
-    }
-}
-
-impl Error for AlgorithmFailure {}
-
 /// Checks if both datasets are isomorphic blank node equal.
 ///
 /// According to the [RDF specs](https://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/#graph-isomorphism)
 /// this means that a mapping for blank nodes in `d1` exists so that `d1 == d2`.
 ///
-/// The used algorithm was originally implemented for [`Oxigraph`](https://github.com/Tpt/oxigraph)
+/// The algorithm is inspired from a similar one in [`Oxigraph`](https://github.com/Tpt/oxigraph)
 /// and is extended for the generalized RDF model of `sophia`.
-///
-/// # Errors
-///
-/// Both datasets may fail traversing (and this is done several times).
-/// Accordingly, a `StreamError` returned where `SourceError`s originate from
-/// `d1` and `SinkError`s originate from `d2`
 ///
 /// # Performance
 ///
-/// As this algorithm has to traverse each graph several times the algorithm
-/// gets way more expensive with bigger numbers of quads. In the same way
-/// the number of blank nodes contributes to the costs.
+/// As this algorithm has to enumerates the quads of each dataset several times,
+/// the algorithm gets more expensive with bigger numbers of quads.
+/// In the same way the number of blank nodes contributes to the cost.
+///
+/// Note however that the algorithm uses some heuristics,
+/// to avoid the combinatorial explosion of trying every possible bnode-pairing.
+/// As a result, it is not 100% accurate (see below).
+///
+/// # Accuracy
+///
+/// If `d1` and `d2` are isomorphic, the function will always return `true`.
+///
+/// If they are not isomorphic, the function will generally return `false`,
+/// but a few pathological cases may be falses positives
+/// (*i.e.* recognized as isomorphic while they are not).
+///
+/// See [`isomorphic_graphs`](../graph/fn.isomorphic_graphs.html) for pathological examples.
 pub fn isomorphic_datasets<D1, D2>(d1: &D1, d2: &D2) -> StreamResult<bool, D1::Error, D2::Error>
 where
     D1: Dataset,
@@ -88,97 +83,32 @@ where
     // -------------------------------------
     // - regardless of blank nodes
     // - implicitly checks that d1 and d2 have the same length
-    let d1_in_d2 = check_for_equal_quads_regardless_bns(d1, d2)?;
-    let d2_in_d1 = check_for_equal_quads_regardless_bns(d2, d1).map_err(StreamError::reverse)?;
-
-    if !(d1_in_d2 && d2_in_d1) {
+    if !check_for_equal_quads_regardless_bns(d1, d2)? {
+        return Ok(false);
+    }
+    if !check_for_equal_quads_regardless_bns(d2, d1).map_err(StreamError::reverse)? {
         return Ok(false);
     }
 
     // Create hashes
-    let bn_hashes1 = match calc_bn_hashes::<D1, IsoHasher>(d1) {
+    let bn_hashes1 = match calc_bn_hashes::<D1, IsoHasher>(d1, bns1) {
         Ok(map) => map,
-        Err(SourceError(e)) => return Err(SourceError(e)),
-        Err(SinkError(_)) => return Ok(false), // Not the best solution
+        Err(e) => return Err(SourceError(e)),
     };
-    let bn_hashes2 = match calc_bn_hashes::<D2, IsoHasher>(d2) {
+    let bn_hashes2 = match calc_bn_hashes::<D2, IsoHasher>(d2, bns2) {
         Ok(map) => map,
-        Err(SourceError(e)) => return Err(SinkError(e)),
-        Err(SinkError(_)) => return Ok(false), // Not the best solution
+        Err(e) => return Err(SinkError(e)),
     };
 
-    // Create mapping
-    let mut bn_mapping = HashMap::new();
+    // Check that, for each hash, there are the same number of bnodes in each graph.
     for (hash, bns1) in bn_hashes1 {
-        for bn1 in bns1 {
-            let bn2 = match bn_hashes2.get(&hash) {
-                Some(bn) => bn,
-                None => return Ok(false), // No matching blank node in g2!
-            };
-            bn_mapping.insert(bn1, bn2);
+        let bns1_len = bns1.len();
+        let bns2_len = bn_hashes2.get(&hash).map(|x| x.len()).unwrap_or(0);
+        if bns1_len != bns2_len {
+            return Ok(false); // Not the same number of "equivalent" bnodes
         }
     }
-
-    // Apply mapping
-    isomorphic_datasets_with_mapping(d1, d2, bn_mapping)
-}
-
-/// Builds a `GraphNameMatcher` by using the blank node mapping provided.
-///
-/// If the given term is a blank node the matcher will match all possible
-/// mappings for that blank node, i.e. included redundant blank nodes. If the
-/// given term is not a blank node the matcher will only match the given term.
-fn bn_mapper_for_gname<'m, T1, T2>(
-    mapping: &'m HashMap<T1, &Vec<T2>>,
-    g: Option<&'m T1>,
-) -> Vec<Option<&'m dyn TTerm>>
-where
-    T1: TTerm + Hash + Eq,
-    T2: TTerm + Hash + Eq,
-{
-    if g.map(TTerm::kind) == Some(TermKind::BlankNode) {
-        match mapping.get(g.unwrap()) {
-            None => vec![],
-            Some(bns) => bns.iter().map(|n| Some(n.as_dyn())).collect(),
-        }
-    } else {
-        vec![g.map(TTerm::as_dyn)]
-    }
-}
-
-/// Checks for each quad in `d1` with at least one blank node if it is also
-/// contained in `d2` if the blank node `mapping` is applied.
-fn isomorphic_datasets_with_mapping<D1, D2>(
-    d1: &D1,
-    d2: &D2,
-    mapping: HashMap<DTerm<D1>, &Vec<DTerm<D2>>>,
-) -> StreamResult<bool, D1::Error, D2::Error>
-where
-    D1: Dataset,
-    D2: Dataset,
-    DTerm<D1>: Clone + Eq + Hash,
-    DTerm<D2>: Clone + Eq + Hash,
-{
-    for q in d1.quads() {
-        let q = q.source_err()?;
-
-        if q.s().kind() == TermKind::BlankNode
-            || q.p().kind() == TermKind::BlankNode
-            || q.o().kind() == TermKind::BlankNode
-            || q.g().map(TTerm::kind) == Some(TermKind::BlankNode)
-        {
-            let ms = bn_mapper(&mapping, q.s());
-            let mp = bn_mapper(&mapping, q.p());
-            let mo = bn_mapper(&mapping, q.o());
-            let mg = bn_mapper_for_gname(&mapping, q.g());
-
-            if d2.quads_matching(&ms, &mp, &mo, &mg).next().is_none() {
-                return Ok(false);
-            }
-        }
-    }
-
-    Ok(true)
+    Ok(true) // heuristically
 }
 
 fn match_gname_ignore_bns<T>(g: Option<&T>) -> AnyOrExactlyRef<Option<&T>>
@@ -219,151 +149,166 @@ where
 
 /// Calculate a hash for each blank node.
 ///
-/// The hash of a blank node in a dataset is the hash of all terms in the quads
-/// in which the blank node occurs. Should this not be enough to create
-/// distinct hashes, the dataset is further traversed starting from the initial
-/// quads.
+/// We first compute a hash based on all adjacent triples, ignoring bnodes.
 ///
-/// Blank nodes are not included in calculating the hashes.
-///
-/// The hashes are distinct if every 'bucket', i.e. the `Vec` in the returning
-/// `HashMap` has only one element.
-///
-/// An exception are redundant blank nodes. If the algorithm detects such nodes
-/// they will share the same hash.
+/// If several blank nodes have the same hash,
+/// we modify their hash with the hash of their adjacent blank nodes.
+/// We repeat this step until either
+/// - we reached a point where each blank node has a unique hash, or
+/// - the last step didn't change the number of distinct hash.
+/// At this point, if several blank nodes share the same hash,
+/// they must be absolutely redundant.
 fn calc_bn_hashes<D, H>(
     d: &D,
-) -> StreamResult<HashMap<u64, Vec<DTerm<D>>>, D::Error, AlgorithmFailure>
+    bnodes: HashSet<DTerm<D>>,
+) -> Result<HashMap<u64, Vec<DTerm<D>>>, D::Error>
 where
     D: Dataset,
     DTerm<D>: Clone + Eq + Hash,
     H: Hasher + Default,
 {
-    let mut res_map = HashMap::new();
-    let mut unresolved_map = HashMap::new();
+    let mut n2h = HashMap::new();
+    let mut map = HashMap::new();
 
-    for bn in d.bnodes().source_err()?.into_iter() {
-        let (hash, upstream, downstream) = calc_bns_init_hash::<D, H>(&bn, d).source_err()?;
-        unresolved_map
-            .entry(hash)
-            .or_insert_with(Vec::new)
-            .push((bn, upstream, downstream));
+    let n_bnodes = bnodes.len();
+    for bn in bnodes {
+        let (hash, related) = calc_bns_init_hash::<D, H>(&bn, d)?;
+        n2h.insert(bn.clone(), hash);
+        map.entry(hash).or_insert_with(Vec::new).push((bn, related));
     }
 
-    let mut last_map = unresolved_map;
-    unresolved_map = HashMap::new();
+    let mut len_old_map = 0;
 
-    let mut i = 0;
+    while map.len() < n_bnodes && map.len() != len_old_map {
+        len_old_map = map.len();
+        let last_map = map;
+        map = HashMap::new();
+        let last_n2h = n2h.clone();
 
-    while !last_map.is_empty() && i < MAX_DISTANCE {
-        for (hash, bns) in last_map.into_iter() {
+        for (hash, bns) in last_map {
             if bns.len() == 1 {
-                // Distinct hash.
-                let (bn, _, _) = bns.into_iter().next().expect("len == 1");
-                res_map.insert(hash, vec![bn]);
-            } else if bns
-                .iter()
-                .all(|(_, upstream, downstream)| upstream.is_empty() && downstream.is_empty())
-            {
-                // Can no longer traverse dataset to distinguish nodes, i.e. they must be redundant.
-                let redundants = bns.into_iter().map(|(bn, _, _)| bn).collect();
-                res_map.insert(hash, redundants);
+                map.insert(hash, bns);
             } else {
-                // improve hash by further traversing.
-                for (bn, upstream, downstream) in bns {
-                    let (better_hash, upstream, downstream) =
-                        improve_hash_by_increasing_distance::<H, D>(
-                            hash,
-                            &upstream,
-                            &downstream,
-                            d,
-                        )
-                        .source_err()?;
-                    unresolved_map
-                        .entry(better_hash)
+                for (bn, related) in bns {
+                    let mut hasher = H::default();
+                    hash.hash(&mut hasher);
+
+                    let mut modifiers = Vec::new();
+                    for (role, other) in related.iter() {
+                        modifiers.push((role, last_n2h[other]));
+                    }
+                    modifiers.sort_unstable(); // to ensure reproducibility
+                    for (role, hash) in modifiers {
+                        role.hash(&mut hasher);
+                        hash.hash(&mut hasher);
+                    }
+                    let new_hash = hasher.finish();
+                    *n2h.get_mut(&bn).unwrap() = new_hash;
+                    map.entry(new_hash)
                         .or_insert_with(Vec::new)
-                        .push((bn, upstream, downstream));
+                        .push((bn, related));
                 }
             }
         }
-
-        last_map = unresolved_map;
-        unresolved_map = HashMap::new();
-        i += 1;
+        //dbg_map::<G, _>(&map);
     }
-
-    if i >= MAX_DISTANCE {
-        return Err(AlgorithmFailure).sink_err();
+    let mut ret = HashMap::with_capacity(map.len());
+    for (hash, bns) in map {
+        let v = bns.into_iter().map(|(bn, _)| bn).collect();
+        ret.insert(hash, v);
     }
-
-    Ok(res_map)
+    Ok(ret)
 }
 
-/// Calculate the blank node's initial hash in the dataset.
+/// Calculate the blank node's initial hash in the graph, i.e. for distance 0.
 ///
-/// Returns the initial hash, the upstream nodes and the downstream nodes.
+/// Returns the initial hash, and a vec of related blank node
+/// (associated with an opaque role identifier )
 #[allow(clippy::type_complexity)]
-fn calc_bns_init_hash<D, H>(
-    bn: &DTerm<D>,
-    d: &D,
-) -> Result<(u64, Vec<DTerm<D>>, Vec<DTerm<D>>), D::Error>
+fn calc_bns_init_hash<D, H>(bn: &DTerm<D>, d: &D) -> Result<(u64, Vec<(u8, DTerm<D>)>), D::Error>
 where
     D: Dataset,
     DTerm<D>: Clone + Eq + Hash,
     H: Hasher + Default,
 {
-    // for same hashing result we need to order the quads' hashes.
-    let mut hashes = BTreeSet::new();
+    let mut quad_hashes = Vec::new();
+    let mut related = vec![];
 
-    let mut upstream = vec![];
-    let mut downstream = vec![];
-
-    for quad in d.quads() {
+    for quad in d.quads_with_s(bn) {
         let quad = quad?;
-        if quad.s() == bn || quad.p() == bn || quad.o() == bn || quad.g() == Some(bn) {
-            hashes.insert(hash_quad_without_bn::<H, DQuad<D>>(&quad));
-            if quad.o() != bn {
-                upstream.push(quad.o().clone())
-            };
-            if quad.s() != bn {
-                downstream.push(quad.s().clone())
-            };
+        quad_hashes.push(hash_quad_without_bn::<H, DQuad<D>>(&quad));
+        let p = quad.p();
+        if p.kind() == TermKind::BlankNode && p != bn {
+            related.push((0, p.clone()));
+        }
+        let o = quad.o();
+        if o.kind() == TermKind::BlankNode && o != bn {
+            related.push((1, o.clone()));
+        }
+        if let Some(g) = quad.g() {
+            if g.kind() == TermKind::BlankNode && g != bn {
+                related.push((2, g.clone()));
+            }
+        }
+    }
+    for quad in d.quads_with_p(bn) {
+        let quad = quad?;
+        quad_hashes.push(hash_quad_without_bn::<H, DQuad<D>>(&quad));
+        let s = quad.s();
+        if s.kind() == TermKind::BlankNode && s != bn {
+            related.push((3, s.clone()));
+        }
+        let o = quad.o();
+        if o.kind() == TermKind::BlankNode && o != bn {
+            related.push((4, o.clone()));
+        }
+        if let Some(g) = quad.g() {
+            if g.kind() == TermKind::BlankNode && g != bn {
+                related.push((5, g.clone()));
+            }
+        }
+    }
+    for quad in d.quads_with_o(bn) {
+        let quad = quad?;
+        quad_hashes.push(hash_quad_without_bn::<H, DQuad<D>>(&quad));
+        let s = quad.s();
+        if s.kind() == TermKind::BlankNode && s != bn {
+            related.push((6, s.clone()));
+        }
+        let p = quad.p();
+        if p.kind() == TermKind::BlankNode && p != bn {
+            related.push((7, p.clone()));
+        }
+        if let Some(g) = quad.g() {
+            if g.kind() == TermKind::BlankNode && g != bn {
+                related.push((8, g.clone()));
+            }
+        }
+    }
+    for quad in d.quads_with_g(Some(bn)) {
+        let quad = quad?;
+        quad_hashes.push(hash_quad_without_bn::<H, DQuad<D>>(&quad));
+        let s = quad.s();
+        if s.kind() == TermKind::BlankNode && s != bn {
+            related.push((9, s.clone()));
+        }
+        let p = quad.p();
+        if p.kind() == TermKind::BlankNode && p != bn {
+            related.push((10, p.clone()));
+        }
+        let o = quad.o();
+        if o.kind() == TermKind::BlankNode && o != bn {
+            related.push((11, o.clone()));
         }
     }
 
-    // hashing
-    let mut hasher = H::default();
-    hashes.into_iter().for_each(|h| h.hash(&mut hasher));
-
-    Ok((hasher.finish(), upstream, downstream))
-}
-
-/// Improves an existing hash by further traversing the dataset.
-#[allow(clippy::type_complexity)]
-fn improve_hash_by_increasing_distance<H, D>(
-    hash: u64,
-    upstream: &[DTerm<D>],
-    downstream: &[DTerm<D>],
-    d: &D,
-) -> Result<(u64, Vec<DTerm<D>>, Vec<DTerm<D>>), D::Error>
-where
-    D: Dataset,
-    DTerm<D>: Clone + Eq + Hash,
-    H: Hasher + Default,
-{
-    // for same hashing result we need to order the quads' hashes.
-    let mut hashes = BTreeSet::new();
-
-    let upstream = traverse_from_s_to_o::<H, D>(upstream, d, &mut hashes)?;
-    let downstream = traverse_from_o_to_s::<H, D>(downstream, d, &mut hashes)?;
+    quad_hashes.sort_unstable(); // to ensure reproducibility
 
     // hashing
     let mut hasher = H::default();
-    // initialize with existing hash.
-    hash.hash(&mut hasher);
-    hashes.into_iter().for_each(|h| h.hash(&mut hasher));
+    quad_hashes.into_iter().for_each(|h| h.hash(&mut hasher));
 
-    Ok((hasher.finish(), upstream, downstream))
+    Ok((hasher.finish(), related))
 }
 
 fn hash_quad_without_bn<H, Q>(q: &Q) -> u64
@@ -372,256 +317,240 @@ where
     Q: Quad,
 {
     let mut h = H::default();
-    hash_if_not_bn(q.s(), &mut h);
-    hash_if_not_bn(q.p(), &mut h);
-    hash_if_not_bn(q.o(), &mut h);
+    hash_if_not_bn(q.s(), 0, &mut h);
+    hash_if_not_bn(q.p(), 1, &mut h);
+    hash_if_not_bn(q.o(), 2, &mut h);
     if let Some(g) = q.g() {
-        hash_if_not_bn(g, &mut h)
+        hash_if_not_bn(g, 3, &mut h)
     }
     h.finish()
 }
 
-/// Looks for quads where the given terms are objects.
-/// Those quads' hashes are inserted into the list and a list of their
-/// subjects is returned.
-fn traverse_from_o_to_s<H, D>(
-    objects: &[DTerm<D>],
-    d: &D,
-    hashes: &mut BTreeSet<u64>,
-) -> Result<Vec<DTerm<D>>, D::Error>
-where
-    D: Dataset,
-    DTerm<D>: Clone + Eq + Hash,
-    H: Hasher + Default,
-{
-    let mut subjects = vec![];
-    for o in objects {
-        for quad in d.quads_with_o(o) {
-            let quad = quad?;
-            hashes.insert(hash_quad_without_bn::<H, DQuad<D>>(&quad));
-            subjects.push(quad.s().clone());
-        }
-    }
-    Ok(subjects)
-}
-
-/// Looks for quads where the given terms are subjects.
-/// Those quads' hashes are inserted into the list and a list of their
-/// objects is returned.
-fn traverse_from_s_to_o<H, D>(
-    subjects: &[DTerm<D>],
-    d: &D,
-    hashes: &mut BTreeSet<u64>,
-) -> Result<Vec<DTerm<D>>, D::Error>
-where
-    D: Dataset,
-    DTerm<D>: Clone + Eq + Hash,
-    H: Hasher + Default,
-{
-    let mut objects = vec![];
-    for s in subjects {
-        for quad in d.quads_with_s(s) {
-            let quad = quad?;
-            hashes.insert(hash_quad_without_bn::<H, DQuad<D>>(&quad));
-            objects.push(quad.o().clone());
-        }
-    }
-    Ok(objects)
-}
-
-/*
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::dataset::inmem::FastDataset;
-    use crate::parser::{gtrig, nq};
-    use crate::quad::stream::QuadSource;
+    use crate::ns::xsd;
+    use crate::term::test::TestTerm;
+    use std::error::Error;
+
+    type StaticTerm = TestTerm<&'static str>;
 
     #[test]
     fn simple() -> Result<(), Box<dyn Error>> {
-        let d1 = r#"
-            @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-            @prefix dc: <http://purl.org/dc/terms/> .
-            @prefix foaf: <http://xmlns.com/foaf/0.1/> .
+        let foaf = "http://xmlns.com/foaf/0.1/";
+        let foaf_knows = StaticTerm::iri2(foaf, "knows");
+        let foaf_mbox = StaticTerm::iri2(foaf, "mbox");
+        let foaf_name = StaticTerm::iri2(foaf, "name");
+        let mbox_alice = StaticTerm::iri("mailto:alice@work.example");
+        let lit_alice = StaticTerm::lit_dt("alice", xsd::string);
+        let lit_bob = StaticTerm::lit_dt("bob", xsd::string);
 
-            {
-                <http://example.org/bob> dc:publisher "Bob" .
-                <http://example.org/alice> dc:publisher "Alice" .
-            }
+        let make_dataset =
+            |b1: &'static str, b2: &'static str| -> Vec<([StaticTerm; 3], Option<StaticTerm>)> {
+                let b1 = StaticTerm::bnode(b1);
+                let b2 = StaticTerm::bnode(b2);
+                vec![
+                    ([b1, foaf_name, lit_alice], None),
+                    ([b1, foaf_mbox, mbox_alice], None),
+                    ([b1, foaf_knows, b2], None),
+                    ([b2, foaf_name, lit_bob], Some(b1)),
+                ]
+            };
+        let d1 = make_dataset("alice", "bob");
+        assert!(isomorphic_datasets(&d1, &d1)?);
 
-            <http://example.org/bob>
-            {
-                _:a foaf:name "Bob" .
-                _:a foaf:mbox <mailto:bob@oldcorp.example.org> .
-                _:a foaf:knows _:b .
-            }
-
-            <http://example.org/alice>
-            {
-                _:b foaf:name "Alice" .
-                _:b foaf:mbox <mailto:alice@work.example.org> .
-            }
-        "#;
-        let d2 = r#"
-            @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-            @prefix dc: <http://purl.org/dc/terms/> .
-            @prefix foaf: <http://xmlns.com/foaf/0.1/> .
-
-            {
-                <http://example.org/bob> dc:publisher "Bob" .
-                <http://example.org/alice> dc:publisher "Alice" .
-            }
-
-            <http://example.org/bob>
-            {
-                _:a2 foaf:name "Bob" .
-                _:a2 foaf:mbox <mailto:bob@oldcorp.example.org> .
-                _:a2 foaf:knows _:b2 .
-            }
-
-            <http://example.org/alice>
-            {
-                _:b2 foaf:name "Alice" .
-                _:b2 foaf:mbox <mailto:alice@work.example.org> .
-            }
-        "#;
-        let d3 = r#"
-            @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-            @prefix dc: <http://purl.org/dc/terms/> .
-            @prefix foaf: <http://xmlns.com/foaf/0.1/> .
-
-            {
-                <http://example.org/bob> dc:publisher "Bob" .
-                <http://example.org/alice> dc:publisher "Alice" .
-            }
-
-            <http://example.org/bob>
-            {
-                _:a3 foaf:name "Bob" .
-                _:a3 foaf:mbox <mailto:bob@oldcorp.example.org> .
-                _:a3 foaf:knows _:b3 .
-            }
-
-            <http://example.org/alice>
-            {
-                _:c3 foaf:name "Alice" .
-                _:c3 foaf:mbox <mailto:alice@work.example.org> .
-            }
-        "#;
-        let d1: FastDataset = gtrig::parse_str(d1).collect_quads()?;
-        let d2: FastDataset = gtrig::parse_str(d2).collect_quads()?;
-        let d3: FastDataset = gtrig::parse_str(d3).collect_quads()?;
-
+        let d2 = make_dataset("a", "b");
         assert!(isomorphic_datasets(&d1, &d2)?);
         assert!(isomorphic_datasets(&d2, &d1)?);
+
+        let d3 = make_dataset("b", "a");
+        assert!(isomorphic_datasets(&d2, &d3)?);
+        assert!(isomorphic_datasets(&d1, &d3)?);
+
+        let b1 = StaticTerm::bnode("alice");
+        let d4 = vec![
+            ([b1, foaf_name, lit_alice], None),
+            ([b1, foaf_mbox, mbox_alice], None),
+            ([b1, foaf_knows, StaticTerm::bnode("bob")], None),
+            ([StaticTerm::bnode("bobby"), foaf_name, lit_bob], Some(b1)),
+        ];
+        assert!(!isomorphic_datasets(&d1, &d4)?);
+        assert!(!isomorphic_datasets(&d4, &d1)?);
+
+        Ok(())
+    }
+
+    fn make_chain(ids: &'static str) -> Vec<[StaticTerm; 4]> {
+        let rel = StaticTerm::iri("tag:rel");
+        let nodes: Vec<_> = (0..ids.len())
+            .map(|i| StaticTerm::bnode(&ids[i..i + 1]))
+            .collect();
+        let mut dataset = Vec::with_capacity(ids.len() - 1);
+        for i in 1..nodes.len() {
+            dataset.push([nodes[i - 1], rel, nodes[i], nodes[i - 1]]);
+        }
+        dataset
+    }
+
+    #[test]
+    fn chain() -> Result<(), Box<dyn Error>> {
+        let d1 = make_chain("abcdefghij");
+        assert!(isomorphic_datasets(&d1, &d1)?);
+        let d2 = make_chain("jihgfedcba");
+        assert!(isomorphic_datasets(&d1, &d2)?);
+        assert!(isomorphic_datasets(&d2, &d1)?);
+
+        let d3 = make_chain("abcdefghijk");
         assert!(!isomorphic_datasets(&d1, &d3)?);
-        assert!(!isomorphic_datasets(&d2, &d3)?);
-
         Ok(())
     }
 
     #[test]
-    fn different_parsers() -> Result<(), Box<dyn Error>> {
-        let trig = r#"
-            @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-            @prefix dc: <http://purl.org/dc/terms/> .
-            @prefix foaf: <http://xmlns.com/foaf/0.1/> .
-
-            {
-                <http://example.org/bob> dc:publisher "Bob" .
-                <http://example.org/alice> dc:publisher "Alice" .
-            }
-
-            <http://example.org/bob>
-            {
-                _:a foaf:name "Bob" .
-                _:a foaf:mbox <mailto:bob@oldcorp.example.org> .
-                _:a foaf:knows _:b .
-            }
-
-            <http://example.org/alice>
-            {
-                _:b foaf:name "Alice" .
-                _:b foaf:mbox <mailto:alice@work.example.org> .
-            }
-        "#;
-        let nq = r#"
-            <http://example.org/bob> <http://purl.org/dc/terms/publisher> "Bob" .
-            <http://example.org/alice> <http://purl.org/dc/terms/publisher> "Alice" .
-
-            _:a2 <http://xmlns.com/foaf/0.1/name> "Bob" <http://example.org/bob> .
-            _:a2 <http://xmlns.com/foaf/0.1/mbox> <mailto:bob@oldcorp.example.org> <http://example.org/bob> .
-            _:a2 <http://xmlns.com/foaf/0.1/knows> _:b2 <http://example.org/bob> .
-
-            _:b2 <http://xmlns.com/foaf/0.1/name> "Alice" <http://example.org/alice> .
-            _:b2 <http://xmlns.com/foaf/0.1/mbox> <mailto:alice@work.example.org> <http://example.org/alice> .
-        "#;
-        let trig: FastDataset = gtrig::parse_str(trig).collect_quads()?;
-        let nq: FastDataset = nq::parse_str(nq).collect_quads()?;
-
-        assert!(isomorphic_datasets(&nq, &trig)?);
-        assert!(isomorphic_datasets(&trig, &nq)?);
-
-        Ok(())
-    }
-
-    #[test]
-    fn bn_names() -> Result<(), Box<dyn Error>> {
-        let d1 = r#"
-            @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-            @prefix dc: <http://purl.org/dc/terms/> .
-            @prefix foaf: <http://xmlns.com/foaf/0.1/> .
-
-            <http://example.org/publishers>
-            {
-                _:bob dc:publisher "Bob" .
-                _:alice dc:publisher "Alice" .
-            }
-
-            _:bob
-            {
-                _:a foaf:name "Bob" .
-                _:a foaf:mbox <mailto:bob@oldcorp.example.org> .
-                _:a foaf:knows _:b .
-            }
-
-            _:alice
-            {
-                _:b foaf:name "Alice" .
-                _:b foaf:mbox <mailto:alice@work.example.org> .
-            }
-        "#;
-        let d2 = r#"
-            @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-            @prefix dc: <http://purl.org/dc/terms/> .
-            @prefix foaf: <http://xmlns.com/foaf/0.1/> .
-
-            <http://example.org/publishers>
-            {
-                _:bob2 dc:publisher "Bob" .
-                _:alice2 dc:publisher "Alice" .
-            }
-
-            _:bob2
-            {
-                _:a2 foaf:name "Bob" .
-                _:a2 foaf:mbox <mailto:bob@oldcorp.example.org> .
-                _:a2 foaf:knows _:b2 .
-            }
-
-            _:alice2
-            {
-                _:b2 foaf:name "Alice" .
-                _:b2 foaf:mbox <mailto:alice@work.example.org> .
-            }
-        "#;
-        let d1: FastDataset = gtrig::parse_str(d1).collect_quads()?;
-        let d2: FastDataset = gtrig::parse_str(d2).collect_quads()?;
-
+    fn cycle2() -> Result<(), Box<dyn Error>> {
+        let d1 = make_chain("aba");
+        assert!(isomorphic_datasets(&d1, &d1)?);
+        let d2 = make_chain("ABA");
         assert!(isomorphic_datasets(&d1, &d2)?);
         assert!(isomorphic_datasets(&d2, &d1)?);
+        Ok(())
+    }
+
+    #[test]
+    fn cycle_long() -> Result<(), Box<dyn Error>> {
+        let d1 = make_chain("abcdefghia");
+        assert!(isomorphic_datasets(&d1, &d1)?);
+        let d2 = make_chain("jihgfedcbj");
+        assert!(isomorphic_datasets(&d1, &d2)?);
+        assert!(isomorphic_datasets(&d2, &d1)?);
+
+        let d3 = make_chain("abcdefghija");
+        assert!(!isomorphic_datasets(&d1, &d3)?);
+        Ok(())
+    }
+
+    #[test]
+    #[ignore]
+    fn cycle_pathological() -> Result<(), Box<dyn Error>> {
+        // This case is tricky (and does not work with the current implementation).
+        // Both graphs contain the same number of (blank nodes) and the same number of arcs.
+        // All blank nodes are locally undistinguishable from each other:
+        // - they have exactly 1 incoming arc and 1 outgoing arc,
+        // - both linking them to a blank node that are themselves undistinguisgable.
+        let mut d1 = make_chain("abca");
+        let mut d1b = make_chain("defgd");
+        d1.append(&mut d1b);
+
+        let d2 = make_chain("abcdefga");
+        assert!(!isomorphic_datasets(&d1, &d2)?);
+        Ok(())
+    }
+
+    #[test]
+    fn cycle_almost_pathological() -> Result<(), Box<dyn Error>> {
+        // This is uses the same graphs as above (cycle_pathological),
+        // but *one* of the blank nodes is distinguished by an additional property,
+        // which breaks symmetry and allow the algorithm to give the correct answer.
+        //
+        // This illustrate why the pathological case is not too bad:
+        // in real data, *most* be nodes will be distinguisgable like that.
+        let typ = StaticTerm::iri("tag:type");
+        let dist = StaticTerm::iri("tag:Distinguished");
+
+        let mut d1 = make_chain("abca");
+        let mut d1b = make_chain("defgd");
+        d1.append(&mut d1b);
+        d1.push([d1[0][0], typ, dist, d1[0][0]]);
+
+        let mut d2 = make_chain("abcdefga");
+        d2.push([d2[0][0], typ, dist, d2[0][0]]);
+        assert!(!isomorphic_datasets(&d1, &d2)?);
+        Ok(())
+    }
+
+    fn make_clique(ids: &'static str) -> Vec<[StaticTerm; 4]> {
+        let rel = StaticTerm::iri("tag:rel");
+        let nodes: Vec<_> = (0..ids.len())
+            .map(|i| StaticTerm::bnode(&ids[i..i + 1]))
+            .collect();
+        let mut dataset = Vec::with_capacity(ids.len() * ids.len());
+        for n1 in nodes.iter() {
+            for n2 in nodes.iter() {
+                dataset.push([*n1, rel, *n2, *n1]);
+            }
+        }
+        dataset
+    }
+
+    #[test]
+    fn clique() -> Result<(), Box<dyn Error>> {
+        let d1 = make_clique("abcde");
+        assert!(isomorphic_datasets(&d1, &d1)?);
+
+        let d2 = make_clique("ABCDE");
+        assert!(isomorphic_datasets(&d1, &d2)?);
+        assert!(isomorphic_datasets(&d2, &d1)?);
+
+        let d3 = make_clique("abcd");
+        assert!(!isomorphic_datasets(&d1, &d3)?);
+        Ok(())
+    }
+
+    fn make_tree(ids: &'static str) -> Vec<[StaticTerm; 4]> {
+        let rel = StaticTerm::iri("tag:rel");
+        let nodes: Vec<_> = (0..ids.len())
+            .map(|i| StaticTerm::bnode(&ids[i..i + 1]))
+            .collect();
+        let mut dataset = Vec::with_capacity(ids.len() * ids.len());
+        let mut i = 0;
+        while 2 * i < nodes.len() {
+            dataset.push([nodes[i], rel, nodes[2 * i], nodes[i]]);
+            if 2 * i + 1 < nodes.len() {
+                dataset.push([nodes[i], rel, nodes[2 * i + 1], nodes[i]]);
+            }
+            i += 1;
+        }
+        dataset
+    }
+
+    #[test]
+    fn tree() -> Result<(), Box<dyn Error>> {
+        let d1 = make_tree("abcdefghij");
+        assert!(isomorphic_datasets(&d1, &d1)?);
+
+        let d2 = make_tree("ABCDEFGHIJ");
+        assert!(isomorphic_datasets(&d1, &d2)?);
+        assert!(isomorphic_datasets(&d2, &d1)?);
+
+        let d3 = make_tree("abcdefghijk");
+        assert!(!isomorphic_datasets(&d1, &d3)?);
+        Ok(())
+    }
+
+    #[test]
+    fn predicate_and_gname() -> Result<(), Box<dyn Error>> {
+        let rel = StaticTerm::iri("tag:rel");
+        let b1 = StaticTerm::bnode("b1");
+        let b2 = StaticTerm::bnode("b2");
+        let b3 = StaticTerm::bnode("b3");
+        let b4 = StaticTerm::bnode("b4");
+
+        let d1 = vec![[b1, rel, b2, b3], [b2, rel, b3, b4], [rel, b1, b4, b3]];
+        assert!(isomorphic_datasets(&d1, &d1)?);
+
+        let d2 = vec![[b2, rel, b3, b4], [b3, rel, b4, b1], [rel, b2, b1, b4]];
+        assert!(isomorphic_datasets(&d1, &d2)?);
+        assert!(isomorphic_datasets(&d2, &d1)?);
+
+        let d3 = vec![[b1, rel, b2, b3], [b2, rel, b3, b4], [rel, b2, b4, b3]];
+        //                                                        ^^
+        assert!(!isomorphic_datasets(&d2, &d3)?);
+        assert!(!isomorphic_datasets(&d1, &d3)?);
+
+        let d4 = vec![[b1, rel, b2, b3], [b2, rel, b3, b4], [rel, b1, b4, b2]];
+        //                                                                ^^
+        assert!(!isomorphic_datasets(&d2, &d4)?);
+        assert!(!isomorphic_datasets(&d1, &d4)?);
 
         Ok(())
     }
 }
-*/

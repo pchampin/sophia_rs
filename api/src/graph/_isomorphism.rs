@@ -10,9 +10,8 @@ use crate::triple::stream::{
     SinkError, SinkResult as _, SourceError, SourceResult as _, StreamError, StreamResult,
 };
 use crate::triple::Triple;
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
-use std::fmt;
 use std::hash::{Hash, Hasher};
 
 /// Maximal steps a graph is traversed for proofing isomorphism.
@@ -23,36 +22,67 @@ pub const MAX_DISTANCE: usize = 8;
 /// The hasher used internally for checking isomorphism.
 pub type IsoHasher = std::collections::hash_map::DefaultHasher;
 
-#[derive(Debug, Clone, Copy)]
-struct AlgorithmFailure;
-
-impl fmt::Display for AlgorithmFailure {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Failed to execute the Algorithm")
-    }
-}
-
-impl Error for AlgorithmFailure {}
-
 /// Checks if both graphs are isomorphic blank node equal.
 ///
 /// According to the [RDF specs](https://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/#graph-isomorphism)
 /// this means that a mapping for blank nodes in `g1` exists so that `g1 == g2`.
 ///
-/// The used algorithm was originally implemented for [`Oxigraph`](https://github.com/Tpt/oxigraph)
+/// The algorithm is inspired from a similar one in [`Oxigraph`](https://github.com/Tpt/oxigraph)
 /// and is extended for the generalized RDF model of `sophia`.
 ///
 /// # Errors
 ///
 /// Both graphs may fail traversing (and this is done several times).
-/// Accordingly, a `StreamError` returned where `SourceError`s originate from
-/// `g1` and `SinkError`s originate from `g2`
+/// Accordingly, a `StreamError` returned,
+/// where `SourceError`s originate from `g1`
+/// and `SinkError`s originate from `g2`
 ///
 /// # Performance
 ///
-/// As this algorithm has to traverse each graph several times the algorithm
-/// gets way more expensive with bigger numbers of triples. In the same way
-/// the number of blank nodes contributes to the costs.
+/// As this algorithm has to enumerates the triples of each graph several times,
+/// the algorithm gets more expensive with bigger numbers of triples.
+/// In the same way the number of blank nodes contributes to the cost.
+///
+/// Note however that the algorithm uses some heuristics,
+/// to avoid the combinatorial explosion of trying every possible bnode-pairing.
+/// As a result, it is not 100% accurate (see below).
+///
+/// # Accuracy
+///
+/// If `g1` and `g2` are isomorphic, the function will always return `true`.
+///
+/// If they are not isomorphic, the function will generally return `false`,
+/// but a few pathological cases may be falses positives
+/// (*i.e.* recognized as isomorphic while they are not).
+///
+/// For example, the graph:
+///
+/// ```turtle
+///     _:a :rel _:b.
+///     _:b :rel _:a.
+///     _:c :rel _:c.
+/// ```
+///
+/// and the graph:
+///
+/// ```turtle
+///     _:a :rel _:b.
+///     _:b :rel _:c.
+///     _:c :rel _:a.
+/// ```
+///
+/// are considered isomorphic by this algorithm,
+/// because they have the same number of blank nodes and arcs,
+/// and all of their blank nodes are locally indistinguisable
+/// (same number of incoming and outgoinc arcs,
+/// linking them to undistinguishable blank nodes).
+///
+/// Correctly answering in this kind of pathological case requires a combinatorial exploration
+/// of all possible bnode-pairings, which would make the algorithm very slow in the worst case.
+///
+/// The choice has been made to accept this flaw,
+/// as such undistinguishable blank nodes are very rare in real data,
+/// and not particularly useful.
 pub fn isomorphic_graphs<G1, G2>(g1: &G1, g2: &G2) -> StreamResult<bool, G1::Error, G2::Error>
 where
     G1: Graph,
@@ -87,100 +117,46 @@ where
     // -------------------------------------
     // - regardless of blank nodes
     // - implicitly checks that g1 and g2 have the same length
-    let g1_in_g2 = check_for_equal_triples_regardless_bns(g1, g2)?;
-    let g2_in_g1 = check_for_equal_triples_regardless_bns(g2, g1).map_err(StreamError::reverse)?;
-
-    if !(g1_in_g2 && g2_in_g1) {
+    if !check_for_equal_triples_regardless_bns(g1, g2)? {
+        return Ok(false);
+    }
+    if !check_for_equal_triples_regardless_bns(g2, g1).map_err(StreamError::reverse)? {
         return Ok(false);
     }
 
     // Create hashes
-    let bn_hashes1 = match calc_bn_hashes::<G1, IsoHasher>(g1) {
+    let bn_hashes1 = match calc_bn_hashes::<G1, IsoHasher>(g1, bns1) {
         Ok(map) => map,
-        Err(SourceError(e)) => return Err(SourceError(e)),
-        Err(SinkError(_)) => return Ok(false), // Not the best solution
+        Err(e) => return Err(SourceError(e)),
     };
-    let bn_hashes2 = match calc_bn_hashes::<G2, IsoHasher>(g2) {
+    let bn_hashes2 = match calc_bn_hashes::<G2, IsoHasher>(g2, bns2) {
         Ok(map) => map,
-        Err(SourceError(e)) => return Err(SinkError(e)),
-        Err(SinkError(_)) => return Ok(false), // Not the best solution
+        Err(e) => return Err(SinkError(e)),
     };
 
-    // Create mapping
-    let mut bn_mapping = HashMap::new();
+    // Check that, for each hash, there are the same number of bnodes in each graph.
     for (hash, bns1) in bn_hashes1 {
-        for bn1 in bns1 {
-            let bn2 = match bn_hashes2.get(&hash) {
-                Some(bn) => bn,
-                None => return Ok(false), // No matching blank node in g2!
-            };
-            bn_mapping.insert(bn1, bn2);
+        let bns1_len = bns1.len();
+        let bns2_len = bn_hashes2.get(&hash).map(|x| x.len()).unwrap_or(0);
+        if bns1_len != bns2_len {
+            return Ok(false); // Not the same number of "equivalent" bnodes
         }
     }
-
-    // Apply mapping
-    isomorphic_graphs_with_mapping(g1, g2, bn_mapping)
-}
-
-/// Builds a `TermMatcher` by using the blank node mapping provided.
-///
-/// If the given term is a blank node the matcher will match all possible
-/// mappings for that blank node, i.e. included redundant blank nodes. If the
-/// given term is not a blank node the matcher will only match the given term.
-///
-/// This aligns with the description of bijection _M_ described in the
-/// [RDF specs](https://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/#graph-isomorphism).
-pub(crate) fn bn_mapper<'m, T1, T2>(
-    mapping: &'m HashMap<T1, &Vec<T2>>,
-    t: &'m T1,
-) -> Vec<&'m dyn TTerm>
-where
-    T1: TTerm + Hash + Eq,
-    T2: TTerm + Hash + Eq,
-{
-    if t.kind() == TermKind::BlankNode {
-        match mapping.get(t) {
-            None => vec![],
-            Some(bns) => bns.iter().map(TTerm::as_dyn).collect(),
-        }
-    } else {
-        vec![t.as_dyn()]
-    }
-}
-
-/// Checks for each triple in `g1` with at least one blank node if it is also
-/// contained in `g2` if the blank node `mapping` is applied.
-fn isomorphic_graphs_with_mapping<G1, G2, E1, E2>(
-    g1: &G1,
-    g2: &G2,
-    mapping: HashMap<GTerm<G1>, &Vec<GTerm<G2>>>,
-) -> StreamResult<bool, E1, E2>
-where
-    E1: 'static + Error,
-    E2: 'static + Error,
-    G1: Graph<Error = E1>,
-    G2: Graph<Error = E2>,
-    GTerm<G1>: Clone + Eq + Hash,
-    GTerm<G2>: Clone + Eq + Hash,
-{
-    for t in g1.triples() {
-        let t = t.source_err()?;
-
-        if t.s().kind() == TermKind::BlankNode
-            || t.p().kind() == TermKind::BlankNode
-            || t.o().kind() == TermKind::BlankNode
-        {
-            let ms = bn_mapper(&mapping, t.s());
-            let mp = bn_mapper(&mapping, t.p());
-            let mo = bn_mapper(&mapping, t.o());
-
-            if g2.triples_matching(&ms, &mp, &mo).next().is_none() {
-                return Ok(false);
-            }
-        }
-    }
-
-    Ok(true)
+    Ok(true) // heuristically
+             // At this point, we are *almost* certain the graphs are isomorphic
+             // (see section 'accuracy' in function documentation).
+             // To be 100% certain,
+             // we would need to try every possible 1-1 mapping of compatible bnodes
+             // (i.e. bnodes with the same hash),
+             // and test every arc against that mapping.
+             /*
+             for bn_mapping in make_all_possible_mappings(bns1, bns2) {
+                 if isomorphic_graphs_with_mapping(g1, g2, bn_mapping {
+                     Ok(true)
+                 }
+             }
+             Ok(false)
+             */
 }
 
 pub(crate) fn match_ignore_bns<T>(t: &T) -> AnyOrExactlyRef<&T>
@@ -194,8 +170,8 @@ where
     }
 }
 
-/// Checks is each triple in `g1` is also in `g2` regardless of blank node
-/// labels.
+/// Checks is each triple in `g1` is also in `g2`
+/// regardless of blank node labels.
 ///
 /// # Example
 ///
@@ -242,164 +218,166 @@ where
     Ok(true)
 }
 
+#[allow(dead_code)]
+fn dbg_map<G, T>(map: &HashMap<u64, Vec<(GTerm<G>, T)>>)
+where
+    G: Graph,
+    GTerm<G>: Sized,
+{
+    for (hash, bns) in map {
+        print!("=== {:8x} ", hash);
+        for (bn, _) in bns {
+            print!("{} ", bn.value());
+        }
+        println!();
+    }
+    println!("=== ---");
+}
+
 /// Calculate a hash for each blank node.
 ///
-/// The hash of a blank node in a graph with `distance == 0` is the hash of all
-/// terms in the triples in which the blank node occurs. Should this not be
-/// enough to create distinct hashes, one can increase the distance. Increasing
-/// distance means that beginning from the blank nodes triples the graph is
-/// traversed up and down to add further triples to the hash calculation.
+/// We first compute a hash based on all adjacent triples, ignoring bnodes.
 ///
-/// Blank nodes are not included in calculating the hashes.
-///
-/// The hashes are distinct if every 'bucket', i.e. the `Vec` in the returning
-/// `HashMap` has only one element.
-///
-/// An exception are redundant blank nodes. If the algorithm detects such nodes
-/// they will share the same hash.
+/// If several blank nodes have the same hash,
+/// we modify their hash with the hash of their adjacent blank nodes.
+/// We repeat this step until either
+/// - we reached a point where each blank node has a unique hash, or
+/// - the last step didn't change the number of distinct hash.
+/// At this point, if several blank nodes share the same hash,
+/// they must be absolutely redundant.
 fn calc_bn_hashes<G, H>(
     g: &G,
-) -> StreamResult<HashMap<u64, Vec<GTerm<G>>>, G::Error, AlgorithmFailure>
+    bnodes: HashSet<GTerm<G>>,
+) -> Result<HashMap<u64, Vec<GTerm<G>>>, G::Error>
 where
     G: Graph,
     GTerm<G>: Clone + Eq + Hash,
     H: Hasher + Default,
 {
-    let mut res_map = HashMap::new();
-    let mut unresolved_map = HashMap::new();
+    let mut n2h = HashMap::new();
+    let mut map = HashMap::new();
 
-    for bn in g.bnodes().source_err()?.into_iter() {
-        let (hash, upstream, downstream) = calc_bns_init_hash::<G, H>(&bn, g).source_err()?;
-        unresolved_map
-            .entry(hash)
-            .or_insert_with(Vec::new)
-            .push((bn, upstream, downstream));
+    let n_bnodes = bnodes.len();
+    for bn in bnodes {
+        let (hash, related) = calc_bns_init_hash::<G, H>(&bn, g)?;
+        n2h.insert(bn.clone(), hash);
+        map.entry(hash).or_insert_with(Vec::new).push((bn, related));
     }
+    //dbg_map::<G, _>(&map);
 
-    let mut last_map = unresolved_map;
-    unresolved_map = HashMap::new();
+    let mut len_old_map = 0;
 
-    let mut i = 0;
+    while map.len() < n_bnodes && map.len() != len_old_map {
+        len_old_map = map.len();
+        let last_map = map;
+        map = HashMap::new();
+        let last_n2h = n2h.clone();
 
-    while !last_map.is_empty() && i < MAX_DISTANCE {
-        for (hash, bns) in last_map.into_iter() {
+        for (hash, bns) in last_map {
             if bns.len() == 1 {
-                // Distinct hash.
-                let (bn, _, _) = bns.into_iter().next().expect("len == 1");
-                res_map.insert(hash, vec![bn]);
-            } else if bns
-                .iter()
-                .all(|(_, upstream, downstream)| upstream.is_empty() && downstream.is_empty())
-            {
-                // Can no longer traverse graph to distinguish nodes, i.e. they must be redundant.
-                let redundants = bns.into_iter().map(|(bn, _, _)| bn).collect();
-                res_map.insert(hash, redundants);
+                map.insert(hash, bns);
             } else {
-                // improve hash by further traversing.
-                for (bn, upstream, downstream) in bns {
-                    let (better_hash, upstream, downstream) =
-                        improve_hash_by_increasing_distance::<H, G>(
-                            hash,
-                            &upstream,
-                            &downstream,
-                            g,
-                        )
-                        .source_err()?;
-                    unresolved_map
-                        .entry(better_hash)
+                for (bn, related) in bns {
+                    let mut hasher = H::default();
+                    hash.hash(&mut hasher);
+
+                    let mut modifiers = Vec::new();
+                    for (role, other) in related.iter() {
+                        modifiers.push((role, last_n2h[other]));
+                    }
+                    modifiers.sort_unstable(); // to ensure reproducibility
+                    for (role, hash) in modifiers {
+                        role.hash(&mut hasher);
+                        hash.hash(&mut hasher);
+                    }
+                    let new_hash = hasher.finish();
+                    *n2h.get_mut(&bn).unwrap() = new_hash;
+                    map.entry(new_hash)
                         .or_insert_with(Vec::new)
-                        .push((bn, upstream, downstream));
+                        .push((bn, related));
                 }
             }
         }
-
-        last_map = unresolved_map;
-        unresolved_map = HashMap::new();
-        i += 1;
+        //dbg_map::<G, _>(&map);
     }
-
-    if i >= MAX_DISTANCE {
-        return Err(AlgorithmFailure).sink_err();
+    let mut ret = HashMap::with_capacity(map.len());
+    for (hash, bns) in map {
+        let v = bns.into_iter().map(|(bn, _)| bn).collect();
+        ret.insert(hash, v);
     }
-
-    Ok(res_map)
+    Ok(ret)
 }
 
 /// Calculate the blank node's initial hash in the graph, i.e. for distance 0.
 ///
-/// Returns the initial hash, the upstream nodes and the downstream nodes.
+/// Returns the initial hash, and a vec of related blank node
+/// (associated with an opaque role identifier )
 #[allow(clippy::type_complexity)]
-fn calc_bns_init_hash<G, H>(
-    bn: &GTerm<G>,
-    g: &G,
-) -> Result<(u64, Vec<GTerm<G>>, Vec<GTerm<G>>), G::Error>
+fn calc_bns_init_hash<G, H>(bn: &GTerm<G>, g: &G) -> Result<(u64, Vec<(u8, GTerm<G>)>), G::Error>
 where
     G: Graph,
     GTerm<G>: Clone + Eq + Hash,
     H: Hasher + Default,
 {
-    // for same hashing result we need to order the triples' hashes.
-    let mut triple_hashes = BTreeSet::new();
+    let mut triple_hashes = Vec::new();
+    let mut related = vec![];
 
-    let mut upstream = vec![];
-    let mut downstream = vec![];
-
-    for tri in g.triples() {
+    for tri in g.triples_with_s(bn) {
         let tri = tri?;
-        if tri.s() == bn || tri.p() == bn || tri.o() == bn {
-            triple_hashes.insert(hash_triple_without_bn::<H, GTriple<G>>(&tri));
-            if tri.o() != bn {
-                upstream.push(tri.o().clone())
-            };
-            if tri.s() != bn {
-                downstream.push(tri.s().clone())
-            };
+        triple_hashes.push(hash_triple_without_bn::<H, GTriple<G>>(&tri));
+        let p = tri.p();
+        if p.kind() == TermKind::BlankNode && p != bn {
+            related.push((0, p.clone()));
+        }
+        let o = tri.o();
+        if o.kind() == TermKind::BlankNode && o != bn {
+            related.push((1, o.clone()));
+        }
+    }
+    for tri in g.triples_with_p(bn) {
+        let tri = tri?;
+        triple_hashes.push(hash_triple_without_bn::<H, GTriple<G>>(&tri));
+        let s = tri.s();
+        if s.kind() == TermKind::BlankNode && s != bn {
+            related.push((2, s.clone()));
+        }
+        let o = tri.o();
+        if o.kind() == TermKind::BlankNode && o != bn {
+            related.push((3, o.clone()));
+        }
+    }
+    for tri in g.triples_with_o(bn) {
+        let tri = tri?;
+        triple_hashes.push(hash_triple_without_bn::<H, GTriple<G>>(&tri));
+        let s = tri.s();
+        if s.kind() == TermKind::BlankNode && s != bn {
+            related.push((4, s.clone()));
+        }
+        let p = tri.p();
+        if p.kind() == TermKind::BlankNode && p != bn {
+            related.push((5, p.clone()));
         }
     }
 
+    triple_hashes.sort_unstable(); // to ensure reproducibility
+
     // hashing
     let mut hasher = H::default();
     triple_hashes.into_iter().for_each(|h| h.hash(&mut hasher));
 
-    Ok((hasher.finish(), upstream, downstream))
-}
-
-/// Improves an existing hash by further traversing the graph.
-#[allow(clippy::type_complexity)]
-fn improve_hash_by_increasing_distance<H, G>(
-    hash: u64,
-    upstream: &[GTerm<G>],
-    downstream: &[GTerm<G>],
-    g: &G,
-) -> Result<(u64, Vec<GTerm<G>>, Vec<GTerm<G>>), G::Error>
-where
-    G: Graph,
-    GTerm<G>: Clone + Eq + Hash,
-    H: Hasher + Default,
-{
-    // for same hashing result we need to order the triples' hashes.
-    let mut triple_hashes = BTreeSet::new();
-
-    let upstream = traverse_from_s_to_o::<H, G>(upstream, g, &mut triple_hashes)?;
-    let downstream = traverse_from_o_to_s::<H, G>(downstream, g, &mut triple_hashes)?;
-
-    // hashing
-    let mut hasher = H::default();
-    // initialize with existing hash.
-    hash.hash(&mut hasher);
-    triple_hashes.into_iter().for_each(|h| h.hash(&mut hasher));
-
-    Ok((hasher.finish(), upstream, downstream))
+    Ok((hasher.finish(), related))
 }
 
 // utility
-pub(crate) fn hash_if_not_bn<T, H>(t: &T, h: &mut H)
+pub(crate) fn hash_if_not_bn<T, H>(t: &T, role: u8, h: &mut H)
 where
     T: TTerm + ?Sized,
     H: Hasher,
 {
     if t.kind() != TermKind::BlankNode {
         term_hash(t, h)
+    } else {
+        role.hash(h)
     }
 }
 
@@ -409,262 +387,229 @@ where
     T: Triple,
 {
     let mut h = H::default();
-    hash_if_not_bn(t.s(), &mut h);
-    hash_if_not_bn(t.p(), &mut h);
-    hash_if_not_bn(t.o(), &mut h);
+    hash_if_not_bn(t.s(), 0, &mut h);
+    hash_if_not_bn(t.p(), 1, &mut h);
+    hash_if_not_bn(t.o(), 2, &mut h);
     h.finish()
 }
 
-/// Looks for triples where the given terms are objects.
-/// Those triples' hashes are inserted into the list and a list of their
-/// subjects is returned.
-fn traverse_from_o_to_s<H, G>(
-    upstream: &[GTerm<G>],
-    g: &G,
-    hashes: &mut BTreeSet<u64>,
-) -> Result<Vec<GTerm<G>>, G::Error>
-where
-    G: Graph,
-    GTerm<G>: Clone + Eq + Hash,
-    H: Hasher + Default,
-{
-    let mut subjects = vec![];
-    for o in upstream {
-        for tri in g.triples_with_o(o) {
-            let tri = tri?;
-            hashes.insert(hash_triple_without_bn::<H, GTriple<G>>(&tri));
-            subjects.push(tri.s().clone());
-        }
-    }
-    Ok(subjects)
-}
-
-/// Looks for triples where the given terms are subjects.
-/// Those triples' hashes are inserted into the list and a list of their
-/// objects is returned.
-fn traverse_from_s_to_o<H, G>(
-    downstream: &[GTerm<G>],
-    g: &G,
-    hashes: &mut BTreeSet<u64>,
-) -> Result<Vec<GTerm<G>>, G::Error>
-where
-    G: Graph,
-    GTerm<G>: Clone + Eq + Hash,
-    H: Hasher + Default,
-{
-    let mut objects = vec![];
-    for s in downstream {
-        for tri in g.triples_with_s(s) {
-            let tri = tri?;
-            hashes.insert(hash_triple_without_bn::<H, GTriple<G>>(&tri));
-            objects.push(tri.o().clone());
-        }
-    }
-    Ok(objects)
-}
-
-/*
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::graph::inmem::FastGraph;
-    //use crate::parser::{nt, turtle};
-    use crate::triple::stream::TripleSource;
+    use crate::ns::xsd;
+    use crate::term::test::TestTerm;
+
+    type StaticTerm = TestTerm<&'static str>;
 
     #[test]
     fn simple() -> Result<(), Box<dyn Error>> {
-        let g1 = r#"
-            @prefix foaf: <http://xmlns.com/foaf/0.1/>.
+        let foaf = "http://xmlns.com/foaf/0.1/";
+        let foaf_knows = StaticTerm::iri2(foaf, "knows");
+        let foaf_mbox = StaticTerm::iri2(foaf, "mbox");
+        let foaf_name = StaticTerm::iri2(foaf, "name");
+        let mbox_alice = StaticTerm::iri("mailto:alice@work.example");
+        let lit_alice = StaticTerm::lit_dt("alice", xsd::string);
+        let lit_bob = StaticTerm::lit_dt("bob", xsd::string);
 
-            _:alice foaf:name "Alice";
-                   foaf:mbox <mailto:alice@work.example> ;
-                   foaf:knows _:bob .
-            _:bob foaf:name "Bob".
-        "#;
-        let g2 = r#"
-            @prefix foaf: <http://xmlns.com/foaf/0.1/>.
+        let make_graph = |b1: &'static str, b2: &'static str| -> Vec<[StaticTerm; 3]> {
+            let b1 = StaticTerm::bnode(b1);
+            let b2 = StaticTerm::bnode(b2);
+            vec![
+                [b1, foaf_name, lit_alice],
+                [b1, foaf_mbox, mbox_alice],
+                [b1, foaf_knows, b2],
+                [b2, foaf_name, lit_bob],
+            ]
+        };
+        let g1 = make_graph("alice", "bob");
+        assert!(isomorphic_graphs(&g1, &g1)?);
 
-            _:a foaf:name "Alice";
-                   foaf:mbox <mailto:alice@work.example> ;
-                   foaf:knows _:b .
-            _:b foaf:name "Bob".
-        "#;
-        let g3 = r#"
-            @prefix foaf: <http://xmlns.com/foaf/0.1/>.
-
-            _:a foaf:name "Alice";
-                   foaf:mbox <mailto:alice@work.example> ;
-                   foaf:knows _:b .
-            _:c foaf:name "Bob".
-        "#;
-        let g1: FastGraph = turtle::parse_str(g1).collect_triples()?;
-        let g2: FastGraph = turtle::parse_str(g2).collect_triples()?;
-        let g3: FastGraph = turtle::parse_str(g3).collect_triples()?;
-
+        let g2 = make_graph("a", "b");
         assert!(isomorphic_graphs(&g1, &g2)?);
         assert!(isomorphic_graphs(&g2, &g1)?);
+
+        let g3 = make_graph("b", "a");
+        assert!(isomorphic_graphs(&g2, &g3)?);
+        assert!(isomorphic_graphs(&g1, &g3)?);
+
+        let b1 = StaticTerm::bnode("alice");
+        let g4 = vec![
+            [b1, foaf_name, lit_alice],
+            [b1, foaf_mbox, mbox_alice],
+            [b1, foaf_knows, StaticTerm::bnode("bob")],
+            [StaticTerm::bnode("bobby"), foaf_name, lit_bob],
+        ];
+        assert!(!isomorphic_graphs(&g1, &g4)?);
+        assert!(!isomorphic_graphs(&g4, &g1)?);
+
+        Ok(())
+    }
+
+    fn make_chain(ids: &'static str) -> Vec<[StaticTerm; 3]> {
+        let rel = StaticTerm::iri("tag:rel");
+        let nodes: Vec<_> = (0..ids.len())
+            .map(|i| StaticTerm::bnode(&ids[i..i + 1]))
+            .collect();
+        let mut graph = Vec::with_capacity(ids.len() - 1);
+        for i in 1..nodes.len() {
+            graph.push([nodes[i - 1], rel, nodes[i]]);
+        }
+        graph
+    }
+
+    #[test]
+    fn chain() -> Result<(), Box<dyn Error>> {
+        let g1 = make_chain("abcdefghij");
+        assert!(isomorphic_graphs(&g1, &g1)?);
+        let g2 = make_chain("jihgfedcba");
+        assert!(isomorphic_graphs(&g1, &g2)?);
+        assert!(isomorphic_graphs(&g2, &g1)?);
+
+        let g3 = make_chain("abcdefghijk");
         assert!(!isomorphic_graphs(&g1, &g3)?);
-        assert!(!isomorphic_graphs(&g2, &g3)?);
-
         Ok(())
     }
 
     #[test]
-    fn different_parsers() -> Result<(), Box<dyn Error>> {
-        let ttl = r#"
-            @prefix foaf: <http://xmlns.com/foaf/0.1/>.
-
-            [] foaf:name "Alice";
-                   foaf:mbox <mailto:alice@work.example> ;
-                   foaf:knows [foaf:name "Bob"] .
-        "#;
-        let nt = r#"
-            _:alice <http://xmlns.com/foaf/0.1/name> "Alice".
-            _:alice <http://xmlns.com/foaf/0.1/mbox> <mailto:alice@work.example>.
-            _:alice <http://xmlns.com/foaf/0.1/knows> _:bob.
-            _:bob <http://xmlns.com/foaf/0.1/name> "Bob".
-        "#;
-        let ttl: FastGraph = turtle::parse_str(ttl).collect_triples()?;
-        let nt: FastGraph = nt::parse_str(nt).collect_triples()?;
-
-        assert!(isomorphic_graphs(&nt, &ttl)?);
-        assert!(isomorphic_graphs(&ttl, &nt)?);
-
+    fn cycle2() -> Result<(), Box<dyn Error>> {
+        let g1 = make_chain("aba");
+        assert!(isomorphic_graphs(&g1, &g1)?);
+        let g2 = make_chain("ABA");
+        assert!(isomorphic_graphs(&g1, &g2)?);
+        assert!(isomorphic_graphs(&g2, &g1)?);
         Ok(())
     }
 
-    /// Every subject and object is a blank node with the a different predicate.
     #[test]
-    fn heterogeneous_grid() -> Result<(), Box<dyn Error>> {
-        let g1 = r#"
-            @prefix : <http://example.org/>.
-
-            _:a :p1 _:b, _:d .
-            _:c :p2 _:b, _:f .
-            _:e :p3 _:b, _:d, _:f, _:h .
-            _:g :p4 _:d, _:h .
-            _:i :p5 _:f, _:h .
-        "#;
-        let g2 = r#"
-            @prefix : <http://example.org/>.
-
-            _:a2 :p1 _:b2, _:d2 .
-            _:c2 :p2 _:b2, _:f2 .
-            _:e2 :p3 _:b2, _:d2, _:f2, _:h2 .
-            _:g2 :p4 _:d2, _:h2 .
-            _:i2 :p5 _:f2, _:h2 .
-        "#;
-        let g1: FastGraph = turtle::parse_str(g1).collect_triples()?;
-        let g2: FastGraph = turtle::parse_str(g2).collect_triples()?;
-
+    fn cycle_long() -> Result<(), Box<dyn Error>> {
+        let g1 = make_chain("abcdefghia");
+        assert!(isomorphic_graphs(&g1, &g1)?);
+        let g2 = make_chain("jihgfedcbj");
         assert!(isomorphic_graphs(&g1, &g2)?);
         assert!(isomorphic_graphs(&g2, &g1)?);
 
+        let g3 = make_chain("abcdefghija");
+        assert!(!isomorphic_graphs(&g1, &g3)?);
         Ok(())
     }
 
-    /// Every subject and object is a blank node with the same predicate.
-    /// Source of test: http://aidanhogan.com/docs/rdf-canonicalisation.pdf
     #[test]
-    fn homogeneous_grid() -> Result<(), Box<dyn Error>> {
-        let g1 = r#"
-            @prefix : <http://example.org/>.
+    #[ignore]
+    fn cycle_pathological() -> Result<(), Box<dyn Error>> {
+        // This case is tricky (and does not work with the current implementation).
+        // Both graphs contain the same number of (blank nodes) and the same number of arcs.
+        // All blank nodes are locally undistinguishable from each other:
+        // - they have exactly 1 incoming arc and 1 outgoing arc,
+        // - both linking them to a blank node that are themselves undistinguisgable.
+        let mut g1 = make_chain("abca");
+        let mut g1b = make_chain("defgd");
+        g1.append(&mut g1b);
 
-            _:a :p _:b, _:d .
-            _:c :p _:b, _:f .
-            _:e :p _:b, _:d, _:f, _:h .
-            _:g :p _:d, _:h .
-            _:i :p _:f, _:h .
-        "#;
-        let g2 = r#"
-            @prefix : <http://example.org/>.
-
-            _:a2 :p _:b2, _:d2 .
-            _:c2 :p _:b2, _:f2 .
-            _:e2 :p _:b2, _:d2, _:f2, _:h2 .
-            _:g2 :p _:d2, _:h2 .
-            _:i2 :p _:f2, _:h2 .
-        "#;
-        let g1: FastGraph = turtle::parse_str(g1).collect_triples()?;
-        let g2: FastGraph = turtle::parse_str(g2).collect_triples()?;
-
-        assert!(isomorphic_graphs(&g1, &g2)?);
-        assert!(isomorphic_graphs(&g2, &g1)?);
-
-        Ok(())
-    }
-
-    /// Like homogeneous grid but with redundant nodes removed in the second graph.
-    #[test]
-    fn truncated_grid() -> Result<(), Box<dyn Error>> {
-        let g1 = r#"
-            @prefix : <http://example.org/>.
-
-            _:a :p _:b, _:d .
-            _:c :p _:b, _:f .
-            _:e :p _:b, _:d, _:f, _:h .
-            _:g :p _:d, _:h .
-            _:i :p _:f, _:h .
-        "#;
-        let g2 = r#"
-            @prefix : <http://example.org/>.
-
-            _:a2 :p _:b2 .
-        "#;
-        let g1: FastGraph = turtle::parse_str(g1).collect_triples()?;
-        let g2: FastGraph = turtle::parse_str(g2).collect_triples()?;
-
+        let g2 = make_chain("abcdefga");
         assert!(!isomorphic_graphs(&g1, &g2)?);
-        assert!(!isomorphic_graphs(&g2, &g1)?);
-
         Ok(())
     }
-    /// Source of test: http://aidanhogan.com/docs/rdf-canonicalisation.pdf
+
     #[test]
-    fn spider_like() -> Result<(), Box<dyn Error>> {
-        let g1 = r#"
-            @prefix : <http://example.org/>.
+    fn cycle_almost_pathological() -> Result<(), Box<dyn Error>> {
+        // This is uses the same graphs as above (cycle_pathological),
+        // but *one* of the blank nodes is distinguished by an additional property,
+        // which breaks symmetry and allow the algorithm to give the correct answer.
+        //
+        // This illustrate why the pathological case is not too bad:
+        // in real data, *most* be nodes will be distinguisgable like that.
+        let typ = StaticTerm::iri("tag:type");
+        let dist = StaticTerm::iri("tag:Distinguished");
 
-            :Chile :cabinet _:b1, [
-                :members 23
-              ], [
-                :members 23
-              ], _:b4 ;
-              :presidency _:a1, _:a2, _:a3, _:a4 .
+        let mut g1 = make_chain("abca");
+        let mut g1b = make_chain("defgd");
+        g1.append(&mut g1b);
+        g1.push([g1[0][0], typ, dist]);
 
-            _:a1 :next _:a2 .
-            _:a2 :next _:a3 ;
-              :president :MBachelet .
-            _:a3 :next _:a4.
-            _:a4 :president :MBachelet .
+        let mut g2 = make_chain("abcdefga");
+        g2.push([g2[0][0], typ, dist]);
+        assert!(!isomorphic_graphs(&g1, &g2)?);
+        Ok(())
+    }
 
-            :MBachelet :spouse _:c .
-        "#;
-        let g2 = r#"
-            @prefix : <http://example.org/>.
+    fn make_clique(ids: &'static str) -> Vec<[StaticTerm; 3]> {
+        let rel = StaticTerm::iri("tag:rel");
+        let nodes: Vec<_> = (0..ids.len())
+            .map(|i| StaticTerm::bnode(&ids[i..i + 1]))
+            .collect();
+        let mut graph = Vec::with_capacity(ids.len() * ids.len());
+        for n1 in nodes.iter() {
+            for n2 in nodes.iter() {
+                graph.push([*n1, rel, *n2]);
+            }
+        }
+        graph
+    }
 
-            :Chile :cabinet _:b12, [
-                :members 23
-            ], [
-                :members 23
-            ], _:b42 ;
-            :presidency _:a12, _:a22, _:a32, _:a42 .
+    #[test]
+    fn clique() -> Result<(), Box<dyn Error>> {
+        let g1 = make_clique("abcde");
+        assert!(isomorphic_graphs(&g1, &g1)?);
 
-            _:a12 :next _:a22 .
-            _:a22 :next _:a32 ;
-            :president :MBachelet .
-            _:a32 :next _:a42.
-            _:a42 :president :MBachelet .
-
-            :MBachelet :spouse _:c2 .
-        "#;
-        let g1: FastGraph = turtle::parse_str(g1).collect_triples()?;
-        let g2: FastGraph = turtle::parse_str(g2).collect_triples()?;
-
+        let g2 = make_clique("ABCDE");
         assert!(isomorphic_graphs(&g1, &g2)?);
         assert!(isomorphic_graphs(&g2, &g1)?);
+
+        let g3 = make_clique("abcd");
+        assert!(!isomorphic_graphs(&g1, &g3)?);
+        Ok(())
+    }
+
+    fn make_tree(ids: &'static str) -> Vec<[StaticTerm; 3]> {
+        let rel = StaticTerm::iri("tag:rel");
+        let nodes: Vec<_> = (0..ids.len())
+            .map(|i| StaticTerm::bnode(&ids[i..i + 1]))
+            .collect();
+        let mut graph = Vec::with_capacity(ids.len() * ids.len());
+        let mut i = 0;
+        while 2 * i < nodes.len() {
+            graph.push([nodes[i], rel, nodes[2 * i]]);
+            if 2 * i + 1 < nodes.len() {
+                graph.push([nodes[i], rel, nodes[2 * i + 1]]);
+            }
+            i += 1;
+        }
+        graph
+    }
+
+    #[test]
+    fn tree() -> Result<(), Box<dyn Error>> {
+        let g1 = make_tree("abcdefghij");
+        assert!(isomorphic_graphs(&g1, &g1)?);
+
+        let g2 = make_tree("ABCDEFGHIJ");
+        assert!(isomorphic_graphs(&g1, &g2)?);
+        assert!(isomorphic_graphs(&g2, &g1)?);
+
+        let g3 = make_tree("abcdefghijk");
+        assert!(!isomorphic_graphs(&g1, &g3)?);
+        Ok(())
+    }
+
+    #[test]
+    fn predicate() -> Result<(), Box<dyn Error>> {
+        let rel = StaticTerm::iri("tag:rel");
+        let b1 = StaticTerm::bnode("b1");
+        let b2 = StaticTerm::bnode("b2");
+        let b3 = StaticTerm::bnode("b3");
+        let b4 = StaticTerm::bnode("b4");
+
+        let g1 = vec![[b1, rel, b2], [b2, rel, b3], [rel, b1, b4]];
+        assert!(isomorphic_graphs(&g1, &g1)?);
+
+        let g2 = vec![[b2, rel, b3], [b3, rel, b4], [rel, b2, b1]];
+        assert!(isomorphic_graphs(&g1, &g2)?);
+        assert!(isomorphic_graphs(&g2, &g1)?);
+
+        let g3 = vec![[b1, rel, b2], [b2, rel, b3], [rel, b2, b4]];
+        assert!(!isomorphic_graphs(&g2, &g3)?);
+        assert!(!isomorphic_graphs(&g1, &g3)?);
 
         Ok(())
     }
 }
-*/
