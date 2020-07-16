@@ -18,6 +18,8 @@ use std::hash::{Hash, Hasher};
 
 mod _dyn_term;
 mod _graph_name_matcher; // is 'pub use'd by module 'matcher'
+mod _raw_value;
+pub use self::_raw_value::*;
 pub mod matcher;
 pub mod simple_iri;
 pub use simple_iri::SimpleIri;
@@ -83,7 +85,7 @@ pub trait TTerm {
     ///
     /// [`value_raw`]: #tymethod.value_raw
     fn value(&self) -> MownStr {
-        raw_to_mownstr(self.value_raw())
+        self.value_raw().into()
     }
 
     /// Return the datatype IRI of this term if it is a literal.
@@ -111,18 +113,18 @@ pub trait TTerm {
     ///
     /// # Note to implementors
     /// The second part of the raw value is intended for some implementations
-    /// of IRIs, storing both a "namepsace" and a "suffix".
+    /// of IRIs, storing both a "namespace" and a "suffix".
     /// For other kinds of term, the second part must always be None.
-    fn value_raw(&self) -> (&str, Option<&str>);
+    fn value_raw(&self) -> RawValue;
 
     /// All terms are absolute, except for:
     /// * relative IRI references,
     /// * literals whose datatype is a relative IRI reference.
     fn is_absolute(&self) -> bool {
         match self.kind() {
-            Iri => raw_absolute(self.value_raw()),
+            Iri => self.value_raw().is_absolute(),
             Literal => match self.language() {
-                None => raw_absolute(self.datatype().unwrap().value_raw()),
+                None => self.datatype().unwrap().value_raw().is_absolute(),
                 Some(_) => true,
             },
             _ => true,
@@ -203,76 +205,6 @@ where
     }
 }
 
-fn raw_to_mownstr<'a>(raw: (&'a str, Option<&'a str>)) -> MownStr<'a> {
-    match raw {
-        (val, None) => MownStr::from(val),
-        (ns, Some(suffix)) => {
-            let mut s = String::with_capacity(ns.len() + suffix.len());
-            s.push_str(ns);
-            s.push_str(suffix);
-            s.into()
-        }
-    }
-}
-
-#[inline]
-pub(crate) fn raw_absolute(raw: (&str, Option<&str>)) -> bool {
-    match str_absolute(raw.0) {
-        0 => raw.1.map(|txt| str_absolute(txt) > 0).unwrap_or(false),
-        i => i > 0,
-    }
-}
-
-#[inline]
-fn raw_to_bytes<'a>(raw: &'a (&'a str, Option<&'a str>)) -> impl Iterator<Item = u8> + 'a {
-    raw.0.bytes().chain(raw.1.unwrap_or("").bytes())
-}
-
-#[inline]
-fn raw_to_len(raw: &(&str, Option<&str>)) -> usize {
-    raw.0.len() + raw.1.map(str::len).unwrap_or(0)
-}
-
-#[inline]
-fn raw_eq(raw1: &(&str, Option<&str>), raw2: &(&str, Option<&str>)) -> bool {
-    raw_to_len(&raw1) == raw_to_len(&raw2)
-        && raw_to_bytes(&raw1)
-            .zip(raw_to_bytes(&raw2))
-            .all(|(b1, b2)| b1 == b2)
-}
-
-#[inline]
-fn raw_hash<H: Hasher>(raw: &(&str, Option<&str>), state: &mut H) {
-    state.write(raw.0.as_bytes());
-    if let Some(txt) = raw.1 {
-        state.write(txt.as_bytes());
-    }
-    state.write_u8(0xff); // this is what <str as Hash>::hash() does
-}
-
-/// return value: -1 means no, 0 means maybe, 1 means yes
-#[inline]
-fn str_absolute(txt: &str) -> i8 {
-    if txt.is_empty() {
-        return 0;
-    }
-    for b in txt.bytes() {
-        if b == b':' {
-            return 1;
-        }
-        if !(b'A' <= b && b <= b'Z'
-            || b'a' <= b && b <= b'z'
-            || b'0' <= b && b <= b'9'
-            || b == b'.'
-            || b == b'+'
-            || b == b'-')
-        {
-            return -1;
-        }
-    }
-    0
-}
-
 /// Hash a term
 pub fn term_hash<T, H>(term: &T, state: &mut H)
 where
@@ -283,19 +215,19 @@ where
     let v = term.value_raw();
     k.hash(state);
     match k {
-        Iri => raw_hash(&v, state),
+        Iri => v.hash(state),
         Literal => {
             match term.language() {
-                None => raw_hash(&term.datatype().unwrap().value_raw(), state),
+                None => term.datatype().unwrap().value_raw().hash(state),
                 Some(tag) => {
                     for b in tag.bytes() {
                         state.write_u8(b.to_ascii_uppercase());
                     }
                 }
             };
-            v.0.hash(state);
+            v.hash(state);
         }
-        _ => v.0.hash(state),
+        _ => v.hash(state),
     }
 }
 
@@ -315,7 +247,7 @@ where
         let v1 = t1.value_raw();
         let v2 = t2.value_raw();
         if matches!(k1, Iri) {
-            raw_eq(&v1, &v2)
+            v1 == v2
         } else {
             v1.0 == v2.0 && {
                 if matches!(k1, Literal) {
@@ -324,7 +256,7 @@ where
                         (None, None) => {
                             let dt1 = t1.datatype().unwrap();
                             let dt2 = t2.datatype().unwrap();
-                            raw_eq(&dt1.value_raw(), &dt2.value_raw())
+                            dt1.value_raw() == dt2.value_raw()
                         }
                         _ => false,
                     }
@@ -355,7 +287,7 @@ where
         let v1 = t1.value_raw();
         let v2 = t2.value_raw();
         match k1 {
-            Iri => raw_to_bytes(&v1).cmp(raw_to_bytes(&v2)),
+            Iri => v1.bytes().cmp(v2.bytes()),
             Literal => {
                 let tag1 = t1.language();
                 let tag2 = t2.language();
@@ -367,8 +299,9 @@ where
                 } else {
                     let dt1 = t1.datatype().unwrap();
                     let dt2 = t2.datatype().unwrap();
-                    raw_to_bytes(&dt1.value_raw())
-                        .cmp(raw_to_bytes(&dt2.value_raw()))
+                    dt1.value_raw()
+                        .bytes()
+                        .cmp(dt2.value_raw().bytes())
                         .then_with(|| v1.0.cmp(&v2.0))
                 }
             }

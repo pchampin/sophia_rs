@@ -48,8 +48,8 @@
 
 use mownstr::MownStr;
 use sophia_api::term::{
-    term_cmp, term_eq, term_format, term_hash, term_to_string, CopyTerm, SimpleIri, TTerm,
-    TermKind, TryCopyTerm,
+    term_cmp, term_eq, term_format, term_hash, term_to_string, CopyTerm, RawValue, SimpleIri,
+    TTerm, TermKind, TryCopyTerm,
 };
 use std::convert::TryInto;
 use std::fmt::Debug;
@@ -397,7 +397,7 @@ impl<T: TermData> TTerm for Term<T> {
             Variable(_) => TermKind::Variable,
         }
     }
-    fn value_raw(&self) -> (&str, Option<&str>) {
+    fn value_raw(&self) -> RawValue {
         use Term::*;
         match self {
             Iri(i) => i.value_raw(),
@@ -567,14 +567,14 @@ where
 #[cfg(test)]
 pub(crate) mod test;
 
-/// This line re-exorts `same_graph_name` from `sophia_api::term`,
+/// This line re-exports `same_graph_name` from `sophia_api::term`,
 /// to ease transition from older versions of Sophia.
 /// It will eventually be deprecated.
 ///
 /// See [`sophia_api`](https://docs.rs/sophia_api/latest/sophia_api/)
 pub use sophia_api::term::same_graph_name;
 
-/// This module re-exorts things from `sophia_api::ns`,
+/// This module re-exports things from `sophia_api::ns`,
 /// to ease transition from older versions of Sophia.
 /// It will eventually be deprecated.
 ///
@@ -583,7 +583,7 @@ pub mod ns {
     pub use sophia_api::ns::*;
 }
 
-/// This line re-exorts the module `sophia_api::term::matcher`,
+/// This line re-exports the module `sophia_api::term::matcher`,
 /// to ease transition from older versions of Sophia.
 /// It will eventually be deprecated.
 ///

@@ -42,8 +42,8 @@ impl<'a> TTerm for SimpleIri<'a> {
     fn kind(&self) -> TermKind {
         TermKind::Iri
     }
-    fn value_raw(&self) -> (&str, Option<&str>) {
-        (self.ns, self.suffix)
+    fn value_raw(&self) -> RawValue {
+        RawValue(self.ns, self.suffix)
     }
     fn as_dyn(&self) -> &dyn TTerm {
         self

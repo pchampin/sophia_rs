@@ -168,8 +168,8 @@ impl<TD: TermData> TTerm for BlankNode<TD> {
     fn kind(&self) -> TermKind {
         TermKind::BlankNode
     }
-    fn value_raw(&self) -> (&str, Option<&str>) {
-        (self.0.as_ref(), None)
+    fn value_raw(&self) -> RawValue {
+        self.0.as_ref().into()
     }
     fn as_dyn(&self) -> &dyn TTerm {
         self
