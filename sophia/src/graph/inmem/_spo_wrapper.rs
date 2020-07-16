@@ -5,6 +5,7 @@ use std::iter::empty;
 
 use super::*;
 use crate::triple::streaming_mode::{ByTermRefs, StreamedTriple};
+use sophia_api::graph::{GResultTermSet, GTripleSource};
 use sophia_api::term::TTerm;
 
 /// A [`GraphWrapper`](trait.GraphWrapper.html)
@@ -38,7 +39,7 @@ where
 
 impl<T> GraphWrapper for SpoWrapper<T>
 where
-    T: IndexedGraph + Graph<Triple = ByTermRefs<<T as IndexedGraph>::TermData>>,
+    T: IndexedGraph + Graph<Triple = ByTermRefs<Term<<T as IndexedGraph>::TermData>>>,
 {
     type Wrapped = T;
 
@@ -144,35 +145,35 @@ where
 
 impl<T> Graph for SpoWrapper<T>
 where
-    T: IndexedGraph + Graph<Triple = ByTermRefs<<T as IndexedGraph>::TermData>>,
+    T: IndexedGraph + Graph<Triple = ByTermRefs<Term<<T as IndexedGraph>::TermData>>>,
 {
     impl_graph_for_wrapper!();
 }
 
 impl<T> IndexedGraph for SpoWrapper<T>
 where
-    T: IndexedGraph + Graph<Triple = ByTermRefs<<T as IndexedGraph>::TermData>>,
+    T: IndexedGraph + Graph<Triple = ByTermRefs<Term<<T as IndexedGraph>::TermData>>>,
 {
     impl_indexed_graph_for_wrapper!();
 }
 
 impl<T> CollectibleGraph for SpoWrapper<T>
 where
-    T: IndexedGraph + Graph<Triple = ByTermRefs<<T as IndexedGraph>::TermData>>,
+    T: IndexedGraph + Graph<Triple = ByTermRefs<Term<<T as IndexedGraph>::TermData>>>,
 {
-    impl_collectible_graph_for_indexed_graph!();
+    crate::impl_collectible_graph_for_indexed_graph!();
 }
 
 impl<T> MutableGraph for SpoWrapper<T>
 where
-    T: IndexedGraph + Graph<Triple = ByTermRefs<<T as IndexedGraph>::TermData>>,
+    T: IndexedGraph + Graph<Triple = ByTermRefs<Term<<T as IndexedGraph>::TermData>>>,
 {
-    impl_mutable_graph_for_indexed_graph!();
+    crate::impl_mutable_graph_for_indexed_graph!();
 }
 
 impl<T> SetGraph for SpoWrapper<T>
 where
-    T: IndexedGraph + Graph<Triple = ByTermRefs<<T as IndexedGraph>::TermData>>,
+    T: IndexedGraph + Graph<Triple = ByTermRefs<Term<<T as IndexedGraph>::TermData>>>,
     T: SetGraph,
 {
 }
@@ -180,4 +181,4 @@ where
 #[cfg(all(test, feature = "all_tests"))]
 type SpoGraph = super::SpoWrapper<super::LightGraph>;
 #[cfg(all(test, feature = "all_tests"))]
-test_graph_impl!(SpoGraph);
+sophia_api::test_graph_impl!(SpoGraph);

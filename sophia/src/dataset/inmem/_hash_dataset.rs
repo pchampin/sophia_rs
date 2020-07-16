@@ -5,10 +5,10 @@ use std::hash::Hash;
 
 use crate::dataset::indexed::IndexedDataset;
 use crate::dataset::*;
-use crate::quad::stream::QuadSource;
-use crate::quad::streaming_mode::{ByTermRefs, StreamedQuad};
-use crate::triple::stream::StreamResult;
+use sophia_api::quad::stream::QuadSource;
+use sophia_api::quad::streaming_mode::{ByTermRefs, StreamedQuad};
 use sophia_api::term::TTerm;
+use sophia_api::triple::stream::StreamResult;
 use sophia_term::factory::TermFactory;
 use sophia_term::index_map::TermIndexMap;
 use sophia_term::*;
@@ -174,7 +174,7 @@ where
     <I::Factory as TermFactory>::TermData: 'static,
 {
     #[allow(clippy::type_complexity)]
-    type Quad = ByTermRefs<<Self as IndexedDataset>::TermData>;
+    type Quad = ByTermRefs<Term<<Self as IndexedDataset>::TermData>>;
     type Error = Infallible;
 
     fn quads(&self) -> DQuadSource<Self> {
@@ -216,7 +216,7 @@ where
     I::Index: Hash,
     <I::Factory as TermFactory>::TermData: 'static,
 {
-    impl_mutable_dataset_for_indexed_dataset!();
+    crate::impl_mutable_dataset_for_indexed_dataset!();
 }
 
 impl<I> SetDataset for HashDataset<I>

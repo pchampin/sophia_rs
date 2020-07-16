@@ -1,5 +1,4 @@
 use super::*;
-use crate::parser::LocatableResult;
 use sophia_api::term::TTerm;
 
 /// The state of the parser.

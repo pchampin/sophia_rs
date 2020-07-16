@@ -443,3 +443,6 @@ where
         term_format(self.0, fmt)
     }
 }
+
+#[cfg(any(test, feature = "test_macro"))]
+pub mod test;

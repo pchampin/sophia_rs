@@ -6,10 +6,10 @@ use std::result::Result as StdResult;
 use rio_api::model::*;
 use rio_api::parser::*;
 
-use crate::quad::stream::*;
-use crate::quad::streaming_mode::StreamedQuad;
-use crate::triple::stream::*;
-use crate::triple::streaming_mode::StreamedTriple;
+use sophia_api::quad::stream::*;
+use sophia_api::quad::streaming_mode::StreamedQuad;
+use sophia_api::triple::stream::*;
+use sophia_api::triple::streaming_mode::StreamedTriple;
 use sophia_term::literal::convert::AsLiteral;
 use sophia_term::{BoxTerm, RefTerm};
 
@@ -65,13 +65,17 @@ where
     }
 }
 
+pub type RioSourceTriple<'a> = [RefTerm<'a>; 3];
+sophia_api::make_scoped_triple_streaming_mode!(ScopedRioSourceTriple, RioSourceTriple);
+
 impl<T, E> TripleSource for StrictRioSource<T, E>
 where
     T: TriplesParser<Error = E>,
     E: Error + 'static,
 {
     type Error = E;
-    type Triple = crate::triple::streaming_mode::ByRefTerms;
+    //type Triple = crate::triple::streaming_mode::ByValue<RioSourceTriple<'static>>;
+    type Triple = ScopedRioSourceTriple;
 
     fn try_for_some_triple<F, EF>(&mut self, f: &mut F) -> StreamResult<bool, E, EF>
     where
@@ -86,11 +90,11 @@ where
                 }
                 parser
                     .parse_step(&mut |t| -> StdResult<(), MyStreamError<E, EF>> {
-                        f(StreamedTriple::by_ref_terms(
+                        f(StreamedTriple::scoped([
                             rio2refterm(t.subject.into()),
                             rio2refterm(t.predicate.into()),
                             rio2refterm(t.object.into()),
-                        ))
+                        ]))
                         .map_err(MyStreamError::from_sink_error)
                     })
                     .map_err(|e| e.into_stream_error())
@@ -100,13 +104,16 @@ where
     }
 }
 
+pub type RioSourceQuad<'a> = ([RefTerm<'a>; 3], Option<RefTerm<'a>>);
+sophia_api::make_scoped_quad_streaming_mode!(ScopedRioSourceQuad, RioSourceQuad);
+
 impl<T, E> QuadSource for StrictRioSource<T, E>
 where
     T: QuadsParser<Error = E>,
     E: Error + 'static,
 {
     type Error = E;
-    type Quad = crate::quad::streaming_mode::ByRefTerms;
+    type Quad = ScopedRioSourceQuad;
 
     fn try_for_some_quad<F, EF>(&mut self, f: &mut F) -> StreamResult<bool, E, EF>
     where
@@ -121,12 +128,14 @@ where
                 }
                 parser
                     .parse_step(&mut |q| -> StdResult<(), MyStreamError<E, EF>> {
-                        f(StreamedQuad::by_ref_terms(
-                            rio2refterm(q.subject.into()),
-                            rio2refterm(q.predicate.into()),
-                            rio2refterm(q.object.into()),
+                        f(StreamedQuad::scoped((
+                            [
+                                rio2refterm(q.subject.into()),
+                                rio2refterm(q.predicate.into()),
+                                rio2refterm(q.object.into()),
+                            ],
                             q.graph_name.map(|g| rio2refterm(g.into())),
-                        ))
+                        )))
                         .map_err(MyStreamError::from_sink_error)
                     })
                     .map_err(|e| e.into_stream_error())
@@ -157,7 +166,7 @@ where
     E: Error + 'static,
 {
     type Error = E;
-    type Quad = crate::quad::streaming_mode::ByRefTerms;
+    type Quad = ScopedRioSourceQuad;
 
     fn try_for_some_quad<F, EF>(&mut self, f: &mut F) -> StreamResult<bool, E, EF>
     where
@@ -172,12 +181,14 @@ where
                 }
                 parser
                     .parse_step(&mut |q| -> StdResult<(), MyStreamError<E, EF>> {
-                        f(StreamedQuad::by_ref_terms(
-                            rio2refterm(q.subject),
-                            rio2refterm(q.predicate),
-                            rio2refterm(q.object),
+                        f(StreamedQuad::scoped((
+                            [
+                                rio2refterm(q.subject),
+                                rio2refterm(q.predicate),
+                                rio2refterm(q.object),
+                            ],
                             q.graph_name.map(rio2refterm),
-                        ))
+                        )))
                         .map_err(MyStreamError::from_sink_error)
                     })
                     .map_err(|e| e.into_stream_error())

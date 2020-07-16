@@ -32,8 +32,8 @@
 //! [`FastGraph`]: type.FastGraph.html
 //! [`LightGraph`]: type.LightGraph.html
 
-use super::_traits::*;
 use super::indexed::*;
+use sophia_api::graph::{CollectibleGraph, Graph, MutableGraph, SetGraph};
 use sophia_term::factory::*;
 use sophia_term::*;
 
@@ -70,9 +70,9 @@ pub type FastGraph = FastWrapper<GenericGraph<u32, RcTermFactory>>;
 pub type LightGraph = GenericGraph<u32, RcTermFactory>;
 
 #[cfg(test)]
-test_graph_impl!(test_fastg, FastGraph);
+sophia_api::test_graph_impl!(test_fastg, FastGraph);
 #[cfg(all(test, feature = "all_tests"))]
-test_graph_impl!(test_lightg, LightGraph);
+sophia_api::test_graph_impl!(test_lightg, LightGraph);
 
 /// Flavors of Graph implementations with a smaller memory-footprint.
 ///
@@ -89,9 +89,9 @@ pub mod small {
     pub type LightGraph = GenericGraph<u16, RcTermFactory>;
 
     #[cfg(all(test, feature = "all_tests"))]
-    test_graph_impl!(test_fastg, FastGraph);
+    sophia_api::test_graph_impl!(test_fastg, FastGraph);
     #[cfg(all(test, feature = "all_tests"))]
-    test_graph_impl!(test_lightg, LightGraph);
+    sophia_api::test_graph_impl!(test_lightg, LightGraph);
 }
 
 /// Flavors of Graph implementations which are safe to share across threads.
@@ -106,7 +106,7 @@ pub mod sync {
     pub type LightGraph = GenericGraph<u32, ArcTermFactory>;
 
     #[cfg(all(test, feature = "all_tests"))]
-    test_graph_impl!(test_fastg, FastGraph);
+    sophia_api::test_graph_impl!(test_fastg, FastGraph);
     #[cfg(all(test, feature = "all_tests"))]
-    test_graph_impl!(test_lightg, LightGraph);
+    sophia_api::test_graph_impl!(test_lightg, LightGraph);
 }

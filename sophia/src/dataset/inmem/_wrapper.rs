@@ -2,6 +2,7 @@
 
 use super::*;
 use crate::dataset::indexed::IndexedDataset;
+use sophia_api::dataset::{DQuadSource, DResult, DResultTermSet, DTerm};
 use sophia_api::term::TTerm;
 use std::hash::Hash;
 

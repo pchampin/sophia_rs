@@ -2,11 +2,11 @@
 
 use std::io::BufRead;
 
+use crate::parser::rio_common::*;
 use rio_api::parser::ParseError;
 use rio_turtle::{TurtleError, TurtleParser as RioTurtleParser};
-
-use crate::parser::rio_common::*;
-use crate::parser::{Location, TripleParser, WithLocation};
+use sophia_api::parser::{Location, TripleParser, WithLocation};
+use thiserror::Error;
 
 /// Turtle parser based on RIO.
 #[derive(Clone, Debug, Default)]
@@ -25,16 +25,20 @@ impl<B: BufRead> TripleParser<B> for TurtleParser {
     }
 }
 
-impl WithLocation for TurtleError {
+#[derive(Debug, Error)]
+#[error("{0}")]
+pub struct SophiaTurtleError(pub TurtleError);
+
+impl WithLocation for SophiaTurtleError {
     fn location(&self) -> Location {
-        match self.textual_position() {
+        match self.0.textual_position() {
             None => Location::Unknown,
             Some(pos) => Location::from_lico(pos.line_number() + 1, pos.byte_number() + 1),
         }
     }
 }
 
-def_mod_functions_for_bufread_parser!(TurtleParser, TripleParser);
+sophia_api::def_mod_functions_for_bufread_parser!(TurtleParser, TripleParser);
 
 // ---------------------------------------------------------------------------------
 //                                      tests

@@ -97,7 +97,12 @@ macro_rules! impl_mutable_graph_for_indexed_graph {
     () => {
         type MutationError = std::convert::Infallible;
 
-        fn insert<TS_, TP_, TO_>(&mut self, s: &TS_, p: &TP_, o: &TO_) -> MGResult<Self, bool>
+        fn insert<TS_, TP_, TO_>(
+            &mut self,
+            s: &TS_,
+            p: &TP_,
+            o: &TO_,
+        ) -> $crate::graph::MGResult<Self, bool>
         where
             TS_: sophia_api::term::TTerm + ?Sized,
             TP_: sophia_api::term::TTerm + ?Sized,
@@ -105,7 +110,12 @@ macro_rules! impl_mutable_graph_for_indexed_graph {
         {
             Ok(self.insert_indexed(s, p, o).is_some())
         }
-        fn remove<TS_, TP_, TO_>(&mut self, s: &TS_, p: &TP_, o: &TO_) -> MGResult<Self, bool>
+        fn remove<TS_, TP_, TO_>(
+            &mut self,
+            s: &TS_,
+            p: &TP_,
+            o: &TO_,
+        ) -> $crate::graph::MGResult<Self, bool>
         where
             TS_: sophia_api::term::TTerm + ?Sized,
             TP_: sophia_api::term::TTerm + ?Sized,

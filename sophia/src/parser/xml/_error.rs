@@ -1,5 +1,6 @@
-use crate::parser::{LocatableError, Location, Position, WithLocation};
 use quick_xml::Reader;
+use sophia_api::parser::{Location, Position, WithLocation};
+use std::error::Error;
 use std::io::BufRead;
 
 pub type Result<T, E = XmlParserError> = std::result::Result<T, E>;
@@ -35,6 +36,14 @@ impl WithLocation for XmlParserError {
     }
 }
 
+/// An error which can be enriched with location information.
+pub trait LocatableError<L>: Error {
+    type WithLocation: WithLocation + Error;
+
+    /// Add location information to this error.
+    fn locate_with(self, ls: L) -> Self::WithLocation;
+}
+
 impl<'a, BR> LocatableError<&'a Reader<BR>> for quick_xml::Error
 where
     BR: BufRead,
@@ -47,6 +56,24 @@ where
             source: self,
             location,
         }
+    }
+}
+
+/// An extension for `Result`s embedding a [`LocatableError`](trait.LocatableError.html).
+pub trait LocatableResult<T, E, L>
+where
+    E: LocatableError<L>,
+{
+    /// Add location information to the embeded error, if any.
+    fn locate_err_with(self, ls: L) -> Result<T, E::WithLocation>;
+}
+
+impl<T, E, L> LocatableResult<T, E, L> for Result<T, E>
+where
+    E: LocatableError<L>,
+{
+    fn locate_err_with(self, ls: L) -> Result<T, E::WithLocation> {
+        self.map_err(|e| e.locate_with(ls))
     }
 }
 

@@ -9,12 +9,10 @@
 //! [`Write`]: https://doc.rust-lang.org/std/io/trait.Write.html
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
-use std::io;
-
-use crate::quad::{stream::*, Quad};
-
 use super::nt::write_term;
-use super::*;
+use sophia_api::quad::{stream::*, Quad};
+use sophia_api::serializer::*;
+use std::io;
 
 /// N-Quads serializer configuration.
 #[derive(Clone, Debug, Default)]

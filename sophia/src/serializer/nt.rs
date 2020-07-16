@@ -10,12 +10,11 @@
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
 use sophia_api::ns::xsd;
+use sophia_api::serializer::*;
 use sophia_api::term::{TTerm, TermKind};
+use sophia_api::triple::stream::{StreamResult, TripleSource};
+use sophia_api::triple::Triple;
 use std::io;
-
-use crate::triple::stream::*;
-
-use super::*;
 
 /// N-Triples serializer configuration.
 #[derive(Clone, Debug, Default)]
