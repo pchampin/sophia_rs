@@ -120,6 +120,7 @@ pub mod serializer {
 /// and
 /// [`sophia_term`](https://docs.rs/sophia_term/latest/sophia_term/).
 pub mod term {
+    pub use sophia_api::term::*;
     pub use sophia_term::*;
 }
 /// This module re-exports symbols from
