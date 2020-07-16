@@ -75,13 +75,14 @@ where
     fn kind(&self) -> TermKind {
         self.kind
     }
-    fn value_raw(&self) -> (&str, Option<&str>) {
+    fn value_raw(&self) -> RawValue {
         match self.kind {
             TermKind::Iri => (
-                &self.value.as_ref(),
+                self.value.as_ref(),
                 self.extra1.as_ref().map(|s| s.as_ref()),
-            ),
-            _ => (&self.value.as_ref(), None),
+            )
+                .into(),
+            _ => self.value.as_ref().into(),
         }
     }
     fn datatype(&self) -> Option<SimpleIri> {

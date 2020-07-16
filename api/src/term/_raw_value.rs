@@ -12,12 +12,6 @@ use std::hash::{Hash, Hasher};
 pub struct RawValue<'a>(pub &'a str, pub Option<&'a str>);
 
 impl<'a> RawValue<'a> {
-    /// A new raw value from namespace and suffix.
-    ///
-    /// To create a raw value without suffix use `From<&str>` implementation.
-    pub fn new(ns: &'a str, suffix: &'a str) -> Self {
-        RawValue(ns, Some(suffix))
-    }
     /// If this represents an IRI, check if its an absolute one.
     ///
     /// _Note:_ This function merely checks that the resulting string starts
@@ -64,6 +58,12 @@ impl<'a> From<RawValue<'a>> for MownStr<'a> {
 impl<'a> From<&'a str> for RawValue<'a> {
     fn from(s: &'a str) -> Self {
         RawValue(s, None)
+    }
+}
+
+impl<'a> From<(&'a str, Option<&'a str>)> for RawValue<'a> {
+    fn from(t: (&'a str, Option<&'a str>)) -> Self {
+        RawValue(t.0, t.1)
     }
 }
 
