@@ -1,3 +1,31 @@
+0.6.0
+    New features
+    - all core traits and types are now in a separate crate `sophia_api`
+    - new trait TTerm, making the whole API more generic
+    - functions for checking graph and dataset isomorphism
+    - IRI management no has its own crate `sophia_iri`
+    Other major changes
+    - changed method names for getting datasets from a graph
+    Improvements
+    - traits CollectibleGraph and CollectibleDataset are more general
+    - RDF/XML parser is now faster and less buggy
+    Dev
+    - some secondary tests are now hidden behind the `all_tests` feature,
+      making "everyday testing" faster
+
+0.5.3
+    Fixes
+    - regression of test_macros
+
+0.5.2
+    Fixes
+    - fix semantic mismatch in test_dataset_impl macro
+    - sophia_jsonld now depends on the correct version of sophia
+
+0.5.1
+    Fixes
+    - regression of test_macros
+
 0.5.0
     New features
     - new trait CollectibleGraph/CollectibleDataset

@@ -1,6 +1,6 @@
 [package]
 name = "sophia_jsonld"
-version = "0.5.3"
+version = "0.6.0"
 authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
 edition = "2018"
 description = "A Rust toolkit for RDF and Linked Data - JSON-LD serializer"
@@ -15,10 +15,10 @@ keywords = ["rdf", "linked-data", "semantic-web", "json-ld"]
 [dependencies]
 chrono = { version = "0.4.13", optional = true }
 json = "0.12.4"
-sophia = { version = "0.5.3", path = "../sophia" }
-sophia_api = { version = "0.5.3", path = "../api" }
-sophia_iri = { version = "0.5.3", path = "../iri" }
-sophia_term = { version = "0.5.3", path = "../term" }
+sophia = { version = "0.6.0", path = "../sophia" }
+sophia_api = { version = "0.6.0", path = "../api" }
+sophia_iri = { version = "0.6.0", path = "../iri" }
+sophia_term = { version = "0.6.0", path = "../term" }
 thiserror = "1.0.20"
 
 [[bin]]
