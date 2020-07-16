@@ -103,11 +103,13 @@ impl<T: AsRef<str>> std::ops::Deref for Namespace<T> {
     }
 }
 
-/// Helper for creating a "namespace module"
+/// Create a "namespace module"
 /// defining a set of terms within a given IRI space.
 ///
 /// # Tests
 /// This macro also create a test module to check that all created IRIs are valid.
+///
+/// This allows to skip those checks at runtime, keeping the initialization of the namespace fast.
 #[macro_export]
 macro_rules! namespace {
     ($iri_prefix:expr, $($suffix:ident),*; $($r_id:ident, $r_sf:expr),*) => {
@@ -145,7 +147,7 @@ macro_rules! namespace {
     };
 }
 
-/// Helper for creating a term in a "namespace module".
+/// Create a term in a "namespace module".
 /// In general, you should use the [`namespace!`](macro.namespace.html) macro instead.
 ///
 /// # Safety

@@ -120,7 +120,7 @@ where
     }
 }
 
-/// A macro for creating a [streaming mode] for lifetime-parameterized Quad types.
+/// Create a [streaming mode] for lifetime-parameterized Quad types.
 ///
 /// This macro expects two identifiers:
 /// * the first one (`$mode`) will be the identifier of the streaming mode;

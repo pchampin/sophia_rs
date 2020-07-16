@@ -108,7 +108,7 @@ where
     println!(">>>>");
 }
 
-/// Generates a test suite for implementations of
+/// Generate a test suite for an implementation of
 /// [`Dataset`], [`CollectibleDataset`] and [`MutableDataset`].
 ///
 /// If your type only implements [`Dataset`] and [`CollectibleDataset`],
@@ -841,8 +841,8 @@ macro_rules! test_dataset_impl {
     };
 }
 
-/// Generates a test suite for implementations of
-/// [`Dataset`], [`CollectibleDataset`].
+/// Generate a test suite for an implementation of
+/// [`Dataset`] and [`CollectibleDataset`].
 ///
 /// If your type also implements [`MutableDataset`],
 /// you should use [`test_dataset_impl`] instead.

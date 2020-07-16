@@ -133,7 +133,7 @@ where
     assert!(collection.into_iter().any(|i| item == i))
 }
 
-/// Generates a test suite for implementations of
+/// Generate a test suite for an implementation of
 /// [`Graph`], [`CollectibleGraph`] and [`MutableGraph`].
 ///
 /// If your type only implements [`Graph`] and [`CollectibleGraph`],
@@ -591,8 +591,8 @@ macro_rules! test_graph_impl {
     };
 }
 
-/// Generates a test suite for implementations of
-/// [`Graph`], [`CollectibleGraph`].
+/// Generate a test suite for an implementation of
+/// [`Graph`] and [`CollectibleGraph`].
 ///
 /// If your type also implements [`MutableGraph`],
 /// you should use [`test_graph_impl`] instead.
