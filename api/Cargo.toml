@@ -22,7 +22,7 @@ test_macro = ["lazy_static"]
 sophia_iri = { version = "0.5.3", path = "../iri" }
 mownstr = "0.1.1"
 resiter = "0.4.0"
-thiserror = "1.0.15"
+thiserror = "1.0.20"
 
 lazy_static = { version = "1.4.0", optional = true }
 

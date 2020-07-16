@@ -16,12 +16,12 @@ keywords = ["rdf", "linked-data", "semantic-web"]
 [dependencies]
 sophia_api = { version = "0.5.3", path = "../api" }
 sophia_iri = { version = "0.5.3", path = "../iri" }
-oxilangtag = "0.1.0"
+oxilangtag = "0.1.1"
 lazy_static = "1.4.0"
 mownstr = "0.1.1"
-regex = "1.3.7"
-weak-table = "0.2.3"
-thiserror = "1.0.15"
+regex = "1.3.9"
+weak-table = "0.3.0"
+thiserror = "1.0.20"
 
 [dev-dependencies]
 test-case = "1.0.0"
