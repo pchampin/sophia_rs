@@ -14,10 +14,7 @@
 use crate::dataset::*;
 use crate::graph::*;
 use crate::quad::stream::*;
-use crate::triple::{stream::*, *};
-
-pub mod nq;
-pub mod nt;
+use crate::triple::stream::*;
 
 /// A triple serializer writes triples according to a given format.
 pub trait TripleSerializer {

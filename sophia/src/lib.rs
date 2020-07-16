@@ -64,7 +64,6 @@
 //! ```
 
 pub mod query;
-pub mod serializer;
 
 pub mod dataset {
     pub use sophia_api::dataset::*;
@@ -92,6 +91,11 @@ pub mod parser {
 }
 pub mod quad {
     pub use sophia_api::quad::*;
+}
+pub mod serializer {
+    pub use sophia_api::serializer::*;
+    pub mod nq;
+    pub mod nt;
 }
 pub mod term {
     pub use sophia_term::*;

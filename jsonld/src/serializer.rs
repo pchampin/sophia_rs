@@ -2,8 +2,8 @@ use crate::config::*;
 use crate::error::*;
 use json::JsonValue;
 use sophia::quad::stream::*;
-use sophia::serializer::*;
 use sophia::triple::stream::{SinkError, StreamResult};
+use sophia_api::serializer::*;
 
 mod engine;
 mod rdf_object;

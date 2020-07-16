@@ -8,6 +8,6 @@ pub mod graph;
 pub mod ns;
 pub mod parser;
 pub mod quad;
-//pub mod serializer;
+pub mod serializer;
 pub mod term;
 pub mod triple;
