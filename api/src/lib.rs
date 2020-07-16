@@ -6,7 +6,7 @@
 pub mod dataset;
 pub mod graph;
 pub mod ns;
-//pub mod parser;
+pub mod parser;
 pub mod quad;
 //pub mod serializer;
 pub mod term;

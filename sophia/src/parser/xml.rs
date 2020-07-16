@@ -21,7 +21,7 @@ use url::Url;
 use crate::ns::rdf;
 use crate::ns::xsd;
 use crate::ns::Namespace;
-use crate::parser::{LocatableError, TripleParser};
+use sophia_api::parser::TripleParser;
 use sophia_api::term::matcher::TermMatcher;
 use sophia_api::term::SimpleIri;
 use sophia_iri::is_absolute_iri_ref;
@@ -117,7 +117,7 @@ impl<B: BufRead> TripleParser<B> for RdfXmlParser {
     }
 }
 
-def_mod_functions_for_bufread_parser!(RdfXmlParser, TripleParser);
+sophia_api::def_mod_functions_for_bufread_parser!(RdfXmlParser, TripleParser);
 
 // ---
 
@@ -271,9 +271,9 @@ mod test {
     use crate::graph::inmem::HashGraph;
     use crate::graph::inmem::TermIndexMapU;
     use crate::graph::Graph;
-    use crate::parser::TripleParser;
     use crate::triple::stream::TripleSource;
     use crate::triple::Triple;
+    use sophia_api::parser::TripleParser;
     use sophia_api::term::{CopyTerm, TTerm};
     use sophia_term::factory::RcTermFactory;
     use sophia_term::{BoxTerm, Term};

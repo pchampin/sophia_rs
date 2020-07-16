@@ -63,7 +63,6 @@
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 
-pub mod parser;
 pub mod query;
 pub mod serializer;
 
@@ -79,6 +78,17 @@ pub mod graph {
 }
 pub mod ns {
     pub use sophia_api::ns::*;
+}
+pub mod parser {
+    pub use sophia_api::parser::*;
+    pub mod gtrig;
+    pub mod nq;
+    pub mod nt;
+    pub mod rio_common;
+    pub mod trig;
+    pub mod turtle;
+    #[cfg(feature = "xml")]
+    pub mod xml;
 }
 pub mod quad {
     pub use sophia_api::quad::*;

@@ -1,7 +1,7 @@
 //! API for parsing RDF syntaxes.
 
-use sophia_api::quad::stream::QuadSource;
-use sophia_api::triple::stream::TripleSource;
+use crate::quad::stream::QuadSource;
+use crate::triple::stream::TripleSource;
 
 mod _location;
 pub use _location::*;
@@ -94,12 +94,3 @@ macro_rules! def_mod_functions_for_bufread_parser {
         }
     };
 }
-
-pub mod gtrig;
-pub mod nq;
-pub mod nt;
-pub mod rio_common;
-pub mod trig;
-pub mod turtle;
-#[cfg(feature = "xml")]
-pub mod xml;

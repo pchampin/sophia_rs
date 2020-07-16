@@ -2,12 +2,10 @@
 //!
 //! [N-Quads]: https://www.w3.org/TR/n-quads/
 
-use std::io::BufRead;
-
-use rio_turtle::{NQuadsParser as RioNQParser, TurtleError};
-
 use crate::parser::rio_common::*;
-use crate::parser::QuadParser;
+use rio_turtle::{NQuadsParser as RioNQParser, TurtleError};
+use sophia_api::parser::QuadParser;
+use std::io::BufRead;
 
 /// N-Quads parser based on RIO.
 #[derive(Clone, Debug, Default)]
@@ -20,7 +18,7 @@ impl<B: BufRead> QuadParser<B> for NQuadsParser {
     }
 }
 
-def_mod_functions_for_bufread_parser!(NQuadsParser, QuadParser);
+sophia_api::def_mod_functions_for_bufread_parser!(NQuadsParser, QuadParser);
 
 // ---------------------------------------------------------------------------------
 //                                      tests

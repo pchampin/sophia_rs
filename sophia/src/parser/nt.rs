@@ -2,12 +2,10 @@
 //!
 //! [N-Triples]: https://www.w3.org/TR/n-triples/
 
-use std::io::BufRead;
-
-use rio_turtle::{NTriplesParser as RioNTParser, TurtleError};
-
 use crate::parser::rio_common::*;
-use crate::parser::TripleParser;
+use rio_turtle::{NTriplesParser as RioNTParser, TurtleError};
+use sophia_api::parser::TripleParser;
+use std::io::BufRead;
 
 /// N-Triples parser based on RIO.
 #[derive(Clone, Debug, Default)]
@@ -20,7 +18,7 @@ impl<B: BufRead> TripleParser<B> for NTriplesParser {
     }
 }
 
-def_mod_functions_for_bufread_parser!(NTriplesParser, TripleParser);
+sophia_api::def_mod_functions_for_bufread_parser!(NTriplesParser, TripleParser);
 
 // ---------------------------------------------------------------------------------
 //                                      tests

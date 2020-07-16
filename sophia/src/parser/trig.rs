@@ -1,11 +1,9 @@
 //! Adapter for the TriG parser from [RIO](https://github.com/Tpt/rio/blob/master/turtle/src/turtle.rs)
 
-use std::io::BufRead;
-
-use rio_turtle::{TriGParser as RioTriGParser, TurtleError};
-
 use crate::parser::rio_common::*;
-use crate::parser::QuadParser;
+use rio_turtle::{TriGParser as RioTriGParser, TurtleError};
+use sophia_api::parser::QuadParser;
+use std::io::BufRead;
 
 /// TriG parser based on RIO.
 #[derive(Clone, Debug, Default)]
@@ -24,7 +22,7 @@ impl<B: BufRead> QuadParser<B> for TriGParser {
     }
 }
 
-def_mod_functions_for_bufread_parser!(TriGParser, QuadParser);
+sophia_api::def_mod_functions_for_bufread_parser!(TriGParser, QuadParser);
 
 // ---------------------------------------------------------------------------------
 //                                      tests
