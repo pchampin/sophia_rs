@@ -74,7 +74,7 @@ pub trait QuadSource {
     #[inline]
     fn for_some_quad<F>(&mut self, f: &mut F) -> Result<bool, Self::Error>
     where
-        F: FnMut(StreamedQuad<Self::Quad>) -> (),
+        F: FnMut(StreamedQuad<Self::Quad>),
     {
         self.try_for_some_quad(&mut |t| -> Result<(), Self::Error> {
             f(t);
@@ -86,7 +86,7 @@ pub trait QuadSource {
     #[inline]
     fn for_each_quad<F>(&mut self, f: F) -> Result<(), Self::Error>
     where
-        F: FnMut(StreamedQuad<Self::Quad>) -> (),
+        F: FnMut(StreamedQuad<Self::Quad>),
     {
         let mut f = f;
         while self.for_some_quad(&mut f)? {}

@@ -102,7 +102,7 @@ pub trait TripleSource {
     #[inline]
     fn for_some_triple<F>(&mut self, f: &mut F) -> Result<bool, Self::Error>
     where
-        F: FnMut(StreamedTriple<Self::Triple>) -> (),
+        F: FnMut(StreamedTriple<Self::Triple>),
     {
         self.try_for_some_triple(&mut |t| -> Result<(), Self::Error> {
             f(t);
@@ -114,7 +114,7 @@ pub trait TripleSource {
     #[inline]
     fn for_each_triple<F>(&mut self, f: F) -> Result<(), Self::Error>
     where
-        F: FnMut(StreamedTriple<Self::Triple>) -> (),
+        F: FnMut(StreamedTriple<Self::Triple>),
     {
         let mut f = f;
         while self.for_some_triple(&mut f)? {}

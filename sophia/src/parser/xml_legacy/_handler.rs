@@ -435,7 +435,7 @@ where
         // Make the predicate a resource element if an object is present.
         if let Some(o) = o {
             self.parents.push(o.clone());
-            std::mem::replace(self.state.last_mut().unwrap(), ParsingState::Resource);
+            *self.state.last_mut().unwrap() = ParsingState::Resource;
             for (k, v) in attributes.into_iter() {
                 self.triples.push_back(Ok([o.clone(), k, v]));
             }
