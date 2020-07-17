@@ -31,7 +31,7 @@
    foaf:name "Pierre-Antoine Champin".
 
 <https://github.com/pchampin/sophia_rs> doap:release [
-  doap:name "sophia-0.6.0";
-  doap:revision "0.6.0";
-  doap:created "2020-07-16"^^xsd:date;
+  doap:name "sophia-0.6.1";
+  doap:revision "0.6.1";
+  doap:created "2020-07-17"^^xsd:date;
 ] .

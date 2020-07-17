@@ -1,3 +1,8 @@
+0.6.1
+    Minor fixes
+    - updated doc.rs configuration to include all features
+    - updated README
+
 0.6.0
     New features
     - all core traits and types are now in a separate crate `sophia_api`
