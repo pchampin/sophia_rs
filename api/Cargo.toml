@@ -10,6 +10,8 @@ readme = "../README.md"
 license = "CECILL-B"
 keywords = ["rdf", "linked-data", "semantic-web"]
 
+[package.metadata.docs.rs]
+all-features = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
