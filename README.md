@@ -8,20 +8,20 @@ A Rust toolkit for RDF and Linked Data.
 
 It comprises the following crates:
 
-* [`sophia`] is currently the main crate,
-  but will eventually become a "compilation" of the smaller,
-  more specialized crates listed below.
-  Currently, it defines
-  - traits for describing RDF graphs and datasets,
-  - implementation of those traits (in-memory),
-  - traits for serializing and parsing various RDF formats,
-  - implementation of those traits for Turtle-like syntaxes and RDF/XML.
-* [`sophia_api`] currently defines the trait for RDF terms,
-  with its associated types;
-  in the future it will contain all the core traits and types of the Sophia API.
-* [`sophia_iri`] provides functions for validating and resolving IRIs
+* [`sophia_api`] defines a generic API for RDF and linked data,
+  as a set of core traits and types;
+  more precisely, it provides traits for describing
+  - terms, triples and quads,
+  - graphs and datasets,
+  - parsers and serializers.
+* [`sophia_iri`] provides functions for validating and resolving IRIs.
 * [`sophia_term`] defines implementations of the `TTerm` trait.
-* [`sophia_jsonld`] preliminary support for JSON-LD
+* [`sophia`] is the “all-included” crate,
+  re-exporting symbols from all the crates above
+  and also providing additional implementations:
+  - optimized in-memory graphs and datasets,
+  - parsers and serializers for various RDF formats (Turtle-family and RDF/XML).
+* [`sophia_jsonld`] provides preliminary support for JSON-LD.
 
 
 ## Performances
