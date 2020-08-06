@@ -6,7 +6,7 @@ description = "A Rust toolkit for RDF and Linked Data"
 repository = "https://github.com/pchampin/sophia_rs"
 documentation = "https://docs.rs/sophia"
 readme = "../README.md"
-license = "CECILL-C"
+license = "CECILL-B"
 keywords = ["rdf", "linked-data", "semantic-web"]
 edition = "2018"
 
