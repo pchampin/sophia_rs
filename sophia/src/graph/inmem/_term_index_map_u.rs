@@ -90,6 +90,7 @@ impl<T, F> TermIndexMap for TermIndexMapU<T, F>
 where
     T: Unsigned,
     F: TermFactory + Default,
+    <F as TermFactory>::TermData: for<'x> From<&'x str>,
 {
     type Index = T;
     type Factory = F;

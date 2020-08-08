@@ -18,7 +18,7 @@ pub type FTerm<F> = Term<<F as TermFactory>::TermData>;
 /// Implementors may cache terms or data to save memory or accelerate creation.
 pub trait TermFactory {
     /// Data used by terms created by the factory.
-    type TermData: TermData + for<'x> From<&'x str>;
+    type TermData: TermData;
 
     /// Get a `TermData` equal to `txt`.
     ///
@@ -90,12 +90,13 @@ pub trait TermFactory {
     fn clone_term<T>(&mut self, other: &T) -> FTerm<Self>
     where
         T: TTerm + ?Sized,
+        Self::TermData: for<'x> From<&'x str>,
     {
         RefTerm::from(other).clone_map(|txt| self.get_term_data(txt.as_ref()))
     }
 
     /// Release memory that the factory no longer uses.
-    fn shrink_to_fit(&mut self);
+    fn shrink_to_fit(&mut self) {}
 }
 
 /// A `TermFactory` ref-counting the data given out.
@@ -143,6 +144,49 @@ impl TermFactory for ArcTermFactory {
 
     fn shrink_to_fit(&mut self) {
         WeakHashSet::shrink_to_fit(self);
+    }
+}
+
+/// Create [`Term`](../enum.Term.html)s with `Box<str>` data.
+///
+/// # Example
+///
+/// ```
+/// # use std::sync::Arc;
+/// use sophia_term::factory::{TermFactory as _, BoxTermFactory};
+///
+/// let dt: Arc<str> = "http://example.org/test".into();
+/// let _ = BoxTermFactory.iri(dt.as_ref())?;
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+#[allow(non_snake_case)]
+pub fn BoxTermFactory(txt: &str) -> Box<str> {
+    Box::from(txt)
+}
+
+/// Allows to use functions and closures to be used as `TermFactories`.
+///
+/// # Example
+///
+/// ```
+/// use sophia_term::factory::{TermFactory as _, BoxTermFactory};
+///
+/// let mut factory = |txt: &str| { String::from(txt) };
+/// let _ = factory.iri("http://example.org/test")?;
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+impl<F, TD> TermFactory for F
+where
+    F: for<'a> FnMut(&'a str) -> TD,
+    TD: TermData,
+{
+    type TermData = TD;
+
+    fn get_term_data<T>(&mut self, txt: T) -> Self::TermData
+    where
+        T: TermData,
+    {
+        self(txt.as_ref())
     }
 }
 
