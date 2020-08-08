@@ -18,7 +18,7 @@ pub type FTerm<F> = Term<<F as TermFactory>::TermData>;
 /// Implementors may cache terms or data to save memory or accelerate creation.
 pub trait TermFactory {
     /// Data used by terms created by the factory.
-    type TermData: TermData;
+    type TermData: TermData + for<'x> From<&'x str>;
 
     /// Get a `TermData` equal to `txt`.
     ///
@@ -90,7 +90,6 @@ pub trait TermFactory {
     fn clone_term<T>(&mut self, other: &T) -> FTerm<Self>
     where
         T: TTerm + ?Sized,
-        Self::TermData: for<'x> From<&'x str>,
     {
         RefTerm::from(other).clone_map(|txt| self.get_term_data(txt.as_ref()))
     }
@@ -154,7 +153,7 @@ impl TermFactory for ArcTermFactory {
 /// implement your own.
 ///
 /// Some `TermData` can not be directly converted, e.g. `Arc<str> -> Box<str>`.
-/// In these cases the user must manually convert to an intermediate type. In 
+/// In these cases the user must manually convert to an intermediate type. In
 /// this case it would be `&str`.
 ///
 /// # Example
@@ -179,7 +178,7 @@ impl TermFactory for ArcTermFactory {
 pub struct SimpleFactory<TD>(std::marker::PhantomData<TD>);
 
 impl<TD> SimpleFactory<TD> {
-    /// Create a new `SimpleFactory` as this is a zero-sized type this is 
+    /// Create a new `SimpleFactory` as this is a zero-sized type this is
     /// actually a no-op.
     pub fn new() -> Self {
         Default::default()
@@ -192,21 +191,21 @@ impl<TD> Default for SimpleFactory<TD> {
     }
 }
 
-impl<TD> TermFactory for SimpleFactory<TD> 
-where 
-    TD: TermData,
+impl<TD> TermFactory for SimpleFactory<TD>
+where
+    TD: TermData + for<'x> From<&'x str>,
 {
     type TermData = TD;
 
     fn get_term_data<T>(&mut self, txt: T) -> Self::TermData
     where
-        T: TermData + Into<Self::TermData> 
+        T: TermData + Into<Self::TermData>,
     {
         txt.into()
     }
 }
 
-/// Allows to use functions and closures to as `TermFactories`.
+/// Allows to use functions and closures as `TermFactory`s.
 ///
 /// # Example
 ///
@@ -220,7 +219,7 @@ where
 impl<F, TD> TermFactory for F
 where
     F: for<'a> FnMut(&'a str) -> TD,
-    TD: TermData,
+    TD: TermData + for<'x> From<&'x str>,
 {
     type TermData = TD;
 
