@@ -6,12 +6,12 @@
 //! [`GraphNameMatcher`'s implementors lists](trait.GraphNameMatcher.html#implementors).
 //!
 //! For methods using matchers (with examples), see for example
-//! [`Graph::triples_matching`](https://docs.rs/sophia/latest/sophia/graph/trait.Graph.html#method.triples_matching),
-//! [`MutableGraph::remove_matching`](https://docs.rs/sophia/latest/sophia/graph/trait.MutableGraph.html#method.remove_matching),
-//! [`MutableGraph::retain_matching`](https://docs.rs/sophia/latest/sophia/graph/trait.MutableGraph.html#method.retain_matching),
-//! [`Dataset::quads_matching`](https://docs.rs/sophia/latest/sophia/dataset/trait.Dataset.html#method.quads_matching),
-//! [`MutableDataset::remove_matching`](https://docs.rs/sophia/latest/sophia/dataset/trait.MutableDataset.html#method.remove_matching),
-//! [`MutableDataset::retain_matching`](https://docs.rs/sophia/latest/sophia/dataset/trait.MutableDataset.html#method.retain_matching).
+//! [`Graph::triples_matching`](../../graph/trait.Graph.html#method.triples_matching),
+//! [`MutableGraph::remove_matching`](../../graph/trait.MutableGraph.html#method.remove_matching),
+//! [`MutableGraph::retain_matching`](../../graph/trait.MutableGraph.html#method.retain_matching),
+//! [`Dataset::quads_matching`](../../dataset/trait.Dataset.html#method.quads_matching),
+//! [`MutableDataset::remove_matching`](../../dataset/trait.MutableDataset.html#method.remove_matching),
+//! [`MutableDataset::retain_matching`](../../dataset/trait.MutableDataset.html#method.retain_matching).
 //!
 
 use super::*;
@@ -20,7 +20,7 @@ pub use super::_graph_name_matcher::*;
 
 /// Generic trait for matching [term]s.
 ///
-/// [term]: ../enum.Term.html
+/// [term]: ../trait.TTerm.html
 pub trait TermMatcher {
     /// Type of `TTerm` used internally by this matcher.
     type Term: TTerm + ?Sized;
@@ -279,7 +279,7 @@ mod test {
     #[test]
     fn test_aoe_exactly_as_matcher() {
         let m = AnyOrExactly::Exactly(SimpleIri::new("http://champin.net/#pa", None).unwrap());
-        // comparing to a term using a difSimferent term data, and differently cut,
+        // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let t1 = SimpleIri::new("http://champin.net/#", Some("pa")).unwrap();
         let t2 = SimpleIri::new("http://example.org/", None).unwrap();
@@ -307,7 +307,7 @@ mod test {
     fn test_aoer_exactly_as_matcher() {
         let t = SimpleIri::new("http://champin.net/#pa", None).unwrap();
         let m = AnyOrExactlyRef::Exactly(&t);
-        // comparing to a term using a difSimferent term data, and differently cut,
+        // comparing to a term using a different term data, and differently cut,
         // to make the test less obvious
         let t1 = SimpleIri::new("http://champin.net/#", Some("pa")).unwrap();
         let t2 = SimpleIri::new("http://example.org/", None).unwrap();

@@ -55,15 +55,15 @@ pub use simple_iri::SimpleIri;
 ///
 /// * if it implements [`Hash`](https://doc.rust-lang.org/std/hash/trait.Hash.html),
 ///   it must be consistent with (or, even better, based on)
-///   [`term_hash`](./function.term_hash.html);
+///   [`term_hash`](./fn.term_hash.html);
 ///
 /// * if it implements [`PartialEq`](https://doc.rust-lang.org/std/cmp/trait.PartialEq.html),
 ///   it must be consistent with (or, even better, based on)
-///   [`term_eq`](./function.term_eq.html);
+///   [`term_eq`](./fn.term_eq.html);
 ///
 /// * if it implements [`PartialCmp`](https://doc.rust-lang.org/std/cmp/trait.PartialCmp.html)
 ///   it must be consistent with (or, even better, based on)
-///   [`term_cmp`](./function.term_cmp.html);
+///   [`term_cmp`](./fn.term_cmp.html);
 pub trait TTerm {
     /// Returns the kind of this term (IRI, literal, blank node, variable).
     fn kind(&self) -> TermKind;
@@ -145,7 +145,7 @@ pub trait TTerm {
     fn as_dyn(&self) -> &dyn TTerm;
 }
 
-/// Any [`TTerm`](./trait.TTerm.html) belongs to one those kinds.
+/// Any [`TTerm`](./trait.TTerm.html) belongs to one of those kinds.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub enum TermKind {
     /// RDF [IRI](https://www.w3.org/TR/rdf11-concepts/#section-IRIs),

@@ -1,5 +1,5 @@
 //! A quad expresses a single fact within a context.
-//! Quads are like RDF `triples`(../triple/index.html)
+//! Quads are like RDF [`triples`](../triple/index.html)
 //! augmented with an optional graph name.
 //!
 //! They are the individual statements of an RDF `dataset`(../dataset/index.html).

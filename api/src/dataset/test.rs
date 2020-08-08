@@ -119,18 +119,18 @@ where
 /// It accepts the following parameters:
 /// * `module_name`: the name of the module to generate (defaults to `test`);
 /// * `dataset_impl`: the type to test, implementing [`Dataset`], [`CollectibleDataset`] and [`MutableDataset`];
-/// * `is_set`: a boolean, indicating if `dataset_impl` implements [`SetDataset`]
+/// * `is_set`: a Boolean, indicating if `dataset_impl` implements [`SetDataset`]
 ///   (defaults to `true`);
-/// * `is_gen`: a boolean, indicating if `dataset_impl` supports the [generalized model]
+/// * `is_gen`: a Boolean, indicating if `dataset_impl` supports the [generalized model]
 ///   (defaults to `true`).
-/// * `dataset_collector`: a function used to create an empy instance of `dataset_impl`
+/// * `dataset_collector`: a function used to create an empty instance of `dataset_impl`
 ///   (defaults to `dataset_impl::from_quad_source`);
 /// * `mt` is used internally, do not touch it...
 ///
 /// [`Dataset`]: dataset/trait.Dataset.html
 /// [`CollectibleDataset`]: dataset/trait.CollectibleDataset.html
 /// [`MutableDataset`]: dataset/trait.MutableDataset.html
-/// [`test_immutable_dataset_impl`]: ./macro.test_immutable_dataset_impl
+/// [`test_immutable_dataset_impl`]: ./macro.test_immutable_dataset_impl.html
 /// [`SetDataset`]: dataset/trait.SetDataset.html
 /// [generalized model]: ./index.html
 #[macro_export]
@@ -852,9 +852,9 @@ macro_rules! test_dataset_impl {
 /// It accepts the following parameters:
 /// * `module_name`: the name of the module to generate (defaults to `test`);
 /// * `dataset_impl`: the type to test, implementing [`Dataset`] and [`CollectibleDataset`];
-/// * `is_set`: a boolean, indicating if `dataset_impl` implements [`SetDataset`]
+/// * `is_set`: a Boolean, indicating if `dataset_impl` implements [`SetDataset`]
 ///   (defaults to `true`);
-/// * `is_gen`: a boolean, indicating if `dataset_impl` supports the [generalized model]
+/// * `is_gen`: a Boolean, indicating if `dataset_impl` supports the [generalized model]
 ///   (defaults to `true`);
 /// * `dataset_collector`: a function used to collect quads into an instance of `dataset_impl`
 ///   (defaults to `dataset_impl::from_quad_source`);
@@ -862,7 +862,7 @@ macro_rules! test_dataset_impl {
 /// [`Dataset`]: dataset/trait.Dataset.html
 /// [`CollectibleDataset`]: dataset/trait.CollectibleDataset.html
 /// [`MutableDataset`]: dataset/trait.MutableDataset.html
-/// [`test_dataset_impl`]: ./macro.test_dataset_impl
+/// [`test_dataset_impl`]: ./macro.test_dataset_impl.html
 /// [`SetDataset`]: dataset/trait.SetDataset.html
 /// [generalized model]: ./index.html
 #[macro_export]

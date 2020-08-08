@@ -5,7 +5,7 @@ use crate::term::*;
 
 /// Generic trait for matching graph names, *i.e.* optional [term]s.
 ///
-/// [term]: ../enum.Term.html
+/// [term]: ../trait.TTerm.html
 pub trait GraphNameMatcher {
     /// Type of `TTerm` used internally by this matcher.
     type Term: TTerm + ?Sized;

@@ -58,7 +58,7 @@ pub use self::_iterator::*;
 mod _map;
 pub use self::_map::*;
 
-/// Type alias for referencing the `Term` used in a `TripleSoDataurce`.
+/// Type alias for referencing the `Term` used in a `TripleSource`.
 pub type TSTerm<S> =
     <<<S as TripleSource>::Triple as TripleStreamingMode>::UnsafeTriple as UnsafeTriple>::Term;
 
@@ -72,9 +72,9 @@ pub trait TripleSource {
     /// The type of errors produced by this source.
     type Error: 'static + Error;
 
-    /// Determine the type of [`Triple`](../triple/trait.Triple.html)s
+    /// Determine the type of [`Triple`](../trait.Triple.html)s
     /// that this triple source yields.
-    /// (see [`streaming_mode`](../triple/streaming_mode/index.html)
+    /// (see [`streaming_mode`](../streaming_mode/index.html)
     type Triple: TripleStreamingMode;
 
     /// Call f for at least one triple from this triple source, if any.
