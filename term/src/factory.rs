@@ -147,29 +147,71 @@ impl TermFactory for ArcTermFactory {
     }
 }
 
-/// Create [`Term`](../enum.Term.html)s with `Box<str>` data.
+/// Simple `TermFactory` that directly builds from any `TermData`.
+///
+/// No caching or other smart actions are performed. For these use
+/// [`ArcTermFactory`], [`RcTermFactory`], [functions and closures] or
+/// implement your own.
+///
+/// Some `TermData` can not be directly converted, e.g. `Arc<str> -> Box<str>`.
+/// In these cases the user must manually convert to an intermediate type. In 
+/// this case it would be `&str`.
 ///
 /// # Example
 ///
 /// ```
 /// # use std::sync::Arc;
-/// use sophia_term::factory::{TermFactory as _, BoxTermFactory};
+/// use sophia_term::factory::{TermFactory as _, SimpleFactory};
 ///
-/// let dt: Arc<str> = "http://example.org/test".into();
-/// let _ = BoxTermFactory.iri(dt.as_ref())?;
+/// let dt1: Arc<str> = "http://example.org/test".into();
+/// let dt2: String = "http://example.org/test".into();
+/// let mut box_terms = SimpleFactory::<Box<str>>::new();
+/// let _ = box_terms.iri(dt1.as_ref())?;
+/// let _ = box_terms.iri(dt2)?;
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
-#[allow(non_snake_case)]
-pub fn BoxTermFactory(txt: &str) -> Box<str> {
-    Box::from(txt)
+///
+/// [`ArcTermFactory`]: ./type.ArcTermFactory.html
+/// [`RcTermFactory`]: ./type.RcTermFactory.html
+/// [functions and closures]: ./trait.TermFactory.html#impl-TermFactory-2
+// The link to the implementation on `FnMut` seems easily to break. Should be inspected from time to time.
+#[derive(Debug, Copy, Clone)]
+pub struct SimpleFactory<TD>(std::marker::PhantomData<TD>);
+
+impl<TD> SimpleFactory<TD> {
+    /// Create a new `SimpleFactory` as this is a zero-sized type this is 
+    /// actually a no-op.
+    pub fn new() -> Self {
+        Default::default()
+    }
 }
 
-/// Allows to use functions and closures to be used as `TermFactories`.
+impl<TD> Default for SimpleFactory<TD> {
+    fn default() -> Self {
+        SimpleFactory(std::marker::PhantomData)
+    }
+}
+
+impl<TD> TermFactory for SimpleFactory<TD> 
+where 
+    TD: TermData,
+{
+    type TermData = TD;
+
+    fn get_term_data<T>(&mut self, txt: T) -> Self::TermData
+    where
+        T: TermData + Into<Self::TermData> 
+    {
+        txt.into()
+    }
+}
+
+/// Allows to use functions and closures to as `TermFactories`.
 ///
 /// # Example
 ///
 /// ```
-/// use sophia_term::factory::{TermFactory as _, BoxTermFactory};
+/// use sophia_term::factory::TermFactory as _;
 ///
 /// let mut factory = |txt: &str| { String::from(txt) };
 /// let _ = factory.iri("http://example.org/test")?;
