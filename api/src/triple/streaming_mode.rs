@@ -47,7 +47,7 @@
 //! [`Triple`] (see its documentation for more details).
 //!
 //! NB: actually, another mode exists,
-//! but is specifically designed for the [`graph::adapter`](../../graph/adapter/index.html) module,
+//! but is specifically designed for the [`dataset::adapter`](../../dataset/adapter/index.html) module,
 //! should never be needed in other contexts.
 //!
 //! [`ByRef<T>`]: struct.ByRef.html

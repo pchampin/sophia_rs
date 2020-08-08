@@ -15,9 +15,9 @@ use crate::term::TTerm;
 use super::GraphAsDatasetError;
 
 /// The adapter returned by
-/// * [`Graph::as_dataset`](../trait.Graph.html#method.as_dataset)
-/// * [`Graph::as_dataset_mut`](../trait.Graph.html#method.as_dataset_mut)
-/// * [`Graph::into_dataset`](../trait.Graph.html#method.into_dataset)
+/// * [`Graph::as_dataset`](../../graph/trait.Graph.html#method.as_dataset)
+/// * [`Graph::as_dataset_mut`](../../graph/trait.Graph.html#method.as_dataset_mut)
+/// * [`Graph::into_dataset`](../../graph/trait.Graph.html#method.into_dataset)
 pub struct GraphAsDataset<G: ?Sized, H = G>(H, PhantomData<G>);
 
 impl<G: ?Sized, H> GraphAsDataset<G, H> {

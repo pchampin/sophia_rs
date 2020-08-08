@@ -61,9 +61,6 @@ impl fmt::Display for Position {
 }
 
 /// This trait is meant to be implemented by errors raised by parsers.
-///
-/// See also [`LocatableError`](./trait.LocatableError.html)
-/// and [`LocatableResult`](./trait.LocatableResult.html).
 pub trait WithLocation {
     fn location(&self) -> Location;
 }

@@ -6,9 +6,9 @@ use std::error::Error;
 /// _Note:_ MGE is the [mutation error] of the wrapped [`MutableGraph`].
 ///
 /// [adapter]: ./struct.GraphAsDataset.html
-/// [`MutableGraph`]: ../trait.MutableGraph.html
-/// [`MutableDataset`]: ../../dataset/trait.MutableDataset.html
-/// [mutation error]: ../trait.MutableGraph.html#associatedtype.MutationError
+/// [`MutableGraph`]: ../../graph/trait.MutableGraph.html
+/// [`MutableDataset`]: ../trait.MutableDataset.html
+/// [mutation error]: ../../graph/trait.MutableGraph.html#associatedtype.MutationError
 #[derive(Debug, thiserror::Error)]
 pub enum GraphAsDatasetError<MGE: 'static + Error> {
     /// Raised when the [adapter] is requested to modify a triple in a named

@@ -47,7 +47,7 @@ pub trait IndexedDataset {
     /// As a consequence, this methods returns *an option of option* :
     /// * `None` means that given index is *not* associated to any graph name,
     /// * `Some(None)` means that the given index is associated to the default graph,
-    /// * `Some(Some(term))` means that given index is associetd to a proper graph name.
+    /// * `Some(Some(term))` means that given index is associated to a proper graph name.
     #[allow(clippy::option_option)]
     fn get_graph_name(&self, i: Self::Index) -> Option<Option<&Term<Self::TermData>>>;
 
@@ -85,7 +85,7 @@ pub trait IndexedDataset {
 /// Defines the implementation of [`CollectibleDataset`] for [`IndexedDataset`].
 ///
 /// [`CollectibleDataset`]: dataset/trait.CollectibleDataset.html
-/// [`IndexedDataset`]: dataset/indexed/trait.IndexedGraph.html
+/// [`IndexedDataset`]: dataset/indexed/trait.IndexedDataset.html
 #[macro_export]
 macro_rules! impl_collectible_dataset_for_indexed_dataset {
     ($indexed_mutable_dataset: ty) => {

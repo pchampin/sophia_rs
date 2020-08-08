@@ -44,9 +44,9 @@ pub trait QuadSource {
     /// The type of errors produced by this source.
     type Error: 'static + Error;
 
-    /// Determine the type of [`Quad`](../quad/trait.Quad.html)s
+    /// Determine the type of [`Quad`](../trait.Quad.html)s
     /// that this quad source yields.
-    /// (see [`streaming_mode`](../quad/streaming_mode/index.html)
+    /// (see [`streaming_mode`](../streaming_mode/index.html)
     type Quad: QuadStreamingMode;
 
     /// Call f for at least one quad from this quad source, if any.

@@ -1,4 +1,4 @@
-//! Minimal implementation of [`TTerm`](../trait.TTerm.html),
+//! Minimal implementation of [`TTerm`](https://docs.rs/sophia_api/latest/sophia_api/term/trait.TTerm.html),
 //! for representing datatype IRIs of literals.
 use super::*;
 use sophia_iri::error::{InvalidIri, Result};

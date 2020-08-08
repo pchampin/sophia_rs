@@ -155,7 +155,7 @@ where
 /// [`Graph`]: graph/trait.Graph.html
 /// [`CollectibleGraph`]: graph/trait.CollectibleGraph.html
 /// [`MutableGraph`]: graph/trait.MutableGraph.html
-/// [`test_immutable_graph_impl`]: ./macro.test_immutable_graph_impl
+/// [`test_immutable_graph_impl`]: ./macro.test_immutable_graph_impl.html
 /// [`SetGraph`]: graph/trait.SetGraph.html
 /// [generalized model]: ./index.html
 #[macro_export]
@@ -612,7 +612,7 @@ macro_rules! test_graph_impl {
 /// [`Graph`]: graph/trait.Graph.html
 /// [`CollectibleGraph`]: graph/trait.CollectibleGraph.html
 /// [`MutableGraph`]: graph/trait.MutableGraph.html
-/// [`test_graph_impl`]: ./macro.test_graph_impl
+/// [`test_graph_impl`]: ./macro.test_graph_impl.html
 /// [`SetGraph`]: graph/trait.SetGraph.html
 /// [generalized model]: ./index.html
 #[macro_export]
