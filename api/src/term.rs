@@ -90,8 +90,9 @@ pub trait TTerm {
 
     /// Return the datatype IRI of this term if it is a literal.
     ///
-    /// # Note to implementors
-    /// Should not be overridden; must be consistent with [`datatype_raw`].
+    /// NB: *all* literals have a datatype,
+    /// even simple literals (whose implicit type is `xsd:string`)
+    /// and language tagged strings (whose implicit type is `rdf:langString`).
     fn datatype(&self) -> Option<SimpleIri> {
         None
     }
