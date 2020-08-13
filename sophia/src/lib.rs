@@ -63,6 +63,8 @@
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 
+#![deny(missing_docs)]
+
 pub mod query;
 
 /// This module re-exports symbols from

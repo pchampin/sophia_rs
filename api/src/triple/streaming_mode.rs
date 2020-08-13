@@ -195,7 +195,8 @@ where
 /// [`Triple`]: triple/trait.Triple.html
 #[macro_export]
 macro_rules! make_scoped_triple_streaming_mode {
-    ($mode: ident, $tt: ident) => {
+    ($(#[$attrs: meta])* $mode: ident, $tt: ident) => {
+        $(#[$attrs])*
         #[derive(Debug)]
         pub struct $mode(std::marker::PhantomData<$tt<'static>>);
         impl $crate::triple::streaming_mode::TripleStreamingMode for $mode {
