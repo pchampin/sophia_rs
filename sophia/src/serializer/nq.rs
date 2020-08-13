@@ -21,13 +21,14 @@ pub struct NqConfig {
 }
 
 impl NqConfig {
+    /// Set the ascii configuration.
     pub fn set_ascii(&mut self, ascii: bool) -> &mut Self {
         self.ascii = ascii;
         self
     }
 }
 
-// N-Quads serializer.
+/// N-Quads serializer.
 pub struct NqSerializer<W> {
     config: NqConfig,
     write: W,

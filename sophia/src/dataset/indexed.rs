@@ -20,6 +20,8 @@ use sophia_term::*;
 pub trait IndexedDataset {
     /// The type used to represent terms internally.
     type Index: Copy + Eq + Hash;
+
+    /// The typed used to represent the term data.
     type TermData: TermData + 'static;
 
     /// Construct a new empty dataset, provisioning for storing `capacity` quads.

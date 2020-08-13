@@ -37,6 +37,7 @@ where
     I: TermIndexMap,
     I::Index: Hash,
 {
+    /// Build a new dataset, storing its terms in a `TermIndexMap` and its triples in a Hashset.
     pub fn new() -> HashDataset<I> {
         HashDataset {
             terms: I::default(),
@@ -44,11 +45,13 @@ where
         }
     }
 
+    /// Returns the number of quads in the dataset.
     #[inline]
     pub fn len(&self) -> usize {
         self.quads.len()
     }
 
+    /// Checks if the dataset is empty.
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.quads.is_empty()

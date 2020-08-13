@@ -15,7 +15,9 @@ use sophia_term::{BoxTerm, RefTerm};
 
 /// TripleSource / QuadSource adapter for RIO TripleParser / QuadParser
 pub enum StrictRioSource<T, E> {
+    /// A RIO TripleParser / QuadParser
     Parser(T),
+    /// An error in acquiring the RIO TripleParser / QuadParser
     Error(Option<E>),
 }
 
@@ -65,6 +67,7 @@ where
     }
 }
 
+/// A RIO source triple.
 pub type RioSourceTriple<'a> = [RefTerm<'a>; 3];
 sophia_api::make_scoped_triple_streaming_mode!(ScopedRioSourceTriple, RioSourceTriple);
 
@@ -104,6 +107,7 @@ where
     }
 }
 
+/// A RIO source quad.
 pub type RioSourceQuad<'a> = ([RefTerm<'a>; 3], Option<RefTerm<'a>>);
 sophia_api::make_scoped_quad_streaming_mode!(ScopedRioSourceQuad, RioSourceQuad);
 
@@ -147,7 +151,9 @@ where
 
 /// QuadSource adapter for RIO GeneralizedQuadParser
 pub enum GeneralizedRioSource<T, E> {
+    /// A RIO GeneralizedQuadParser
     Parser(T),
+    /// An error in acquiring the RIO GeneralizedQuadParser
     Error(Option<E>),
 }
 

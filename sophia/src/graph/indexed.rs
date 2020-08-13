@@ -22,6 +22,8 @@ use sophia_term::*;
 pub trait IndexedGraph {
     /// The type used to represent terms internally.
     type Index: Copy + Eq + Hash;
+
+    /// The type used to represent the term data.
     type TermData: TermData + 'static;
 
     /// Construct a new empty graph, provisioning for storing `capacity` triples.
