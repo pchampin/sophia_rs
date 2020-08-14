@@ -151,7 +151,7 @@ macro_rules! test_dataset_impl {
         $crate::test_dataset_impl!($module_name, $dataset_impl, $is_set, $is_gen, $dataset_collector, {
             // these tests will only be performed for implementations of `MutableDataset`
             #[test]
-            fn test_simple_mutations() -> MDResult<$dataset_impl, ()> {
+            fn test_simple_mutations() -> Result<(), Box<dyn std::error::Error>> {
                 let mut d: $dataset_impl = $dataset_collector(no_quad()).unwrap();
                 assert_eq!(d.quads().count(), 0);
                 assert!(MutableDataset::insert(
@@ -160,7 +160,7 @@ macro_rules! test_dataset_impl {
                     &rdf::type_,
                     &rdfs::Class,
                     DG.as_ref(),
-                )?);
+                )? || !$is_set);
                 assert_eq!(d.quads().count(), 1);
                 assert!(MutableDataset::insert(
                     &mut d,
@@ -168,7 +168,7 @@ macro_rules! test_dataset_impl {
                     &rdfs::subClassOf,
                     &*C2,
                     GN1.as_ref(),
-                )?);
+                )? || !$is_set);
                 assert_eq!(d.quads().count(), 2);
                 assert!(MutableDataset::remove(
                     &mut d,
@@ -176,7 +176,7 @@ macro_rules! test_dataset_impl {
                     &rdf::type_,
                     &rdfs::Class,
                     DG.as_ref(),
-                )?);
+                )? || !$is_set);
                 assert_eq!(d.quads().count(), 1);
                 assert!(MutableDataset::remove(
                     &mut d,
@@ -184,13 +184,13 @@ macro_rules! test_dataset_impl {
                     &rdfs::subClassOf,
                     &*C2,
                     GN1.as_ref(),
-                )?);
+                )? || !$is_set);
                 assert_eq!(d.quads().count(), 0);
                 Ok(())
             }
 
             #[test]
-            fn test_no_duplicate() -> MDResult<$dataset_impl, ()> {
+            fn test_no_duplicate() -> Result<(), Box<dyn std::error::Error>> {
                 if $is_set {
                     let mut d: $dataset_impl = $dataset_collector(no_quad()).unwrap();
                     assert_eq!(d.quads().count(), 0);
@@ -200,7 +200,7 @@ macro_rules! test_dataset_impl {
                         &rdf::type_,
                         &rdfs::Class,
                         DG.as_ref(),
-                    )?);
+                    )? || !$is_set);
                     assert_eq!(d.quads().count(), 1);
                     assert!(!MutableDataset::insert(
                         &mut d,
@@ -208,7 +208,7 @@ macro_rules! test_dataset_impl {
                         &rdf::type_,
                         &rdfs::Class,
                         DG.as_ref(),
-                    )?);
+                    )? || !$is_set);
                     assert_eq!(d.quads().count(), 1);
                     assert!(MutableDataset::remove(
                         &mut d,
@@ -216,7 +216,7 @@ macro_rules! test_dataset_impl {
                         &rdf::type_,
                         &rdfs::Class,
                         DG.as_ref(),
-                    )?);
+                    )? || !$is_set);
                     assert_eq!(d.quads().count(), 0);
                     assert!(!MutableDataset::remove(
                         &mut d,
@@ -224,7 +224,7 @@ macro_rules! test_dataset_impl {
                         &rdf::type_,
                         &rdfs::Class,
                         DG.as_ref(),
-                    )?);
+                    )? || !$is_set);
                     assert_eq!(d.quads().count(), 0);
                 } else {
                     println!("effectively skipped, since is_set is false");
@@ -233,7 +233,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_different_graphs_do_not_count_as_duplicate() -> MDResult<$dataset_impl, ()> {
+            fn test_different_graphs_do_not_count_as_duplicate() -> Result<(), Box<dyn std::error::Error>> {
                 let mut d: $dataset_impl = $dataset_collector(no_quad()).unwrap();
                 assert_eq!(d.quads().count(), 0);
                 assert!(MutableDataset::insert(
@@ -242,7 +242,7 @@ macro_rules! test_dataset_impl {
                     &rdf::type_,
                     &rdfs::Class,
                     DG.as_ref(),
-                )?);
+                )? || !$is_set);
                 assert_eq!(d.quads().count(), 1);
                 assert!(MutableDataset::insert(
                     &mut d,
@@ -250,7 +250,7 @@ macro_rules! test_dataset_impl {
                     &rdf::type_,
                     &rdfs::Class,
                     GN1.as_ref(),
-                )?);
+                )? || !$is_set);
                 assert_eq!(d.quads().count(), 2);
                 assert!(MutableDataset::remove(
                     &mut d,
@@ -258,7 +258,7 @@ macro_rules! test_dataset_impl {
                     &rdf::type_,
                     &rdfs::Class,
                     DG.as_ref(),
-                )?);
+                )? || !$is_set);
                 assert_eq!(d.quads().count(), 1);
                 assert!(MutableDataset::remove(
                     &mut d,
@@ -266,7 +266,7 @@ macro_rules! test_dataset_impl {
                     &rdf::type_,
                     &rdfs::Class,
                     GN1.as_ref(),
-                )?);
+                )? || !$is_set);
                 assert_eq!(d.quads().count(), 0);
                 Ok(())
             }
@@ -298,7 +298,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_remove_matching() -> MDResult<$dataset_impl, ()> {
+            fn test_remove_matching() -> Result<(), Box<dyn std::error::Error>> {
                 let mut d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let o_matcher = [&*C1, &*C2];
@@ -308,7 +308,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_retain_matching() -> MDResult<$dataset_impl, ()> {
+            fn test_retain_matching() -> Result<(), Box<dyn std::error::Error>> {
                 let mut d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let o_matcher = [&*C1, &*C2];
@@ -333,7 +333,7 @@ macro_rules! test_dataset_impl {
             use super::*;
 
             #[test]
-            fn test_quads() -> MDResult<$dataset_impl, ()> {
+            fn test_quads() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads();
@@ -350,7 +350,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_s() -> MDResult<$dataset_impl, ()> {
+            fn test_quads_with_s() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_s(&*C2);
@@ -379,7 +379,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_p() -> MDResult<$dataset_impl, ()> {
+            fn test_quads_with_p() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_p(&rdfs::subClassOf);
@@ -402,7 +402,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_o() -> MDResult<$dataset_impl, ()> {
+            fn test_quads_with_o() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_o(&*I2B);
@@ -419,7 +419,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_g() -> MDResult<$dataset_impl, ()> {
+            fn test_quads_with_g() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_g(GN1.as_ref());
@@ -436,7 +436,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_sp() -> MDResult<$dataset_impl, ()> {
+            fn test_quads_with_sp() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_sp(&*C2, &rdf::type_);
@@ -459,7 +459,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_so() -> MDResult<$dataset_impl, ()> {
+            fn test_quads_with_so() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_so(&*C2, &*C1);
@@ -476,7 +476,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_po() -> MDResult<$dataset_impl, ()> {
+            fn test_quads_with_po() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_po(&rdf::type_, &rdfs::Class);
@@ -508,7 +508,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_sg() -> MDResult<$dataset_impl, ()> {
+            fn test_quads_with_sg() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_sg(&*C2, GN1.as_ref());
@@ -525,7 +525,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_pg() -> MDResult<$dataset_impl, ()> {
+            fn test_quads_with_pg() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_pg(&rdf::type_, GN1.as_ref());
@@ -542,7 +542,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_og() -> MDResult<$dataset_impl, ()> {
+            fn test_quads_with_og() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_og(&*C1, GN1.as_ref());
@@ -559,7 +559,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_spo() -> MDResult<$dataset_impl, ()> {
+            fn test_quads_with_spo() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_spo(&*C1, &rdf::type_, &rdfs::Class);
@@ -579,7 +579,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_spg() -> MDResult<$dataset_impl, ()> {
+            fn test_quads_with_spg() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_spg(&*C1, &rdf::type_, DG.as_ref());
@@ -602,7 +602,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_sog() -> MDResult<$dataset_impl, ()> {
+            fn test_quads_with_sog() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_sog(&*C1, &rdfs::Class, DG.as_ref());
@@ -625,7 +625,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_pog() -> MDResult<$dataset_impl, ()> {
+            fn test_quads_with_pog() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_pog(&rdf::type_, &rdfs::Class, DG.as_ref());
@@ -651,7 +651,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_with_spog() -> MDResult<$dataset_impl, ()> {
+            fn test_quads_with_spog() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let quads = d.quads_with_spog(&*C1, &rdf::type_, &rdfs::Class, DG.as_ref());
@@ -677,7 +677,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_contains() -> MDResult<$dataset_impl, ()> {
+            fn test_contains() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
                 assert!(Dataset::contains(&d, &*C2, &rdfs::subClassOf, &*C1, GN1.as_ref())?);
                 assert!(!Dataset::contains(&d, &*C1, &rdfs::subClassOf, &*C2, GN1.as_ref())?);
@@ -685,7 +685,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_quads_matching() -> MDResult<$dataset_impl, ()> {
+            fn test_quads_matching() ->  Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let p_matcher = [&rdf::type_, &rdfs::domain];
@@ -712,7 +712,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_subjects() -> MDResult<$dataset_impl, ()> {
+            fn test_subjects() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let subjects = d.subjects().unwrap();
@@ -729,7 +729,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_predicates() -> MDResult<$dataset_impl, ()> {
+            fn test_predicates() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let predicates = d.predicates().unwrap();
@@ -744,7 +744,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_objects() -> MDResult<$dataset_impl, ()> {
+            fn test_objects() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let objects = d.objects().unwrap();
@@ -760,7 +760,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_graph_names() -> MDResult<$dataset_impl, ()> {
+            fn test_graph_names() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let graph_names = d.graph_names().unwrap();
@@ -771,7 +771,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_iris() -> MDResult<$dataset_impl, ()> {
+            fn test_iris() -> Result<(), Box<dyn std::error::Error>> {
                 let d = if $is_gen {
                     $dataset_collector(generalized_node_types_quads()).unwrap()
                 } else {
@@ -786,7 +786,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_bnodes() -> MDResult<$dataset_impl, ()> {
+            fn test_bnodes() -> Result<(), Box<dyn std::error::Error>> {
                 let d = if $is_gen {
                     $dataset_collector(generalized_node_types_quads()).unwrap()
                 } else {
@@ -801,7 +801,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_literals() -> MDResult<$dataset_impl, ()> {
+            fn test_literals() -> Result<(), Box<dyn std::error::Error>> {
                 let d = if $is_gen {
                     $dataset_collector(generalized_node_types_quads()).unwrap()
                 } else {
@@ -817,7 +817,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn test_variables() -> MDResult<$dataset_impl, ()> {
+            fn test_variables() -> Result<(), Box<dyn std::error::Error>> {
                 if $is_gen {
                     let d: $dataset_impl = $dataset_collector(generalized_node_types_quads()).unwrap();
 

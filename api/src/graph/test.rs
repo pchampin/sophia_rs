@@ -176,7 +176,7 @@ macro_rules! test_graph_impl {
         $crate::test_graph_impl!($module_name, $graph_impl, $is_set, $is_gen, $graph_collector, {
             // these tests will only be performed for implementations of `MutableGraph`
             #[test]
-            fn test_simple_mutations() -> MGResult<$graph_impl, ()> {
+            fn test_simple_mutations() -> Result<(), Box<dyn std::error::Error>> {
                 let mut g: $graph_impl = $graph_collector(no_triple()).unwrap();
                 assert_eq!(g.triples().count(), 0);
                 assert!(MutableGraph::insert(
@@ -184,24 +184,24 @@ macro_rules! test_graph_impl {
                     &*C1,
                     &rdf::type_,
                     &rdfs::Class
-                )?);
+                )? || !$is_set);
                 assert_eq!(g.triples().count(), 1);
-                assert!(MutableGraph::insert(&mut g, &*C1, &rdfs::subClassOf, &*C2)?);
+                assert!(MutableGraph::insert(&mut g, &*C1, &rdfs::subClassOf, &*C2)? || !$is_set);
                 assert_eq!(g.triples().count(), 2);
                 assert!(MutableGraph::remove(
                     &mut g,
                     &*C1,
                     &rdf::type_,
                     &rdfs::Class
-                )?);
+                )? || !$is_set);
                 assert_eq!(g.triples().count(), 1);
-                assert!(MutableGraph::remove(&mut g, &*C1, &rdfs::subClassOf, &*C2)?);
+                assert!(MutableGraph::remove(&mut g, &*C1, &rdfs::subClassOf, &*C2)? || !$is_set);
                 assert_eq!(g.triples().count(), 0);
                 Ok(())
             }
 
             #[test]
-            fn test_no_duplicate() -> MGResult<$graph_impl, ()> {
+            fn test_no_duplicate() -> Result<(), Box<dyn std::error::Error>> {
                 if $is_set {
                     let mut g: $graph_impl = $graph_collector(no_triple()).unwrap();
                     assert_eq!(g.triples().count(), 0);
@@ -210,28 +210,28 @@ macro_rules! test_graph_impl {
                         &*C1,
                         &rdf::type_,
                         &rdfs::Class
-                    )?);
+                    )? || !$is_set);
                     assert_eq!(g.triples().count(), 1);
                     assert!(!MutableGraph::insert(
                         &mut g,
                         &*C1,
                         &rdf::type_,
                         &rdfs::Class
-                    )?);
+                    )? || !$is_set);
                     assert_eq!(g.triples().count(), 1);
                     assert!(MutableGraph::remove(
                         &mut g,
                         &*C1,
                         &rdf::type_,
                         &rdfs::Class
-                    )?);
+                    )? || !$is_set);
                     assert_eq!(g.triples().count(), 0);
                     assert!(!MutableGraph::remove(
                         &mut g,
                         &*C1,
                         &rdf::type_,
                         &rdfs::Class
-                    )?);
+                    )? || !$is_set);
                     assert_eq!(g.triples().count(), 0);
                 } else {
                     println!("effectively skipped, since is_set is false");
@@ -266,7 +266,7 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_remove_matching() -> MGResult<$graph_impl, ()> {
+            fn test_remove_matching() -> Result<(), Box<dyn std::error::Error>> {
                 let mut g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
                 let o_matcher = [&*C1, &*C2];
@@ -276,7 +276,7 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_retain_matching() -> MGResult<$graph_impl, ()> {
+            fn test_retain_matching() -> Result<(), Box<dyn std::error::Error>> {
                 let mut g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
                 let o_matcher = [&*C1, &*C2];
@@ -298,7 +298,7 @@ macro_rules! test_graph_impl {
             use super::*;
 
             #[test]
-            fn test_triples() -> MGResult<$graph_impl, ()> {
+            fn test_triples() -> Result<(), Box<dyn std::error::Error>> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
                 let triples = g.triples();
@@ -314,7 +314,7 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_triples_with_s() -> MGResult<$graph_impl, ()> {
+            fn test_triples_with_s() -> Result<(), Box<dyn std::error::Error>> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
                 let triples = g.triples_with_s(&*C2);
@@ -330,7 +330,7 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_triples_with_p() -> MGResult<$graph_impl, ()> {
+            fn test_triples_with_p() -> Result<(), Box<dyn std::error::Error>> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
                 let triples = g.triples_with_p(&rdf::type_);
@@ -351,7 +351,7 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_triples_with_o() -> MGResult<$graph_impl, ()> {
+            fn test_triples_with_o() -> Result<(), Box<dyn std::error::Error>> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
                 let triples = g.triples_with_o(&*C2);
@@ -367,7 +367,7 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_triples_with_sp() -> MGResult<$graph_impl, ()> {
+            fn test_triples_with_sp() -> Result<(), Box<dyn std::error::Error>> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
                 let triples = g.triples_with_sp(&*C2, &rdf::type_);
@@ -383,7 +383,7 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_triples_with_so() -> MGResult<$graph_impl, ()> {
+            fn test_triples_with_so() -> Result<(), Box<dyn std::error::Error>> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
                 let triples = g.triples_with_so(&*C2, &rdfs::Resource);
@@ -405,7 +405,7 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_triples_with_po() -> MGResult<$graph_impl, ()> {
+            fn test_triples_with_po() -> Result<(), Box<dyn std::error::Error>> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
                 let triples = g.triples_with_po(&rdf::type_, &rdfs::Class);
@@ -421,7 +421,7 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_triples_with_spo() -> MGResult<$graph_impl, ()> {
+            fn test_triples_with_spo() -> Result<(), Box<dyn std::error::Error>> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
                 let triples = g.triples_with_spo(&*C2, &rdf::type_, &rdfs::Resource);
@@ -445,7 +445,7 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_contains() -> MGResult<$graph_impl, ()> {
+            fn test_contains() -> Result<(), Box<dyn std::error::Error>> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
                 assert!(Graph::contains(&g, &*C2, &rdfs::subClassOf, &*C1)?);
@@ -454,7 +454,7 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_triples_matching() -> MGResult<$graph_impl, ()> {
+            fn test_triples_matching() -> Result<(), Box<dyn std::error::Error>> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
                 let p_matcher = [&rdf::type_, &rdfs::domain];
@@ -473,7 +473,7 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_subjects() -> MGResult<$graph_impl, ()> {
+            fn test_subjects() -> Result<(), Box<dyn std::error::Error>> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
                 let subjects = g.subjects().unwrap();
@@ -490,7 +490,7 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_predicates() -> MGResult<$graph_impl, ()> {
+            fn test_predicates() -> Result<(), Box<dyn std::error::Error>> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
                 let predicates = g.predicates().unwrap();
@@ -505,7 +505,7 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_objects() -> MGResult<$graph_impl, ()> {
+            fn test_objects() -> Result<(), Box<dyn std::error::Error>> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
                 let objects = g.objects().unwrap();
@@ -521,7 +521,7 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_iris() -> MGResult<$graph_impl, ()> {
+            fn test_iris() -> Result<(), Box<dyn std::error::Error>> {
                 let g = if $is_gen {
                     $graph_collector(generalized_node_types_triples()).unwrap()
                 } else {
@@ -536,7 +536,7 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_bnodes() -> MGResult<$graph_impl, ()> {
+            fn test_bnodes() -> Result<(), Box<dyn std::error::Error>> {
                 let g = if $is_gen {
                     $graph_collector(generalized_node_types_triples()).unwrap()
                 } else {
@@ -551,7 +551,7 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_literals() -> MGResult<$graph_impl, ()> {
+            fn test_literals() -> Result<(), Box<dyn std::error::Error>> {
                 let g = if $is_gen {
                     $graph_collector(generalized_node_types_triples()).unwrap()
                 } else {
@@ -567,7 +567,7 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn test_variables() -> MGResult<$graph_impl, ()> {
+            fn test_variables() -> Result<(), Box<dyn std::error::Error>> {
                 if $is_gen {
                     let g: $graph_impl = $graph_collector(generalized_node_types_triples()).unwrap();
 
