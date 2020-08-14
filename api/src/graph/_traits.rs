@@ -13,7 +13,6 @@ use crate::triple::stream::*;
 use crate::triple::streaming_mode::*;
 use crate::triple::*;
 
-use std::convert::Infallible;
 use std::error::Error;
 
 /// Type alias for the terms returned by a graph.
@@ -573,7 +572,6 @@ pub trait MutableGraph: Graph {
         O: TermMatcher + ?Sized,
         GTerm<Self>: Clone,
         <Self as Graph>::Error: Into<Self::MutationError>,
-        Infallible: Into<Self::MutationError>,
     {
         let to_remove = self
             .triples_matching(ms, mp, mo)
@@ -583,7 +581,7 @@ pub trait MutableGraph: Graph {
         let mut to_remove = to_remove.into_iter().as_triple_source();
         Ok(self
             .remove_all(&mut to_remove)
-            .map_err(|err| err.inner_into())?)
+            .map_err(|err| err.unwrap_sink_error())?)
     }
 
     /// Keep only the triples matching the given matchers.
@@ -603,7 +601,6 @@ pub trait MutableGraph: Graph {
         O: TermMatcher + ?Sized,
         GTerm<Self>: Clone,
         <Self as Graph>::Error: Into<Self::MutationError>,
-        Infallible: Into<Self::MutationError>,
     {
         let to_remove = self
             .triples()
@@ -613,7 +610,7 @@ pub trait MutableGraph: Graph {
             .map_err(Into::into)?;
         let mut to_remove = to_remove.into_iter().as_triple_source();
         self.remove_all(&mut to_remove)
-            .map_err(|err| err.inner_into())?;
+            .map_err(|err| err.unwrap_sink_error())?;
         Ok(())
     }
 }

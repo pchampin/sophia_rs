@@ -1,7 +1,6 @@
 // this module is transparently re-exported by its parent `dataset`
 
 use std::collections::HashSet;
-use std::convert::Infallible;
 use std::error::Error;
 use std::hash::Hash;
 
@@ -704,7 +703,6 @@ pub trait MutableDataset: Dataset {
         G: GraphNameMatcher + ?Sized,
         DTerm<Self>: Clone,
         <Self as Dataset>::Error: Into<Self::MutationError>,
-        Infallible: Into<Self::MutationError>,
     {
         let to_remove = self
             .quads_matching(ms, mp, mo, mg)
@@ -719,7 +717,7 @@ pub trait MutableDataset: Dataset {
         let mut to_remove = to_remove.into_iter().as_quad_source();
         Ok(self
             .remove_all(&mut to_remove)
-            .map_err(|err| err.inner_into())?)
+            .map_err(|err| err.unwrap_sink_error())?)
     }
 
     /// Keep only the quads matching the given matchers.
@@ -735,7 +733,6 @@ pub trait MutableDataset: Dataset {
         G: GraphNameMatcher + ?Sized,
         DTerm<Self>: Clone,
         <Self as Dataset>::Error: Into<Self::MutationError>,
-        Infallible: Into<Self::MutationError>,
     {
         let to_remove = self
             .quads()
@@ -752,7 +749,7 @@ pub trait MutableDataset: Dataset {
             .map_err(Into::into)?;
         let mut to_remove = to_remove.into_iter().as_quad_source();
         self.remove_all(&mut to_remove)
-            .map_err(|err| err.inner_into())?;
+            .map_err(|err| err.unwrap_sink_error())?;
         Ok(())
     }
 }
