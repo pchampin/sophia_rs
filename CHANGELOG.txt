@@ -1,3 +1,12 @@
+0.6.2
+    License change
+    - all crates are now under CeCILL-B (compatible with BSD)
+    Minor fixes
+    - improves documentation
+    - improved test macros for Graph and Dataset
+    - removed useless trait bounds in Graph and Dataset API,
+      making them easier to implement
+
 0.6.1
     Minor fixes
     - updated doc.rs configuration to include all features

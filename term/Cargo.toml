@@ -1,6 +1,6 @@
 [package]
 name = "sophia_term"
-version = "0.6.1"
+version = "0.6.2"
 authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
 edition = "2018"
 description = "A Rust toolkit for RDF and Linked Data - Implementations of RDF terms"
@@ -14,8 +14,8 @@ keywords = ["rdf", "linked-data", "semantic-web"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sophia_api = { version = "0.6.1", path = "../api" }
-sophia_iri = { version = "0.6.1", path = "../iri" }
+sophia_api = { version = "0.6.2", path = "../api" }
+sophia_iri = { version = "0.6.2", path = "../iri" }
 oxilangtag = "0.1.1"
 lazy_static = "1.4.0"
 mownstr = "0.1.1"
@@ -25,4 +25,4 @@ thiserror = "1.0.20"
 
 [dev-dependencies]
 test-case = "1.0.0"
-sophia_iri = { version = "0.6.1", path = "../iri", features = ["test_data"] }
+sophia_iri = { version = "0.6.2", path = "../iri", features = ["test_data"] }
