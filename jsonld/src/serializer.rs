@@ -67,13 +67,13 @@ where
 
 pub type Jsonifier = JsonLdSerializer<JsonTarget>;
 
-/// This type is just a placeholder [`JsonLdSerialiser`]
+/// This type is just a placeholder [`JsonLdSerializer`]
 /// targetting a `JsonValue`.
 /// See [`new_jsonifier`] and [`new_jsonifier_with_config`].
 ///
-/// [`JsonLdSerializer`](./struct.JsonLdSerializer.html)
-/// [`new_jsonifier`](./struct.JsonLdSerializer.html#method.new_jsonifier)
-/// [`new_jsonifier_with_config`](./struct.JsonLdSerializer.html#method.new_jsonifier_with_config)
+/// [`JsonLdSerializer`]: struct.JsonLdSerializer.html
+/// [`new_jsonifier`]: struct.JsonLdSerializer.html#method.new_jsonifier
+/// [`new_jsonifier_with_config`]: struct.JsonLdSerializer.html#method.new_jsonifier_with_config
 #[derive(Clone, Debug)]
 pub struct JsonTarget(JsonValue);
 
