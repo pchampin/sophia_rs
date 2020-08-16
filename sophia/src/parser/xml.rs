@@ -12,6 +12,7 @@ use crate::parser::TripleParser;
 /// N-Triples parser based on RIO.
 #[derive(Clone, Debug, Default)]
 pub struct RdfXmlParser {
+    /// The base IRI.
     pub base: Option<String>,
 }
 
