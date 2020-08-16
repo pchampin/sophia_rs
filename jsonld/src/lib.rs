@@ -7,6 +7,8 @@
 //! [JSON-LD]: https://www.w3.org/TR/json-ld11/
 //! [expanded document form]: https://www.w3.org/TR/json-ld11/#expanded-document-form
 
+#![deny(missing_docs)]
+
 pub mod config;
 pub use config::*;
 pub mod error;
