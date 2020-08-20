@@ -50,6 +50,9 @@ pub enum TermError {
     /// Raised when failing to convert a literal into a native type
     #[error("The term '{0}' has an unsupported datatype")]
     UnsupportedDatatype(String),
+    /// Raised when an IRI was expected but another kind of term was received.
+    #[error("The term '{0}' is not an IRI")]
+    NotAnIri(String),
 }
 
 impl From<std::convert::Infallible> for TermError {
