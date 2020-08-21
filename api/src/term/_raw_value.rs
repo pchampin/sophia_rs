@@ -39,6 +39,58 @@ impl<'a> RawValue<'a> {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
+    pub fn starts_with<B>(&self, bytes: B) -> bool
+    where
+        B: IntoIterator<Item = u8>,
+    {
+        let mut me = self.bytes();
+        let mut other = bytes.into_iter();
+        loop {
+            match (me.next(), other.next()) {
+                (_, None) => return true,
+                (None, Some(_)) => return false,
+                (Some(a), Some(b)) if a != b => return false,
+                _ => continue,
+            }
+        }
+    }
+    pub fn slice<R>(&self, range: R) -> MownStr<'a>
+    where
+        R: std::ops::RangeBounds<usize> + std::slice::SliceIndex<str, Output = str>,
+    {
+        use std::ops::Bound::*;
+        match self.1 {
+            None => self.0[range].into(),
+            Some(suffix) if self.0.is_empty() => suffix[range].into(),
+            Some(suffix) => {
+                let total_len = self.0.len() + suffix.len();
+                let start = match range.start_bound() {
+                    Included(n) => *n,
+                    Excluded(n) => *n + 1,
+                    Unbounded => 0,
+                };
+                let end = match range.end_bound() {
+                    Included(n) => *n + 1,
+                    Excluded(n) => *n,
+                    Unbounded => total_len,
+                };
+                if end < start {
+                    panic!("can not slice RawValue with end < start");
+                }
+                let cut_point = self.0.len();
+                if end <= cut_point {
+                    self.0[start..end].into()
+                } else if cut_point <= start {
+                    suffix[start - cut_point..end - cut_point].into()
+                } else {
+                    let mut buf = String::with_capacity(end - start);
+                    buf.push_str(&self.0[start..]);
+                    buf.push_str(&suffix[..end - cut_point]);
+                    buf.into()
+                }
+            }
+        }
+    }
 }
 
 impl<'a> From<RawValue<'a>> for MownStr<'a> {
@@ -155,5 +207,50 @@ mod test {
     #[test_case("h", Some("ello"), "hell", Some("o") => true ; "full mixed")]
     fn eq(ns1: &str, sf1: Option<&str>, ns2: &str, sf2: Option<&str>) -> bool {
         RawValue(ns1, sf1) == RawValue(ns2, sf2)
+    }
+
+    #[test_case("hello", None, "hell" => true ; "only ns")]
+    #[test_case("hello", None, "heaven" => false ; "not starts with")]
+    #[test_case("hel", Some("lo"), "hell" => true ; "mixed")]
+    #[test_case("", Some("hello"), "hell" => true ; "only suffix")]
+    #[test_case("hel", Some("lo"), "helli" => false ; "tricky")]
+    fn starts_with_str(ns: &str, sf: Option<&str>, txt: &str) -> bool {
+        let raw = RawValue(ns, sf);
+        raw.starts_with(txt.bytes())
+    }
+
+    #[test_case("hel", Some("lo"), "he", Some("ll") => true ; "tricky")]
+    #[test_case("hel", Some("lo"), "he", Some("lo") => false ; "tricky2")]
+    fn starts_with_raw(ns: &str, sf: Option<&str>, ns2: &str, sf2: Option<&str>) -> bool {
+        let raw = RawValue(ns, sf);
+        let raw2 = RawValue(ns2, sf2);
+        raw.starts_with(raw2.bytes())
+    }
+
+    #[allow(unused_parens)]
+    #[test_case("hello", None, 1..4 => "ell" ; "only ns")]
+    #[test_case("hello", None, ..4 => "hell" ; "only ns open start")]
+    #[test_case("hello", None, (1..) => "ello" ; "only ns open end")]
+    #[test_case("hello", None, 1..=3 => "ell" ; "only ns inclusive")]
+    #[test_case("", Some("hello"), 1..4 => "ell" ; "only suffix")]
+    #[test_case("", Some("hello"), ..4 => "hell" ; "only suffix open start")]
+    #[test_case("", Some("hello"), (1..) => "ello" ; "only suffix open end")]
+    #[test_case("", Some("hello"), 1..=3 => "ell" ; "only suffix inclusive")]
+    #[test_case("hello", Some(" world"), 1..4 => "ell" ; "in ns")]
+    #[test_case("hello", Some(" world"), ..4 => "hell" ; "in ns open start")]
+    #[test_case("hello", Some(" world"), 1..=3 => "ell" ; "in ns inclusive")]
+    #[test_case("hello", Some(" world"), 6..9 => "wor" ; "in suffix")]
+    #[test_case("hello", Some(" world"), (6..) => "world" ; "in suffix open end")]
+    #[test_case("hello", Some(" world"), 6..=8 => "wor" ; "in suffix inclusive")]
+    #[test_case("hel", Some("lo"), 1..4 => "ell" ; "across cut")]
+    #[test_case("hel", Some("lo"), ..4 => "hell" ; "across cut open start")]
+    #[test_case("hel", Some("lo"), (1..) => "ello" ; "across cut open end")]
+    #[test_case("hel", Some("lo"), 1..=3 => "ell" ; "across cut inclusive")]
+    fn slice<'a, R>(ns: &'a str, sf: Option<&'a str>, range: R) -> MownStr<'a>
+    where
+        R: std::ops::RangeBounds<usize> + std::slice::SliceIndex<str, Output = str>,
+    {
+        let raw = RawValue(ns, sf);
+        raw.slice(range)
     }
 }
