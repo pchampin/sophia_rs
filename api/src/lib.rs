@@ -36,6 +36,7 @@ pub mod dataset;
 pub mod graph;
 pub mod ns;
 pub mod parser;
+pub mod prefix;
 pub mod quad;
 pub mod serializer;
 pub mod term;

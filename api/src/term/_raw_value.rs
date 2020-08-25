@@ -214,6 +214,7 @@ mod test {
     #[test_case("hel", Some("lo"), "hell" => true ; "mixed")]
     #[test_case("", Some("hello"), "hell" => true ; "only suffix")]
     #[test_case("hel", Some("lo"), "helli" => false ; "tricky")]
+    #[test_case("hello", None, "hello" => true ; "equal")]
     fn starts_with_str(ns: &str, sf: Option<&str>, txt: &str) -> bool {
         let raw = RawValue(ns, sf);
         raw.starts_with(txt.bytes())
@@ -221,6 +222,7 @@ mod test {
 
     #[test_case("hel", Some("lo"), "he", Some("ll") => true ; "tricky")]
     #[test_case("hel", Some("lo"), "he", Some("lo") => false ; "tricky2")]
+    #[test_case("hel", Some("lo"), "he", Some("llo") => true ; "equal")]
     fn starts_with_raw(ns: &str, sf: Option<&str>, ns2: &str, sf2: Option<&str>) -> bool {
         let raw = RawValue(ns, sf);
         let raw2 = RawValue(ns2, sf2);
