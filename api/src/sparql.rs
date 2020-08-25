@@ -4,7 +4,7 @@
 //!
 //! These traits are deliberately very generic.
 //! Specific implementations may have additional features, such as:
-//! 
+//!
 //! - preparing a query for multiple use;
 //! - setting default values for `BASE`, `PREFIX`, `FROM`, `FROM NAMED` directives,
 //!   before parsing query string;
@@ -26,17 +26,16 @@ pub trait SparqlDataset: Dataset {
     type SparqlError: Error + 'static;
 
     /// Parse and immediately execute `query`
-    fn execute<'p, P>(&self, query: &str) -> Result<Self::Result, Self::SparqlError>
+    fn query<'p, P>(&self, query: &str) -> Result<Self::Result, Self::SparqlError>
     where
-        P: PrefixMap<'p> + ?Sized,
-    ;
+        P: PrefixMap<'p> + ?Sized;
 }
 
 /// The result of executing a SPARQL query.
 pub trait SparqlResult {
     type Term: TTerm;
     /// The type of iterator returned if the query was a SELECT.
-    type Bindings: Iterator<Item=Vec<Option<Self::Term>>>;
+    type Bindings: Iterator<Item = Vec<Option<Self::Term>>>;
     /// The type of graph returned if the query was a CONSTRUCT or DESCRIBE.
     type Graph: Graph;
 
@@ -53,6 +52,7 @@ pub trait SparqlResult {
 }
 
 /// Different kinds of SPARQL results
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SparqlResultKind {
     /// Result of a SELECT query
     Bindings,
