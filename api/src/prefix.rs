@@ -44,13 +44,12 @@ where
                             None
                         }
                     })
-                    .max_by_key(|(_, suffix)| len-suffix.len())
+                    .max_by_key(|(_, suffix)| len - suffix.len())
             }
             _ => None,
         }
     }
 }
-
 
 #[cfg(test)]
 mod test {
@@ -64,16 +63,20 @@ mod test {
     #[test_case("http://example.org/a/b#c", None, Some(("ab", "c")); "b:c")]
     #[test_case("http://example.org/a#c", None, Some(("", "a#c")); ":a#c")]
     fn get_prefixed_pair(ns: &str, sf: Option<&str>, expected: Option<(&str, &str)>) {
-
         let mut map = HashMap::new();
         map.insert("s", SimpleIri::new_unchecked("http://schema.org/", None));
-        map.insert("ab", SimpleIri::new_unchecked("http://example.org/", Some("a/b#")));
-        map.insert("a", SimpleIri::new_unchecked("http://example.org/", Some("a/")));
+        map.insert(
+            "ab",
+            SimpleIri::new_unchecked("http://example.org/", Some("a/b#")),
+        );
+        map.insert(
+            "a",
+            SimpleIri::new_unchecked("http://example.org/", Some("a/")),
+        );
         map.insert("", SimpleIri::new_unchecked("http://example.org/", None));
 
         let expected = expected.map(|(pf, sf)| (pf, MownStr::from(sf)));
         let iri = SimpleIri::new_unchecked(ns, sf);
         assert_eq!(map.get_prefixed_pair(&iri), expected);
     }
-
 }
