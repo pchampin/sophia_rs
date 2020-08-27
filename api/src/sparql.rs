@@ -14,15 +14,15 @@
 //! However, we do not want to impose these feature, or any subset thereof,
 //! to all implementation of Sophia.
 
-use crate::graph::Graph;
 use crate::term::TTerm;
+use crate::triple::stream::TripleSource;
 use std::error::Error;
 
 /// A dataset that can be queried with SPARQL.
 pub trait SparqlDataset {
     type BindingsTerm: TTerm;
     type BindingsResult: SparqlBindings<Self>;
-    type GraphResult: Graph;
+    type TriplesResult: TripleSource;
     type SparqlError: Error + 'static;
 
     /// Parse and immediately execute `query`
@@ -34,9 +34,12 @@ pub enum SparqlResult<T>
 where
     T: SparqlDataset + ?Sized,
 {
+    /// The result of a SELECT query
     Bindings(T::BindingsResult),
+    /// The result of an ASK query
     Boolean(bool),
-    Graph(T::GraphResult),
+    /// The result of a CONSTRUCT or DESCRIBE query
+    Triples(T::TriplesResult),
 }
 
 /// The result of executing a SPARQL SELECT query
@@ -54,7 +57,6 @@ where
 mod dummy {
     use super::*;
     use crate::dataset::Dataset;
-    use crate::quad::Quad;
     use std::convert::Infallible;
 
     pub type MyTerm = crate::term::test::TestTerm<String>;
@@ -79,17 +81,16 @@ mod dummy {
     impl SparqlDataset for MyDataset {
         type BindingsTerm = MyTerm;
         type BindingsResult = MyBindings;
-        type GraphResult = Vec<[MyTerm; 3]>;
+        type TriplesResult = Box<dyn Iterator<Item = Result<[MyTerm; 3], Infallible>>>;
         type SparqlError = Infallible;
 
         fn query(&self, query: &str) -> Result<SparqlResult<Self>, Self::SparqlError> {
             match query {
                 "ASK" => Ok(SparqlResult::Boolean(true)),
-                "GRAPH" => Ok(SparqlResult::Graph(
-                    self.iter()
-                        .map(|q| [q.s().clone(), q.p().clone(), q.o().clone()])
-                        .collect(),
-                )),
+                "GRAPH" => Ok(SparqlResult::Triples(Box::new(
+                    self.clone().into_iter().map(|q| Ok(q.0)),
+                )
+                    as Self::TriplesResult)),
                 _ => Ok(SparqlResult::Bindings(MyBindings(Box::new(
                     self.subjects()
                         .unwrap()
