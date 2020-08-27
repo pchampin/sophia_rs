@@ -1,3 +1,8 @@
+//! A JSON-LD serializer implementing the
+//! [`Serialize RDF as JSON-LD Algorithm`].
+//!
+//! [`Serialize RDF as JSON-LD Algorithm`]: https://www.w3.org/TR/json-ld11-api/#serialize-rdf-as-json-ld-algorithm
+
 use crate::config::*;
 use crate::error::*;
 use json::JsonValue;
@@ -10,6 +15,7 @@ mod rdf_object;
 #[cfg(test)]
 mod test;
 
+/// A JSON-LD serializer.
 pub struct JsonLdSerializer<W> {
     config: JsonLdConfig,
     target: W,
@@ -65,6 +71,10 @@ where
     }
 }
 
+/// A utility type alias of [`JsonLdSerializer`] with `[JsonTarget]` as its target.
+///
+/// [`JsonLdSerializer`]: struct.JsonLdSerializer.html
+/// [`JsonTarget`]: struct.JsonTarget.html
 pub type Jsonifier = JsonLdSerializer<JsonTarget>;
 
 /// This type is just a placeholder [`JsonLdSerializer`]
@@ -108,6 +118,9 @@ impl QuadSerializer for Jsonifier {
     }
 }
 
+/// A utility type alias representing a [`JsonLdSerializer`] which targets a string.
+///
+/// [`JsonLdSerializer`]: struct.JsonLdSerializer.html
 pub type JsonLdStringifier = JsonLdSerializer<Vec<u8>>;
 
 impl JsonLdStringifier {

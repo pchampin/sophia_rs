@@ -1,5 +1,7 @@
 //! Utility types and functions for testing JSON-LD
 
+#![allow(missing_docs)]
+
 use crate::config::*;
 use crate::error::*;
 use crate::serializer::Jsonifier;
