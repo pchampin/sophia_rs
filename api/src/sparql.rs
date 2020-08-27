@@ -21,40 +21,84 @@ use std::error::Error;
 
 /// A dataset that can be queried with SPARQL.
 pub trait SparqlDataset: Dataset {
-    type Result: SparqlResult;
+    type BindingsTerm: TTerm;
+    type BindingsResult: SparqlBindings<Self::BindingsTerm>;
+    type GraphResult: Graph;
     type SparqlError: Error + 'static;
 
     /// Parse and immediately execute `query`
-    fn query(&self, query: &str) -> Result<Self::Result, Self::SparqlError>;
+    fn query(&self, query: &str) -> Result<SparqlResult<Self>, Self::SparqlError>;
 }
 
 /// The result of executing a SPARQL query.
-pub trait SparqlResult {
-    type Term: TTerm;
-    /// The type of iterator returned if the query was a SELECT.
-    type Bindings: Iterator<Item = Vec<Option<Self::Term>>>;
-    /// The type of graph returned if the query was a CONSTRUCT or DESCRIBE.
-    type Graph: Graph;
-
-    /// The kind of this result (depends on the type of query)
-    fn kind(&self) -> SparqlResultKind;
-    /// If the query was a SELECT, the list of selected variable names
-    fn variables(&self) -> Option<Vec<String>>;
-    /// If the query was a SELECT, an iterator over all the solutions
-    fn bindings(self) -> Option<Self::Bindings>;
-    /// If the query was an ASK, the boolean result
-    fn boolean(&self) -> Option<bool>;
-    /// If the query was a CONSTRUCT or DESCRIBE, the resulting graph
-    fn graph(&self) -> Option<Self::Graph>;
+pub enum SparqlResult<T>
+where
+    T: SparqlDataset + ?Sized,
+{
+    Bindings(T::BindingsResult),
+    Boolean(bool),
+    Graph(T::GraphResult),
 }
 
-/// Different kinds of SPARQL results
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum SparqlResultKind {
-    /// Result of a SELECT query
-    Bindings,
-    /// Result of an ASK query
-    Boolean,
-    /// Result of a CONSTRUCT or DESCRIBE query
-    Graph,
+/// The result of executing a SPARQL SELECT query
+pub trait SparqlBindings<T: TTerm>: IntoIterator<Item = Vec<Option<T>>> {
+    /// Borrow the list of SELECTed variable names
+    fn variables(&self) -> &[&str];
+
+    /// Return an owned copy of the list of SELECTed variable names
+    fn variables_owned(&self) -> Vec<String> {
+        self.variables()
+            .iter()
+            .cloned()
+            .map(str::to_string)
+            .collect()
+    }
+}
+
+/// A dummy module to check that implementing these traits is actually possible
+#[cfg(test)]
+mod dummy {
+    use super::*;
+    use crate::quad::Quad;
+    use std::convert::Infallible;
+
+    pub type MyTerm = crate::term::test::TestTerm<String>;
+    pub type MyQuad = ([MyTerm; 3], Option<MyTerm>);
+    pub type MyDataset = Vec<MyQuad>;
+
+    pub struct MyBindings(Box<dyn Iterator<Item = Vec<Option<MyTerm>>>>);
+
+    impl IntoIterator for MyBindings {
+        type Item = Vec<Option<MyTerm>>;
+        type IntoIter = Box<dyn Iterator<Item = Vec<Option<MyTerm>>>>;
+        fn into_iter(self) -> Self::IntoIter {
+            self.0
+        }
+    }
+    impl SparqlBindings<MyTerm> for MyBindings {
+        fn variables(&self) -> &[&str] {
+            &["s"]
+        }
+    }
+
+    impl SparqlDataset for MyDataset {
+        type BindingsTerm = MyTerm;
+        type BindingsResult = MyBindings;
+        type GraphResult = Vec<[MyTerm; 3]>;
+        type SparqlError = Infallible;
+
+        fn query(&self, query: &str) -> Result<SparqlResult<Self>, Self::SparqlError> {
+            match query {
+                "ASK" => Ok(SparqlResult::Boolean(true)),
+                "GRAPH" => Ok(SparqlResult::Graph(
+                    self.iter()
+                        .map(|q| [q.s().clone(), q.p().clone(), q.o().clone()])
+                        .collect(),
+                )),
+                _ => Ok(SparqlResult::Bindings(MyBindings(Box::new(
+                    self.subjects().unwrap().into_iter().map(|t| vec![Some(t)]),
+                )))),
+            }
+        }
+    }
 }
