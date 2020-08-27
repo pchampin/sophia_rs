@@ -22,7 +22,7 @@ use std::error::Error;
 /// A dataset that can be queried with SPARQL.
 pub trait SparqlDataset: Dataset {
     type BindingsTerm: TTerm;
-    type BindingsResult: SparqlBindings<Self::BindingsTerm>;
+    type BindingsResult: SparqlBindings<Self>;
     type GraphResult: Graph;
     type SparqlError: Error + 'static;
 
@@ -41,18 +41,13 @@ where
 }
 
 /// The result of executing a SPARQL SELECT query
-pub trait SparqlBindings<T: TTerm>: IntoIterator<Item = Vec<Option<T>>> {
-    /// Borrow the list of SELECTed variable names
-    fn variables(&self) -> &[&str];
-
-    /// Return an owned copy of the list of SELECTed variable names
-    fn variables_owned(&self) -> Vec<String> {
-        self.variables()
-            .iter()
-            .cloned()
-            .map(str::to_string)
-            .collect()
-    }
+pub trait SparqlBindings<D>:
+    IntoIterator<Item = Result<Vec<Option<D::BindingsTerm>>, D::SparqlError>>
+where
+    D: SparqlDataset + ?Sized,
+{
+    /// Return the list of SELECTed variable names
+    fn variables(&self) -> Result<Vec<String>, D::SparqlError>;
 }
 
 /// A dummy module to check that implementing these traits is actually possible
@@ -66,18 +61,18 @@ mod dummy {
     pub type MyQuad = ([MyTerm; 3], Option<MyTerm>);
     pub type MyDataset = Vec<MyQuad>;
 
-    pub struct MyBindings(Box<dyn Iterator<Item = Vec<Option<MyTerm>>>>);
+    pub struct MyBindings(Box<dyn Iterator<Item = Result<Vec<Option<MyTerm>>, Infallible>>>);
 
     impl IntoIterator for MyBindings {
-        type Item = Vec<Option<MyTerm>>;
-        type IntoIter = Box<dyn Iterator<Item = Vec<Option<MyTerm>>>>;
+        type Item = Result<Vec<Option<MyTerm>>, Infallible>;
+        type IntoIter = Box<dyn Iterator<Item = Result<Vec<Option<MyTerm>>, Infallible>>>;
         fn into_iter(self) -> Self::IntoIter {
             self.0
         }
     }
-    impl SparqlBindings<MyTerm> for MyBindings {
-        fn variables(&self) -> &[&str] {
-            &["s"]
+    impl SparqlBindings<MyDataset> for MyBindings {
+        fn variables(&self) -> Result<Vec<String>, Infallible> {
+            Ok(vec!["s".to_string()])
         }
     }
 
@@ -96,7 +91,10 @@ mod dummy {
                         .collect(),
                 )),
                 _ => Ok(SparqlResult::Bindings(MyBindings(Box::new(
-                    self.subjects().unwrap().into_iter().map(|t| vec![Some(t)]),
+                    self.subjects()
+                        .unwrap()
+                        .into_iter()
+                        .map(|t| Ok(vec![Some(t)])),
                 )))),
             }
         }
