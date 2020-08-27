@@ -42,6 +42,42 @@ where
     Triples(T::TriplesResult),
 }
 
+impl<T> SparqlResult<T>
+where
+    T: SparqlDataset + ?Sized,
+{
+    /// Get this result as a `Bindings`.
+    ///
+    /// # Panics
+    /// This will panic if `self` is actually of another kind.
+    pub fn into_bindings(self) -> T::BindingsResult {
+        match self {
+            SparqlResult::Bindings(b) => b,
+            _ => panic!("This SparqlResult is not a Bindings"),
+        }
+    }
+    /// Get this result as a `Boolean`.
+    ///
+    /// # Panics
+    /// This will panic if `self` is actually of another kind.
+    pub fn into_boolean(self) -> bool {
+        match self {
+            SparqlResult::Boolean(b) => b,
+            _ => panic!("This SparqlResult is not a Boolean"),
+        }
+    }
+    /// Get this result as a `Triples`.
+    ///
+    /// # Panics
+    /// This will panic if `self` is actually of another kind.
+    pub fn into_triples(self) -> T::TriplesResult {
+        match self {
+            SparqlResult::Triples(t) => t,
+            _ => panic!("This SparqlResult is not a Triples"),
+        }
+    }
+}
+
 /// The result of executing a SPARQL SELECT query
 pub trait SparqlBindings<D>:
     IntoIterator<Item = Result<Vec<Option<D::BindingsTerm>>, D::SparqlError>>
