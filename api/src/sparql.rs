@@ -16,7 +16,6 @@
 
 use crate::dataset::Dataset;
 use crate::graph::Graph;
-use crate::prefix::PrefixMap;
 use crate::term::TTerm;
 use std::error::Error;
 
@@ -26,9 +25,7 @@ pub trait SparqlDataset: Dataset {
     type SparqlError: Error + 'static;
 
     /// Parse and immediately execute `query`
-    fn query<'p, P>(&self, query: &str) -> Result<Self::Result, Self::SparqlError>
-    where
-        P: PrefixMap<'p> + ?Sized;
+    fn query(&self, query: &str) -> Result<Self::Result, Self::SparqlError>;
 }
 
 /// The result of executing a SPARQL query.
