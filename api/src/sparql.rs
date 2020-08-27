@@ -14,13 +14,12 @@
 //! However, we do not want to impose these feature, or any subset thereof,
 //! to all implementation of Sophia.
 
-use crate::dataset::Dataset;
 use crate::graph::Graph;
 use crate::term::TTerm;
 use std::error::Error;
 
 /// A dataset that can be queried with SPARQL.
-pub trait SparqlDataset: Dataset {
+pub trait SparqlDataset {
     type BindingsTerm: TTerm;
     type BindingsResult: SparqlBindings<Self>;
     type GraphResult: Graph;
@@ -54,6 +53,7 @@ where
 #[cfg(test)]
 mod dummy {
     use super::*;
+    use crate::dataset::Dataset;
     use crate::quad::Quad;
     use std::convert::Infallible;
 
