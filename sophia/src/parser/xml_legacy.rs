@@ -99,7 +99,7 @@ pub struct RdfXmlParser {
 }
 
 impl RdfXmlParser {
-    /// Build a new RDF XML parser with the given config.
+    /// Build a new RDF/XML parser with the given config.
     pub fn with_base(base: &str) -> Result<Self> {
         match Url::parse(base) {
             Ok(url) => Ok(Self { base: Some(url) }),
