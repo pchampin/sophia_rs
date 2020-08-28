@@ -67,7 +67,7 @@ where
     }
 }
 
-/// A RIO source triple.
+/// A triple produced by a RIO source.
 pub type RioSourceTriple<'a> = [RefTerm<'a>; 3];
 sophia_api::make_scoped_triple_streaming_mode!(
     /// A scoped RIO source triple.
