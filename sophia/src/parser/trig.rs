@@ -8,7 +8,7 @@ use std::io::BufRead;
 /// TriG parser based on RIO.
 #[derive(Clone, Debug, Default)]
 pub struct TriGParser {
-    /// The current base IRI.
+    /// The base IRI used by this parser to resolve relative IRI-references.
     pub base: Option<String>,
 }
 
