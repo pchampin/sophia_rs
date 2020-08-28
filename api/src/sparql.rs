@@ -92,10 +92,10 @@ where
 #[cfg(test)]
 mod dummy {
     use super::*;
-    use crate::dataset::Dataset;
+    use crate::{dataset::Dataset, term::test::TestTerm};
     use std::convert::Infallible;
 
-    pub type MyTerm = crate::term::test::TestTerm<String>;
+    pub type MyTerm = TestTerm<String>;
     pub type MyQuad = ([MyTerm; 3], Option<MyTerm>);
     pub type MyDataset = Vec<MyQuad>;
 
@@ -135,5 +135,98 @@ mod dummy {
                 )))),
             }
         }
+    }
+
+    fn test_triple() -> [MyTerm; 3] {
+        use crate::ns::xsd;
+        [
+            TestTerm::iri("http://example.org/person#Alice"),
+            TestTerm::iri("http://www.w3.org/2001/vcard-rdf/3.0#FN"),
+            TestTerm::lit_dt("Alice", xsd::string),
+        ]
+    }
+
+    fn test_dataset() -> MyDataset {
+        vec![(test_triple(), None)]
+    }
+
+    #[test]
+    fn get_boolean_result_by_destructuring() {
+        let my_dataset = test_dataset();
+
+        assert_eq!(
+            match my_dataset.query("ASK").unwrap() {
+                SparqlResult::Boolean(b) => Some(b),
+                _ => None,
+            },
+            Some(true)
+        );
+    }
+
+    #[test]
+    fn get_boolean_result_by_coercing() {
+        let my_dataset = test_dataset();
+
+        assert_eq!(my_dataset.query("ASK").unwrap().into_boolean(), true);
+    }
+
+    #[test]
+    fn get_triples_result_by_destructuring() {
+        let my_dataset = test_dataset();
+        let mut triples_result = match my_dataset.query("GRAPH").unwrap() {
+            SparqlResult::Triples(t) => Some(t),
+            _ => None,
+        }
+        .unwrap();
+
+        assert_eq!(triples_result.next(), Some(Ok(test_triple())));
+        assert_eq!(triples_result.next(), None);
+    }
+
+    #[test]
+    fn get_triples_result_by_coercing() {
+        let my_dataset = test_dataset();
+        let mut triples_result = my_dataset.query("GRAPH").unwrap().into_triples();
+
+        assert_eq!(triples_result.next(), Some(Ok(test_triple())));
+        assert_eq!(triples_result.next(), None);
+    }
+
+    #[test]
+    fn get_bindings_result_by_destructuring() {
+        let my_dataset = test_dataset();
+        let bindings_result = match my_dataset.query("SELECT").unwrap() {
+            SparqlResult::Bindings(b) => Some(b),
+            _ => None,
+        }
+        .unwrap();
+
+        assert_eq!(bindings_result.variables(), vec!["s"]);
+
+        let mut bindings_iter = bindings_result.into_iter();
+        assert_eq!(
+            bindings_iter.next(),
+            Some(Ok(vec![Some(TestTerm::iri(
+                "http://example.org/person#Alice"
+            ),)]))
+        );
+        assert_eq!(bindings_iter.next(), None);
+    }
+
+    #[test]
+    fn get_bindings_result_by_coercing() {
+        let my_dataset = test_dataset();
+        let bindings_result = my_dataset.query("SELECT").unwrap().into_bindings();
+
+        assert_eq!(bindings_result.variables(), vec!["s"]);
+
+        let mut bindings_iter = bindings_result.into_iter();
+        assert_eq!(
+            bindings_iter.next(),
+            Some(Ok(vec![Some(TestTerm::iri(
+                "http://example.org/person#Alice"
+            ),)]))
+        );
+        assert_eq!(bindings_iter.next(), None);
     }
 }
