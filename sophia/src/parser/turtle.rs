@@ -11,7 +11,7 @@ use thiserror::Error;
 /// Turtle parser based on RIO.
 #[derive(Clone, Debug, Default)]
 pub struct TurtleParser {
-    /// The current base IRI.
+    /// The base IRI used by this parser to resolve relative IRI-references.
     pub base: Option<String>,
 }
 
