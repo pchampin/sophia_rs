@@ -26,7 +26,7 @@ impl<B: BufRead> TripleParser<B> for TurtleParser {
     }
 }
 
-/// A wrapper around [`rio_turtle::TurtleError`] the implements [`WithLocation`].
+/// A wrapper around [`rio_turtle::TurtleError`] that implements [`WithLocation`].
 ///
 /// [`rio_turtle::TurtleError`]: ../../../rio_turtle/struct.TurtleError.html
 /// [`WithLocation`]: ../trait.WithLocation.html
