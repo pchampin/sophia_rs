@@ -85,7 +85,7 @@ where
     D: SparqlDataset + ?Sized,
 {
     /// Return the list of SELECTed variable names
-    fn variables(&self) -> Result<Vec<String>, D::SparqlError>;
+    fn variables(&self) -> Vec<&str>;
 }
 
 /// A dummy module to check that implementing these traits is actually possible
@@ -109,8 +109,8 @@ mod dummy {
         }
     }
     impl SparqlBindings<MyDataset> for MyBindings {
-        fn variables(&self) -> Result<Vec<String>, Infallible> {
-            Ok(vec!["s".to_string()])
+        fn variables(&self) -> Vec<&str> {
+            vec!["s"]
         }
     }
 
