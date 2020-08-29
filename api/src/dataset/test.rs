@@ -313,7 +313,6 @@ macro_rules! test_dataset_impl {
 
                 let o_matcher = [&*C1, &*C2];
                 d.retain_matching(&ANY, &rdf::type_, &o_matcher, &ANY)?;
-                print!("{:?}", d.quads().size_hint());
                 assert_consistent_hint(4, d.quads().size_hint());
                 Ok(())
             }
