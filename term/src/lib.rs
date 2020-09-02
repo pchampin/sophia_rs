@@ -51,6 +51,7 @@ use sophia_api::term::{
     term_cmp, term_eq, term_format, term_hash, term_to_string, CopyTerm, RawValue, SimpleIri,
     TTerm, TermKind, TryCopyTerm,
 };
+use std::borrow::Borrow;
 use std::convert::TryInto;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
@@ -561,6 +562,12 @@ where
             TermKind::BlankNode => Term::BNode(BlankNode::new_unchecked(v.0)),
             TermKind::Variable => Term::Variable(Variable::new_unchecked(v.0)),
         }
+    }
+}
+
+impl<'a, TD: TermData + 'a> Borrow<dyn TTerm + 'a> for Term<TD> {
+    fn borrow(&self) -> &(dyn TTerm + 'a) {
+        self as _
     }
 }
 

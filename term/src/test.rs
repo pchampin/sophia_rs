@@ -2,6 +2,23 @@ use super::Term::*;
 use super::*;
 use sophia_api::ns::xsd;
 use sophia_api::term::CopiableTerm;
+use sophia_api::term::SimpleIri;
+use std::collections::HashSet;
+
+#[test]
+fn term_map() -> Result<(), Box<dyn std::error::Error>> {
+    let t: Term<String> = Term::new_iri("http://example.com/test")?;
+    let mut map = HashSet::new();
+    map.insert(t);
+
+    let ns = "http://example.com/";
+    let sf = "test";
+    let iri = SimpleIri::new(ns, Some(sf))?;
+    let iri = iri.as_dyn();
+    let get = map.get(iri);
+    assert!(get.is_some());
+    Ok(())
+}
 
 fn h<H: std::hash::Hash>(x: &H) -> u64 {
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
