@@ -11,12 +11,8 @@ fn term_map() -> Result<(), Box<dyn std::error::Error>> {
     let mut map = HashSet::new();
     map.insert(t);
 
-    let ns = "http://example.com/";
-    let sf = "test";
-    let iri = SimpleIri::new(ns, Some(sf))?;
-    let iri = iri.as_dyn();
-    let get = map.get(iri);
-    assert!(get.is_some());
+    let iri = SimpleIri::new("http://example.com/", Some("test"))?;
+    assert!(map.get(iri.as_dyn()).is_some());
     Ok(())
 }
 
