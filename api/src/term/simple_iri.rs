@@ -3,6 +3,7 @@
 use super::*;
 use sophia_iri::error::{InvalidIri, Result};
 use sophia_iri::is_valid_suffixed_iri_ref;
+use std::borrow::Borrow;
 use std::fmt;
 use std::hash;
 
@@ -77,5 +78,11 @@ where
 impl<'a> hash::Hash for SimpleIri<'a> {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
         term_hash(self, state)
+    }
+}
+
+impl<'a> Borrow<dyn TTerm + 'a> for SimpleIri<'a> {
+    fn borrow(&self) -> &(dyn TTerm + 'a) {
+        self as _
     }
 }

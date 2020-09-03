@@ -272,6 +272,12 @@ where
     }
 }
 
+impl<'a, TD: TermData + 'a> std::borrow::Borrow<dyn TTerm + 'a> for BlankNode<TD> {
+    fn borrow(&self) -> &(dyn TTerm + 'a) {
+        self
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

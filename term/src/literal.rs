@@ -427,6 +427,12 @@ where
     }
 }
 
+impl<'a, TD: TermData + 'a> std::borrow::Borrow<dyn TTerm + 'a> for Literal<TD> {
+    fn borrow(&self) -> &(dyn TTerm + 'a) {
+        self
+    }
+}
+
 fn fmt_quoted_string<W: fmt::Write>(w: &mut W, txt: &str) -> fmt::Result {
     let mut cut = txt.len();
     let mut cutchar = '\0';
