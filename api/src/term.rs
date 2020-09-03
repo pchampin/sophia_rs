@@ -55,15 +55,71 @@ pub use simple_iri::SimpleIri;
 ///
 /// * if it implements [`Hash`](https://doc.rust-lang.org/std/hash/trait.Hash.html),
 ///   it must be consistent with (or, even better, based on)
-///   [`term_hash`](./fn.term_hash.html);
+///   [`term_hash()`];
 ///
 /// * if it implements [`PartialEq`](https://doc.rust-lang.org/std/cmp/trait.PartialEq.html),
 ///   it must be consistent with (or, even better, based on)
-///   [`term_eq`](./fn.term_eq.html);
+///   [`term_eq()`];
 ///
 /// * if it implements [`PartialCmp`](https://doc.rust-lang.org/std/cmp/trait.PartialCmp.html)
 ///   it must be consistent with (or, even better, based on)
 ///   [`term_cmp`](./fn.term_cmp.html);
+///
+/// * if it implements [`Borrow<dyn TTerm + 'a>`](https://doc.rust-lang.org/std/borrow/trait.Borrow.html)
+///   it must have equivalent implementations to [`term_hash()`] and [`term_eq()`]
+///   so that the contract of `Borrow` upholds with the implementations on
+///   `dyn TTerm`.
+///
+/// # `Borrow<dyn TTerm + 'a>`
+///
+/// Implementing `Borrow<dyn TTerm + 'a>` for a term increases the ergonomics
+/// when the type is used as key in a [`HashSet`] or similar. It allows to
+/// search for keys with any implementation of the `TTerm` trait, e.g.:
+///
+/// ```
+/// # use std::collections::HashSet;
+/// use sophia_term::Term;
+/// use sophia_api::term::{SimpleIri, TTerm as _};
+///
+/// let t: Term<String> = Term::new_iri("http://example.com/test")?;
+/// let mut map = HashSet::new();
+/// map.insert(t);
+///
+/// let iri = SimpleIri::new("http://example.com/", Some("test"))?;
+/// assert!(map.get(iri.as_dyn()).is_some());
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+///
+/// ## Implementation
+///
+/// Besides the contract [mentioned above](#Contract), it should be noted that
+/// someone wants to implement `Borrow<dyn TTerm + 'a>` instead of
+/// `Borrow<dyn TTerm>` for a custom term. The reason is that Rust assumes that
+///  every `dyn Trait` object has a `'static` lifetime which means that
+/// borrowing `dyn TTerm` requires borrowing of the value for the `'static`
+/// lifetime. To remove this assumption implement `Borrow<dyn TTerm + 'a>`
+/// instead, e.g.:
+///
+/// ```
+/// # use sophia_api::term::{TTerm, TermKind, RawValue};
+/// # struct MyTerm;
+/// # impl TTerm for MyTerm {
+/// #     fn kind(&self) -> TermKind {TermKind::BlankNode}
+/// #     fn value_raw(&self) -> RawValue { "".into() }
+/// #     fn as_dyn(&self) -> &dyn TTerm { self }
+/// # }
+/// use std::borrow::Borrow;
+///
+/// impl<'a> Borrow<dyn TTerm + 'a> for MyTerm {
+///     fn borrow(&self) -> &(dyn TTerm + 'a) {
+///         self
+///     }
+/// }
+/// ```
+///
+/// [`term_hash()`]: ./fn.term_hash.html
+/// [`HashSet`]: https://doc.rust-lang.org/std/collections/struct.HashSet.html
+/// [`term_eq()`]: ./fn.term_eq.html
 pub trait TTerm {
     /// Returns the kind of this term (IRI, literal, blank node, variable).
     fn kind(&self) -> TermKind;
