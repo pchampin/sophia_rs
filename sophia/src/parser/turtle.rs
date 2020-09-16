@@ -11,6 +11,7 @@ use thiserror::Error;
 /// Turtle parser based on RIO.
 #[derive(Clone, Debug, Default)]
 pub struct TurtleParser {
+    /// The base IRI used by this parser to resolve relative IRI-references.
     pub base: Option<String>,
 }
 
@@ -25,6 +26,10 @@ impl<B: BufRead> TripleParser<B> for TurtleParser {
     }
 }
 
+/// A wrapper around [`rio_turtle::TurtleError`] that implements [`WithLocation`].
+///
+/// [`rio_turtle::TurtleError`]: ../../../rio_turtle/struct.TurtleError.html
+/// [`WithLocation`]: ../trait.WithLocation.html
 #[derive(Debug, Error)]
 #[error("{0}")]
 pub struct SophiaTurtleError(pub TurtleError);

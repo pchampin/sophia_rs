@@ -35,6 +35,8 @@ where
     T: IndexedDataset + Default,
     T::Index: Default,
 {
+    /// Build a new `DatasetWrapper` that indexes quads by graph name,
+    /// then by subject, then by predicate, then by object.
     pub fn new() -> Self {
         Self::default()
     }

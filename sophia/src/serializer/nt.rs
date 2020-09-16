@@ -23,13 +23,14 @@ pub struct NtConfig {
 }
 
 impl NtConfig {
+    /// Set the ascii configuration.
     pub fn set_ascii(&mut self, ascii: bool) -> &mut Self {
         self.ascii = ascii;
         self
     }
 }
 
-// N-Triples serializer.
+/// N-Triples serializer.
 pub struct NtSerializer<W> {
     config: NtConfig,
     write: W,

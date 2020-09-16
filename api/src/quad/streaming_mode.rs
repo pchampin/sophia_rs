@@ -135,7 +135,8 @@ where
 /// [`Quad`]: quad/trait.Quad.html
 #[macro_export]
 macro_rules! make_scoped_quad_streaming_mode {
-    ($mode: ident, $qt: ident) => {
+    ($(#[$attrs: meta])* $mode: ident, $qt: ident) => {
+        $(#[$attrs])*
         #[derive(Debug)]
         pub struct $mode(std::marker::PhantomData<$qt<'static>>);
         impl $crate::quad::streaming_mode::QuadStreamingMode for $mode {

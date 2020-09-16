@@ -43,6 +43,7 @@ where
     I: Unsigned,
     F: TermFactory + Default,
 {
+    /// Build a `TermIndexMap`.
     pub fn new() -> TermIndexMapU<I, F> {
         Self::default()
     }
@@ -167,11 +168,22 @@ where
 /// as an abstraction of all unsigned int types.
 ///
 pub trait Unsigned: Copy + Eq + std::hash::Hash {
+    /// The value zero.
     const ZERO: Self;
+
+    /// The value one.
     const ONE: Self;
+
+    /// Get the value as a `usize`.
     fn as_usize(&self) -> usize;
+
+    /// Construct a value from `usize`.
     fn from_usize(_: usize) -> Self;
+
+    /// Increment the value.
     fn inc(&mut self);
+
+    /// Decrement the value.
     fn dec(&mut self);
 }
 

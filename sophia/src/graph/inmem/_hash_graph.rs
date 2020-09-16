@@ -37,6 +37,8 @@ where
     I: TermIndexMap,
     I::Index: Hash,
 {
+    /// Build a new graph which stores its terms in a `TermIndexMap`, and its
+    /// triples in a `HashSet`.
     pub fn new() -> HashGraph<I> {
         HashGraph {
             terms: I::default(),
@@ -44,10 +46,12 @@ where
         }
     }
 
+    /// Returns the number of triples in the graph.
     pub fn len(&self) -> usize {
         self.triples.len()
     }
 
+    /// Returns whether the graph is empty.
     pub fn is_empty(&self) -> bool {
         self.triples.is_empty()
     }

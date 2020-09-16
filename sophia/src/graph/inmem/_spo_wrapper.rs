@@ -32,6 +32,8 @@ where
     T: IndexedGraph + Default,
     T::Index: Default,
 {
+    /// Build a `GraphWrapper`, indexing triples by subject, then by predicate,
+    /// then by object.
     pub fn new() -> Self {
         Self::default()
     }
