@@ -1,0 +1,11 @@
+
+[book]
+authors = [""]
+language = "en"
+multilingual = false
+src = "./book/src"
+title = "Sophia"
+
+[build]
+build-dir = "./book/out"
+create-missing = false
