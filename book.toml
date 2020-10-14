@@ -3,9 +3,9 @@
 authors = [""]
 language = "en"
 multilingual = false
-src = "./docs"
+src = "./book/src"
 title = "Sophia"
 
 [build]
-build-dir = "book"
+build-dir = "./book/out"
 create-missing = false
