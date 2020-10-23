@@ -16,18 +16,100 @@
 
 use crate::term::TTerm;
 use crate::triple::stream::TripleSource;
+use std::borrow::Borrow;
 use std::error::Error;
 
 /// A dataset that can be queried with SPARQL.
 pub trait SparqlDataset {
+    /// The type of terms that SELECT queries will return.
     type BindingsTerm: TTerm;
+    /// The type of bindings that SELECT queries will return.
     type BindingsResult: SparqlBindings<Self>;
+    /// The type of triples that GRAPH and DESCRIBE queries will return.
     type TriplesResult: TripleSource;
+    /// The type of errors that processing SPARQL queries may raise.
     type SparqlError: Error + 'static;
+    /// The type representing pre-processed queries.
+    ///
+    /// See [`prepare_query`](#tymethod.prepare_query) for more defail.
+    type Query: Query<Error=Self::SparqlError>;
 
-    /// Parse and immediately execute `query`
-    fn query(&self, query: &str) -> Result<SparqlResult<Self>, Self::SparqlError>;
+    /// Parse and immediately execute `query`.
+    ///
+    /// `query` is usually either a `&str` that will be parsed on the fly,
+    /// or a `Self::Query` that was earlier prepared by the [`prepare_query`] method.
+    ///
+    /// [`prepare_query`]: #method.prepared
+    fn query<Q>(&self, query: Q) -> Result<SparqlResult<Self>, Self::SparqlError>
+    where Q: ToQuery<Self::Query>;
+
+    /// Prepare a query for multiple future executions.
+    ///
+    /// This allows some implementation to mutualize parsing,
+    /// (or any other pre-processing step) of the query string.
+    /// There is however no guarantee on how much pre-processing is actually done.
+    ///
+    /// # Note to implementers
+    ///
+    /// If it is impossible or inconvenient to provide a type for pre-parsed queries,
+    /// you can still use `String`, which implements the [`Query`] trait.
+    ///
+    /// [`Query`]: ./trait.Query.html
+    fn prepare_query(&self, query_string: &str) ->Result<Self::Query, Self::SparqlError> {
+        Self::Query::parse(query_string)
+    }
 }
+
+/// Preprocessed query, ready for execution.
+///
+/// This trait exist to allow *some* implementations of [`SparqlDataset`]
+/// to mutualize the parsing of queries in the [`prepare_query`] method.
+///
+/// [`SparqlDataset`]: ./trait.SparqlDataset.html
+/// [`prepare_query`]: ./trait.SparqlDataset.html#tymethod.prepare_query
+pub trait Query: Sized {
+    type Error: Error + 'static;
+    fn parse(query_source: &str) -> Result<Self, Self::Error>;
+}
+
+impl Query for String {
+    type Error = std::convert::Infallible;
+    fn parse(query_source: &str) -> Result<Self, Self::Error> {
+        Ok(query_source.into())
+    }
+
+}
+
+/// A utility trait to allow [`SparqlDataset::query`]
+/// to accept either `&str` or `Self::Query`.
+///
+/// [`SparqlDataset::query`]: ./trait.SparqlDataset.html#tymethod.query
+pub trait ToQuery<Q: Query> {
+    type Out: Borrow<Q>;
+    fn to_query(self) -> Result<Self::Out, Q::Error>;
+}
+
+impl<'a, Q> ToQuery<Q> for &'a Q
+where
+    Q: Query,
+{
+    type Out = &'a Q;
+    fn to_query(self) -> Result<Self::Out, Q::Error> {
+        Ok(self)
+    }
+}
+
+impl<'a, Q> ToQuery<Q> for &'a str
+where
+    Q: Query,
+{
+    type Out = Q;
+    fn to_query(self) -> Result<Self::Out, Q::Error> {
+        Q::parse(self)
+    }
+}
+
+
 
 /// The result of executing a SPARQL query.
 pub enum SparqlResult<T>
@@ -119,9 +201,13 @@ mod dummy {
         type BindingsResult = MyBindings;
         type TriplesResult = Box<dyn Iterator<Item = Result<[MyTerm; 3], Infallible>>>;
         type SparqlError = Infallible;
+        type Query = String;
 
-        fn query(&self, query: &str) -> Result<SparqlResult<Self>, Self::SparqlError> {
-            match query {
+        fn query<Q>(&self, query: Q) -> Result<SparqlResult<Self>, Self::SparqlError>
+        where
+            Q: ToQuery<String>,
+        {
+            match query.to_query()?.borrow().as_ref() {
                 "ASK" => Ok(SparqlResult::Boolean(true)),
                 "GRAPH" => Ok(SparqlResult::Triples(Box::new(
                     self.clone().into_iter().map(|q| Ok(q.0)),
