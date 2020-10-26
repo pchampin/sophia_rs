@@ -5,14 +5,24 @@
 //! These traits are deliberately very generic.
 //! Specific implementations may have additional features, such as:
 //!
-//! - preparing a query for multiple use;
 //! - setting default values for `BASE`, `PREFIX`, `FROM`, `FROM NAMED` directives,
-//!   before parsing query string;
+//!   before parsing query string, or
 //! - pre-binding variables before evaluating query;
 //! - etc...
 //!
 //! However, we do not want to impose these feature, or any subset thereof,
 //! to all implementation of Sophia.
+//!
+//! # Extension point
+//!
+//! A possible way to extend these traits with additional functionalities
+//! (such as the ones described above)
+//! would be to define subtraits of `Query` with additional methods
+//! (*e.g.*`set_base`, `bind_variables`...).
+//!
+//! Sophia may define such traits in the future,
+//!
+//! Sophia
 
 use crate::term::TTerm;
 use crate::triple::stream::TripleSource;
@@ -32,7 +42,7 @@ pub trait SparqlDataset {
     /// The type representing pre-processed queries.
     ///
     /// See [`prepare_query`](#tymethod.prepare_query) for more defail.
-    type Query: Query<Error=Self::SparqlError>;
+    type Query: Query<Error = Self::SparqlError>;
 
     /// Parse and immediately execute `query`.
     ///
@@ -41,13 +51,16 @@ pub trait SparqlDataset {
     ///
     /// [`prepare_query`]: #method.prepared
     fn query<Q>(&self, query: Q) -> Result<SparqlResult<Self>, Self::SparqlError>
-    where Q: ToQuery<Self::Query>;
+    where
+        Q: ToQuery<Self::Query>;
 
     /// Prepare a query for multiple future executions.
     ///
-    /// This allows some implementation to mutualize parsing,
-    /// (or any other pre-processing step) of the query string.
-    /// There is however no guarantee on how much pre-processing is actually done.
+    /// This allows some implementation to separate parsing,
+    /// (or any other pre-processing step)
+    /// of the query string from the actual exectution of the query.
+    /// There is however no guarantee on how much pre-processing is actually done by this method
+    /// (see below).
     ///
     /// # Note to implementers
     ///
@@ -55,7 +68,7 @@ pub trait SparqlDataset {
     /// you can still use `String`, which implements the [`Query`] trait.
     ///
     /// [`Query`]: ./trait.Query.html
-    fn prepare_query(&self, query_string: &str) ->Result<Self::Query, Self::SparqlError> {
+    fn prepare_query(&self, query_string: &str) -> Result<Self::Query, Self::SparqlError> {
         Self::Query::parse(query_string)
     }
 }
@@ -77,7 +90,6 @@ impl Query for String {
     fn parse(query_source: &str) -> Result<Self, Self::Error> {
         Ok(query_source.into())
     }
-
 }
 
 /// A utility trait to allow [`SparqlDataset::query`]
@@ -108,8 +120,6 @@ where
         Q::parse(self)
     }
 }
-
-
 
 /// The result of executing a SPARQL query.
 pub enum SparqlResult<T>
@@ -168,58 +178,4 @@ where
 {
     /// Return the list of SELECTed variable names
     fn variables(&self) -> Vec<&str>;
-}
-
-/// A dummy module to check that implementing these traits is actually possible
-#[cfg(test)]
-mod dummy {
-    use super::*;
-    use crate::dataset::Dataset;
-    use std::convert::Infallible;
-
-    pub type MyTerm = crate::term::test::TestTerm<String>;
-    pub type MyQuad = ([MyTerm; 3], Option<MyTerm>);
-    pub type MyDataset = Vec<MyQuad>;
-
-    pub struct MyBindings(Box<dyn Iterator<Item = Result<Vec<Option<MyTerm>>, Infallible>>>);
-
-    impl IntoIterator for MyBindings {
-        type Item = Result<Vec<Option<MyTerm>>, Infallible>;
-        type IntoIter = Box<dyn Iterator<Item = Result<Vec<Option<MyTerm>>, Infallible>>>;
-        fn into_iter(self) -> Self::IntoIter {
-            self.0
-        }
-    }
-    impl SparqlBindings<MyDataset> for MyBindings {
-        fn variables(&self) -> Vec<&str> {
-            vec!["s"]
-        }
-    }
-
-    impl SparqlDataset for MyDataset {
-        type BindingsTerm = MyTerm;
-        type BindingsResult = MyBindings;
-        type TriplesResult = Box<dyn Iterator<Item = Result<[MyTerm; 3], Infallible>>>;
-        type SparqlError = Infallible;
-        type Query = String;
-
-        fn query<Q>(&self, query: Q) -> Result<SparqlResult<Self>, Self::SparqlError>
-        where
-            Q: ToQuery<String>,
-        {
-            match query.to_query()?.borrow().as_ref() {
-                "ASK" => Ok(SparqlResult::Boolean(true)),
-                "GRAPH" => Ok(SparqlResult::Triples(Box::new(
-                    self.clone().into_iter().map(|q| Ok(q.0)),
-                )
-                    as Self::TriplesResult)),
-                _ => Ok(SparqlResult::Bindings(MyBindings(Box::new(
-                    self.subjects()
-                        .unwrap()
-                        .into_iter()
-                        .map(|t| Ok(vec![Some(t)])),
-                )))),
-            }
-        }
-    }
 }
