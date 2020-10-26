@@ -39,5 +39,6 @@ pub mod parser;
 pub mod prefix;
 pub mod quad;
 pub mod serializer;
+pub mod sparql;
 pub mod term;
 pub mod triple;
