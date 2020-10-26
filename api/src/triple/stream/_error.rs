@@ -42,19 +42,11 @@ where
 {
     /// Checks if `StreamError` was raised by the `Source`.
     pub fn is_source_error(&self) -> bool {
-        if let SourceError(_) = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, SourceError(_))
     }
     /// Checks if `StreamError` was raised by the `Sink`.
     pub fn is_sink_error(&self) -> bool {
-        if let SinkError(_) = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, SinkError(_))
     }
     /// Converts `StreamError` into an inner error.
     pub fn inner_into<Err>(self) -> Err
