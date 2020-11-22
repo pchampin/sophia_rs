@@ -1,7 +1,7 @@
-//! A `TermCache` can be used to create terms while preventing the proliferation of duplicate string.
+//! A `DataCache` can be used to create terms while preventing the proliferation of duplicate string.
 //!
 //! This is especially useful for [`RcTerm`s](../index.html) and [`ArcTerm`s](../index.html),
-//! for which two implementations of `TermCache` are provided.
+//! for which two implementations of `DataCache` are provided.
 
 use crate::{
     data::{FromData, IntoData, TermData},
@@ -15,7 +15,7 @@ use weak_table::{traits::WeakKey, WeakHashSet};
 
 use super::*;
 
-/// `TermData` that can be used in a `TermCache`.
+/// `TermData` that can be used in a `DataCache`.
 pub trait CacheableData: TermData {
     /// The weak-key that is stored in the cache.
     type Weak: WeakKey<Strong = Self, Key = str>;
@@ -29,29 +29,29 @@ impl CacheableData for Arc<str> {
     type Weak = sync::Weak<str>;
 }
 
-/// A `TermCache` does ref-counting on the underlying lexical data like IRIs,
-/// namespaces and literals.
+/// A `DataCache` does ref-counting on lexical data required to build terms
+/// like IRIs, namespaces and literals.
 ///
 /// Each time a new term is created or when a term is cloned the cache looks up
 /// its memory if there is already a ref-counted version available. This reuse
 /// makes copying of terms, especially suffixed IRIs, cheaper and saves memory.
 #[derive(Clone)]
-pub struct TermCache<CD>(WeakHashSet<CD::Weak>)
+pub struct DataCache<CD>(WeakHashSet<CD::Weak>)
 where
     CD: CacheableData;
 
-/// A `TermCache` for single-threaded environments.
-pub type RcTermCache = TermCache<rc::Rc<str>>;
+/// A `DataCache` for single-threaded environments.
+pub type RcDataCache = DataCache<rc::Rc<str>>;
 
-/// A `TermCache` for multi-threaded environments.
-pub type ArcTermCache = TermCache<sync::Arc<str>>;
+/// A `DataCache` for multi-threaded environments.
+pub type ArcDataCache = DataCache<sync::Arc<str>>;
 
-impl<CD> fmt::Debug for TermCache<CD>
+impl<CD> fmt::Debug for DataCache<CD>
 where
     CD: CacheableData + Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "TermCache {{")?;
+        writeln!(f, "DataCache {{")?;
         writeln!(f, "  len : {}", self.0.len())?;
         writeln!(f, "  load: {:3} %", self.0.load_factor() * 100f32)?;
         write!(f, "  elements: [ ")?;
@@ -62,24 +62,24 @@ where
     }
 }
 
-impl<CD> Default for TermCache<CD>
+impl<CD> Default for DataCache<CD>
 where
     CD: CacheableData,
 {
     fn default() -> Self {
-        TermCache(WeakHashSet::default())
+        DataCache(WeakHashSet::default())
     }
 }
 
-impl<CD: CacheableData> TermCache<CD> {
+impl<CD: CacheableData> DataCache<CD> {
     /// Build an IRI from the raw value of the term.
     fn iri_from_raw(&mut self, rv: RawValue) -> Iri<CD>
     where
         CD: for<'a> From<&'a str>,
     {
         match rv {
-            RawValue(ns, Some(suffix)) => Iri::new_suffixed_unchecked(ns, suffix).into(),
-            RawValue(iri, None) => Iri::new_unchecked(iri).into(),
+            RawValue(ns, Some(suffix)) => self.iri_suffixed(ns, suffix),
+            RawValue(iri, None) => self.iri(iri),
         }
     }
 
@@ -203,7 +203,7 @@ mod test {
     #[test]
     fn cache_cnt() -> Result<(), Box<dyn std::error::Error>> {
         let ns = "http://example.org/ns/";
-        let mut cache = RcTermCache::default();
+        let mut cache = RcDataCache::default();
         let _a = cache.iri_suffixed(ns, "a")?;
         let _b = cache.iri_suffixed(ns, "b")?;
         assert_eq!(3, cache.len());
