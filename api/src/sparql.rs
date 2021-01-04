@@ -19,10 +19,13 @@
 //! (such as the ones described above)
 //! would be to define subtraits of `Query` with additional methods
 //! (*e.g.*`set_base`, `bind_variables`...).
+//! Implementation could then express requirements as trait bound, e.g.:
+//! ```ignore
+//!     D: SparqlDataset,
+//!     D:Query: Clone + BindVariable,
+//! ```
 //!
-//! Sophia may define such traits in the future,
-//!
-//! Sophia
+//! Sophia may define such traits in the future.
 
 use crate::term::TTerm;
 use crate::triple::stream::TripleSource;
