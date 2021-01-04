@@ -7,3 +7,6 @@ members = [
     "term",
     "jsonld",
 ]
+
+[profile.release]
+lto = true
