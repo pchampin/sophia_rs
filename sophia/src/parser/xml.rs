@@ -19,11 +19,9 @@ pub struct RdfXmlParser {
 impl<B: BufRead> TripleParser<B> for RdfXmlParser {
     type Source = StrictRioSource<RioRdfXmlParser<B>, RdfXmlError>;
     fn parse(&self, data: B) -> Self::Source {
-        let base: &str = match &self.base {
-            Some(base) => &base,
-            None => "x-no-base:///",
-        };
-        StrictRioSource::from(RioRdfXmlParser::new(data, base))
+        // TODO issue RdfXmlError if base can not be parsed
+        let base = self.base.clone().and_then(|b| oxiri::Iri::parse(b).ok());
+        StrictRioSource::Parser(RioRdfXmlParser::new(data, base))
     }
 }
 

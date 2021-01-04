@@ -18,11 +18,9 @@ pub struct TurtleParser {
 impl<B: BufRead> TripleParser<B> for TurtleParser {
     type Source = StrictRioSource<RioTurtleParser<B>, TurtleError>;
     fn parse(&self, data: B) -> Self::Source {
-        let base: &str = match &self.base {
-            Some(base) => &base,
-            None => "x-no-base:///",
-        };
-        StrictRioSource::from(RioTurtleParser::new(data, base))
+        // TODO issue TurtleError if base can not be parsed
+        let base = self.base.clone().and_then(|b| oxiri::Iri::parse(b).ok());
+        StrictRioSource::Parser(RioTurtleParser::new(data, base))
     }
 }
 
@@ -38,7 +36,10 @@ impl WithLocation for SophiaTurtleError {
     fn location(&self) -> Location {
         match self.0.textual_position() {
             None => Location::Unknown,
-            Some(pos) => Location::from_lico(pos.line_number() + 1, pos.byte_number() + 1),
+            Some(pos) => Location::from_lico(
+                pos.line_number() as usize + 1,
+                pos.byte_number() as usize + 1,
+            ),
         }
     }
 }

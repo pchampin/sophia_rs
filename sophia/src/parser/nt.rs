@@ -14,7 +14,7 @@ pub struct NTriplesParser {}
 impl<B: BufRead> TripleParser<B> for NTriplesParser {
     type Source = StrictRioSource<RioNTParser<B>, TurtleError>;
     fn parse(&self, data: B) -> Self::Source {
-        StrictRioSource::from(RioNTParser::new(data))
+        StrictRioSource::Parser(RioNTParser::new(data))
     }
 }
 

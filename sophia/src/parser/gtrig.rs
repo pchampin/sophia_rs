@@ -15,11 +15,9 @@ pub struct GTriGParser {
 impl<B: BufRead> QuadParser<B> for GTriGParser {
     type Source = GeneralizedRioSource<RioGTriGParser<B>, TurtleError>;
     fn parse(&self, data: B) -> Self::Source {
-        let base: &str = match &self.base {
-            Some(base) => &base,
-            None => "",
-        };
-        GeneralizedRioSource::from(RioGTriGParser::new(data, base))
+        // TODO issue TurtleError if base can not be parsed
+        let base = self.base.clone().and_then(|b| oxiri::Iri::parse(b).ok());
+        GeneralizedRioSource::Parser(RioGTriGParser::new(data, base))
     }
 }
 

@@ -14,7 +14,7 @@ pub struct NQuadsParser {}
 impl<B: BufRead> QuadParser<B> for NQuadsParser {
     type Source = StrictRioSource<RioNQParser<B>, TurtleError>;
     fn parse(&self, data: B) -> Self::Source {
-        StrictRioSource::from(RioNQParser::new(data))
+        StrictRioSource::Parser(RioNQParser::new(data))
     }
 }
 
