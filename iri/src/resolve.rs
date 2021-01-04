@@ -93,7 +93,7 @@ impl<'a> IriParsed<'a> {
                     path = self.path.clone();
                     query = other.query.or(self.query);
                 } else {
-                    if other.path[0] == "" {
+                    if other.path[0].is_empty() {
                         path = other.path.clone();
                     } else {
                         path = self.merged_path(&other.path);
@@ -187,7 +187,7 @@ fn remove_dot_segments(path: &mut Vec<&str>) {
         if path[i] == "." {
             path.remove(i);
         } else if path[i] == ".." {
-            if i != 0 && (i != 1 || path[0] != "") {
+            if i != 0 && (i != 1 || !path[0].is_empty()) {
                 path.remove(i - 1);
                 i -= 1;
             }

@@ -155,9 +155,9 @@ fn str_absolute(txt: &str) -> Absolute {
         if b == b':' {
             return Absolute::Yes;
         }
-        if !(b'A' <= b && b <= b'Z'
-            || b'a' <= b && b <= b'z'
-            || b'0' <= b && b <= b'9'
+        if !((b'A'..b'Z').contains(&b)
+            || (b'a'..b'z').contains(&b)
+            || (b'0'..b'9').contains(&b)
             || b == b'.'
             || b == b'+'
             || b == b'-')

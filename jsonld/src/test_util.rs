@@ -43,7 +43,7 @@ impl Manifest {
         &self.iri
     }
 
-    pub fn tests<'s>(&'s self) -> impl Iterator<Item = Test<'s>> + 's {
+    pub fn tests(&self) -> impl Iterator<Item = Test> {
         self.json["sequence"]
             .members()
             .map(move |val| Test::new(self, val))

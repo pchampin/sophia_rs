@@ -720,12 +720,13 @@ pub trait MutableDataset: Dataset {
             .map_err(|err| err.unwrap_sink_error())?)
     }
 
+    #[allow(clippy::result_unit_err)] // workaround https://github.com/rust-lang/rust-clippy/issues/6546
     /// Keep only the quads matching the given matchers.
     ///
     /// # Note to implementors
     /// The default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
-    fn retain_matching<S, P, O, G>(&mut self, ms: &S, mp: &P, mo: &O, mg: &G) -> MDResult<Self, ()>
+    fn retain_matching<S, P, O, G>(&mut self, ms: &S, mp: &P, mo: &O, mg: &G) -> Result<(), Self::MutationError>
     where
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
