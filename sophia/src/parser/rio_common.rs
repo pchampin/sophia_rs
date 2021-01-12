@@ -1,4 +1,10 @@
-//! Common implementations for adapting [RIO](https://github.com/Tpt/rio/blob/master/turtle/src/turtle.rs) parsers.
+//! Common implementations for adapting
+//! [RIO](https://github.com/Tpt/rio/blob/master/turtle/src/turtle.rs) parsers.
+//!
+//! NB: Rio provides its own adapter for Sophia's traits (using the `sophia` features).
+//! However,
+//! published versions of Rio will always depend on the previously published version of Sophia,
+//! which makes it impossible for Sophia itself to rely on that feature.
 
 use std::error::Error;
 use std::result::Result as StdResult;
@@ -6,12 +12,12 @@ use std::result::Result as StdResult;
 use rio_api::model::*;
 use rio_api::parser::*;
 
+use sophia_api::ns::{rdf, xsd};
 use sophia_api::quad::stream::*;
 use sophia_api::quad::streaming_mode::StreamedQuad;
+use sophia_api::term::*;
 use sophia_api::triple::stream::*;
 use sophia_api::triple::streaming_mode::StreamedTriple;
-use sophia_term::literal::convert::AsLiteral;
-use sophia_term::{BoxTerm, RefTerm};
 
 /// TripleSource / QuadSource adapter for RIO TripleParser / QuadParser.
 pub enum StrictRioSource<T, E> {
@@ -68,7 +74,7 @@ where
 }
 
 /// A triple produced by a RIO source.
-pub type RioSourceTriple<'a> = [RefTerm<'a>; 3];
+pub type RioSourceTriple<'a> = [RioTermWrapper<'a>; 3];
 sophia_api::make_scoped_triple_streaming_mode!(
     /// A scoped RIO source triple.
     ScopedRioSourceTriple,
@@ -98,9 +104,9 @@ where
                 parser
                     .parse_step(&mut |t| -> StdResult<(), MyStreamError<E, EF>> {
                         f(StreamedTriple::scoped([
-                            rio2refterm(t.subject.into()),
-                            rio2refterm(t.predicate.into()),
-                            rio2refterm(t.object.into()),
+                            RioTermWrapper(t.subject.into()),
+                            RioTermWrapper(t.predicate.into()),
+                            RioTermWrapper(t.object),
                         ]))
                         .map_err(MyStreamError::from_sink_error)
                     })
@@ -112,7 +118,7 @@ where
 }
 
 /// A RIO source quad.
-pub type RioSourceQuad<'a> = ([RefTerm<'a>; 3], Option<RefTerm<'a>>);
+pub type RioSourceQuad<'a> = ([RioTermWrapper<'a>; 3], Option<RioTermWrapper<'a>>);
 sophia_api::make_scoped_quad_streaming_mode!(
     /// A scoped RIO source quad.
     ScopedRioSourceQuad,
@@ -142,11 +148,11 @@ where
                     .parse_step(&mut |q| -> StdResult<(), MyStreamError<E, EF>> {
                         f(StreamedQuad::scoped((
                             [
-                                rio2refterm(q.subject.into()),
-                                rio2refterm(q.predicate.into()),
-                                rio2refterm(q.object.into()),
+                                RioTermWrapper(q.subject.into()),
+                                RioTermWrapper(q.predicate.into()),
+                                RioTermWrapper(q.object),
                             ],
-                            q.graph_name.map(|g| rio2refterm(g.into())),
+                            q.graph_name.map(|g| RioTermWrapper(g.into())),
                         )))
                         .map_err(MyStreamError::from_sink_error)
                     })
@@ -156,6 +162,14 @@ where
         }
     }
 }
+
+/// A Generalized RIO source quad.
+pub type GRioSourceQuad<'a> = ([GRioTermWrapper<'a>; 3], Option<GRioTermWrapper<'a>>);
+sophia_api::make_scoped_quad_streaming_mode!(
+    /// A scoped RIO source quad.
+    ScopedGRioSourceQuad,
+    GRioSourceQuad
+);
 
 /// QuadSource adapter for RIO GeneralizedQuadParser.
 pub enum GeneralizedRioSource<T, E> {
@@ -180,7 +194,7 @@ where
     E: Error + 'static,
 {
     type Error = E;
-    type Quad = ScopedRioSourceQuad;
+    type Quad = ScopedGRioSourceQuad;
 
     fn try_for_some_quad<F, EF>(&mut self, f: &mut F) -> StreamResult<bool, E, EF>
     where
@@ -197,11 +211,11 @@ where
                     .parse_step(&mut |q| -> StdResult<(), MyStreamError<E, EF>> {
                         f(StreamedQuad::scoped((
                             [
-                                rio2refterm(q.subject),
-                                rio2refterm(q.predicate),
-                                rio2refterm(q.object),
+                                GRioTermWrapper(q.subject),
+                                GRioTermWrapper(q.predicate),
+                                GRioTermWrapper(q.object),
                             ],
-                            q.graph_name.map(rio2refterm),
+                            q.graph_name.map(GRioTermWrapper),
                         )))
                         .map_err(MyStreamError::from_sink_error)
                     })
@@ -219,29 +233,107 @@ fn consume_err<E>(opt: &mut Option<E>) -> E {
     })
 }
 
-/// Convert RIO term to Sophia term
-pub fn rio2refterm(t: GeneralizedTerm) -> RefTerm {
-    use Literal::*;
+/// TTerm wrapper for Rio Term
+pub struct RioTermWrapper<'a>(Term<'a>);
 
-    match t {
-        GeneralizedTerm::BlankNode(b) => RefTerm::new_bnode(b.id).unwrap(),
-        GeneralizedTerm::NamedNode(n) => {
-            RefTerm::new_iri(n.iri).expect("Already checked by parser but determine if absolute.")
+impl<'a> TTerm for RioTermWrapper<'a> {
+    /// Returns the kind of this term (IRI, literal, blank node, variable).
+    fn kind(&self) -> TermKind {
+        match self.0 {
+            Term::BlankNode(_) => TermKind::BlankNode,
+            Term::Literal(_) => TermKind::Literal,
+            Term::NamedNode(_) => TermKind::Iri,
         }
-        GeneralizedTerm::Literal(Simple { value }) => value.as_literal().into(),
-        GeneralizedTerm::Literal(LanguageTaggedString { value, language }) => {
-            RefTerm::new_literal_lang_unchecked(value, language)
+    }
+
+    fn datatype(&self) -> Option<SimpleIri> {
+        if let Term::Literal(lit) = self.0 {
+            Some(match lit {
+                Literal::Simple { .. } => xsd::string,
+                Literal::LanguageTaggedString { .. } => rdf::langString,
+                Literal::Typed { datatype, .. } => SimpleIri::new_unchecked(datatype.iri, None),
+            })
+        } else {
+            None
         }
-        GeneralizedTerm::Literal(Typed { value, datatype }) => RefTerm::new_literal_dt_unchecked(
-            value,
-            RefTerm::new_iri(datatype.iri)
-                .expect("Already checked by parser but determine if absolute."),
-        ),
-        GeneralizedTerm::Variable(v) => RefTerm::new_variable_unchecked(v.name),
+    }
+
+    fn language(&self) -> Option<&str> {
+        if let Term::Literal(Literal::LanguageTaggedString { language, .. }) = self.0 {
+            Some(language)
+        } else {
+            None
+        }
+    }
+
+    fn value_raw(&self) -> RawValue {
+        use Literal::*;
+        match self.0 {
+            Term::BlankNode(node) => node.id.into(),
+            Term::Literal(Simple { value }) => value.into(),
+            Term::Literal(LanguageTaggedString { value, .. }) => value.into(),
+            Term::Literal(Typed { value, .. }) => value.into(),
+            Term::NamedNode(node) => node.iri.into(),
+        }
+    }
+
+    fn is_absolute(&self) -> bool {
+        // Rio standard terms are always absolute
+        true
+    }
+
+    fn as_dyn(&self) -> &dyn TTerm {
+        self
     }
 }
 
-/// Convert RIO term to Sophia term
-pub fn rio2boxterm(t: GeneralizedTerm) -> BoxTerm {
-    rio2refterm(t).map_into()
+/// TTerm wrapper for Rio Generalized Term
+pub struct GRioTermWrapper<'a>(GeneralizedTerm<'a>);
+
+impl<'a> TTerm for GRioTermWrapper<'a> {
+    /// Returns the kind of this term (IRI, literal, blank node, variable).
+    fn kind(&self) -> TermKind {
+        match self.0 {
+            GeneralizedTerm::BlankNode(_) => TermKind::BlankNode,
+            GeneralizedTerm::Literal(_) => TermKind::Literal,
+            GeneralizedTerm::NamedNode(_) => TermKind::Iri,
+            GeneralizedTerm::Variable(_) => TermKind::Variable,
+        }
+    }
+
+    fn datatype(&self) -> Option<SimpleIri> {
+        if let GeneralizedTerm::Literal(lit) = self.0 {
+            Some(match lit {
+                Literal::Simple { .. } => xsd::string,
+                Literal::LanguageTaggedString { .. } => rdf::langString,
+                Literal::Typed { datatype, .. } => SimpleIri::new_unchecked(datatype.iri, None),
+            })
+        } else {
+            None
+        }
+    }
+
+    fn language(&self) -> Option<&str> {
+        if let GeneralizedTerm::Literal(Literal::LanguageTaggedString { language, .. }) = self.0 {
+            Some(language)
+        } else {
+            None
+        }
+    }
+
+    fn value_raw(&self) -> RawValue {
+        use Literal::*;
+        match self.0 {
+            GeneralizedTerm::BlankNode(node) => node.id.into(),
+            GeneralizedTerm::Literal(Simple { value }) => value.into(),
+            GeneralizedTerm::Literal(LanguageTaggedString { value, .. }) => value.into(),
+            GeneralizedTerm::Literal(Typed { value, .. }) => value.into(),
+            GeneralizedTerm::NamedNode(node) => node.iri.into(),
+            GeneralizedTerm::Variable(var) => var.name.into(),
+        }
+    }
+
+    fn as_dyn(&self) -> &dyn TTerm {
+        self
+    }
 }
