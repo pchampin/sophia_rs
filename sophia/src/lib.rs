@@ -118,6 +118,12 @@ pub mod serializer {
     pub mod nt;
 }
 /// This module re-exports symbols from
+/// [`sophia_api::sparql`](https://docs.rs/sophia_api/latest/sophia_api/sparql/)
+pub mod sparql {
+    pub use sophia_api::sparql::*;
+}
+/// This module re-exports symbols from
+/// This module re-exports symbols from
 /// [`sophia_api::term`](https://docs.rs/sophia_api/latest/sophia_api/term/)
 /// and
 /// [`sophia_term`](https://docs.rs/sophia_term/latest/sophia_term/).
