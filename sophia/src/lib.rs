@@ -116,6 +116,10 @@ pub mod serializer {
     pub use sophia_api::serializer::*;
     pub mod nq;
     pub mod nt;
+    pub mod rio_common;
+    pub mod turtle;
+    #[cfg(feature = "xml")]
+    pub mod xml;
 }
 /// This module re-exports symbols from
 /// [`sophia_api::sparql`](https://docs.rs/sophia_api/latest/sophia_api/sparql/)
