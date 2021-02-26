@@ -578,7 +578,7 @@ pub trait MutableGraph: Graph {
             .map_ok(|t| [t.s().clone(), t.p().clone(), t.o().clone()])
             .collect::<std::result::Result<Vec<_>, _>>()
             .map_err(Into::into)?;
-        let mut to_remove = to_remove.into_iter().as_triple_source();
+        let mut to_remove = to_remove.into_iter().into_triple_source();
         Ok(self
             .remove_all(&mut to_remove)
             .map_err(|err| err.unwrap_sink_error())?)
@@ -608,7 +608,7 @@ pub trait MutableGraph: Graph {
             .map_ok(|t| [t.s().clone(), t.p().clone(), t.o().clone()])
             .collect::<std::result::Result<Vec<_>, _>>()
             .map_err(Into::into)?;
-        let mut to_remove = to_remove.into_iter().as_triple_source();
+        let mut to_remove = to_remove.into_iter().into_triple_source();
         self.remove_all(&mut to_remove)
             .map_err(|err| err.unwrap_sink_error())?;
         Ok(())

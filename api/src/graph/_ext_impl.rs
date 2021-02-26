@@ -9,7 +9,7 @@ use resiter::oks::*;
 
 use super::*;
 use crate::term::{term_eq, CopiableTerm, CopyTerm, TTerm};
-use crate::triple::stream::{AsTripleSource, StreamError, StreamResult, TripleSource};
+use crate::triple::stream::{IntoTripleSource, StreamError, StreamResult, TripleSource};
 use crate::triple::streaming_mode::*;
 use crate::triple::*;
 
@@ -25,7 +25,7 @@ where
         Box::new(
             <[T]>::iter(self)
                 .map(StreamedTriple::by_ref)
-                .as_triple_source(),
+                .into_triple_source(),
         )
     }
 }
@@ -42,7 +42,7 @@ where
         Box::new(
             <[T]>::iter(self)
                 .map(StreamedTriple::by_ref)
-                .as_triple_source(),
+                .into_triple_source(),
         )
     }
 }
@@ -109,7 +109,7 @@ where
 
     #[inline]
     fn triples(&self) -> GTripleSource<Self> {
-        Box::from(self.iter().map(StreamedTriple::by_ref).as_triple_source())
+        Box::from(self.iter().map(StreamedTriple::by_ref).into_triple_source())
     }
 }
 

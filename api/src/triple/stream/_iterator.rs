@@ -33,24 +33,36 @@ where
     }
 }
 
-pub type AsInfallibleSource<I, T> = Map<I, fn(T) -> Result<T, Infallible>>;
+pub type IntoInfallibleSource<I, T> = Map<I, fn(T) -> Result<T, Infallible>>;
+
+#[deprecated(since = "0.6.3", note = "has been renamed to IntoInfallibleSource")]
+pub use IntoInfallibleSource as AsInfallibleSource;
 
 /// A utility extension trait for converting any iterator of [`Triple`]s
 /// into [`TripleSource`], by wrapping its items in `Ok` results.
 ///
 /// [`TripleSource`]: trait.TripleSource.html
 /// [`Triple`]: ../trait.Triple.html
-pub trait AsTripleSource<T>: Sized {
+pub trait IntoTripleSource<T>: Sized {
     /// Map all items of this iterator into an Ok result.
-    fn as_triple_source(self) -> AsInfallibleSource<Self, T>;
+    fn into_triple_source(self) -> IntoInfallibleSource<Self, T>;
+
+    #[deprecated(since = "0.6.3", note = "has been renamed to into_triple_source")]
+    #[allow(clippy::wrong_self_convention)]
+    fn as_triple_source(self) -> IntoInfallibleSource<Self, T> {
+        self.into_triple_source()
+    }
 }
 
-impl<T, I> AsTripleSource<T> for I
+#[deprecated(since = "0.6.3", note = "has been renamed to IntoTripleSource")]
+pub use self::IntoTripleSource as AsTripleSource;
+
+impl<T, I> IntoTripleSource<T> for I
 where
     I: Iterator<Item = T> + Sized,
     T: Triple,
 {
-    fn as_triple_source(self) -> AsInfallibleSource<Self, T> {
+    fn into_triple_source(self) -> IntoInfallibleSource<Self, T> {
         self.map(Ok)
     }
 }

@@ -478,6 +478,7 @@ where
         self.leave_scope();
     }
 
+    #[allow(clippy::unnecessary_wraps)]
     fn node_end(&mut self) -> Result<()> {
         // Add the entity as a triple object if it is not top-level
         let o = self.parents.pop().unwrap();
@@ -522,6 +523,7 @@ where
         self.predicate_end(e)
     }
 
+    #[allow(clippy::unnecessary_wraps)]
     fn collection_item_end(&mut self) -> Result<()> {
         // End of the node parent.
         self.parents.pop();

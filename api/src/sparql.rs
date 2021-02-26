@@ -55,7 +55,7 @@ pub trait SparqlDataset {
     /// [`prepare_query`]: #method.prepared
     fn query<Q>(&self, query: Q) -> Result<SparqlResult<Self>, Self::SparqlError>
     where
-        Q: ToQuery<Self::Query>;
+        Q: IntoQuery<Self::Query>;
 
     /// Prepare a query for multiple future executions.
     ///
@@ -99,27 +99,27 @@ impl Query for String {
 /// to accept either `&str` or `Self::Query`.
 ///
 /// [`SparqlDataset::query`]: ./trait.SparqlDataset.html#tymethod.query
-pub trait ToQuery<Q: Query> {
+pub trait IntoQuery<Q: Query> {
     type Out: Borrow<Q>;
-    fn to_query(self) -> Result<Self::Out, Q::Error>;
+    fn into_query(self) -> Result<Self::Out, Q::Error>;
 }
 
-impl<'a, Q> ToQuery<Q> for &'a Q
+impl<'a, Q> IntoQuery<Q> for &'a Q
 where
     Q: Query,
 {
     type Out = &'a Q;
-    fn to_query(self) -> Result<Self::Out, Q::Error> {
+    fn into_query(self) -> Result<Self::Out, Q::Error> {
         Ok(self)
     }
 }
 
-impl<'a, Q> ToQuery<Q> for &'a str
+impl<'a, Q> IntoQuery<Q> for &'a str
 where
     Q: Query,
 {
     type Out = Q;
-    fn to_query(self) -> Result<Self::Out, Q::Error> {
+    fn into_query(self) -> Result<Self::Out, Q::Error> {
         Q::parse(self)
     }
 }

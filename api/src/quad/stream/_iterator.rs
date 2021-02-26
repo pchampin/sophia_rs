@@ -29,24 +29,36 @@ where
     }
 }
 
-pub type AsInfallibleSource<I, T> = Map<I, fn(T) -> Result<T, Infallible>>;
+pub type IntoInfallibleSource<I, T> = Map<I, fn(T) -> Result<T, Infallible>>;
+
+#[deprecated(since = "0.6.3", note = "has been renamed to IntoInfallibleSource")]
+pub use self::IntoInfallibleSource as AsInfallibleSource;
 
 /// A utility extension trait for converting any iterator of [`Quad`]s
 /// into [`QuadSource`], by wrapping its items in `Ok` results.
 ///
 /// [`QuadSource`]: trait.QuadSource.html
 /// [`Quad`]: ../trait.Quad.html
-pub trait AsQuadSource<T>: Sized {
+pub trait IntoQuadSource<T>: Sized {
     /// Map all items of this iterator into an Ok result.
-    fn as_quad_source(self) -> AsInfallibleSource<Self, T>;
+    fn into_quad_source(self) -> IntoInfallibleSource<Self, T>;
+
+    #[deprecated(since = "0.6.3", note = "has been renamed to into_quad_source")]
+    #[allow(clippy::wrong_self_convention)]
+    fn as_quad_source(self) -> IntoInfallibleSource<Self, T> {
+        self.into_quad_source()
+    }
 }
 
-impl<T, I> AsQuadSource<T> for I
+#[deprecated(since = "0.6.3", note = "has been renamed to IntoQuadSource")]
+pub use self::IntoQuadSource as AsQuadSource;
+
+impl<T, I> IntoQuadSource<T> for I
 where
     I: Iterator<Item = T> + Sized,
     T: Quad,
 {
-    fn as_quad_source(self) -> AsInfallibleSource<Self, T> {
+    fn into_quad_source(self) -> IntoInfallibleSource<Self, T> {
         self.map(Ok)
     }
 }

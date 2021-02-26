@@ -31,20 +31,41 @@ pub trait Triple {
 
     /// [`Quad`](../quad/trait.Quad.html) adapter owning this triple,
     /// pretending to belong to the default graph.
-    fn as_quad(self) -> TripleAsQuad<Self>
+    fn wrap_as_quad(self) -> TripleAsQuad<Self>
     where
         Self: Sized,
     {
         TripleAsQuad(self)
     }
+
+    #[deprecated(since = "0.6.3", note = "has been renamed to wrap_as_quad")]
+    #[allow(clippy::wrong_self_convention)]
+    fn as_quad(self) -> TripleAsQuad<Self>
+    where
+        Self: Sized,
+        Self::Term: Sized,
+    {
+        self.wrap_as_quad()
+    }
+
     /// [`Quad`](../quad/trait.Quad.html) adapter owning this triple,
     /// pretending to belong to a named graph with the given name.
-    fn as_quad_from(self, name: Self::Term) -> TripleAsQuadFrom<Self>
+    fn wrap_as_quad_from(self, name: Self::Term) -> TripleAsQuadFrom<Self>
     where
         Self: Sized,
         Self::Term: Sized,
     {
         TripleAsQuadFrom(self, name)
+    }
+
+    #[deprecated(since = "0.6.3", note = "has been renamed to wrap_as_quad_from")]
+    #[allow(clippy::wrong_self_convention)]
+    fn as_quad_from(self, name: Self::Term) -> TripleAsQuadFrom<Self>
+    where
+        Self: Sized,
+        Self::Term: Sized,
+    {
+        self.wrap_as_quad_from(name)
     }
 
     /// Iterator over the components of this triple

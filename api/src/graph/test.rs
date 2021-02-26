@@ -37,7 +37,7 @@ lazy_static! {
 
 pub fn no_triple() -> impl TripleSource {
     let v = Vec::<[StaticTerm; 3]>::new();
-    v.into_iter().as_triple_source()
+    v.into_iter().into_triple_source()
 }
 
 pub fn some_triples() -> impl TripleSource {
@@ -64,7 +64,7 @@ pub fn some_triples() -> impl TripleSource {
         [*I1B, *P1, *I2B],
         [*I2A, *P2, *I2B],
     ];
-    v.into_iter().as_triple_source()
+    v.into_iter().into_triple_source()
 }
 
 pub fn strict_node_types_triples() -> impl TripleSource {
@@ -75,7 +75,7 @@ pub fn strict_node_types_triples() -> impl TripleSource {
         [*B2, rdf::type_.into(), *L2],
         [*B2, rdf::type_.into(), *L2E],
     ];
-    v.into_iter().as_triple_source()
+    v.into_iter().into_triple_source()
 }
 
 pub fn generalized_node_types_triples() -> impl TripleSource {
@@ -86,7 +86,7 @@ pub fn generalized_node_types_triples() -> impl TripleSource {
         [*V1, *V2, *V3],
         [*B2, *V1, *L2E],
     ];
-    v.into_iter().as_triple_source()
+    v.into_iter().into_triple_source()
 }
 
 pub fn as_box_t<T: Triple, E>(triple: Result<T, E>) -> [BoxTerm; 3]

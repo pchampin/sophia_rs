@@ -1,5 +1,7 @@
 //! Contains helper functions and macros for testing Dataset implementations
 
+#![allow(clippy::unnecessary_wraps)] // required temporarily by the lazy_static clause
+
 use std::fmt::Debug;
 
 use crate::dataset::*;
@@ -26,7 +28,7 @@ lazy_static! {
 
 pub fn no_quad() -> impl QuadSource {
     let v = Vec::<([StaticTerm; 3], Option<StaticTerm>)>::new();
-    v.into_iter().as_quad_source()
+    v.into_iter().into_quad_source()
 }
 
 pub fn some_quads() -> impl QuadSource {
@@ -53,7 +55,7 @@ pub fn some_quads() -> impl QuadSource {
         ([*I1B, *P1, *I2B], *GN2),
         ([*I2A, *P2, *I2B], *GN2),
     ];
-    v.into_iter().as_quad_source()
+    v.into_iter().into_quad_source()
 }
 
 pub fn strict_node_types_quads() -> impl QuadSource {
@@ -67,7 +69,7 @@ pub fn strict_node_types_quads() -> impl QuadSource {
         ([*B2, rdf::type_.into(), *L2], None),
         ([*B2, rdf::type_.into(), *L2E], None),
     ];
-    v.into_iter().as_quad_source()
+    v.into_iter().into_quad_source()
 }
 
 pub fn generalized_node_types_quads() -> impl QuadSource {
@@ -81,7 +83,7 @@ pub fn generalized_node_types_quads() -> impl QuadSource {
         ([*V1, *V2, *V3], Some(*V3)),
         ([*B2, *V1, *L2E], None),
     ];
-    v.into_iter().as_quad_source()
+    v.into_iter().into_quad_source()
 }
 
 pub fn as_box_q<Q: Quad, E>(quad: Result<Q, E>) -> ([BoxTerm; 3], Option<BoxTerm>)

@@ -24,11 +24,20 @@ pub trait Quad {
     fn g(&self) -> Option<&Self::Term>;
 
     /// [`Triple`](../triple/trait.Triple.html) adapter owning this quad.
-    fn as_triple(self) -> QuadAsTriple<Self>
+    fn wrap_as_triple(self) -> QuadAsTriple<Self>
     where
         Self: Sized,
     {
         QuadAsTriple(self)
+    }
+
+    #[deprecated(since = "0.6.3", note = "Has been renamed to wrap_as_triple")]
+    #[allow(clippy::wrong_self_convention)]
+    fn as_triple(self) -> QuadAsTriple<Self>
+    where
+        Self: Sized,
+    {
+        self.wrap_as_triple()
     }
 
     /// Iterator over the components of this triple

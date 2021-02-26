@@ -714,7 +714,7 @@ pub trait MutableDataset: Dataset {
             })
             .collect::<std::result::Result<Vec<_>, _>>()
             .map_err(Into::into)?;
-        let mut to_remove = to_remove.into_iter().as_quad_source();
+        let mut to_remove = to_remove.into_iter().into_quad_source();
         Ok(self
             .remove_all(&mut to_remove)
             .map_err(|err| err.unwrap_sink_error())?)
@@ -754,7 +754,7 @@ pub trait MutableDataset: Dataset {
             })
             .collect::<std::result::Result<Vec<_>, _>>()
             .map_err(Into::into)?;
-        let mut to_remove = to_remove.into_iter().as_quad_source();
+        let mut to_remove = to_remove.into_iter().into_quad_source();
         self.remove_all(&mut to_remove)
             .map_err(|err| err.unwrap_sink_error())?;
         Ok(())

@@ -8,7 +8,7 @@ use std::hash::{BuildHasher, Hash};
 use resiter::oks::*;
 
 use super::*;
-use crate::quad::stream::{AsQuadSource, QuadSource, StreamError, StreamResult};
+use crate::quad::stream::{IntoQuadSource, QuadSource, StreamError, StreamResult};
 use crate::quad::streaming_mode::*;
 use crate::quad::*;
 use crate::term::{same_graph_name, term_eq, CopiableTerm, CopyTerm, TTerm};
@@ -22,7 +22,11 @@ where
 
     #[inline]
     fn quads(&self) -> DQuadSource<Self> {
-        Box::new(<[Q]>::iter(self).map(StreamedQuad::by_ref).as_quad_source())
+        Box::new(
+            <[Q]>::iter(self)
+                .map(StreamedQuad::by_ref)
+                .into_quad_source(),
+        )
     }
 }
 
@@ -35,7 +39,11 @@ where
 
     #[inline]
     fn quads(&self) -> DQuadSource<Self> {
-        Box::new(<[Q]>::iter(self).map(StreamedQuad::by_ref).as_quad_source())
+        Box::new(
+            <[Q]>::iter(self)
+                .map(StreamedQuad::by_ref)
+                .into_quad_source(),
+        )
     }
 }
 
@@ -117,7 +125,7 @@ where
 
     #[inline]
     fn quads(&self) -> DQuadSource<Self> {
-        Box::from(self.iter().map(StreamedQuad::by_ref).as_quad_source())
+        Box::from(self.iter().map(StreamedQuad::by_ref).into_quad_source())
     }
 }
 
