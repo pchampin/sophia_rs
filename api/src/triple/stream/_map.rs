@@ -97,7 +97,7 @@ where
         let mut buffer = VecDeque::new();
         std::mem::swap(&mut self.buffer, &mut buffer);
         let map = &mut self.map;
-        while self.buffer.is_empty() && remaining {
+        while buffer.is_empty() && remaining {
             match self.source.for_some_triple(&mut |t| {
                 buffer.push_back(Ok((map)(t)));
             }) {
