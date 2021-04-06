@@ -408,7 +408,14 @@ pub trait CollectibleGraph: Graph + Sized {
 }
 
 /// Type alias for results produced by a mutable graph.
-pub type MGResult<G, T> = std::result::Result<T, <G as MutableGraph>::MutationError>;
+pub type MgResult<G, T> = std::result::Result<T, <G as MutableGraph>::MutationError>;
+
+#[allow(clippy::upper_case_acronyms)]
+#[deprecated(
+    since = "0.7.0",
+    note = "Was renamed to MgResult, according to naming conventions"
+)]
+pub type MGResult<G, T> = MgResult<G, T>;
 
 /// Generic trait for mutable RDF graphs.
 ///
@@ -434,9 +441,9 @@ pub trait MutableGraph: Graph {
     /// # Usage
     /// ```
     /// # use sophia_api::ns::{Namespace, rdf, rdfs, xsd};
-    /// # use sophia_api::graph::{MutableGraph, MGResult};
+    /// # use sophia_api::graph::{MutableGraph, MgResult};
     ///
-    /// # fn populate<G: MutableGraph>(graph: &mut G) -> MGResult<G, ()> {
+    /// # fn populate<G: MutableGraph>(graph: &mut G) -> MgResult<G, ()> {
     /// let schema = Namespace::new("http://schema.org/").unwrap();
     /// let s_name = schema.get("name").unwrap();
     ///
@@ -447,7 +454,7 @@ pub trait MutableGraph: Graph {
     /// ```
     ///
     /// [`SetGraph`]: trait.SetGraph.html
-    fn insert<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MGResult<Self, bool>
+    fn insert<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MgResult<Self, bool>
     where
         TS: TTerm + ?Sized,
         TP: TTerm + ?Sized,
@@ -466,7 +473,7 @@ pub trait MutableGraph: Graph {
     /// because the triple was already absent from this [`SetGraph`].
     ///
     /// [`SetGraph`]: trait.SetGraph.html
-    fn remove<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MGResult<Self, bool>
+    fn remove<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MgResult<Self, bool>
     where
         TS: TTerm + ?Sized,
         TP: TTerm + ?Sized,
@@ -504,7 +511,7 @@ pub trait MutableGraph: Graph {
     {
         let mut src = src;
         let mut c = 0;
-        src.try_for_each_triple(|t| -> MGResult<Self, ()> {
+        src.try_for_each_triple(|t| -> MgResult<Self, ()> {
             if self.insert(t.s(), t.p(), t.o())? {
                 c += 1;
             }
@@ -535,7 +542,7 @@ pub trait MutableGraph: Graph {
     {
         let mut src = src;
         let mut c = 0;
-        src.try_for_each_triple(|t| -> MGResult<Self, ()> {
+        src.try_for_each_triple(|t| -> MgResult<Self, ()> {
             if self.remove(t.s(), t.p(), t.o())? {
                 c += 1;
             }
@@ -579,9 +586,8 @@ pub trait MutableGraph: Graph {
             .collect::<std::result::Result<Vec<_>, _>>()
             .map_err(Into::into)?;
         let mut to_remove = to_remove.into_iter().into_triple_source();
-        Ok(self
-            .remove_all(&mut to_remove)
-            .map_err(|err| err.unwrap_sink_error())?)
+        self.remove_all(&mut to_remove)
+            .map_err(|err| err.unwrap_sink_error())
     }
 
     /// Keep only the triples matching the given matchers.

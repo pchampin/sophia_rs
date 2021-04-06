@@ -395,7 +395,8 @@ fn variable() {
         let res = BoxTerm::new_variable(*id);
         assert!(
             res.is_ok(),
-            format!("{:?} should be accepted as a variable name", *id)
+            "{:?} should be accepted as a variable name",
+            *id
         );
 
         let var = res.unwrap();
@@ -408,7 +409,8 @@ fn variable() {
         let res = BoxTerm::new_variable(*id);
         assert!(
             res.is_err(),
-            format!("{:?} should be refused as a variable name", *id)
+            "{:?} should be refused as a variable name",
+            *id
         );
     }
 }

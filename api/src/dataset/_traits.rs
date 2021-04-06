@@ -538,7 +538,14 @@ pub trait CollectibleDataset: Dataset + Sized {
 }
 
 /// Type alias for results produced by a mutable dataset.
-pub type MDResult<D, T> = std::result::Result<T, <D as MutableDataset>::MutationError>;
+pub type MdResult<D, T> = std::result::Result<T, <D as MutableDataset>::MutationError>;
+
+#[allow(clippy::upper_case_acronyms)]
+#[deprecated(
+    since = "0.7.0",
+    note = "Was renamed to MdResult, according to naming conventions"
+)]
+pub type MDResult<D, T> = MdResult<D, T>;
 
 /// Generic trait for mutable RDF datasets.
 ///
@@ -568,7 +575,7 @@ pub trait MutableDataset: Dataset {
         p: &TP,
         o: &TO,
         g: Option<&TG>,
-    ) -> MDResult<Self, bool>
+    ) -> MdResult<Self, bool>
     where
         TS: TTerm + ?Sized,
         TP: TTerm + ?Sized,
@@ -594,7 +601,7 @@ pub trait MutableDataset: Dataset {
         p: &TP,
         o: &TO,
         g: Option<&TG>,
-    ) -> MDResult<Self, bool>
+    ) -> MdResult<Self, bool>
     where
         TS: TTerm + ?Sized,
         TP: TTerm + ?Sized,
@@ -633,7 +640,7 @@ pub trait MutableDataset: Dataset {
     {
         let mut src = src;
         let mut c = 0;
-        src.try_for_each_quad(|q| -> MDResult<Self, ()> {
+        src.try_for_each_quad(|q| -> MdResult<Self, ()> {
             if self.insert(q.s(), q.p(), q.o(), q.g())? {
                 c += 1;
             }
@@ -664,7 +671,7 @@ pub trait MutableDataset: Dataset {
     {
         let mut src = src;
         let mut c = 0;
-        src.try_for_each_quad(|q| -> MDResult<Self, ()> {
+        src.try_for_each_quad(|q| -> MdResult<Self, ()> {
             if self.remove(q.s(), q.p(), q.o(), q.g())? {
                 c += 1;
             }
@@ -695,7 +702,7 @@ pub trait MutableDataset: Dataset {
         mp: &P,
         mo: &O,
         mg: &G,
-    ) -> MDResult<Self, usize>
+    ) -> MdResult<Self, usize>
     where
         S: TermMatcher + ?Sized,
         P: TermMatcher + ?Sized,
@@ -715,9 +722,8 @@ pub trait MutableDataset: Dataset {
             .collect::<std::result::Result<Vec<_>, _>>()
             .map_err(Into::into)?;
         let mut to_remove = to_remove.into_iter().into_quad_source();
-        Ok(self
-            .remove_all(&mut to_remove)
-            .map_err(|err| err.unwrap_sink_error())?)
+        self.remove_all(&mut to_remove)
+            .map_err(|err| err.unwrap_sink_error())
     }
 
     #[allow(clippy::result_unit_err)] // workaround https://github.com/rust-lang/rust-clippy/issues/6546

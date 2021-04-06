@@ -133,7 +133,7 @@ macro_rules! impl_mutable_dataset_for_indexed_dataset {
             p: &TP_,
             o: &TO_,
             g: Option<&TG_>,
-        ) -> $crate::dataset::MDResult<Self, bool>
+        ) -> $crate::dataset::MdResult<Self, bool>
         where
             TS_: sophia_api::term::TTerm + ?Sized,
             TP_: sophia_api::term::TTerm + ?Sized,
@@ -148,7 +148,7 @@ macro_rules! impl_mutable_dataset_for_indexed_dataset {
             p: &TP_,
             o: &TO_,
             g: Option<&TG_>,
-        ) -> $crate::dataset::MDResult<Self, bool>
+        ) -> $crate::dataset::MdResult<Self, bool>
         where
             TS_: sophia_api::term::TTerm + ?Sized,
             TP_: sophia_api::term::TTerm + ?Sized,

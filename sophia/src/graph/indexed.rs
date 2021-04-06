@@ -104,7 +104,7 @@ macro_rules! impl_mutable_graph_for_indexed_graph {
             s: &TS_,
             p: &TP_,
             o: &TO_,
-        ) -> $crate::graph::MGResult<Self, bool>
+        ) -> $crate::graph::MgResult<Self, bool>
         where
             TS_: sophia_api::term::TTerm + ?Sized,
             TP_: sophia_api::term::TTerm + ?Sized,
@@ -117,7 +117,7 @@ macro_rules! impl_mutable_graph_for_indexed_graph {
             s: &TS_,
             p: &TP_,
             o: &TO_,
-        ) -> $crate::graph::MGResult<Self, bool>
+        ) -> $crate::graph::MgResult<Self, bool>
         where
             TS_: sophia_api::term::TTerm + ?Sized,
             TP_: sophia_api::term::TTerm + ?Sized,

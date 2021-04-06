@@ -31,8 +31,15 @@ mod _map;
 pub use _map::*;
 
 /// Type alias for referencing the `TermData` used in a `QuadSource`.
-pub type QSTerm<S> =
+pub type QsTerm<S> =
     <<<S as QuadSource>::Quad as QuadStreamingMode>::UnsafeQuad as UnsafeQuad>::Term;
+
+#[allow(clippy::upper_case_acronyms)]
+#[deprecated(
+    since = "0.6.3",
+    note = "Was renamed to QsTerm, according to naming conventions"
+)]
+pub type QSTerm<S> = QsTerm<S>;
 
 /// A quad source produces [quads], and may also fail in the process.
 ///

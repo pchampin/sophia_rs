@@ -12,7 +12,7 @@ pub enum JsonLdError {
 
     /// An IO error.
     #[error("IO Error: {0}")]
-    IOError(#[from] std::io::Error),
+    IoError(#[from] std::io::Error),
 
     /// An unsupported JSON-LD version
     #[error("unsupported version: {0:?}")]

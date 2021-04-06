@@ -77,7 +77,7 @@ where
         p: &TP,
         o: &TO,
         g: Option<&TG>,
-    ) -> MDResult<Self, bool>
+    ) -> MdResult<Self, bool>
     where
         TS: TTerm + ?Sized,
         TP: TTerm + ?Sized,
@@ -97,7 +97,7 @@ where
         p: &TP,
         o: &TO,
         g: Option<&TG>,
-    ) -> MDResult<Self, bool>
+    ) -> MdResult<Self, bool>
     where
         TS: TTerm + ?Sized,
         TP: TTerm + ?Sized,
@@ -161,7 +161,7 @@ where
         p: &TP,
         o: &TO,
         g: Option<&TG>,
-    ) -> MDResult<Self, bool>
+    ) -> MdResult<Self, bool>
     where
         TS: TTerm + ?Sized,
         TP: TTerm + ?Sized,
@@ -180,7 +180,7 @@ where
         p: &TP,
         o: &TO,
         g: Option<&TG>,
-    ) -> MDResult<Self, bool>
+    ) -> MdResult<Self, bool>
     where
         TS: TTerm + ?Sized,
         TP: TTerm + ?Sized,

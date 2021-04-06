@@ -207,7 +207,7 @@ mod test {
     fn positive() {
         for (txt, parsed) in POSITIVE_IRIS {
             let rpi = IriParsed::new(txt);
-            assert!(rpi.is_ok(), format!("<{}> → {:?}", txt, rpi));
+            assert!(rpi.is_ok(), "<{}> → {:?}", txt, rpi);
             let pi = rpi.unwrap();
             assert_eq!(pi.is_absolute(), parsed.0);
             assert_eq!(pi.scheme, parsed.1);
@@ -223,7 +223,7 @@ mod test {
     fn negative() {
         for txt in NEGATIVE_IRIS {
             let rpi = IriParsed::new(txt);
-            assert!(rpi.is_err(), format!("<{}> → {:?}", txt, rpi));
+            assert!(rpi.is_err(), "<{}> → {:?}", txt, rpi);
         }
     }
 

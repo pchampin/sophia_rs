@@ -68,7 +68,7 @@ where
 {
     type MutationError = Infallible;
 
-    fn insert<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MGResult<Self, bool>
+    fn insert<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MgResult<Self, bool>
     where
         TS: TTerm + ?Sized,
         TP: TTerm + ?Sized,
@@ -80,7 +80,7 @@ where
         self.push([s, p, o]);
         Ok(true)
     }
-    fn remove<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MGResult<Self, bool>
+    fn remove<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MgResult<Self, bool>
     where
         TS: TTerm + ?Sized,
         TP: TTerm + ?Sized,
@@ -136,7 +136,7 @@ where
 {
     type MutationError = Infallible;
 
-    fn insert<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MGResult<Self, bool>
+    fn insert<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MgResult<Self, bool>
     where
         TS: TTerm + ?Sized,
         TP: TTerm + ?Sized,
@@ -147,7 +147,7 @@ where
         let o = o.copied();
         Ok(HashSet::insert(self, [s, p, o]))
     }
-    fn remove<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MGResult<Self, bool>
+    fn remove<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MgResult<Self, bool>
     where
         TS: TTerm + ?Sized,
         TP: TTerm + ?Sized,

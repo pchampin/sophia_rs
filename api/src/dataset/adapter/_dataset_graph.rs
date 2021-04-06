@@ -151,7 +151,7 @@ where
 {
     type MutationError = D::MutationError;
 
-    fn insert<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MGResult<Self, bool>
+    fn insert<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MgResult<Self, bool>
     where
         TS: TTerm + ?Sized,
         TP: TTerm + ?Sized,
@@ -160,7 +160,7 @@ where
         self.dataset.borrow_mut().insert(s, p, o, self.gmatcher)
     }
 
-    fn remove<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MGResult<Self, bool>
+    fn remove<TS, TP, TO>(&mut self, s: &TS, p: &TP, o: &TO) -> MgResult<Self, bool>
     where
         TS: TTerm + ?Sized,
         TP: TTerm + ?Sized,
@@ -182,7 +182,7 @@ where
 mod test {
     use super::*;
     use crate::dataset::test::*;
-    use crate::dataset::MDResult;
+    use crate::dataset::MdResult;
     use crate::dataset::*;
     use crate::quad::stream::QuadSource;
     use crate::term::{same_graph_name, SimpleIri, TTerm};
@@ -227,7 +227,7 @@ mod test {
     crate::test_graph_impl!(named_graph, MyDatasetGraph, true, true, make_named_graph);
 
     #[test]
-    fn test_graph_default() -> MDResult<MyDataset, ()> {
+    fn test_graph_default() -> MdResult<MyDataset, ()> {
         let d: MyDataset = some_quads().collect_quads().unwrap();
         assert_eq!(d.graph(DG.as_ref()).triples().count(), 4);
         assert_eq!(d.graph(GN1.as_ref()).triples().count(), 7);

@@ -59,8 +59,15 @@ mod _map;
 pub use self::_map::*;
 
 /// Type alias for referencing the `Term` used in a `TripleSource`.
-pub type TSTerm<S> =
+pub type TsTerm<S> =
     <<<S as TripleSource>::Triple as TripleStreamingMode>::UnsafeTriple as UnsafeTriple>::Term;
+
+#[allow(clippy::upper_case_acronyms)]
+#[deprecated(
+    since = "0.6.3",
+    note = "Was renamed to TsTerm, according to naming conventions"
+)]
+pub type TSTerm<S> = TsTerm<S>;
 
 /// A triple source produces [triples], and may also fail in the process.
 ///
