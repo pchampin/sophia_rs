@@ -18,6 +18,7 @@ use std::hash::{Hash, Hasher};
 
 mod _dyn_term;
 mod _graph_name_matcher; // is 'pub use'd by module 'matcher'
+mod _iri_wrapper;
 mod _raw_value;
 pub use self::_raw_value::*;
 pub mod matcher;
