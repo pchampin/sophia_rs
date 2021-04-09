@@ -12,6 +12,10 @@
 
 mod _regex;
 pub use self::_regex::*;
+mod _trait;
+pub use self::_trait::*;
+mod _wrapper;
+pub use _wrapper::*;
 pub mod error;
 pub mod resolve;
 

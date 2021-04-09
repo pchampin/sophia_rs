@@ -22,7 +22,10 @@ use super::*;
 use mownstr::MownStr;
 use sophia_api::{ns::Namespace, term::RawValue};
 pub use sophia_iri::resolve::*; // prefixed with "pub" to ease transition from older versions of Sophia
-pub use sophia_iri::*; // prefixed with "pub" to ease transition from older versions of Sophia
+pub use sophia_iri::{
+    error, is_absolute_iri_ref, is_relative_iri_ref, is_valid_iri_ref, is_valid_suffixed_iri_ref,
+    resolve,
+}; // prefixed with "pub" to ease transition from older versions of Sophia
 use std::convert::TryFrom;
 use std::fmt;
 use std::hash::{Hash, Hasher};
