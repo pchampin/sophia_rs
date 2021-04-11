@@ -18,19 +18,17 @@ all-features = true
 [features]
 default = []
 # This feature enables to use the graph and dataset test macros in other crates
-test_macro = ["lazy_static"]
+test_macro = []
 
 [dependencies]
 sophia_iri = { version = "0.6.2", path = "../iri" }
+lazy_static = "1.4.0"
 mownstr = "0.1.1"
+regex = "1.4.5"
 resiter = "0.4.0"
 thiserror = "1.0.20"
 
-lazy_static = { version = "1.4.0", optional = true }
-
-
 [dev-dependencies]
-lazy_static = { version = "1.4.0" }
 sophia_iri = { version = "0.6.2", path = "../iri", features = ["test_data"] }
 sophia_term = { version = "0.6.2", path = "../term" }
 test-case = "1.0.0"
