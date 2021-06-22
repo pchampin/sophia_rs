@@ -14,7 +14,6 @@ use rio_turtle::TurtleFormatter;
 use sophia_api::serializer::*;
 use sophia_api::triple::stream::{SinkError, StreamResult, TripleSource};
 use std::io;
-use std::mem::MaybeUninit;
 
 /// RDF/XML serializer configuration.
 #[derive(Clone, Debug, Default)]
@@ -27,7 +26,7 @@ impl TurtleConfig {
 /// RDF/XML serializer.
 pub struct TurtleSerializer<W> {
     config: TurtleConfig,
-    write: MaybeUninit<W>,
+    write: W,
 }
 
 impl<W> TurtleSerializer<W>
@@ -42,17 +41,12 @@ where
 
     /// Build a new N-Triples serializer writing to `write`, with the given config.
     pub fn new_with_config(write: W, config: TurtleConfig) -> TurtleSerializer<W> {
-        let write = MaybeUninit::new(write);
         TurtleSerializer { write, config }
     }
 
     /// Borrow this serializer's configuration.
     pub fn config(&self) -> &TurtleConfig {
         &self.config
-    }
-
-    fn write(&self) -> &W {
-        unsafe { &*self.write.as_ptr() }
     }
 }
 
@@ -69,18 +63,9 @@ where
     where
         TS: TripleSource,
     {
-        // temporarily move out self.write
-        let mut buffer = MaybeUninit::uninit();
-        std::mem::swap(&mut self.write, &mut buffer);
-        let write = unsafe { buffer.assume_init() };
-
-        let mut tf = TurtleFormatter::new(write);
+        let mut tf = TurtleFormatter::new(&mut self.write);
         rio_format_triples(&mut tf, source)?;
-        let write = tf.finish().map_err(SinkError)?;
-
-        // restore self.write
-        buffer = MaybeUninit::new(write);
-        std::mem::swap(&mut self.write, &mut buffer);
+        tf.finish().map_err(SinkError)?;
         Ok(self)
     }
 }
@@ -100,7 +85,7 @@ impl TurtleSerializer<Vec<u8>> {
 
 impl Stringifier for TurtleSerializer<Vec<u8>> {
     fn as_utf8(&self) -> &[u8] {
-        &self.write()[..]
+        &self.write[..]
     }
 }
 

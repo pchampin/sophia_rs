@@ -14,7 +14,6 @@ use rio_xml::RdfXmlFormatter;
 use sophia_api::serializer::*;
 use sophia_api::triple::stream::{SinkError, StreamResult, TripleSource};
 use std::io;
-use std::mem::MaybeUninit;
 
 /// RDF/XML serializer configuration.
 #[derive(Clone, Debug, Default)]
@@ -27,7 +26,7 @@ impl RdfXmlConfig {
 /// RDF/XML serializer.
 pub struct RdfXmlSerializer<W> {
     config: RdfXmlConfig,
-    write: MaybeUninit<W>,
+    write: W,
 }
 
 impl<W> RdfXmlSerializer<W>
@@ -42,17 +41,12 @@ where
 
     /// Build a new N-Triples serializer writing to `write`, with the given config.
     pub fn new_with_config(write: W, config: RdfXmlConfig) -> RdfXmlSerializer<W> {
-        let write = MaybeUninit::new(write);
         RdfXmlSerializer { write, config }
     }
 
     /// Borrow this serializer's configuration.
     pub fn config(&self) -> &RdfXmlConfig {
         &self.config
-    }
-
-    fn write(&self) -> &W {
-        unsafe { &*self.write.as_ptr() }
     }
 }
 
@@ -70,17 +64,9 @@ where
         TS: TripleSource,
     {
         // temporarily move out self.write
-        let mut buffer = MaybeUninit::uninit();
-        std::mem::swap(&mut self.write, &mut buffer);
-        let write = unsafe { buffer.assume_init() };
-
-        let mut tf = RdfXmlFormatter::new(write).map_err(SinkError)?;
+        let mut tf = RdfXmlFormatter::new(&mut self.write).map_err(SinkError)?;
         rio_format_triples(&mut tf, source)?;
-        let write = tf.finish().map_err(SinkError)?;
-
-        // restore self.write
-        buffer = MaybeUninit::new(write);
-        std::mem::swap(&mut self.write, &mut buffer);
+        tf.finish().map_err(SinkError)?;
         Ok(self)
     }
 }
@@ -100,7 +86,7 @@ impl RdfXmlSerializer<Vec<u8>> {
 
 impl Stringifier for RdfXmlSerializer<Vec<u8>> {
     fn as_utf8(&self) -> &[u8] {
-        &self.write()[..]
+        &self.write[..]
     }
 }
 
