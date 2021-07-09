@@ -46,7 +46,7 @@ where
 
     /// Build a new N-Quads serializer writing to `write`, with the given config.
     pub fn new_with_config(write: W, config: NqConfig) -> NqSerializer<W> {
-        NqSerializer { write, config }
+        NqSerializer { config, write }
     }
 
     /// Borrow this serializer's configuration.

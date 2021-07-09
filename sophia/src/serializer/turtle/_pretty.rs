@@ -44,7 +44,7 @@ lazy_static::lazy_static! {
     pub(crate) static ref BOOLEAN: Regex = Regex::new(r"true|false").unwrap();
 }
 
-const INDENT: &'static str = "  ";
+const INDENT: &str = "  ";
 
 pub fn prettify<TS, W>(
     source: TS,
@@ -81,8 +81,8 @@ where
 
     let gd = GraphData {
         graph,
-        lists,
         roots,
+        lists,
     };
     p.write_all(&gd).map_err(SinkError)
 }

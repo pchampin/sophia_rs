@@ -63,7 +63,7 @@ impl TurtleConfig {
     }
 }
 
-/// RDF/XML serializer.
+/// Turtle serializer.
 pub struct TurtleSerializer<W> {
     config: TurtleConfig,
     write: W,
@@ -81,7 +81,7 @@ where
 
     /// Build a new N-Triples serializer writing to `write`, with the given config.
     pub fn new_with_config(write: W, config: TurtleConfig) -> TurtleSerializer<W> {
-        TurtleSerializer { write, config }
+        TurtleSerializer { config, write }
     }
 
     /// Borrow this serializer's configuration.
@@ -105,7 +105,7 @@ where
     {
         if self.config.pretty {
             for (prefix, ns) in &self.config.prefix_map {
-                write!(&mut self.write, "PREFIX {}: <{}>\n", prefix.as_ref(), ns.as_ref()).map_err(SinkError)?;
+                writeln!(&mut self.write, "PREFIX {}: <{}>", prefix.as_ref(), ns.as_ref()).map_err(SinkError)?;
             }
             _pretty::prettify(source, &mut self.write, &self.config)?;
         } else {

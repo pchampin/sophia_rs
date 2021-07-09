@@ -36,7 +36,7 @@ impl Manifest {
             json["@context"][1]["@base"].as_str().expect("no @base"),
         )
         .expect("could not resolve manifest IRI");
-        Self { base, json, iri }
+        Self { base, iri, json }
     }
 
     pub fn iri(&self) -> &Iri<Box<str>> {
@@ -261,7 +261,7 @@ pub fn jsonld_cmp(v1: &JsonValue, v2: &JsonValue, orig: &str) -> bool {
                     return false;
                 }
                 for i in a1.iter() {
-                    if a2.iter().find(|j| jsonld_cmp(i, j, "")).is_none() {
+                    if !a2.iter().any(|j| jsonld_cmp(i, j, "")) {
                         return false;
                     }
                 }

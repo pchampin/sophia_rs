@@ -41,7 +41,7 @@ where
 
     /// Build a new N-Triples serializer writing to `write`, with the given config.
     pub fn new_with_config(write: W, config: RdfXmlConfig) -> RdfXmlSerializer<W> {
-        RdfXmlSerializer { write, config }
+        RdfXmlSerializer { config, write }
     }
 
     /// Borrow this serializer's configuration.

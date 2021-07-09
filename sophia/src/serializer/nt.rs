@@ -48,7 +48,7 @@ where
 
     /// Build a new N-Triples serializer writing to `write`, with the given config.
     pub fn new_with_config(write: W, config: NtConfig) -> NtSerializer<W> {
-        NtSerializer { write, config }
+        NtSerializer { config, write }
     }
 
     /// Borrow this serializer's configuration.
