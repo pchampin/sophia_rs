@@ -1,12 +1,13 @@
 //! Utility code for pretty-printing Turtle.
 
 use super::TurtleConfig;
-use crate::graph::{inmem::FastGraph, Graph};
+use crate::dataset::inmem::FastDataset;
 use regex::Regex;
+use sophia_api::dataset::adapter::DatasetGraph;
+use sophia_api::graph::Graph;
 use sophia_api::ns::{rdf, xsd};
 use sophia_api::prefix::PrefixMap;
 use sophia_api::term::{CopiableTerm, TTerm, TermKind};
-use sophia_api::triple::stream::{SinkError, SourceError, StreamError, StreamResult, TripleSource};
 use sophia_api::triple::Triple;
 use sophia_term::RcTerm;
 use std::collections::{HashMap, HashSet};
@@ -36,45 +37,47 @@ lazy_static::lazy_static! {
             )
         )?
     $").unwrap();
-    pub(crate) static ref INTEGER: Regex = Regex::new(r"[+-]?[0-9]+").unwrap();
-    pub(crate) static ref DECIMAL: Regex = Regex::new(r"[+-]?[0-9]*.[0-9]+").unwrap();
-    pub(crate) static ref DOUBLE: Regex = Regex::new(r"(?x)
+    pub(crate) static ref INTEGER: Regex = Regex::new(r"^[+-]?[0-9]+$").unwrap();
+    pub(crate) static ref DECIMAL: Regex = Regex::new(r"^[+-]?[0-9]*.[0-9]+$").unwrap();
+    pub(crate) static ref DOUBLE: Regex = Regex::new(r"(?x)^
       [+-]? ( [0-9]+ ( . [0-9]* )? | . [0-9]+ ) [eE] [+-]? [0-9]+
-    ").unwrap();
-    pub(crate) static ref BOOLEAN: Regex = Regex::new(r"true|false").unwrap();
+    $").unwrap();
+    pub(crate) static ref BOOLEAN: Regex = Regex::new(r"^(true|false)$").unwrap();
 }
 
-const INDENT: &str = "  ";
+pub type PrettifiableGraph<'a> = DatasetGraph<FastDataset, &'a FastDataset, Option<&'a RcTerm>>;
 
-pub fn prettify<TS, W>(
-    source: TS,
+/// Serialize `graph` in pretty turtle on `write`, using the given `config`.
+/// `anon_blacklist` is a set of blank nodes labels that must not be hidden in ANON or lists
+/// (because ther are used otherwise -- e.g. in another named graph, if this is used for TriG).
+/// `base_indent` is the base indentation to be used for the whole graph.
+pub fn prettify<W>(
+    graph: PrettifiableGraph<'_>,
     write: W,
     config: &TurtleConfig,
-) -> StreamResult<(), TS::Error, io::Error>
+    anon_blacklist: &HashSet<RcTerm>,
+    base_indent: &str,
+) -> io::Result<()>
 where
-    TS: TripleSource,
     W: io::Write,
 {
-    let graph: FastGraph = source
-        .collect_triples()
-        .map_err(StreamError::unwrap_source_error)
-        .map_err(SourceError)?;
+    assert!(base_indent.chars().all(char::is_whitespace));
     let subjects = graph.subjects().unwrap();
     let mut roots = Vec::new();
     let mut anons = HashSet::new();
     for subject in subjects {
-        if is_anon(&graph, &subject) {
+        if is_anon(&graph, &subject) && !anon_blacklist.contains(&subject) {
             anons.insert(subject);
         } else {
             roots.push(subject);
         }
     }
 
-    let lists = build_lists(&graph);
+    let lists = build_lists(&graph, anon_blacklist);
 
     let mut p = Prettifier {
         write,
-        indent: String::new(),
+        indent: base_indent.to_string(),
         config,
         anons,
     };
@@ -84,29 +87,32 @@ where
         roots,
         lists,
     };
-    p.write_all(&gd).map_err(SinkError)
+    p.write_all(&gd)
 }
 
-fn is_anon(g: &FastGraph, n: &RcTerm) -> bool {
+fn is_anon(g: &PrettifiableGraph<'_>, n: &RcTerm) -> bool {
     n.kind() == TermKind::BlankNode
         && g.triples_with_o(n).take(2).count() == 1
         && g.triples_with_p(n).take(1).count() == 0
 }
 
-fn is_anon_root(g: &FastGraph, n: &RcTerm) -> bool {
+fn is_anon_root(g: &PrettifiableGraph<'_>, n: &RcTerm) -> bool {
     g.triples_with_o(n).take(1).count() == 0 && g.triples_with_p(n).take(1).count() == 0
 }
 
-fn build_lists(g: &FastGraph) -> HashMap<RcTerm, Vec<RcTerm>> {
+fn build_lists(
+    g: &PrettifiableGraph<'_>,
+    blacklist: &HashSet<RcTerm>,
+) -> HashMap<RcTerm, Vec<RcTerm>> {
     let mut lists = HashMap::new();
     for t in g.triples_with_po(&rdf::rest, &rdf::nil).map(Result::unwrap) {
         let n = t.s();
-        if n.kind() != TermKind::BlankNode {
+        if n.kind() != TermKind::BlankNode || blacklist.contains(n) {
             continue;
         }
         if let Some((item, opt_pred)) = list_link(g, n) {
             let mut items = vec![item];
-            let head = build_list(g, t.s().clone(), opt_pred, &mut items);
+            let head = build_list(g, t.s().clone(), opt_pred, &mut items, &blacklist);
             items.reverse();
             lists.insert(head.clone(), items);
         }
@@ -120,20 +126,27 @@ fn build_lists(g: &FastGraph) -> HashMap<RcTerm, Vec<RcTerm>> {
 /// return the furthest rdf:rest-ancestor of n (possibly n itself)
 /// that is a valid list link, and update itemsPN accordingly
 fn build_list(
-    g: &FastGraph,
+    g: &PrettifiableGraph<'_>,
     n: RcTerm,
     opt_pred: Option<RcTerm>,
     items: &mut Vec<RcTerm>,
+    blacklist: &HashSet<RcTerm>,
 ) -> RcTerm {
     match opt_pred {
         None => n,
-        Some(pred) => match list_link(g, &pred) {
-            None => n,
-            Some((item, opt_pred2)) => {
-                items.push(item);
-                build_list(g, pred, opt_pred2, items)
+        Some(pred) => {
+            if blacklist.contains(&pred) {
+                n
+            } else {
+                match list_link(g, &pred) {
+                    None => n,
+                    Some((item, opt_pred2)) => {
+                        items.push(item);
+                        build_list(g, pred, opt_pred2, items, blacklist)
+                    }
+                }
             }
-        },
+        }
     }
 }
 
@@ -144,7 +157,7 @@ fn build_list(
 /// then return Some(first_value, opt_pred),
 /// whered opt_pred is the rdf:rest-predecessor, if any;
 /// otherwise return None.
-fn list_link(g: &FastGraph, n: &RcTerm) -> Option<(RcTerm, Option<RcTerm>)> {
+fn list_link(g: &PrettifiableGraph<'_>, n: &RcTerm) -> Option<(RcTerm, Option<RcTerm>)> {
     let mut item = None;
     let mut rest = false;
     let mut extra = false;
@@ -180,8 +193,8 @@ fn list_link(g: &FastGraph, n: &RcTerm) -> Option<(RcTerm, Option<RcTerm>)> {
     Some((item.unwrap(), pred))
 }
 
-struct GraphData {
-    graph: FastGraph,
+struct GraphData<'a> {
+    graph: PrettifiableGraph<'a>,
     roots: Vec<RcTerm>,
     lists: HashMap<RcTerm, Vec<RcTerm>>,
 }
@@ -206,7 +219,6 @@ impl<'a, W: io::Write> Prettifier<'a, W> {
             }
         }
         self.write_bytes(b"\n")?;
-        self.write.flush()?;
         Ok(())
     }
 
@@ -250,7 +262,8 @@ impl<'a, W: io::Write> Prettifier<'a, W> {
             self.indent(); // to object-level
             self.write_objects(gd, &types)?;
         }
-        // NB: we know that FastGraph iterates triples grouped by predicate
+        // NB: we know that PrettifiableGraph<'_> iterates triples grouped by predicate
+        // (it is based on FastDataset, which uses GSPO indexes)
         for t in gd.graph.triples_with_s(node).map(Result::unwrap) {
             let p = t.p();
             if p == &rdf::type_ || skip_list_predicates && (p == &rdf::first || p == &rdf::rest) {
@@ -365,11 +378,12 @@ impl<'a, W: io::Write> Prettifier<'a, W> {
     }
 
     fn indent(&mut self) {
-        self.indent.push_str(INDENT);
+        self.indent.push_str(self.config.indentation());
     }
 
     fn unindent(&mut self) {
-        self.indent.truncate(self.indent.len() - INDENT.len());
+        let ilen = self.config.indentation().len();
+        self.indent.truncate(self.indent.len() - ilen);
     }
 }
 
@@ -377,8 +391,8 @@ impl<'a, W: io::Write> Prettifier<'a, W> {
 mod test {
     use super::super::*;
     use super::*;
-    use sophia_api::prefix::Prefix;
-    use sophia_iri::Iri;
+    use crate::graph::inmem::FastGraph;
+    use sophia_api::triple::stream::TripleSource;
     use std::error::Error;
 
     #[test]
@@ -410,20 +424,6 @@ mod test {
 
     #[test]
     fn roundtrip() -> Result<(), Box<dyn Error>> {
-        let prefixes = [
-            (
-                Prefix::new_unchecked("rdf"),
-                Iri::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
-            ),
-            (
-                Prefix::new_unchecked("xsd"),
-                Iri::new_unchecked("http://www.w3.org/2001/XMLSchema#"),
-            ),
-            (
-                Prefix::new_unchecked("ex"),
-                Iri::new_unchecked("http://example.org/ns/"),
-            ),
-        ];
         for ttl in [
             "#empty ttl",
             r#"# simple triple
@@ -454,9 +454,7 @@ mod test {
             let g1: FastGraph = crate::parser::turtle::parse_str(ttl).collect_triples()?;
 
             let mut out = Vec::<u8>::new();
-            let config = TurtleConfig::new()
-                .with_pretty(true)
-                .with_prefix_map(&prefixes[..]);
+            let config = TurtleConfig::new().with_pretty(true);
             let mut ser = TurtleSerializer::new_with_config(&mut out, config);
             ser.serialize_triples(g1.triples())?;
             let out = String::from_utf8(out)?;
