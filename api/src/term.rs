@@ -199,7 +199,7 @@ pub trait TTerm {
     /// The reason is that most methods of the API will accept *references*
     /// to terms, as `&T` where `T: TTerm + ?Sized`,
     /// and such references can *not* be cast to `dyn TTerm`
-    /// (see https://stackoverflow.com/a/57432042/1235487 for more details).
+    /// (see <https://stackoverflow.com/a/57432042/1235487> for more details).
     fn as_dyn(&self) -> &dyn TTerm;
 }
 

@@ -5,22 +5,62 @@
 //! make no effort to minimize the number of write operations.
 //! Hence, in most cased, they should be passed a [`BufWriter`].
 //!
-//! [RDF/XML]: https://www.w3.org/TR/turtle/
+//! [Turtle]: https://www.w3.org/TR/turtle/
 //! [`Write`]: https://doc.rust-lang.org/std/io/trait.Write.html
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
 use super::rio_common::rio_format_triples;
 use rio_turtle::TurtleFormatter;
+use sophia_api::prefix::{PrefixBox, PrefixMap};
 use sophia_api::serializer::*;
 use sophia_api::triple::stream::{SinkError, StreamResult, TripleSource};
+use sophia_iri::IriBox;
 use std::io;
 
-/// RDF/XML serializer configuration.
+mod _pretty;
+
+/// Turtle serializer configuration.
 #[derive(Clone, Debug, Default)]
-pub struct TurtleConfig {}
+pub struct TurtleConfig {
+    pretty: bool,
+    prefix_map: Vec<(PrefixBox, IriBox)>,
+}
 
 impl TurtleConfig {
-    // TODO add ways to customize prefixes
+    /// Should the parser make extra effort to produce pretty Turtle.
+    /// (defaults to false)
+    pub fn pretty(&self) -> bool {
+        self.pretty
+    }
+
+    /// [`PrefixMap`] to use in serialization.
+    /// (defaults to empty)
+    pub fn prefix_map(&self) -> &[(PrefixBox, IriBox)] {
+        &self.prefix_map
+    }
+
+    /// Build a new default [`TurtleConfig`].
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Transform a [`TurtleConfig`] by setting the [`pretty`][`TurtleConfig::pretty`] flag.
+    pub fn with_pretty(mut self, b: bool) -> Self {
+        self.pretty = b;
+        self
+    }
+
+    /// Transform a [`TurtleConfig`] by setting the [`prefix_map`][`TurtleConfig::prefix_map`] flag
+    /// (copying `pm` using [`PrefixMap::to_vec`]).
+    pub fn with_prefix_map<P: PrefixMap + ?Sized>(self, pm: &P) -> Self {
+        self.with_own_prefix_map(pm.to_vec())
+    }
+
+    /// Transform a [`TurtleConfig`] by setting the [`prefix_map`][`TurtleConfig::prefix_map`] flag.
+    pub fn with_own_prefix_map(mut self, pm: Vec<(PrefixBox, IriBox)>) -> Self {
+        self.prefix_map = pm;
+        self
+    }
 }
 
 /// RDF/XML serializer.
@@ -63,9 +103,16 @@ where
     where
         TS: TripleSource,
     {
-        let mut tf = TurtleFormatter::new(&mut self.write);
-        rio_format_triples(&mut tf, source)?;
-        tf.finish().map_err(SinkError)?;
+        if self.config.pretty {
+            for (prefix, ns) in &self.config.prefix_map {
+                write!(&mut self.write, "PREFIX {}: <{}>\n", prefix.as_ref(), ns.as_ref()).map_err(SinkError)?;
+            }
+            _pretty::prettify(source, &mut self.write, &self.config)?;
+        } else {
+            let mut tf = TurtleFormatter::new(&mut self.write);
+            rio_format_triples(&mut tf, source)?;
+            tf.finish().map_err(SinkError)?;
+        }
         Ok(self)
     }
 }

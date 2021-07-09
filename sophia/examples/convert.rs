@@ -1,5 +1,9 @@
 //! Convert RDF on stdin from one format to another
 use resiter::map::Map;
+use sophia::iri::Iri;
+use sophia::parser::TripleParser;
+use sophia::prefix::Prefix;
+use sophia::serializer::turtle::TurtleConfig;
 use sophia::serializer::TripleSerializer;
 use sophia::term::{BoxTerm, CopyTerm};
 use sophia::triple::{stream::TripleSource, Triple};
@@ -17,13 +21,39 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
         exit_printing_usage(&args, message, Status::ArgNumber);
     }
+    let prefixes = [
+        (
+            Prefix::new_unchecked("rdf"),
+            Iri::new_unchecked("http://www.w3.org/1999/02/22-rdf-syntax-ns#"),
+        ),
+        (
+            Prefix::new_unchecked("rdfs"),
+            Iri::new_unchecked("http://www.w3.org/2000/01/rdf-schema#"),
+        ),
+        (
+            Prefix::new_unchecked("xsd"),
+            Iri::new_unchecked("http://www.w3.org/2001/XMLSchema#"),
+        ),
+        (
+            Prefix::new_unchecked("schema"),
+            Iri::new_unchecked("http://schema.org/"),
+        ),
+        (
+            Prefix::new_unchecked("foaf"),
+            Iri::new_unchecked("http://xmlns.com/foaf/0.1/"),
+        ),
+    ];
     match args[2].as_str() {
         "nt" => {
             let mut ser = sophia::serializer::nt::NtSerializer::new(io::stdout());
             ser.serialize_triples(get_triples(&args))?;
         }
         "turtle" => {
-            let mut ser = sophia::serializer::turtle::TurtleSerializer::new(io::stdout());
+            let config = TurtleConfig::new()
+                .with_pretty(true)
+                .with_prefix_map(&prefixes[..]);
+            let mut ser =
+                sophia::serializer::turtle::TurtleSerializer::new_with_config(io::stdout(), config);
             ser.serialize_triples(get_triples(&args))?;
         }
         #[cfg(feature = "xml")]
@@ -50,7 +80,12 @@ fn get_triples(args: &[String]) -> MyTripleSource {
     let bufread = io::BufReader::new(io::stdin());
     match args[1].as_str() {
         "nt" => wrap(sophia::parser::nt::parse_bufread(bufread)),
-        "turtle" => wrap(sophia::parser::turtle::parse_bufread(bufread)),
+        "turtle" => {
+            let p = sophia::parser::turtle::TurtleParser {
+                base: Some("x-stdin:".to_string()),
+            };
+            wrap(p.parse(bufread))
+        }
         #[cfg(feature = "xml")]
         "xml" => wrap(sophia::parser::xml::parse_bufread(bufread)),
         #[cfg(not(feature = "xml"))]

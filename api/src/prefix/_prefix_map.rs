@@ -1,8 +1,8 @@
-use super::{AsPrefix, IsPrefix, Prefix};
+use super::{AsPrefix, IsPrefix, Prefix, PrefixBox};
 /// Define the [`PrefixMap`] trait with default implementation.
 use crate::term::{TTerm, TermKind};
 use mownstr::MownStr;
-use sophia_iri::{AsIri, Iri, IsIri};
+use sophia_iri::{AsIri, Iri, IriBox, IsIri};
 
 /// A prefix map associates prefixes to namespaces.
 pub trait PrefixMap {
@@ -26,6 +26,14 @@ pub trait PrefixMap {
     where
         T: TTerm,
         F: Fn(&str) -> bool;
+    /// Iterate over (prefix, IRI) pairs.
+    fn iter<'s>(&'s self) -> Box<dyn Iterator<Item = (Prefix<'s>, Iri<'s>)> + 's>;
+    /// Copies this prefix map as a self-sufficient vector
+    fn to_vec(&self) -> Vec<(PrefixBox, IriBox)> {
+        self.iter()
+            .map(|(prefix, ns)| (prefix.boxed(), ns.boxed()))
+            .collect()
+    }
 }
 
 impl<P, N> PrefixMap for [(P, N)]
@@ -68,6 +76,9 @@ where
             }
         }
         found
+    }
+    fn iter<'s>(&'s self) -> Box<dyn Iterator<Item = (Prefix<'s>, Iri<'s>)> + 's> {
+        Box::new(<[(P, N)]>::iter(self).map(|(prefix, ns)| (prefix.as_prefix(), ns.as_iri())))
     }
 }
 

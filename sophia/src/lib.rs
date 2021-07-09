@@ -76,6 +76,11 @@ pub mod dataset {
     pub mod inmem;
 }
 /// This module re-exports symbols from
+/// [`sophia_iri`]
+pub mod iri {
+    pub use sophia_iri::*;
+}
+/// This module re-exports symbols from
 /// [`sophia_api::graph`](https://docs.rs/sophia_api/latest/sophia_api/graph/),
 /// and also provides some implementations of its traits.
 pub mod graph {
@@ -103,6 +108,11 @@ pub mod parser {
     pub mod xml;
     #[cfg(feature = "xml")]
     pub mod xml_legacy;
+}
+/// This module re-exports symbols from
+/// [`sophia_api::prefix`]
+pub mod prefix {
+    pub use sophia_api::prefix::*;
 }
 /// This module re-exports symbols from
 /// [`sophia_api::quad`](https://docs.rs/sophia_api/latest/sophia_api/quad/).

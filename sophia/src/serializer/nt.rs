@@ -156,7 +156,7 @@ where
     }
 }
 
-fn quoted_string<W: io::Write>(w: &mut W, txt: &[u8]) -> io::Result<()> {
+pub(crate) fn quoted_string<W: io::Write>(w: &mut W, txt: &[u8]) -> io::Result<()> {
     let mut cut = txt.len();
     let mut cutchar = b'\0';
     for (pos, chr) in txt.iter().enumerate() {
