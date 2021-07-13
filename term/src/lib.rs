@@ -58,9 +58,10 @@ use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use std::sync::Arc;
 
-pub mod factory;
 pub mod index_map;
-
+pub mod cache;
+pub mod data;
+use self::data::TermData;
 pub mod variable;
 use self::variable::Variable;
 pub mod blank_node;
@@ -95,10 +96,6 @@ where
     /// A universally quantified variable like in SPARQL or Notation3.
     Variable(Variable<TD>),
 }
-
-/// Trait alias for types holding the textual data of terms.
-pub trait TermData: AsRef<str> + Clone + Eq + Hash {}
-impl<T> TermData for T where T: AsRef<str> + Clone + Eq + Hash {}
 
 /// Convenient alias for a specialization of `Term<T>`.
 ///
