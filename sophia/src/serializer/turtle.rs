@@ -11,9 +11,12 @@
 
 use super::rio_common::rio_format_triples;
 use crate::dataset::{inmem::FastDataset, Dataset, MutableDataset};
+use regex::Regex;
 use rio_turtle::TurtleFormatter;
+use sophia_api::ns::{rdf, xsd};
 use sophia_api::prefix::{PrefixBox, PrefixMap};
 use sophia_api::serializer::*;
+use sophia_api::term::{TermKind::*, TTerm};
 use sophia_api::triple::stream::{SinkError, SourceError, StreamResult, TripleSource};
 use sophia_api::triple::Triple;
 use sophia_iri::IriBox;
@@ -21,18 +24,26 @@ use sophia_term::RcTerm;
 use std::io;
 
 mod _pretty;
+pub(super) use _pretty::prettify;
 
 /// Turtle serializer configuration.
 #[derive(Clone, Debug)]
 pub struct TurtleConfig {
-    pretty: bool,
-    prefix_map: Vec<(PrefixBox, IriBox)>,
-    indentation: String,
+    pub(super) pretty: bool,
+    pub(super) prefix_map: Vec<(PrefixBox, IriBox)>,
+    pub(super) indentation: String,
 }
 
 impl TurtleConfig {
     /// Should the parser make extra effort to produce pretty Turtle.
-    /// (defaults to false)
+    ///
+    /// If false (default), the triples will be serialized in streaming mode.
+    /// Subject and predicate "factorization" will only occur based on the previous triple(s)
+    /// in the stream. The collection syntax for `rdf:List`s will not be used.
+    ///
+    /// If true, extra effort will be made to group related triples together,
+    /// and to use the collection syntax whenever possible.
+    /// This requires storing the whole graph in memory.
     pub fn pretty(&self) -> bool {
         self.pretty
     }
@@ -116,8 +127,8 @@ impl Default for TurtleConfig {
 
 /// Turtle serializer.
 pub struct TurtleSerializer<W> {
-    config: TurtleConfig,
-    write: W,
+    pub(super) config: TurtleConfig,
+    pub(super) write: W,
 }
 
 impl<W> TurtleSerializer<W>
@@ -155,16 +166,6 @@ where
         TS: TripleSource,
     {
         if self.config.pretty {
-            for (prefix, ns) in &self.config.prefix_map {
-                writeln!(
-                    &mut self.write,
-                    "PREFIX {}: <{}>",
-                    prefix.as_ref(),
-                    ns.as_ref()
-                )
-                .map_err(SinkError)?;
-            }
-            let blacklist = Default::default();
             let mut dataset = FastDataset::new();
             source
                 .for_each_triple(|t| {
@@ -174,7 +175,10 @@ where
                 })
                 .map_err(SourceError)?;
             let graph = dataset.graph(None); // get the default graph
-            _pretty::prettify(graph, &mut self.write, &self.config, &blacklist, "")
+            let blacklist = Default::default(); // no blacklist required for Turtle
+
+            write_prefixes(&mut self.write, &self.config.prefix_map[..]).map_err(SinkError)?;
+            prettify(graph, &mut self.write, &self.config, &blacklist, "")
                 .map_err(SinkError)?;
             self.write.flush().map_err(SinkError)?;
         } else {
@@ -206,37 +210,222 @@ impl Stringifier for TurtleSerializer<Vec<u8>> {
 }
 
 // ---------------------------------------------------------------------------------
+//                                      inners
+// ---------------------------------------------------------------------------------
+
+lazy_static::lazy_static! {
+    /// Match an absolute IRI reference.
+    pub(crate) static ref PN_LOCAL: Regex = Regex::new(r"(?x)^
+        #(PN_CHARS_U | ':' | [0-9] | PLX)
+        (
+            [A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}_:0-9]
+            # | PLX
+            | \\ [_~.!$&'()*+,;=/?\#@%-]
+            | % [0-9A-Fa-f]{2}
+        )
+        # ((PN_CHARS | '.' | ':' | PLX)* (PN_CHARS | ':' | PLX))?
+        (
+            (
+                [A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}_0-9\u{00B7}\u{0300}-\u{036F}\u{203F}-\u{2040}.:-]
+                | \\ [_~.!$&'()*+,;=/?\#@%-]
+                | % [0-9A-Fa-f]{2}
+            )*
+            (
+                [A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}_0-9\u{00B7}\u{0300}-\u{036F}\u{203F}-\u{2040}:-]
+                | \\ [_~.!$&'()*+,;=/?\#@%-]
+                | % [0-9A-Fa-f]{2}
+            )
+        )?
+    $").unwrap();
+    pub(crate) static ref INTEGER: Regex = Regex::new(r"^[+-]?[0-9]+$").unwrap();
+    pub(crate) static ref DECIMAL: Regex = Regex::new(r"^[+-]?[0-9]*.[0-9]+$").unwrap();
+    pub(crate) static ref DOUBLE: Regex = Regex::new(r"(?x)^
+      [+-]? ( [0-9]+ ( . [0-9]* )? | . [0-9]+ ) [eE] [+-]? [0-9]+
+    $").unwrap();
+    pub(crate) static ref BOOLEAN: Regex = Regex::new(r"^(true|false)$").unwrap();
+}
+
+/// write the prefix declaration of the given prefix_map, using SPARQL style.
+pub fn write_prefixes<W, P>(mut write: W, prefix_map: &P) -> io::Result<()>
+where
+    W: io::Write,
+    P: PrefixMap + ?Sized,
+{
+    for (pre, iri) in prefix_map.iter() {
+        writeln!(
+            &mut write,
+            "PREFIX {}: <{}>",
+            pre.as_ref(),
+            iri.as_ref()
+        )?;
+    }
+    Ok(())
+}
+
+/// write the given term in Turtle syntax, using the prefix map from `config` if appropriate.
+///
+/// If `allow_anon` is true and `term` is a blank node, it will be written as `[]`
+/// instead of using it's label.
+pub fn write_term<W: io::Write, T: TTerm>(mut write: W, term: &T, config: &TurtleConfig, allow_anon: bool) -> io::Result<()> {
+    match term.kind() {
+        Iri => write_iri(write, term, config),
+        BlankNode => {
+            if allow_anon {
+                write.write_all(b"[]")
+            } else {
+                write!(&mut write, "_:{}", term.value_raw().0)
+            }
+        }
+        Literal => write_literal(write, term, config),
+        Variable => {
+            write!(&mut write, "?{}", term.value_raw().0)
+        }
+    }
+}
+
+fn write_iri<W: io::Write, T: TTerm>(mut write: W, iri: &T, config: &TurtleConfig) -> io::Result<()> {
+    debug_assert!(iri.kind() == Iri);
+    if &rdf::nil == iri {
+        return write.write_all(b"()");
+    }
+    match config
+        .prefix_map
+        .get_checked_prefixed_pair(iri, |txt| PN_LOCAL.is_match(txt))
+    {
+        Some((pre, suf)) => {
+            write!(write, "{}:{}", pre.as_ref(), suf)
+        }
+        None => {
+            let raw = iri.value_raw();
+            write!(write, "<{}{}>", raw.0, raw.1.unwrap_or(""))
+        }
+    }
+}
+
+fn write_literal<W: io::Write, T: TTerm>(mut write: W, lit: &T, config: &TurtleConfig) -> io::Result<()> {
+    debug_assert!(lit.kind() == Literal);
+    let datatype = lit.datatype().unwrap();
+    let value = lit.value_raw().0;
+    if datatype == xsd::integer && INTEGER.is_match(value)
+        || datatype == xsd::decimal && DECIMAL.is_match(value)
+        || datatype == xsd::double && DOUBLE.is_match(value)
+        || datatype == xsd::boolean && BOOLEAN.is_match(value)
+    {
+        write.write_all(value.as_bytes())
+    } else {
+        write.write_all(b"\"")?;
+        super::nt::quoted_string(&mut write, value.as_bytes())?;
+        write.write_all(b"\"")?;
+        if let Some(tag) = lit.language() {
+            write!(write, "@{}", tag)
+        } else {
+            if datatype != xsd::string {
+                write.write_all(b"^^")?;
+                write_iri(write, &datatype, config)?;
+            }
+            Ok(())
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------------
 //                                      tests
 // ---------------------------------------------------------------------------------
 
 #[cfg(test)]
 pub(crate) mod test {
+    use crate::graph::inmem::FastGraph;
     use super::*;
-    use sophia_api::graph::isomorphic_graphs;
-    use sophia_api::ns::*;
-    use sophia_term::literal::convert::AsLiteral;
+    use sophia_api::graph::{Graph, isomorphic_graphs};
     use sophia_term::*;
+    use std::error::Error;
 
     #[test]
-    fn roundtrip() -> Result<(), Box<dyn std::error::Error>> {
-        let me = StaticTerm::new_iri("http://champin.net/#pa")?;
-        let g = vec![
-            [
-                me,
-                rdf::type_.into(),
-                StaticTerm::new_iri("http://schema.org/Person")?,
-            ],
-            [
-                me,
-                StaticTerm::new_iri("http://schema.org/name")?,
-                "Pierre-Antoine".as_literal().into(),
-            ],
-        ];
-        let s = TurtleSerializer::new_stringifier()
-            .serialize_graph(&g)?
-            .to_string();
-        let g2: Vec<[BoxTerm; 3]> = crate::parser::turtle::parse_str(&s).collect_triples()?;
-        assert!(isomorphic_graphs(&g, &g2)?);
+    fn pn_local() {
+        for positive in ["a", "aBc", "éàïsophia_api::graph::", ":::", "123", "%20%21%22", "\\%\\?\\&"] {
+            assert!(PN_LOCAL.is_match(positive), "{}", positive);
+        }
+        for negative in [" ", ".a", "a."] {
+            assert!(!PN_LOCAL.is_match(negative), "{}", negative);
+        }
+    }
+
+    #[test]
+    fn double() {
+        for positive in [
+            "3.14e0",
+            "+3.14e0",
+            "-3.14e0",
+            "3.14e+0",
+            "3.14e-0",
+            "0000e0000",
+            ".1E0",
+            "1.e+3",
+            "1E-3",
+        ] {
+            assert!(DOUBLE.is_match(positive), "{}", positive);
+        }
+    }
+
+    const TESTS: &'static [&str] = &[
+        "#empty ttl",
+        r#"# simple triple
+            PREFIX : <http://example.org/ns/>
+            :alice a :Person; :name "Alice"; :age 42.
+            :bob a :Person, :Man; :nick "bob"@fr, "bobby"@en; :admin true.
+        "#,
+        r#"# lists
+            <tag:alice> <tag:likes> ( 1 2 ( 3 4 ) 5 6 ), ("a" "b").
+        "#,
+        r#"# subject lists
+            (1 2 3) a <tag:List>.
+        "#,
+        r#"# malformed list
+            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+            _:a rdf:first 42, 43; rdf:rest (44 45).
+            _:b rdf:first 42; rdf:rest (43), (44).
+        "#,
+        /* broken due to a bug in Rio
+        r#"# bnode cycles
+        PREFIX : <http://example.org/ns/>
+        _:a :n "a"; :p [ :q [ :r _:a ]].
+        _:b :n "b"; :s [ :s _:b ].
+        "#,
+        */
+    ];
+
+    #[test]
+    fn roundtrip_not_pretty() -> Result<(), Box<dyn std::error::Error>> {
+        for ttl in TESTS {
+            println!("==========\n{}\n----------", ttl);
+            let g1: FastGraph = crate::parser::turtle::parse_str(ttl).collect_triples()?;
+
+            let out = TurtleSerializer::new_stringifier().serialize_triples(g1.triples())?.to_string();
+            println!("{}", &out);
+
+            let g2: FastGraph = crate::parser::turtle::parse_str(&out).collect_triples()?;
+
+            assert!(isomorphic_graphs(&g1, &g2)?);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn roundtrip_pretty() -> Result<(), Box<dyn Error>> {
+        for ttl in TESTS {
+            println!("==========\n{}\n----------", ttl);
+            let g1: FastGraph = crate::parser::turtle::parse_str(ttl).collect_triples()?;
+            let out2 = TurtleSerializer::new_stringifier().serialize_triples(g1.triples())?.to_string();
+            println!("\n>>> DEBUG\n{}", &out2);
+
+            let config = TurtleConfig::new().with_pretty(true);
+            let out = TurtleSerializer::new_stringifier_with_config(config).serialize_triples(g1.triples())?.to_string();
+            println!("{}", &out);
+
+            let g2: FastGraph = crate::parser::turtle::parse_str(&out).collect_triples()?;
+
+            assert!(isomorphic_graphs(&g1, &g2)?);
+        }
         Ok(())
     }
 }

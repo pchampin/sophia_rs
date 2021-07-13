@@ -127,6 +127,7 @@ pub mod serializer {
     pub mod nq;
     pub mod nt;
     pub mod rio_common;
+    pub mod trig;
     pub mod turtle;
     #[cfg(feature = "xml")]
     pub mod xml;
