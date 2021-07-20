@@ -125,11 +125,12 @@ where
                     let g = self.wrapped.get_graph_name(gi).unwrap();
                     let s = self.wrapped.get_term(si).unwrap();
                     let p = self.wrapped.get_term(pi).unwrap();
-                    let ois = self.gsp2o.get(&[gi, si, pi]).unwrap();
-                    return Box::new(ois.iter().map(move |oi| {
-                        let o = self.wrapped.get_term(*oi).unwrap();
-                        Ok(StreamedQuad::by_term_refs(s, p, o, g))
-                    }));
+                    if let Some(ois) = self.gsp2o.get(&[gi, si, pi]) {
+                        return Box::new(ois.iter().map(move |oi| {
+                            let o = self.wrapped.get_term(*oi).unwrap();
+                            Ok(StreamedQuad::by_term_refs(s, p, o, g))
+                        }));
+                    }
                 }
             }
         }
