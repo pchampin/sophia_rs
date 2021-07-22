@@ -3,15 +3,14 @@ use std::collections::HashSet;
 use std::convert::Infallible;
 use std::hash::Hash;
 
-use crate::dataset::indexed::IndexedDataset;
 use crate::dataset::*;
 use sophia_api::quad::stream::QuadSource;
 use sophia_api::quad::streaming_mode::{ByTermRefs, StreamedQuad};
 use sophia_api::term::TTerm;
 use sophia_api::triple::stream::StreamResult;
+use sophia_indexed::dataset::IndexedDataset;
 use sophia_term::factory::TermFactory;
 use sophia_term::index_map::TermIndexMap;
-use sophia_term::*;
 
 /// A generic implementation of [`Dataset`] and [`MutableDataset`],
 /// storing its terms in a [`TermIndexMap`],
@@ -219,7 +218,7 @@ where
     I::Index: Hash,
     <I::Factory as TermFactory>::TermData: 'static,
 {
-    crate::impl_mutable_dataset_for_indexed_dataset!();
+    sophia_indexed::impl_mutable_dataset_for_indexed_dataset!();
 }
 
 impl<I> SetDataset for HashDataset<I>

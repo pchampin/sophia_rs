@@ -20,8 +20,8 @@
 //! an appropriate type definition would be:
 //!
 //! ```
-//! use sophia::term::factory::ArcTermFactory;
-//! use sophia::graph::inmem::*;
+//! use sophia_term::factory::ArcTermFactory;
+//! use sophia_inmem::graph::*;
 //!
 //! type MyGraph = OpsWrapper<GenericGraph<u16, ArcTermFactory>>;
 //! let g = MyGraph::new();
@@ -32,10 +32,13 @@
 //! [`FastGraph`]: type.FastGraph.html
 //! [`LightGraph`]: type.LightGraph.html
 
-use super::indexed::*;
 use sophia_api::graph::{CollectibleGraph, Graph, MutableGraph, SetGraph};
+use sophia_indexed::graph::*;
 use sophia_term::factory::*;
 use sophia_term::*;
+
+// Symbols from other crates, re-exported for the sake of macros
+pub use sophia_api::graph::{GResult, GTerm, GTripleSource};
 
 #[macro_use]
 mod _wrapper;

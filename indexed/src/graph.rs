@@ -7,6 +7,13 @@ use std::hash::Hash;
 use sophia_api::term::TTerm;
 use sophia_term::*;
 
+/// Symbols from other crates, re-exported for the sake of macros
+pub mod reexport {
+    pub use sophia_api::graph::MgResult;
+    pub use sophia_api::triple::stream::{StreamResult, TripleSource};
+    pub use sophia_api::triple::Triple;
+}
+
 /// A utility trait for implementing [`Graph`] and [`MutableGraph`]
 /// based on an internal [`TermIndexMap`] for efficient storage.
 ///
@@ -68,10 +75,10 @@ macro_rules! impl_collectible_graph_for_indexed_graph {
         }
     };
     () => {
-        fn from_triple_source<TS: $crate::triple::stream::TripleSource>(
+        fn from_triple_source<TS: $crate::graph::reexport::TripleSource>(
             mut triples: TS,
-        ) -> $crate::triple::stream::StreamResult<Self, TS::Error, Self::Error> {
-            use $crate::triple::Triple;
+        ) -> $crate::graph::reexport::StreamResult<Self, TS::Error, Self::Error> {
+            use $crate::graph::reexport::Triple;
             let (tmin, tmax) = triples.size_hint_triples();
             let cap = tmax.unwrap_or(tmin);
             let mut g = Self::with_capacity(cap);
@@ -104,7 +111,7 @@ macro_rules! impl_mutable_graph_for_indexed_graph {
             s: &TS_,
             p: &TP_,
             o: &TO_,
-        ) -> $crate::graph::MgResult<Self, bool>
+        ) -> $crate::graph::reexport::MgResult<Self, bool>
         where
             TS_: sophia_api::term::TTerm + ?Sized,
             TP_: sophia_api::term::TTerm + ?Sized,
@@ -117,7 +124,7 @@ macro_rules! impl_mutable_graph_for_indexed_graph {
             s: &TS_,
             p: &TP_,
             o: &TO_,
-        ) -> $crate::graph::MgResult<Self, bool>
+        ) -> $crate::graph::reexport::MgResult<Self, bool>
         where
             TS_: sophia_api::term::TTerm + ?Sized,
             TP_: sophia_api::term::TTerm + ?Sized,
@@ -136,7 +143,7 @@ macro_rules! impl_mutable_graph_for_indexed_graph {
 /// `true` if the Vec was created,
 ///  meaning that "parent" indexes need to be updated.
 ///
-pub(crate) fn insert_in_index<K, W>(hm: &mut HashMap<K, Vec<W>>, k: K, w: W) -> bool
+pub fn insert_in_index<K, W>(hm: &mut HashMap<K, Vec<W>>, k: K, w: W) -> bool
 where
     K: Eq + Hash,
     W: Copy + Eq,
@@ -164,7 +171,7 @@ where
 /// This function will panic if either
 /// * `k` is not a key of `hm`, or
 /// * `w` is not contained in the value associated to `k`.
-pub(crate) fn remove_from_index<K, W>(hm: &mut HashMap<K, Vec<W>>, k: K, w: W) -> bool
+pub fn remove_from_index<K, W>(hm: &mut HashMap<K, Vec<W>>, k: K, w: W) -> bool
 where
     K: Eq + Hash,
     W: Copy + Eq,

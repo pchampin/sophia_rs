@@ -4,13 +4,14 @@ use std::collections::{HashMap, HashSet};
 use std::iter::empty;
 
 use super::*;
-use crate::graph::indexed::*;
+
 use sophia_api::dataset::{DQuadSource, DResultTermSet};
 use sophia_api::quad::streaming_mode::{ByTermRefs, StreamedQuad};
 use sophia_api::term::TTerm;
+use sophia_indexed::graph::*;
 
 /// A [`DatasetWrapper`](trait.DatasetWrapper.html)
-/// indexing quads by object, then by graph name, then by predicate, then by subject.
+/// indexing quads by graph name, then by subject, then by predicate, then by object.
 ///
 /// Compared to its wrapped dataset,
 /// it overrides the methods that can efficiently be implemented using this index.
@@ -19,29 +20,29 @@ use sophia_api::term::TTerm;
 /// it is limited to wrapping datasets whose quads are `([&Term<H>;3], Option<&Term<H>>)`.
 ///
 #[derive(Default)]
-pub struct OgpsWrapper<T>
+pub struct GspoWrapper<T>
 where
     T: IndexedDataset,
 {
     wrapped: T,
-    o2g: HashMap<T::Index, Vec<T::Index>>,
-    og2p: HashMap<[T::Index; 2], Vec<T::Index>>,
-    ogp2s: HashMap<[T::Index; 3], Vec<T::Index>>,
+    g2s: HashMap<T::Index, Vec<T::Index>>,
+    gs2p: HashMap<[T::Index; 2], Vec<T::Index>>,
+    gsp2o: HashMap<[T::Index; 3], Vec<T::Index>>,
 }
 
-impl<T> OgpsWrapper<T>
+impl<T> GspoWrapper<T>
 where
     T: IndexedDataset + Default,
     T::Index: Default,
 {
-    /// Build a new `DatasetWrapper` that indexes quads by object,
-    /// then by graph name, then by predicate, then by subject.
+    /// Build a new `DatasetWrapper` that indexes quads by graph name,
+    /// then by subject, then by predicate, then by object.
     pub fn new() -> Self {
         Self::default()
     }
 }
 
-impl<T> DatasetWrapper for OgpsWrapper<T>
+impl<T> DatasetWrapper for GspoWrapper<T>
 where
     T: IndexedDataset + Dataset<Quad = ByTermRefs<Term<<T as IndexedDataset>::TermData>>>,
 {
@@ -55,21 +56,21 @@ where
         &mut self.wrapped
     }
 
-    fn dw_quads_with_o<'s, TO>(&'s self, o: &'s TO) -> DQuadSource<'s, Self::Wrapped>
+    fn dw_quads_with_g<'s, TG>(&'s self, g: Option<&'s TG>) -> DQuadSource<'s, Self::Wrapped>
     where
-        TO: TTerm + ?Sized,
+        TG: TTerm + ?Sized,
     {
-        if let Some(oi) = self.wrapped.get_index(o) {
-            if let Some(gis) = self.o2g.get(&oi) {
-                let o = self.wrapped.get_term(oi).unwrap();
-                return Box::new(gis.iter().flat_map(move |gi| {
-                    let g = self.wrapped.get_graph_name(*gi).unwrap();
-                    let pis = self.og2p.get(&[oi, *gi]).unwrap();
+        if let Some(gi) = self.wrapped.get_index_for_graph_name(g) {
+            if let Some(sis) = self.g2s.get(&gi) {
+                let g = self.wrapped.get_graph_name(gi).unwrap();
+                return Box::new(sis.iter().flat_map(move |si| {
+                    let s = self.wrapped.get_term(*si).unwrap();
+                    let pis = self.gs2p.get(&[gi, *si]).unwrap();
                     pis.iter().flat_map(move |pi| {
                         let p = self.wrapped.get_term(*pi).unwrap();
-                        let sis = self.ogp2s.get(&[oi, *gi, *pi]).unwrap();
-                        sis.iter().map(move |si| {
-                            let s = self.wrapped.get_term(*si).unwrap();
+                        let ois = self.gsp2o.get(&[gi, *si, *pi]).unwrap();
+                        ois.iter().map(move |oi| {
+                            let o = self.wrapped.get_term(*oi).unwrap();
                             Ok(StreamedQuad::by_term_refs(s, p, o, g))
                         })
                     })
@@ -79,25 +80,25 @@ where
         Box::new(empty())
     }
 
-    fn dw_quads_with_og<'s, TO, TG>(
+    fn dw_quads_with_sg<'s, TS, TG>(
         &'s self,
-        o: &'s TO,
+        s: &'s TS,
         g: Option<&'s TG>,
     ) -> DQuadSource<'s, Self::Wrapped>
     where
-        TO: TTerm + ?Sized,
+        TS: TTerm + ?Sized,
         TG: TTerm + ?Sized,
     {
-        if let Some(oi) = self.wrapped.get_index(o) {
-            if let Some(gi) = self.wrapped.get_index_for_graph_name(g) {
-                if let Some(pis) = self.og2p.get(&[oi, gi]) {
-                    let o = self.wrapped.get_term(oi).unwrap();
+        if let Some(gi) = self.wrapped.get_index_for_graph_name(g) {
+            if let Some(si) = self.wrapped.get_index(s) {
+                if let Some(pis) = self.gs2p.get(&[gi, si]) {
                     let g = self.wrapped.get_graph_name(gi).unwrap();
+                    let s = self.wrapped.get_term(si).unwrap();
                     return Box::new(pis.iter().flat_map(move |pi| {
                         let p = self.wrapped.get_term(*pi).unwrap();
-                        let sis = self.ogp2s.get(&[oi, gi, *pi]).unwrap();
-                        sis.iter().map(move |si| {
-                            let s = self.wrapped.get_term(*si).unwrap();
+                        let ois = self.gsp2o.get(&[gi, si, *pi]).unwrap();
+                        ois.iter().map(move |oi| {
+                            let o = self.wrapped.get_term(*oi).unwrap();
                             Ok(StreamedQuad::by_term_refs(s, p, o, g))
                         })
                     }));
@@ -107,26 +108,26 @@ where
         Box::new(empty())
     }
 
-    fn dw_quads_with_pog<'s, TP, TO, TG>(
+    fn dw_quads_with_spg<'s, TS, TP, TG>(
         &'s self,
+        s: &'s TS,
         p: &'s TP,
-        o: &'s TO,
         g: Option<&'s TG>,
     ) -> DQuadSource<'s, Self::Wrapped>
     where
+        TS: TTerm + ?Sized,
         TP: TTerm + ?Sized,
-        TO: TTerm + ?Sized,
         TG: TTerm + ?Sized,
     {
-        if let Some(pi) = self.wrapped.get_index(p) {
-            if let Some(oi) = self.wrapped.get_index(o) {
-                if let Some(gi) = self.wrapped.get_index_for_graph_name(g) {
-                    if let Some(sis) = self.ogp2s.get(&[oi, gi, pi]) {
-                        let p = self.wrapped.get_term(pi).unwrap();
-                        let o = self.wrapped.get_term(oi).unwrap();
-                        let g = self.wrapped.get_graph_name(gi).unwrap();
-                        return Box::new(sis.iter().map(move |si| {
-                            let s = self.wrapped.get_term(*si).unwrap();
+        if let Some(gi) = self.wrapped.get_index_for_graph_name(g) {
+            if let Some(si) = self.wrapped.get_index(s) {
+                if let Some(pi) = self.wrapped.get_index(p) {
+                    let g = self.wrapped.get_graph_name(gi).unwrap();
+                    let s = self.wrapped.get_term(si).unwrap();
+                    let p = self.wrapped.get_term(pi).unwrap();
+                    if let Some(ois) = self.gsp2o.get(&[gi, si, pi]) {
+                        return Box::new(ois.iter().map(move |oi| {
+                            let o = self.wrapped.get_term(*oi).unwrap();
                             Ok(StreamedQuad::by_term_refs(s, p, o, g))
                         }));
                     }
@@ -136,27 +137,28 @@ where
         Box::new(empty())
     }
 
-    fn dw_objects(&self) -> DResultTermSet<Self::Wrapped> {
-        let objects: HashSet<_> = self
-            .o2g
+    fn dw_graph_names(&self) -> DResultTermSet<Self::Wrapped> {
+        let graph_names: HashSet<_> = self
+            .g2s
             .keys()
-            .map(|i| self.wrapped.get_term(*i).unwrap().clone())
+            .filter_map(|i| self.wrapped.get_term(*i)) // NB: filters out None
+            .cloned()
             .collect();
-        Ok(objects)
+        Ok(graph_names)
     }
 }
 
-impl<T> IndexedDatasetWrapper<T> for OgpsWrapper<T>
+impl<T> IndexedDatasetWrapper<T> for GspoWrapper<T>
 where
     T: IndexedDataset,
 {
     #[inline]
     fn idw_wrap_empty(dataset: T) -> Self {
-        OgpsWrapper {
+        GspoWrapper {
             wrapped: dataset,
-            o2g: HashMap::default(),
-            og2p: HashMap::default(),
-            ogp2s: HashMap::default(),
+            g2s: HashMap::default(),
+            gs2p: HashMap::default(),
+            gsp2o: HashMap::default(),
         }
     }
 
@@ -164,9 +166,9 @@ where
     #[inline]
     fn idw_hook_insert_indexed(&mut self, modified: &Option<[T::Index; 4]>) {
         if let Some([si, pi, oi, gi]) = *modified {
-            if insert_in_index(&mut self.ogp2s, [oi, gi, pi], si) {
-                if insert_in_index(&mut self.og2p, [oi, gi], pi) {
-                    insert_in_index(&mut self.o2g, oi, gi);
+            if insert_in_index(&mut self.gsp2o, [gi, si, pi], oi) {
+                if insert_in_index(&mut self.gs2p, [gi, si], pi) {
+                    insert_in_index(&mut self.g2s, gi, si);
                 }
             }
         }
@@ -176,9 +178,9 @@ where
     #[inline]
     fn idw_hook_remove_indexed(&mut self, modified: &Option<[T::Index; 4]>) {
         if let Some([si, pi, oi, gi]) = *modified {
-            if remove_from_index(&mut self.ogp2s, [oi, gi, pi], si) {
-                if remove_from_index(&mut self.og2p, [oi, gi], pi) {
-                    remove_from_index(&mut self.o2g, oi, gi);
+            if remove_from_index(&mut self.gsp2o, [gi, si, pi], oi) {
+                if remove_from_index(&mut self.gs2p, [gi, si], pi) {
+                    remove_from_index(&mut self.g2s, gi, si);
                 }
             }
         }
@@ -186,48 +188,48 @@ where
 
     #[inline]
     fn idw_hook_shrink_to_fit(&mut self) {
-        self.o2g.shrink_to_fit();
-        self.og2p.shrink_to_fit();
-        self.ogp2s.shrink_to_fit();
+        self.g2s.shrink_to_fit();
+        self.gs2p.shrink_to_fit();
+        self.gsp2o.shrink_to_fit();
     }
 }
 
-impl<T> Dataset for OgpsWrapper<T>
+impl<T> Dataset for GspoWrapper<T>
 where
     T: IndexedDataset + Dataset<Quad = ByTermRefs<Term<<T as IndexedDataset>::TermData>>>,
 {
     impl_dataset_for_wrapper!();
 }
 
-impl<T> IndexedDataset for OgpsWrapper<T>
+impl<T> IndexedDataset for GspoWrapper<T>
 where
     T: IndexedDataset + Dataset<Quad = ByTermRefs<Term<<T as IndexedDataset>::TermData>>>,
 {
     impl_indexed_dataset_for_wrapper!();
 }
 
-impl<T> CollectibleDataset for OgpsWrapper<T>
+impl<T> CollectibleDataset for GspoWrapper<T>
 where
     T: IndexedDataset + Dataset<Quad = ByTermRefs<Term<<T as IndexedDataset>::TermData>>>,
 {
-    crate::impl_collectible_dataset_for_indexed_dataset!();
+    sophia_indexed::impl_collectible_dataset_for_indexed_dataset!();
 }
 
-impl<T> MutableDataset for OgpsWrapper<T>
+impl<T> MutableDataset for GspoWrapper<T>
 where
     T: IndexedDataset + Dataset<Quad = ByTermRefs<Term<<T as IndexedDataset>::TermData>>>,
 {
-    crate::impl_mutable_dataset_for_indexed_dataset!();
+    sophia_indexed::impl_mutable_dataset_for_indexed_dataset!();
 }
 
-impl<T> SetDataset for OgpsWrapper<T>
+impl<T> SetDataset for GspoWrapper<T>
 where
     T: IndexedDataset + Dataset<Quad = ByTermRefs<Term<<T as IndexedDataset>::TermData>>>,
-    T: IndexedDataset + SetDataset,
+    T: SetDataset,
 {
 }
 
 #[cfg(all(test, feature = "all_tests"))]
-type GspoDataset = OgpsWrapper<LightDataset>;
+type GspoDataset = GspoWrapper<LightDataset>;
 #[cfg(all(test, feature = "all_tests"))]
 sophia_api::test_dataset_impl!(GspoDataset);

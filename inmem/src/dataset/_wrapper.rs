@@ -1,9 +1,9 @@
 // this module is transparently re-exported by its parent `dataset::inmem`
 
 use super::*;
-use crate::dataset::indexed::IndexedDataset;
 use sophia_api::dataset::{DQuadSource, DResult, DResultTermSet, DTerm};
 use sophia_api::term::TTerm;
+use sophia_indexed::dataset::IndexedDataset;
 use std::hash::Hash;
 
 /// A dataset wrapper wraps a [`Dataset`] and overrides some of its methods.
@@ -326,48 +326,40 @@ macro_rules! impl_dataset_for_wrapper {
         }
     };
     () => {
-        type Quad = <<Self as $crate::dataset::inmem::DatasetWrapper>::Wrapped as $crate::dataset::Dataset>::Quad;
-        type Error = <<Self as $crate::dataset::inmem::DatasetWrapper>::Wrapped as $crate::dataset::Dataset>::Error;
+        type Quad =
+            <<Self as $crate::dataset::DatasetWrapper>::Wrapped as $crate::dataset::Dataset>::Quad;
+        type Error =
+            <<Self as $crate::dataset::DatasetWrapper>::Wrapped as $crate::dataset::Dataset>::Error;
 
         #[inline]
         fn quads(&self) -> $crate::dataset::DQuadSource<Self> {
             DatasetWrapper::dw_quads(self)
         }
         #[inline]
-        fn quads_with_s<'s_, TS_>(
-            &'s_ self,
-            s: &'s_ TS_,
-        ) -> $crate::dataset::DQuadSource<'s_, Self>
+        fn quads_with_s<'s_, TS_>(&'s_ self, s: &'s_ TS_) -> $crate::dataset::DQuadSource<'s_, Self>
         where
             TS_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_s(self, s)
         }
         #[inline]
-        fn quads_with_p<'s_, TP_>(
-            &'s_ self,
-            p: &'s_ TP_,
-        ) -> $crate::dataset::DQuadSource<'s_, Self>
+        fn quads_with_p<'s_, TP_>(&'s_ self, p: &'s_ TP_) -> $crate::dataset::DQuadSource<'s_, Self>
         where
             TP_: sophia_api::term::TTerm + ?Sized,
         {
             DatasetWrapper::dw_quads_with_p(self, p)
         }
         #[inline]
-        fn quads_with_o<'s_, TO_>(
-            &'s_ self,
-            o: &'s_ TO_
-        ) -> $crate::dataset::DQuadSource<'s_, Self>
+        fn quads_with_o<'s_, TO_>(&'s_ self, o: &'s_ TO_) -> $crate::dataset::DQuadSource<'s_, Self>
         where
             TO_: sophia_api::term::TTerm + ?Sized,
         {
-
             DatasetWrapper::dw_quads_with_o(self, o)
         }
         #[inline]
         fn quads_with_g<'s_, TG_>(
             &'s_ self,
-            g: std::option::Option<&'s_ TG_>
+            g: std::option::Option<&'s_ TG_>,
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
             TG_: sophia_api::term::TTerm + ?Sized,
@@ -378,7 +370,7 @@ macro_rules! impl_dataset_for_wrapper {
         fn quads_with_sp<'s_, TS_, TP_>(
             &'s_ self,
             s: &'s_ TS_,
-            p: &'s_ TP_
+            p: &'s_ TP_,
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
             TS_: sophia_api::term::TTerm + ?Sized,
@@ -390,7 +382,7 @@ macro_rules! impl_dataset_for_wrapper {
         fn quads_with_so<'s_, TS_, TO_>(
             &'s_ self,
             s: &'s_ TS_,
-            o: &'s_ TO_
+            o: &'s_ TO_,
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
             TS_: sophia_api::term::TTerm + ?Sized,
@@ -402,7 +394,7 @@ macro_rules! impl_dataset_for_wrapper {
         fn quads_with_sg<'s_, TS_, TG_>(
             &'s_ self,
             s: &'s_ TS_,
-            g: std::option::Option<&'s_ TG_>
+            g: std::option::Option<&'s_ TG_>,
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
             TS_: sophia_api::term::TTerm + ?Sized,
@@ -414,7 +406,7 @@ macro_rules! impl_dataset_for_wrapper {
         fn quads_with_po<'s_, TP_, TO_>(
             &'s_ self,
             p: &'s_ TP_,
-            o: &'s_ TO_
+            o: &'s_ TO_,
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
             TP_: sophia_api::term::TTerm + ?Sized,
@@ -426,7 +418,7 @@ macro_rules! impl_dataset_for_wrapper {
         fn quads_with_pg<'s_, TP_, TG_>(
             &'s_ self,
             p: &'s_ TP_,
-            g: std::option::Option<&'s_ TG_>
+            g: std::option::Option<&'s_ TG_>,
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
             TP_: sophia_api::term::TTerm + ?Sized,
@@ -438,7 +430,7 @@ macro_rules! impl_dataset_for_wrapper {
         fn quads_with_og<'s_, TO_, TG_>(
             &'s_ self,
             o: &'s_ TO_,
-            g: std::option::Option<&'s_ TG_>
+            g: std::option::Option<&'s_ TG_>,
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
             TO_: sophia_api::term::TTerm + ?Sized,
@@ -451,7 +443,7 @@ macro_rules! impl_dataset_for_wrapper {
             &'s_ self,
             s: &'s_ TS_,
             p: &'s_ TP_,
-            o: &'s_ TO_
+            o: &'s_ TO_,
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
             TS_: sophia_api::term::TTerm + ?Sized,
@@ -465,7 +457,7 @@ macro_rules! impl_dataset_for_wrapper {
             &'s_ self,
             s: &'s_ TS_,
             p: &'s_ TP_,
-            g: std::option::Option<&'s_ TG_>
+            g: std::option::Option<&'s_ TG_>,
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
             TS_: sophia_api::term::TTerm + ?Sized,
@@ -479,7 +471,7 @@ macro_rules! impl_dataset_for_wrapper {
             &'s_ self,
             s: &'s_ TS_,
             o: &'s_ TO_,
-            g: std::option::Option<&'s_ TG_>
+            g: std::option::Option<&'s_ TG_>,
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
             TS_: sophia_api::term::TTerm + ?Sized,
@@ -493,7 +485,7 @@ macro_rules! impl_dataset_for_wrapper {
             &'s_ self,
             p: &'s_ TP_,
             o: &'s_ TO_,
-            g: std::option::Option<&'s_ TG_>
+            g: std::option::Option<&'s_ TG_>,
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
             TP_: sophia_api::term::TTerm + ?Sized,
@@ -508,7 +500,7 @@ macro_rules! impl_dataset_for_wrapper {
             s: &'s_ TS_,
             p: &'s_ TP_,
             o: &'s_ TO_,
-            g: std::option::Option<&'s_ TG_>
+            g: std::option::Option<&'s_ TG_>,
         ) -> $crate::dataset::DQuadSource<'s_, Self>
         where
             TS_: sophia_api::term::TTerm + ?Sized,
@@ -525,7 +517,7 @@ macro_rules! impl_dataset_for_wrapper {
             s: &TS_,
             p: &TP_,
             o: &TO_,
-            g: std::option::Option<&TG_>
+            g: std::option::Option<&TG_>,
         ) -> $crate::dataset::DResult<Self, bool>
         where
             TS_: sophia_api::term::TTerm + ?Sized,

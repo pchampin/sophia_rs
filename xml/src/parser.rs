@@ -35,10 +35,10 @@ sophia_api::def_mod_functions_for_bufread_parser!(RdfXmlParser, TripleParser);
 #[cfg(test)]
 mod test {
     use super::*;
-    use sophia::graph::inmem::FastGraph;
     use sophia_api::graph::Graph;
     use sophia_api::ns::{rdf, xsd};
     use sophia_api::triple::stream::TripleSource;
+    use sophia_inmem::graph::FastGraph;
     use sophia_term::matcher::ANY;
     use sophia_term::StaticTerm;
 

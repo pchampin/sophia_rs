@@ -4,11 +4,11 @@ use std::collections::HashSet;
 use std::convert::Infallible;
 use std::hash::Hash;
 
-use crate::graph::indexed::IndexedGraph;
 use crate::graph::*;
-use crate::triple::stream::{StreamResult, TripleSource};
-use crate::triple::streaming_mode::{ByTermRefs, StreamedTriple};
 use sophia_api::term::TTerm;
+use sophia_api::triple::stream::{StreamResult, TripleSource};
+use sophia_api::triple::streaming_mode::{ByTermRefs, StreamedTriple};
+use sophia_indexed::graph::IndexedGraph;
 use sophia_term::factory::TermFactory;
 use sophia_term::index_map::TermIndexMap;
 use sophia_term::{RefTerm, Term};
@@ -184,7 +184,7 @@ where
     I::Index: Hash,
     <I::Factory as TermFactory>::TermData: 'static,
 {
-    crate::impl_mutable_graph_for_indexed_graph!();
+    sophia_indexed::impl_mutable_graph_for_indexed_graph!();
 }
 
 impl<I> SetGraph for HashGraph<I>

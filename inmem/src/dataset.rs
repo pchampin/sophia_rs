@@ -17,10 +17,14 @@
 //! [`FastDataset`]: type.FastDataset.html
 //! [`LightDataset`]: type.LightDataset.html
 
-use super::indexed::*;
-use crate::graph::inmem::TermIndexMapU;
+use crate::graph::TermIndexMapU;
 use sophia_api::dataset::{CollectibleDataset, Dataset, MutableDataset, SetDataset};
-use sophia_term::{factory::*, *};
+use sophia_indexed::dataset::*;
+use sophia_term::factory::*;
+use sophia_term::*;
+
+// Symbols from other crates, re-exported for the sake of macros
+pub use sophia_api::dataset::{DQuadSource, DResult, DResultTermSet, DTerm};
 
 #[macro_use]
 mod _wrapper;

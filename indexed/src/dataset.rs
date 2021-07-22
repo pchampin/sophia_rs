@@ -5,6 +5,13 @@ use std::hash::Hash;
 use sophia_api::term::TTerm;
 use sophia_term::*;
 
+/// Symbols from other crates, re-exported for the sake of macros
+pub mod reexport {
+    pub use sophia_api::dataset::MdResult;
+    pub use sophia_api::quad::stream::{QuadSource, StreamResult};
+    pub use sophia_api::quad::Quad;
+}
+
 /// A utility trait for implementing [`Dataset`] and [`MutableDataset`]
 /// based on an internal [`TermIndexMap`] for efficient storage.
 ///
@@ -96,10 +103,10 @@ macro_rules! impl_collectible_dataset_for_indexed_dataset {
         }
     };
     () => {
-        fn from_quad_source<QS: $crate::quad::stream::QuadSource>(
+        fn from_quad_source<QS: $crate::dataset::reexport::QuadSource>(
             mut quads: QS,
-        ) -> $crate::quad::stream::StreamResult<Self, QS::Error, Self::Error> {
-            use $crate::quad::Quad;
+        ) -> $crate::dataset::reexport::StreamResult<Self, QS::Error, Self::Error> {
+            use $crate::dataset::reexport::Quad;
             let (tmin, tmax) = quads.size_hint_quads();
             let cap = tmax.unwrap_or(tmin);
             let mut g = Self::with_capacity(cap);
@@ -133,7 +140,7 @@ macro_rules! impl_mutable_dataset_for_indexed_dataset {
             p: &TP_,
             o: &TO_,
             g: Option<&TG_>,
-        ) -> $crate::dataset::MdResult<Self, bool>
+        ) -> $crate::dataset::reexport::MdResult<Self, bool>
         where
             TS_: sophia_api::term::TTerm + ?Sized,
             TP_: sophia_api::term::TTerm + ?Sized,
@@ -148,7 +155,7 @@ macro_rules! impl_mutable_dataset_for_indexed_dataset {
             p: &TP_,
             o: &TO_,
             g: Option<&TG_>,
-        ) -> $crate::dataset::MdResult<Self, bool>
+        ) -> $crate::dataset::reexport::MdResult<Self, bool>
         where
             TS_: sophia_api::term::TTerm + ?Sized,
             TP_: sophia_api::term::TTerm + ?Sized,

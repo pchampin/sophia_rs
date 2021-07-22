@@ -26,6 +26,8 @@ all_tests = []
 lazy_static = { version = "1.4.0" }
 regex = { version = "1.4.2" }
 sophia_api = { version = "0.6.2", path = "../api" }
+sophia_indexed = { version = "0.6.2", path = "../indexed" }
+sophia_inmem = { version = "0.6.2", path = "../inmem" }
 sophia_iri = { version = "0.6.2", path = "../iri" }
 sophia_rio = { version = "0.6.2", path = "../rio" }
 sophia_term = { version = "0.6.2", path = "../term" }

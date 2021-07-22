@@ -264,11 +264,6 @@ where
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod test {
-
-    use std::fmt::Debug;
-    use std::fmt::Formatter;
-    use std::fmt::Result as FmtResult;
-
     use crate::graph::inmem::HashGraph;
     use crate::graph::inmem::TermIndexMapU;
     use crate::graph::Graph;
@@ -281,26 +276,24 @@ mod test {
 
     type TestGraph = HashGraph<TermIndexMapU<u16, RcTermFactory>>;
 
-    impl Debug for TestGraph {
-        fn fmt(&self, f: &mut Formatter) -> FmtResult {
-            let mut v = Vec::new();
-            for t in self.triples() {
-                let t = t.unwrap();
-                v.push([
-                    BoxTerm::copy(t.s()),
-                    BoxTerm::copy(t.p()),
-                    BoxTerm::copy(t.o()),
-                ]);
-            }
-            v.sort_by_key(|t| {
-                (
-                    t.s().value().to_string(),
-                    t.p().value().to_string(),
-                    t.o().value().to_string(),
-                )
-            });
-            v.fmt(f)
+    fn dump(g: &TestGraph) -> String {
+        let mut v = Vec::new();
+        for t in g.triples() {
+            let t = t.unwrap();
+            v.push([
+                BoxTerm::copy(t.s()),
+                BoxTerm::copy(t.p()),
+                BoxTerm::copy(t.o()),
+            ]);
         }
+        v.sort_by_key(|t| {
+            (
+                t.s().value().to_string(),
+                t.p().value().to_string(),
+                t.o().value().to_string(),
+            )
+        });
+        format!("{:?}", v)
     }
 
     macro_rules! assert_graph_eq {
@@ -309,7 +302,7 @@ mod test {
                 $l.len(),
                 $r.len(),
                 "unexpected number of triples: {:#?}",
-                $l
+                dump(&$l),
             );
             for t in $r.triples().map(Result::unwrap) {
                 assert!(
@@ -318,7 +311,7 @@ mod test {
                     t.s(),
                     t.p(),
                     t.o(),
-                    $l
+                    dump(&$l),
                 );
             }
         };

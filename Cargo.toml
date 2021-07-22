@@ -2,6 +2,8 @@
 
 members = [
     "api",
+    "indexed",
+    "inmem",
     "iri",
     "rio",
     "sophia",

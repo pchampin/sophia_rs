@@ -4,9 +4,9 @@ use std::collections::{HashMap, HashSet};
 use std::iter::empty;
 
 use super::*;
-use crate::triple::streaming_mode::{ByTermRefs, StreamedTriple};
 use sophia_api::graph::{GResultTermSet, GTripleSource};
 use sophia_api::term::TTerm;
+use sophia_api::triple::streaming_mode::{ByTermRefs, StreamedTriple};
 
 /// A [`GraphWrapper`](trait.GraphWrapper.html)
 /// indexing triples by subject, then by predicate, then by object.
@@ -163,14 +163,14 @@ impl<T> CollectibleGraph for SpoWrapper<T>
 where
     T: IndexedGraph + Graph<Triple = ByTermRefs<Term<<T as IndexedGraph>::TermData>>>,
 {
-    crate::impl_collectible_graph_for_indexed_graph!();
+    sophia_indexed::impl_collectible_graph_for_indexed_graph!();
 }
 
 impl<T> MutableGraph for SpoWrapper<T>
 where
     T: IndexedGraph + Graph<Triple = ByTermRefs<Term<<T as IndexedGraph>::TermData>>>,
 {
-    crate::impl_mutable_graph_for_indexed_graph!();
+    sophia_indexed::impl_mutable_graph_for_indexed_graph!();
 }
 
 impl<T> SetGraph for SpoWrapper<T>

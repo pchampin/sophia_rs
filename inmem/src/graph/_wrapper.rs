@@ -201,13 +201,13 @@ macro_rules! impl_graph_for_wrapper {
     };
     () => {
         type Triple =
-            <<Self as $crate::graph::inmem::GraphWrapper>::Wrapped as $crate::graph::Graph>::Triple;
+            <<Self as $crate::graph::GraphWrapper>::Wrapped as $crate::graph::Graph>::Triple;
         type Error =
-            <<Self as $crate::graph::inmem::GraphWrapper>::Wrapped as $crate::graph::Graph>::Error;
+            <<Self as $crate::graph::GraphWrapper>::Wrapped as $crate::graph::Graph>::Error;
 
         #[inline]
         fn triples(&self) -> $crate::graph::GTripleSource<Self> {
-            $crate::graph::inmem::GraphWrapper::gw_triples(self)
+            $crate::graph::GraphWrapper::gw_triples(self)
         }
         #[inline]
         fn triples_with_s<'s_, TS_>(
@@ -217,7 +217,7 @@ macro_rules! impl_graph_for_wrapper {
         where
             TS_: sophia_api::term::TTerm + ?Sized,
         {
-            $crate::graph::inmem::GraphWrapper::gw_triples_with_s(self, s)
+            $crate::graph::GraphWrapper::gw_triples_with_s(self, s)
         }
         #[inline]
         fn triples_with_p<'s_, TP_>(
@@ -227,7 +227,7 @@ macro_rules! impl_graph_for_wrapper {
         where
             TP_: sophia_api::term::TTerm + ?Sized,
         {
-            $crate::graph::inmem::GraphWrapper::gw_triples_with_p(self, p)
+            $crate::graph::GraphWrapper::gw_triples_with_p(self, p)
         }
         #[inline]
         fn triples_with_o<'s_, TO_>(
@@ -237,7 +237,7 @@ macro_rules! impl_graph_for_wrapper {
         where
             TO_: sophia_api::term::TTerm + ?Sized,
         {
-            $crate::graph::inmem::GraphWrapper::gw_triples_with_o(self, o)
+            $crate::graph::GraphWrapper::gw_triples_with_o(self, o)
         }
         #[inline]
         fn triples_with_sp<'s_, TS_, TP_>(
@@ -249,7 +249,7 @@ macro_rules! impl_graph_for_wrapper {
             TS_: sophia_api::term::TTerm + ?Sized,
             TP_: sophia_api::term::TTerm + ?Sized,
         {
-            $crate::graph::inmem::GraphWrapper::gw_triples_with_sp(self, s, p)
+            $crate::graph::GraphWrapper::gw_triples_with_sp(self, s, p)
         }
         #[inline]
         fn triples_with_so<'s_, TS_, TO_>(
@@ -261,7 +261,7 @@ macro_rules! impl_graph_for_wrapper {
             TS_: sophia_api::term::TTerm + ?Sized,
             TO_: sophia_api::term::TTerm + ?Sized,
         {
-            $crate::graph::inmem::GraphWrapper::gw_triples_with_so(self, s, o)
+            $crate::graph::GraphWrapper::gw_triples_with_so(self, s, o)
         }
         #[inline]
         fn triples_with_po<'s_, TP_, TO_>(
@@ -273,7 +273,7 @@ macro_rules! impl_graph_for_wrapper {
             TP_: sophia_api::term::TTerm + ?Sized,
             TO_: sophia_api::term::TTerm + ?Sized,
         {
-            $crate::graph::inmem::GraphWrapper::gw_triples_with_po(self, p, o)
+            $crate::graph::GraphWrapper::gw_triples_with_po(self, p, o)
         }
         #[inline]
         fn triples_with_spo<'s_, TS_, TP_, TO_>(
@@ -287,7 +287,7 @@ macro_rules! impl_graph_for_wrapper {
             TP_: sophia_api::term::TTerm + ?Sized,
             TO_: sophia_api::term::TTerm + ?Sized,
         {
-            $crate::graph::inmem::GraphWrapper::gw_triples_with_spo(self, s, p, o)
+            $crate::graph::GraphWrapper::gw_triples_with_spo(self, s, p, o)
         }
 
         #[inline]
@@ -302,7 +302,7 @@ macro_rules! impl_graph_for_wrapper {
             TP_: sophia_api::term::TTerm + ?Sized,
             TO_: sophia_api::term::TTerm + ?Sized,
         {
-            $crate::graph::inmem::GraphWrapper::gw_contains(self, s, p, o)
+            $crate::graph::GraphWrapper::gw_contains(self, s, p, o)
         }
 
         #[inline]
@@ -312,7 +312,7 @@ macro_rules! impl_graph_for_wrapper {
         where
             $crate::graph::GTerm<Self>: Clone + Eq + std::hash::Hash,
         {
-            $crate::graph::inmem::GraphWrapper::gw_subjects(self)
+            $crate::graph::GraphWrapper::gw_subjects(self)
         }
 
         #[inline]
@@ -322,7 +322,7 @@ macro_rules! impl_graph_for_wrapper {
         where
             $crate::graph::GTerm<Self>: Clone + Eq + std::hash::Hash,
         {
-            $crate::graph::inmem::GraphWrapper::gw_predicates(self)
+            $crate::graph::GraphWrapper::gw_predicates(self)
         }
 
         #[inline]
@@ -332,7 +332,7 @@ macro_rules! impl_graph_for_wrapper {
         where
             $crate::graph::GTerm<Self>: Clone + Eq + std::hash::Hash,
         {
-            $crate::graph::inmem::GraphWrapper::gw_objects(self)
+            $crate::graph::GraphWrapper::gw_objects(self)
         }
 
         #[inline]
@@ -342,7 +342,7 @@ macro_rules! impl_graph_for_wrapper {
         where
             $crate::graph::GTerm<Self>: Clone + Eq + std::hash::Hash,
         {
-            $crate::graph::inmem::GraphWrapper::gw_iris(self)
+            $crate::graph::GraphWrapper::gw_iris(self)
         }
 
         #[inline]
@@ -352,7 +352,7 @@ macro_rules! impl_graph_for_wrapper {
         where
             $crate::graph::GTerm<Self>: Clone + Eq + std::hash::Hash,
         {
-            $crate::graph::inmem::GraphWrapper::gw_bnodes(self)
+            $crate::graph::GraphWrapper::gw_bnodes(self)
         }
 
         #[inline]
@@ -362,7 +362,7 @@ macro_rules! impl_graph_for_wrapper {
         where
             $crate::graph::GTerm<Self>: Clone + Eq + std::hash::Hash,
         {
-            $crate::graph::inmem::GraphWrapper::gw_literals(self)
+            $crate::graph::GraphWrapper::gw_literals(self)
         }
 
         #[inline]
@@ -372,7 +372,7 @@ macro_rules! impl_graph_for_wrapper {
         where
             $crate::graph::GTerm<Self>: Clone + Eq + std::hash::Hash,
         {
-            $crate::graph::inmem::GraphWrapper::gw_variables(self)
+            $crate::graph::GraphWrapper::gw_variables(self)
         }
     };
 }

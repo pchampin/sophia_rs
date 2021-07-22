@@ -72,8 +72,8 @@ pub mod query;
 /// and also provides some implementations of its traits.
 pub mod dataset {
     pub use sophia_api::dataset::*;
-    pub mod indexed;
-    pub mod inmem;
+    pub use sophia_indexed::dataset as indexed;
+    pub use sophia_inmem::dataset as inmem;
 }
 /// This module re-exports symbols from
 /// [`sophia_iri`]
@@ -85,8 +85,8 @@ pub mod iri {
 /// and also provides some implementations of its traits.
 pub mod graph {
     pub use sophia_api::graph::*;
-    pub mod indexed;
-    pub mod inmem;
+    pub use sophia_indexed::graph as indexed;
+    pub use sophia_inmem::graph as inmem;
 }
 /// This module re-exports symbols from
 /// [`sophia_api::ns`](https://docs.rs/sophia_api/latest/sophia_api/ns/).
