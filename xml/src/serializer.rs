@@ -1,4 +1,7 @@
 //! Serializer for the [RDF/XML] concrete syntax of RDF.
+//! based on [`rio_xml`](https://docs.rs/rio_xml/)
+//!
+//! [RDF/XML]: https://www.w3.org/TR/rdf-syntax-grammar/
 //!
 //! **Important**:
 //! the methods in this module accepting a [`Write`]
@@ -9,10 +12,10 @@
 //! [`Write`]: https://doc.rust-lang.org/std/io/trait.Write.html
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
-use super::rio_common::rio_format_triples;
 use rio_xml::RdfXmlFormatter;
 use sophia_api::serializer::*;
 use sophia_api::triple::stream::{SinkError, StreamResult, TripleSource};
+use sophia_rio::serializer::rio_format_triples;
 use std::io;
 
 /// RDF/XML serializer configuration.
@@ -120,7 +123,7 @@ pub(crate) mod test {
         let s = RdfXmlSerializer::new_stringifier()
             .serialize_graph(&g)?
             .to_string();
-        let g2: Vec<[BoxTerm; 3]> = crate::parser::xml::parse_str(&s).collect_triples()?;
+        let g2: Vec<[BoxTerm; 3]> = crate::parser::parse_str(&s).collect_triples()?;
         assert!(isomorphic_graphs(&g, &g2)?);
         Ok(())
     }

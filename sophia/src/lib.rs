@@ -105,7 +105,7 @@ pub mod parser {
     pub mod trig;
     pub mod turtle;
     #[cfg(feature = "xml")]
-    pub mod xml;
+    pub use sophia_xml::parser as xml;
     #[cfg(feature = "xml")]
     pub mod xml_legacy;
 }
@@ -130,7 +130,7 @@ pub mod serializer {
     pub mod trig;
     pub mod turtle;
     #[cfg(feature = "xml")]
-    pub mod xml;
+    pub use sophia_xml::serializer as xml;
 }
 /// This module re-exports symbols from
 /// [`sophia_api::sparql`](https://docs.rs/sophia_api/latest/sophia_api/sparql/)

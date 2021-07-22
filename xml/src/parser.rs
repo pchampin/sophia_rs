@@ -1,4 +1,5 @@
-//! Adapter for the [RDF/XML] parser from [RIO](https://github.com/Tpt/rio/blob/master/xml)
+//! Parser for the [RDF/XML] concrete syntax of RDF,
+//! based on [`rio_xml`](https://docs.rs/rio_xml/)
 //!
 //! [RDF/XML]: https://www.w3.org/TR/rdf-syntax-grammar/
 
@@ -6,8 +7,8 @@ use std::io::BufRead;
 
 use rio_xml::{RdfXmlError, RdfXmlParser as RioRdfXmlParser};
 
-use crate::parser::rio_common::*;
-use crate::parser::TripleParser;
+use sophia_api::parser::TripleParser;
+use sophia_rio::parser::*;
 
 /// N-Triples parser based on RIO.
 #[derive(Clone, Debug, Default)]
@@ -34,10 +35,10 @@ sophia_api::def_mod_functions_for_bufread_parser!(RdfXmlParser, TripleParser);
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::graph::inmem::FastGraph;
-    use crate::graph::Graph;
-    use crate::ns::{rdf, xsd};
-    use crate::triple::stream::TripleSource;
+    use sophia::graph::inmem::FastGraph;
+    use sophia_api::graph::Graph;
+    use sophia_api::ns::{rdf, xsd};
+    use sophia_api::triple::stream::TripleSource;
     use sophia_term::matcher::ANY;
     use sophia_term::StaticTerm;
 
