@@ -243,6 +243,7 @@ impl<'a> TTerm for RioTermWrapper<'a> {
             Term::BlankNode(_) => TermKind::BlankNode,
             Term::Literal(_) => TermKind::Literal,
             Term::NamedNode(_) => TermKind::Iri,
+            Term::Triple(_) => panic!("Sophia does not support RDF-star yet")
         }
     }
 
@@ -274,6 +275,7 @@ impl<'a> TTerm for RioTermWrapper<'a> {
             Term::Literal(LanguageTaggedString { value, .. }) => value.into(),
             Term::Literal(Typed { value, .. }) => value.into(),
             Term::NamedNode(node) => node.iri.into(),
+            Term::Triple(_) => panic!("Sophia does not support RDF-star yet")
         }
     }
 
@@ -298,6 +300,7 @@ impl<'a> TTerm for GRioTermWrapper<'a> {
             GeneralizedTerm::Literal(_) => TermKind::Literal,
             GeneralizedTerm::NamedNode(_) => TermKind::Iri,
             GeneralizedTerm::Variable(_) => TermKind::Variable,
+            GeneralizedTerm::Triple(_) => panic!("Sophia does not support RDF-star yet")
         }
     }
 
@@ -330,6 +333,7 @@ impl<'a> TTerm for GRioTermWrapper<'a> {
             GeneralizedTerm::Literal(Typed { value, .. }) => value.into(),
             GeneralizedTerm::NamedNode(node) => node.iri.into(),
             GeneralizedTerm::Variable(var) => var.name.into(),
+            GeneralizedTerm::Triple(_) => panic!("Sophia does not support RDF-star yet")
         }
     }
 
