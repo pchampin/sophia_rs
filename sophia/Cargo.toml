@@ -1,6 +1,6 @@
 [package]
 name = "sophia"
-version = "0.6.2"
+version = "0.7.0"
 authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
 description = "A Rust toolkit for RDF and Linked Data"
 repository = "https://github.com/pchampin/sophia_rs"
@@ -23,13 +23,13 @@ test_macro = ["sophia_api/test_macro"]
 all_tests = []
 
 [dependencies]
-sophia_api = { version = "0.6.2", path = "../api" }
-sophia_indexed = { version = "0.6.2", path = "../indexed" }
-sophia_inmem = { version = "0.6.2", path = "../inmem" }
-sophia_iri = { version = "0.6.2", path = "../iri" }
-sophia_rio = { version = "0.6.2", path = "../rio" }
-sophia_term = { version = "0.6.2", path = "../term" }
-sophia_turtle = { version = "0.6.2", path = "../turtle" }
+sophia_api = { version = "0.7.0", path = "../api" }
+sophia_indexed = { version = "0.7.0", path = "../indexed" }
+sophia_inmem = { version = "0.7.0", path = "../inmem" }
+sophia_iri = { version = "0.7.0", path = "../iri" }
+sophia_rio = { version = "0.7.0", path = "../rio" }
+sophia_term = { version = "0.7.0", path = "../term" }
+sophia_turtle = { version = "0.7.0", path = "../turtle" }
 
 resiter = "0.4.0"
 
@@ -37,14 +37,14 @@ lazy_static = { version = "1.4.0", optional = true }
 percent-encoding = { version = "2.1.0", optional = true }
 quick-xml = { version = "0.22.0", optional = true }
 regex = { version = "1.5.4", optional = true }
-sophia_xml = { version = "0.6.2", path = "../xml", optional = true }
+sophia_xml = { version = "0.7.0", path = "../xml", optional = true }
 thiserror = { version = "1.0.20", optional = true }
 url = { version = "2.2.0", optional = true }
 
 [dev-dependencies]
 criterion = "0.3.3"
 lazy_static = "1.4.0"
-sophia_api = { version = "0.6.2", path = "../api", features = ["test_macro"] }
+sophia_api = { version = "0.7.0", path = "../api", features = ["test_macro"] }
 
 [[bench]]
 name = "main"

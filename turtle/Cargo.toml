@@ -1,6 +1,6 @@
 [package]
 name = "sophia_turtle"
-version = "0.6.2"
+version = "0.7.0"
 authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
 edition = "2018"
 description = "A Rust toolkit for RDF and Linked Data - parsers and serializers for the Turtle-family of syntaxes"
@@ -18,13 +18,13 @@ oxiri = "0.1.1"
 regex = { version = "1.4.2" }
 rio_api = { version = "0.6.0", features = ["generalized"] }
 rio_turtle = { version = "0.6.0", features = ["generalized"] }
-sophia_api = { version = "0.6.2", path = "../api" }
-sophia_indexed = { version = "0.6.2", path = "../indexed" }
-sophia_inmem = { version = "0.6.2", path = "../inmem" }
-sophia_iri = { version = "0.6.2", path = "../iri" }
-sophia_term = { version = "0.6.2", path = "../term" }
-sophia_rio = { version = "0.6.2", path = "../rio" }
+sophia_api = { version = "0.7.0", path = "../api" }
+sophia_indexed = { version = "0.7.0", path = "../indexed" }
+sophia_inmem = { version = "0.7.0", path = "../inmem" }
+sophia_iri = { version = "0.7.0", path = "../iri" }
+sophia_term = { version = "0.7.0", path = "../term" }
+sophia_rio = { version = "0.7.0", path = "../rio" }
 thiserror = "1.0.20"
 
 [dev-dependencies]
-sophia_term = { version = "0.6.2", path = "../term" }
+sophia_term = { version = "0.7.0", path = "../term" }

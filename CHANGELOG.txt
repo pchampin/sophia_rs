@@ -1,3 +1,15 @@
+0.7.0
+    New features
+    - new API for SPARQL
+    - new API for prefix map
+    - new IRI wrappers and traits in sophia_iri
+    - Serializers for Turtle and TriG (with 2 modes: fast and pretty)
+    Oher major changes
+    - Now entirely modular: sophia is essentially only a compilation
+      of smaller crates
+    Documentation
+    - Preliminary MDbook created by @huhn511
+
 0.6.2
     License change
     - all crates are now under CeCILL-B (compatible with BSD)

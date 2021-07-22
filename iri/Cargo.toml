@@ -1,6 +1,6 @@
 [package]
 name = "sophia_iri"
-version = "0.6.2"
+version = "0.7.0"
 authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
 edition = "2018"
 description = "A Rust toolkit for RDF and Linked Data - IRI management"
