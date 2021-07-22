@@ -13,31 +13,29 @@ It comprises the following crates:
   more precisely, it provides traits for describing
   - terms, triples and quads,
   - graphs and datasets,
-  - parsers and serializers.
-* [`sophia_iri`] provides functions for validating and resolving IRIs.
-* [`sophia_term`] defines implementations of the `TTerm` trait.
-* [`sophia`] is the “all-included” crate,
-  re-exporting symbols from all the crates above
-  and also providing additional implementations:
-  - optimized in-memory graphs and datasets,
-  - parsers and serializers for various RDF formats (Turtle-family and RDF/XML).
+  - parsers and serializers
+* [`sophia_iri`] provides functions, types and traits for validating and resolving IRIs.
+* [`sophia_term`] defines implementations of the `TTerm` trait from `sophia_api`.
+* [`sophia_inmem`] defines in-memory implementations of the `Graph` and `Dataset` traits from `sophia_api`.
+* [`sophia_turtle`] provides parsers and serializers for the Turtle-family of concrete syntaxes.
+* [`sophia_xml`] provides parsers and serializers for RDF/XML.
 * [`sophia_jsonld`] provides preliminary support for JSON-LD.
+* [`sophia_indexed`] and [`sophia_rio`] are lower-level crates, used by the ones above. 
 
+and finally:
+* [`sophia`] is the “all-inclusive” crate,
+  re-exporting symbols from all the crates above.
+  
 ## Licence
 
 [CECILL-B] (compatible with BSD)
 
-## Performances
-
-A comparison of Sophia with other RDF libraries is available
-[here](https://github.com/pchampin/sophia_benchmark/blob/master/benchmark_results.ipynb).
-
 ## Testing
 
-The test suite depends on the [RDF test-suite] and the [JSON-LD test-suite]
+The test suite depends on the [the [JSON-LD test-suite]
 which is included as a `git` submodule.
 In order to run all the tests, you need to execute the following commands:
-```
+```bash
 $ git submodule init
 $ git submodule update
 ```
@@ -63,11 +61,22 @@ Bibtex:
 }
 ```
 
+## History
+
+An outdated comparison of Sophia with other RDF libraries is still available
+[here](https://github.com/pchampin/sophia_benchmark/blob/master/benchmark_results.ipynb).
+
+
 [`sophia_api`]: https://crates.io/crates/sophia_api
 [`sophia_iri`]: https://crates.io/crates/sophia_iri
 [`sophia_term`]: https://crates.io/crates/sophia_term
-[`sophia`]: https://crates.io/crates/sophia
+[`sophia_inmem`]: https://crates.io/crates/sophia_inmem
+[`sophia_turtle`]: https://crates.io/crates/sophia_turtle
+[`sophia_xml`]: https://crates.io/crates/sophia_xml
 [`sophia_jsonld`]: https://crates.io/crates/sophia_jsonld
+[`sophia_indexed`]: https://crates.io/crates/sophia_indexed
+[`sophia_rio`]: https://crates.io/crates/sophia_rio
+[`sophia`]: https://crates.io/crates/sophia
 [CECILL-B]: https://cecill.info/licences/Licence_CeCILL-B_V1-en.html
 [RDF test-suite]: https://github.com/w3c/rdf-tests/
 [JSON-LD test-suite]: https://github.com/w3c/json-ld-api/
