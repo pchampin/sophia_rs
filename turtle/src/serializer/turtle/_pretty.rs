@@ -1,12 +1,12 @@
 //! Utility code for pretty-printing Turtle.
 
 use super::TurtleConfig;
-use crate::dataset::inmem::FastDataset;
 use sophia_api::dataset::adapter::DatasetGraph;
 use sophia_api::graph::Graph;
 use sophia_api::ns::rdf;
 use sophia_api::term::{CopiableTerm, TTerm, TermKind};
 use sophia_api::triple::Triple;
+use sophia_inmem::dataset::FastDataset;
 use sophia_term::RcTerm;
 use std::collections::{HashMap, HashSet};
 use std::io;
@@ -58,7 +58,11 @@ where
     p.write_all(&gd)
 }
 
-fn check_anon_root(g: &PrettifiableGraph<'_>, n: &RcTerm, blacklist: &HashSet<RcTerm>) -> (bool, bool) {
+fn check_anon_root(
+    g: &PrettifiableGraph<'_>,
+    n: &RcTerm,
+    blacklist: &HashSet<RcTerm>,
+) -> (bool, bool) {
     let indeg = g.triples_with_o(n).take(2).count();
     let anon = n.kind() == TermKind::BlankNode
         && indeg <= 1

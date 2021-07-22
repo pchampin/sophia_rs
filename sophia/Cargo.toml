@@ -15,7 +15,7 @@ all-features = true
 
 [features]
 default = []
-xml = ["percent-encoding", "quick-xml", "sophia_xml", "url"]
+xml = ["lazy_static", "percent-encoding", "regex", "quick-xml", "sophia_xml", "thiserror", "url"]
 
 # This feature enables to use the graph and dataset test macros in other crates
 test_macro = ["sophia_api/test_macro"]
@@ -23,30 +23,28 @@ test_macro = ["sophia_api/test_macro"]
 all_tests = []
 
 [dependencies]
-lazy_static = { version = "1.4.0" }
-regex = { version = "1.4.2" }
 sophia_api = { version = "0.6.2", path = "../api" }
 sophia_indexed = { version = "0.6.2", path = "../indexed" }
 sophia_inmem = { version = "0.6.2", path = "../inmem" }
 sophia_iri = { version = "0.6.2", path = "../iri" }
 sophia_rio = { version = "0.6.2", path = "../rio" }
 sophia_term = { version = "0.6.2", path = "../term" }
-oxiri = "0.1.1"
-resiter = "0.4.0"
-rio_api = { version = "0.6.0", features = ["generalized"] }
-rio_turtle = { version = "0.6.0", features = ["generalized"] }
-thiserror = "1.0.20"
+sophia_turtle = { version = "0.6.2", path = "../turtle" }
 
+resiter = "0.4.0"
+
+lazy_static = { version = "1.4.0", optional = true }
 percent-encoding = { version = "2.1.0", optional = true }
 quick-xml = { version = "0.22.0", optional = true }
+regex = { version = "1.5.4", optional = true }
 sophia_xml = { version = "0.6.2", path = "../xml", optional = true }
+thiserror = { version = "1.0.20", optional = true }
 url = { version = "2.2.0", optional = true }
 
 [dev-dependencies]
-test-case = "1.0.0"
+criterion = "0.3.3"
 lazy_static = "1.4.0"
 sophia_api = { version = "0.6.2", path = "../api", features = ["test_macro"] }
-criterion = "0.3.3"
 
 [[bench]]
 name = "main"

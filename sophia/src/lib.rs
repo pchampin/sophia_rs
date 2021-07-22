@@ -98,14 +98,14 @@ pub mod ns {
 /// and also provides some implementations of its traits.
 pub mod parser {
     pub use sophia_api::parser::*;
-    pub use sophia_rio::parser as rio_common;
-    pub mod gtrig;
-    pub mod nq;
-    pub mod nt;
-    pub mod trig;
-    pub mod turtle;
+    pub use sophia_turtle::parser::gtrig;
+    pub use sophia_turtle::parser::nq;
+    pub use sophia_turtle::parser::nt;
+    pub use sophia_turtle::parser::trig;
+    pub use sophia_turtle::parser::turtle;
     #[cfg(feature = "xml")]
     pub use sophia_xml::parser as xml;
+    #[deprecated(since = "0.7.0", note = "please use `sophia_xml` instead")]
     #[cfg(feature = "xml")]
     pub mod xml_legacy;
 }
@@ -124,11 +124,10 @@ pub mod quad {
 /// and also provides some implementations of its traits.
 pub mod serializer {
     pub use sophia_api::serializer::*;
-    pub use sophia_rio::serializer as rio_common;
-    pub mod nq;
-    pub mod nt;
-    pub mod trig;
-    pub mod turtle;
+    pub use sophia_turtle::serializer::nq;
+    pub use sophia_turtle::serializer::nt;
+    pub use sophia_turtle::serializer::trig;
+    pub use sophia_turtle::serializer::turtle;
     #[cfg(feature = "xml")]
     pub use sophia_xml::serializer as xml;
 }

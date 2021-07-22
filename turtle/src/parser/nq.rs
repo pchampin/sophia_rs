@@ -2,9 +2,9 @@
 //!
 //! [N-Quads]: https://www.w3.org/TR/n-quads/
 
-use crate::parser::rio_common::*;
 use rio_turtle::{NQuadsParser as RioNQParser, TurtleError};
 use sophia_api::parser::QuadParser;
+use sophia_rio::parser::*;
 use std::io::BufRead;
 
 /// N-Quads parser based on RIO.
@@ -27,11 +27,11 @@ sophia_api::def_mod_functions_for_bufread_parser!(NQuadsParser, QuadParser);
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::dataset::inmem::FastDataset;
-    use crate::dataset::Dataset;
-    use crate::quad::stream::QuadSource;
+    use sophia_api::dataset::Dataset;
     use sophia_api::ns::{rdf, xsd};
+    use sophia_api::quad::stream::QuadSource;
     use sophia_api::term::matcher::ANY;
+    use sophia_inmem::dataset::FastDataset;
     use sophia_term::StaticTerm;
 
     #[test]

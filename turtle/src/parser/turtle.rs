@@ -2,10 +2,10 @@
 
 use std::io::BufRead;
 
-use crate::parser::rio_common::*;
 use rio_api::parser::ParseError;
 use rio_turtle::{TurtleError, TurtleParser as RioTurtleParser};
 use sophia_api::parser::{Location, TripleParser, WithLocation};
+use sophia_rio::parser::*;
 use thiserror::Error;
 
 /// Turtle parser based on RIO.
@@ -53,11 +53,11 @@ sophia_api::def_mod_functions_for_bufread_parser!(TurtleParser, TripleParser);
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::graph::inmem::FastGraph;
-    use crate::graph::Graph;
-    use crate::triple::stream::TripleSource;
+    use sophia_api::graph::Graph;
     use sophia_api::ns::{rdf, xsd};
     use sophia_api::term::matcher::ANY;
+    use sophia_api::triple::stream::TripleSource;
+    use sophia_inmem::graph::FastGraph;
     use sophia_term::StaticTerm;
 
     #[test]

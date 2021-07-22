@@ -8,6 +8,7 @@ members = [
     "rio",
     "sophia",
     "term",
+    "turtle",
     "jsonld",
     "xml",
 ]

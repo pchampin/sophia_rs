@@ -2,9 +2,9 @@
 //!
 //! [N-Triples]: https://www.w3.org/TR/n-triples/
 
-use crate::parser::rio_common::*;
 use rio_turtle::{NTriplesParser as RioNTParser, TurtleError};
 use sophia_api::parser::TripleParser;
+use sophia_rio::parser::*;
 use std::io::BufRead;
 
 /// N-Triples parser based on RIO.
@@ -27,11 +27,11 @@ sophia_api::def_mod_functions_for_bufread_parser!(NTriplesParser, TripleParser);
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::graph::inmem::FastGraph;
-    use crate::graph::Graph;
-    use crate::triple::stream::TripleSource;
+    use sophia_api::graph::Graph;
     use sophia_api::ns::{rdf, xsd};
     use sophia_api::term::matcher::ANY;
+    use sophia_api::triple::stream::TripleSource;
+    use sophia_inmem::graph::FastGraph;
     use sophia_term::StaticTerm;
 
     #[test]

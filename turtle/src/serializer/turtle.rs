@@ -9,17 +9,18 @@
 //! [`Write`]: https://doc.rust-lang.org/std/io/trait.Write.html
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
-use super::rio_common::rio_format_triples;
-use crate::dataset::{inmem::FastDataset, Dataset, MutableDataset};
 use regex::Regex;
 use rio_turtle::TurtleFormatter;
+use sophia_api::dataset::{Dataset, MutableDataset};
 use sophia_api::ns::{rdf, xsd};
 use sophia_api::prefix::{PrefixBox, PrefixMap};
 use sophia_api::serializer::*;
-use sophia_api::term::{TermKind::*, TTerm};
+use sophia_api::term::{TTerm, TermKind::*};
 use sophia_api::triple::stream::{SinkError, SourceError, StreamResult, TripleSource};
 use sophia_api::triple::Triple;
+use sophia_inmem::dataset::FastDataset;
 use sophia_iri::IriBox;
+use sophia_rio::serializer::rio_format_triples;
 use sophia_term::RcTerm;
 use std::io;
 
@@ -178,8 +179,7 @@ where
             let blacklist = Default::default(); // no blacklist required for Turtle
 
             write_prefixes(&mut self.write, &self.config.prefix_map[..]).map_err(SinkError)?;
-            prettify(graph, &mut self.write, &self.config, &blacklist, "")
-                .map_err(SinkError)?;
+            prettify(graph, &mut self.write, &self.config, &blacklist, "").map_err(SinkError)?;
             self.write.flush().map_err(SinkError)?;
         } else {
             let mut tf = TurtleFormatter::new(&mut self.write);
@@ -252,12 +252,7 @@ where
     P: PrefixMap + ?Sized,
 {
     for (pre, iri) in prefix_map.iter() {
-        writeln!(
-            &mut write,
-            "PREFIX {}: <{}>",
-            pre.as_ref(),
-            iri.as_ref()
-        )?;
+        writeln!(&mut write, "PREFIX {}: <{}>", pre.as_ref(), iri.as_ref())?;
     }
     Ok(())
 }
@@ -266,7 +261,12 @@ where
 ///
 /// If `allow_anon` is true and `term` is a blank node, it will be written as `[]`
 /// instead of using it's label.
-pub fn write_term<W: io::Write, T: TTerm>(mut write: W, term: &T, config: &TurtleConfig, allow_anon: bool) -> io::Result<()> {
+pub fn write_term<W: io::Write, T: TTerm>(
+    mut write: W,
+    term: &T,
+    config: &TurtleConfig,
+    allow_anon: bool,
+) -> io::Result<()> {
     match term.kind() {
         Iri => write_iri(write, term, config),
         BlankNode => {
@@ -283,7 +283,11 @@ pub fn write_term<W: io::Write, T: TTerm>(mut write: W, term: &T, config: &Turtl
     }
 }
 
-fn write_iri<W: io::Write, T: TTerm>(mut write: W, iri: &T, config: &TurtleConfig) -> io::Result<()> {
+fn write_iri<W: io::Write, T: TTerm>(
+    mut write: W,
+    iri: &T,
+    config: &TurtleConfig,
+) -> io::Result<()> {
     debug_assert!(iri.kind() == Iri);
     if &rdf::nil == iri {
         return write.write_all(b"()");
@@ -302,7 +306,11 @@ fn write_iri<W: io::Write, T: TTerm>(mut write: W, iri: &T, config: &TurtleConfi
     }
 }
 
-fn write_literal<W: io::Write, T: TTerm>(mut write: W, lit: &T, config: &TurtleConfig) -> io::Result<()> {
+fn write_literal<W: io::Write, T: TTerm>(
+    mut write: W,
+    lit: &T,
+    config: &TurtleConfig,
+) -> io::Result<()> {
     debug_assert!(lit.kind() == Literal);
     let datatype = lit.datatype().unwrap();
     let value = lit.value_raw().0;
@@ -334,15 +342,23 @@ fn write_literal<W: io::Write, T: TTerm>(mut write: W, lit: &T, config: &TurtleC
 
 #[cfg(test)]
 pub(crate) mod test {
-    use crate::graph::inmem::FastGraph;
     use super::*;
-    use sophia_api::graph::{Graph, isomorphic_graphs};
+    use sophia_api::graph::{isomorphic_graphs, Graph};
+    use sophia_inmem::graph::FastGraph;
     use sophia_term::*;
     use std::error::Error;
 
     #[test]
     fn pn_local() {
-        for positive in ["a", "aBc", "éàïsophia_api::graph::", ":::", "123", "%20%21%22", "\\%\\?\\&"] {
+        for positive in [
+            "a",
+            "aBc",
+            "éàïsophia_api::graph::",
+            ":::",
+            "123",
+            "%20%21%22",
+            "\\%\\?\\&",
+        ] {
             assert!(PN_LOCAL.is_match(positive), "{}", positive);
         }
         for negative in [" ", ".a", "a."] {
@@ -400,7 +416,9 @@ pub(crate) mod test {
             println!("==========\n{}\n----------", ttl);
             let g1: FastGraph = crate::parser::turtle::parse_str(ttl).collect_triples()?;
 
-            let out = TurtleSerializer::new_stringifier().serialize_triples(g1.triples())?.to_string();
+            let out = TurtleSerializer::new_stringifier()
+                .serialize_triples(g1.triples())?
+                .to_string();
             println!("{}", &out);
 
             let g2: FastGraph = crate::parser::turtle::parse_str(&out).collect_triples()?;
@@ -415,11 +433,15 @@ pub(crate) mod test {
         for ttl in TESTS {
             println!("==========\n{}\n----------", ttl);
             let g1: FastGraph = crate::parser::turtle::parse_str(ttl).collect_triples()?;
-            let out2 = TurtleSerializer::new_stringifier().serialize_triples(g1.triples())?.to_string();
+            let out2 = TurtleSerializer::new_stringifier()
+                .serialize_triples(g1.triples())?
+                .to_string();
             println!("\n>>> DEBUG\n{}", &out2);
 
             let config = TurtleConfig::new().with_pretty(true);
-            let out = TurtleSerializer::new_stringifier_with_config(config).serialize_triples(g1.triples())?.to_string();
+            let out = TurtleSerializer::new_stringifier_with_config(config)
+                .serialize_triples(g1.triples())?
+                .to_string();
             println!("{}", &out);
 
             let g2: FastGraph = crate::parser::turtle::parse_str(&out).collect_triples()?;

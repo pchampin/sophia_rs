@@ -9,17 +9,17 @@
 //! [`Write`]: https://doc.rust-lang.org/std/io/trait.Write.html
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
-use super::rio_common::rio_format_quads;
 use super::turtle::{prettify, write_prefixes, write_term};
-use crate::dataset::{Dataset, MutableDataset};
-use crate::dataset::indexed::IndexedDataset;
-use crate::dataset::inmem::FastDataset;
 use rio_turtle::TriGFormatter;
-use sophia_api::quad::stream::{SinkError, SourceError, StreamResult, QuadSource};
+use sophia_api::dataset::{Dataset, MutableDataset};
+use sophia_api::quad::stream::{QuadSource, SinkError, SourceError, StreamResult};
 use sophia_api::quad::Quad;
 use sophia_api::serializer::*;
-use sophia_api::term::{TermKind::BlankNode, TTerm};
-use sophia_term::{RcTerm};
+use sophia_api::term::{TTerm, TermKind::BlankNode};
+use sophia_indexed::dataset::IndexedDataset;
+use sophia_inmem::dataset::FastDataset;
+use sophia_rio::serializer::rio_format_quads;
+use sophia_term::RcTerm;
 use std::collections::{HashMap, HashSet};
 use std::io;
 
@@ -49,15 +49,13 @@ where
             let mut anon_blacklist = HashSet::new();
             source
                 .for_each_quad(|q| {
-                    dataset
-                        .insert(q.s(), q.p(), q.o(), q.g())
-                        .unwrap();
+                    dataset.insert(q.s(), q.p(), q.o(), q.g()).unwrap();
                     // build graph_names and anon_blacklist
-                    let gn = q.g().map(|t| get_rcterm(t, &dataset) );
+                    let gn = q.g().map(|t| get_rcterm(t, &dataset));
                     for t in [q.s(), q.p(), q.o()] {
                         if t.kind() != BlankNode {
                             continue;
-                        } 
+                        }
                         let t = get_rcterm(t, &dataset);
                         if anon_blacklist.contains(&t) {
                             continue;
@@ -73,8 +71,8 @@ where
                             Some(gn2) if &gn != gn2 => {
                                 anon_blacklist.insert(t);
                             }
-                            _ => ()
-                        }            
+                            _ => (),
+                        }
                     }
                     if let Some(term) = gn {
                         if term.kind() == BlankNode && bnode_graph.get(&term).is_some() {
@@ -86,14 +84,27 @@ where
                 .map_err(SourceError)?;
 
             write_prefixes(&mut self.write, &self.config.prefix_map[..]).map_err(SinkError)?;
-            prettify(dataset.graph(None), &mut self.write, &self.config, &anon_blacklist, "")
-                .map_err(SinkError)?;
+            prettify(
+                dataset.graph(None),
+                &mut self.write,
+                &self.config,
+                &anon_blacklist,
+                "",
+            )
+            .map_err(SinkError)?;
             for gn in &graph_names {
                 let allow_anon = !anon_blacklist.contains(gn);
                 self.write.write_all(b"GRAPH ").map_err(SinkError)?;
                 write_term(&mut self.write, gn, &self.config, allow_anon).map_err(SinkError)?;
                 self.write.write_all(b" {").map_err(SinkError)?;
-                prettify(dataset.graph(Some(gn)), &mut self.write, &self.config, &anon_blacklist, self.config.indentation()).map_err(SinkError)?;
+                prettify(
+                    dataset.graph(Some(gn)),
+                    &mut self.write,
+                    &self.config,
+                    &anon_blacklist,
+                    self.config.indentation(),
+                )
+                .map_err(SinkError)?;
                 self.write.write_all(b"}").map_err(SinkError)?;
             }
             self.write.flush().map_err(SinkError)?;
@@ -120,9 +131,9 @@ fn get_rcterm<T: TTerm + ?Sized>(term: &T, dataset: &FastDataset) -> RcTerm {
 
 #[cfg(test)]
 pub(crate) mod test {
-    use crate::dataset::inmem::FastDataset;
     use super::*;
-    use sophia_api::dataset::{Dataset, isomorphic_datasets};
+    use sophia_api::dataset::{isomorphic_datasets, Dataset};
+    use sophia_inmem::dataset::FastDataset;
     use sophia_term::*;
     use std::error::Error;
 
@@ -163,7 +174,9 @@ pub(crate) mod test {
             println!("==========\n{}\n----------", ttl);
             let g1: FastDataset = crate::parser::trig::parse_str(ttl).collect_quads()?;
 
-            let out = TrigSerializer::new_stringifier().serialize_quads(g1.quads())?.to_string();
+            let out = TrigSerializer::new_stringifier()
+                .serialize_quads(g1.quads())?
+                .to_string();
             println!("{}", &out);
 
             let g2: FastDataset = crate::parser::trig::parse_str(&out).collect_quads()?;
@@ -180,7 +193,9 @@ pub(crate) mod test {
             let g1: FastDataset = crate::parser::trig::parse_str(ttl).collect_quads()?;
 
             let config = TrigConfig::new().with_pretty(true);
-            let out = TrigSerializer::new_stringifier_with_config(config).serialize_quads(g1.quads())?.to_string();
+            let out = TrigSerializer::new_stringifier_with_config(config)
+                .serialize_quads(g1.quads())?
+                .to_string();
             println!("{}", &out);
 
             let g2: FastDataset = crate::parser::trig::parse_str(&out).collect_quads()?;
