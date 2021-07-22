@@ -30,5 +30,5 @@ thiserror = "1.0.20"
 
 [dev-dependencies]
 sophia_iri = { version = "0.7.0", path = "../iri", features = ["test_data"] }
-sophia_term = { version = "0.7.0", path = "../term" }
+sophia_term = { version = "0.*", path = "../term" }
 test-case = "1.0.0"
