@@ -152,12 +152,7 @@ where
 ///   (defaults to `graph_impl::from_triple_source`);
 /// * `mt` is used internally, do not touch it...
 ///
-/// [`Graph`]: graph/trait.Graph.html
-/// [`CollectibleGraph`]: graph/trait.CollectibleGraph.html
-/// [`MutableGraph`]: graph/trait.MutableGraph.html
-/// [`test_immutable_graph_impl`]: ./macro.test_immutable_graph_impl.html
-/// [`SetGraph`]: graph/trait.SetGraph.html
-/// [generalized model]: ./index.html
+/// [generalized model]: crate#generalized-vs-strict-rdf-model
 #[macro_export]
 macro_rules! test_graph_impl {
     ($graph_impl: ident) => {
@@ -609,12 +604,7 @@ macro_rules! test_graph_impl {
 /// * `graph_collector`: a function used to collect triples into an instance of `graph_impl`
 ///   (defaults to `graph_impl::from_triple_source`);
 ///
-/// [`Graph`]: graph/trait.Graph.html
-/// [`CollectibleGraph`]: graph/trait.CollectibleGraph.html
-/// [`MutableGraph`]: graph/trait.MutableGraph.html
-/// [`test_graph_impl`]: ./macro.test_graph_impl.html
-/// [`SetGraph`]: graph/trait.SetGraph.html
-/// [generalized model]: ./index.html
+/// [generalized model]: crate#generalized-vs-strict-rdf-model
 #[macro_export]
 macro_rules! test_immutable_graph_impl {
     ($graph_impl: ident) => {

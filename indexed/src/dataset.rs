@@ -12,18 +12,14 @@ pub mod reexport {
     pub use sophia_api::quad::Quad;
 }
 
-/// A utility trait for implementing [`Dataset`] and [`MutableDataset`]
-/// based on an internal [`TermIndexMap`] for efficient storage.
+/// A utility trait for implementing [`Dataset`](sophia_api::dataset::Dataset)
+/// and [`MutableDataset`](sophia_api::dataset::MutableDataset)
+/// based on an internal [`TermIndexMap`](sophia_term::index_map::TermIndexMap)
+/// for efficient storage.
 ///
 /// The [`impl_mutable_dataset_for_indexed_dataset!`] macro
 /// can be used to derive the `MutableDataset` implementation
 /// for any implementation of `IndexedDataset`.
-///
-/// [`Dataset`]: ../trait.Dataset.html
-/// [`MutableDataset`]: ../trait.MutableDataset.html
-/// [`TermIndexMap`]: ../../term/index_map/trait.TermIndexMap.html
-/// [`impl_mutable_dataset_for_indexed_dataset!`]: ../../macro.impl_mutable_dataset_for_indexed_dataset.html
-///
 pub trait IndexedDataset {
     /// The type used to represent terms internally.
     type Index: Copy + Eq + Hash;
@@ -91,10 +87,8 @@ pub trait IndexedDataset {
         TG: TTerm + ?Sized;
 }
 
-/// Defines the implementation of [`CollectibleDataset`] for [`IndexedDataset`].
-///
-/// [`CollectibleDataset`]: dataset/trait.CollectibleDataset.html
-/// [`IndexedDataset`]: dataset/indexed/trait.IndexedDataset.html
+/// Defines the implementation of [`CollectibleDataset`](sophia_api::dataset::CollectibleDataset)
+/// for [`IndexedDataset`].
 #[macro_export]
 macro_rules! impl_collectible_dataset_for_indexed_dataset {
     ($indexed_mutable_dataset: ty) => {
@@ -120,10 +114,8 @@ macro_rules! impl_collectible_dataset_for_indexed_dataset {
     };
 }
 
-/// Defines the implementation of [`MutableDataset`] for [`IndexedDataset`].
-///
-/// [`MutableDataset`]: dataset/trait.MutableDataset.html
-/// [`IndexedDataset`]: dataset/indexed/trait.IndexedDataset.html
+/// Defines the implementation of [`MutableDataset`](sophia_api::dataset::MutableDataset)
+/// for [`IndexedDataset`].
 #[macro_export]
 macro_rules! impl_mutable_dataset_for_indexed_dataset {
     ($indexed_mutable_dataset: ty) => {

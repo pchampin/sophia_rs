@@ -14,18 +14,14 @@ pub mod reexport {
     pub use sophia_api::triple::Triple;
 }
 
-/// A utility trait for implementing [`Graph`] and [`MutableGraph`]
-/// based on an internal [`TermIndexMap`] for efficient storage.
+/// A utility trait for implementing [`Graph`](sophia_api::graph::Graph)
+/// and [`MutableGraph`](sophia_api::dataset::Dataset)
+/// based on an internal [`TermIndexMap`](sophia_term::index_map::TermIndexMap)
+/// for efficient storage.
 ///
 /// The [`impl_mutable_graph_for_indexed_graph!`] macro
 /// can be used to derive the `MutableGraph` implementation
 /// for any implementation of `IndexedGraph`.
-///
-/// [`Graph`]: ../trait.Graph.html
-/// [`MutableGraph`]: ../trait.MutableGraph.html
-/// [`TermIndexMap`]: ../../term/index_map/trait.TermIndexMap.html
-/// [`impl_mutable_graph_for_indexed_graph!`]: ../../macro.impl_mutable_graph_for_indexed_graph.html
-///
 pub trait IndexedGraph {
     /// The type used to represent terms internally.
     type Index: Copy + Eq + Hash;
@@ -63,10 +59,8 @@ pub trait IndexedGraph {
         TO: TTerm + ?Sized;
 }
 
-/// Defines the implementation of [`CollectibleGraph`] for [`IndexedGraph`].
-///
-/// [`CollectibleGraph`]: graph/trait.CollectibleGraph.html
-/// [`IndexedGraph`]: graph/indexed/trait.IndexedGraph.html
+/// Defines the implementation of [`CollectibleGraph`](sophia_api::graph::CollectibleGraph)
+/// for [`IndexedGraph`].
 #[macro_export]
 macro_rules! impl_collectible_graph_for_indexed_graph {
     ($indexed_mutable_graph: ty) => {
@@ -92,10 +86,8 @@ macro_rules! impl_collectible_graph_for_indexed_graph {
     };
 }
 
-/// Defines the implementation of [`MutableGraph`] for [`IndexedGraph`].
-///
-/// [`MutableGraph`]: graph/trait.MutableGraph.html
-/// [`IndexedGraph`]: graph/indexed/trait.IndexedGraph.html
+/// Defines the implementation of [`MutableGraph`](sophia_api::graph::MutableGraph)
+/// for [`IndexedGraph`].
 #[macro_export]
 macro_rules! impl_mutable_graph_for_indexed_graph {
     ($indexed_mutable_graph: ty) => {

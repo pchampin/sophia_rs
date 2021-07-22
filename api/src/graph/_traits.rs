@@ -24,8 +24,7 @@ pub type GTriple<'a, G> = StreamedTriple<'a, <G as Graph>::Triple>;
 pub type GResult<G, T> = Result<T, <G as Graph>::Error>;
 /// Type alias for fallible triple iterators produced by a graph.
 ///
-/// See [`Graph::triples`](./trait.Graph.html#tymethod.triples)
-/// for more information about how to use it.
+/// See [`Graph::triples`] for more information about how to use it.
 pub type GTripleSource<'a, G> = Box<dyn Iterator<Item = GResult<G, GTriple<'a, G>>> + 'a>;
 /// Type alias for fallible hashsets of terms produced by a graph.
 pub type GResultTermSet<G> = GResult<G, HashSet<GTerm<G>>>;
@@ -39,9 +38,9 @@ pub type GResultTermSet<G> = GResult<G, HashSet<GTerm<G>>>;
 /// see also [`SetGraph`](trait.SetGraph.html).
 ///
 pub trait Graph {
-    /// Determine the type of [`Triple`](../triple/trait.Triple.html)s
+    /// Determine the type of [`Triple`]s
     /// that the methods of this graph will yield
-    /// (see [`streaming_mode`](../triple/streaming_mode/index.html)
+    /// (see [`streaming_mode`])
     type Triple: TripleStreamingMode;
     /// The error type that this graph may raise.
     type Error: 'static + Error;
@@ -69,8 +68,7 @@ pub trait Graph {
     /// # }
     /// ```
     ///
-    /// Another way is to use the specific methods provided by
-    /// [`TripleSource`](../triple/stream/trait.TripleSource.html),
+    /// Another way is to use the specific methods provided by [`TripleSource`],
     /// for example:
     /// ```
     /// # use sophia_api::graph::Graph;
@@ -380,17 +378,17 @@ pub trait Graph {
         Ok(res)
     }
 
-    /// [`Dataset`](../dataset/trait.Dataset.html) adapter borrowing this graph
+    /// [`Dataset`](crate::dataset::Dataset) adapter borrowing this graph
     fn as_dataset(&self) -> GraphAsDataset<Self, &Self> {
         GraphAsDataset::new(self)
     }
 
-    /// [`Dataset`](../dataset/trait.Dataset.html) adapter borrowing this graph mutably
+    /// [`Dataset`](crate::dataset::Dataset) adapter borrowing this graph mutably
     fn as_dataset_mut(&mut self) -> GraphAsDataset<Self, &mut Self> {
         GraphAsDataset::new(self)
     }
 
-    /// [`Dataset`](../dataset/trait.Dataset.html) adapter taking ownership of this graph
+    /// [`Dataset`](crate::dataset::Dataset) adapter taking ownership of this graph
     fn into_dataset(self) -> GraphAsDataset<Self>
     where
         Self: Sized,
@@ -399,8 +397,7 @@ pub trait Graph {
     }
 }
 
-/// A graph that can be constructed from a
-/// [`TripleSource`](../triple/stream/trait.TripleSource.html)
+/// A graph that can be constructed from a [`TripleSource`]
 pub trait CollectibleGraph: Graph + Sized {
     fn from_triple_source<TS: TripleSource>(
         triples: TS,

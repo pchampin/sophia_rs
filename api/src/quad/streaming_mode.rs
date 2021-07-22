@@ -1,6 +1,6 @@
 //! Streaming modes for quad iterators and quad streams.
 //!
-//! See [`triple::streaming_mode`](../../triple/streaming_mode/index.html)
+//! See [`triple::streaming_mode`](crate::triple::streaming_mode)
 //! for more detail.
 
 use std::marker::PhantomData;
@@ -131,8 +131,7 @@ where
 /// and add an associated function named`scoped` to `StreamedQuad<'a, $mode>`,
 /// to convert an instance of `$tt<'a>` to a streamed quad.
 ///
-/// [streaming mode]: triple/streaming_mode/index.html
-/// [`Quad`]: quad/trait.Quad.html
+/// [streaming mode]: crate::triple::streaming_mode
 #[macro_export]
 macro_rules! make_scoped_quad_streaming_mode {
     ($(#[$attrs: meta])* $mode: ident, $qt: ident) => {
@@ -156,8 +155,6 @@ macro_rules! make_scoped_quad_streaming_mode {
 
 /// A utility trait used internally by [`make_scoped_quad_streaming_mode`].
 /// It should not be implemented manually.
-///
-/// [`make_scoped_quad_streaming_mode`]: ../../macro.make_scoped_quad_streaming_mode.html
 pub trait ScopedQuadMode<'a>: QuadStreamingMode + Sized {
     type SourceQuad: Quad + 'a;
     /// Convert a quad

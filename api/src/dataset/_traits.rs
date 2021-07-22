@@ -27,8 +27,7 @@ pub type DResult<D, T> = Result<T, <D as Dataset>::Error>;
 pub type DQuadSource<'a, D> = Box<dyn Iterator<Item = DResult<D, DQuad<'a, D>>> + 'a>;
 /// Type alias for fallible hashsets of terms produced by a dataset.
 ///
-/// See [`Dataset::quads`](./trait.Dataset.html#tymethod.quads)
-/// for more information about how to use it.
+/// See [`Dataset::quads`] for more information about how to use it.
 pub type DResultTermSet<D> = DResult<D, HashSet<DTerm<D>>>;
 
 /// Generic trait for RDF datasets.
@@ -39,9 +38,9 @@ pub type DResultTermSet<D> = DResult<D, HashSet<DTerm<D>>>;
 /// NB: the semantics of this trait allows a dataset to contain duplicate quads;
 /// see also [`SetDataset`](trait.SetDataset.html).
 pub trait Dataset {
-    /// Determine the type of [`Quad`](../quad/trait.Quad.html)s
+    /// Determine the type of [`Quad`]s
     /// that the methods of this dataset will yield
-    /// (see [`streaming_mode`](../quad/streaming_mode/index.html)
+    /// (see [`streaming_mode`]).
     type Quad: QuadStreamingMode;
     /// The error type that this dataset may raise.
     type Error: 'static + Error;
@@ -69,8 +68,7 @@ pub trait Dataset {
     /// # }
     /// ```
     ///
-    /// Another way is to use the specific methods provided by
-    /// [`QuadSource`](../quad/stream/trait.QuadSource.html),
+    /// Another way is to use the specific methods provided by [`QuadSource`],
     /// for example:
     /// ```
     /// # use sophia_api::dataset::Dataset;
@@ -531,8 +529,7 @@ pub trait Dataset {
     }
 }
 
-/// A dataset that can be constructed from a
-/// [`QuadSource`](../quad/stream/trait.QuadSource.html)
+/// A dataset that can be constructed from a [`QuadSource`]
 pub trait CollectibleDataset: Dataset + Sized {
     fn from_quad_source<QS: QuadSource>(quad: QS) -> StreamResult<Self, QS::Error, Self::Error>;
 }
@@ -550,7 +547,7 @@ pub type MDResult<D, T> = MdResult<D, T>;
 /// Generic trait for mutable RDF datasets.
 ///
 /// NB: the semantics of this trait allows a dataset to contain duplicate quads;
-/// see also [`SetDataset`](trait.SetDataset.html).
+/// see also [`SetDataset`].
 ///
 pub trait MutableDataset: Dataset {
     /// The error type that this dataset may raise during mutations.

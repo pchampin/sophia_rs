@@ -15,11 +15,6 @@ use sophia_term::index_map::TermIndexMap;
 /// A generic implementation of [`Dataset`] and [`MutableDataset`],
 /// storing its terms in a [`TermIndexMap`],
 /// and its triples in a [`HashSet`].
-///
-/// [`Dataset`]: ../trait.Dataset.html
-/// [`MutableDataset`]: ../trait.MutableDataset.html
-/// [`TermIndexMap`]: ../../term/index_map/trait.TermIndexMap.html
-/// [`HashSet`]: https://doc.rust-lang.org/std/collections/struct.HashSet.html
 #[derive(Default)]
 pub struct HashDataset<I>
 where

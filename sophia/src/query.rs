@@ -14,7 +14,7 @@ use sophia_term::*;
 use crate::graph::*;
 use crate::triple::*;
 
-/// A map associating variable names to [`term`](../term/enum.Term.html)s.
+/// A map associating variable names to [`RcTerm`]s.
 pub type BindingMap = HashMap<String, RcTerm>;
 
 /// A query can be processed against a graph, producing a sequence of binding maps.

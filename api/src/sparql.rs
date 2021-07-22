@@ -69,8 +69,6 @@ pub trait SparqlDataset {
     ///
     /// If it is impossible or inconvenient to provide a type for pre-parsed queries,
     /// you can still use `String`, which implements the [`Query`] trait.
-    ///
-    /// [`Query`]: ./trait.Query.html
     fn prepare_query(&self, query_string: &str) -> Result<Self::Query, Self::SparqlError> {
         Self::Query::parse(query_string)
     }
@@ -79,10 +77,8 @@ pub trait SparqlDataset {
 /// Preprocessed query, ready for execution.
 ///
 /// This trait exist to allow *some* implementations of [`SparqlDataset`]
-/// to mutualize the parsing of queries in the [`prepare_query`] method.
-///
-/// [`SparqlDataset`]: ./trait.SparqlDataset.html
-/// [`prepare_query`]: ./trait.SparqlDataset.html#tymethod.prepare_query
+/// to mutualize the parsing of queries in the
+/// [`prepare_query`](SparqlDataset::prepare_query) method.
 pub trait Query: Sized {
     type Error: Error + 'static;
     fn parse(query_source: &str) -> Result<Self, Self::Error>;
@@ -97,8 +93,6 @@ impl Query for String {
 
 /// A utility trait to allow [`SparqlDataset::query`]
 /// to accept either `&str` or `Self::Query`.
-///
-/// [`SparqlDataset::query`]: ./trait.SparqlDataset.html#tymethod.query
 pub trait IntoQuery<Q: Query> {
     type Out: Borrow<Q>;
     fn into_query(self) -> Result<Self::Out, Q::Error>;

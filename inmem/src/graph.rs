@@ -7,7 +7,7 @@
 //! It also provides two pre-defined trade-offs:
 //! [`FastGraph`] and [`LightGraph`],
 //! provided in different flavors
-//! ([default](#types), [`small`](small/index.html), [`sync`](sync/index.html)).
+//! ([default](#types), [`small`], [`sync`].
 //!
 //! # Customized trade-off
 //!
@@ -26,11 +26,6 @@
 //! type MyGraph = OpsWrapper<GenericGraph<u16, ArcTermFactory>>;
 //! let g = MyGraph::new();
 //! ```
-//!
-//! [`Graph`]: ../trait.Graph.html
-//! [`MutableGraph`]: ../trait.MutableGraph.html
-//! [`FastGraph`]: type.FastGraph.html
-//! [`LightGraph`]: type.LightGraph.html
 
 use sophia_api::graph::{CollectibleGraph, Graph, MutableGraph, SetGraph};
 use sophia_indexed::graph::*;
@@ -54,11 +49,11 @@ pub use self::_term_index_map_u::*;
 
 /// A generic in-memory graph.
 ///
-/// `I` must be a type for which [`TermIndexMapU`](struct.TermIndexMapU.html)
-/// implements [`TermIndexMap`](../../term/index_map/trait.TermIndexMap.html),
+/// `I` must be a type for which [`TermIndexMapU`]
+/// implements [`TermIndexMap`](sophia_term::index_map::TermIndexMap),
 /// typically `u16` or `u32`.
 ///
-/// `F` must implement [`TermFactory`](../../term/factory/trait.TermFactory.html).
+/// `F` must implement [`TermFactory`].
 ///
 pub type GenericGraph<I, F> = HashGraph<TermIndexMapU<I, F>>;
 

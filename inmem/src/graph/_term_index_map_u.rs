@@ -6,7 +6,7 @@ use sophia_term::factory::{FTerm, TermFactory};
 use sophia_term::index_map::TermIndexMap;
 use sophia_term::*;
 
-/// An in-memory implementation of [`TermIndexMap`](../../term/index_map/trait.TermIndexMap.html)
+/// An in-memory implementation of [`TermIndexMap`]
 /// with unsigned integers as indices.
 pub struct TermIndexMapU<I, F>
 where

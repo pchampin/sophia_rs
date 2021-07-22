@@ -1,5 +1,5 @@
 //! Parsers for the Turtle-familt of RDF concrete syntaxes,
-//! based on [`rio_turtle`](https://docs.rs/rio_turtle/).
+//! based on [`rio_turtle`].
 
 pub mod gtrig;
 pub mod nq;

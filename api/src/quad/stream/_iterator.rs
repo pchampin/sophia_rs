@@ -36,9 +36,6 @@ pub use self::IntoInfallibleSource as AsInfallibleSource;
 
 /// A utility extension trait for converting any iterator of [`Quad`]s
 /// into [`QuadSource`], by wrapping its items in `Ok` results.
-///
-/// [`QuadSource`]: trait.QuadSource.html
-/// [`Quad`]: ../trait.Quad.html
 pub trait IntoQuadSource<T>: Sized {
     /// Map all items of this iterator into an Ok result.
     fn into_quad_source(self) -> IntoInfallibleSource<Self, T>;

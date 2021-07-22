@@ -15,9 +15,6 @@ use std::hash::Hash;
 ///
 /// Conversely, the [`impl_graph_for_wrapper!`] macro can be used to derive
 /// the Graph implementation for any implementation of GraphWrapper.
-///
-/// [`Graph`]: ../trait.Graph.html
-/// [`impl_mutable_graph_for_indexed_graph`]: ../../macro.impl_mutable_graph_for_indexed_graph.html
 pub trait GraphWrapper {
     /// The type of the wrapped graph.
     type Wrapped: Graph;
@@ -29,13 +26,13 @@ pub trait GraphWrapper {
     fn get_wrapped_mut(&mut self) -> &mut Self::Wrapped;
 
     #[inline]
-    /// Mimmic the [`iter`](../trait.Graph.html#tymethod.iter) method.
+    /// Mimmic the [`Graph::triples`] method.
     fn gw_triples(&self) -> GTripleSource<Self::Wrapped> {
         self.get_wrapped().triples()
     }
 
     #[inline]
-    /// Mimmic the [`triples_with_s`](../trait.Graph.html#method.triples_with_s) method.
+    /// Mimmic the [`Graph::triples_with_s`] method.
     fn gw_triples_with_s<'s, TS>(&'s self, s: &'s TS) -> GTripleSource<'s, Self::Wrapped>
     where
         TS: TTerm + ?Sized,
@@ -43,7 +40,7 @@ pub trait GraphWrapper {
         self.get_wrapped().triples_with_s(s)
     }
     #[inline]
-    /// Mimmic the [`triples_with_p`](../trait.Graph.html#method.triples_with_p) method.
+    /// Mimmic the [`Graph::triples_with_p`] method.
     fn gw_triples_with_p<'s, TP>(&'s self, p: &'s TP) -> GTripleSource<'s, Self::Wrapped>
     where
         TP: TTerm + ?Sized,
@@ -51,7 +48,7 @@ pub trait GraphWrapper {
         self.get_wrapped().triples_with_p(p)
     }
     #[inline]
-    /// Mimmic the [`triples_with_o`](../trait.Graph.html#method.triples_with_o) method.
+    /// Mimmic the [`Graph::triples_with_o`] method.
     fn gw_triples_with_o<'s, TO>(&'s self, o: &'s TO) -> GTripleSource<'s, Self::Wrapped>
     where
         TO: TTerm + ?Sized,
@@ -59,7 +56,7 @@ pub trait GraphWrapper {
         self.get_wrapped().triples_with_o(o)
     }
     #[inline]
-    /// Mimmic the [`triples_with_sp`](../trait.Graph.html#method.triples_with_sp) method.
+    /// Mimmic the [`Graph::triples_with_sp`] method.
     fn gw_triples_with_sp<'s, TS, TP>(
         &'s self,
         s: &'s TS,
@@ -72,7 +69,7 @@ pub trait GraphWrapper {
         self.get_wrapped().triples_with_sp(s, p)
     }
     #[inline]
-    /// Mimmic the [`triples_with_so`](../trait.Graph.html#method.triples_with_so) method.
+    /// Mimmic the [`Graph::triples_with_so`] method.
     fn gw_triples_with_so<'s, TS, TO>(
         &'s self,
         s: &'s TS,
@@ -85,7 +82,7 @@ pub trait GraphWrapper {
         self.get_wrapped().triples_with_so(s, o)
     }
     #[inline]
-    /// Mimmic the [`triples_with_po`](../trait.Graph.html#method.triples_with_po) method.
+    /// Mimmic the [`Graph::triples_with_po`] method.
     fn gw_triples_with_po<'s, TP, TO>(
         &'s self,
         p: &'s TP,
@@ -98,7 +95,7 @@ pub trait GraphWrapper {
         self.get_wrapped().triples_with_po(p, o)
     }
     #[inline]
-    /// Mimmic the [`triples_with_spo`](../trait.Graph.html#method.triples_with_spo) method.
+    /// Mimmic the [`Graph::triples_with_spo`] method.
     fn gw_triples_with_spo<'s, TS, TP, TO>(
         &'s self,
         s: &'s TS,
@@ -114,7 +111,7 @@ pub trait GraphWrapper {
     }
 
     #[inline]
-    /// Mimmic the [`contains`](../trait.Graph.html#method.contains) method.
+    /// Mimmic the [`Graph::contains`] method.
     fn gw_contains<TS, TP, TO>(&self, s: &TS, p: &TP, o: &TO) -> GResult<Self::Wrapped, bool>
     where
         TS: TTerm + ?Sized,
@@ -125,7 +122,7 @@ pub trait GraphWrapper {
     }
 
     #[inline]
-    /// Mimmic the [`subjects`](../trait.Graph.html#method.subjects) method.
+    /// Mimmic the [`Graph::subjects`] method.
     fn gw_subjects(&self) -> GResultTermSet<Self::Wrapped>
     where
         GTerm<Self::Wrapped>: Clone + Eq + Hash,
@@ -134,7 +131,7 @@ pub trait GraphWrapper {
     }
 
     #[inline]
-    /// Mimmic the [`predicates`](../trait.Graph.html#method.predicates) method.
+    /// Mimmic the [`Graph::predicates`] method.
     fn gw_predicates(&self) -> GResultTermSet<Self::Wrapped>
     where
         GTerm<Self::Wrapped>: Clone + Eq + Hash,
@@ -143,7 +140,7 @@ pub trait GraphWrapper {
     }
 
     #[inline]
-    /// Mimmic the [`objects`](../trait.Graph.html#method.objects) method.
+    /// Mimmic the [`Graph::objects`] method.
     fn gw_objects(&self) -> GResultTermSet<Self::Wrapped>
     where
         GTerm<Self::Wrapped>: Clone + Eq + Hash,
@@ -152,7 +149,7 @@ pub trait GraphWrapper {
     }
 
     #[inline]
-    /// Mimmic the [`iris`](../trait.Graph.html#method.iris) method.
+    /// Mimmic the [`Graph::iris`] method.
     fn gw_iris(&self) -> GResultTermSet<Self::Wrapped>
     where
         GTerm<Self::Wrapped>: Clone + Eq + Hash,
@@ -161,7 +158,7 @@ pub trait GraphWrapper {
     }
 
     #[inline]
-    /// Mimmic the [`bnodes`](../trait.Graph.html#method.bnodes) method.
+    /// Mimmic the [`Graph::bnodes`] method.
     fn gw_bnodes(&self) -> GResultTermSet<Self::Wrapped>
     where
         GTerm<Self::Wrapped>: Clone + Eq + Hash,
@@ -170,7 +167,7 @@ pub trait GraphWrapper {
     }
 
     #[inline]
-    /// Mimmic the [`literals`](../trait.Graph.html#method.literals) method.
+    /// Mimmic the [`Graph::literals`] method.
     fn gw_literals(&self) -> GResultTermSet<Self::Wrapped>
     where
         GTerm<Self::Wrapped>: Clone + Eq + Hash,
@@ -179,7 +176,7 @@ pub trait GraphWrapper {
     }
 
     #[inline]
-    /// Mimmic the [`variables`](../trait.Graph.html#method.variables) method.
+    /// Mimmic the [`Graph::variables`] method.
     fn gw_variables(&self) -> GResultTermSet<Self::Wrapped>
     where
         GTerm<Self::Wrapped>: Clone + Eq + Hash,
@@ -189,9 +186,6 @@ pub trait GraphWrapper {
 }
 
 /// Defines the implementation of [`Graph`] for [`GraphWrapper`].
-///
-/// [`Graph`]: graph/trait.Graph.html
-/// [`GraphWrapper`]: graph/inmem/trait.GraphWrapper.html
 #[macro_export]
 macro_rules! impl_graph_for_wrapper {
     ($wrapper: ty) => {
@@ -382,10 +376,6 @@ macro_rules! impl_graph_for_wrapper {
 ///
 /// This trait is designed to add mutability to [`GraphWrapper`],
 /// through the [`impl_indexed_graph_for_wrapper!`] macro.
-///
-/// [`IndexedGraph`]: ../indexed/trait.IndexedGraph.html
-/// [`GraphWrapper`]: ./trait.GraphWrapper.html
-/// [`impl_mutable_graph_for_indexed_graph!`]: ../../macro.impl_mutable_graph_for_indexed_graph.html
 pub trait IndexedGraphWrapper<T>
 where
     T: IndexedGraph,
@@ -397,22 +387,19 @@ where
     fn igw_wrap_empty(graph: T) -> Self;
 
     /// Hook to be executed at the end of
-    /// [`IndexedGraph::insert_indexed`](../indexed/trait.IndexedGraph.html#tymethod.insert_indexed).
+    /// [`IndexedGraph::insert_indexed`].
     fn igw_hook_insert_indexed(&mut self, modified: &Option<[T::Index; 3]>);
 
     /// Hook to be executed at the end of
-    /// [`IndexedGraph::remove_indexed`](../indexed/trait.IndexedGraph.html#tymethod.remove_indexed).
+    /// [`IndexedGraph::remove_indexed`].
     fn igw_hook_remove_indexed(&mut self, modified: &Option<[T::Index; 3]>);
 
     /// Hook to be executed at the end of
-    /// [`IndexedGraph::shrink_to_fit`](../indexed/trait.IndexedGraph.html#tymethod.shrink_to_fit).
+    /// [`IndexedGraph::shrink_to_fit`].
     fn igw_hook_shrink_to_fit(&mut self);
 }
 
 /// Defines the implementation of [`IndexedGraph`] for [`GraphWrapper`] around another [`IndexedGraph`].
-///
-/// [`IndexedGraph`]: graph/indexed/trait.IndexedGraph.html
-/// [`GraphWrapper`]: graph/inmem/trait.GraphWrapper.html
 #[macro_export]
 macro_rules! impl_indexed_graph_for_wrapper {
     () => {

@@ -40,9 +40,6 @@ pub use IntoInfallibleSource as AsInfallibleSource;
 
 /// A utility extension trait for converting any iterator of [`Triple`]s
 /// into [`TripleSource`], by wrapping its items in `Ok` results.
-///
-/// [`TripleSource`]: trait.TripleSource.html
-/// [`Triple`]: ../trait.Triple.html
 pub trait IntoTripleSource<T>: Sized {
     /// Map all items of this iterator into an Ok result.
     fn into_triple_source(self) -> IntoInfallibleSource<Self, T>;

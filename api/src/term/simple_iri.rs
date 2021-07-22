@@ -1,4 +1,4 @@
-//! Minimal implementation of [`TTerm`](https://docs.rs/sophia_api/latest/sophia_api/term/trait.TTerm.html),
+//! Minimal implementation of [`TTerm`],
 //! for representing datatype IRIs of literals.
 use super::*;
 use sophia_iri::error::{InvalidIri, Result};
@@ -7,7 +7,7 @@ use std::borrow::Borrow;
 use std::fmt;
 use std::hash;
 
-/// See [module documentation](./index.html)
+/// See [module](./index.html) documentation.
 #[derive(Clone, Copy, Debug, Eq, Ord)]
 pub struct SimpleIri<'a> {
     ns: &'a str,

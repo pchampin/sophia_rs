@@ -8,8 +8,6 @@ pub use _location::*;
 
 /// A parser takes some data of type `T`,
 /// and returns a [`TripleSource`].
-///
-/// [`TripleSource`]: ../triple/stream/trait.TripleSource.html
 pub trait TripleParser<T> {
     /// The source produced by this parser
     type Source: TripleSource;
@@ -35,8 +33,6 @@ pub trait TripleParser<T> {
 
 /// A parser takes some data of type `T`,
 /// and returns a [`QuadSource`].
-///
-/// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
 pub trait QuadParser<T> {
     /// The source produced by this parser
     type Source: QuadSource;

@@ -38,15 +38,13 @@ pub const GEN_DELIMS: &[char] = &[':', '/', '?', '#', '[', ']', '@'];
 /// Normalization policies are used to ensure that
 /// IRIs are represented in a given format.
 ///
-/// They are applied by copying terms with
-/// [`Term::normalized`](../enum.Term.html#method.normalized_with).
+/// They are applied by copying terms with [`Term::normalized`].
 #[derive(Clone, Copy)]
 pub enum Normalization {
     /// IRIs are represented as a single string (`ns`) with an empty `suffix`.
     NoSuffix,
-    /// IRIs are represented with a prefix `ns` extending to the last
-    /// [`gen-delim`](./constant.GEN_DELIMS.html) and a `suffix` containing the
-    /// remaining characters.
+    /// IRIs are represented with a prefix `ns` extending to the last [`GEN_DELIMS`]
+    /// and a `suffix` containing the remaining characters.
     LastGenDelim,
 }
 
@@ -621,9 +619,8 @@ where
 {
     type Error = TermError;
 
-    /// Requires that the given `Iri` has no suffix. This can be enforced with
-    /// the [`clone_no_suffix()`](../iri/struct.Iri.html#method.clone_no_suffix)
-    /// method.
+    /// Requires that the given [`Iri`] has no suffix. This can be enforced with
+    /// the [`Iri::normalized_no_suffix()`] method.
     fn try_from(iri: Iri<TD>) -> Result<Self, Self::Error> {
         if iri.suffix().is_some() {
             Err(TermError::IsSuffixed)

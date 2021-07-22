@@ -21,8 +21,6 @@ pub trait TripleSerializer {
     type Error: 'static + std::error::Error;
 
     /// Serialize all triples from the given [`TripleSource`].
-    ///
-    /// [`TripleSource`]: ../triple/stream/trait.TripleSource.html
     fn serialize_triples<TS>(
         &mut self,
         source: TS,
@@ -33,11 +31,9 @@ pub trait TripleSerializer {
 
     /// Serialize a whole [`Graph`].
     ///
-    /// While this method has a default implementation based on [`serialize_triples`],
+    /// While this method has a default implementation based on
+    /// [`serialize_triples`](Self::serialize_triples),
     /// some implementations may override it in order to better use the structure of the Graph.
-    ///
-    /// [`Graph`]: ../graph/trait.Graph.html
-    /// [`serialize_triples`]: #tymethod.serialize_triples
     #[inline]
     fn serialize_graph<G>(&mut self, graph: &G) -> StreamResult<&mut Self, G::Error, Self::Error>
     where
@@ -53,8 +49,6 @@ pub trait QuadSerializer {
     type Error: 'static + std::error::Error;
 
     /// Serialize all quads from the given [`QuadSource`].
-    ///
-    /// [`QuadSource`]: ../quad/stream/trait.QuadSource.html
     fn serialize_quads<QS>(
         &mut self,
         source: QS,
@@ -65,11 +59,9 @@ pub trait QuadSerializer {
 
     /// Serialize a whole [`Dataset`].
     ///
-    /// While this method has a default implementation based on [`serialize_quads`],
+    /// While this method has a default implementation based on
+    /// [`serialize_quads`](Self::serialize_quads),
     /// some implementations may override it in order to better use the structure of the Dataset.
-    ///
-    /// [`Dataset`]: ../dataset/trait.Dataset.html
-    /// [`serialize_quads`]: #tymethod.serialize_quads
     #[inline]
     fn serialize_dataset<D>(
         &mut self,

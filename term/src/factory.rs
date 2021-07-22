@@ -1,6 +1,6 @@
 //! A `TermFactory` can be used to create terms while preventing the proliferation of duplicate string.
 //!
-//! This is especially useful for  [`RcTerm`s](../index.html) and [`ArcTerm`s](../index.html),
+//! This is especially useful for [`RcTerm`]s and [`ArcTerm`]s,
 //! for which two implementations of `TermFactory` are provided.
 
 use std::rc;

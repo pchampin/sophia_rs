@@ -2,16 +2,16 @@
 //!
 //! # What this is about
 //!
-//! The [`Graph`] traits provides a number of methods for iterating over [`Triple`]s,
-//! as for example the [`triples`] method.
+//! The [`Graph`](crate::graph::Graph) traits provides a number of methods for iterating over [`Triple`]s,
+//! as for example the [`Graph::triples`](crate::graph::Graph::triples) method.
 //! Since [`Triple`] is itself a trait,
 //! the actual type returned by such iterating methods needs to be specified for each
-//! [`Graph`] implementation.
+//! [`Graph`](crate::graph::Graph) implementation.
 //! This is what this module is about.
 //!
 //! # In the future, the ideal solution
 //!
-//! Ideally, the concrete type of [`Triples`] returned by iterating methods
+//! Ideally, the concrete type of [`Triple`]s returned by iterating methods
 //! would be directly given by the [`Graph::Triple`] associated type.
 //!
 //! Unfortunately, in the current version of Rust,
@@ -34,11 +34,11 @@
 
 //! The available streaming mode are:
 //!
-//! * [`ByValue<T>`]: [`StreamedTriple<'a>`] will wrap an (owned) instance of `T`;
+//! * [`ByValue`]`<T>`: [`StreamedTriple<'a>`] will wrap an (owned) instance of `T`;
 //!   it is constructed with [`StreamedTriple::by_value`];
-//! * [`ByRef<T>`]: [`StreamedTriple<'a>`] will wrap a reference to `T`, valid as long as `'a`;
+//! * [`ByRef`]`<T>`: [`StreamedTriple<'a>`] will wrap a reference to `T`, valid as long as `'a`;
 //!   it is constructed with [`StreamedTriple::by_ref`];
-//! * [`ByTermRefs<T>`]: [`StreamedTriple<'a>`] will wrap an array of 3 [`&'a T`] references,
+//! * [`ByTermRefs`]`<T>`: [`StreamedTriple`]`<'a>` will wrap an array of 3 [`&'a T`] references,
 //!   valid as long as `'a`;
 //!   it is constructed with [`StreamedTriple::by_term_refs`].
 //!
@@ -47,25 +47,11 @@
 //! [`Triple`] (see its documentation for more details).
 //!
 //! NB: actually, another mode exists,
-//! but is specifically designed for the [`dataset::adapter`](../../dataset/adapter/index.html) module,
+//! but is specifically designed for the [`dataset::adapter`](crate::dataset::adapter),
 //! should never be needed in other contexts.
 //!
-//! [`ByRef<T>`]: struct.ByRef.html
-//! [`ByTermRefs<TD>`]: struct.ByTermRefs.html
-//! [`ByValue<T>`]: struct.ByValue.html
+//! [`Graph::Triple`]: crate::graph::Graph::Triple
 //! [Generic Associated Types]: https://github.com/rust-lang/rust/issues/44265
-//! [`Graph`]: ../../graph/trait.Graph.html
-//! [`Graph::Triple`]: ../../graph/trait.Graph.html#associatedtype.Triple
-//! [`StreamedTriple<'a>`]: struct.StreamedTriple.html
-//! [`StreamedTriple::by_value`]: struct.StreamedTriple.html#method.by_value
-//! [`StreamedTriple::by_ref`]: struct.StreamedTriple.html#method.by_ref
-//! [`StreamedTriple::by_term_refs`]: struct.StreamedTriple.html#method.by_term_refs
-//! [`Term<TD>`]: ../../term
-//! [`Term<&'a str>`]: ../../term
-//! [`Triple`]: ../trait.Triple.html
-//! [`triples`]: ../../graph/trait.Graph.html#tymethod.triples
-//! [`TripleStreamingMode`]: trait.TripleStreamingMode.html
-//! [`make_scoped_triple_streaming_mode`]: ../../macro.make_scoped_triple_streaming_mode.html
 
 use std::marker::PhantomData;
 use std::ptr::NonNull;
@@ -190,9 +176,6 @@ where
 /// It declares the streaming mode type `$mode`,
 /// and add an associated function named`scoped` to `StreamedTriple<'a, $mode>`,
 /// to convert an instance of `$tt<'a>` to a streamed triple.
-///
-/// [streaming mode]: triple/streaming_mode/index.html
-/// [`Triple`]: triple/trait.Triple.html
 #[macro_export]
 macro_rules! make_scoped_triple_streaming_mode {
     ($(#[$attrs: meta])* $mode: ident, $tt: ident) => {
@@ -220,8 +203,6 @@ macro_rules! make_scoped_triple_streaming_mode {
 
 /// A utility trait used internally by [`make_scoped_triple_streaming_mode`].
 /// It should not be implemented manually.
-///
-/// [`make_scoped_triple_streaming_mode`]: ../../macro.make_scoped_triple_streaming_mode.html
 pub trait ScopedTripleMode<'a>: TripleStreamingMode + Sized {
     type SourceTriple: Triple + 'a;
     /// Convert a triple

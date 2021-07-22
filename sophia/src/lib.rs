@@ -12,10 +12,6 @@
 //!
 //! [RDF]: https://www.w3.org/TR/rdf-primer/
 //! [Linked Data]: http://linkeddata.org/
-//! [triple]: triple/index.html
-//! [term]: term/index.html
-//! [graph]: graph/index.html
-//! [dataset]: dataset/index.html
 //!
 //! # Generalized vs. Strict RDF model
 //!
@@ -68,34 +64,33 @@
 pub mod query;
 
 /// This module re-exports symbols from
-/// [`sophia_api::dataset`](https://docs.rs/sophia_api/latest/sophia_api/dataset/),
-/// and also provides some implementations of its traits.
+/// [`sophia_api::dataset`], [`sophia_indexed::dataset`] and [`sophia_inmem::dataset`].
 pub mod dataset {
     pub use sophia_api::dataset::*;
     pub use sophia_indexed::dataset as indexed;
     pub use sophia_inmem::dataset as inmem;
 }
 /// This module re-exports symbols from
-/// [`sophia_iri`]
+/// [`sophia_iri`].
 pub mod iri {
     pub use sophia_iri::*;
 }
 /// This module re-exports symbols from
-/// [`sophia_api::graph`](https://docs.rs/sophia_api/latest/sophia_api/graph/),
-/// and also provides some implementations of its traits.
+/// [`sophia_api::graph`], [`sophia_indexed::graph`] and [`sophia_inmem::graph`].
 pub mod graph {
     pub use sophia_api::graph::*;
     pub use sophia_indexed::graph as indexed;
     pub use sophia_inmem::graph as inmem;
 }
 /// This module re-exports symbols from
-/// [`sophia_api::ns`](https://docs.rs/sophia_api/latest/sophia_api/ns/).
+/// [`sophia_api::ns`].
 pub mod ns {
     pub use sophia_api::ns::*;
 }
 /// This module re-exports symbols from
-/// [`sophia_api::parser`](https://docs.rs/sophia_api/latest/sophia_api/parser/),
-/// and also provides some implementations of its traits.
+/// [`sophia_api::parser`] and [`sophia_turtle::parser`].
+/// If the `xml` feature is enabled, it also re-exports
+/// [`sophia_xml::parser`] as [`xml`](crate::parser::xml).
 pub mod parser {
     pub use sophia_api::parser::*;
     pub use sophia_turtle::parser::gtrig;
@@ -110,18 +105,19 @@ pub mod parser {
     pub mod xml_legacy;
 }
 /// This module re-exports symbols from
-/// [`sophia_api::prefix`]
+/// [`sophia_api::prefix`].
 pub mod prefix {
     pub use sophia_api::prefix::*;
 }
 /// This module re-exports symbols from
-/// [`sophia_api::quad`](https://docs.rs/sophia_api/latest/sophia_api/quad/).
+/// [`sophia_api::quad`].
 pub mod quad {
     pub use sophia_api::quad::*;
 }
 /// This module re-exports symbols from
-/// [`sophia_api::serializer`](https://docs.rs/sophia_api/latest/sophia_api/serializer/),
-/// and also provides some implementations of its traits.
+/// [`sophia_api::serializer`] and [`sophia_turtle::serializer`].
+/// If the `xml` feature is enabled, it also re-exports
+/// [`sophia_xml::serializer`] as [`xml`](crate::serializer::xml).
 pub mod serializer {
     pub use sophia_api::serializer::*;
     pub use sophia_turtle::serializer::nq;
@@ -132,21 +128,21 @@ pub mod serializer {
     pub use sophia_xml::serializer as xml;
 }
 /// This module re-exports symbols from
-/// [`sophia_api::sparql`](https://docs.rs/sophia_api/latest/sophia_api/sparql/)
+/// [`sophia_api::sparql`].
 pub mod sparql {
     pub use sophia_api::sparql::*;
 }
 /// This module re-exports symbols from
 /// This module re-exports symbols from
-/// [`sophia_api::term`](https://docs.rs/sophia_api/latest/sophia_api/term/)
+/// [`sophia_api::term`]
 /// and
-/// [`sophia_term`](https://docs.rs/sophia_term/latest/sophia_term/).
+/// [`sophia_term`].
 pub mod term {
     pub use sophia_api::term::*;
     pub use sophia_term::*;
 }
 /// This module re-exports symbols from
-/// [`sophia_api::triple`](https://docs.rs/sophia_api/latest/sophia_api/triple/).
+/// [`sophia_api::triple`].
 pub mod triple {
     pub use sophia_api::triple::*;
 }

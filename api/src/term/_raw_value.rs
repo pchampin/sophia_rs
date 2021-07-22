@@ -1,4 +1,4 @@
-//! Implementation of the so-called [`RawValue`](./struct.RawValue.html).
+//! Implementation of the so-called [`RawValue`].
 
 use mownstr::MownStr;
 use std::hash::{Hash, Hasher};

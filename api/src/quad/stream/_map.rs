@@ -6,8 +6,7 @@ use crate::triple::streaming_mode::StreamedTriple;
 
 use std::collections::VecDeque;
 
-/// The result of
-/// [`QuadSource::map_quads`](./trait.QuadSource.html#method.map_quads)
+/// The result of [`QuadSource::map_quads`]
 pub struct MapSource<S, F> {
     pub source: S,
     pub map: F,
@@ -76,8 +75,7 @@ where
     }
 }
 
-/// An iterator over the result of
-/// [`QuadSource::map_quads`](./trait.QuadSource.html#method.map_quads)
+/// An iterator over the result of [`QuadSource::map_quads`]
 pub struct MapSourceIterator<S, F, T, E> {
     pub source: S,
     pub map: F,

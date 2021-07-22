@@ -16,9 +16,6 @@ use std::hash::Hash;
 ///
 /// Conversely, the [`impl_dataset_for_wrapper!`] macro can be used to derive
 /// the Dataset implementation for any implementation of DatasetWrapper.
-///
-/// [`Dataset`]: ../trait.Dataset.html
-/// [`impl_dataset_for_wrapper!`]: ../../macro.impl_dataset_for_wrapper.html
 pub trait DatasetWrapper {
     /// The type of the wrapped dataset.
     type Wrapped: Dataset;
@@ -30,13 +27,13 @@ pub trait DatasetWrapper {
     fn get_wrapped_mut(&mut self) -> &mut Self::Wrapped;
 
     #[inline]
-    /// Mimmic the [`iter`](../trait.Dataset.html#tymethod.iter) method.
+    /// Mimmic the [`Dataset::quads`] method.
     fn dw_quads(&self) -> DQuadSource<Self::Wrapped> {
         self.get_wrapped().quads()
     }
 
     #[inline]
-    /// Mimmic the [`quads_with_s`](../trait.Dataset.html#method.quads_with_s) method.
+    /// Mimmic the [`Dataset::quads_with_s`] method.
     fn dw_quads_with_s<'s, TS>(&'s self, s: &'s TS) -> DQuadSource<'s, Self::Wrapped>
     where
         TS: TTerm + ?Sized,
@@ -44,7 +41,7 @@ pub trait DatasetWrapper {
         self.get_wrapped().quads_with_s(s)
     }
     #[inline]
-    /// Mimmic the [`quads_with_p`](../trait.Dataset.html#method.quads_with_p) method.
+    /// Mimmic the [`Dataset::quads_with_p`] method.
     fn dw_quads_with_p<'s, TP>(&'s self, p: &'s TP) -> DQuadSource<'s, Self::Wrapped>
     where
         TP: TTerm + ?Sized,
@@ -52,7 +49,7 @@ pub trait DatasetWrapper {
         self.get_wrapped().quads_with_p(p)
     }
     #[inline]
-    /// Mimmic the [`quads_with_o`](../trait.Dataset.html#method.quads_with_o) method.
+    /// Mimmic the [`Dataset::quads_with_o`] method.
     fn dw_quads_with_o<'s, TO>(&'s self, o: &'s TO) -> DQuadSource<'s, Self::Wrapped>
     where
         TO: TTerm + ?Sized,
@@ -60,7 +57,7 @@ pub trait DatasetWrapper {
         self.get_wrapped().quads_with_o(o)
     }
     #[inline]
-    /// Mimmic the [`quads_with_g`](../trait.Dataset.html#method.quads_with_g) method.
+    /// Mimmic the [`Dataset::quads_with_g`] method.
     fn dw_quads_with_g<'s, TG>(&'s self, g: Option<&'s TG>) -> DQuadSource<'s, Self::Wrapped>
     where
         TG: TTerm + ?Sized,
@@ -68,7 +65,7 @@ pub trait DatasetWrapper {
         self.get_wrapped().quads_with_g(g)
     }
     #[inline]
-    /// Mimmic the [`quads_with_sp`](../trait.Dataset.html#method.quads_with_sp) method.
+    /// Mimmic the [`Dataset::quads_with_sp`] method.
     fn dw_quads_with_sp<'s, TS, TP>(
         &'s self,
         s: &'s TS,
@@ -81,7 +78,7 @@ pub trait DatasetWrapper {
         self.get_wrapped().quads_with_sp(s, p)
     }
     #[inline]
-    /// Mimmic the [`quads_with_so`](../trait.Dataset.html#method.quads_with_so) method.
+    /// Mimmic the [`Dataset::quads_with_so`] method.
     fn dw_quads_with_so<'s, TS, TO>(
         &'s self,
         s: &'s TS,
@@ -94,7 +91,7 @@ pub trait DatasetWrapper {
         self.get_wrapped().quads_with_so(s, o)
     }
     #[inline]
-    /// Mimmic the [`quads_with_sg`](../trait.Dataset.html#method.quads_with_sg) method.
+    /// Mimmic the [`Dataset::quads_with_sg`] method.
     fn dw_quads_with_sg<'s, TS, TG>(
         &'s self,
         s: &'s TS,
@@ -107,7 +104,7 @@ pub trait DatasetWrapper {
         self.get_wrapped().quads_with_sg(s, g)
     }
     #[inline]
-    /// Mimmic the [`quads_with_po`](../trait.Dataset.html#method.quads_with_po) method.
+    /// Mimmic the [`Dataset::quads_with_po`] method.
     fn dw_quads_with_po<'s, TP, TO>(
         &'s self,
         p: &'s TP,
@@ -120,7 +117,7 @@ pub trait DatasetWrapper {
         self.get_wrapped().quads_with_po(p, o)
     }
     #[inline]
-    /// Mimmic the [`quads_with_pg`](../trait.Dataset.html#method.quads_with_pg) method.
+    /// Mimmic the [`Dataset::quads_with_pg`] method.
     fn dw_quads_with_pg<'s, TP, TG>(
         &'s self,
         p: &'s TP,
@@ -133,7 +130,7 @@ pub trait DatasetWrapper {
         self.get_wrapped().quads_with_pg(p, g)
     }
     #[inline]
-    /// Mimmic the [`quads_with_og`](../trait.Dataset.html#method.quads_with_og) method.
+    /// Mimmic the [`Dataset::quads_with_og`] method.
     fn dw_quads_with_og<'s, TO, TG>(
         &'s self,
         o: &'s TO,
@@ -146,7 +143,7 @@ pub trait DatasetWrapper {
         self.get_wrapped().quads_with_og(o, g)
     }
     #[inline]
-    /// Mimmic the [`quads_with_spo`](../trait.Dataset.html#method.quads_with_spo) method.
+    /// Mimmic the [`Dataset::quads_with_spo`] method.
     fn dw_quads_with_spo<'s, TS, TP, TO>(
         &'s self,
         s: &'s TS,
@@ -161,7 +158,7 @@ pub trait DatasetWrapper {
         self.get_wrapped().quads_with_spo(s, p, o)
     }
     #[inline]
-    /// Mimmic the [`quads_with_spg`](../trait.Dataset.html#method.quads_with_spg) method.
+    /// Mimmic the [`Dataset::quads_with_spg`] method.
     fn dw_quads_with_spg<'s, TS, TP, TG>(
         &'s self,
         s: &'s TS,
@@ -176,7 +173,7 @@ pub trait DatasetWrapper {
         self.get_wrapped().quads_with_spg(s, p, g)
     }
     #[inline]
-    /// Mimmic the [`quads_with_sog`](../trait.Dataset.html#method.quads_with_sog) method.
+    /// Mimmic the [`Dataset::quads_with_sog`] method.
     fn dw_quads_with_sog<'s, TS, TO, TG>(
         &'s self,
         s: &'s TS,
@@ -191,7 +188,7 @@ pub trait DatasetWrapper {
         self.get_wrapped().quads_with_sog(s, o, g)
     }
     #[inline]
-    /// Mimmic the [`quads_with_pog`](../trait.Dataset.html#method.quads_with_pog) method.
+    /// Mimmic the [`Dataset::quads_with_pog`] method.
     fn dw_quads_with_pog<'s, TP, TO, TG>(
         &'s self,
         p: &'s TP,
@@ -206,7 +203,7 @@ pub trait DatasetWrapper {
         self.get_wrapped().quads_with_pog(p, o, g)
     }
     #[inline]
-    /// Mimmic the [`quads_with_spog`](../trait.Dataset.html#method.quads_with_spog) method.
+    /// Mimmic the [`Dataset::quads_with_spog`] method.
     fn dw_quads_with_spog<'s, TS, TP, TO, TG>(
         &'s self,
         s: &'s TS,
@@ -224,7 +221,7 @@ pub trait DatasetWrapper {
     }
 
     #[inline]
-    /// Mimmic the [`contains`](../trait.Dataset.html#method.contains) method.
+    /// Mimmic the [`Dataset::contains`] method.
     fn dw_contains<TS, TP, TO, TG>(
         &self,
         s: &TS,
@@ -242,7 +239,7 @@ pub trait DatasetWrapper {
     }
 
     #[inline]
-    /// Mimmic the [`subjects`](../trait.Dataset.html#method.subjects) method.
+    /// Mimmic the [`Dataset::subjects`] method.
     fn dw_subjects(&self) -> DResultTermSet<Self::Wrapped>
     where
         DTerm<Self::Wrapped>: Clone + Eq + Hash,
@@ -251,7 +248,7 @@ pub trait DatasetWrapper {
     }
 
     #[inline]
-    /// Mimmic the [`predicates`](../trait.Dataset.html#method.predicates) method.
+    /// Mimmic the [`Dataset::predicates`] method.
     fn dw_predicates(&self) -> DResultTermSet<Self::Wrapped>
     where
         DTerm<Self::Wrapped>: Clone + Eq + Hash,
@@ -260,7 +257,7 @@ pub trait DatasetWrapper {
     }
 
     #[inline]
-    /// Mimmic the [`objects`](../trait.Dataset.html#method.objects) method.
+    /// Mimmic the [`Dataset::objects`] method.
     fn dw_objects(&self) -> DResultTermSet<Self::Wrapped>
     where
         DTerm<Self::Wrapped>: Clone + Eq + Hash,
@@ -269,7 +266,7 @@ pub trait DatasetWrapper {
     }
 
     #[inline]
-    /// Mimmic the [`graph_names`](../trait.Dataset.html#method.graph_names) method.
+    /// Mimmic the [`Dataset::graph_names`] method.
     fn dw_graph_names(&self) -> DResultTermSet<Self::Wrapped>
     where
         DTerm<Self::Wrapped>: Clone + Eq + Hash,
@@ -278,7 +275,7 @@ pub trait DatasetWrapper {
     }
 
     #[inline]
-    /// Mimmic the [`iris`](../trait.Dataset.html#method.iris) method.
+    /// Mimmic the [`Dataset::iris`] method.
     fn dw_iris(&self) -> DResultTermSet<Self::Wrapped>
     where
         DTerm<Self::Wrapped>: Clone + Eq + Hash,
@@ -287,7 +284,7 @@ pub trait DatasetWrapper {
     }
 
     #[inline]
-    /// Mimmic the [`bnodes`](../trait.Dataset.html#method.bnodes) method.
+    /// Mimmic the [`Dataset::bnodes`] method.
     fn dw_bnodes(&self) -> DResultTermSet<Self::Wrapped>
     where
         DTerm<Self::Wrapped>: Clone + Eq + Hash,
@@ -296,7 +293,7 @@ pub trait DatasetWrapper {
     }
 
     #[inline]
-    /// Mimmic the [`literals`](../trait.Dataset.html#method.literals) method.
+    /// Mimmic the [`Dataset::literals`] method.
     fn dw_literals(&self) -> DResultTermSet<Self::Wrapped>
     where
         DTerm<Self::Wrapped>: Clone + Eq + Hash,
@@ -305,7 +302,7 @@ pub trait DatasetWrapper {
     }
 
     #[inline]
-    /// Mimmic the [`variables`](../trait.Dataset.html#method.variables) method.
+    /// Mimmic the [`Dataset::variables`] method.
     fn dw_variables(&self) -> DResultTermSet<Self::Wrapped>
     where
         DTerm<Self::Wrapped>: Clone + Eq + Hash,
@@ -315,9 +312,6 @@ pub trait DatasetWrapper {
 }
 
 /// Defines the implementation of [`Dataset`] for [`DatasetWrapper`].
-///
-/// [`Dataset`]: dataset/trait.Dataset.html
-/// [`DatasetWrapper`]: dataset/inmem/trait.DatasetWrapper.html
 #[macro_export]
 macro_rules! impl_dataset_for_wrapper {
     ($wrapper: ty) => {
@@ -570,10 +564,6 @@ macro_rules! impl_dataset_for_wrapper {
 ///
 /// This trait is designed to add mutability to [`DatasetWrapper`],
 /// through the [`impl_indexed_dataset_for_wrapper!`] macro.
-///
-/// [`IndexedDataset`]: ../indexed/trait.IndexedDataset.html
-/// [`DatasetWrapper`]: ./trait.DatasetWrapper.html
-/// [`impl_indexed_dataset_for_wrapper!`]: ../../macro.impl_indexed_dataset_for_wrapper.html
 pub trait IndexedDatasetWrapper<T>
 where
     T: IndexedDataset,
@@ -585,22 +575,19 @@ where
     fn idw_wrap_empty(dataset: T) -> Self;
 
     /// Hook to be executed at the end of
-    /// [`IndexedDataset::insert_indexed`](../indexed/trait.IndexedDataset.html#tymethod.insert_indexed).
+    /// [`IndexedDataset::insert_indexed`].
     fn idw_hook_insert_indexed(&mut self, modified: &Option<[T::Index; 4]>);
 
     /// Hook to be executed at the end of
-    /// [`IndexedDataset::remove_indexed`](../indexed/trait.IndexedDataset.html#tymethod.remove_indexed).
+    /// [`IndexedDataset::remove_indexed`].
     fn idw_hook_remove_indexed(&mut self, modified: &Option<[T::Index; 4]>);
 
     /// Hook to be executed at the end of
-    /// [`IndexedDataset::shrink_to_fit`](../indexed/trait.IndexedDataset.html#tymethod.shrink_to_fit).
+    /// [`IndexedDataset::shrink_to_fit`].
     fn idw_hook_shrink_to_fit(&mut self);
 }
 
 /// Defines the implementation of [`IndexedDataset`] for [`DatasetWrapper`] around another [`IndexedDataset`].
-///
-/// [`IndexedDataset`]: dataset/indexed/trait.IndexedDataset.html
-/// [`DatasetWrapper`]: dataset/inmem/trait.DatasetWrapper.html
 #[macro_export]
 macro_rules! impl_indexed_dataset_for_wrapper {
     () => {

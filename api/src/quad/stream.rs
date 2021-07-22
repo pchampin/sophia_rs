@@ -8,11 +8,9 @@
 //!
 //! See the documentation of the [`triple::stream`] module.
 //!
-//! [`QuadSource`]: trait.QuadSource.html
-//! [`Iterator`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html
-//! [`for_each_quad`]: ./trait.QuadSource.html#method.for_each_quad
-//! [`try_for_each_quad`]: ./trait.QuadSource.html#method.try_for_each_quad
-//! [`triple::stream`]: ../../triple/stream/index.html
+//! [`for_each_quad`]: QuadSource::for_each_quad
+//! [`try_for_each_quad`]: QuadSource::try_for_each_quad
+//! [`triple::stream`]: crate::triple::stream
 
 use std::error::Error;
 
@@ -41,19 +39,17 @@ pub type QsTerm<S> =
 )]
 pub type QSTerm<S> = QsTerm<S>;
 
-/// A quad source produces [quads], and may also fail in the process.
+/// A quad source produces [`Quad`]s, and may also fail in the process.
 ///
-/// Any iterator yielding [quads] wrapped in `Result`
+/// Any iterator yielding [`Quad`]s wrapped in `Result`
 /// implements the `QuadSource` trait.
-///
-/// [quads]: ../trait.Quad.html
 pub trait QuadSource {
     /// The type of errors produced by this source.
     type Error: 'static + Error;
 
-    /// Determine the type of [`Quad`](../trait.Quad.html)s
+    /// Determine the type of [`Quad`]s
     /// that this quad source yields.
-    /// (see [`streaming_mode`](../streaming_mode/index.html)
+    /// (see [`streaming_mode`](super::streaming_mode)
     type Quad: QuadStreamingMode;
 
     /// Call f for at least one quad from this quad source, if any.
@@ -148,7 +144,7 @@ pub trait QuadSource {
     {
         D::from_quad_source(self)
     }
-    /// Insert all quads from this source into the given [dataset](../../dataset/trait.MutableDataset.html).
+    /// Insert all quads from this source into the given [MutableDataset].
     ///
     /// Stop on the first error (in the source or in the dataset).
     #[inline]

@@ -27,7 +27,7 @@ pub type IsoHasher = std::collections::hash_map::DefaultHasher;
 /// According to the [RDF specs](https://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/#graph-isomorphism)
 /// this means that a mapping for blank nodes in `d1` exists so that `d1 == d2`.
 ///
-/// The algorithm is inspired from a similar one in [`Oxigraph`](https://github.com/Tpt/oxigraph)
+/// The algorithm is inspired from a similar one in [Oxigraph](https://github.com/Tpt/oxigraph)
 /// and is extended for the generalized RDF model of `sophia`.
 ///
 /// # Performance
@@ -48,7 +48,7 @@ pub type IsoHasher = std::collections::hash_map::DefaultHasher;
 /// but a few pathological cases may be falses positives
 /// (*i.e.* recognized as isomorphic while they are not).
 ///
-/// See [`isomorphic_graphs`](../graph/fn.isomorphic_graphs.html) for pathological examples.
+/// See [`isomorphic_graphs`](crate::graph::isomorphic_graphs) for pathological examples.
 pub fn isomorphic_datasets<D1, D2>(d1: &D1, d2: &D2) -> StreamResult<bool, D1::Error, D2::Error>
 where
     D1: Dataset,

@@ -9,7 +9,7 @@
 //! [Sophia]: https://docs.rs/sophia/latest/sophia/
 //! [RDF]: https://www.w3.org/TR/rdf-primer/
 //! [Linked Data]: http://linkeddata.org/
-//! [generalized RDF]: https://docs.rs/sophia/latest/sophia/#generalized-vs-strict-rdf-model
+//! [generalized RDF]: crate#generalized-vs-strict-rdf-model
 
 use mownstr::MownStr;
 use std::cmp::Ordering;
@@ -54,28 +54,29 @@ pub use simple_iri::SimpleIri;
 /// In addition to the specific contract of each method,
 /// any type implementing this trait must uphold the following guarantees:
 ///
-/// * if it implements [`Hash`](https://doc.rust-lang.org/std/hash/trait.Hash.html),
+/// * if it implements [`Hash`],
 ///   it must be consistent with (or, even better, based on)
 ///   [`term_hash()`];
 ///
-/// * if it implements [`PartialEq`](https://doc.rust-lang.org/std/cmp/trait.PartialEq.html),
+/// * if it implements [`PartialEq`],
 ///   it must be consistent with (or, even better, based on)
 ///   [`term_eq()`];
 ///
-/// * if it implements [`PartialCmp`](https://doc.rust-lang.org/std/cmp/trait.PartialCmp.html)
+/// * if it implements [`PartialCmp`](std::cmp),
 ///   it must be consistent with (or, even better, based on)
-///   [`term_cmp`](./fn.term_cmp.html);
+///   [`term_cmp`];
 ///
-/// * if it implements [`Borrow<dyn TTerm + 'a>`](https://doc.rust-lang.org/std/borrow/trait.Borrow.html)
+/// * if it implements [`Borrow`](std::borrow::Borrow)`<dyn `[`TTerm`]` + 'a>`
 ///   it must have equivalent implementations to [`term_hash()`] and [`term_eq()`]
-///   so that the contract of `Borrow` upholds with the implementations on
-///   `dyn TTerm`.
+///   so that the contract of [`Borrow`](std::borrow::Borrow)
+///   upholds with the implementations on `dyn `[`TTerm`].
 ///
-/// # `Borrow<dyn TTerm + 'a>`
+/// # `[Borrow]<dyn TTerm + 'a>`
 ///
-/// Implementing `Borrow<dyn TTerm + 'a>` for a term increases the ergonomics
-/// when the type is used as key in a [`HashSet`] or similar. It allows to
-/// search for keys with any implementation of the `TTerm` trait, e.g.:
+/// Implementing [`Borrow`](std::borrow::Borrow)`<dyn `[`TTerm`]` + 'a>`
+/// for a term increases the ergonomics
+/// when the type is used as key in a [`HashSet`](std::collections::HashSet) or similar.
+/// It allows to search for keys with any implementation of the `TTerm` trait, e.g.:
 ///
 /// ```
 /// # use std::collections::HashSet;
@@ -117,10 +118,6 @@ pub use simple_iri::SimpleIri;
 ///     }
 /// }
 /// ```
-///
-/// [`term_hash()`]: ./fn.term_hash.html
-/// [`HashSet`]: https://doc.rust-lang.org/std/collections/struct.HashSet.html
-/// [`term_eq()`]: ./fn.term_eq.html
 pub trait TTerm {
     /// Returns the kind of this term (IRI, literal, blank node, variable).
     fn kind(&self) -> TermKind;
@@ -203,7 +200,7 @@ pub trait TTerm {
     fn as_dyn(&self) -> &dyn TTerm;
 }
 
-/// Any [`TTerm`](./trait.TTerm.html) belongs to one of those kinds.
+/// Any [`TTerm`] belongs to one of those kinds.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub enum TermKind {
     /// RDF [IRI](https://www.w3.org/TR/rdf11-concepts/#section-IRIs),
@@ -240,10 +237,6 @@ pub trait TryCopyTerm: Sized {
 /// This trait is to [`CopyTerm`] and [`TryCopyTerm`]
 /// what `Into` is to `From`.
 /// It is automatically implemented by any implementation of [`TTerm`].
-///
-/// [`CopyTerm`]: ./trait.CopyTerm.html
-/// [`TryCopyTerm`]: ./trait.TryCopyTerm.html
-/// [`TTerm`]: ./trait.TTerm.html
 pub trait CopiableTerm {
     /// Copy this IRI into another type.
     fn copied<T: CopyTerm>(&self) -> T;

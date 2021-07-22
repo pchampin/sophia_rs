@@ -6,21 +6,19 @@
 //! [`GraphNameMatcher`'s implementors lists](trait.GraphNameMatcher.html#implementors).
 //!
 //! For methods using matchers (with examples), see for example
-//! [`Graph::triples_matching`](../../graph/trait.Graph.html#method.triples_matching),
-//! [`MutableGraph::remove_matching`](../../graph/trait.MutableGraph.html#method.remove_matching),
-//! [`MutableGraph::retain_matching`](../../graph/trait.MutableGraph.html#method.retain_matching),
-//! [`Dataset::quads_matching`](../../dataset/trait.Dataset.html#method.quads_matching),
-//! [`MutableDataset::remove_matching`](../../dataset/trait.MutableDataset.html#method.remove_matching),
-//! [`MutableDataset::retain_matching`](../../dataset/trait.MutableDataset.html#method.retain_matching).
+//! [`Graph::triples_matching`](crate::graph::Graph::triples_matching),
+//! [`MutableGraph::remove_matching`](crate::graph::MutableGraph::remove_matching),
+//! [`MutableGraph::retain_matching`](crate::graph::MutableGraph::retain_matching),
+//! [`Dataset::quads_matching`](crate::dataset::Dataset::quads_matching),
+//! [`MutableDataset::remove_matching`](crate::dataset::MutableDataset::remove_matching), and
+//! [`MutableDataset::retain_matching`](crate::dataset::MutableDataset::retain_matching).
 //!
 
 use super::*;
 
 pub use super::_graph_name_matcher::*;
 
-/// Generic trait for matching [term]s.
-///
-/// [term]: ../trait.TTerm.html
+/// Generic trait for matching [TTerm]s.
 pub trait TermMatcher {
     /// Type of `TTerm` used internally by this matcher.
     type Term: TTerm + ?Sized;

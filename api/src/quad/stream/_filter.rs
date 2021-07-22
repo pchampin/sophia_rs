@@ -2,8 +2,7 @@
 
 use super::*;
 
-/// The result of
-/// [`QuadSource::filter_quads`](./trait.QuadSource.html#method.filter_quads)
+/// The result of [`QuadSource::filter_quads`]
 pub struct FilterSource<S, F> {
     pub source: S,
     pub filter: F,

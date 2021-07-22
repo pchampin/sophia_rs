@@ -29,7 +29,7 @@ pub trait Triple {
     /// The object of this triple.
     fn o(&self) -> &Self::Term;
 
-    /// [`Quad`](../quad/trait.Quad.html) adapter owning this triple,
+    /// [`Quad`] adapter owning this triple,
     /// pretending to belong to the default graph.
     fn wrap_as_quad(self) -> TripleAsQuad<Self>
     where
@@ -48,7 +48,7 @@ pub trait Triple {
         self.wrap_as_quad()
     }
 
-    /// [`Quad`](../quad/trait.Quad.html) adapter owning this triple,
+    /// [`Quad`] adapter owning this triple,
     /// pretending to belong to a named graph with the given name.
     fn wrap_as_quad_from(self, name: Self::Term) -> TripleAsQuadFrom<Self>
     where
@@ -151,7 +151,7 @@ impl<'a, T: Triple> Triple for &'a T {
     }
 }
 
-/// The adapter returned by [`Triple::as_quad`](./trait.Triple.html#method.as_quad).
+/// The adapter returned by [`Triple::as_quad`].
 pub struct TripleAsQuad<T>(T);
 
 impl<T> TripleAsQuad<T> {
@@ -181,7 +181,7 @@ impl<T: Triple> Quad for TripleAsQuad<T> {
     }
 }
 
-/// The adapter returned by [`Triple::as_quad_from`](./trait.Triple.html#method.as_quad_from).
+/// The adapter returned by [`Triple::as_quad_from`].
 pub struct TripleAsQuadFrom<T: Triple>(T, T::Term);
 
 impl<T> TripleAsQuadFrom<T>

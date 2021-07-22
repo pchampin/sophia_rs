@@ -7,15 +7,10 @@
 //! It also provides two pre-defined trade-offs:
 //! [`FastDataset`] and [`LightDataset`],
 //! provided in different flavours
-//! ([default](#types), [`small`](small/index.html), [`sync`](sync/index.html)).
+//! ([default](#types), [`small`], [`sync`]).
 //!
-//! This module is the twin of the [`graph.inmem`](../../graph/inmem/index.html) module.
+//! This module is the twin of the [`graph`](super::graph) module.
 //! See its documentation for more details.
-//!
-//! [`Dataset`]: ../trait.Dataset.html
-//! [`MutableDataset`]: ../trait.MutableDataset.html
-//! [`FastDataset`]: type.FastDataset.html
-//! [`LightDataset`]: type.LightDataset.html
 
 use crate::graph::TermIndexMapU;
 use sophia_api::dataset::{CollectibleDataset, Dataset, MutableDataset, SetDataset};
@@ -38,11 +33,11 @@ pub use self::_ogps_wrapper::*;
 
 /// A generic in-memory dataset.
 ///
-/// `I` must be a type for which [`TermIndexMapU`](../../graph/inmem/struct.TermIndexMapU.html)
-/// implements [`TermIndexMap`](../../term/index_map/trait.TermIndexMap.html),
+/// `I` must be a type for which [`TermIndexMapU`]
+/// implements [`TermIndexMap`](sophia_term::index_map::TermIndexMap),
 /// typically `u16` or `u32`.
 ///
-/// `F` must implement [`TermFactory`](../../term/factory/trait.TermFactory.html).
+/// `F` must implement [`TermFactory`].
 ///
 pub type GenericDataset<I, F> = HashDataset<TermIndexMapU<I, F>>;
 

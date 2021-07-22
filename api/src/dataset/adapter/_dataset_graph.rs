@@ -12,9 +12,9 @@ use crate::term::TTerm;
 use crate::triple::streaming_mode::{FromQuad, StreamedTriple};
 
 /// The adapter returned by
-/// [`Dataset::graph`](../trait.Dataset.html#method.graph)
-/// [`Dataset::graph_mut`](../trait.Dataset.html#method.graph_mut)
-/// [`Dataset::union_graph`](../trait.Dataset.html#method.union_graph)
+/// [`Dataset::graph`],
+/// [`Dataset::graph_mut`], and
+/// [`Dataset::union_graph`].
 pub struct DatasetGraph<D: ?Sized, E, M: GraphNameMatcher> {
     dataset: E,
     gmatcher: M,

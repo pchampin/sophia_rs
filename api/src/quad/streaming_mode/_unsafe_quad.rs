@@ -81,7 +81,7 @@ where
 // adapter
 
 /// Expose an `UnsafeQuad` as an `UnsafeTriple`.
-/// Used internally by [`dataset::adapter`](../../dataset/adapter/index.html).
+/// Used internally by [`dataset::adapter`].
 pub struct UnsafeTripleAdapter<Q: UnsafeQuad>(pub(crate) Q);
 impl<Q: UnsafeQuad> crate::triple::streaming_mode::UnsafeTriple for UnsafeTripleAdapter<Q> {
     type Term = Q::Term;

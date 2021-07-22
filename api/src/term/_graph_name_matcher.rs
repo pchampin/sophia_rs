@@ -3,9 +3,7 @@
 use crate::term::matcher::{AnyOrExactly, AnyOrExactlyRef, AnyTerm};
 use crate::term::*;
 
-/// Generic trait for matching graph names, *i.e.* optional [term]s.
-///
-/// [term]: ../trait.TTerm.html
+/// Generic trait for matching graph names, *i.e.* optional [TTerm]s.
 pub trait GraphNameMatcher {
     /// Type of `TTerm` used internally by this matcher.
     type Term: TTerm + ?Sized;

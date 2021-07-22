@@ -16,11 +16,6 @@ use sophia_term::{RefTerm, Term};
 /// A generic implementation of [`Graph`] and [`MutableGraph`],
 /// storing its terms in a [`TermIndexMap`],
 /// and its triples in a [`HashSet`].
-///
-/// [`Graph`]: ../trait.Graph.html
-/// [`MutableGraph`]: ../trait.MutableGraph.html
-/// [`TermIndexMap`]: ../../term/index_map/trait.TermIndexMap.html
-/// [`HashSet`]: https://doc.rust-lang.org/std/collections/struct.HashSet.html
 #[derive(Default)]
 pub struct HashGraph<I>
 where

@@ -35,11 +35,8 @@
 //! but we do not want to impose that cost on all implementations
 //! — especially when many consumers will be happy with short-lived references.
 //!
-//! [`TripleSource`]: trait.TripleSource.html
-//! [`Iterator`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html
-//! [`for_each_triple`]: ./trait.TripleSource.html#method.for_each_triple
-//! [`try_for_each_triple`]: ./trait.TripleSource.html#method.try_for_each_triple
-//! [`Iterator::collect`]: https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.collect
+//! [`for_each_triple`]: TripleSource::for_each_triple
+//! [`try_for_each_triple`]: TripleSource::try_for_each_triple
 
 use std::error::Error;
 
@@ -69,19 +66,17 @@ pub type TsTerm<S> =
 )]
 pub type TSTerm<S> = TsTerm<S>;
 
-/// A triple source produces [triples], and may also fail in the process.
+/// A triple source produces [`Triple`]s, and may also fail in the process.
 ///
-/// Any iterator yielding [triples] wrapped in `Result`
+/// Any iterator yielding [`Triple`]s wrapped in `Result`
 /// implements the `TripleSource` trait.
-///
-/// [triples]: ../trait.Triple.html
 pub trait TripleSource {
     /// The type of errors produced by this source.
     type Error: 'static + Error;
 
-    /// Determine the type of [`Triple`](../trait.Triple.html)s
+    /// Determine the type of [`Triple`]s
     /// that this triple source yields.
-    /// (see [`streaming_mode`](../streaming_mode/index.html)
+    /// (see [`streaming_mode`])
     type Triple: TripleStreamingMode;
 
     /// Call f for at least one triple from this triple source, if any.
@@ -176,7 +171,7 @@ pub trait TripleSource {
     {
         G::from_triple_source(self)
     }
-    /// Insert all triples from this source into the given [graph](../../graph/trait.MutableGraph.html).
+    /// Insert all triples from this source into the given [MutableGraph].
     ///
     /// Stop on the first error (in the source or in the graph).
     #[inline]

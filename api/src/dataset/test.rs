@@ -129,12 +129,7 @@ where
 ///   (defaults to `dataset_impl::from_quad_source`);
 /// * `mt` is used internally, do not touch it...
 ///
-/// [`Dataset`]: dataset/trait.Dataset.html
-/// [`CollectibleDataset`]: dataset/trait.CollectibleDataset.html
-/// [`MutableDataset`]: dataset/trait.MutableDataset.html
-/// [`test_immutable_dataset_impl`]: ./macro.test_immutable_dataset_impl.html
-/// [`SetDataset`]: dataset/trait.SetDataset.html
-/// [generalized model]: ./index.html
+/// [generalized model]: crate#generalized-vs-strict-rdf-model
 #[macro_export]
 macro_rules! test_dataset_impl {
     ($dataset_impl: ident) => {
@@ -860,12 +855,7 @@ macro_rules! test_dataset_impl {
 /// * `dataset_collector`: a function used to collect quads into an instance of `dataset_impl`
 ///   (defaults to `dataset_impl::from_quad_source`);
 ///
-/// [`Dataset`]: dataset/trait.Dataset.html
-/// [`CollectibleDataset`]: dataset/trait.CollectibleDataset.html
-/// [`MutableDataset`]: dataset/trait.MutableDataset.html
-/// [`test_dataset_impl`]: ./macro.test_dataset_impl.html
-/// [`SetDataset`]: dataset/trait.SetDataset.html
-/// [generalized model]: ./index.html
+/// [generalized model]: crate#generalized-vs-strict-rdf-model
 #[macro_export]
 macro_rules! test_immutable_dataset_impl {
     ($dataset_impl: ident) => {

@@ -68,7 +68,7 @@ where
 // adapters
 
 /// Expose an `UnsafeTriple` as an `UnsafeQuad`.
-/// Used internally by [`graph::adapter`](../../graph/adapter/index.html).
+/// Used internally by [`graph::adapter`].
 pub struct UnsafeQuadAdapter<T: UnsafeTriple>(pub(crate) T);
 impl<T: UnsafeTriple> crate::quad::streaming_mode::UnsafeQuad for UnsafeQuadAdapter<T> {
     type Term = T::Term;

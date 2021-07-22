@@ -6,8 +6,7 @@ use crate::quad::streaming_mode::StreamedQuad;
 
 use std::collections::VecDeque;
 
-/// The result of
-/// [`TripleSource::filter_map_triples`](./trait.TripleSource.html#method.filter_map_triples)
+/// The result of [`TripleSource::filter_map_triples`]
 pub struct FilterMapSource<S, F> {
     pub source: S,
     pub filter_map: F,
@@ -86,8 +85,7 @@ where
     }
 }
 
-/// An iterator over the result of
-/// [`TripleSource::filter_map_triples`](./trait.TripleSource.html#method.filter_map_triples)
+/// An iterator over the result of [`TripleSource::filter_map_triples`]
 pub struct FilterMapSourceIterator<S, F, T, E> {
     pub source: S,
     pub filter_map: F,

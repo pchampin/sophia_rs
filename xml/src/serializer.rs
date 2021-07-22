@@ -1,7 +1,5 @@
 //! Serializer for the [RDF/XML] concrete syntax of RDF.
-//! based on [`rio_xml`](https://docs.rs/rio_xml/)
-//!
-//! [RDF/XML]: https://www.w3.org/TR/rdf-syntax-grammar/
+//! based on [`rio_xml`].
 //!
 //! **Important**:
 //! the methods in this module accepting a [`Write`]

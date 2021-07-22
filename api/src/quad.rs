@@ -1,5 +1,5 @@
 //! A quad expresses a single fact within a context.
-//! Quads are like RDF [`triples`](../triple/index.html)
+//! Quads are like RDF [`triple`](crate::triple)s
 //! augmented with an optional graph name.
 //!
 //! They are the individual statements of an RDF `dataset`(../dataset/index.html).
@@ -23,7 +23,7 @@ pub trait Quad {
     /// The (optional) graph name
     fn g(&self) -> Option<&Self::Term>;
 
-    /// [`Triple`](../triple/trait.Triple.html) adapter owning this quad.
+    /// [`Triple`] adapter owning this quad.
     fn wrap_as_triple(self) -> QuadAsTriple<Self>
     where
         Self: Sized,
@@ -170,7 +170,7 @@ where
     }
 }
 
-/// The adapter returned by [`Quad::as_triple`](./trait.Quad.html#method.as_triple).
+/// The adapter returned by [`Quad::as_triple`].
 pub struct QuadAsTriple<Q: ?Sized>(Q);
 
 impl<Q> QuadAsTriple<Q>

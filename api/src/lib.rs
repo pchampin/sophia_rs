@@ -2,7 +2,7 @@
 //! as a set of traits and core types,
 //! for building interoperable implementations of [RDF] and [Linked Data] in Rust.
 //!
-//! For an all-included crate
+//! For an all-inclusive crate
 //! (providing actual implementations of the traits defined here),
 //! see [`sophia`](https://docs.rs/sophia/latest/sophia/).
 //!
@@ -19,10 +19,6 @@
 //!
 //! [RDF]: https://www.w3.org/TR/rdf-primer/
 //! [Linked Data]: http://linkeddata.org/
-//! [triple]: triple/index.html
-//! [term]: term/index.html
-//! [graph]: graph/index.html
-//! [dataset]: dataset/index.html
 //!
 //! # Generalized vs. Strict RDF model
 //!

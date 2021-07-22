@@ -11,9 +11,8 @@ use crate::RefTerm;
 /// One special index (called the *null index*) is never mapped to any [`Term`],
 /// and is used to represent `None` (the absence of graph name in a [`Quad`]).
 ///
-/// [`Term`]: ../../term/enum.Term.html
-/// [`Quad`]: ../../quad/trait.Quad.html
-///
+/// [`Term`]: crate::Term
+/// [`Quad`]: sophia_api::quad::Quad
 pub trait TermIndexMap: Default {
     /// The type used to represent terms
     type Index: Copy + Eq;

@@ -42,7 +42,7 @@
 //! [Sophia]: https://docs.rs/sophia/latest/sophia/
 //! [RDF]: https://www.w3.org/TR/rdf-primer/
 //! [Linked Data]: http://linkeddata.org/
-//! [generalized RDF]: https://docs.rs/sophia/latest/sophia/#generalized-vs-strict-rdf-model
+//! [generalized RDF]: sophia_api#generalized-vs-strict-rdf-model
 
 #![deny(missing_docs)]
 
@@ -574,25 +574,27 @@ impl<'a, TD: TermData + 'a> Borrow<dyn TTerm + 'a> for Term<TD> {
 #[cfg(test)]
 pub(crate) mod test;
 
-/// This line re-exports `same_graph_name` from `sophia_api::term`,
+/// DEPRECATED - This is a re-exports of [`sophia_api::term`]`::same_graph_name`
 /// to ease transition from older versions of Sophia.
-/// It will eventually be deprecated.
 ///
-/// See [`sophia_api`](https://docs.rs/sophia_api/latest/sophia_api/)
+#[deprecated(
+    since = "0.7.0",
+    note = "use `sophia_api::term::same_graph_name` instead"
+)]
 pub use sophia_api::term::same_graph_name;
 
-/// This module re-exports things from `sophia_api::ns`,
+/// This is a re-exports of [`sophia_api::ns`]
 /// to ease transition from older versions of Sophia.
-/// It will eventually be deprecated.
 ///
-/// See [`sophia_api`](https://docs.rs/sophia_api/latest/sophia_api/)
+#[deprecated(since = "0.7.0", note = "use `sophia_api::ns` instead")]
 pub mod ns {
     pub use sophia_api::ns::*;
 }
 
-/// This line re-exports the module `sophia_api::term::matcher`,
+/// This is a re-exports of [`sophia_api::term::matcher`]
 /// to ease transition from older versions of Sophia.
-/// It will eventually be deprecated.
 ///
-/// See [`sophia_api`](https://docs.rs/sophia_api/latest/sophia_api/)
-pub use sophia_api::term::matcher;
+#[deprecated(since = "0.7.0", note = "use `sophia_api::term::matcher` instead")]
+pub mod matcher {
+    pub use sophia_api::term::matcher::*;
+}

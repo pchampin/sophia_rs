@@ -5,17 +5,14 @@ use std::error::Error;
 ///
 /// _Note:_ MGE is the [mutation error] of the wrapped [`MutableGraph`].
 ///
-/// [adapter]: ./struct.GraphAsDataset.html
-/// [`MutableGraph`]: ../../graph/trait.MutableGraph.html
-/// [`MutableDataset`]: ../trait.MutableDataset.html
-/// [mutation error]: ../../graph/trait.MutableGraph.html#associatedtype.MutationError
+/// [adapter]: super::GraphAsDataset
+/// [`MutableGraph`]: crate::graph::MutableGraph
+/// [`MutableDataset`]: crate::dataset::MutableDataset
+/// [mutation error]: crate::graph::MutableGraph::MutationError
 #[derive(Debug, thiserror::Error)]
 pub enum GraphAsDatasetError<MGE: 'static + Error> {
-    /// Raised when the [adapter] is requested to modify a triple in a named
-    /// `Graph` which is not supported as it is only a singel `Graph` wrapped.
-    ///
-    /// [adapter]: ./struct.GraphAsDataset.html
-    ///
+    /// Raised when the [adapter](super::GraphAsDataset) is requested to modify a triple in a named
+    /// `Graph` which is not supported as it is only a single `Graph` wrapped.
     #[error("GraphAsDataset does not support named graphs")]
     GraphNamesNotSupported,
     /// Error from the wrapped `Graph`

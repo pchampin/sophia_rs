@@ -63,9 +63,6 @@ where
 /// This trait is to [`TryConvertTerm`]
 /// what `Into` is to `From`.
 /// It is automatically implemented by any implementation of [`TTerm`].
-///
-/// [`TryConvertTerm`]: ./trait.TryConvertTerm.html
-/// [`TTerm`]: ./trait.TTerm.html
 pub trait ConvertibleTerm: TTerm {
     /// Try to convert this term into a native type
     fn try_converted<T>(&self) -> Result<T>
