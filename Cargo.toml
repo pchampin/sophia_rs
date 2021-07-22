@@ -3,6 +3,7 @@
 members = [
     "api",
     "iri",
+    "rio",
     "sophia",
     "term",
     "jsonld",

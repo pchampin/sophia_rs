@@ -1,15 +1,7 @@
-//! Serializer for the [RDF/XML] concrete syntax of RDF.
-//!
-//! **Important**:
-//! the methods in this module accepting a [`Write`]
-//! make no effort to minimize the number of write operations.
-//! Hence, in most cased, they should be passed a [`BufWriter`].
-//!
-//! [RDF/XML]: https://www.w3.org/TR/rdf-syntax-grammar/
-//! [`Write`]: https://doc.rust-lang.org/std/io/trait.Write.html
-//! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
+//! Common implementations for adapting
+//! [RIO](https://docs.rs/rio_api/) serializers.
 
-use rio_api::formatter::{TriplesFormatter, QuadsFormatter};
+use rio_api::formatter::{QuadsFormatter, TriplesFormatter};
 use rio_api::model::{BlankNode, Literal, NamedNode, Quad as RioQuad, Triple as RioTriple};
 use sophia_api::ns::xsd;
 use sophia_api::quad::stream::QuadSource;
@@ -190,12 +182,14 @@ where
                     bufg = term.value();
                     Some(NamedNode { iri: &bufg }.into())
                 }
-                TermKind::BlankNode => Some(BlankNode {
-                    id: &term.value_raw().0,
-                }
-                .into()),
+                TermKind::BlankNode => Some(
+                    BlankNode {
+                        id: &term.value_raw().0,
+                    }
+                    .into(),
+                ),
                 _ => return Ok(()), // non standard subject, skip this triple
-            }
+            },
         };
         let rq = RioQuad {
             subject,

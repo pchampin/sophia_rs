@@ -27,6 +27,7 @@ lazy_static = { version = "1.4.0" }
 regex = { version = "1.4.2" }
 sophia_api = { version = "0.6.2", path = "../api" }
 sophia_iri = { version = "0.6.2", path = "../iri" }
+sophia_rio = { version = "0.6.2", path = "../rio" }
 sophia_term = { version = "0.6.2", path = "../term" }
 oxiri = "0.1.1"
 resiter = "0.4.0"

@@ -98,10 +98,10 @@ pub mod ns {
 /// and also provides some implementations of its traits.
 pub mod parser {
     pub use sophia_api::parser::*;
+    pub use sophia_rio::parser as rio_common;
     pub mod gtrig;
     pub mod nq;
     pub mod nt;
-    pub mod rio_common;
     pub mod trig;
     pub mod turtle;
     #[cfg(feature = "xml")]
@@ -124,9 +124,9 @@ pub mod quad {
 /// and also provides some implementations of its traits.
 pub mod serializer {
     pub use sophia_api::serializer::*;
+    pub use sophia_rio::serializer as rio_common;
     pub mod nq;
     pub mod nt;
-    pub mod rio_common;
     pub mod trig;
     pub mod turtle;
     #[cfg(feature = "xml")]
