@@ -6,9 +6,9 @@ use crate::config::*;
 use crate::error::*;
 use crate::serializer::Jsonifier;
 use json::JsonValue;
-use sophia::dataset::MutableDataset;
-use sophia::triple::stream::SinkError;
+use sophia_api::dataset::MutableDataset;
 use sophia_api::serializer::QuadSerializer;
+use sophia_api::triple::stream::SinkError;
 use sophia_iri::resolve::Resolve;
 use sophia_term::iri::Iri;
 use sophia_term::BoxTerm;
@@ -102,7 +102,7 @@ impl<'a> Test<'a> {
 
     pub fn input_dataset(&self) -> HashSet<([BoxTerm; 3], Option<BoxTerm>)> {
         let nq = self.input();
-        let quads = sophia::parser::nq::parse_str(&nq);
+        let quads = sophia_turtle::parser::nq::parse_str(&nq);
         let mut dataset = HashSet::new();
         MutableDataset::insert_all(&mut dataset, quads).expect("test input could not be parsed");
         dataset

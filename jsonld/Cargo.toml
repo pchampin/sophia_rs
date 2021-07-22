@@ -15,10 +15,10 @@ keywords = ["rdf", "linked-data", "semantic-web", "json-ld"]
 [dependencies]
 chrono = { version = "0.4.13", optional = true }
 json = "0.12.4"
-sophia = { version = "0.6.2", path = "../sophia" }
 sophia_api = { version = "0.6.2", path = "../api" }
 sophia_iri = { version = "0.6.2", path = "../iri" }
 sophia_term = { version = "0.6.2", path = "../term" }
+sophia_turtle = { version = "0.6.2", path = "../turtle" }
 thiserror = "1.0.20"
 
 [[bin]]

@@ -6,9 +6,9 @@
 use crate::config::*;
 use crate::error::*;
 use json::JsonValue;
-use sophia::quad::stream::*;
-use sophia::triple::stream::{SinkError, StreamResult};
+use sophia_api::quad::stream::*;
 use sophia_api::serializer::*;
+use sophia_api::triple::stream::{SinkError, StreamResult};
 
 mod engine;
 mod rdf_object;
