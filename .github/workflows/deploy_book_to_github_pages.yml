@@ -1,7 +1,9 @@
+name: Deploy book to GitHUb Pages
+
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   deploy:

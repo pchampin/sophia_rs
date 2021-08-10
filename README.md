@@ -2,6 +2,7 @@
 
 A Rust toolkit for RDF and Linked Data.
 
+[![actions status](https://github.com/pchampin/sophia_rs/workflows/build/badge.svg)](https://github.com/pchampin/sophia_rs/actions)
 [![Latest Version](https://img.shields.io/crates/v/sophia.svg)](https://crates.io/crates/sophia)
 
 It comprises the following crates:
