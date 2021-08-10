@@ -36,20 +36,20 @@ impl<'a> IsIri for Iri<'a> {}
 
 impl<'a> Borrow<str> for Iri<'a> {
     fn borrow(&self) -> &str {
-        &self.0
+        self.0
     }
 }
 
 impl<'a> AsRef<str> for Iri<'a> {
     fn as_ref(&self) -> &str {
-        &self.0
+        self.0
     }
 }
 
 impl<'a> Deref for Iri<'a> {
     type Target = str;
     fn deref(&self) -> &str {
-        &self.0
+        self.0
     }
 }
 
@@ -108,20 +108,20 @@ impl<'a> IsIriRef for IriRef<'a> {}
 
 impl<'a> Borrow<str> for IriRef<'a> {
     fn borrow(&self) -> &str {
-        &self.0
+        self.0
     }
 }
 
 impl<'a> AsRef<str> for IriRef<'a> {
     fn as_ref(&self) -> &str {
-        &self.0
+        self.0
     }
 }
 
 impl<'a> Deref for IriRef<'a> {
     type Target = str;
     fn deref(&self) -> &str {
-        &self.0
+        self.0
     }
 }
 

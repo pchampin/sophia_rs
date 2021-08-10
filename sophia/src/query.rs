@@ -32,9 +32,9 @@ impl Query {
                     .iter()
                     .map(|t| {
                         let tm = vec![
-                            matcher(t.s(), &initial_bindings),
-                            matcher(t.p(), &initial_bindings),
-                            matcher(t.o(), &initial_bindings),
+                            matcher(t.s(), initial_bindings),
+                            matcher(t.p(), initial_bindings),
+                            matcher(t.o(), initial_bindings),
                         ];
                         let hint = triples_matching(graph, &tm).size_hint();
                         (hint.1.unwrap_or(std::usize::MAX), hint.0)
@@ -183,7 +183,7 @@ mod test {
         let s_event = schema.get("Event").unwrap();
         let x_alice = RcTerm::new_iri("http://example.org/alice").unwrap();
 
-        let tq: [RcTerm; 3] = [x_alice.clone(), rdf::type_.copied(), s_event.copied()];
+        let tq: [RcTerm; 3] = [x_alice, rdf::type_.copied(), s_event.copied()];
 
         let results: Result<Vec<_>, _> = bindings_for_triple(&g, &tq, BindingMap::new()).collect();
         let results = results.unwrap();
@@ -198,7 +198,7 @@ mod test {
         let s_person = schema.get("Person").unwrap();
         let x_alice = RcTerm::new_iri("http://example.org/alice").unwrap();
 
-        let tq: [RcTerm; 3] = [x_alice.clone(), rdf::type_.copied(), s_person.copied()];
+        let tq: [RcTerm; 3] = [x_alice, rdf::type_.copied(), s_person.copied()];
 
         let results: Result<Vec<BindingMap>, _> =
             bindings_for_triple(&g, &tq, BindingMap::new()).collect();
@@ -218,7 +218,7 @@ mod test {
 
         let v1 = RcTerm::new_variable("v1").unwrap();
 
-        let tq: [RcTerm; 3] = [v1.clone(), rdf::type_.copied(), s_event.copied()];
+        let tq: [RcTerm; 3] = [v1, rdf::type_.copied(), s_event.copied()];
 
         let results: Result<Vec<BindingMap>, _> =
             bindings_for_triple(&g, &tq, BindingMap::new()).collect();
@@ -235,7 +235,7 @@ mod test {
 
         let v1 = RcTerm::new_variable("v1").unwrap();
 
-        let tq: [RcTerm; 3] = [v1.clone(), rdf::type_.copied(), s_person.copied()];
+        let tq: [RcTerm; 3] = [v1, rdf::type_.copied(), s_person.copied()];
 
         let results: Result<Vec<BindingMap>, _> =
             bindings_for_triple(&g, &tq, BindingMap::new()).collect();
@@ -265,7 +265,7 @@ mod test {
         let v1 = RcTerm::new_variable("v1").unwrap();
         let v2 = RcTerm::new_variable("v2").unwrap();
 
-        let tq: [RcTerm; 3] = [v1.clone(), s_name.copied(), v2.clone()];
+        let tq: [RcTerm; 3] = [v1, s_name.copied(), v2];
 
         let results: Result<Vec<BindingMap>, _> =
             bindings_for_triple(&g, &tq, BindingMap::new()).collect();
@@ -305,6 +305,7 @@ mod test {
         let v1 = RcTerm::new_variable("v1").unwrap();
         let v2 = RcTerm::new_variable("v2").unwrap();
 
+        #[allow(clippy::redundant_clone)]
         let mut q = Query::Triples(vec![
             [v1.clone(), s_name.copied(), v2.clone()],
             [v1.clone(), rdf::type_.copied(), s_person.copied()],

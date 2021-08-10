@@ -526,7 +526,7 @@ mod test {
         let dt1 = Iri::<Box<str>>::new("").unwrap();
         let lit1 = Literal::<Box<str>>::new_dt("hello", dt1);
         let xsd_string = &xsd::string.value();
-        let base = IriParsed::new(&xsd_string).unwrap();
+        let base = IriParsed::new(xsd_string).unwrap();
         let lit2: Literal<MownStr> = base.resolve(&lit1);
         let Literal { txt, .. } = lit2;
         assert!(txt.is_borrowed(), "txt has been allocated");

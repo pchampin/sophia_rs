@@ -44,7 +44,7 @@ mod test {
 
         let mut d = FastDataset::new();
         let p = NQuadsParser {};
-        let c = p.parse_str(&turtle).add_to_dataset(&mut d)?;
+        let c = p.parse_str(turtle).add_to_dataset(&mut d)?;
         assert_eq!(c, 3);
         assert!(d
             .quads_matching(

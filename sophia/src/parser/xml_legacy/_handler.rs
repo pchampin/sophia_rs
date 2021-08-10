@@ -92,8 +92,7 @@ where
             if a.key.starts_with(b"xmlns:") {
                 scope
                     .add_prefix(
-                        &self
-                            .reader
+                        self.reader
                             .decode(&a.key[6..])
                             .locate_err_with(&self.reader)?,
                         &a.unescape_and_decode_value(&self.reader)
@@ -254,7 +253,7 @@ where
         // Get node type from the XML attribute.
         let ty = self
             .scope()
-            .expand_attribute(&self.reader.decode(e.name()).locate_err_with(&self.reader)?)
+            .expand_attribute(self.reader.decode(e.name()).locate_err_with(&self.reader)?)
             .locate_err_with(&self.reader)?;
 
         // Return early if in a top-level rdf:RDF element
@@ -284,7 +283,7 @@ where
             // try to extract the subject annotation
             let k = self
                 .scope()
-                .expand_attribute(&self.reader.decode(a.key).locate_err_with(&self.reader)?)
+                .expand_attribute(self.reader.decode(a.key).locate_err_with(&self.reader)?)
                 .locate_err_with(&self.reader)?;
             let v = a
                 .unescape_and_decode_value(&self.reader)
@@ -340,7 +339,7 @@ where
         // Get the predicate and add it to the current nested stack
         // or build a new `rdf:_n` IRI if the predicate is `rdf:li`.
         let pred =
-            self.predicate_iri_start(&self.reader.decode(e.name()).locate_err_with(&self.reader)?)?;
+            self.predicate_iri_start(self.reader.decode(e.name()).locate_err_with(&self.reader)?)?;
 
         // Fail if the property is among forbidden names.
         if RESERVED_PROPERTY_NAMES.matches(&pred) {
@@ -364,7 +363,7 @@ where
 
             let k = self
                 .scope()
-                .expand_attribute(&self.reader.decode(a.key).locate_err_with(&self.reader)?)
+                .expand_attribute(self.reader.decode(a.key).locate_err_with(&self.reader)?)
                 .locate_err_with(&self.reader)?;
             if k.matches(&rdf::datatype) {
                 let v = a
@@ -496,7 +495,7 @@ where
     fn predicate_end(&mut self, e: &BytesEnd) -> Result<()> {
         // Build the predicate IRI
         let p =
-            self.predicate_iri_end(&self.reader.decode(e.name()).locate_err_with(&self.reader)?)?;
+            self.predicate_iri_end(self.reader.decode(e.name()).locate_err_with(&self.reader)?)?;
 
         // Get the literal value
         if self.parents.len() > 1 {
@@ -641,7 +640,7 @@ where
 
     fn predicate_empty(&mut self, e: &BytesStart) -> Result<()> {
         let pred =
-            self.predicate_iri_start(&self.reader.decode(e.name()).locate_err_with(&self.reader)?)?;
+            self.predicate_iri_start(self.reader.decode(e.name()).locate_err_with(&self.reader)?)?;
 
         // Fail if the property is among forbidden names.
         if RESERVED_PROPERTY_NAMES.matches(&pred) {
@@ -666,7 +665,7 @@ where
             // try to extract the annotation object
             let k = self
                 .scope()
-                .expand_attribute(&self.reader.decode(a.key).locate_err_with(&self.reader)?)
+                .expand_attribute(self.reader.decode(a.key).locate_err_with(&self.reader)?)
                 .locate_err_with(&self.reader)?;
             let v = a
                 .unescape_and_decode_value(&self.reader)

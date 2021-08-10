@@ -169,6 +169,7 @@ fn str_absolute(txt: &str) -> Absolute {
 }
 
 #[cfg(test)]
+#[allow(clippy::bool_assert_comparison)]
 mod test {
     use super::*;
     use test_case::test_case;

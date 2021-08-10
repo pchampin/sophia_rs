@@ -160,7 +160,7 @@ where
     type Term = U;
     fn constant(&self) -> Option<&U> {
         if self.len() == 1 {
-            Some(&self[0])
+            Some(self[0])
         } else {
             None
         }
@@ -215,7 +215,7 @@ where
     type Term = U;
     fn constant(&self) -> Option<&U> {
         if self.len() == 1 {
-            Some(&self[0])
+            Some(self[0])
         } else {
             None
         }

@@ -54,7 +54,7 @@ mod test {
         let p = TriGParser {
             base: Some("http://localhost/ex".into()),
         };
-        let c = p.parse_str(&trig).add_to_dataset(&mut d)?;
+        let c = p.parse_str(trig).add_to_dataset(&mut d)?;
         assert_eq!(c, 3);
         assert!(d
             .quads_matching(

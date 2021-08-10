@@ -206,7 +206,7 @@ impl Engine {
             return Ok(None);
         }
         //println!("=== --- doing it");
-        let mut obj = self.make_node_object(&s_id, node)?;
+        let mut obj = self.make_node_object(s_id, node)?;
         if root {
             if let Some(ng) = node.get("@graph") {
                 //println!("=== --- @graph for {}", s_id);
@@ -301,7 +301,7 @@ impl Engine {
                             }
                         }
                         if dt == rdf::JSON {
-                            let json_value = json::parse(&txt)?;
+                            let json_value = json::parse(txt)?;
                             obj.insert("@value", json_value);
                             obj.insert("@type", "@json".into());
                         }
@@ -386,7 +386,7 @@ fn is_list_node(node: &HashMap<String, Vec<RdfObject>>) -> bool {
         && (node.len() == 2
             || node
                 .get(RDF_TYPE)
-                .map(|v| v.len() == 1 && v[0].is_node() && v[0].eq_node(&RDF_LIST))
+                .map(|v| v.len() == 1 && v[0].is_node() && v[0].eq_node(RDF_LIST))
                 .unwrap_or(false))
 }
 

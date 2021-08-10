@@ -21,7 +21,7 @@ impl RdfObject {
     pub fn as_str(&self) -> &str {
         match self {
             RdfObject::Literal(lit) => lit.txt().as_ref(),
-            RdfObject::Node(_, id) => &id,
+            RdfObject::Node(_, id) => id,
         }
     }
 }

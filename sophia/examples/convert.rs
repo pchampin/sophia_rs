@@ -97,7 +97,7 @@ fn get_triples(args: &[String]) -> MyTripleSource {
             );
         }
         _ => {
-            exit_printing_usage(&args, "unknown output format", Status::OutputFormat);
+            exit_printing_usage(args, "unknown output format", Status::OutputFormat);
         }
     }
 }
@@ -122,7 +122,7 @@ fn wrap<TS: TripleSource + 'static>(ts: TS) -> MyTripleSource {
 type MyTripleSource = Box<dyn Iterator<Item = Result<[BoxTerm; 3], Infallible>>>;
 
 fn exit_printing_usage(args: &[String], message: &str, status: Status) -> ! {
-    if message.len() > 0 {
+    if message.is_empty() {
         eprintln!("{}", message);
     }
     eprintln!("usage: {} <format-in> <format-out>", args[0]);

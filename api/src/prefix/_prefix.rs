@@ -74,20 +74,20 @@ impl<'a> IsPrefix for Prefix<'a> {}
 
 impl<'a> AsRef<str> for Prefix<'a> {
     fn as_ref(&self) -> &str {
-        &self.0
+        self.0
     }
 }
 
 impl<'a> Borrow<str> for Prefix<'a> {
     fn borrow(&self) -> &str {
-        &self.0
+        self.0
     }
 }
 
 impl<'a> Deref for Prefix<'a> {
     type Target = str;
     fn deref(&self) -> &str {
-        &self.0
+        self.0
     }
 }
 
@@ -194,6 +194,7 @@ impl PartialOrd<PrefixBox> for str {
 pub struct InvalidPrefix(pub String);
 
 #[cfg(test)]
+#[allow(clippy::unused_unit)] // test_case! generated warnings
 mod test {
     use super::*;
     use test_case::test_case;

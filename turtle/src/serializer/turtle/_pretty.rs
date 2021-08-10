@@ -32,7 +32,7 @@ where
     let mut roots = Vec::new();
     let mut anons = HashSet::new();
     for subject in subjects {
-        let (anon, root) = check_anon_root(&graph, &subject, &anon_blacklist);
+        let (anon, root) = check_anon_root(&graph, &subject, anon_blacklist);
         if anon {
             anons.insert(subject.clone());
         }
@@ -206,7 +206,7 @@ impl<'a, W: io::Write> Prettifier<'a, W> {
         if node.kind() == BlankNode {
             self.write_bnode(gd, node, root)
         } else {
-            super::write_term(&mut self.write, node, &self.config, false)
+            super::write_term(&mut self.write, node, self.config, false)
         }
     }
 
@@ -265,7 +265,7 @@ impl<'a, W: io::Write> Prettifier<'a, W> {
         for obj in &objects[1..] {
             self.write_bytes(b",")?;
             self.write_newline()?;
-            self.write_term(gd, &obj, false)?;
+            self.write_term(gd, obj, false)?;
         }
         Ok(())
     }

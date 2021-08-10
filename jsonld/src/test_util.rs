@@ -188,7 +188,7 @@ pub fn perform_from_rdf(test: &Test, verbose: bool) -> TestResult {
     if test.positive() {
         let exp = test.expected_json();
         match ser.serialize_dataset(&test.input_dataset()) {
-            Ok(got) if jsonld_cmp(&got.as_json(), &exp, "") => {
+            Ok(got) if jsonld_cmp(got.as_json(), &exp, "") => {
                 if verbose {
                     println!("PASS");
                 }

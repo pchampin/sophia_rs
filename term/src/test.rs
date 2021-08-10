@@ -23,7 +23,7 @@ fn iri() {
         assert_eq!(s1, exp);
         assert_eq!(s2, exp);
     } else {
-        assert!(false, "Should have returned Iri(_)");
+        panic!("Should have returned Iri(_)");
     }
     let res = RefTerm::new_iri("1://champin.net/");
     assert!(res.is_err());
@@ -43,7 +43,7 @@ fn iri2() {
         assert_eq!(s1, exp);
         assert_eq!(s2, exp);
     } else {
-        assert!(false, "Should have returned Iri(_)");
+        panic!("Should have returned Iri(_)");
     }
     let res = RefTerm::new_iri_suffixed("1://champin.net/", "pa");
     assert!(res.is_err());
@@ -140,7 +140,7 @@ fn iri_normalized_last_gen_delim() {
             "ê",
         ),
     ] {
-        let i1 = if sf1.len() == 0 {
+        let i1 = if sf1.is_empty() {
             BoxTerm::new_iri(*ns1).unwrap()
         } else {
             BoxTerm::new_iri_suffixed(*ns1, *sf1).unwrap()
@@ -149,7 +149,7 @@ fn iri_normalized_last_gen_delim() {
         assert_eq!(i1, i2);
         if let Iri(i2) = i2 {
             assert_eq!(&i2.ns[..], *ns2);
-            let sf2 = if sf2.len() == 0 { None } else { Some(*sf2) };
+            let sf2 = if sf2.is_empty() { None } else { Some(*sf2) };
             assert_eq!(i2.suffix.as_ref().map(AsRef::as_ref), sf2);
         }
     }
@@ -326,8 +326,8 @@ fn literal_eq_different_case() {
 fn literal_similar_but_not_eq() {
     let l1 = RefTerm::new_literal_lang("42", "en").unwrap();
     let l2 = RefTerm::new_literal_lang("42", "en-us").unwrap();
-    let l3 = RefTerm::new_literal_dt("42", xsd::string.clone()).unwrap();
-    let l4 = RefTerm::new_literal_dt("42", xsd::integer.clone()).unwrap();
+    let l3 = RefTerm::new_literal_dt("42", xsd::string).unwrap();
+    let l4 = RefTerm::new_literal_dt("42", xsd::integer).unwrap();
     assert_ne!(l1, l2);
     assert_ne!(h(&l1), h(&l2));
     assert_ne!(l1, l3);
@@ -371,7 +371,7 @@ fn literal_normalized_last_gen_delim() {
         ("tag:foo", "", "tag:", "foo"),
         ("tag:", "foo", "tag:", "foo"),
     ] {
-        let dt = if sf1.len() == 0 {
+        let dt = if sf1.is_empty() {
             BoxTerm::new_iri(*ns1).unwrap()
         } else {
             BoxTerm::new_iri_suffixed(*ns1, *sf1).unwrap()
@@ -381,8 +381,8 @@ fn literal_normalized_last_gen_delim() {
         assert_eq!(l1, l2);
         if let Literal(l2) = l2 {
             let i2 = l2.dt();
-            assert_eq!(&i2.ns[..], *ns2);
-            let sf2 = if sf2.len() == 0 { None } else { Some(*sf2) };
+            assert_eq!(i2.ns, *ns2);
+            let sf2 = if sf2.is_empty() { None } else { Some(*sf2) };
             assert_eq!(i2.suffix, sf2);
         }
     }
@@ -480,9 +480,9 @@ fn map() {
 fn map_into() {
     let t1 = StaticTerm::new_iri("http://champin.net/#pa").unwrap();
     let t2 = t1.map_into::<Box<str>>();
-    let _3 = t2.clone().map_into::<Rc<str>>();
-    let _4 = t2.clone().map_into::<Arc<str>>();
-    let _5 = t2.map_into::<String>();
+    let _ = t2.clone().map_into::<Rc<str>>();
+    let _ = t2.clone().map_into::<Arc<str>>();
+    let _ = t2.map_into::<String>();
 }
 
 #[test]
@@ -491,7 +491,7 @@ fn convert() {
     let t2 = t1.clone_into::<Box<str>>();
     let t3 = t2.clone_into::<Rc<str>>();
     let t4 = t3.clone_into::<Arc<str>>();
-    let _5 = t4.clone_into::<&str>();
+    let _ = t4.clone_into::<&str>();
 }
 
 pub(crate) const POSITIVE_1CHAR_IDS: &[&str] = &[

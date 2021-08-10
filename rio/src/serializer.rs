@@ -34,7 +34,7 @@ where
                     NamedNode { iri: &bufs }.into()
                 }
                 TermKind::BlankNode => BlankNode {
-                    id: &term.value_raw().0,
+                    id: term.value_raw().0,
                 }
                 .into(),
                 _ => return Ok(()), // non standard subject, skip this triple
@@ -58,7 +58,7 @@ where
                     NamedNode { iri: &bufo }.into()
                 }
                 TermKind::BlankNode => BlankNode {
-                    id: &term.value_raw().0,
+                    id: term.value_raw().0,
                 }
                 .into(),
                 TermKind::Literal => match term.language() {
@@ -66,20 +66,20 @@ where
                         let datatype = term.datatype().unwrap();
                         if datatype == xsd::string {
                             Literal::Simple {
-                                value: &term.value_raw().0,
+                                value: term.value_raw().0,
                             }
                             .into()
                         } else {
                             bufd = datatype.value().to_string();
                             Literal::Typed {
-                                value: &term.value_raw().0,
+                                value: term.value_raw().0,
                                 datatype: NamedNode { iri: &bufd },
                             }
                             .into()
                         }
                     }
                     Some(tag) => Literal::LanguageTaggedString {
-                        value: &term.value_raw().0,
+                        value: term.value_raw().0,
                         language: tag,
                     }
                     .into(),
@@ -122,7 +122,7 @@ where
                     NamedNode { iri: &bufs }.into()
                 }
                 TermKind::BlankNode => BlankNode {
-                    id: &term.value_raw().0,
+                    id: term.value_raw().0,
                 }
                 .into(),
                 _ => return Ok(()), // non standard subject, skip this triple
@@ -146,7 +146,7 @@ where
                     NamedNode { iri: &bufo }.into()
                 }
                 TermKind::BlankNode => BlankNode {
-                    id: &term.value_raw().0,
+                    id: term.value_raw().0,
                 }
                 .into(),
                 TermKind::Literal => match term.language() {
@@ -154,20 +154,20 @@ where
                         let datatype = term.datatype().unwrap();
                         if datatype == xsd::string {
                             Literal::Simple {
-                                value: &term.value_raw().0,
+                                value: term.value_raw().0,
                             }
                             .into()
                         } else {
                             bufd = datatype.value().to_string();
                             Literal::Typed {
-                                value: &term.value_raw().0,
+                                value: term.value_raw().0,
                                 datatype: NamedNode { iri: &bufd },
                             }
                             .into()
                         }
                     }
                     Some(tag) => Literal::LanguageTaggedString {
-                        value: &term.value_raw().0,
+                        value: term.value_raw().0,
                         language: tag,
                     }
                     .into(),
@@ -184,7 +184,7 @@ where
                 }
                 TermKind::BlankNode => Some(
                     BlankNode {
-                        id: &term.value_raw().0,
+                        id: term.value_raw().0,
                     }
                     .into(),
                 ),

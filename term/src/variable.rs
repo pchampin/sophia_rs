@@ -268,6 +268,7 @@ impl<'a, TD: TermData + 'a> std::borrow::Borrow<dyn TTerm + 'a> for Variable<TD>
 }
 
 #[cfg(test)]
+#[allow(clippy::bool_assert_comparison)] // test_case! generated warnings
 mod test {
     use super::*;
     use test_case::test_case;

@@ -83,6 +83,7 @@ where
 }
 
 #[cfg(test)]
+#[allow(clippy::bool_assert_comparison, clippy::unused_unit)] // test_case! generated warnings
 mod test {
     use super::super::Prefix;
     use super::*;

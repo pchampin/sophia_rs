@@ -137,7 +137,7 @@ pub(crate) mod test {
     use sophia_term::*;
     use std::error::Error;
 
-    const TESTS: &'static [&str] = &[
+    const TESTS: &[&str] = &[
         "#empty trig",
         r#"# simple quads
             PREFIX : <http://example.org/ns/>

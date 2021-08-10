@@ -346,17 +346,17 @@ where
                 if let (Some(tag1), Some(tag2)) = (tag1, tag2) {
                     tag1.to_uppercase()
                         .cmp(&tag2.to_uppercase())
-                        .then_with(|| v1.0.cmp(&v2.0))
+                        .then_with(|| v1.0.cmp(v2.0))
                 } else {
                     let dt1 = t1.datatype().unwrap();
                     let dt2 = t2.datatype().unwrap();
                     dt1.value_raw()
                         .bytes()
                         .cmp(dt2.value_raw().bytes())
-                        .then_with(|| v1.0.cmp(&v2.0))
+                        .then_with(|| v1.0.cmp(v2.0))
                 }
             }
-            _ => v1.0.cmp(&v2.0),
+            _ => v1.0.cmp(v2.0),
         }
     })
 }
@@ -371,7 +371,7 @@ where
     match term.kind() {
         Iri => {
             w.write_char('<')?;
-            w.write_str(&v.0)?;
+            w.write_str(v.0)?;
             if let Some(suffix) = v.1 {
                 w.write_str(suffix)?;
             }

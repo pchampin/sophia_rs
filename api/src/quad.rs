@@ -128,15 +128,15 @@ where
     type Term = T::Term;
     #[inline]
     fn s(&self) -> &Self::Term {
-        &self.0.s()
+        self.0.s()
     }
     #[inline]
     fn p(&self) -> &Self::Term {
-        &self.0.p()
+        self.0.p()
     }
     #[inline]
     fn o(&self) -> &Self::Term {
-        &self.0.o()
+        self.0.o()
     }
     #[inline]
     fn g(&self) -> Option<&Self::Term> {

@@ -278,7 +278,7 @@ mod test {
     #[test_case("-10"       => Ok(-10)                ; "minus ten")]
     #[test_case("10"        => Ok(10)                 ; "ten")]
     #[test_case("1000000"   => Err(Failed::InvLexVal) ; "million")]
-    #[test_case("314e-2"    => Err(Failed::InvLexVal) ; "float")]
+    #[test_case("123e-2"    => Err(Failed::InvLexVal) ; "float")]
     #[test_case("true"      => Err(Failed::InvLexVal) ; "bool")]
     #[test_case("something" => Err(Failed::InvLexVal) ; "string")]
     fn convert_i8(lex: &str) -> Result<i8, Failed> {
@@ -294,7 +294,7 @@ mod test {
     #[test_case("-10"       => Ok(-10)                ; "minus ten")]
     #[test_case("10"        => Ok(10)                 ; "ten")]
     #[test_case("1000000"   => Err(Failed::InvLexVal) ; "million")]
-    #[test_case("314e-2"    => Err(Failed::InvLexVal) ; "float")]
+    #[test_case("123e-2"    => Err(Failed::InvLexVal) ; "float")]
     #[test_case("true"      => Err(Failed::InvLexVal) ; "bool")]
     #[test_case("something" => Err(Failed::InvLexVal) ; "string")]
     fn convert_i16(lex: &str) -> Result<i16, Failed> {
@@ -310,7 +310,7 @@ mod test {
     #[test_case("-10"       => Ok(-10)                ; "minus ten")]
     #[test_case("10"        => Ok(10)                 ; "ten")]
     #[test_case("1000000"   => Ok(1000000)            ; "million")]
-    #[test_case("314e-2"    => Err(Failed::InvLexVal) ; "float")]
+    #[test_case("123e-2"    => Err(Failed::InvLexVal) ; "float")]
     #[test_case("true"      => Err(Failed::InvLexVal) ; "bool")]
     #[test_case("something" => Err(Failed::InvLexVal) ; "string")]
     fn convert_i32(lex: &str) -> Result<i32, Failed> {
@@ -326,7 +326,7 @@ mod test {
     #[test_case("-10"       => Ok(-10)                ; "minus ten")]
     #[test_case("10"        => Ok(10)                 ; "ten")]
     #[test_case("1000000"   => Ok(1000000)            ; "million")]
-    #[test_case("314e-2"    => Err(Failed::InvLexVal) ; "float")]
+    #[test_case("123e-2"    => Err(Failed::InvLexVal) ; "float")]
     #[test_case("true"      => Err(Failed::InvLexVal) ; "bool")]
     #[test_case("something" => Err(Failed::InvLexVal) ; "string")]
     fn convert_i64(lex: &str) -> Result<i64, Failed> {
@@ -342,7 +342,7 @@ mod test {
     #[test_case("-10"       => Err(Failed::InvLexVal) ; "minus ten")]
     #[test_case("10"        => Ok(10)                 ; "ten")]
     #[test_case("1000000"   => Err(Failed::InvLexVal) ; "million")]
-    #[test_case("314e-2"    => Err(Failed::InvLexVal) ; "float")]
+    #[test_case("123e-2"    => Err(Failed::InvLexVal) ; "float")]
     #[test_case("true"      => Err(Failed::InvLexVal) ; "bool")]
     #[test_case("something" => Err(Failed::InvLexVal) ; "string")]
     fn convert_u8(lex: &str) -> Result<u8, Failed> {
@@ -358,7 +358,7 @@ mod test {
     #[test_case("-10"       => Err(Failed::InvLexVal) ; "minus ten")]
     #[test_case("10"        => Ok(10)                 ; "ten")]
     #[test_case("1000000"   => Err(Failed::InvLexVal) ; "million")]
-    #[test_case("314e-2"    => Err(Failed::InvLexVal) ; "float")]
+    #[test_case("123e-2"    => Err(Failed::InvLexVal) ; "float")]
     #[test_case("true"      => Err(Failed::InvLexVal) ; "bool")]
     #[test_case("something" => Err(Failed::InvLexVal) ; "string")]
     fn convert_u16(lex: &str) -> Result<u16, Failed> {
@@ -374,7 +374,7 @@ mod test {
     #[test_case("-10"       => Err(Failed::InvLexVal) ; "minus ten")]
     #[test_case("10"        => Ok(10)                 ; "ten")]
     #[test_case("1000000"   => Ok(1000000)            ; "million")]
-    #[test_case("314e-2"    => Err(Failed::InvLexVal) ; "float")]
+    #[test_case("123e-2"    => Err(Failed::InvLexVal) ; "float")]
     #[test_case("true"      => Err(Failed::InvLexVal) ; "bool")]
     #[test_case("something" => Err(Failed::InvLexVal) ; "string")]
     fn convert_u32(lex: &str) -> Result<u32, Failed> {
@@ -390,7 +390,7 @@ mod test {
     #[test_case("-10"       => Err(Failed::InvLexVal) ; "minus ten")]
     #[test_case("10"        => Ok(10)                 ; "ten")]
     #[test_case("1000000"   => Ok(1000000)            ; "million")]
-    #[test_case("314e-2"    => Err(Failed::InvLexVal) ; "float")]
+    #[test_case("123e-2"    => Err(Failed::InvLexVal) ; "float")]
     #[test_case("true"      => Err(Failed::InvLexVal) ; "bool")]
     #[test_case("something" => Err(Failed::InvLexVal) ; "string")]
     fn convert_u64(lex: &str) -> Result<u64, Failed> {
@@ -406,7 +406,7 @@ mod test {
     #[test_case("-10"       => Ok(-10.0)              ; "minus ten")]
     #[test_case("10"        => Ok(10.0)               ; "ten")]
     #[test_case("1000000"   => Ok(1000000.0)          ; "million")]
-    #[test_case("314e-2"    => Ok(3.14)               ; "float")]
+    #[test_case("123e-2"    => Ok(1.23)               ; "float")]
     #[test_case("true"      => Err(Failed::InvLexVal) ; "bool")]
     #[test_case("something" => Err(Failed::InvLexVal) ; "string")]
     fn convert_f32(lex: &str) -> Result<f32, Failed> {
@@ -422,7 +422,7 @@ mod test {
     #[test_case("-10"       => Ok(-10.0)              ; "minus ten")]
     #[test_case("10"        => Ok(10.0)               ; "ten")]
     #[test_case("1000000"   => Ok(1000000.0)          ; "million")]
-    #[test_case("314e-2"    => Ok(3.14)               ; "float")]
+    #[test_case("123e-2"    => Ok(1.23)               ; "float")]
     #[test_case("true"      => Err(Failed::InvLexVal) ; "bool")]
     #[test_case("something" => Err(Failed::InvLexVal) ; "string")]
     fn convert_f64(lex: &str) -> Result<f64, Failed> {
@@ -438,7 +438,7 @@ mod test {
     #[test_case("-10"       => Err(Failed::InvLexVal) ; "minus ten")]
     #[test_case("10"        => Err(Failed::InvLexVal) ; "ten")]
     #[test_case("1000000"   => Err(Failed::InvLexVal) ; "million")]
-    #[test_case("314e-2"    => Err(Failed::InvLexVal) ; "float")]
+    #[test_case("123e-2"    => Err(Failed::InvLexVal) ; "float")]
     #[test_case("true"      => Ok(true)               ; "bool")]
     #[test_case("something" => Err(Failed::InvLexVal) ; "string")]
     fn convert_bool(lex: &str) -> Result<bool, Failed> {
@@ -454,7 +454,7 @@ mod test {
     #[test_case("-10"       => Ok("-10"      .to_string()) ; "minus ten")]
     #[test_case("10"        => Ok("10"       .to_string()) ; "ten")]
     #[test_case("1000000"   => Ok("1000000"  .to_string()) ; "million")]
-    #[test_case("314e-2"    => Ok("314e-2"   .to_string()) ; "float")]
+    #[test_case("123e-2"    => Ok("123e-2"   .to_string()) ; "float")]
     #[test_case("true"      => Ok("true"     .to_string()) ; "bool")]
     #[test_case("something" => Ok("something".to_string()) ; "string")]
     fn convert_string(lex: &str) -> Result<String, Failed> {

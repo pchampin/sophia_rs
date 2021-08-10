@@ -10,7 +10,7 @@ use lazy_static::lazy_static;
 type BoxTerm = TestTerm<Box<str>>;
 type StaticTerm = TestTerm<&'static str>;
 
-pub const NS: &'static str = "http://example.org/";
+pub const NS: &str = "http://example.org/";
 lazy_static! {
     pub static ref ALICE: StaticTerm = StaticTerm::iri2(NS, "alice");
     pub static ref BOB: StaticTerm = StaticTerm::iri2(NS, "bob");
@@ -34,9 +34,9 @@ fn make_dataset() -> Vec<[StaticTerm; 4]> {
 
 fn map_term(t: &StaticTerm) -> StaticTerm {
     if t == &ALICE as &StaticTerm {
-        CHARLIE.clone()
+        *CHARLIE
     } else {
-        t.clone()
+        *t
     }
 }
 

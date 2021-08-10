@@ -468,15 +468,15 @@ mod test {
     }
 
     /// A DatasetAsGraph wrapped as a graph so that we can test it
-    type GDG =
+    type Gdg =
         DatasetGraph<GraphAsDataset<MyGraph>, GraphAsDataset<MyGraph>, Option<&'static StaticTerm>>;
 
-    fn make_gdg<TS: TripleSource>(ts: TS) -> Result<GDG, Infallible> {
+    fn make_gdg<TS: TripleSource>(ts: TS) -> Result<Gdg, Infallible> {
         Ok(DatasetGraph::new(
             ts.collect_triples::<MyGraph>().unwrap().into_dataset(),
             None,
         ))
     }
 
-    crate::test_immutable_graph_impl!(gdg, GDG, true, true, make_gdg);
+    crate::test_immutable_graph_impl!(gdg, Gdg, true, true, make_gdg);
 }

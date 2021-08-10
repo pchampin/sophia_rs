@@ -52,7 +52,7 @@ mod test {
 
         let mut d = FastDataset::new();
         let p = GTriGParser { base: None };
-        let c = p.parse_str(&gtrig).add_to_dataset(&mut d)?;
+        let c = p.parse_str(gtrig).add_to_dataset(&mut d)?;
         assert_eq!(c, 3);
         assert!(d
             .quads_matching(

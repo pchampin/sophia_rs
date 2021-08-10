@@ -383,7 +383,7 @@ pub(crate) mod test {
         }
     }
 
-    const TESTS: &'static [&str] = &[
+    const TESTS: &[&str] = &[
         "#empty ttl",
         r#"# simple triple
             PREFIX : <http://example.org/ns/>
