@@ -58,9 +58,9 @@ impl<'a> Prefix<'a> {
     /// Build new `Prefix` from `str`, checking that it is valid.
     pub fn new(prefix: &'a str) -> Result<Self, InvalidPrefix> {
         if is_valid_prefix(prefix) {
-            Err(InvalidPrefix(prefix.to_string()))
-        } else {
             Ok(Prefix(prefix))
+        } else {
+            Err(InvalidPrefix(prefix.to_string()))
         }
     }
 
@@ -134,9 +134,9 @@ impl PrefixBox {
     /// as this will wait until the data is checked to allocate it.
     pub fn new(prefix: Box<str>) -> Result<Self, InvalidPrefix> {
         if is_valid_prefix(&prefix) {
-            Err(InvalidPrefix(prefix.to_string()))
-        } else {
             Ok(PrefixBox(prefix))
+        } else {
+            Err(InvalidPrefix(prefix.to_string()))
         }
     }
 }
@@ -205,6 +205,8 @@ mod test {
     #[test_case("é.hê"; "with dot and accents")]
     fn valid_prefix(p: &str) {
         assert!(is_valid_prefix(p));
+        assert!(Prefix::new(p).is_ok());
+        assert!(PrefixBox::new(p.into()).is_ok());
     }
 
     #[test_case(" "; "space")]
@@ -212,5 +214,7 @@ mod test {
     #[test_case("a."; "ending with dot")]
     fn invalid_prefix(p: &str) {
         assert!(!is_valid_prefix(p));
+        assert!(Prefix::new(p).is_err());
+        assert!(PrefixBox::new(p.into()).is_err());
     }
 }
