@@ -2,7 +2,7 @@
 name = "sophia_rio"
 version = "0.7.0"
 authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
-edition = "2018"
+edition = "2021"
 description = "A Rust toolkit for RDF and Linked Data - Common code for Rio adapters"
 repository = "https://github.com/pchampin/sophia_rs"
 documentation = "https://docs.rs/sophia_rio"
