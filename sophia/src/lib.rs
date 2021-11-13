@@ -27,36 +27,42 @@
 //! back.
 //!
 //! ```
+//! extern crate sophia;
+//! 
 //! use sophia::graph::{*, inmem::FastGraph};
 //! use sophia::ns::Namespace;
 //! use sophia::parser::turtle;
 //! use sophia::serializer::*;
 //! use sophia::serializer::nt::NtSerializer;
 //! use sophia::triple::stream::TripleSource;
-//!
-//! let example = r#"
-//!     @prefix : <http://example.org/>.
-//!     @prefix foaf: <http://xmlns.com/foaf/0.1/>.
-//!
-//!     :alice foaf:name "Alice";
-//!            foaf:mbox <mailto:alice@work.example> .
-//!
-//!     :bob foaf:name "Bob".
-//! "#;
-//! let mut graph: FastGraph = turtle::parse_str(example).collect_triples()?;
-//!
-//! let ex = Namespace::new("http://example.org/")?;
-//! let foaf = Namespace::new("http://xmlns.com/foaf/0.1/")?;
-//! graph.insert(
-//!     &ex.get("bob")?,
-//!     &foaf.get("knows")?,
-//!     &ex.get("alice")?,
-//! )?;
-//!
-//! let mut nt_stringifier = NtSerializer::new_stringifier();
-//! let example2 = nt_stringifier.serialize_graph(&mut graph)?.as_str();
-//! println!("The resulting graph\n{}", example2);
-//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! 
+//! fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! 
+//!     let example = r#"
+//!         @prefix : <http://example.org/>.
+//!         @prefix foaf: <http://xmlns.com/foaf/0.1/>.
+//! 
+//!         :alice foaf:name "Alice";
+//!             foaf:mbox <mailto:alice@work.example> .
+//! 
+//!         :bob foaf:name "Bob".
+//!     "#;
+//!     let mut graph: FastGraph = turtle::parse_str(example).collect_triples()?;
+//! 
+//!     let ex = Namespace::new("http://example.org/")?;
+//!     let foaf = Namespace::new("http://xmlns.com/foaf/0.1/")?;
+//!     graph.insert(
+//!         &ex.get("bob")?,
+//!         &foaf.get("knows")?,
+//!         &ex.get("alice")?,
+//!     )?;
+//! 
+//!     let mut nt_stringifier = NtSerializer::new_stringifier();
+//!     let example2 = nt_stringifier.serialize_graph(&mut graph)?.as_str();
+//!     println!("The resulting graph\n{}", example2);
+//! 
+//!     Ok::<(), Box<dyn std::error::Error>>(())
+//! }
 //! ```
 
 #![deny(missing_docs)]
