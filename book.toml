@@ -9,3 +9,6 @@ title = "Sophia"
 [build]
 build-dir = "./book/out"
 create-missing = false
+
+[output.html]
+git-repository-url = "https://github.com/pchampin/sophia_rs"
