@@ -401,13 +401,11 @@ pub(crate) mod test {
             _:a rdf:first 42, 43; rdf:rest (44 45).
             _:b rdf:first 42; rdf:rest (43), (44).
         "#,
-        /* broken due to a bug in Rio
         r#"# bnode cycles
         PREFIX : <http://example.org/ns/>
         _:a :n "a"; :p [ :q [ :r _:a ]].
         _:b :n "b"; :s [ :s _:b ].
         "#,
-        */
     ];
 
     #[test]

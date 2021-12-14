@@ -16,8 +16,8 @@ keywords = ["rdf", "linked-data", "semantic-web"]
 lazy_static = { version = "1.4.0" }
 oxiri = "0.1.1"
 regex = { version = "1.4.2" }
-rio_api = { version = "0.6.0", features = ["generalized"] }
-rio_turtle = { version = "0.6.0", features = ["generalized"] }
+rio_api = { version = "0.6.1", features = ["generalized"] }
+rio_turtle = { version = "0.6.1", features = ["generalized"] }
 sophia_api = { version = "0.7.0", path = "../api" }
 sophia_indexed = { version = "0.7.0", path = "../indexed" }
 sophia_inmem = { version = "0.7.0", path = "../inmem" }

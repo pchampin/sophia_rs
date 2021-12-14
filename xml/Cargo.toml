@@ -14,7 +14,7 @@ keywords = ["rdf", "linked-data", "semantic-web"]
 
 [dependencies]
 oxiri = "0.1.1"
-rio_xml = "0.6.0"
+rio_xml = "0.6.1"
 sophia_api = { version = "0.7.0", path = "../api" }
 sophia_rio = { version = "0.7.0", path = "../rio" }
 

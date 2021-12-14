@@ -15,6 +15,6 @@ keywords = ["rdf", "linked-data", "semantic-web"]
 
 [dependencies]
 sophia_api = { version = "0.7.0", path = "../api" }
-rio_api = { version = "0.6.0", features = ["generalized"] }
+rio_api = { version = "0.6.1", features = ["generalized"] }
 
 [dev-dependencies]
