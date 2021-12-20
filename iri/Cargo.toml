@@ -21,6 +21,13 @@ mownstr = "0.1.1"
 regex = "1.4.2"
 thiserror = "1.0.20"
 
+[dev-dependencies]
+criterion = "0.3"
+
 [features]
 default = []
 test_data = []
+
+[[bench]]
+name = "bench1"
+harness = false
