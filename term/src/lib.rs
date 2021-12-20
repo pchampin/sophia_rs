@@ -1,6 +1,5 @@
 //! This crate is part of [Sophia],
 //! an [RDF] and [Linked Data] toolkit in Rust.
-
 //!
 //! Terms are the building blocks of an [RDF] graph.
 //! There are four types of terms: IRIs, blank nodes (BNode for short),

@@ -6,7 +6,7 @@ use std::borrow::Borrow;
 /// (i.e. absolute or relative, with an optional fragment identifier)
 pub trait IsIriRef: Borrow<str> {}
 
-/// /// Marker trait guaranteeing that the underlying `str` is a valid IRI-reference
+/// Marker trait guaranteeing that the underlying `str` is a valid IRI-reference
 /// (i.e. absolute, with an optional fragment identifier)
 pub trait IsIri: IsIriRef {}
 

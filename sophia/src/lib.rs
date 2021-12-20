@@ -1,4 +1,4 @@
-//! This crate aims to provide a comprehensive toolkit
+//! This meta-crate aims to provide a comprehensive toolkit
 //! for working with [RDF] and [Linked Data] in Rust.
 //!
 //! RDF is a data model
