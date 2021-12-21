@@ -1,6 +1,6 @@
 [package]
 name = "sophia_api"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
 edition = "2021"
 description = "A Rust toolkit for RDF and Linked Data - Core API"
@@ -21,7 +21,7 @@ default = []
 test_macro = []
 
 [dependencies]
-sophia_iri = { version = "0.7.0", path = "../iri" }
+sophia_iri = { version = "0.7.1", path = "../iri" }
 lazy_static = "1.4.0"
 mownstr = "0.1.3"
 regex = "1.5.4"
@@ -29,6 +29,6 @@ resiter = "0.4.0"
 thiserror = "1.0.30"
 
 [dev-dependencies]
-sophia_iri = { version = "0.7.0", path = "../iri", features = ["test_data"] }
+sophia_iri = { version = "0.7.1", path = "../iri", features = ["test_data"] }
 sophia_term = { version = "0.*", path = "../term" }
 test-case = "1.2.1"

@@ -1,3 +1,11 @@
+0.7.1
+    Bug fixes
+    - prefix validation was working backward
+    Documentation
+    - minor improvement of documentation and book
+    Dev
+    - migrated from Travis to Github CI
+
 0.7.0
     New features
     - new API for SPARQL

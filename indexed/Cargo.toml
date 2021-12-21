@@ -1,6 +1,6 @@
 [package]
 name = "sophia_indexed"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
 edition = "2021"
 description = "A Rust toolkit for RDF and Linked Data - Utility traits and functions for index-based implementations of graphs and datasets"
@@ -13,7 +13,7 @@ keywords = ["rdf", "linked-data", "semantic-web"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sophia_api = { version = "0.7.0", path = "../api" }
-sophia_term = { version = "0.7.0", path = "../term" }
+sophia_api = { version = "0.7.1", path = "../api" }
+sophia_term = { version = "0.7.1", path = "../term" }
 
 [dev-dependencies]
