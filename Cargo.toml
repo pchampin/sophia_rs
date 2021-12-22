@@ -1,16 +1,16 @@
 [workspace]
 
 members = [
-    "api",
-    "indexed",
-    "inmem",
+    #"api",
+    #"indexed",
+    #"inmem",
     "iri",
-    "rio",
-    "sophia",
-    "term",
-    "turtle",
-    "jsonld",
-    "xml",
+    #"rio",
+    #"sophia",
+    #"term",
+    #"turtle",
+    #"jsonld",
+    #"xml",
 ]
 
 [profile.release]

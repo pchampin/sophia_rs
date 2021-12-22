@@ -17,7 +17,7 @@ all-features = true
 
 [dependencies]
 lazy_static = "1.4.0"
-mownstr = "0.1.3"
+oxiri = { git="https://github.com/oxigraph/oxiri", rev="3191bed" }
 regex = "1.5.4"
 thiserror = "1.0.30"
 
@@ -27,6 +27,7 @@ criterion = "0.3.5"
 [features]
 default = []
 test_data = []
+examples = []
 
 [[bench]]
 name = "bench1"

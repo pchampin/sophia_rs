@@ -16,13 +16,13 @@ fn parse(c: &mut Criterion) {
             b.iter(|| {
                 for _ in 0..42 {
                     for iri in i.0 {
-                        black_box(IriParsed::new(iri).is_ok());
+                        black_box(BaseIriRef::new(*iri).is_ok());
                     }
                     for iri in i.1 {
-                        black_box(IriParsed::new(iri).is_err());
+                        black_box(BaseIriRef::new(*iri).is_err());
                     }
                     for (iri, _) in i.2 {
-                        black_box(IriParsed::new(iri).is_ok());
+                        black_box(BaseIriRef::new(*iri).is_ok());
                     }
                 }
             })
@@ -38,9 +38,8 @@ fn resolve_from_scratch(c: &mut Criterion) {
             b.iter(|| {
                 for _ in 0..42 {
                     for (rel, _) in i {
-                        let base = IriParsed::new("http://a/b/c/d;p?q").unwrap();
-                        let rel = IriParsed::new(rel).unwrap();
-                        black_box(&base.join(&rel));
+                        let base = BaseIriRef::new("http://a/b/c/d;p?q").unwrap();
+                        black_box(&base.resolve(*rel).unwrap());
                     }
                 }
             })
@@ -51,13 +50,12 @@ fn resolve_from_scratch(c: &mut Criterion) {
 fn resolve_mutualized(c: &mut Criterion) {
     c.bench_with_input(
         BenchmarkId::new("resolve mutualized", ""),
-        black_box(&(IriParsed::new("http://a/b/c/d;p?q").unwrap(), RELATIVE_IRIS)),
+        black_box(&(BaseIri::new("http://a/b/c/d;p?q").unwrap(), RELATIVE_IRIS)),
         |b, i| {
             b.iter(|| {
                 for _ in 0..42 {
                     for (rel, _) in i.1 {
-                        let rel = IriParsed::new(rel).unwrap();
-                        black_box(i.0.join(&rel));
+                        black_box(i.0.resolve(*rel).unwrap());
                     }
                 }
             })

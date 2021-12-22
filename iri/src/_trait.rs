@@ -13,11 +13,11 @@ pub trait IsIri: IsIriRef {}
 /// Automatic trait for [`IsIriRef`], providing cheap conversion to [`IriRef`].
 pub trait AsIriRef {
     /// Extract an [`IriRef`] wrapping the underlying `str`.
-    fn as_iri_ref(&self) -> IriRef;
+    fn as_iri_ref(&self) -> IriRef<&str>;
 }
 
 impl<T: IsIriRef> AsIriRef for T {
-    fn as_iri_ref(&self) -> IriRef {
+    fn as_iri_ref(&self) -> IriRef<&str> {
         IriRef::new_unchecked(self.borrow())
     }
 }
@@ -25,11 +25,11 @@ impl<T: IsIriRef> AsIriRef for T {
 /// Automatic trait for [`IsIri`], providing cheap conversion to [`Iri`].
 pub trait AsIri {
     /// Extract an [`Iri`] wrapping the underlying `str`.
-    fn as_iri(&self) -> Iri;
+    fn as_iri(&self) -> Iri<&str>;
 }
 
 impl<T: IsIri> AsIri for T {
-    fn as_iri(&self) -> Iri {
+    fn as_iri(&self) -> Iri<&str> {
         Iri::new_unchecked(self.borrow())
     }
 }

@@ -1,266 +1,275 @@
 //! Implementation of IRI resolution as per
 //! [\[RFC 3987\]](https://tools.ietf.org/html/rfc3987).
+//!
+//! This module is based on <https://docs.rs/oxiri/>.
+//!
+//! NB: compared to [`Iri`](crate::Iri) and [`IriRef`](crate::IriRef),
+//! [`BaseIri`] and [`BaseIriRef`] are slower to build,
+//! because they analyse the internal structure of the IRI,
+//! in order to allow for efficient resolution of relative IRIs.
 
-use super::{error::*, *};
-use mownstr::MownStr;
-use std::fmt;
+use super::{Iri, IriRef, IsIri, IsIriRef};
+use std::borrow::Borrow;
+use std::ops::Deref;
 
-/// Resolve some kind of IRI with `self` as the base.
-pub trait Resolve<S, T> {
-    /// Resolve relative IRI(s) somewhat contained in `other` with `self` as
-    /// the base IRI.
-    fn resolve(&self, other: S) -> T;
-}
+pub use oxiri::IriParseError;
+use oxiri::{Iri as Oxiri, IriRef as OxiriRef};
 
-/// Keeps track of the different components of an IRI reference.
-///
-/// NB: this type does not store the actual text of the IRI reference,
-/// it borrows it from one (or possibly several) external `str`s.
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct IriParsed<'a> {
-    scheme: Option<&'a str>,
-    authority: Option<&'a str>,
-    /// NB: path complies with the following rules:
-    /// - does not contain the separators ('/')
-    /// - its first element is "" if the path starts with '/'
-    /// - its last element is "" if the path ends with a '/'
-    path: Vec<&'a str>,
-    query: Option<&'a str>,
-    fragment: Option<&'a str>,
-}
+/// A `BaseIri` is an absolute IRI against which relative IRIs can be resolved.
+/// It stores the internal structure of the IRI,
+/// to allow for efficient resolution of relative IRIs against itself.
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct BaseIri<T>(Oxiri<T>);
 
-impl<'a> IriParsed<'a> {
-    /// Parse the given `str` as an IRI reference,
-    /// and return its inner structure (or fail with a `TermError`).
-    pub fn new(txt: &'a str) -> Result<IriParsed<'a>> {
-        let mut pi = IriParsed::default();
-        let path: Option<&str>;
-        if let Some(cap) = IRI_REGEX.captures(txt) {
-            pi.scheme = cap.get(1).map(|m| m.as_str());
-            pi.authority = cap.get(2).map(|m| m.as_str());
-            pi.query = cap.get(6).map(|m| m.as_str());
-            pi.fragment = cap.get(7).map(|m| m.as_str());
-            path = cap
-                .get(3)
-                .or_else(|| cap.get(4))
-                .or_else(|| cap.get(5))
-                .map(|m| m.as_str())
-                .filter(|s| !s.is_empty());
-        } else if let Some(cap) = IRELATIVE_REF_REGEX.captures(txt) {
-            pi.authority = cap.get(1).map(|m| m.as_str());
-            pi.query = cap.get(5).map(|m| m.as_str());
-            pi.fragment = cap.get(6).map(|m| m.as_str());
-            path = cap
-                .get(2)
-                .or_else(|| cap.get(3))
-                .or_else(|| cap.get(4))
-                .map(|m| m.as_str())
-                .filter(|s| !s.is_empty());
-        } else {
-            return Err(InvalidIri(txt.to_owned()));
-        }
-        if let Some(path) = path {
-            path.split('/').for_each(|i| pi.path.push(i))
-        }
-        Ok(pi)
+impl<T: Deref<Target = str>> IsIriRef for BaseIri<T> {}
+impl<T: Deref<Target = str>> IsIri for BaseIri<T> {}
+
+impl<T: Deref<Target = str>> BaseIri<T> {
+    /// Creates a new `BaseIri` if `iri` is a valid IRI,
+    /// otherwise returns an [`IriParseError`].
+    pub fn new(iri: T) -> Result<Self, IriParseError> {
+        Oxiri::parse(iri).map(BaseIri)
     }
 
-    /// Return `true` if this IRI reference is absolute.
-    pub fn is_absolute(&self) -> bool {
-        self.scheme.is_some()
+    /// Resolves `iri` against this `BaseIri`.
+    pub fn resolve<R: Resolvable<String>>(&self, iri: R) -> R::OutputAbs {
+        R::output_abs(self.0.resolve(iri.borrow()).map(Oxiri::into_inner))
     }
 
-    /// Resolve `other` using this IRI reference as the base.
+    /// Resolves `iri` against this `BaseIri`, using `buf` to store the result.
+    pub fn resolve_into<'a, R: Resolvable<&'a str>>(
+        &self,
+        iri: R,
+        buf: &'a mut String,
+    ) -> R::OutputAbs {
+        R::output_abs(self.0.resolve_into(iri.borrow(), buf).map(|_| &buf[..]))
+    }
+}
+
+impl<T: Deref<Target = str>> Borrow<str> for BaseIri<T> {
+    fn borrow(&self) -> &str {
+        &self.0
+    }
+}
+
+impl<T: Deref<Target = str>> Deref for BaseIri<T> {
+    type Target = Oxiri<T>;
+    fn deref(&self) -> &Oxiri<T> {
+        &self.0
+    }
+}
+
+//
+
+/// A `BaseIriRef` is an absolute or relative IRI reference,
+/// against which relative IRIs can be resolved.
+/// It stores the internal structure of the IRI,
+/// to allow for efficient resolution of relative IRIs against itself.
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct BaseIriRef<T>(OxiriRef<T>);
+
+impl<T: Deref<Target = str>> IsIriRef for BaseIriRef<T> {}
+
+impl<T: Deref<Target = str>> BaseIriRef<T> {
+    /// Creates a new `BaseIriRef` if `iri` is a valid IRI,
+    /// otherwise returns an [`IriParseError`].
+    pub fn new(iri: T) -> Result<Self, IriParseError> {
+        OxiriRef::parse(iri).map(BaseIriRef)
+    }
+
+    /// Resolves `iri` against this `BaseIriRef`.
+    pub fn resolve<R: Resolvable<String>>(&self, iri: R) -> R::OutputRel {
+        R::output_rel(self.0.resolve(iri.borrow()).map(OxiriRef::into_inner))
+    }
+
+    /// Resolves `iri` against this `BaseIriRef`, using `buf` to store the result.
+    pub fn resolve_into<'a, R: Resolvable<&'a str>>(
+        &self,
+        iri: R,
+        buf: &'a mut String,
+    ) -> R::OutputRel {
+        R::output_rel(self.0.resolve_into(iri.borrow(), buf).map(|_| &buf[..]))
+    }
+
+    /// Convert this to a [`BaseIri`].
     ///
-    /// NB: the resulting `IriParsed` may borrow parts from both parts.
-    pub fn join(&self, other: &IriParsed<'a>) -> IriParsed<'a> {
-        let (scheme, authority, query, fragment);
-        let mut path;
-        if other.scheme.is_some() {
-            scheme = other.scheme;
-            authority = other.authority;
-            path = other.path.clone();
-            query = other.query;
-        } else {
-            scheme = self.scheme;
-            if other.authority.is_some() {
-                authority = other.authority;
-                path = other.path.clone();
-                query = other.query;
-            } else {
-                authority = self.authority;
-                if other.path.is_empty() {
-                    path = self.path.clone();
-                    query = other.query.or(self.query);
-                } else {
-                    if other.path[0].is_empty() {
-                        path = other.path.clone();
-                    } else {
-                        path = self.merged_path(&other.path);
-                    }
-                    query = other.query;
-                }
-            }
-        }
-        remove_dot_segments(&mut path);
-        fragment = other.fragment;
-        IriParsed {
-            scheme,
-            authority,
-            path,
-            query,
-            fragment,
-        }
-    }
-
-    /// Appends the given path to `self`'s own path.
-    fn merged_path(&self, path: &[&'a str]) -> Vec<&'a str> {
-        if self.authority.is_some() && self.path.is_empty() {
-            // resulting path must have a leading '/'
-            std::iter::once("").chain(path.iter().cloned()).collect()
-        } else {
-            self.path
-                .iter()
-                .take(self.path.len() - 1)
-                .cloned()
-                .chain(path.iter().cloned())
-                .collect()
-        }
+    /// # Precondition
+    /// This [`BaseIriRef`] must be [absolute](`OxiriRef::is_absolute`)
+    pub fn to_base_iri(self) -> BaseIri<T> {
+        assert!(self.is_absolute());
+        BaseIri(Oxiri::try_from(self.0).unwrap())
     }
 }
 
-impl fmt::Display for IriParsed<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if let Some(scheme) = self.scheme {
-            write!(f, "{}:", scheme)?;
-        }
-        if let Some(authority) = self.authority {
-            write!(f, "//{}", authority)?;
-        }
-        if !self.path.is_empty() {
-            write!(f, "{}", self.path[0])?;
-            for p in &self.path[1..] {
-                write!(f, "/{}", p)?;
-            }
-        }
-        if let Some(query) = self.query {
-            write!(f, "?{}", query)?;
-        }
-        if let Some(fragment) = self.fragment {
-            write!(f, "#{}", fragment)?;
-        }
-        Ok(())
+impl<T: Deref<Target = str>> Borrow<str> for BaseIriRef<T> {
+    fn borrow(&self) -> &str {
+        &self.0
     }
 }
 
-impl<'a> Resolve<&'a IriParsed<'a>, IriParsed<'a>> for IriParsed<'a> {
-    /// Just a call to `IriParsed::join()`
-    fn resolve(&self, other: &'a IriParsed<'a>) -> IriParsed<'a> {
-        self.join(other)
+impl<T: Deref<Target = str>> Deref for BaseIriRef<T> {
+    type Target = OxiriRef<T>;
+    fn deref(&self) -> &OxiriRef<T> {
+        &self.0
     }
 }
 
-impl<'a, 'b> Resolve<&'a str, Result<MownStr<'a>>> for IriParsed<'b> {
-    /// Resolve an IRI given as `String`.
-    ///
-    /// Fails if `other` is not a valid IRI.
-    fn resolve(&self, other: &'a str) -> Result<MownStr<'a>> {
-        let other_parsed = IriParsed::new(other)?;
-        if other_parsed.is_absolute() {
-            Ok(other.into())
-        } else {
-            Ok(self.join(&other_parsed).to_string().into())
-        }
+//
+
+/// A trait for anything that can be resolved against a
+/// [`BaseIri`](`BaseIri::resolve`) or a [`BaseIriRef`](`BaseIriRef::resolve`).
+pub trait Resolvable<T: Borrow<str>>: Borrow<str> {
+    /// The output type when joining to an absolute base.
+    type OutputAbs;
+    /// The output type when joining to an relative base.
+    type OutputRel;
+    /// Method for producing the `Self::OutputAbs` from a raw result.
+    fn output_abs(res: Result<T, IriParseError>) -> Self::OutputAbs;
+    /// Method for producing the `Self::OutputRel` from a raw result.
+    fn output_rel(res: Result<T, IriParseError>) -> Self::OutputRel;
+}
+
+impl<T: Borrow<str>> Resolvable<T> for &str {
+    type OutputAbs = Result<Iri<T>, IriParseError>;
+    type OutputRel = Result<IriRef<T>, IriParseError>;
+    fn output_abs(res: Result<T, IriParseError>) -> Self::OutputAbs {
+        res.map(|iri| Iri::new_unchecked(iri))
+    }
+    fn output_rel(res: Result<T, IriParseError>) -> Self::OutputRel {
+        res.map(|iri| IriRef::new_unchecked(iri))
     }
 }
 
-fn remove_dot_segments(path: &mut Vec<&str>) {
-    if path.is_empty() {
-        return;
+impl<T: Borrow<str>, U: IsIriRef> Resolvable<T> for U {
+    type OutputAbs = Iri<T>;
+    type OutputRel = IriRef<T>;
+    fn output_abs(res: Result<T, IriParseError>) -> Self::OutputAbs {
+        Iri::new_unchecked(res.unwrap())
     }
-    let mut i = 0;
-    let last = path[path.len() - 1];
-    if last == "." || last == ".." {
-        path.push("");
-    }
-    while i < path.len() {
-        if path[i] == "." {
-            path.remove(i);
-        } else if path[i] == ".." {
-            if i != 0 && (i != 1 || !path[0].is_empty()) {
-                path.remove(i - 1);
-                i -= 1;
-            }
-            path.remove(i);
-        } else {
-            i += 1;
-        }
+    fn output_rel(res: Result<T, IriParseError>) -> Self::OutputRel {
+        IriRef::new_unchecked(res.unwrap())
     }
 }
+
+//
 
 #[cfg(test)]
 mod test {
     use super::*;
     use crate::test::*;
+    use crate::AsIriRef;
 
     #[test]
     fn positive() {
         for (txt, parsed) in POSITIVE_IRIS {
-            let rpi = IriParsed::new(txt);
-            assert!(rpi.is_ok(), "<{}> → {:?}", txt, rpi);
-            let pi = rpi.unwrap();
-            assert_eq!(pi.is_absolute(), parsed.0);
-            assert_eq!(pi.scheme, parsed.1);
-            assert_eq!(pi.authority, parsed.2);
-            assert_eq!(&pi.path[..], parsed.3);
-            assert_eq!(pi.query, parsed.4);
-            assert_eq!(pi.fragment, parsed.5);
-            assert_eq!(&pi.to_string(), txt);
+            let bir = BaseIriRef::new(*txt).unwrap();
+            assert_eq!(bir.is_absolute(), parsed.0);
+            assert_eq!(bir.scheme(), parsed.1);
+            assert_eq!(bir.authority(), parsed.2);
+            assert_eq!(bir.path(), parsed.3);
+            assert_eq!(bir.query(), parsed.4);
+            assert_eq!(bir.fragment(), parsed.5);
+            assert_eq!(bir.to_string(), *txt);
+
+            assert_eq!(bir, IriRef::new(*txt).unwrap().to_base());
+            assert_eq!(bir, IriRef::new(*txt).unwrap().as_base());
+
+            let rbi = BaseIri::new(*txt);
+            if parsed.0 {
+                assert!(rbi.is_ok(), "<{}> → {:?}", txt, rbi);
+                let bi = rbi.unwrap();
+                assert_eq!(bi.scheme(), parsed.1.unwrap());
+                assert_eq!(bi.authority(), parsed.2);
+                assert_eq!(bi.path(), parsed.3);
+                assert_eq!(bi.query(), parsed.4);
+                assert_eq!(bi.fragment(), parsed.5);
+                assert_eq!(bi.to_string(), *txt);
+
+                assert_eq!(bi.as_iri_ref(), bir.as_iri_ref());
+                assert_eq!(bi, Iri::new(*txt).unwrap().to_base());
+                assert_eq!(bi, Iri::new(*txt).unwrap().as_base());
+            } else {
+                assert!(rbi.is_err(), "<{}> → {:?}", txt, rbi);
+            }
         }
     }
 
     #[test]
     fn negative() {
         for txt in NEGATIVE_IRIS {
-            let rpi = IriParsed::new(txt);
+            let rpir = BaseIriRef::new(*txt);
+            assert!(rpir.is_err(), "<{}> → {:?}", txt, rpir);
+            let rpi = BaseIri::new(*txt);
             assert!(rpi.is_err(), "<{}> → {:?}", txt, rpi);
         }
     }
 
     #[test]
     fn relative() {
-        let base = IriParsed::new("http://a/b/c/d;p?q").unwrap();
         for (rel, abs) in RELATIVE_IRIS {
-            let rel = IriParsed::new(rel).unwrap();
-            let got = base.join(&rel);
-            assert_eq!(&got.to_string(), abs);
+            let rbir = BaseIriRef::new(*rel);
+            assert!(rbir.is_ok(), "<{}> → {:?}", rel, rbir);
+
+            let rbi = BaseIri::new(*rel);
+            if rel != abs {
+                assert!(rbi.is_err(), "<{}> → {:?}", rel, rbi);
+            } else {
+                assert!(rbi.is_ok(), "<{}> → {:?}", rel, rbi);
+                assert_eq!(rbir.unwrap().as_iri_ref(), rbi.unwrap().as_iri_ref());
+            }
         }
     }
 
     #[test]
     fn resolve_iri_parsed() {
-        let base = IriParsed::new("http://a/b/c/d;p?q").unwrap();
+        let base1 = BaseIriRef::new("http://a/b/c/d;p?q").unwrap();
+        let base2: BaseIri<_> = base1.clone().to_base_iri();
+        let mut buf = String::new();
         for (rel, abs) in RELATIVE_IRIS {
-            let rel = IriParsed::new(rel).unwrap();
-            let got = base.resolve(&rel);
-            assert_eq!(&got.to_string(), abs);
+            let rel = IriRef::new(*rel).unwrap();
+            let got1a = base1.resolve(rel);
+            assert_eq!(&got1a, *abs);
+            buf.clear();
+            let got1b = base1.resolve_into(rel, &mut buf);
+            assert_eq!(&got1b, *abs);
+            let got2 = base2.resolve(rel);
+            assert_eq!(&got2, *abs);
+            buf.clear();
+            let got2b = base2.resolve_into(rel, &mut buf);
+            assert_eq!(&got2b, *abs);
         }
     }
 
     #[test]
     fn resolve_str() {
-        let base = IriParsed::new("http://a/b/c/d;p?q").unwrap();
+        let base1 = BaseIriRef::new("http://a/b/c/d;p?q").unwrap();
+        let base2: BaseIri<_> = base1.clone().to_base_iri();
+        let mut buf = String::new();
         for (rel, abs) in RELATIVE_IRIS {
-            let got = base.resolve(*rel).unwrap();
-            assert_eq!(got, *abs);
+            let got1a = base1.resolve(*rel).unwrap();
+            assert_eq!(&got1a, *abs);
+            buf.clear();
+            let got1b = base1.resolve_into(*rel, &mut buf).unwrap();
+            assert_eq!(&got1b, *abs);
+            let got2a = base2.resolve(*rel).unwrap();
+            assert_eq!(&got2a, *abs);
+            buf.clear();
+            let got2b = base2.resolve_into(*rel, &mut buf).unwrap();
+            assert_eq!(&got2b, *abs);
         }
     }
 
     #[test]
     fn resolve_bad_str() {
-        let base = IriParsed::new("http://a/b/c/d;p?q").unwrap();
+        let base1 = BaseIriRef::new("http://a/b/c/d;p?q").unwrap();
+        let base2: BaseIri<_> = base1.clone().to_base_iri();
+        let mut buf = String::new();
         for txt in NEGATIVE_IRIS {
-            assert!(base.resolve(*txt).is_err());
+            println!("{}", *txt);
+            assert!(base1.resolve(*txt).is_err());
+            assert!(base2.resolve(*txt).is_err());
+            assert!(base1.resolve_into(*txt, &mut buf).is_err());
+            assert!(base2.resolve_into(*txt, &mut buf).is_err());
         }
     }
 }
