@@ -1,6 +1,6 @@
 [package]
 name = "sophia_inmem"
-version = "0.7.1"
+version = "0.7.2"
 authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
 edition = "2021"
 description = "A Rust toolkit for RDF and Linked Data - In-memory Graph and Dataset implementations"
@@ -13,9 +13,9 @@ keywords = ["rdf", "linked-data", "semantic-web"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sophia_api = { version = "0.7.1", path = "../api" }
-sophia_indexed = { version = "0.7.1", path = "../indexed" }
-sophia_term = { version = "0.7.1", path = "../term" }
+sophia_api = { version = "0.7.2", path = "../api" }
+sophia_indexed = { version = "0.7.2", path = "../indexed" }
+sophia_term = { version = "0.7.2", path = "../term" }
 
 [dev-dependencies]
-sophia_api = { version = "0.7.1", path = "../api", features = ["test_macro"] }
+sophia_api = { version = "0.7.2", path = "../api", features = ["test_macro"] }

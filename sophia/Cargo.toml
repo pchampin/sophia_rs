@@ -1,6 +1,6 @@
 [package]
 name = "sophia"
-version = "0.7.1"
+version = "0.7.2"
 authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
 description = "A Rust toolkit for RDF and Linked Data"
 repository = "https://github.com/pchampin/sophia_rs"
@@ -23,14 +23,14 @@ test_macro = ["sophia_api/test_macro"]
 all_tests = []
 
 [dependencies]
-sophia_api = { version = "0.7.1", path = "../api" }
-sophia_indexed = { version = "0.7.1", path = "../indexed" }
-sophia_inmem = { version = "0.7.1", path = "../inmem" }
-sophia_iri = { version = "0.7.1", path = "../iri" }
-sophia_rio = { version = "0.7.1", path = "../rio" }
-sophia_term = { version = "0.7.1", path = "../term" }
-sophia_turtle = { version = "0.7.1", path = "../turtle" }
-sophia_xml = { version = "0.7.1", path = "../xml", optional = true }
+sophia_api = { version = "0.7.2", path = "../api" }
+sophia_indexed = { version = "0.7.2", path = "../indexed" }
+sophia_inmem = { version = "0.7.2", path = "../inmem" }
+sophia_iri = { version = "0.7.2", path = "../iri" }
+sophia_rio = { version = "0.7.2", path = "../rio" }
+sophia_term = { version = "0.7.2", path = "../term" }
+sophia_turtle = { version = "0.7.2", path = "../turtle" }
+sophia_xml = { version = "0.7.2", path = "../xml", optional = true }
 
 resiter = "0.4.0"
 
@@ -44,7 +44,7 @@ url = { version = "2.2.2", optional = true }
 [dev-dependencies]
 criterion = "0.3.5"
 lazy_static = "1.4.0"
-sophia_api = { version = "0.7.1", path = "../api", features = ["test_macro"] }
+sophia_api = { version = "0.7.2", path = "../api", features = ["test_macro"] }
 
 [[bench]]
 name = "main"

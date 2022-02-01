@@ -1,3 +1,7 @@
+0.7.2
+    Bug fixes
+    - update dependency on oxiri to fix build issue
+
 0.7.1
     Bug fixes
     - prefix validation was working backward
