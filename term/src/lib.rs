@@ -504,6 +504,12 @@ impl<'a> From<SimpleIri<'a>> for RefTerm<'a> {
     }
 }
 
+impl<'a> From<SimpleIri<'a>> for MownTerm<'a> {
+    fn from(other: SimpleIri<'a>) -> Self {
+        Iri::from(other).into()
+    }
+}
+
 impl<T, TD> From<NativeLiteral<T>> for Term<TD>
 where
     T: DataType + ?Sized,

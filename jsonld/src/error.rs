@@ -17,4 +17,16 @@ pub enum JsonLdError {
     /// An unsupported JSON-LD version
     #[error("unsupported version: {0:?}")]
     UnsupportedVersion(JsonLdSpecVersion),
+
+    /// https://www.w3.org/TR/json-ld11-api/#dom-jsonlderrorcode-conflicting-indexes
+    #[error("conflicting index")]
+    ConflictingIndex,
+
+    /// Can not deserialize
+    #[error("can not deserialize: {0:?}")]
+    CanNotDeserialize(String),
+
+    /// JsonLdSource is already exhausted
+    #[error("exhausted source")]
+    ExhaustedSource,
 }

@@ -12,13 +12,36 @@ const MAKER: &str = "http://champin.net/#pa";
 pub fn main() {
     header(MAKER, &Utc::now().to_rfc3339());
 
+    let mut passed = 0;
+    let mut failed = 0;
+    let mut skipped = 0;
+
     let mpath = Path::new("..")
         .join("json-ld-api")
         .join("tests")
         .join("fromRdf-manifest.jsonld");
-    let mut passed = 0;
-    let mut failed = 0;
-    let mut skipped = 0;
+    let manifest = Manifest::new(&mpath);
+    for t in manifest.tests() {
+        let outcome = match t.perform(false) {
+            TestResult::Pass => {
+                passed += 1;
+                "passed"
+            }
+            TestResult::Skip => {
+                skipped += 1;
+                "untested"
+            }
+            TestResult::Fail => {
+                failed += 1;
+                "failed"
+            }
+        };
+        assertion(MAKER, &Utc::now().to_rfc3339(), &t.iri().value(), outcome);
+    }
+    let mpath = Path::new("..")
+        .join("json-ld-api")
+        .join("tests")
+        .join("toRdf-manifest.jsonld");
     let manifest = Manifest::new(&mpath);
     for t in manifest.tests() {
         let outcome = match t.perform(false) {

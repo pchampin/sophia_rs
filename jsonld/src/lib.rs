@@ -19,6 +19,8 @@ pub mod config;
 pub use config::*;
 pub mod error;
 pub use error::*;
+pub mod parser;
+pub use parser::*;
 pub mod serializer;
 pub use serializer::*;
 mod util_traits;

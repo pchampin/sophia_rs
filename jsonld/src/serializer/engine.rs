@@ -50,9 +50,9 @@ impl Engine {
     where
         QS: QuadSource,
     {
-        if self.config.spec_version > JsonLd11 {
+        if self.config.processing_mode > JsonLd11 {
             return Err(SinkError(JsonLdError::UnsupportedVersion(
-                self.config.spec_version,
+                self.config.processing_mode,
             )));
         }
         source.try_for_each_quad(|q| {
@@ -154,7 +154,7 @@ impl Engine {
         let (g_id, s_id) = &self.gs_id[inode];
         debug_assert!(s_id.starts_with("_:"), "{}", s_id);
         if let Some((iparent, pp)) = &self.unique_parent[s_id] {
-            if self.config.spec_version == JsonLd10 && pp == RDF_FIRST {
+            if self.config.processing_mode == JsonLd10 && pp == RDF_FIRST {
                 return;
             }
             // node 'gs_id' has a unique parent

@@ -125,7 +125,6 @@ macro_rules! namespace {
         /// Test module for checking tha IRIs are valid
         #[cfg(test)]
         mod test_valid_iri {
-            #[test]
             $(
                 #[allow(non_snake_case)]
                 #[test]
