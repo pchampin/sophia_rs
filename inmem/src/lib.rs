@@ -7,5 +7,6 @@
 //! [RDF]: https://www.w3.org/TR/rdf-primer/
 //! [Linked Data]: http://linkeddata.org/
 
-pub mod dataset;
+//pub mod dataset;
 pub mod graph;
+pub mod index;

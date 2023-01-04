@@ -11,15 +11,15 @@
 
 use sophia_api::ns::xsd;
 use sophia_api::serializer::*;
-use sophia_api::term::{TTerm, TermKind};
-use sophia_api::triple::stream::{StreamResult, TripleSource};
+use sophia_api::source::{StreamResult, TripleSource};
+use sophia_api::term::{Term, TermKind};
 use sophia_api::triple::Triple;
 use std::io;
 
 /// N-Triples serializer configuration.
 #[derive(Clone, Debug, Default)]
 pub struct NtConfig {
-    ascii: bool,
+    pub(super) ascii: bool,
 }
 
 impl NtConfig {
@@ -77,11 +77,7 @@ where
             .try_for_each_triple(|t| {
                 {
                     let w = &mut self.write;
-                    write_term(w, t.s())?;
-                    w.write_all(b" ")?;
-                    write_term(w, t.p())?;
-                    w.write_all(b" ")?;
-                    write_term(w, t.o())?;
+                    write_triple(w, t)?;
                     w.write_all(b".\n")
                 }
                 .map_err(|e| io::Error::new(io::ErrorKind::Other, e))
@@ -110,50 +106,67 @@ impl Stringifier for NtSerializer<Vec<u8>> {
 }
 
 /// Write the given term into the given write in the N-Triples format.
-pub fn write_term<W, T>(w: &mut W, t: &T) -> io::Result<()>
+pub fn write_triple<W, T>(w: &mut W, t: T) -> io::Result<()>
 where
     W: io::Write,
-    T: TTerm + ?Sized,
+    T: Triple,
+{
+    write_term(w, t.s())?;
+    w.write_all(b" ")?;
+    write_term(w, t.p())?;
+    w.write_all(b" ")?;
+    write_term(w, t.o())?;
+    Ok(())
+}
+
+/// Write the given term into the given write in the N-Triples format.
+pub fn write_term<W, T>(w: &mut W, t: T) -> io::Result<()>
+where
+    W: io::Write,
+    T: Term,
 {
     use TermKind::*;
     match t.kind() {
         Iri => {
             w.write_all(b"<")?;
-            let v = t.value_raw();
-            w.write_all(v.0.as_bytes())?;
-            if let Some(suffix) = v.1 {
-                w.write_all(suffix.as_bytes())?;
-            }
-            w.write_all(b">")
+            w.write_all(t.iri().unwrap().as_bytes())?;
+            w.write_all(b">")?;
+        }
+        BlankNode => {
+            w.write_all(b"_:")?;
+            w.write_all(t.bnode_id().unwrap().as_bytes())?;
         }
         Literal => {
             w.write_all(b"\"")?;
-            quoted_string(w, t.value_raw().0.as_bytes())?;
-            match t.language() {
+            quoted_string(w, t.lexical_value().unwrap().as_bytes())?;
+            match t.language_tag() {
                 Some(tag) => {
                     w.write_all(b"\"@")?;
-                    w.write_all(tag.as_bytes())
+                    w.write_all(tag.as_bytes())?;
                 }
                 None => {
                     let dt = t.datatype().unwrap();
                     if xsd::string != dt {
-                        w.write_all(b"\"^^")?;
-                        write_term(w, &dt)
+                        w.write_all(b"\"^^<")?;
+                        w.write_all(dt.as_bytes())?;
+                        w.write_all(b">")?;
                     } else {
-                        w.write_all(b"\"")
+                        w.write_all(b"\"")?;
                     }
                 }
             }
         }
-        BlankNode => {
-            w.write_all(b"_:")?;
-            w.write_all(t.value_raw().0.as_bytes())
+        Triple => {
+            w.write_all(b"<<")?;
+            write_triple(w, t.to_triple().unwrap())?;
+            w.write_all(b">>")?;
         }
         Variable => {
             w.write_all(b"?")?;
-            w.write_all(t.value_raw().0.as_bytes())
+            w.write_all(t.variable().unwrap().as_bytes())?;
         }
     }
+    Ok(())
 }
 
 pub(crate) fn quoted_string<W: io::Write>(w: &mut W, txt: &[u8]) -> io::Result<()> {
@@ -199,34 +212,63 @@ pub(crate) fn quoted_string<W: io::Write>(w: &mut W, txt: &[u8]) -> io::Result<(
 #[cfg(test)]
 pub(crate) mod test {
     use super::*;
+    use sophia_api::graph::MutableGraph;
     use sophia_api::ns::*;
-    use sophia_term::literal::convert::AsLiteral;
-    use sophia_term::*;
+    use sophia_api::term::{BnodeId, LanguageTag, SimpleTerm, VarName};
+    use sophia_iri::Iri;
 
     #[test]
-    fn graph() {
-        let me = StaticTerm::new_iri("http://champin.net/#pa").unwrap();
-        let g = vec![
-            [
-                me,
-                rdf::type_.into(),
-                StaticTerm::new_iri("http://schema.org/Person").unwrap(),
-            ],
-            [
-                me,
-                StaticTerm::new_iri("http://schema.org/name").unwrap(),
-                "Pierre-Antoine".as_literal().into(),
-            ],
-        ];
+    fn graph() -> Result<(), Box<dyn std::error::Error>> {
+        let me = BnodeId::new_unchecked("me");
+        let mut g: Vec<[SimpleTerm<'static>; 3]> = vec![];
+        MutableGraph::insert(
+            &mut g,
+            me,
+            rdf::type_,
+            Iri::new_unchecked("http://schema.org/Person"),
+        )?;
+        MutableGraph::insert(
+            &mut g,
+            me,
+            Iri::new_unchecked("http://schema.org/name"),
+            "Pierre-Antoine",
+        )?;
+        MutableGraph::insert(
+            &mut g,
+            me,
+            Iri::new_unchecked("http://example.org/value"),
+            42,
+        )?;
+        MutableGraph::insert(
+            &mut g,
+            me,
+            Iri::new_unchecked("http://example.org/message"),
+            SimpleTerm::LiteralLanguage(
+                "hello\nworld".into(),
+                LanguageTag::new_unchecked("en".into()),
+            ),
+        )?;
+        let tr = g[0].clone();
+        MutableGraph::insert(
+            &mut g,
+            SimpleTerm::Triple(Box::new(tr)),
+            Iri::new_unchecked("http://schema.org/creator"),
+            VarName::new_unchecked("x"),
+        )?;
+
         let s = NtSerializer::new_stringifier()
             .serialize_graph(&g)
             .unwrap()
             .to_string();
         assert_eq!(
             &s,
-            r#"<http://champin.net/#pa> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person>.
-<http://champin.net/#pa> <http://schema.org/name> "Pierre-Antoine".
+            r#"_:me <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person>.
+_:me <http://schema.org/name> "Pierre-Antoine".
+_:me <http://example.org/value> "42"^^<http://www.w3.org/2001/XMLSchema#integer>.
+_:me <http://example.org/message> "hello\nworld"@en.
+<<_:me <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person>>> <http://schema.org/creator> ?x.
 "#
         );
+        Ok(())
     }
 }

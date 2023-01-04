@@ -9,24 +9,14 @@
 //! [`Write`]: https://doc.rust-lang.org/std/io/trait.Write.html
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
-use super::nt::write_term;
-use sophia_api::quad::{stream::*, Quad};
+use super::nt::{write_term, write_triple};
+use sophia_api::quad::Quad;
 use sophia_api::serializer::*;
+use sophia_api::source::{QuadSource, StreamResult};
 use std::io;
 
 /// N-Quads serializer configuration.
-#[derive(Clone, Debug, Default)]
-pub struct NqConfig {
-    ascii: bool,
-}
-
-impl NqConfig {
-    /// Set the ascii configuration.
-    pub fn set_ascii(&mut self, ascii: bool) -> &mut Self {
-        self.ascii = ascii;
-        self
-    }
-}
+pub type NqConfig = super::nt::NtConfig;
 
 /// N-Quads serializer.
 pub struct NqSerializer<W> {
@@ -75,16 +65,16 @@ where
             .try_for_each_quad(|q| {
                 {
                     let w = &mut self.write;
-                    write_term(w, q.s())?;
-                    w.write_all(b" ")?;
-                    write_term(w, q.p())?;
-                    w.write_all(b" ")?;
-                    write_term(w, q.o())?;
-                    if let Some(n) = q.g() {
-                        w.write_all(b" ")?;
-                        write_term(w, n)?;
+                    let (tr, gn) = q.spog();
+                    write_triple(w, tr)?;
+                    match gn {
+                        None => w.write_all(b".\n"),
+                        Some(t) => {
+                            w.write_all(b" ")?;
+                            write_term(w, t)?;
+                            w.write_all(b".\n")
+                        }
                     }
-                    w.write_all(b".\n")
                 }
                 .map_err(|e| io::Error::new(io::ErrorKind::Other, e))
             })
@@ -118,40 +108,69 @@ impl Stringifier for NqSerializer<Vec<u8>> {
 #[cfg(test)]
 pub(crate) mod test {
     use super::*;
+    use sophia_api::dataset::MutableDataset;
     use sophia_api::ns::*;
-    use sophia_term::literal::convert::AsLiteral;
-    use sophia_term::*;
+    use sophia_api::quad::Spog;
+    use sophia_api::term::{BnodeId, LanguageTag, SimpleTerm, VarName};
+    use sophia_iri::Iri;
 
     #[test]
-    fn dataset() {
-        let me = StaticTerm::new_iri("http://champin.net/#pa").unwrap();
-        let d = vec![
-            (
-                [
-                    me,
-                    rdf::type_.into(),
-                    StaticTerm::new_iri("http://schema.org/Person").unwrap(),
-                ],
-                None,
+    fn graph() -> Result<(), Box<dyn std::error::Error>> {
+        let me = BnodeId::new_unchecked("me");
+        let mut d: Vec<Spog<SimpleTerm<'static>>> = vec![];
+        MutableDataset::insert(
+            &mut d,
+            me,
+            rdf::type_,
+            Iri::new_unchecked("http://schema.org/Person"),
+            None as Option<i32>,
+        )?;
+        MutableDataset::insert(
+            &mut d,
+            me,
+            Iri::new_unchecked("http://schema.org/name"),
+            "Pierre-Antoine",
+            Some(me),
+        )?;
+        MutableDataset::insert(
+            &mut d,
+            me,
+            Iri::new_unchecked("http://example.org/value"),
+            42,
+            Some(me),
+        )?;
+        MutableDataset::insert(
+            &mut d,
+            me,
+            Iri::new_unchecked("http://example.org/message"),
+            SimpleTerm::LiteralLanguage(
+                "hello\nworld".into(),
+                LanguageTag::new_unchecked("en".into()),
             ),
-            (
-                [
-                    me,
-                    StaticTerm::new_iri("http://schema.org/name").unwrap(),
-                    "Pierre-Antoine".as_literal().into(),
-                ],
-                Some(StaticTerm::new_iri("http://champin.net/").unwrap()),
-            ),
-        ];
+            Some(Iri::new_unchecked("tag:g1")),
+        )?;
+        let tr = d[0].spog().0.map(Clone::clone);
+        MutableDataset::insert(
+            &mut d,
+            SimpleTerm::Triple(Box::new(tr)),
+            Iri::new_unchecked("http://schema.org/creator"),
+            VarName::new_unchecked("x"),
+            None as Option<i32>,
+        )?;
+
         let s = NqSerializer::new_stringifier()
             .serialize_dataset(&d)
             .unwrap()
             .to_string();
         assert_eq!(
             &s,
-            r#"<http://champin.net/#pa> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person>.
-<http://champin.net/#pa> <http://schema.org/name> "Pierre-Antoine" <http://champin.net/>.
+            r#"_:me <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person>.
+_:me <http://schema.org/name> "Pierre-Antoine" _:me.
+_:me <http://example.org/value> "42"^^<http://www.w3.org/2001/XMLSchema#integer> _:me.
+_:me <http://example.org/message> "hello\nworld"@en <tag:g1>.
+<<_:me <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person>>> <http://schema.org/creator> ?x.
 "#
         );
+        Ok(())
     }
 }

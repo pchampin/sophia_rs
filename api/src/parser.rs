@@ -1,10 +1,6 @@
 //! API for parsing RDF syntaxes.
 
-use crate::quad::stream::QuadSource;
-use crate::triple::stream::TripleSource;
-
-mod _location;
-pub use _location::*;
+use crate::source::{QuadSource, TripleSource};
 
 /// A parser takes some data of type `T`,
 /// and returns a [`TripleSource`].
@@ -21,8 +17,8 @@ pub trait TripleParser<T> {
     /// but will be automatically supported for parsers supporting any
     /// [`BufRead`] or [`Read`].
     ///
-    /// [`BufRead`]: https://doc.rust-lang.org/std/io/trait.BufRead.html
-    /// [`Read`]: https://doc.rust-lang.org/std/io/trait.Read.html
+    /// [`BufRead`]: std::io::BufRead
+    /// [`Read`]: std::io::Read
     fn parse_str<'t>(&self, txt: &'t str) -> Self::Source
     where
         &'t str: IntoParsable<Target = T>,
@@ -46,8 +42,8 @@ pub trait QuadParser<T> {
     /// but will be automatically supported for parsers supporting any
     /// [`BufRead`] or [`Read`].
     ///
-    /// [`BufRead`]: https://doc.rust-lang.org/std/io/trait.BufRead.html
-    /// [`Read`]: https://doc.rust-lang.org/std/io/trait.Read.html
+    /// [`BufRead`]: std::io::BufRead
+    /// [`Read`]: std::io::Read
     fn parse_str<'t>(&self, txt: &'t str) -> Self::Source
     where
         &'t str: IntoParsable<Target = T>,
@@ -57,11 +53,10 @@ pub trait QuadParser<T> {
 }
 
 /// Utility trait to support [`TripleParser::parse_str`] and [`QuadParser::parse_str`].
-///
-/// [`TripleParser::parse_str`]: trait.TripleParser.html#method.parse_str
-/// [`QuadParser::parse_str`]: trait.QuadParser.html#method.parse_str
 pub trait IntoParsable {
+    /// The parsable type this type can be converted to.
     type Target;
+    /// Convert into the parsable target type
     fn into_parsable(self) -> Self::Target;
 }
 impl<'a> IntoParsable for &'a str {

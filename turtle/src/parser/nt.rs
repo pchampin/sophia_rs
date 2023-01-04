@@ -1,8 +1,7 @@
 //! Adapter for the [N-Triples] parser from [RIO](https://github.com/Tpt/rio/blob/master/turtle/src/ntriples.rs)
 //!
 //! [N-Triples]: https://www.w3.org/TR/n-triples/
-
-use rio_turtle::{NTriplesParser as RioNTParser, TurtleError};
+use rio_turtle::NTriplesParser as RioNTParser;
 use sophia_api::parser::TripleParser;
 use sophia_rio::parser::*;
 use std::io::BufRead;
@@ -12,9 +11,9 @@ use std::io::BufRead;
 pub struct NTriplesParser {}
 
 impl<B: BufRead> TripleParser<B> for NTriplesParser {
-    type Source = StrictRioSource<RioNTParser<B>, TurtleError>;
+    type Source = StrictRioSource<RioNTParser<B>>;
     fn parse(&self, data: B) -> Self::Source {
-        StrictRioSource::Parser(RioNTParser::new(data))
+        StrictRioSource(RioNTParser::new(data))
     }
 }
 
@@ -28,48 +27,68 @@ sophia_api::def_mod_functions_for_bufread_parser!(NTriplesParser, TripleParser);
 mod test {
     use super::*;
     use sophia_api::graph::Graph;
-    use sophia_api::ns::{rdf, xsd};
-    use sophia_api::term::matcher::ANY;
-    use sophia_api::triple::stream::TripleSource;
-    use sophia_inmem::graph::FastGraph;
-    use sophia_term::StaticTerm;
+    use sophia_api::ns::rdf;
+    use sophia_api::source::TripleSource;
+    use sophia_api::term::{SimpleTerm, TermKind};
+    use sophia_iri::Iri;
+    use std::collections::HashSet;
+
+    type MyGraph = Vec<[SimpleTerm<'static>; 3]>;
 
     #[test]
     fn test_simple_nt_string() -> std::result::Result<(), Box<dyn std::error::Error>> {
-        let turtle = r#"
+        let nt = r#"
             <http://localhost/ex#me> <http://example.org/ns/knows> _:b1.
             _:b1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/ns/Person>.
             _:b1 <http://example.org/ns/name> "Alice".
+            << <http://localhost/ex#me> <http://example.org/ns/knows> _:b1 >> <http://example.org/ns/since> "2002"^^<http://www.w3.org/2001/XMLSchema#integer>.
         "#;
 
-        let mut g = FastGraph::new();
+        let mut g = MyGraph::new();
         let p = NTriplesParser {};
-        let c = p.parse_str(turtle).add_to_graph(&mut g)?;
-        assert_eq!(c, 3);
-        assert!(g
-            .triples_matching(
-                &StaticTerm::new_iri("http://localhost/ex#me").unwrap(),
-                &StaticTerm::new_iri("http://example.org/ns/knows").unwrap(),
-                &ANY,
+        let c = p.parse_str(nt).add_to_graph(&mut g)?;
+        assert_eq!(c, 4);
+        assert_eq!(
+            g.triples_matching(
+                [Iri::new_unchecked("http://localhost/ex#me")],
+                [Iri::new_unchecked("http://example.org/ns/knows")],
+                TermKind::BlankNode,
             )
-            .next()
-            .is_some());
-        assert!(g
-            .triples_matching(
-                &ANY,
-                &rdf::type_,
-                &StaticTerm::new_iri("http://example.org/ns/Person").unwrap(),
+            .count(),
+            1
+        );
+        assert_eq!(
+            g.triples_matching(
+                TermKind::BlankNode,
+                [&rdf::type_],
+                [Iri::new_unchecked("http://example.org/ns/Person")],
             )
-            .next()
-            .is_some());
-        assert!(g
-            .triples_matching(
-                &ANY,
-                &StaticTerm::new_iri("http://example.org/ns/name").unwrap(),
-                &StaticTerm::new_literal_dt("Alice", xsd::string).unwrap(),
+            .count(),
+            1
+        );
+        assert_eq!(
+            g.triples_matching(
+                TermKind::BlankNode,
+                [Iri::new_unchecked("http://example.org/ns/name")],
+                ["Alice"],
             )
-            .next()
-            .is_some());
+            .count(),
+            1
+        );
+        assert_eq!(
+            g.triples_matching(
+                (
+                    [Iri::new_unchecked("http://localhost/ex#me")],
+                    [Iri::new_unchecked("http://example.org/ns/knows")],
+                    TermKind::BlankNode,
+                ),
+                [Iri::new_unchecked("http://example.org/ns/since")],
+                [2002],
+            )
+            .count(),
+            1
+        );
+        assert_eq!(g.blank_nodes().collect::<HashSet<_>>().len(), 1);
         Ok(())
     }
 }

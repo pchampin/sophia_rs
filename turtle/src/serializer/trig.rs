@@ -9,25 +9,45 @@
 //! [`Write`]: https://doc.rust-lang.org/std/io/trait.Write.html
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
-use super::turtle::{prettify, write_prefixes, write_term};
 use rio_turtle::TriGFormatter;
-use sophia_api::dataset::{Dataset, MutableDataset};
-use sophia_api::quad::stream::{QuadSource, SinkError, SourceError, StreamResult};
 use sophia_api::quad::Quad;
-use sophia_api::serializer::*;
-use sophia_api::term::{TTerm, TermKind::BlankNode};
-use sophia_indexed::dataset::IndexedDataset;
-use sophia_inmem::dataset::FastDataset;
+use sophia_api::serializer::{QuadSerializer, Stringifier};
+use sophia_api::source::{QuadSource, SinkError, SourceError, StreamResult};
+use sophia_api::term::{CmpTerm, Term};
 use sophia_rio::serializer::rio_format_quads;
-use sophia_term::RcTerm;
-use std::collections::{HashMap, HashSet};
 use std::io;
 
-/// The TriG serializer uses the same configuration type as the Turtle parser.
+pub(super) use super::_pretty::*;
+
+/// Trig serializer configuration.
 pub type TrigConfig = super::turtle::TurtleConfig;
 
-/// TriG serialization uses the same underlying struct as Turtle serialization.
-pub type TrigSerializer<W> = super::turtle::TurtleSerializer<W>;
+/// Trig serializer.
+pub struct TrigSerializer<W> {
+    pub(super) config: TrigConfig,
+    pub(super) write: W,
+}
+
+impl<W> TrigSerializer<W>
+where
+    W: io::Write,
+{
+    /// Build a new Trig serializer writing to `write`, with the default config.
+    #[inline]
+    pub fn new(write: W) -> TrigSerializer<W> {
+        Self::new_with_config(write, TrigConfig::default())
+    }
+
+    /// Build a new Trig serializer writing to `write`, with the given config.
+    pub fn new_with_config(write: W, config: TrigConfig) -> TrigSerializer<W> {
+        TrigSerializer { config, write }
+    }
+
+    /// Borrow this serializer's configuration.
+    pub fn config(&self) -> &TrigConfig {
+        &self.config
+    }
+}
 
 impl<W> QuadSerializer for TrigSerializer<W>
 where
@@ -35,79 +55,24 @@ where
 {
     type Error = io::Error;
 
-    fn serialize_quads<QS>(
+    fn serialize_quads<TS>(
         &mut self,
-        mut source: QS,
-    ) -> StreamResult<&mut Self, QS::Error, Self::Error>
+        mut source: TS,
+    ) -> StreamResult<&mut Self, TS::Error, Self::Error>
     where
-        QS: QuadSource,
+        TS: QuadSource,
     {
         if self.config.pretty {
-            let mut dataset = FastDataset::new();
-            let mut graph_names = HashSet::new();
-            let mut bnode_graph = HashMap::<RcTerm, Option<RcTerm>>::new();
-            let mut anon_blacklist = HashSet::new();
+            let mut dataset = PrettifiableDataset::new();
             source
-                .for_each_quad(|q| {
-                    dataset.insert(q.s(), q.p(), q.o(), q.g()).unwrap();
-                    // build graph_names and anon_blacklist
-                    let gn = q.g().map(|t| get_rcterm(t, &dataset));
-                    for t in [q.s(), q.p(), q.o()] {
-                        if t.kind() != BlankNode {
-                            continue;
-                        }
-                        let t = get_rcterm(t, &dataset);
-                        if anon_blacklist.contains(&t) {
-                            continue;
-                        }
-                        match bnode_graph.get(&t) {
-                            None => {
-                                if graph_names.contains(&t) {
-                                    anon_blacklist.insert(t);
-                                } else {
-                                    bnode_graph.insert(t, gn.clone());
-                                }
-                            }
-                            Some(gn2) if &gn != gn2 => {
-                                anon_blacklist.insert(t);
-                            }
-                            _ => (),
-                        }
-                    }
-                    if let Some(term) = gn {
-                        if term.kind() == BlankNode && bnode_graph.get(&term).is_some() {
-                            anon_blacklist.insert(term.clone());
-                        }
-                        graph_names.insert(term);
-                    }
+                .for_each_quad(|t| {
+                    let (spo, g) = t.spog();
+                    let spo = spo.map(|t| CmpTerm(t.into_term()));
+                    let g = g.map(|t| CmpTerm(t.into_term()));
+                    dataset.insert((g, spo));
                 })
                 .map_err(SourceError)?;
-
-            write_prefixes(&mut self.write, &self.config.prefix_map[..]).map_err(SinkError)?;
-            prettify(
-                dataset.graph(None),
-                &mut self.write,
-                &self.config,
-                &anon_blacklist,
-                "",
-            )
-            .map_err(SinkError)?;
-            for gn in &graph_names {
-                let allow_anon = !anon_blacklist.contains(gn);
-                self.write.write_all(b"GRAPH ").map_err(SinkError)?;
-                write_term(&mut self.write, gn, &self.config, allow_anon).map_err(SinkError)?;
-                self.write.write_all(b" {").map_err(SinkError)?;
-                prettify(
-                    dataset.graph(Some(gn)),
-                    &mut self.write,
-                    &self.config,
-                    &anon_blacklist,
-                    self.config.indentation(),
-                )
-                .map_err(SinkError)?;
-                self.write.write_all(b"}").map_err(SinkError)?;
-            }
-            self.write.flush().map_err(SinkError)?;
+            prettify(dataset, &mut self.write, &self.config, "").map_err(SinkError)?;
         } else {
             let mut tf = TriGFormatter::new(&mut self.write);
             rio_format_quads(&mut tf, source)?;
@@ -117,12 +82,23 @@ where
     }
 }
 
-/// For a term that we know belongs to dataset,
-/// return a clone of the corresponding RcTerm used in dataset.
-fn get_rcterm<T: TTerm + ?Sized>(term: &T, dataset: &FastDataset) -> RcTerm {
-    let i = dataset.get_index(term).unwrap();
-    let t = dataset.get_term(i).unwrap();
-    t.clone()
+impl TrigSerializer<Vec<u8>> {
+    /// Create a new serializer which targets a `String`.
+    #[inline]
+    pub fn new_stringifier() -> Self {
+        TrigSerializer::new(Vec::new())
+    }
+    /// Create a new serializer which targets a `String` with a custom config.
+    #[inline]
+    pub fn new_stringifier_with_config(config: TrigConfig) -> Self {
+        TrigSerializer::new_with_config(Vec::new(), config)
+    }
+}
+
+impl Stringifier for TrigSerializer<Vec<u8>> {
+    fn as_utf8(&self) -> &[u8] {
+        &self.write[..]
+    }
 }
 
 // ---------------------------------------------------------------------------------
@@ -132,9 +108,9 @@ fn get_rcterm<T: TTerm + ?Sized>(term: &T, dataset: &FastDataset) -> RcTerm {
 #[cfg(test)]
 pub(crate) mod test {
     use super::*;
-    use sophia_api::dataset::{isomorphic_datasets, Dataset};
-    use sophia_inmem::dataset::FastDataset;
-    use sophia_term::*;
+    use sophia_api::term::SimpleTerm;
+    use sophia_api::{dataset::Dataset, quad::Spog};
+    use sophia_isomorphism::isomorphic_datasets;
     use std::error::Error;
 
     const TESTS: &[&str] = &[
@@ -153,10 +129,37 @@ pub(crate) mod test {
         r#"# subject lists
             GRAPH <tag:g> { (1 2 3) a <tag:List>. }
         "#,
+        r#"# malformed list
+            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+            GRAPH <tag:g> {
+                _:a rdf:first 42, 43; rdf:rest (44 45).
+                _:b rdf:first 42; rdf:rest (43), (44).
+            }
+        "#,
+        r#"# bnode cycles
+            PREFIX : <http://example.org/ns/>
+            GRAPH <tag:g> {
+                _:a :n "a"; :p [ :q [ :r _:a ]].
+                _:b :n "b"; :s [ :s _:b ].
+                _:c :b "c"; :t _:c.
+            }
+        "#,
+        r#"# quoted triples
+            PREFIX : <http://example.org/ns/>
+            GRAPH <tag:g> {
+                << :s :p :o1 >> :a :b.
+                :s :p :o2 {| :c :d |}.
+            }
+        "#,
         r#"# blank node graph name
             PREFIX : <http://example.org/ns/>
-            #:lois :belives _:b.
-            #GRAPH _:b1 { :clark a :Human }
+            :lois :belives _:b.
+            GRAPH _:b1 { :clark a :Human }
+        "#,
+        r#"# blank node sharred across graphs
+            PREFIX : <http://example.org/ns/>
+            _:a :name "alice".
+            GRAPH <tag:g> { _:a a :Person }
         "#,
         r#"# list split over different graphs
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -172,14 +175,14 @@ pub(crate) mod test {
     fn roundtrip_not_pretty() -> Result<(), Box<dyn std::error::Error>> {
         for ttl in TESTS {
             println!("==========\n{}\n----------", ttl);
-            let g1: FastDataset = crate::parser::trig::parse_str(ttl).collect_quads()?;
+            let g1: Vec<Spog<SimpleTerm>> = crate::parser::trig::parse_str(ttl).collect_quads()?;
 
             let out = TrigSerializer::new_stringifier()
                 .serialize_quads(g1.quads())?
                 .to_string();
             println!("{}", &out);
 
-            let g2: FastDataset = crate::parser::trig::parse_str(&out).collect_quads()?;
+            let g2: Vec<Spog<SimpleTerm>> = crate::parser::trig::parse_str(&out).collect_quads()?;
 
             assert!(isomorphic_datasets(&g1, &g2)?);
         }
@@ -190,7 +193,7 @@ pub(crate) mod test {
     fn roundtrip_pretty() -> Result<(), Box<dyn Error>> {
         for ttl in TESTS {
             println!("==========\n{}\n----------", ttl);
-            let g1: FastDataset = crate::parser::trig::parse_str(ttl).collect_quads()?;
+            let g1: Vec<Spog<SimpleTerm>> = crate::parser::trig::parse_str(ttl).collect_quads()?;
 
             let config = TrigConfig::new().with_pretty(true);
             let out = TrigSerializer::new_stringifier_with_config(config)
@@ -198,7 +201,7 @@ pub(crate) mod test {
                 .to_string();
             println!("{}", &out);
 
-            let g2: FastDataset = crate::parser::trig::parse_str(&out).collect_quads()?;
+            let g2: Vec<Spog<SimpleTerm>> = crate::parser::trig::parse_str(&out).collect_quads()?;
 
             assert!(isomorphic_datasets(&g1, &g2)?);
         }

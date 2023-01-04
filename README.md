@@ -15,16 +15,16 @@ It comprises the following crates:
   - graphs and datasets,
   - parsers and serializers
 * [`sophia_iri`] provides functions, types and traits for validating and resolving IRIs.
-* [`sophia_term`] defines implementations of the `TTerm` trait from `sophia_api`.
 * [`sophia_inmem`] defines in-memory implementations of the `Graph` and `Dataset` traits from `sophia_api`.
 * [`sophia_turtle`] provides parsers and serializers for the Turtle-family of concrete syntaxes.
 * [`sophia_xml`] provides parsers and serializers for RDF/XML.
 * [`sophia_jsonld`] provides preliminary support for JSON-LD.
-* [`sophia_indexed`] and [`sophia_rio`] are lower-level crates, used by the ones above. 
+* [`sophia_rio`] is a lower-level crate, used by the ones above. 
 
 and finally:
 * [`sophia`] is the “all-inclusive” crate,
   re-exporting symbols from all the crates above.
+  (actually, `sophia_xml` is only available if the `xml` feature is enabled)
   
 ## Licence
 

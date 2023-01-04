@@ -147,4 +147,11 @@ mod test {
             assert!(IriRef::new(Box::from(txt as &str)).is_ok())
         }
     }
+
+    #[test]
+    fn heterogeneous_comparison() {
+        let iri1 = Iri::new(String::from("http://example.com/")).unwrap();
+        let iri2 = Iri::new_unchecked(iri1.as_str());
+        assert_eq!(iri1, iri2);
+    }
 }

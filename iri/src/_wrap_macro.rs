@@ -55,7 +55,7 @@
 /// NB: the documentation of the wrapper will point to the documentation of the `new` method.
 macro_rules! wrap {
     ($wid:ident<$tid:ident: $bound:path>: $new:item $($item:item)*) => {
-        #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+        #[derive(Clone, Copy, Debug)]
 
         #[doc = concat!(
             "See [`",
@@ -85,7 +85,7 @@ macro_rules! wrap {
 
             /// Returns the wrapped value, consuming `self`.
             #[allow(dead_code)]
-            pub fn unwrap(self) -> T {
+            pub fn unwrap(self) -> $tid {
                 self.0
             }
 
@@ -126,6 +126,50 @@ macro_rules! wrap {
         impl<T: $bound> std::borrow::Borrow<T> for $wid<T> {
             fn borrow(&self) -> &T {
                 &self.0
+            }
+        }
+
+        impl<T, U> std::cmp::PartialEq<$wid<T>> for $wid<U>
+        where
+            T: $bound,
+            U: $bound + std::cmp::PartialEq<T>,
+        {
+            fn eq(&self, rhs: &$wid<T>) -> bool {
+                self.0 == rhs.0
+            }
+        }
+
+        impl<T> std::cmp::Eq for $wid<T>
+        where
+            T: $bound + std::cmp::Eq,
+        {}
+
+        impl<T, U> std::cmp::PartialOrd<$wid<T>> for $wid<U>
+        where
+            T: $bound,
+            U: $bound + std::cmp::PartialOrd<T>,
+        {
+            fn partial_cmp(&self, rhs: &$wid<T>) -> std::option::Option<std::cmp::Ordering> {
+                std::cmp::PartialOrd::partial_cmp(&self.0, &rhs.0)
+            }
+        }
+
+        impl<T> std::cmp::Ord for $wid<T>
+        where
+            T: $bound + std::cmp::Eq + std::cmp::Ord,
+        {
+            fn cmp(&self, rhs: &$wid<T>) -> std::cmp::Ordering {
+                std::cmp::Ord::cmp(&self.0, &rhs.0)
+            }
+        }
+
+
+        impl<T> std::hash::Hash for $wid<T>
+        where
+            T: $bound + std::hash::Hash,
+        {
+            fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+                self.0.hash(state);
             }
         }
     };

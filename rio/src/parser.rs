@@ -6,338 +6,140 @@
 //! published versions of Rio will always depend on the previously published version of Sophia,
 //! which makes it impossible for Sophia itself to rely on that feature.
 
+use crate::model::Trusted;
+use sophia_api::source::{StreamError, StreamError::*, StreamResult};
 use std::error::Error;
-use std::result::Result as StdResult;
 
-use rio_api::model::*;
-use rio_api::parser::*;
+/// Wrap a Rio [`TriplesParser`](rio_api::parser::TriplesParser)
+/// or [`QuadsParser`](rio_api::parser::QuadsParser)
+/// into a Sophia [`TripleSource`](sophia_api::source::TripleSource)
+/// or [`QuadSource`](sophia_api::source::QuadSource)
+/// respectivelly.
+pub struct StrictRioSource<T>(pub T);
 
-use sophia_api::ns::{rdf, xsd};
-use sophia_api::quad::stream::*;
-use sophia_api::quad::streaming_mode::StreamedQuad;
-use sophia_api::term::*;
-use sophia_api::triple::stream::*;
-use sophia_api::triple::streaming_mode::StreamedTriple;
+impl<T> sophia_api::source::TripleSource for StrictRioSource<T>
+where
+    T: rio_api::parser::TriplesParser,
+    T::Error: Error + 'static,
+{
+    type Triple<'x> = Trusted<rio_api::model::Triple<'x>>;
 
-/// TripleSource / QuadSource adapter for RIO TripleParser / QuadParser.
-pub enum StrictRioSource<T, E> {
-    /// A RIO TripleParser / QuadParser.
-    Parser(T),
-    /// An error in acquiring the RIO TripleParser / QuadParser.
-    Error(Option<E>),
-}
+    type Error = T::Error;
 
-impl<T, E> From<StdResult<T, E>> for StrictRioSource<T, E> {
-    fn from(res: StdResult<T, E>) -> Self {
-        match res {
-            Ok(parser) => StrictRioSource::Parser(parser),
-            Err(error) => StrictRioSource::Error(Some(error)),
+    fn try_for_some_triple<EF, F>(&mut self, mut f: F) -> StreamResult<bool, T::Error, EF>
+    where
+        EF: Error,
+        F: FnMut(Self::Triple<'_>) -> Result<(), EF>,
+    {
+        let parser = &mut self.0;
+        if parser.is_end() {
+            return Ok(false);
         }
+        parser
+            .parse_step(&mut |t| -> Result<(), RioStreamError<T::Error, EF>> {
+                f(Trusted(t)).map_err(RioStreamError::Sink)
+                // NB: RioStreamError::Source is produced implicitly by parse_step,
+                // using the fact that RioStreamError<A, B> implements From<A>
+            })
+            .map_err(StreamError::from)
+            .and(Ok(true))
     }
 }
 
-// This intermediate type is required,
-// because Rio requires that the error type of triple_handler/quad_handler
-// implement From<TurtleError> (or whatever Rio-specific error returned by the parser).
-//
-// This is costless, though,
-// because MyStreamError's internal representation is identical to StreamError,
-// so the final type conversion performed by into_stream_error is actually
-// just for pleasing the compiler.
-enum MyStreamError<E1, E2> {
+impl<T> sophia_api::source::QuadSource for StrictRioSource<T>
+where
+    T: rio_api::parser::QuadsParser,
+    T::Error: Error + 'static,
+{
+    type Quad<'x> = Trusted<rio_api::model::Quad<'x>>;
+
+    type Error = T::Error;
+
+    fn try_for_some_quad<EF, F>(&mut self, mut f: F) -> StreamResult<bool, T::Error, EF>
+    where
+        EF: Error,
+        F: FnMut(Self::Quad<'_>) -> Result<(), EF>,
+    {
+        let parser = &mut self.0;
+        if parser.is_end() {
+            return Ok(false);
+        }
+        parser
+            .parse_step(&mut |q| -> Result<(), RioStreamError<T::Error, EF>> {
+                f(Trusted(q)).map_err(RioStreamError::Sink)
+                // NB: RioStreamError::Source is produced implicitly by parse_step,
+                // using the fact that RioStreamError<A, B> implements From<A>
+            })
+            .map_err(StreamError::from)
+            .and(Ok(true))
+    }
+}
+
+/// Wrap a Rio [`GeneralizedQuadsParser`](rio_api::parser::GeneralizedQuadsParser)
+/// into a Sophia [`QuadSource`](sophia_api::source::QuadSource).
+pub struct GeneralizedRioSource<T>(pub T);
+
+impl<T> sophia_api::source::QuadSource for GeneralizedRioSource<T>
+where
+    T: rio_api::parser::GeneralizedQuadsParser,
+    T::Error: Error + 'static,
+{
+    type Quad<'x> = Trusted<rio_api::model::GeneralizedQuad<'x>>;
+
+    type Error = T::Error;
+
+    fn try_for_some_quad<EF, F>(&mut self, mut f: F) -> StreamResult<bool, T::Error, EF>
+    where
+        EF: Error,
+        F: FnMut(Self::Quad<'_>) -> Result<(), EF>,
+    {
+        let parser = &mut self.0;
+        if parser.is_end() {
+            return Ok(false);
+        }
+        parser
+            .parse_step(&mut |q| -> Result<(), RioStreamError<T::Error, EF>> {
+                f(Trusted(q)).map_err(RioStreamError::Sink)
+                // NB: RioStreamError::Source is produced implicitly by parse_step,
+                // using the fact that RioStreamError<A, B> implements From<A>
+            })
+            .map_err(StreamError::from)
+            .and(Ok(true))
+    }
+}
+
+/// This intermediate type is required,
+/// because Rio requires that the error type of triple_handler/quad_handler
+/// implement From<TurtleError> (or whatever Rio-specific error returned by the parser).
+///
+/// This is costless, though,
+/// because RioStreamError's internal representation is identical to StreamError,
+/// so the final type conversion performed by into_stream_error is actually
+/// just for pleasing the compiler.
+enum RioStreamError<E1, E2> {
+    /// Equivalent to [`StreamError::SourceError`]
     Source(E1),
+    /// Equivalent to [`StreamError::SinkError`]
     Sink(E2),
 }
-impl<E1, E2> MyStreamError<E1, E2>
+impl<E1, E2> From<E1> for RioStreamError<E1, E2>
 where
-    E1: Error + 'static,
-    E2: Error + 'static,
-{
-    fn from_sink_error(err: E2) -> Self {
-        MyStreamError::Sink(err)
-    }
-    fn into_stream_error(self) -> StreamError<E1, E2> {
-        match self {
-            MyStreamError::Source(err) => SourceError(err),
-            MyStreamError::Sink(err) => SinkError(err),
-        }
-    }
-}
-impl<E1, E2> From<E1> for MyStreamError<E1, E2>
-where
-    E1: Error + 'static,
-    E2: Error + 'static,
+    E1: Error,
+    E2: Error,
 {
     fn from(other: E1) -> Self {
-        MyStreamError::Source(other)
+        RioStreamError::Source(other)
     }
 }
-
-/// A triple produced by a RIO source.
-pub type RioSourceTriple<'a> = [RioTermWrapper<'a>; 3];
-sophia_api::make_scoped_triple_streaming_mode!(
-    /// A scoped RIO source triple.
-    ScopedRioSourceTriple,
-    RioSourceTriple
-);
-
-impl<T, E> TripleSource for StrictRioSource<T, E>
+impl<E1, E2> From<RioStreamError<E1, E2>> for StreamError<E1, E2>
 where
-    T: TriplesParser<Error = E>,
-    E: Error + 'static,
+    E1: Error,
+    E2: Error,
 {
-    type Error = E;
-    //type Triple = crate::triple::streaming_mode::ByValue<RioSourceTriple<'static>>;
-    type Triple = ScopedRioSourceTriple;
-
-    fn try_for_some_triple<F, EF>(&mut self, f: &mut F) -> StreamResult<bool, E, EF>
-    where
-        F: FnMut(StreamedTriple<Self::Triple>) -> Result<(), EF>,
-        EF: Error,
-    {
-        match self {
-            StrictRioSource::Error(opt) => Err(SourceError(consume_err(opt))),
-            StrictRioSource::Parser(parser) => {
-                if parser.is_end() {
-                    return Ok(false);
-                }
-                parser
-                    .parse_step(&mut |t| -> StdResult<(), MyStreamError<E, EF>> {
-                        f(StreamedTriple::scoped([
-                            RioTermWrapper(t.subject.into()),
-                            RioTermWrapper(t.predicate.into()),
-                            RioTermWrapper(t.object),
-                        ]))
-                        .map_err(MyStreamError::from_sink_error)
-                    })
-                    .map_err(|e| e.into_stream_error())
-                    .and(Ok(true))
-            }
+    fn from(other: RioStreamError<E1, E2>) -> Self {
+        match other {
+            RioStreamError::Source(err) => SourceError(err),
+            RioStreamError::Sink(err) => SinkError(err),
         }
-    }
-}
-
-/// A RIO source quad.
-pub type RioSourceQuad<'a> = ([RioTermWrapper<'a>; 3], Option<RioTermWrapper<'a>>);
-sophia_api::make_scoped_quad_streaming_mode!(
-    /// A scoped RIO source quad.
-    ScopedRioSourceQuad,
-    RioSourceQuad
-);
-
-impl<T, E> QuadSource for StrictRioSource<T, E>
-where
-    T: QuadsParser<Error = E>,
-    E: Error + 'static,
-{
-    type Error = E;
-    type Quad = ScopedRioSourceQuad;
-
-    fn try_for_some_quad<F, EF>(&mut self, f: &mut F) -> StreamResult<bool, E, EF>
-    where
-        F: FnMut(StreamedQuad<Self::Quad>) -> Result<(), EF>,
-        EF: Error,
-    {
-        match self {
-            StrictRioSource::Error(opt) => Err(SourceError(consume_err(opt))),
-            StrictRioSource::Parser(parser) => {
-                if parser.is_end() {
-                    return Ok(false);
-                }
-                parser
-                    .parse_step(&mut |q| -> StdResult<(), MyStreamError<E, EF>> {
-                        f(StreamedQuad::scoped((
-                            [
-                                RioTermWrapper(q.subject.into()),
-                                RioTermWrapper(q.predicate.into()),
-                                RioTermWrapper(q.object),
-                            ],
-                            q.graph_name.map(|g| RioTermWrapper(g.into())),
-                        )))
-                        .map_err(MyStreamError::from_sink_error)
-                    })
-                    .map_err(|e| e.into_stream_error())
-                    .and(Ok(true))
-            }
-        }
-    }
-}
-
-/// A Generalized RIO source quad.
-pub type GRioSourceQuad<'a> = ([GRioTermWrapper<'a>; 3], Option<GRioTermWrapper<'a>>);
-sophia_api::make_scoped_quad_streaming_mode!(
-    /// A scoped RIO source quad.
-    ScopedGRioSourceQuad,
-    GRioSourceQuad
-);
-
-/// QuadSource adapter for RIO GeneralizedQuadParser.
-pub enum GeneralizedRioSource<T, E> {
-    /// A RIO GeneralizedQuadParser.
-    Parser(T),
-    /// An error in acquiring the RIO GeneralizedQuadParser.
-    Error(Option<E>),
-}
-
-impl<T, E> From<StdResult<T, E>> for GeneralizedRioSource<T, E> {
-    fn from(res: StdResult<T, E>) -> Self {
-        match res {
-            Ok(parser) => GeneralizedRioSource::Parser(parser),
-            Err(error) => GeneralizedRioSource::Error(Some(error)),
-        }
-    }
-}
-
-impl<T, E> QuadSource for GeneralizedRioSource<T, E>
-where
-    T: GeneralizedQuadsParser<Error = E>,
-    E: Error + 'static,
-{
-    type Error = E;
-    type Quad = ScopedGRioSourceQuad;
-
-    fn try_for_some_quad<F, EF>(&mut self, f: &mut F) -> StreamResult<bool, E, EF>
-    where
-        F: FnMut(StreamedQuad<Self::Quad>) -> Result<(), EF>,
-        EF: Error,
-    {
-        match self {
-            GeneralizedRioSource::Error(opt) => Err(SourceError(consume_err(opt))),
-            GeneralizedRioSource::Parser(parser) => {
-                if parser.is_end() {
-                    return Ok(false);
-                }
-                parser
-                    .parse_step(&mut |q| -> StdResult<(), MyStreamError<E, EF>> {
-                        f(StreamedQuad::scoped((
-                            [
-                                GRioTermWrapper(q.subject),
-                                GRioTermWrapper(q.predicate),
-                                GRioTermWrapper(q.object),
-                            ],
-                            q.graph_name.map(GRioTermWrapper),
-                        )))
-                        .map_err(MyStreamError::from_sink_error)
-                    })
-                    .map_err(|e| e.into_stream_error())
-                    .and(Ok(true))
-            }
-        }
-    }
-}
-
-/// Consume inner error and convert it to Error
-fn consume_err<E>(opt: &mut Option<E>) -> E {
-    opt.take().unwrap_or_else(|| {
-        panic!("This parser has failed previously, and can not be used anymore");
-    })
-}
-
-/// TTerm wrapper for Rio Term
-pub struct RioTermWrapper<'a>(Term<'a>);
-
-impl<'a> TTerm for RioTermWrapper<'a> {
-    /// Returns the kind of this term (IRI, literal, blank node, variable).
-    fn kind(&self) -> TermKind {
-        match self.0 {
-            Term::BlankNode(_) => TermKind::BlankNode,
-            Term::Literal(_) => TermKind::Literal,
-            Term::NamedNode(_) => TermKind::Iri,
-            Term::Triple(_) => panic!("Sophia does not support RDF-star yet"),
-        }
-    }
-
-    fn datatype(&self) -> Option<SimpleIri> {
-        if let Term::Literal(lit) = self.0 {
-            Some(match lit {
-                Literal::Simple { .. } => xsd::string,
-                Literal::LanguageTaggedString { .. } => rdf::langString,
-                Literal::Typed { datatype, .. } => SimpleIri::new_unchecked(datatype.iri, None),
-            })
-        } else {
-            None
-        }
-    }
-
-    fn language(&self) -> Option<&str> {
-        if let Term::Literal(Literal::LanguageTaggedString { language, .. }) = self.0 {
-            Some(language)
-        } else {
-            None
-        }
-    }
-
-    fn value_raw(&self) -> RawValue {
-        use Literal::*;
-        match self.0 {
-            Term::BlankNode(node) => node.id.into(),
-            Term::Literal(Simple { value }) => value.into(),
-            Term::Literal(LanguageTaggedString { value, .. }) => value.into(),
-            Term::Literal(Typed { value, .. }) => value.into(),
-            Term::NamedNode(node) => node.iri.into(),
-            Term::Triple(_) => panic!("Sophia does not support RDF-star yet"),
-        }
-    }
-
-    fn is_absolute(&self) -> bool {
-        // Rio standard terms are always absolute
-        true
-    }
-
-    fn as_dyn(&self) -> &dyn TTerm {
-        self
-    }
-}
-
-/// TTerm wrapper for Rio Generalized Term
-pub struct GRioTermWrapper<'a>(GeneralizedTerm<'a>);
-
-impl<'a> TTerm for GRioTermWrapper<'a> {
-    /// Returns the kind of this term (IRI, literal, blank node, variable).
-    fn kind(&self) -> TermKind {
-        match self.0 {
-            GeneralizedTerm::BlankNode(_) => TermKind::BlankNode,
-            GeneralizedTerm::Literal(_) => TermKind::Literal,
-            GeneralizedTerm::NamedNode(_) => TermKind::Iri,
-            GeneralizedTerm::Variable(_) => TermKind::Variable,
-            GeneralizedTerm::Triple(_) => panic!("Sophia does not support RDF-star yet"),
-        }
-    }
-
-    fn datatype(&self) -> Option<SimpleIri> {
-        if let GeneralizedTerm::Literal(lit) = self.0 {
-            Some(match lit {
-                Literal::Simple { .. } => xsd::string,
-                Literal::LanguageTaggedString { .. } => rdf::langString,
-                Literal::Typed { datatype, .. } => SimpleIri::new_unchecked(datatype.iri, None),
-            })
-        } else {
-            None
-        }
-    }
-
-    fn language(&self) -> Option<&str> {
-        if let GeneralizedTerm::Literal(Literal::LanguageTaggedString { language, .. }) = self.0 {
-            Some(language)
-        } else {
-            None
-        }
-    }
-
-    fn value_raw(&self) -> RawValue {
-        use Literal::*;
-        match self.0 {
-            GeneralizedTerm::BlankNode(node) => node.id.into(),
-            GeneralizedTerm::Literal(Simple { value }) => value.into(),
-            GeneralizedTerm::Literal(LanguageTaggedString { value, .. }) => value.into(),
-            GeneralizedTerm::Literal(Typed { value, .. }) => value.into(),
-            GeneralizedTerm::NamedNode(node) => node.iri.into(),
-            GeneralizedTerm::Variable(var) => var.name.into(),
-            GeneralizedTerm::Triple(_) => panic!("Sophia does not support RDF-star yet"),
-        }
-    }
-
-    fn as_dyn(&self) -> &dyn TTerm {
-        self
     }
 }

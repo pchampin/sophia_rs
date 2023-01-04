@@ -9,5 +9,4 @@
 //! [Linked Data]: http://linkeddata.org/
 
 pub mod parser;
-
 pub mod serializer;

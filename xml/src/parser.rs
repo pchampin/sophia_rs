@@ -3,26 +3,29 @@
 //!
 //! [RDF/XML]: https://www.w3.org/TR/rdf-syntax-grammar/
 
-use std::io::BufRead;
-
-use rio_xml::{RdfXmlError, RdfXmlParser as RioRdfXmlParser};
-
+use rio_xml::RdfXmlParser as RioRdfXmlParser;
 use sophia_api::parser::TripleParser;
+use sophia_iri::Iri;
 use sophia_rio::parser::*;
+use std::io::BufRead;
 
 /// N-Triples parser based on RIO.
 #[derive(Clone, Debug, Default)]
 pub struct RdfXmlParser {
     /// The base IRI used by this parser to resolve relative IRI-references.
-    pub base: Option<String>,
+    pub base: Option<Iri<String>>,
 }
 
 impl<B: BufRead> TripleParser<B> for RdfXmlParser {
-    type Source = StrictRioSource<RioRdfXmlParser<B>, RdfXmlError>;
+    type Source = StrictRioSource<RioRdfXmlParser<B>>;
     fn parse(&self, data: B) -> Self::Source {
-        // TODO issue RdfXmlError if base can not be parsed
-        let base = self.base.clone().and_then(|b| oxiri::Iri::parse(b).ok());
-        StrictRioSource::Parser(RioRdfXmlParser::new(data, base))
+        let base = self
+            .base
+            .clone()
+            .map(Iri::unwrap)
+            .map(oxiri::Iri::parse)
+            .map(Result::unwrap);
+        StrictRioSource(RioRdfXmlParser::new(data, base))
     }
 }
 
@@ -36,11 +39,11 @@ sophia_api::def_mod_functions_for_bufread_parser!(RdfXmlParser, TripleParser);
 mod test {
     use super::*;
     use sophia_api::graph::Graph;
-    use sophia_api::ns::{rdf, xsd};
-    use sophia_api::triple::stream::TripleSource;
-    use sophia_inmem::graph::FastGraph;
-    use sophia_term::matcher::ANY;
-    use sophia_term::StaticTerm;
+    use sophia_api::ns::rdf;
+    use sophia_api::source::TripleSource;
+    use sophia_api::term::{SimpleTerm, TermKind};
+
+    type MyGraph = Vec<[SimpleTerm<'static>; 3]>;
 
     #[test]
     fn test_simple_xml_string() -> std::result::Result<(), Box<dyn std::error::Error>> {
@@ -57,33 +60,33 @@ mod test {
         </rdf:RDF>
         "#;
 
-        let mut g = FastGraph::new();
+        let mut g = MyGraph::new();
         let p = RdfXmlParser {
-            base: Some("http://localhost/ex".into()),
+            base: Some(Iri::new_unchecked("http://localhost/ex".to_string())),
         };
         let c = p.parse_str(xml).add_to_graph(&mut g)?;
         assert_eq!(c, 3);
         assert!(g
             .triples_matching(
-                &StaticTerm::new_iri("http://localhost/ex#me").unwrap(),
-                &StaticTerm::new_iri("http://example.org/ns/knows").unwrap(),
-                &ANY,
+                [Iri::new_unchecked("http://localhost/ex#me")],
+                [Iri::new_unchecked("http://example.org/ns/knows")],
+                TermKind::BlankNode,
             )
             .next()
             .is_some());
         assert!(g
             .triples_matching(
-                &ANY,
-                &rdf::type_,
-                &StaticTerm::new_iri("http://example.org/ns/Person").unwrap(),
+                TermKind::BlankNode,
+                [rdf::type_],
+                [Iri::new_unchecked("http://example.org/ns/Person")],
             )
             .next()
             .is_some());
         assert!(g
             .triples_matching(
-                &ANY,
-                &StaticTerm::new_iri("http://example.org/ns/name").unwrap(),
-                &StaticTerm::new_literal_dt("Alice", xsd::string).unwrap(),
+                TermKind::BlankNode,
+                [Iri::new_unchecked("http://example.org/ns/name")],
+                ["Alice"],
             )
             .next()
             .is_some());

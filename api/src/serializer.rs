@@ -13,11 +13,11 @@
 
 use crate::dataset::*;
 use crate::graph::*;
-use crate::quad::stream::*;
-use crate::triple::stream::*;
+use crate::source::*;
 
 /// A triple serializer writes triples according to a given format.
 pub trait TripleSerializer {
+    /// The error type that may be raised during serialization.
     type Error: 'static + std::error::Error;
 
     /// Serialize all triples from the given [`TripleSource`].
@@ -46,6 +46,7 @@ pub trait TripleSerializer {
 
 /// A quad serializer writes quads according to a given format.
 pub trait QuadSerializer {
+    /// The error type that may be raised during serialization.
     type Error: 'static + std::error::Error;
 
     /// Serialize all quads from the given [`QuadSource`].
@@ -86,7 +87,7 @@ pub trait QuadSerializer {
 pub trait Stringifier {
     /// Borrows the internal serialized data.
     ///
-    /// # Safety
+    /// # Note to implementers
     /// It is the responsibility of implementors to ensure that this data is valid UTF8.
     /// The methods [`as_str`](#method.as_str) and
     /// [`to_string`](#method.to_string) rely on this.

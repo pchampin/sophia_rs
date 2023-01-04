@@ -1,6 +1,6 @@
 
 [book]
-authors = [""]
+authors = ["Pierre-Antoine Champin <http://champin.net>"]
 language = "en"
 multilingual = false
 src = "./book/src"

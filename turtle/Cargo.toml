@@ -1,6 +1,6 @@
 [package]
 name = "sophia_turtle"
-version = "0.7.2"
+version = "0.8.0-alpha"
 authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
 edition = "2021"
 description = "A Rust toolkit for RDF and Linked Data - parsers and serializers for the Turtle-family of syntaxes"
@@ -14,17 +14,13 @@ keywords = ["rdf", "linked-data", "semantic-web"]
 
 [dependencies]
 lazy_static = { version = "1.4.0" }
-oxiri = "0.2.1"
+oxiri = "0.2.2"
 regex = { version = "1.5.4" }
-rio_api = { version = "0.6.1", features = ["generalized"] }
-rio_turtle = { version = "0.6.1", features = ["generalized"] }
-sophia_api = { version = "0.7.2", path = "../api" }
-sophia_indexed = { version = "0.7.2", path = "../indexed" }
-sophia_inmem = { version = "0.7.2", path = "../inmem" }
-sophia_iri = { version = "0.7.2", path = "../iri" }
-sophia_term = { version = "0.7.2", path = "../term" }
-sophia_rio = { version = "0.7.2", path = "../rio" }
-thiserror = "1.0.30"
+rio_turtle = { version = "0.8", features = ["generalized"] }
+sophia_api = { version = "0.8.0-alpha", path = "../api" }
+sophia_iri = { version = "0.8.0-alpha", path = "../iri" }
+sophia_rio = { version = "0.8.0-alpha", path = "../rio" }
 
 [dev-dependencies]
-sophia_term = { version = "0.7.2", path = "../term" }
+sophia_isomorphism = { version = "0.8.0-alpha", path = "../isomorphism" }
+

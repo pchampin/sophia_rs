@@ -13,7 +13,7 @@ use std::borrow::Borrow;
 use std::ops::Deref;
 
 pub use oxiri::IriParseError;
-use oxiri::{Iri as Oxiri, IriRef as OxiriRef};
+pub use oxiri::{Iri as Oxiri, IriRef as OxiriRef};
 
 /// A `BaseIri` is an absolute IRI against which relative IRIs can be resolved.
 /// It stores the internal structure of the IRI,

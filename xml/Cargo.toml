@@ -1,6 +1,6 @@
 [package]
 name = "sophia_xml"
-version = "0.7.2"
+version = "0.8.0-alpha"
 authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
 edition = "2021"
 description = "A Rust toolkit for RDF and Linked Data - RDF/XML parser and serializer"
@@ -13,11 +13,11 @@ keywords = ["rdf", "linked-data", "semantic-web"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-oxiri = "0.2.1"
-rio_xml = "0.6.1"
-sophia_api = { version = "0.7.2", path = "../api" }
-sophia_rio = { version = "0.7.2", path = "../rio" }
+oxiri = "0.2.2"
+rio_xml = { version = "0.8" }
+sophia_api = { version = "0.8.0-alpha", path = "../api" }
+sophia_iri = { version = "0.8.0-alpha", path = "../iri" }
+sophia_rio = { version = "0.8.0-alpha", path = "../rio" }
 
 [dev-dependencies]
-sophia_inmem = { version = "0.7.2", path = "../inmem" }
-sophia_term = { version = "0.7.2", path = "../term" }
+sophia_isomorphism = { version = "0.8.0-alpha", path = "../isomorphism" }

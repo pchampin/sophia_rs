@@ -11,8 +11,8 @@
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
 use rio_xml::RdfXmlFormatter;
-use sophia_api::serializer::*;
-use sophia_api::triple::stream::{SinkError, StreamResult, TripleSource};
+use sophia_api::serializer::{Stringifier, TripleSerializer};
+use sophia_api::source::{SinkError, StreamResult, TripleSource};
 use sophia_rio::serializer::rio_format_triples;
 use std::io;
 
@@ -98,31 +98,38 @@ impl Stringifier for RdfXmlSerializer<Vec<u8>> {
 #[cfg(test)]
 pub(crate) mod test {
     use super::*;
-    use sophia_api::graph::isomorphic_graphs;
-    use sophia_api::ns::*;
-    use sophia_term::literal::convert::AsLiteral;
-    use sophia_term::*;
+    use sophia_api::graph::Graph;
+    use sophia_api::term::SimpleTerm;
+    use sophia_isomorphism::isomorphic_graphs;
+
+    const TESTS: &[&str] = &[r#"<?xml version="1.0" encoding="utf-8"?>
+        <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                 xmlns="http://example.org/ns/">
+          <rdf:Description rdf:about="http://localhost/ex#me">
+            <knows>
+              <Person>
+                <name>Alice</name>
+              </Person>
+            </knows>
+          </rdf:Description>
+        </rdf:RDF>
+        "#];
 
     #[test]
     fn roundtrip() -> Result<(), Box<dyn std::error::Error>> {
-        let me = StaticTerm::new_iri("http://champin.net/#pa")?;
-        let g = vec![
-            [
-                me,
-                rdf::type_.into(),
-                StaticTerm::new_iri("http://schema.org/Person")?,
-            ],
-            [
-                me,
-                StaticTerm::new_iri("http://schema.org/name")?,
-                "Pierre-Antoine".as_literal().into(),
-            ],
-        ];
-        let s = RdfXmlSerializer::new_stringifier()
-            .serialize_graph(&g)?
-            .to_string();
-        let g2: Vec<[BoxTerm; 3]> = crate::parser::parse_str(&s).collect_triples()?;
-        assert!(isomorphic_graphs(&g, &g2)?);
+        for rdfxml in TESTS {
+            println!("==========\n{}\n----------", rdfxml);
+            let g1: Vec<[SimpleTerm; 3]> = crate::parser::parse_str(rdfxml).collect_triples()?;
+
+            let out = RdfXmlSerializer::new_stringifier()
+                .serialize_triples(g1.triples())?
+                .to_string();
+            println!("{}", &out);
+
+            let g2: Vec<[SimpleTerm; 3]> = crate::parser::parse_str(&out).collect_triples()?;
+
+            assert!(isomorphic_graphs(&g1, &g2)?);
+        }
         Ok(())
     }
 }

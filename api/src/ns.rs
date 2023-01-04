@@ -6,164 +6,31 @@
 //!
 //! # Example
 //! ```
-//! use sophia_api::ns::{Namespace, rdf, rdfs, xsd};
+//! use sophia_api::ns::{Namespace, NsTerm, rdf, rdfs, xsd};
 //!
 //! let schema = Namespace::new("http://schema.org/").unwrap();
 //! let s_name = schema.get("name").unwrap();
-//! // and then, given a graph:
-//! //g.insert(&s_name, &rdf::type_, &rdf::Property);
-//! //g.insert(&s_name, &rdfs::range, &xsd::string);
+//!
+//! // you can now populate a graph like this:
+//! let mut g = vec![];
+//! g.push([&s_name, &rdf::type_, &rdf::Property]);
+//! g.push([&s_name, &rdfs::range, &xsd::string]);
 //! ```
-
-use crate::term::SimpleIri;
 use mownstr::MownStr;
-use sophia_iri::{error::*, is_valid_iri_ref, resolve::*};
+use sophia_iri::InvalidIri;
+use std::borrow::Borrow;
+use std::fmt;
 
-/// A custom namespace.
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct Namespace<T>(pub(crate) T);
+// rexport is necessary to ensure that the macros work.
+pub use sophia_iri::IriRef;
 
-impl<T> Namespace<T>
-where
-    T: AsRef<str>,
-{
-    /// Build a custom namespace based on the given IRI.
-    ///
-    /// `iri` must be a valid IRI, otherwise this constructor returns an error.
-    pub fn new(iri: T) -> Result<Namespace<T>> {
-        if is_valid_iri_ref(iri.as_ref()) {
-            Ok(Self(iri))
-        } else {
-            Err(InvalidIri(String::from(iri.as_ref())))
-        }
-    }
-
-    /// Build a custom namespace, without checking the given IRI.
-    ///
-    /// # Pre-conditions
-    /// It is the callers responsibility to ensure that `iri` is a valid IRI reference.
-    pub fn new_unchecked(iri: T) -> Namespace<T> {
-        Self(iri)
-    }
-
-    /// Build an IRI by appending `suffix` to this namespace.
-    ///
-    /// Return an error if the concatenation produces an invalid IRI.
-    pub fn get<'s>(&'s self, suffix: &'s str) -> Result<SimpleIri<'s>> {
-        SimpleIri::new(self.0.as_ref(), Some(suffix))
-    }
-
-    /// Maps this Namespace to another one by applying function `f`.
-    pub fn map<U, F>(self, f: F) -> Namespace<U>
-    where
-        U: AsRef<str>,
-        F: FnOnce(T) -> U,
-    {
-        Namespace(f(self.0))
-    }
-
-    /// Tries to map this Namespace to another one by applying function `f`.
-    pub fn try_map<U, F, E>(self, f: F) -> Result<Namespace<U>, E>
-    where
-        U: AsRef<str>,
-        F: FnOnce(T) -> Result<U, E>,
-    {
-        Ok(Namespace(f(self.0)?))
-    }
-
-    /// Consume this Namespace and return the inner IRI data.
-    pub fn destruct(self) -> T {
-        self.0
-    }
-}
-
-impl<'a, 'b, T> Resolve<&'a Namespace<T>, Namespace<MownStr<'a>>> for IriParsed<'b>
-where
-    T: AsRef<str>,
-{
-    /// Resolve the IRI of the given `Namespace`.
-    fn resolve(&self, other: &'a Namespace<T>) -> Namespace<MownStr<'a>> {
-        let iri = other.0.as_ref();
-        let resolved: MownStr = self.resolve(iri).expect("Is valid as from Namespace");
-        Namespace(resolved)
-    }
-}
-
-impl<T: AsRef<str>> AsRef<str> for Namespace<T> {
-    fn as_ref(&self) -> &str {
-        self.0.as_ref()
-    }
-}
-
-impl<T: AsRef<str>> std::ops::Deref for Namespace<T> {
-    type Target = str;
-
-    fn deref(&self) -> &str {
-        self.0.as_ref()
-    }
-}
-
-/// Create a "namespace module"
-/// defining a set of terms within a given IRI space.
-///
-/// # Tests
-/// This macro also create a test module to check that all created IRIs are valid.
-///
-/// This allows to skip those checks at runtime, keeping the initialization of the namespace fast.
-#[macro_export]
-macro_rules! namespace {
-    ($iri_prefix:expr, $($suffix:ident),*; $($r_id:ident, $r_sf:expr),*) => {
-        /// Prefix used in this namespace.
-        pub static PREFIX:&'static str = $iri_prefix;
-        $(
-            $crate::ns_iri!($iri_prefix, $suffix);
-        )*
-        $(
-            $crate::ns_iri!($iri_prefix, $r_id, $r_sf);
-        )*
-
-        /// Test module for checking tha IRIs are valid
-        #[cfg(test)]
-        mod test_valid_iri {
-            $(
-                #[allow(non_snake_case)]
-                #[test]
-                fn $suffix() {
-                    $crate::term::SimpleIri::new($iri_prefix, Some(stringify!($suffix))).expect(stringify!($suffix));
-                }
-            )*
-            $(
-                #[allow(non_snake_case)]
-                #[test]
-                fn $r_id() {
-                    $crate::term::SimpleIri::new($iri_prefix, Some($r_sf)).expect($r_sf);
-                }
-            )*
-        }
-    };
-    ($iri_prefix:expr, $($suffix:ident),*) => {
-        namespace!($iri_prefix, $($suffix),*;);
-    };
-}
-
-/// Create a term in a "namespace module".
-/// In general, you should use the [`namespace!`](macro.namespace.html) macro instead.
-///
-/// # Safety
-/// This macro is conceptually unsafe,
-/// as it is never checked that the prefix IRI is a valid IRI reference.
-#[macro_export]
-macro_rules! ns_iri {
-    ($prefix:expr, $ident:ident) => {
-        $crate::ns_iri!($prefix, $ident, stringify!($ident));
-    };
-    ($prefix:expr, $ident:ident, $suffix:expr) => {
-        /// Generated term.
-        #[allow(non_upper_case_globals)]
-        pub static $ident: $crate::term::SimpleIri =
-            $crate::term::SimpleIri::new_unchecked($prefix, Some($suffix));
-    };
-}
+#[macro_use]
+mod _macro;
+pub use _macro::*;
+mod _namespace;
+pub use _namespace::*;
+mod _term;
+pub use _term::*;
 
 /// The standard `rdf:` namespace.
 ///
@@ -364,15 +231,27 @@ mod test {
         let ns1 = Namespace::new("http://schema.org/").unwrap();
         let ns2 = Namespace::new(Rc::from("http://schema.org/")).unwrap();
 
-        assert_eq!(ns1.get("name").unwrap(), ns1.get("name").unwrap());
-        assert_eq!(ns2.get("name").unwrap(), ns2.get("name").unwrap());
-        assert_eq!(ns1.get("name").unwrap(), ns2.get("name").unwrap());
+        assert_eq!(
+            ns1.get("name").unwrap().to_string(),
+            ns1.get("name").unwrap().to_string()
+        );
+        assert_eq!(
+            ns2.get("name").unwrap().to_string(),
+            ns2.get("name").unwrap().to_string()
+        );
+        assert_eq!(
+            ns1.get("name").unwrap().to_string(),
+            ns2.get("name").unwrap().to_string()
+        );
     }
 
     #[test]
     fn test_different_terms() {
         let ns1 = Namespace::new("http://schema.org/").unwrap();
-        assert_ne!(ns1.get("name").unwrap(), ns1.get("nam").unwrap());
+        assert_ne!(
+            ns1.get("name").unwrap().to_string(),
+            ns1.get("nam").unwrap().to_string()
+        );
     }
 
     #[test]

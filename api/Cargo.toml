@@ -1,6 +1,6 @@
 [package]
 name = "sophia_api"
-version = "0.7.2"
+version = "0.8.0-alpha"
 authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
 edition = "2021"
 description = "A Rust toolkit for RDF and Linked Data - Core API"
@@ -17,18 +17,19 @@ all-features = true
 
 [features]
 default = []
+# This feature increases the number of tests
+all_tests = []
 # This feature enables to use the graph and dataset test macros in other crates
 test_macro = []
 
 [dependencies]
-sophia_iri = { version = "0.7.2", path = "../iri" }
+sophia_iri = { version = "0.8.0-alpha", path = "../iri" }
 lazy_static = "1.4.0"
-mownstr = "0.1.3"
-regex = "1.5.4"
+mownstr = { git="https://github.com/pchampin/mownstr", rev="c88467d" }
+regex = "1.6.0"
 resiter = "0.4.0"
-thiserror = "1.0.30"
+thiserror = "1.0.32"
 
 [dev-dependencies]
-sophia_iri = { version = "0.7.2", path = "../iri", features = ["test_data"] }
-sophia_term = { version = "0.*", path = "../term" }
-test-case = "1.2.1"
+sophia_iri = { version = "0.8.0-alpha", path = "../iri", features = ["test_data"] }
+test-case = "2.2.1"

@@ -1,432 +1,797 @@
-//! This module defines the API for [RDF] terms.
+//! I define how RDF terms
+//! (such as [IRIs](https://www.w3.org/TR/rdf11-concepts/#section-IRIs),
+//! [blank nodes](https://www.w3.org/TR/rdf11-concepts/#section-blank-nodes)
+//! and [literals](https://www.w3.org/TR/rdf11-concepts/#section-Graph-Literal))
+//! are represented in Sophia.
 //!
-//! Terms are the building blocks of an [RDF] graph.
-//! There are four types of terms: IRIs, blank nodes (BNode for short),
-//! literals and variables.
-//!
-//! NB: variable only exist in [generalized RDF].
-//!
-//! [Sophia]: https://docs.rs/sophia/latest/sophia/
-//! [RDF]: https://www.w3.org/TR/rdf-primer/
-//! [Linked Data]: http://linkeddata.org/
-//! [generalized RDF]: crate#generalized-vs-strict-rdf-model
-
+//! I provide the main trait [`Term`],
+//! and a number of auxiliary types and traits, such as [`TermKind`], [`FromTerm`]...
+use crate::triple::Triple;
 use mownstr::MownStr;
-use std::cmp::Ordering;
-use std::error::Error;
-use std::hash::{Hash, Hasher};
+use std::cmp::{Ord, Ordering};
+use std::hash::Hash;
 
-mod _dyn_term;
-mod _graph_name_matcher; // is 'pub use'd by module 'matcher'
-mod _iri_wrapper;
-mod _raw_value;
-pub use self::_raw_value::*;
+mod _cmp;
+pub use _cmp::*;
+mod _graph_name;
+pub use _graph_name::*;
+mod _native_iri;
+pub use _native_iri::*;
+mod _native_literal;
+pub use _native_literal::*;
+mod _simple;
+pub use _simple::*;
+
+pub mod bnode_id;
+pub mod language_tag;
 pub mod matcher;
-pub mod simple_iri;
-pub use simple_iri::SimpleIri;
+pub mod var_name;
 
-/// Trait for all RDF terms.
-///
-/// Sophia supports 4 kinds of terms: IRI references (absolute or relative),
-/// literals, blank nodes and variables.
-/// Note that strict RDF does not support relative IRI references nor variables.
-///
-/// Types representing terms, of one or more of the kinds above,
-/// can implement this trait and be used with the rest of the Sophia API.
-///
-/// # Design considerations
-///
-/// The design of this trait is not as "pure" as it could have been:
-///
-/// * it merges into a single trait four "kinds"
-///   which could arguably be considered as four different abstract types;
-///
-/// * it is rather opinionated on how implementation should store their data internally,
-///   and has a very constrained contract (see below);
-///
-/// * it relies on the "semi-abstract" methods `value_raw`,
-///   which mostly makes sense for the default implementation of other methods.
-///
-/// These choices were made to allow for efficient implementations of the overall API.
-///
-/// # Contract
-///
-/// In addition to the specific contract of each method,
-/// any type implementing this trait must uphold the following guarantees:
-///
-/// * if it implements [`Hash`],
-///   it must be consistent with (or, even better, based on)
-///   [`term_hash()`];
-///
-/// * if it implements [`PartialEq`],
-///   it must be consistent with (or, even better, based on)
-///   [`term_eq()`];
-///
-/// * if it implements [`PartialCmp`](std::cmp),
-///   it must be consistent with (or, even better, based on)
-///   [`term_cmp`];
-///
-/// * if it implements [`Borrow`](std::borrow::Borrow)`<dyn `[`TTerm`]` + 'a>`
-///   it must have equivalent implementations to [`term_hash()`] and [`term_eq()`]
-///   so that the contract of [`Borrow`](std::borrow::Borrow)
-///   upholds with the implementations on `dyn `[`TTerm`].
-///
-/// # `[Borrow]<dyn TTerm + 'a>`
-///
-/// Implementing [`Borrow`](std::borrow::Borrow)`<dyn `[`TTerm`]` + 'a>`
-/// for a term increases the ergonomics
-/// when the type is used as key in a [`HashSet`](std::collections::HashSet) or similar.
-/// It allows to search for keys with any implementation of the `TTerm` trait, e.g.:
-///
-/// ```
-/// # use std::collections::HashSet;
-/// use sophia_term::Term;
-/// use sophia_api::term::{SimpleIri, TTerm as _};
-///
-/// let t: Term<String> = Term::new_iri("http://example.com/test")?;
-/// let mut map = HashSet::new();
-/// map.insert(t);
-///
-/// let iri = SimpleIri::new("http://example.com/", Some("test"))?;
-/// assert!(map.get(iri.as_dyn()).is_some());
-/// # Ok::<(), Box<dyn std::error::Error>>(())
-/// ```
-///
-/// ## Implementation
-///
-/// Besides the contract [mentioned above](#Contract), it should be noted that
-/// someone wants to implement `Borrow<dyn TTerm + 'a>` instead of
-/// `Borrow<dyn TTerm>` for a custom term. The reason is that Rust assumes that
-///  every `dyn Trait` object has a `'static` lifetime which means that
-/// borrowing `dyn TTerm` requires borrowing of the value for the `'static`
-/// lifetime. To remove this assumption implement `Borrow<dyn TTerm + 'a>`
-/// instead, e.g.:
-///
-/// ```
-/// # use sophia_api::term::{TTerm, TermKind, RawValue};
-/// # struct MyTerm;
-/// # impl TTerm for MyTerm {
-/// #     fn kind(&self) -> TermKind {TermKind::BlankNode}
-/// #     fn value_raw(&self) -> RawValue { "".into() }
-/// #     fn as_dyn(&self) -> &dyn TTerm { self }
-/// # }
-/// use std::borrow::Borrow;
-///
-/// impl<'a> Borrow<dyn TTerm + 'a> for MyTerm {
-///     fn borrow(&self) -> &(dyn TTerm + 'a) {
-///         self
-///     }
-/// }
-/// ```
-pub trait TTerm {
-    /// Returns the kind of this term (IRI, literal, blank node, variable).
-    fn kind(&self) -> TermKind;
+/// This type is aliased from `sophia_iri` for convenience,
+/// as it is required to implement [`Term`].
+pub type IriRef<T> = sophia_iri::IriRef<T>;
+// The following two types are also re-exported for the same reason.
+pub use bnode_id::BnodeId;
+pub use language_tag::LanguageTag;
+pub use var_name::VarName;
 
-    /// Return the "value" of this term, which depends on its kind:
-    /// * for an IRI reference, its value;
-    /// * for a literal, its lexical value;
-    /// * for a blank node, its local identifier;
-    /// * for a variable, its name.
-    ///
-    /// # Performance
-    /// The returned `MownStr` is always borrowed (equivalent to a `&str`),
-    /// **except** for IRI references where this method *may* allocate a new string
-    /// (depending on implementations).
-    /// If this allocation is undesirable, use [`value_raw`] instead.
-    ///
-    /// # Note to implementors
-    /// Should not be overridden; must be consistent with [`value_raw`].
-    ///
-    /// [`value_raw`]: #tymethod.value_raw
-    fn value(&self) -> MownStr {
-        self.value_raw().into()
-    }
-
-    /// Return the datatype IRI of this term if it is a literal.
-    ///
-    /// NB: *all* literals have a datatype,
-    /// even simple literals (whose implicit type is `xsd:string`)
-    /// and language tagged strings (whose implicit type is `rdf:langString`).
-    fn datatype(&self) -> Option<SimpleIri> {
-        None
-    }
-
-    /// Return the language tag of this term if it is a language-tagged literal.
-    ///
-    /// # Note to implementors
-    /// The default implementation always return `None`,
-    /// so unless your type may represent a language-tagged literal,
-    /// you do not need to override it.
-    fn language(&self) -> Option<&str> {
-        None
-    }
-
-    /// Return the "value" of this term, possibly split in two substrings.
-    /// The second part might only be non-empty if this term is an IRI reference.
-    ///
-    /// See also [`value`](#method.value).
-    ///
-    /// # Note to implementors
-    /// The second part of the raw value is intended for some implementations
-    /// of IRIs, storing both a "namespace" and a "suffix".
-    /// For other kinds of term, the second part must always be None.
-    fn value_raw(&self) -> RawValue;
-
-    /// All terms are absolute, except for:
-    /// * relative IRI references,
-    /// * literals whose datatype is a relative IRI reference.
-    fn is_absolute(&self) -> bool {
-        match self.kind() {
-            Iri => self.value_raw().is_absolute(),
-            Literal => match self.language() {
-                None => self.datatype().unwrap().value_raw().is_absolute(),
-                Some(_) => true,
-            },
-            _ => true,
-        }
-    }
-
-    /// This method ensures that all implementations of `TTerm`
-    /// can be turned into a trait object.
-    ///
-    /// # Why is this required?
-    /// After all, in most cases, passing `&t` instead of `t.as_dyn()`
-    /// will work just as well.
-    ///
-    /// The reason is that most methods of the API will accept *references*
-    /// to terms, as `&T` where `T: TTerm + ?Sized`,
-    /// and such references can *not* be cast to `dyn TTerm`
-    /// (see <https://stackoverflow.com/a/57432042/1235487> for more details).
-    fn as_dyn(&self) -> &dyn TTerm;
+lazy_static::lazy_static! {
+    static ref RDF_LANG_STRING: Box<str> = crate::ns::rdf::langString.iri().unwrap().unwrap().into();
 }
 
-/// Any [`TTerm`] belongs to one of those kinds.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, PartialOrd, Ord)]
+/// The different kinds of terms that a [`Term`] can represent.
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialOrd, PartialEq)]
 pub enum TermKind {
-    /// RDF [IRI](https://www.w3.org/TR/rdf11-concepts/#section-IRIs),
-    /// although in Sophia they can also be
-    /// [relative IRI references](https://www.ietf.org/rfc/rfc3987.html#section-6.5)
+    /// An [RDF IRI](https://www.w3.org/TR/rdf11-concepts/#section-IRIs)
     Iri,
-    /// RDF [literal](https://www.w3.org/TR/rdf11-concepts/#section-Graph-Literal)
+    /// An RDF [literal](https://www.w3.org/TR/rdf11-concepts/#section-Graph-Literal)
     Literal,
-    /// RDF [blank node](https://www.w3.org/TR/rdf11-concepts/#section-blank-nodes)
+    /// An RDF [blank node](https://www.w3.org/TR/rdf11-concepts/#section-blank-nodes)
     BlankNode,
-    /// [variable](https://www.w3.org/TR/sparql11-query/#QSynVariables)
+    /// An RDF-star [quoted triple](https://www.w3.org/2021/12/rdf-star.html#dfn-quoted)
+    Triple,
+    /// A SPARQL or Notation3 variable
     Variable,
 }
-use TermKind::*;
 
-/// A type that can copy any term.
-pub trait CopyTerm: Sized {
-    /// Copy `term` into an instance of this type.
-    fn copy<T>(term: &T) -> Self
-    where
-        T: TTerm + ?Sized;
-}
-
-/// A type that can copy some terms.
-pub trait TryCopyTerm: Sized {
-    /// The error type produced when failing to copy a given term
-    type Error: 'static + Error;
-    /// Try to copy `term` into an instance of this type.
-    fn try_copy<T>(term: &T) -> Result<Self, Self::Error>
-    where
-        T: TTerm + ?Sized;
-}
-
-/// This trait is to [`CopyTerm`] and [`TryCopyTerm`]
-/// what `Into` is to `From`.
-/// It is automatically implemented by any implementation of [`TTerm`].
-pub trait CopiableTerm {
-    /// Copy this IRI into another type.
-    fn copied<T: CopyTerm>(&self) -> T;
-    /// Try to copy this IRI into another type.
-    fn try_copied<T: TryCopyTerm>(&self) -> Result<T, T::Error>;
-}
-
-impl<T> CopiableTerm for T
-where
-    T: TTerm + ?Sized,
-{
-    fn copied<U: CopyTerm>(&self) -> U {
-        U::copy(self)
-    }
-    fn try_copied<U: TryCopyTerm>(&self) -> Result<U, U::Error> {
-        U::try_copy(self)
-    }
-}
-
-/// Hash a term
-pub fn term_hash<T, H>(term: &T, state: &mut H)
-where
-    H: Hasher,
-    T: TTerm + ?Sized,
-{
-    let k = term.kind();
-    let v = term.value_raw();
-    k.hash(state);
-    match k {
-        Iri => v.hash(state),
-        Literal => {
-            match term.language() {
-                None => term.datatype().unwrap().value_raw().hash(state),
-                Some(tag) => {
-                    for b in tag.bytes() {
-                        state.write_u8(b.to_ascii_uppercase());
-                    }
-                }
-            };
-            v.hash(state);
-        }
-        _ => v.hash(state),
-    }
-}
-
-/// Compare two terms for syntactic equality.
+/// A [generalized] RDF term.
 ///
-/// NB: this does not take into account semantics, not even for literals.
-/// For example, `"42"^^xsd:integer`, `"042"^^xsd:integer` and `"42.0"^^xsd::decimal`
-/// are considered all different from each other.
-pub fn term_eq<T1, T2>(t1: &T1, t2: &T2) -> bool
-where
-    T1: TTerm + ?Sized,
-    T2: TTerm + ?Sized,
-{
-    let k1 = t1.kind();
-    let k2 = t2.kind();
-    k1 == k2 && {
-        let v1 = t1.value_raw();
-        let v2 = t2.value_raw();
-        if matches!(k1, Iri) {
-            v1 == v2
+/// # Implementation
+///
+/// The only method without a default implementation is [`kind`](Term::kind),
+/// which indicates what kind of RDF term a given [`Term`] represents.
+///
+/// However, while all other methods have a default implementtation (returning `None`),
+/// those corresponding to the supported kinds MUST be overridden accordingly,
+/// otherwise they will panic.
+///
+/// See below for an explaination of this design choice.
+///
+/// # Design rationale
+///
+/// The methods defined by this trait are not independant:
+/// depending on the value returned by [`kind`](Term::kind),
+/// other methods are expected to return `Some(...)` or `None` accordingly.
+///
+/// An alternative solution would have been for the variants of [`TermKind`]
+/// to *contain* the corresponding values.
+/// This would arguably have been more idiomatic for users,
+/// and less error-prone for implementors of this trait.
+///
+/// However, this would have caused performance issues in some cases,
+/// because the [`MownStr`] returned by, e.g.,
+/// [`iri`](Term::iri) or [`lexical_value`](Term::lexical_value),
+/// can be allocated *on demand* by some implementations.
+///
+/// [generalized]: crate#generalized-vs-strict-rdf-model
+pub trait Term: std::fmt::Debug {
+    /// A type of [`Term`] that can be borrowed from this type
+    /// (i.e. that can be obtained from a simple reference to this type).
+    /// It is used in particular for accessing constituents of quoted tripes ([`Term::triple`])
+    /// or for sharing this term with a function that expects `T: Term` (rather than `&T`).
+    ///
+    /// In "standard" cases, this type is `&Self`.
+    ///
+    /// Exceptions, where this type is `Self` instead, are
+    /// * some [`Term`] implementations implementing [`Copy`];
+    /// * in particular, the implementation of [`Term`] by *references* to "standard" [`Term`] implementations.
+    ///
+    /// This design makes `T: Term` conceptually equivalent `T: Borrow<Term>`
+    /// (but the latter is not valid, since `Term` is a trait).
+    /// In this pattern, [`Term::borrow_term`] plays the rols of [`Borrow::borrow`](std::borrow).
+    ///
+    /// # Note to implementors
+    /// When in doubt, set this to `&Self`.
+    /// If that is not possible and your type implements [`Copy`],
+    /// consider setting this to `Self`.
+    /// Otherwise, your implementations is probably not a good fit for implementing [`Term`].
+    type BorrowTerm<'x>: Term + Copy
+    where
+        Self: 'x;
+
+    /// Return the kind of RDF term that this [`Term`] represents.
+    fn kind(&self) -> TermKind;
+
+    /// Return true if this [`Term`] is an IRI,
+    /// i.e. if [`kind`](Term::kind) retuns [`TermKind::Iri`].
+    #[inline]
+    fn is_iri(&self) -> bool {
+        self.kind() == TermKind::Iri
+    }
+
+    /// Return true if this [`Term`] is a blank node,
+    /// i.e. if [`kind`](Term::kind) retuns [`TermKind::BlankNode`].
+    #[inline]
+    fn is_blank_node(&self) -> bool {
+        self.kind() == TermKind::BlankNode
+    }
+
+    /// Return true if this [`Term`] is a literal,
+    /// i.e. if [`kind`](Term::kind) retuns [`TermKind::Literal`].
+    #[inline]
+    fn is_literal(&self) -> bool {
+        self.kind() == TermKind::Literal
+    }
+
+    /// Return true if this [`Term`] is a variable,
+    /// i.e. if [`kind`](Term::kind) retuns [`TermKind::Variable`].
+    #[inline]
+    fn is_variable(&self) -> bool {
+        self.kind() == TermKind::Variable
+    }
+
+    /// Return true if this [`Term`] is an atomic term,
+    /// i.e. an [IRI](Term::is_iri),
+    /// a [blank node](Term::is_blank_node),
+    /// a [literal](Term::is_literal)
+    /// or a [variable](Term::is_variable).
+    #[inline]
+    fn is_atom(&self) -> bool {
+        use TermKind::*;
+        match self.kind() {
+            Iri | BlankNode | Literal | Variable => true,
+            Triple => false,
+        }
+    }
+
+    /// Return true if this [`Term`] is an RDF-star quoted triple,
+    /// i.e. if [`kind`](Term::kind) retuns [`TermKind::Triple`].
+    #[inline]
+    fn is_triple(&self) -> bool {
+        self.kind() == TermKind::Triple
+    }
+
+    /// If [`kind`](Term::kind) returns [`TermKind::Iri`],
+    /// return this IRI.
+    /// Otherwise return `None`.
+    ///
+    /// # Note to implementors
+    /// The default implementation assumes that [`Term::is_iri`] always return false.
+    /// If that is not the case, this method must be explicit implemented.
+    #[inline]
+    fn iri(&self) -> Option<IriRef<MownStr>> {
+        self.is_iri()
+            .then(|| unimplemented!("Default implementation should have been overridden"))
+    }
+
+    /// If [`kind`](Term::kind) returns [`TermKind::BlankNode`],
+    /// return the locally unique label of this blank node.
+    /// Otherwise return `None`.
+    ///
+    /// # Note to implementors
+    /// The default implementation assumes that [`Term::is_blank_node`] always return false.
+    /// If that is not the case, this method must be explicit implemented.
+    #[inline]
+    fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
+        self.is_blank_node()
+            .then(|| unimplemented!("Default implementation should have been overridden"))
+    }
+
+    /// If [`kind`](Term::kind) returns [`TermKind::Literal`],
+    /// return the lexical value of this literal.
+    /// Otherwise return `None`.
+    ///
+    /// # Note to implementors
+    /// The default implementation assumes that [`Term::is_literal`] always return false.
+    /// If that is not the case, this method must be explicit implemented.
+    #[inline]
+    fn lexical_value(&self) -> Option<MownStr> {
+        self.is_literal()
+            .then(|| unimplemented!("Default implementation should have been overridden"))
+    }
+
+    /// If [`kind`](Term::kind) returns [`TermKind::Literal`],
+    /// return the datatype IRI of this literal.
+    /// Otherwise return `None`.
+    ///
+    /// NB: if this literal is a language-tagged string,
+    /// then this method MUST return `http://www.w3.org/1999/02/22-rdf-syntax-ns#langString`.
+    ///
+    /// # Note to implementors
+    /// The default implementation assumes that [`Term::is_literal`] always return false.
+    /// If that is not the case, this method must be explicit implemented.
+    #[inline]
+    fn datatype(&self) -> Option<IriRef<MownStr>> {
+        self.is_literal()
+            .then(|| unimplemented!("Default implementation should have been overridden"))
+    }
+
+    /// If [`kind`](Term::kind) returns [`TermKind::Literal`],
+    /// and if this literal is a language-tagged string,
+    /// return its language tag.
+    /// Otherwise return `None`.
+    ///
+    /// # Note to implementors
+    /// The default implementation assumes that [`Term::is_literal`] always return false.
+    /// If that is not the case, this method must be explicit implemented.
+    #[inline]
+    fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+        self.is_literal()
+            .then(|| unimplemented!("Default implementation should have been overridden"))
+    }
+
+    /// If [`kind`](Term::kind) returns [`TermKind::Variable`],
+    /// return the name of this variable.
+    /// Otherwise return `None`.
+    ///
+    /// # Note to implementors
+    /// The default implementation assumes that [`Term::is_variable`] always return false.
+    /// If that is not the case, this method must be explicit implemented.
+    #[inline]
+    fn variable(&self) -> Option<VarName<MownStr>> {
+        self.is_variable()
+            .then(|| unimplemented!("Default implementation should have been overridden"))
+    }
+
+    /// If [`kind`](Term::kind) returns [`TermKind::Triple`],
+    /// return this triple.
+    /// Otherwise return `None`.
+    ///
+    /// # Note to implementors
+    /// The default implementation assumes that [`Term::is_triple`] always return false.
+    /// If that is not the case, this method must be explicit implemented.
+    #[inline]
+    fn triple(&self) -> Option<[Self::BorrowTerm<'_>; 3]> {
+        self.is_triple()
+            .then(|| unimplemented!("Default implementation should have been overridden"))
+    }
+
+    /// If [`kind`](Term::kind) returns [`TermKind::Triple`],
+    /// return this triple, consuming this term.
+    /// Otherwise return `None`.
+    ///
+    /// # Note to implementors
+    /// The default implementation assumes that [`Term::is_triple`] always return false.
+    /// If that is not the case, this method must be explicit implemented.
+    #[inline]
+    fn to_triple(self) -> Option<[Self; 3]>
+    where
+        Self: Sized,
+    {
+        self.is_triple()
+            .then(|| unimplemented!("Default implementation should have been overridden"))
+    }
+
+    /// Get something implementing [`Term`] from a simple reference to `self`.
+    ///
+    /// See [`Term::BorrowTerm`] for more detail.
+    fn borrow_term(&self) -> Self::BorrowTerm<'_>;
+
+    /// Iter over all the constituents of this term.
+    ///
+    /// If this term is [atomic](Term::is_atom), the iterator yields only the term itself.
+    /// If it is a quoted triple, the iterator yields the quoted triple itself,
+    /// and the constituents of its subject, predicate and object.
+    fn constituents<'s>(&'s self) -> Box<dyn Iterator<Item = Self::BorrowTerm<'s>> + 's> {
+        let this_term = std::iter::once(self.borrow_term());
+        match self.triple() {
+            None => Box::new(this_term),
+            Some(triple) => {
+                Box::new(this_term.chain(triple.into_iter().flat_map(Term::to_constituents)))
+            }
+        }
+    }
+
+    /// Iter over all the constiutents of this term, consuming it.
+    ///
+    /// See [Term::constituents].
+    fn to_constituents<'a>(self) -> Box<dyn Iterator<Item = Self> + 'a>
+    where
+        Self: Clone + 'a,
+    {
+        if !self.is_triple() {
+            Box::new(std::iter::once(self))
         } else {
-            v1.0 == v2.0 && {
-                if matches!(k1, Literal) {
-                    match (t1.language(), t2.language()) {
-                        (Some(tag1), Some(tag2)) => tag1.eq_ignore_ascii_case(tag2),
-                        (None, None) => {
-                            let dt1 = t1.datatype().unwrap();
-                            let dt2 = t2.datatype().unwrap();
-                            dt1.value_raw() == dt2.value_raw()
-                        }
+            Box::new(
+                std::iter::once(self.clone()).chain(
+                    self.to_triple()
+                        .unwrap()
+                        .into_iter()
+                        .flat_map(Term::to_constituents),
+                ),
+            )
+        }
+    }
+
+    /// Iter over all the [atomic] constituents of this term.
+    ///
+    /// If this term is [atomic], the iterator yields only the term itself.
+    /// If it is a quoted triple, the iterator yields the atoms of its subject, predicate and object.
+    ///
+    /// [atomic]: Term::is_atom
+    fn atoms<'s>(&'s self) -> Box<dyn Iterator<Item = Self::BorrowTerm<'s>> + 's> {
+        match self.triple() {
+            None => Box::new(std::iter::once(self.borrow_term())),
+            Some(triple) => Box::new(triple.into_iter().flat_map(Term::to_atoms)),
+        }
+    }
+
+    /// Iter over all the [atomic](Term::is_atom) constituents of this term, consuming it.
+    ///
+    /// See [Term::atoms].
+    fn to_atoms<'a>(self) -> Box<dyn Iterator<Item = Self> + 'a>
+    where
+        Self: Sized + 'a,
+    {
+        if !self.is_triple() {
+            Box::new(std::iter::once(self))
+        } else {
+            Box::new(
+                self.to_triple()
+                    .unwrap()
+                    .into_iter()
+                    .flat_map(Term::to_atoms),
+            )
+        }
+    }
+
+    /// Check whether `self` and `other` represent the same RDF term.
+    fn eq<T: Term>(&self, other: T) -> bool {
+        let k1 = self.kind();
+        let k2 = other.kind();
+        if k1 != k2 {
+            return false;
+        }
+        match k1 {
+            TermKind::Iri => self.iri() == other.iri(),
+            TermKind::BlankNode => self.bnode_id() == other.bnode_id(),
+            TermKind::Literal => {
+                self.lexical_value() == other.lexical_value()
+                    && match (self.language_tag(), other.language_tag()) {
+                        (None, None) => self.datatype() == other.datatype(),
+                        (Some(tag1), Some(tag2)) if tag1 == tag2 => true,
                         _ => false,
                     }
-                } else {
-                    true
-                }
             }
+            TermKind::Triple => self.triple().unwrap().eq(other.triple().unwrap()),
+            TermKind::Variable => self.variable() == other.variable(),
         }
     }
-}
 
-/// Compare two terms:
-/// * IRIs < literals < blank nodes < variables
-/// * IRIs, blank nodes and variables are ordered by their value
-/// * Literals are ordered by their datatype, then their language (if any),
-///   then their lexical value
-///
-/// NB: literals are ordered by their *lexical* value,
-/// so for example, `"10"^^xsd:integer` come `*before* "2"^^xsd:integer`.
-pub fn term_cmp<T1, T2>(t1: &T1, t2: &T2) -> Ordering
-where
-    T1: TTerm + ?Sized,
-    T2: TTerm + ?Sized,
-{
-    let k1 = t1.kind();
-    let k2 = t2.kind();
-    k1.cmp(&k2).then_with(|| {
-        let v1 = t1.value_raw();
-        let v2 = t2.value_raw();
-        match k1 {
-            Iri => v1.bytes().cmp(v2.bytes()),
-            Literal => {
-                let tag1 = t1.language();
-                let tag2 = t2.language();
-                //if tag1.is_some() && tag2.is_some() {
+    /// Compare two terms:
+    /// * IRIs < literals < blank nodes < quoted triples < variables
+    /// * IRIs, blank nodes and variables are ordered by their value
+    /// * Literals are ordered by their datatype, then their language (if any),
+    ///   then their lexical value
+    /// * Quoted triples are ordered in lexicographical order
+    ///
+    /// NB: literals are ordered by their *lexical* value,
+    /// so for example, `"10"^^xsd:integer` come *before* `"2"^^xsd:integer`.
+    fn cmp<T>(&self, other: T) -> Ordering
+    where
+        T: Term,
+    {
+        let k1 = self.kind();
+        let k2 = other.kind();
+        k1.cmp(&k2).then_with(|| match k1 {
+            TermKind::Iri => Ord::cmp(&self.iri().unwrap(), &other.iri().unwrap()),
+            TermKind::BlankNode => Ord::cmp(&self.bnode_id().unwrap(), &other.bnode_id().unwrap()),
+            TermKind::Variable => Ord::cmp(&self.variable().unwrap(), &other.variable().unwrap()),
+            TermKind::Literal => {
+                let tag1 = self.language_tag();
+                let tag2 = other.language_tag();
                 if let (Some(tag1), Some(tag2)) = (tag1, tag2) {
-                    tag1.to_uppercase()
-                        .cmp(&tag2.to_uppercase())
-                        .then_with(|| v1.0.cmp(v2.0))
+                    tag1.cmp(&tag2).then_with(|| {
+                        self.lexical_value()
+                            .unwrap()
+                            .cmp(&other.lexical_value().unwrap())
+                    })
                 } else {
-                    let dt1 = t1.datatype().unwrap();
-                    let dt2 = t2.datatype().unwrap();
-                    dt1.value_raw()
-                        .bytes()
-                        .cmp(dt2.value_raw().bytes())
-                        .then_with(|| v1.0.cmp(v2.0))
+                    let dt1 = self.datatype().unwrap();
+                    let dt2 = other.datatype().unwrap();
+                    Ord::cmp(&dt1, &dt2).then_with(|| {
+                        self.lexical_value()
+                            .unwrap()
+                            .cmp(&other.lexical_value().unwrap())
+                    })
                 }
             }
-            _ => v1.0.cmp(v2.0),
+            TermKind::Triple => {
+                let spo1 = self.triple().unwrap();
+                let spo2 = other.triple().unwrap();
+                Term::cmp(&spo1[0], spo2[0])
+                    .then_with(|| Term::cmp(&spo1[1], spo2[1]))
+                    .then_with(|| Term::cmp(&spo1[2], spo2[2]))
+            }
+        })
+    }
+
+    /// Compute an implementation-independant hash of this RDF term.
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        let k = self.kind();
+        k.hash(state);
+        match k {
+            TermKind::Iri => Hash::hash(self.iri().unwrap().as_str(), state),
+            TermKind::BlankNode => Hash::hash(self.bnode_id().unwrap().as_str(), state),
+            TermKind::Literal => {
+                self.lexical_value().unwrap().hash(state);
+                match self.language_tag() {
+                    None => {
+                        Hash::hash(self.datatype().unwrap().as_str(), state);
+                    }
+                    Some(tag) => {
+                        '@'.hash(state);
+                        tag.hash(state);
+                    }
+                }
+            }
+            TermKind::Triple => {
+                let t = self.triple().unwrap();
+                t.s().hash(state);
+                t.p().hash(state);
+                t.o().hash(state);
+            }
+            TermKind::Variable => Hash::hash(self.variable().unwrap().as_str(), state),
         }
-    })
+    }
+
+    /// Convert this term in another type.
+    ///
+    /// This method is to [`FromTerm`] was [`Into::into`] is to [`From`].
+    ///
+    /// NB: if you want to make a *copy* of this term without consuming it,
+    /// you can use `this_term.`[`borrow_term`](Term::borrow_term)`().into_term::<T>()`.
+    #[inline]
+    fn into_term<T: FromTerm>(self) -> T
+    where
+        Self: Sized,
+    {
+        T::from_term(self)
+    }
+
+    /// Try to convert this term into another type.
+    ///
+    /// This method is to [`FromTerm`] was [`TryInto::try_into`] is to [`TryFrom`].
+    ///
+    /// NB: if you want to make a *copy* of this term without consuming it,
+    /// you can use `this_term.`[`borrow_term`](Term::borrow_term)`().into_term::<T>()`.
+    #[inline]
+    fn try_into_term<T: TryFromTerm>(self) -> Result<T, T::Error>
+    where
+        Self: Sized,
+    {
+        T::try_from_term(self)
+    }
+
+    /// Copies this term into a [`SimpleTerm`], calling [`SimpleTerm::from_term_ref`].
+    #[inline]
+    fn as_simple(&self) -> SimpleTerm<'_> {
+        SimpleTerm::from_term_ref(self)
+    }
 }
 
-/// Format the given term in a Turtle-like format.
-pub fn term_format<T, W>(term: &T, w: &mut W) -> std::fmt::Result
+impl<'a, T> Term for &'a T
 where
-    T: TTerm + ?Sized,
-    W: std::fmt::Write,
+    T: Term<BorrowTerm<'a> = &'a T> + ?Sized,
 {
-    let v = term.value_raw();
-    match term.kind() {
-        Iri => {
-            w.write_char('<')?;
-            w.write_str(v.0)?;
-            if let Some(suffix) = v.1 {
-                w.write_str(suffix)?;
-            }
-            w.write_char('>')
+    type BorrowTerm<'x> = Self where 'a: 'x;
+
+    fn kind(&self) -> TermKind {
+        (*self).kind()
+    }
+    fn is_iri(&self) -> bool {
+        (*self).is_iri()
+    }
+    fn is_blank_node(&self) -> bool {
+        (*self).is_blank_node()
+    }
+    fn is_literal(&self) -> bool {
+        (*self).is_literal()
+    }
+    fn is_variable(&self) -> bool {
+        (*self).is_variable()
+    }
+    fn is_triple(&self) -> bool {
+        (*self).is_triple()
+    }
+    fn iri(&self) -> Option<IriRef<MownStr>> {
+        (*self).iri()
+    }
+    fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
+        (*self).bnode_id()
+    }
+    fn lexical_value(&self) -> Option<MownStr> {
+        (*self).lexical_value()
+    }
+    fn datatype(&self) -> Option<IriRef<MownStr>> {
+        (*self).datatype()
+    }
+    fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+        (*self).language_tag()
+    }
+    fn variable(&self) -> Option<VarName<MownStr>> {
+        (*self).variable()
+    }
+    fn triple(&self) -> Option<[Self::BorrowTerm<'_>; 3]> {
+        (*self).triple()
+    }
+    fn to_triple(self) -> Option<[Self; 3]> {
+        (*self).triple()
+    }
+    fn borrow_term(&self) -> Self::BorrowTerm<'_> {
+        *self
+    }
+    fn eq<U: Term>(&self, other: U) -> bool {
+        (*self).eq(other)
+    }
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        (*self).hash(state)
+    }
+}
+
+//
+
+/// A type that can be built from any term.
+///
+/// See also [`TryFromTerm`]
+pub trait FromTerm: Sized {
+    /// Copy `term` into an instance of this type.
+    fn from_term<T: Term>(term: T) -> Self;
+}
+
+/// A type that can be built from some terms.
+///
+/// See also [`FromTerm`]
+pub trait TryFromTerm: Sized {
+    /// The error type produced when failing to copy a given term
+    type Error: 'static + std::error::Error;
+    /// Try to copy `term` into an instance of this type.
+    fn try_from_term<T: Term>(term: T) -> Result<Self, Self::Error>;
+}
+
+/// Test that the given term is consistent in its implementation of the [`Term`] trait.
+///
+/// NB: it may be necessary to explicitly specify the parameter `T`,
+/// even when the type of `t` is known. E.g.: ``test_term_impl::<MyTerm>(&t)``.
+pub fn test_term_impl<T>(t: &T)
+where
+    T: Term + Clone,
+{
+    let k = t.kind();
+    if k == TermKind::Iri {
+        assert!(t.is_iri());
+        assert!(t.iri().is_some());
+    } else {
+        assert!(!t.is_iri());
+        assert!(t.iri().is_none());
+    }
+    if k == TermKind::BlankNode {
+        assert!(t.is_blank_node());
+        assert!(t.bnode_id().is_some());
+    } else {
+        assert!(!t.is_blank_node());
+        assert!(t.bnode_id().is_none());
+    }
+    if k == TermKind::Literal {
+        assert!(t.is_literal());
+        assert!(t.lexical_value().is_some());
+        assert!(t.datatype().is_some());
+        if t.datatype() == crate::ns::rdf::langString.iri() {
+            assert!(t.language_tag().is_some());
+        } else {
+            assert!(t.language_tag().is_none());
         }
-        Literal => {
-            write!(w, "{:?}", v.0)?;
-            if let Some(tag) = term.language() {
-                write!(w, "@{}", tag)
+    } else {
+        assert!(!t.is_literal());
+        assert!(t.lexical_value().is_none());
+        assert!(t.datatype().is_none());
+        assert!(t.language_tag().is_none());
+    }
+    if k == TermKind::Variable {
+        assert!(t.is_variable());
+        assert!(t.variable().is_some());
+    } else {
+        assert!(!t.is_variable());
+        assert!(t.variable().is_none());
+    }
+    if k == TermKind::Triple {
+        assert!(t.is_triple());
+        assert!(t.triple().is_some());
+        assert!(t.clone().to_triple().is_some());
+    } else {
+        assert!(!t.is_triple());
+        assert!(t.triple().is_none());
+        assert!(t.clone().to_triple().is_none());
+    }
+    if k != TermKind::Triple {
+        assert!(t.is_atom());
+        assert!(t.constituents().count() == 1);
+        assert!(t.constituents().next().unwrap().eq(t.borrow_term()));
+        assert!(t.clone().to_constituents().count() == 1);
+        assert!(t.clone().to_constituents().next().unwrap().eq(t.clone()));
+        assert!(t.atoms().count() == 1);
+        assert!(t.atoms().next().unwrap().eq(t.borrow_term()));
+        assert!(t.clone().to_atoms().count() == 1);
+        assert!(t.clone().to_atoms().next().unwrap().eq(t.clone()));
+    } else {
+        assert!(!t.is_atom());
+        assert!(t.constituents().count() >= 4);
+        assert!(t.clone().to_constituents().count() >= 4);
+        assert!(t.atoms().count() >= 3);
+        assert!(t.clone().to_atoms().count() >= 3);
+    }
+    t.eq(t.borrow_term());
+}
+
+#[cfg(test)]
+mod check_implementability {
+    use super::*;
+
+    // three different implementations of Term using different strategies for Self::Triple
+
+    #[derive(Clone, Copy, Debug)]
+    struct Term1 {
+        nested: bool,
+    }
+
+    const BN1: Term1 = Term1 { nested: false };
+
+    impl Term for Term1 {
+        type BorrowTerm<'x> = Self;
+
+        fn kind(&self) -> TermKind {
+            match self.nested {
+                false => TermKind::BlankNode,
+                true => TermKind::Triple,
+            }
+        }
+        fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
+            (!self.nested).then(|| BnodeId::new_unchecked("t1".into()))
+        }
+        fn triple(&self) -> Option<[Self::BorrowTerm<'_>; 3]> {
+            self.nested.then(|| [BN1, BN1, BN1])
+        }
+        fn borrow_term(&self) -> Self::BorrowTerm<'_> {
+            *self
+        }
+    }
+
+    #[derive(Clone, Copy, Debug)]
+    struct Term2 {
+        nested: bool,
+    }
+
+    const BN2: Term2 = Term2 { nested: false };
+
+    impl Term for Term2 {
+        type BorrowTerm<'x> = &'x Self;
+
+        fn kind(&self) -> TermKind {
+            match self.nested {
+                false => TermKind::BlankNode,
+                true => TermKind::Triple,
+            }
+        }
+        fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
+            (!self.nested).then(|| BnodeId::new_unchecked("t2".into()))
+        }
+        fn triple(&self) -> Option<[Self::BorrowTerm<'_>; 3]> {
+            self.nested.then(|| [&BN2, &BN2, &BN2])
+        }
+        fn borrow_term(&self) -> Self::BorrowTerm<'_> {
+            self
+        }
+    }
+
+    #[derive(Clone, Debug)]
+    struct Term3(Option<Box<[Term3; 3]>>);
+
+    impl Term for Term3 {
+        type BorrowTerm<'x> = &'x Self;
+
+        fn kind(&self) -> TermKind {
+            match self.0 {
+                None => TermKind::BlankNode,
+                Some(_) => TermKind::Triple,
+            }
+        }
+        fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
+            match self.0 {
+                None => Some(BnodeId::new_unchecked("t3".into())),
+                Some(_) => None,
+            }
+        }
+        fn triple(&self) -> Option<[Self::BorrowTerm<'_>; 3]> {
+            if let Some(b) = &self.0 {
+                let [s, p, o] = b.as_ref();
+                Some([s, p, o])
             } else {
-                let dt = term.datatype().unwrap();
-                if !term_eq(&dt, &crate::ns::xsd::string) {
-                    w.write_str("^^")?;
-                    term_format(&term.datatype().unwrap(), w)?;
-                }
-                Ok(())
+                None
             }
         }
-        BlankNode => write!(w, "_:{}", v.0),
-        Variable => write!(w, "_?{}", v.0),
+        fn borrow_term(&self) -> Self::BorrowTerm<'_> {
+            self
+        }
     }
 }
 
-/// Formats the given term in to a string.
-pub fn term_to_string<T>(term: &T) -> String
-where
-    T: TTerm + ?Sized,
-{
-    format!("{}", TermFormater(term))
-}
-
-/// Check the equality of two graph names (`Option<&Term>`)
-/// possibly of different types.
-pub fn same_graph_name<T, U>(g1: Option<&T>, g2: Option<&U>) -> bool
-where
-    T: TTerm + ?Sized,
-    U: TTerm + ?Sized,
-{
-    match (g1, g2) {
-        (Some(n1), Some(n2)) => term_eq(n1, n2),
-        (None, None) => true,
-        _ => false,
+#[cfg(test)]
+/// Simplistic Term parser, useful for writing test cases.
+/// The syntax is a subset of Turtle-star.
+pub(crate) fn ez_term(txt: &str) -> SimpleTerm {
+    use sophia_iri::IriRef;
+    match txt.as_bytes() {
+        [b'<', b'<', .., b'>', b'>'] => {
+            let subterms: Vec<&str> = txt[2..txt.len() - 2].split(" ").collect();
+            assert_eq!(subterms.len(), 3);
+            SimpleTerm::Triple(Box::new([
+                ez_term(&subterms[0]),
+                ez_term(&subterms[1]),
+                ez_term(&subterms[2]),
+            ]))
+        }
+        [b'<', .., b'>'] => IriRef::new_unchecked(&txt[1..txt.len() - 1]).into_term(),
+        [b':', ..] => {
+            let iri = format!("tag:{}", &txt[1..]);
+            SimpleTerm::Iri(IriRef::new_unchecked(iri.into()))
+        }
+        [b'_', b':', ..] => BnodeId::new_unchecked(&txt[2..]).into_term(),
+        [b'\'', .., b'\''] => (&txt[1..txt.len() - 1]).into_term(),
+        [b'\'', .., b'\'', b'@', _, _] => SimpleTerm::LiteralLanguage(
+            (&txt[1..txt.len() - 4]).into(),
+            LanguageTag::new_unchecked(txt[txt.len() - 2..].into()),
+        ),
+        [c, ..] if c.is_ascii_digit() => txt.parse::<i32>().unwrap().into_term(),
+        [b'?', ..] => VarName::new_unchecked(&txt[1..]).into_term(),
+        _ => panic!("Unable to parse term"),
     }
 }
 
-struct TermFormater<'a, T: ?Sized>(&'a T);
+#[cfg(test)]
+mod test_term_impl {
+    use super::*;
+    use test_case::test_case;
 
-impl<'a, T> std::fmt::Display for TermFormater<'a, T>
-where
-    T: TTerm + ?Sized,
-{
-    fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
-        term_format(self.0, fmt)
+    // order with terms of the same kind
+    #[test_case("<tag:a>", "<tag:b>")]
+    #[test_case("_:u", "_:v")]
+    #[test_case("'a'", "'b'")]
+    #[test_case("10", "2")]
+    #[test_case("'a'@en", "'a'@fr")]
+    #[test_case("?x", "?y")]
+    #[test_case("<<_:s <tag:p> 'o1'>>", "<<_:s <tag:p> 'o2'>>")]
+    #[test_case("<<_:s <tag:p1> 'o2'>>", "<<_:s <tag:p2> 'o1'>>")]
+    #[test_case("<<_:s1 <tag:p2> 'o'>>", "<<_:s2 <tag:p1> 'o'>>")]
+    // order across different literals
+    #[test_case("2", "'10'")]
+    #[test_case("'b'@en", "'a'")]
+    // order across term kinds
+    #[test_case("<tag:a>", "'s'")]
+    #[test_case("<tag:a>", "_:r")]
+    #[test_case("<tag:a>", "<<_:q <tag:q> 'q'>>")]
+    #[test_case("<tag:a>", "?p")]
+    #[test_case("'s'", "_:r")]
+    #[test_case("'s'", "<<_:q <tag:q> 'q'>>")]
+    #[test_case("'s'", "?p")]
+    #[test_case("_:r", "<<_:q <tag:q> 'q'>>")]
+    #[test_case("_:r", "?p")]
+    #[test_case("<<_:q <tag:q> 'q'>>", "?p")]
+    fn cmp_terms(t1: &str, t2: &str) {
+        let t1 = ez_term(t1);
+        let t2 = ez_term(t2);
+        assert_eq!(t1.cmp(&t1), std::cmp::Ordering::Equal);
+        assert_eq!(t2.cmp(&t2), std::cmp::Ordering::Equal);
+        assert_eq!(t1.cmp(&t2), std::cmp::Ordering::Less);
+        assert_eq!(t2.cmp(&t1), std::cmp::Ordering::Greater);
     }
 }
-
-#[cfg(any(test, feature = "test_macro"))]
-pub mod test;

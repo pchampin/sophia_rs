@@ -11,7 +11,7 @@
 //! - etc...
 //!
 //! However, we do not want to impose these feature, or any subset thereof,
-//! to all implementation of Sophia.
+//! to all implementations of Sophia.
 //!
 //! # Extension point
 //!
@@ -22,20 +22,20 @@
 //! Implementation could then express requirements as trait bound, e.g.:
 //! ```ignore
 //!     D: SparqlDataset,
-//!     D:Query: Clone + BindVariable,
+//!     D::Query: Clone + BindVariable,
 //! ```
 //!
 //! Sophia may define such traits in the future.
 
-use crate::term::TTerm;
-use crate::triple::stream::TripleSource;
+use crate::source::TripleSource;
+use crate::term::Term;
 use std::borrow::Borrow;
 use std::error::Error;
 
 /// A dataset that can be queried with SPARQL.
 pub trait SparqlDataset {
     /// The type of terms that SELECT queries will return.
-    type BindingsTerm: TTerm;
+    type BindingsTerm: Term;
     /// The type of bindings that SELECT queries will return.
     type BindingsResult: SparqlBindings<Self>;
     /// The type of triples that GRAPH and DESCRIBE queries will return.
@@ -80,7 +80,9 @@ pub trait SparqlDataset {
 /// to mutualize the parsing of queries in the
 /// [`prepare_query`](SparqlDataset::prepare_query) method.
 pub trait Query: Sized {
+    /// The error type that might be raised when parsing a query.
     type Error: Error + 'static;
+    /// Parse the given text into a [`Query`].
     fn parse(query_source: &str) -> Result<Self, Self::Error>;
 }
 
@@ -92,9 +94,11 @@ impl Query for String {
 }
 
 /// A utility trait to allow [`SparqlDataset::query`]
-/// to accept either `&str` or `Self::Query`.
+/// to accept either `&str` or [`Self::Query`](SparqlDataset::Query).
 pub trait IntoQuery<Q: Query> {
+    /// The ouput type of [`into_query`](IntoQuery::into_query).
     type Out: Borrow<Q>;
+    /// Convert `self` to a [`Query`].
     fn into_query(self) -> Result<Self::Out, Q::Error>;
 }
 

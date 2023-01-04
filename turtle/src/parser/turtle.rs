@@ -1,43 +1,27 @@
 //! Adapter for the Turtle parser from [RIO](https://github.com/Tpt/rio/blob/master/turtle/src/turtle.rs)
-
-use std::io::BufRead;
-
-use rio_api::parser::ParseError;
-use rio_turtle::{TurtleError, TurtleParser as RioTurtleParser};
-use sophia_api::parser::{Location, TripleParser, WithLocation};
+use rio_turtle::TurtleParser as RioTurtleParser;
+use sophia_api::parser::TripleParser;
+use sophia_iri::Iri;
 use sophia_rio::parser::*;
-use thiserror::Error;
+use std::io::BufRead;
 
 /// Turtle parser based on RIO.
 #[derive(Clone, Debug, Default)]
 pub struct TurtleParser {
     /// The base IRI used by this parser to resolve relative IRI-references.
-    pub base: Option<String>,
+    pub base: Option<Iri<String>>,
 }
 
 impl<B: BufRead> TripleParser<B> for TurtleParser {
-    type Source = StrictRioSource<RioTurtleParser<B>, TurtleError>;
+    type Source = StrictRioSource<RioTurtleParser<B>>;
     fn parse(&self, data: B) -> Self::Source {
-        // TODO issue TurtleError if base can not be parsed
-        let base = self.base.clone().and_then(|b| oxiri::Iri::parse(b).ok());
-        StrictRioSource::Parser(RioTurtleParser::new(data, base))
-    }
-}
-
-/// A wrapper around [`rio_turtle::TurtleError`] that implements [`WithLocation`].
-#[derive(Debug, Error)]
-#[error("{0}")]
-pub struct SophiaTurtleError(pub TurtleError);
-
-impl WithLocation for SophiaTurtleError {
-    fn location(&self) -> Location {
-        match self.0.textual_position() {
-            None => Location::Unknown,
-            Some(pos) => Location::from_lico(
-                pos.line_number() as usize + 1,
-                pos.byte_number() as usize + 1,
-            ),
-        }
+        let base = self
+            .base
+            .clone()
+            .map(Iri::unwrap)
+            .map(oxiri::Iri::parse)
+            .map(Result::unwrap);
+        StrictRioSource(RioTurtleParser::new(data, base))
     }
 }
 
@@ -51,50 +35,70 @@ sophia_api::def_mod_functions_for_bufread_parser!(TurtleParser, TripleParser);
 mod test {
     use super::*;
     use sophia_api::graph::Graph;
-    use sophia_api::ns::{rdf, xsd};
-    use sophia_api::term::matcher::ANY;
-    use sophia_api::triple::stream::TripleSource;
-    use sophia_inmem::graph::FastGraph;
-    use sophia_term::StaticTerm;
+    use sophia_api::ns::rdf;
+    use sophia_api::source::TripleSource;
+    use sophia_api::term::{SimpleTerm, TermKind};
+    use std::collections::HashSet;
+
+    type MyGraph = Vec<[SimpleTerm<'static>; 3]>;
 
     #[test]
     fn test_simple_turtle_string() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let turtle = r#"
             @prefix : <http://example.org/ns/> .
 
-            <#me> :knows [ a :Person ; :name "Alice" ].
+            <#me> :knows [ a :Person ; :name "Alice" ] {|
+                :since 2002 ;
+            |}.
         "#;
 
-        let mut g = FastGraph::new();
+        let mut g = MyGraph::new();
         let p = TurtleParser {
-            base: Some("http://localhost/ex".into()),
+            base: Some(Iri::new_unchecked("http://localhost/ex".to_string())),
         };
         let c = p.parse_str(turtle).add_to_graph(&mut g)?;
-        assert_eq!(c, 3);
-        assert!(g
-            .triples_matching(
-                &StaticTerm::new_iri("http://localhost/ex#me").unwrap(),
-                &StaticTerm::new_iri("http://example.org/ns/knows").unwrap(),
-                &ANY,
+        assert_eq!(c, 4);
+        assert_eq!(
+            g.triples_matching(
+                [Iri::new_unchecked("http://localhost/ex#me")],
+                [Iri::new_unchecked("http://example.org/ns/knows")],
+                TermKind::BlankNode,
             )
-            .next()
-            .is_some());
-        assert!(g
-            .triples_matching(
-                &ANY,
-                &rdf::type_,
-                &StaticTerm::new_iri("http://example.org/ns/Person").unwrap(),
+            .count(),
+            1
+        );
+        assert_eq!(
+            g.triples_matching(
+                TermKind::BlankNode,
+                [&rdf::type_],
+                [Iri::new_unchecked("http://example.org/ns/Person")],
             )
-            .next()
-            .is_some());
-        assert!(g
-            .triples_matching(
-                &ANY,
-                &StaticTerm::new_iri("http://example.org/ns/name").unwrap(),
-                &StaticTerm::new_literal_dt("Alice", xsd::string).unwrap(),
+            .count(),
+            1
+        );
+        assert_eq!(
+            g.triples_matching(
+                TermKind::BlankNode,
+                [Iri::new_unchecked("http://example.org/ns/name")],
+                ["Alice"],
             )
-            .next()
-            .is_some());
+            .count(),
+            1
+        );
+        assert_eq!(
+            g.triples_matching(
+                (
+                    [Iri::new_unchecked("http://localhost/ex#me")],
+                    [Iri::new_unchecked("http://example.org/ns/knows")],
+                    TermKind::BlankNode,
+                ),
+                [Iri::new_unchecked("http://example.org/ns/since")],
+                [2002],
+            )
+            .count(),
+            1
+        );
+        assert_eq!(g.blank_nodes().collect::<HashSet<_>>().len(), 1);
         Ok(())
     }
 }
