@@ -144,7 +144,8 @@
 
                 <div id="content" class="content">
                     <main>
-                        <p>Sophia has been heavily refactored between version 0.7 and 0.8. This refactoring was triggered by the use of <a href="https://blog.rust-lang.org/2022/10/28/gats-stabilization.html">Generic Ascciated Types</a> (GATs), that have finally landed in stable Rust. But this was also an opportunity to make a number of other changes.</p>
+                        <h1 id="changes-since-version-07"><a class="header" href="#changes-since-version-07">Changes since version 0.7</a></h1>
+<p>Sophia has been heavily refactored between version 0.7 and 0.8. This refactoring was triggered by the use of <a href="https://blog.rust-lang.org/2022/10/28/gats-stabilization.html">Generic Ascciated Types</a> (GATs), that have finally landed in stable Rust. But this was also an opportunity to make a number of other changes.</p>
 <h2 id="the-benefit-of-gats"><a class="header" href="#the-benefit-of-gats">The benefit of GATs</a></h2>
 <p>The main benefit of GATs is to get rid of <a href="https://docs.rs/sophia/0.7.2/sophia/triple/streaming_mode/index.html">odd patterns</a> that were introduced in Sophia in order to keep it genetic enough to support multiple implementation choices. The drawback of this approach was that implementing Sophia's traits (especially <code>Graph</code> and <code>Dataset</code>) could be cumbersome.</p>
 <p>As an example, the <a href="https://docs.rs/sophia/0.7.2/sophia/graph/trait.Graph.html"><code>Graph</code></a> trait used to be</p>
