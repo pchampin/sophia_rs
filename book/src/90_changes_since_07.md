@@ -5,7 +5,7 @@ Sophia has been heavily refactored between version 0.7 and 0.8. This refactoring
 The main benefit of GATs is to get rid of [odd patterns](https://docs.rs/sophia/0.7.2/sophia/triple/streaming_mode/index.html) that were introduced in Sophia in order to keep it genetic enough to support multiple implementation choices. The drawback of this approach was that implementing Sophia's traits (especially `Graph` and `Dataset`) could be cumbersome.
 
 As an example, the [`Graph`](https://docs.rs/sophia/0.7.2/sophia/graph/trait.Graph.html) trait used to be
-```rust
+```rust,noplayground
 pub trait Graph {
     type Triple: TripleStreamingMode;
     // ...
@@ -15,7 +15,7 @@ pub trait Graph {
 Given a type `MyGraph` implementing that trait, the actual type of triples yielded by [`MyGraph::triples`](https://docs.rs/sophia/0.7.2/sophia/graph/trait.Graph.html#tymethod.triples) could not be immediately determined, and was [quite intricate](https://docs.rs/sophia/latest/sophia/graph/type.GTriple.html). This could be inconvenient for some users of `MyGraph`, and was usually cumbersome for the implementer.
 
 Compare to the new definition of the `Graph` trait:
-```rust
+```rust,noplayground
 pub trait Graph {
     type Triple<'x>: Triple where Self: 'x;
     // ...
@@ -56,6 +56,30 @@ are now subsumed by [`SimpleTerm`](https://github.com/pchampin/sophia_rs/blob/a9
 a straightforward implementation of the `Term` trait, provided by `sophia_api`.
 More specific types (such as [`RcTerm`](https://docs.rs/sophia_term/0.7.2/sophia_term/type.RcTerm.html) or [`ArcTerm`](https://docs.rs/sophia_term/0.7.2/sophia_term/type.ArcTerm.html))
 have been deemed non-essential, and are no longer provided at the moment.
+
+## Simplification of the `Graph` and `Dataset` traits
+
+In version 0.7, the `Graph` trait had a number of specialized methods for retrieving selected triples,
+such as [`triples_with_s`](https://docs.rs/sophia_api/0.7.2/sophia_api/graph/trait.Graph.html#method.triples_with_s)
+or [`triples_with_po`](https://docs.rs/sophia_api/0.7.2/sophia_api/graph/trait.Graph.html#method.triples_with_po)
+(and similarly for `Dataset`: `quads_with_s`, etc.).
+
+All these methods have disappeared in favor of `triples_matching`,
+so that instead of:
+```rust,noplayground
+for t in g.triples_with_s(mys) {
+    // ...
+}
+```
+one should now write
+```rust,noplayground
+for t in g.triples_matching([mys], Any, Any) {
+    // ...
+}
+```
+and the performances will be the same
+(depending, of course, of how carefully the `Graph`/`Dataset` was implemented,
+but that was already the case with the previous API).
 
 ## The `sophia` crate
 
