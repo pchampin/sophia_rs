@@ -148,22 +148,16 @@
 <h2 id="the-benefit-of-gats"><a class="header" href="#the-benefit-of-gats">The benefit of GATs</a></h2>
 <p>The main benefit of GATs is to get rid of <a href="https://docs.rs/sophia/0.7.2/sophia/triple/streaming_mode/index.html">odd patterns</a> that were introduced in Sophia in order to keep it genetic enough to support multiple implementation choices. The drawback of this approach was that implementing Sophia's traits (especially <code>Graph</code> and <code>Dataset</code>) could be cumbersome.</p>
 <p>As an example, the <a href="https://docs.rs/sophia/0.7.2/sophia/graph/trait.Graph.html"><code>Graph</code></a> trait used to be</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>pub trait Graph {
+<pre><code class="language-rust noplayground">pub trait Graph {
     type Triple: TripleStreamingMode;
     // ...
-}
-<span class="boring">}</span></code></pre></pre>
+}</code></pre>
 <p>Given a type <code>MyGraph</code> implementing that trait, the actual type of triples yielded by <a href="https://docs.rs/sophia/0.7.2/sophia/graph/trait.Graph.html#tymethod.triples"><code>MyGraph::triples</code></a> could not be immediately determined, and was <a href="https://docs.rs/sophia/latest/sophia/graph/type.GTriple.html">quite intricate</a>. This could be inconvenient for some users of <code>MyGraph</code>, and was usually cumbersome for the implementer.</p>
 <p>Compare to the new definition of the <code>Graph</code> trait:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>pub trait Graph {
+<pre><code class="language-rust noplayground">pub trait Graph {
     type Triple&lt;'x&gt;: Triple where Self: 'x;
     // ...
-}
-<span class="boring">}</span></code></pre></pre>
+}</code></pre>
 <p>where <code>Graph::triples</code> now yield triples whose type is exactly <code>Graph::Triple&lt;'_&gt;</code>. Much easier.</p>
 <p>The same pattern existed for <a href="https://docs.rs/sophia/0.7.2/sophia/dataset/trait.Dataset.html"><code>Dataset</code></a>,
 <a href="https://docs.rs/sophia/0.7.2/sophia/triple/stream/trait.TripleSource.html"><code>TripleSource</code></a>, and
@@ -192,6 +186,23 @@ are now subsumed by <a href="https://github.com/pchampin/sophia_rs/blob/a925e617
 a straightforward implementation of the <code>Term</code> trait, provided by <code>sophia_api</code>.
 More specific types (such as <a href="https://docs.rs/sophia_term/0.7.2/sophia_term/type.RcTerm.html"><code>RcTerm</code></a> or <a href="https://docs.rs/sophia_term/0.7.2/sophia_term/type.ArcTerm.html"><code>ArcTerm</code></a>)
 have been deemed non-essential, and are no longer provided at the moment.</p>
+<h2 id="simplification-of-the-graph-and-dataset-traits"><a class="header" href="#simplification-of-the-graph-and-dataset-traits">Simplification of the <code>Graph</code> and <code>Dataset</code> traits</a></h2>
+<p>In version 0.7, the <code>Graph</code> trait had a number of specialized methods for retrieving selected triples,
+such as <a href="https://docs.rs/sophia_api/0.7.2/sophia_api/graph/trait.Graph.html#method.triples_with_s"><code>triples_with_s</code></a>
+or <a href="https://docs.rs/sophia_api/0.7.2/sophia_api/graph/trait.Graph.html#method.triples_with_po"><code>triples_with_po</code></a>
+(and similarly for <code>Dataset</code>: <code>quads_with_s</code>, etc.).</p>
+<p>All these methods have disappeared in favor of <code>triples_matching</code>,
+so that instead of:</p>
+<pre><code class="language-rust noplayground">for t in g.triples_with_s(mys) {
+    // ...
+}</code></pre>
+<p>one should now write</p>
+<pre><code class="language-rust noplayground">for t in g.triples_matching([mys], Any, Any) {
+    // ...
+}</code></pre>
+<p>and the performances will be the same
+(depending, of course, of how carefully the <code>Graph</code>/<code>Dataset</code> was implemented,
+but that was already the case with the previous API).</p>
 <h2 id="the-sophia-crate"><a class="header" href="#the-sophia-crate">The <code>sophia</code> crate</a></h2>
 <p>As before, Sophia is still made of several specialized crates
 (<code>sophia_api</code>, <code>sophia_iri</code>, <code>sophia_turtle</code>...)
