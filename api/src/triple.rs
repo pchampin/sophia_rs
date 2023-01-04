@@ -237,7 +237,7 @@ mod test_triple {
         assert!(t.matched_by([S], [P], [O]));
         assert!(t.matched_by([O, S], [S, P], [P, O]));
         let istag = |t: SimpleTerm| t.iri().map(|iri| iri.starts_with("tag:")).unwrap_or(false);
-        assert!(t.matched_by(&istag, &istag, &istag));
+        assert!(t.matched_by(istag, istag, istag));
 
         let none: Option<IriRef<&str>> = None;
         assert!(!t.matched_by(none, Any, Any));

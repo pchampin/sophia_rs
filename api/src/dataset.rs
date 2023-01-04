@@ -784,7 +784,7 @@ mod check_implementability_lazy_term {
                         dataset: self,
                         index: j,
                     });
-                    Ok([s, p, o, g.clone()])
+                    Ok([s, p, o, g])
                 })
             }))
         }

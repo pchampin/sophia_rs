@@ -659,7 +659,7 @@ mod check_implementability {
             (!self.nested).then(|| BnodeId::new_unchecked("t1".into()))
         }
         fn triple(&self) -> Option<[Self::BorrowTerm<'_>; 3]> {
-            self.nested.then(|| [BN1, BN1, BN1])
+            self.nested.then_some([BN1, BN1, BN1])
         }
         fn borrow_term(&self) -> Self::BorrowTerm<'_> {
             *self
@@ -686,7 +686,7 @@ mod check_implementability {
             (!self.nested).then(|| BnodeId::new_unchecked("t2".into()))
         }
         fn triple(&self) -> Option<[Self::BorrowTerm<'_>; 3]> {
-            self.nested.then(|| [&BN2, &BN2, &BN2])
+            self.nested.then_some([&BN2, &BN2, &BN2])
         }
         fn borrow_term(&self) -> Self::BorrowTerm<'_> {
             self
@@ -732,12 +732,12 @@ pub(crate) fn ez_term(txt: &str) -> SimpleTerm {
     use sophia_iri::IriRef;
     match txt.as_bytes() {
         [b'<', b'<', .., b'>', b'>'] => {
-            let subterms: Vec<&str> = txt[2..txt.len() - 2].split(" ").collect();
+            let subterms: Vec<&str> = txt[2..txt.len() - 2].split(' ').collect();
             assert_eq!(subterms.len(), 3);
             SimpleTerm::Triple(Box::new([
-                ez_term(&subterms[0]),
-                ez_term(&subterms[1]),
-                ez_term(&subterms[2]),
+                ez_term(subterms[0]),
+                ez_term(subterms[1]),
+                ez_term(subterms[2]),
             ]))
         }
         [b'<', .., b'>'] => IriRef::new_unchecked(&txt[1..txt.len() - 1]).into_term(),

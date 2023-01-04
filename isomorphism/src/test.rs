@@ -30,7 +30,7 @@ fn no_bnode() -> Result<(), Box<dyn Error>> {
     assert!(!isomorphic_datasets(&d1, &d2)?);
     assert!(!isomorphic_datasets(&d2, &d1)?);
 
-    let d3: Vec<_> = d1[1..].iter().cloned().collect();
+    let d3 = d1[1..].to_vec();
     assert!(!isomorphic_datasets(&d1, &d3)?);
     assert!(!isomorphic_datasets(&d3, &d1)?);
 
@@ -65,7 +65,7 @@ fn simple() -> Result<(), Box<dyn Error>> {
     assert!(isomorphic_datasets(&d1, &d2)?);
     assert!(isomorphic_datasets(&d2, &d1)?);
 
-    let d3: Vec<_> = d1[1..].iter().cloned().collect();
+    let d3 = d1[1..].to_vec();
     assert!(!isomorphic_datasets(&d1, &d3)?);
     assert!(!isomorphic_datasets(&d3, &d1)?);
 
@@ -96,7 +96,7 @@ fn no_bnode_quoted_triple() -> Result<(), Box<dyn Error>> {
     ];
     assert!(isomorphic_datasets(&d1, &d1)?);
 
-    let d2: Vec<_> = d1[1..].iter().copied().collect();
+    let d2 = d1[1..].to_vec();
     assert!(!isomorphic_datasets(&d1, &d2)?);
     assert!(!isomorphic_datasets(&d2, &d1)?);
 
@@ -128,7 +128,7 @@ fn quoted_triple() -> Result<(), Box<dyn Error>> {
     ];
     assert!(isomorphic_datasets(&d1, &d1)?);
 
-    let d2: Vec<_> = d1[1..].iter().copied().collect();
+    let d2 = d1[1..].to_vec();
     assert!(!isomorphic_datasets(&d1, &d2)?);
     assert!(!isomorphic_datasets(&d2, &d1)?);
 
@@ -391,7 +391,7 @@ impl Term for MyTerm {
             let spo: Vec<_> = spo
                 .split(' ')
                 .map(|t| {
-                    if t.starts_with("#") {
+                    if t.starts_with('#') {
                         MyTerm::Iri(t)
                     } else {
                         MyTerm::Bnode(t)

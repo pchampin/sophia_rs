@@ -349,7 +349,7 @@ mod test_quad {
         assert!(q.matched_by([S], [P], [O], [G]));
         assert!(q.matched_by([O, S], [S, P], [P, O], [None, G]));
         let istag = |t: SimpleTerm| t.iri().map(|iri| iri.starts_with("tag:")).unwrap_or(false);
-        assert!(q.matched_by(&istag, &istag, &istag, istag.gn()));
+        assert!(q.matched_by(istag, istag, istag, istag.gn()));
 
         let none: Option<IriRef<&str>> = None;
         assert!(!q.matched_by(none, Any, Any, Any));

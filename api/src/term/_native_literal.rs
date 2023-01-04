@@ -131,6 +131,7 @@ mod test {
 
     #[test]
     fn f64_as_literal() {
+        #[allow(clippy::approx_constant)]
         let lit = 3.14;
         test_term_impl::<f64>(&lit);
         assert_eq!(lit.kind(), TermKind::Literal);
