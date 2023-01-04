@@ -1,3 +1,5 @@
+# Changes since version 0.7
+
 Sophia has been heavily refactored between version 0.7 and 0.8. This refactoring was triggered by the use of [Generic Ascciated Types](https://blog.rust-lang.org/2022/10/28/gats-stabilization.html) (GATs), that have finally landed in stable Rust. But this was also an opportunity to make a number of other changes.
 
 ## The benefit of GATs

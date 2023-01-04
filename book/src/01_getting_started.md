@@ -48,7 +48,7 @@ You should get the following output:
 ```text
 The resulting graph:
 <http://example.org/alice> <http://xmlns.com/foaf/0.1/name> "Alice".
+<http://example.org/alice> <http://xmlns.com/foaf/0.1/mbox> <mailto:alice@work.example>.
 <http://example.org/bob> <http://xmlns.com/foaf/0.1/name> "Bob".
 <http://example.org/bob> <http://xmlns.com/foaf/0.1/knows> <http://example.org/alice>.
-<http://example.org/alice> <http://xmlns.com/foaf/0.1/mbox> <mailto:alice@work.example>.
 ```
