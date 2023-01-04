@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Sophia</title>
-        <meta name="robots" content="noindex" />
+        <title>Changes since version 0.7 - Sophia</title>
 
 
         <!-- Custom HTML head -->
@@ -81,7 +80,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Executive summary</a></li><li class="chapter-item expanded "><a href="00_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="01_getting_started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="90_changes_since_07.html"><strong aria-hidden="true">3.</strong> Changes since version 0.7</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Executive summary</a></li><li class="chapter-item expanded "><a href="00_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="01_getting_started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="90_changes_since_07.html" class="active"><strong aria-hidden="true">3.</strong> Changes since version 0.7</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -145,117 +144,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <!-- this file is only meant to "import" the README.md into the book -->
-<h1 id="sophia"><a class="header" href="#sophia">Sophia</a></h1>
-<p>A Rust toolkit for RDF and Linked Data.</p>
-<p><a href="https://github.com/pchampin/sophia_rs/actions"><img src="https://github.com/pchampin/sophia_rs/actions/workflows/lint_and_test.yml/badge.svg" alt="Actions Status" /></a>
-<a href="https://crates.io/crates/sophia"><img src="https://img.shields.io/crates/v/sophia.svg" alt="Latest Version" /></a>
-<a href="https://docs.rs/sophia/"><img src="https://docs.rs/sophia/badge.svg" alt="Documentation" /></a></p>
-<p>It comprises the following crates:</p>
-<ul>
-<li><a href="https://crates.io/crates/sophia_api"><code>sophia_api</code></a> defines a generic API for RDF and linked data,
-as a set of core traits and types;
-more precisely, it provides traits for describing
-<ul>
-<li>terms, triples and quads,</li>
-<li>graphs and datasets,</li>
-<li>parsers and serializers</li>
-</ul>
-</li>
-<li><a href="https://crates.io/crates/sophia_iri"><code>sophia_iri</code></a> provides functions, types and traits for validating and resolving IRIs.</li>
-<li><a href="https://crates.io/crates/sophia_inmem"><code>sophia_inmem</code></a> defines in-memory implementations of the <code>Graph</code> and <code>Dataset</code> traits from <code>sophia_api</code>.</li>
-<li><a href="https://crates.io/crates/sophia_turtle"><code>sophia_turtle</code></a> provides parsers and serializers for the Turtle-family of concrete syntaxes.</li>
-<li><a href="https://crates.io/crates/sophia_xml"><code>sophia_xml</code></a> provides parsers and serializers for RDF/XML.</li>
-<li><a href="https://crates.io/crates/sophia_jsonld"><code>sophia_jsonld</code></a> provides preliminary support for JSON-LD.</li>
-<li><a href="https://crates.io/crates/sophia_rio"><code>sophia_rio</code></a> is a lower-level crate, used by the ones above. </li>
-</ul>
-<p>and finally:</p>
-<ul>
-<li><a href="https://crates.io/crates/sophia"><code>sophia</code></a> is the “all-inclusive” crate,
-re-exporting symbols from all the crates above.
-(actually, <code>sophia_xml</code> is only available if the <code>xml</code> feature is enabled)</li>
-</ul>
-<h2 id="licence"><a class="header" href="#licence">Licence</a></h2>
-<p><a href="https://cecill.info/licences/Licence_CeCILL-B_V1-en.html">CECILL-B</a> (compatible with BSD)</p>
-<h2 id="testing"><a class="header" href="#testing">Testing</a></h2>
-<p>The test suite depends on the [the <a href="https://github.com/w3c/json-ld-api/">JSON-LD test-suite</a>
-which is included as a <code>git</code> submodule.
-In order to run all the tests, you need to execute the following commands:</p>
-<pre><code class="language-bash">$ git submodule init
-$ git submodule update
-</code></pre>
-<h2 id="citation"><a class="header" href="#citation">Citation</a></h2>
-<p>When using Sophia, please use the following citation:</p>
-<blockquote>
-<p>Champin, P.-A. (2020) ‘Sophia: A Linked Data and Semantic Web toolkit for Rust’, in Wilde, E. and Amundsen, M. (eds). The Web Conference 2020: Developers Track, Taipei, TW. Available at: https://www2020devtrack.github.io/site/schedule.</p>
-</blockquote>
-<p>Bibtex:</p>
-<pre><code class="language-bibtex">@misc{champin_sophia_2020,
-        title = {{Sophia: A Linked Data and Semantic Web toolkit for Rust},
-        author = {Champin, Pierre-Antoine},
-        howpublished = {{The Web Conference 2020: Developers Track}},
-        address = {Taipei, TW},
-        editor = {Wilde, Erik and Amundsen, Mike},
-        month = apr,
-        year = {2020},
-        language = {en},
-        url = {https://www2020devtrack.github.io/site/schedule}
-}
-</code></pre>
-<h2 id="history"><a class="header" href="#history">History</a></h2>
-<p>An outdated comparison of Sophia with other RDF libraries is still available
-<a href="https://github.com/pchampin/sophia_benchmark/blob/master/benchmark_results.ipynb">here</a>.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
-<p>The <a href="https://crates.io/crates/sophia">sophia crate</a> aims to provide a comprehensive toolkit for working with RDF and Linked Data in Rust.</p>
-<p>RDF is a data model designed to exchange knowledge on the Web in an interoperable way. Each piece of knowledge in RDF (a statement) is represented by a triple, made of three terms. A set of triples forms an RDF graph. Finally, several graphs can be grouped in a collection called a dataset, where each graph is identified by a unique name.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
-<p>Following a short example how to build a graph, mutate it and serialize it back.</p>
-<p>Add the sophia crate to your dependencies in <code>Cargo.toml</code></p>
-<pre><code class="language-bash">[dependencies]
-sophia = { version=&quot;0.8.0-alpha&quot;, git=&quot;https://github.com/pchampin/sophia_rs&quot; }
-</code></pre>
-<p>Add these lines of code and run the programm.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>use sophia::api::prelude::*;
-use sophia::api::ns::Namespace;
-use sophia::inmem::graph::LightGraph;
-use sophia::turtle::parser::turtle;
-use sophia::turtle::serializer::nt::NtSerializer;
-
-// loading a graph
-let example = r#&quot;
-    @prefix : &lt;http://example.org/&gt;.
-    @prefix foaf: &lt;http://xmlns.com/foaf/0.1/&gt;.
-    :alice foaf:name &quot;Alice&quot;;
-           foaf:mbox &lt;mailto:alice@work.example&gt; .
-    :bob foaf:name &quot;Bob&quot;.
-&quot;#;
-let mut graph: LightGraph = turtle::parse_str(example).collect_triples()?;
-
-// mutating the graph
-let ex = Namespace::new(&quot;http://example.org/&quot;)?;
-let foaf = Namespace::new(&quot;http://xmlns.com/foaf/0.1/&quot;)?;
-graph.insert(
-    ex.get(&quot;bob&quot;)?,
-    foaf.get(&quot;knows&quot;)?,
-    ex.get(&quot;alice&quot;)?,
-)?;
-
-// serializing the graph
-let mut nt_stringifier = NtSerializer::new_stringifier();
-let example2 = nt_stringifier.serialize_graph(&amp;graph)?.as_str();
-println!(&quot;The resulting graph:\n{}&quot;, example2);
-<span class="boring">Ok::&lt;(), Box&lt;dyn std::error::Error&gt;&gt;(())
-</span><span class="boring">}</span></code></pre></pre>
-<p>You should get the following output:</p>
-<pre><code class="language-text">The resulting graph:
-&lt;http://example.org/alice&gt; &lt;http://xmlns.com/foaf/0.1/name&gt; &quot;Alice&quot;.
-&lt;http://example.org/bob&gt; &lt;http://xmlns.com/foaf/0.1/name&gt; &quot;Bob&quot;.
-&lt;http://example.org/bob&gt; &lt;http://xmlns.com/foaf/0.1/knows&gt; &lt;http://example.org/alice&gt;.
-&lt;http://example.org/alice&gt; &lt;http://xmlns.com/foaf/0.1/mbox&gt; &lt;mailto:alice@work.example&gt;.
-</code></pre>
-<div style="break-before: page; page-break-before: always;"></div><p>Sophia has been heavily refactored between version 0.7 and 0.8. This refactoring was triggered by the use of <a href="https://blog.rust-lang.org/2022/10/28/gats-stabilization.html">Generic Ascciated Types</a> (GATs), that have finally landed in stable Rust. But this was also an opportunity to make a number of other changes.</p>
+                        <p>Sophia has been heavily refactored between version 0.7 and 0.8. This refactoring was triggered by the use of <a href="https://blog.rust-lang.org/2022/10/28/gats-stabilization.html">Generic Ascciated Types</a> (GATs), that have finally landed in stable Rust. But this was also an opportunity to make a number of other changes.</p>
 <h2 id="the-benefit-of-gats"><a class="header" href="#the-benefit-of-gats">The benefit of GATs</a></h2>
 <p>The main benefit of GATs is to get rid of <a href="https://docs.rs/sophia/0.7.2/sophia/triple/streaming_mode/index.html">odd patterns</a> that were introduced in Sophia in order to keep it genetic enough to support multiple implementation choices. The drawback of this approach was that implementing Sophia's traits (especially <code>Graph</code> and <code>Dataset</code>) could be cumbersome.</p>
 <p>As an example, the <a href="https://docs.rs/sophia/0.7.2/sophia/graph/trait.Graph.html"><code>Graph</code></a> trait used to be</p>
@@ -320,6 +209,9 @@ has been added on the github repository of Sophia to mark migration issues and r
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="01_getting_started.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
 
 
                         <div style="clear: both"></div>
@@ -328,6 +220,9 @@ has been added on the github repository of Sophia to mark migration issues and r
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="01_getting_started.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
 
             </nav>
 
@@ -351,11 +246,6 @@ has been added on the github repository of Sophia to mark migration issues and r
 
         <!-- Custom JS scripts -->
 
-        <script>
-        window.addEventListener('load', function() {
-            window.setTimeout(window.print, 100);
-        });
-        </script>
 
     </body>
 </html>
