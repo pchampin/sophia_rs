@@ -230,7 +230,7 @@ impl<D: MutableDataset, G: Term> MutableGraph for DatasetGraph<D, G> {
 mod test {
     use super::*;
     use crate::quad::Spog;
-    use crate::term::{graph_name_eq, CmpTerm, FromTerm};
+    use crate::term::{graph_name_eq, FromTerm};
     use sophia_iri::Iri;
     use std::collections::BTreeSet;
 
@@ -238,7 +238,7 @@ mod test {
     static G2: Iri<&'static str> = Iri::new_unchecked_const("http://example.com/g2");
     static G3: Iri<&'static str> = Iri::new_unchecked_const("http://example.com/g3");
 
-    type MyTerm = CmpTerm<SimpleTerm<'static>>;
+    type MyTerm = SimpleTerm<'static>;
     type MyQuad = Spog<MyTerm>;
     type MyDS = BTreeSet<MyQuad>;
 

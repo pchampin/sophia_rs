@@ -205,6 +205,18 @@ impl std::hash::Hash for SimpleTerm<'_> {
     }
 }
 
+impl<T: Term> PartialOrd<T> for SimpleTerm<'_> {
+    fn partial_cmp(&self, other: &T) -> Option<Ordering> {
+        Some(Term::cmp(self, other.borrow_term()))
+    }
+}
+
+impl Ord for SimpleTerm<'_> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        Term::cmp(self, other)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

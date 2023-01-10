@@ -183,10 +183,9 @@ mod test {
     use super::*;
     use crate::graph::adapter::DatasetGraph;
     use crate::source::{StreamError, TripleSource};
-    use crate::term::CmpTerm;
     use std::collections::BTreeSet;
 
-    type MyTerm = CmpTerm<SimpleTerm<'static>>;
+    type MyTerm = SimpleTerm<'static>;
     type MyGraph = BTreeSet<[MyTerm; 3]>;
 
     // NB: using test_dataset_impl! for testing GraphAsDataset is not convenient,

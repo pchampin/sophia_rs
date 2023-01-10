@@ -17,7 +17,7 @@ use sophia_api::ns::{rdf, xsd};
 use sophia_api::prefix::PrefixMap;
 use sophia_api::quad::{iter_spog, Gspo, Quad, Spog};
 use sophia_api::term::matcher::Any;
-use sophia_api::term::{CmpTerm, GraphName, SimpleTerm, Term, TermKind};
+use sophia_api::term::{GraphName, SimpleTerm, Term, TermKind};
 use sophia_api::triple::Triple;
 use sophia_api::MownStr;
 use sophia_iri::{Iri, IriRef};
@@ -27,9 +27,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::io::{self, Write};
 use std::ops::Range;
 
-pub type MyTerm<'a> = CmpTerm<SimpleTerm<'a>>;
-pub type MyBTerm<'a> = <MyTerm<'a> as Term>::BorrowTerm<'a>;
-pub type PrettifiableDataset<'a> = BTreeSet<Gspo<MyTerm<'a>>>;
+pub type PrettifiableDataset<'a> = BTreeSet<Gspo<SimpleTerm<'a>>>;
 
 /// Serialize `dataset` in pretty TriG on `write`, using the given `config`.
 ///
@@ -70,13 +68,21 @@ struct Prettifier<'a, W> {
     write: W,
     indent: String,
     config: &'a TurtleConfig,
-    labelled: BTreeSet<MyBTerm<'a>>,
-    subject_types: Vec<(GraphName<MyBTerm<'a>>, MyBTerm<'a>, SubjectType)>,
-    lists: BTreeMap<MyBTerm<'a>, Vec<MyBTerm<'a>>>,
+    labelled: BTreeSet<&'a SimpleTerm<'a>>,
+    subject_types: Vec<(
+        GraphName<&'a SimpleTerm<'a>>,
+        &'a SimpleTerm<'a>,
+        SubjectType,
+    )>,
+    lists: BTreeMap<&'a SimpleTerm<'a>, Vec<&'a SimpleTerm<'a>>>,
     graph_range: Range<usize>,
 }
 
-type SubjectsWithType<'a> = [(GraphName<MyBTerm<'a>>, MyBTerm<'a>, SubjectType)];
+type SubjectsWithType<'a> = [(
+    GraphName<&'a SimpleTerm<'a>>,
+    &'a SimpleTerm<'a>,
+    SubjectType,
+)];
 
 impl<'a, W: Write> Prettifier<'a, W> {
     fn new(
@@ -144,7 +150,7 @@ impl<'a, W: Write> Prettifier<'a, W> {
             if *st != SubjectType::Root {
                 continue;
             }
-            self.write_tree(*s)?;
+            self.write_tree(s)?;
             self.subject_types[i].2 = SubjectType::Done;
         }
         /*
@@ -163,7 +169,7 @@ impl<'a, W: Write> Prettifier<'a, W> {
         Ok(())
     }
 
-    fn write_tree(&mut self, root: MyBTerm<'a>) -> io::Result<()> {
+    fn write_tree(&mut self, root: &'a SimpleTerm<'a>) -> io::Result<()> {
         self.write_newline()?;
         self.write_term(root)?;
         self.write_properties(root)?;
@@ -171,7 +177,7 @@ impl<'a, W: Write> Prettifier<'a, W> {
         Ok(())
     }
 
-    fn write_properties(&mut self, subject: MyBTerm<'a>) -> io::Result<()> {
+    fn write_properties(&mut self, subject: &'a SimpleTerm<'a>) -> io::Result<()> {
         let mut predicate = None;
         self.indent(); // to predicate-level
         let g = self.current_graph_name();
@@ -227,31 +233,31 @@ impl<'a, W: Write> Prettifier<'a, W> {
 
     fn write_objects(
         &mut self,
-        subject: MyBTerm<'a>,
-        predicate: MyBTerm<'a>,
-        objects: &[MyBTerm<'a>],
+        subject: &'a SimpleTerm<'a>,
+        predicate: &'a SimpleTerm<'a>,
+        objects: &[&'a SimpleTerm<'a>],
     ) -> io::Result<()> {
         self.write_object(subject, predicate, objects[0])?;
         for obj in &objects[1..] {
             self.write_bytes(b",")?;
             self.write_newline()?;
-            self.write_object(subject, predicate, *obj)?;
+            self.write_object(subject, predicate, obj)?;
         }
         Ok(())
     }
 
     fn write_object(
         &mut self,
-        subject: MyBTerm<'a>,
-        predicate: MyBTerm<'a>,
-        object: MyBTerm<'a>,
+        subject: &'a SimpleTerm<'a>,
+        predicate: &'a SimpleTerm<'a>,
+        object: &'a SimpleTerm<'a>,
     ) -> io::Result<()> {
         self.write_term(object)?;
-        let tr = CmpTerm(SimpleTerm::Triple(Box::new([
-            subject.0.clone(),
-            predicate.0.clone(),
-            object.0.clone(),
-        ])));
+        let tr = SimpleTerm::Triple(Box::new([
+            subject.clone(),
+            predicate.clone(),
+            object.clone(),
+        ]));
         if let Some(i) = self.find_st_index(tr) {
             let (_, s, st) = self.subject_types[i];
             if st == SubjectType::Annotation {
@@ -264,7 +270,7 @@ impl<'a, W: Write> Prettifier<'a, W> {
         Ok(())
     }
 
-    fn write_term(&mut self, term: MyBTerm<'a>) -> io::Result<()> {
+    fn write_term(&mut self, term: &'a SimpleTerm<'a>) -> io::Result<()> {
         use TermKind::*;
         match term.kind() {
             Iri => self.write_iri(&term.iri().unwrap()),
@@ -305,7 +311,7 @@ impl<'a, W: Write> Prettifier<'a, W> {
         }
     }
 
-    fn write_bnode(&mut self, bn: MyBTerm<'a>) -> io::Result<()> {
+    fn write_bnode(&mut self, bn: &'a SimpleTerm<'a>) -> io::Result<()> {
         if let Some(items) = self.lists.remove(&bn) {
             self.write_bytes(b"(")?;
             self.indent();
@@ -338,7 +344,7 @@ impl<'a, W: Write> Prettifier<'a, W> {
         Ok(())
     }
 
-    fn write_literal(&mut self, lit: MyBTerm<'a>) -> io::Result<()> {
+    fn write_literal(&mut self, lit: &'a SimpleTerm<'a>) -> io::Result<()> {
         debug_assert!(lit.kind() == TermKind::Literal);
         let datatype = lit.datatype().unwrap();
         let value = lit.lexical_form().unwrap();
@@ -380,7 +386,7 @@ impl<'a, W: Write> Prettifier<'a, W> {
         self.indent.truncate(self.indent.len() - ilen);
     }
 
-    fn next_graph(&mut self) -> Option<MyBTerm<'a>> {
+    fn next_graph(&mut self) -> Option<&'a SimpleTerm<'a>> {
         if self.graph_range.end >= self.subject_types.len() {
             None
         } else {
@@ -395,7 +401,7 @@ impl<'a, W: Write> Prettifier<'a, W> {
         }
     }
 
-    fn current_graph_name(&self) -> GraphName<MyBTerm<'a>> {
+    fn current_graph_name(&self) -> GraphName<&'a SimpleTerm<'a>> {
         self.subject_types[self.graph_range.start].0
     }
 
@@ -418,7 +424,7 @@ impl<'a, W: Write> Prettifier<'a, W> {
 /// NB2: there would be other cases where a bnode in a quoted triples could,
 /// theory, be written using the square brackets, but the added value is not worth
 /// the trouble of identifying those cases.
-fn build_labelled<'a>(d: &'a PrettifiableDataset) -> BTreeSet<MyBTerm<'a>> {
+fn build_labelled<'a>(d: &'a PrettifiableDataset) -> BTreeSet<&'a SimpleTerm<'a>> {
     let mut profiles = BTreeMap::new();
     for q in d.quads() {
         let q = q.unwrap();
@@ -505,20 +511,20 @@ fn build_labelled<'a>(d: &'a PrettifiableDataset) -> BTreeSet<MyBTerm<'a>> {
 
 struct BnodeProfile<'a> {
     bad: bool,
-    named_graphs: BTreeSet<GraphName<MyBTerm<'a>>>,
+    named_graphs: BTreeSet<GraphName<&'a SimpleTerm<'a>>>,
     out_degree: usize,
-    predecessor: Option<MyBTerm<'a>>,
+    predecessor: Option<&'a SimpleTerm<'a>>,
     visited: bool,
 }
 
 impl<'a> BnodeProfile<'a> {
-    fn add_named_graph(&mut self, g: GraphName<MyBTerm<'a>>) {
+    fn add_named_graph(&mut self, g: GraphName<&'a SimpleTerm<'a>>) {
         self.named_graphs.insert(g);
         if self.named_graphs.len() > 1 {
             self.bad = true;
         }
     }
-    fn update_positions(&mut self, pos: usize, quad: &Spog<CmpTerm<&'a SimpleTerm>>) {
+    fn update_positions(&mut self, pos: usize, quad: &Spog<&'a SimpleTerm>) {
         if pos == 0 {
             self.out_degree += 1;
         } else if pos == 2 {
@@ -537,8 +543,8 @@ impl<'a> BnodeProfile<'a> {
 /// For each pair (graph-name, subject), determine the subject type
 fn build_subject_types<'a>(
     d: &'a PrettifiableDataset,
-    labelled: &BTreeSet<MyBTerm<'a>>,
-) -> BTreeMap<(GraphName<MyBTerm<'a>>, MyBTerm<'a>), SubjectType> {
+    labelled: &BTreeSet<&'a SimpleTerm<'a>>,
+) -> BTreeMap<(GraphName<&'a SimpleTerm<'a>>, &'a SimpleTerm<'a>), SubjectType> {
     d.iter()
         .map(|q| (q.g(), q.s()))
         .dedup()
@@ -588,8 +594,8 @@ enum SubjectType {
 /// Find all well-formed lists in this dataset
 fn build_lists<'a>(
     d: &'a PrettifiableDataset,
-    subject_types: &mut BTreeMap<(GraphName<MyBTerm<'a>>, MyBTerm<'a>), SubjectType>,
-) -> BTreeMap<MyBTerm<'a>, Vec<MyBTerm<'a>>> {
+    subject_types: &mut BTreeMap<(GraphName<&'a SimpleTerm<'a>>, &'a SimpleTerm<'a>), SubjectType>,
+) -> BTreeMap<&'a SimpleTerm<'a>, Vec<&'a SimpleTerm<'a>>> {
     let mut preds = BTreeMap::new();
     let mut seeds = vec![];
     use TermKind::BlankNode;
@@ -634,7 +640,7 @@ fn build_lists<'a>(
         .collect()
 }
 
-fn list_item<'a>(s: MyBTerm<'a>, d: &'a PrettifiableDataset) -> Option<MyBTerm<'a>> {
+fn list_item<'a>(s: &'a SimpleTerm<'a>, d: &'a PrettifiableDataset) -> Option<&'a SimpleTerm<'a>> {
     let mut ret = None;
     for q in d.quads_matching([s], Any, Any, Any) {
         let q = q.unwrap();

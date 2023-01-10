@@ -13,7 +13,7 @@ use rio_turtle::TriGFormatter;
 use sophia_api::quad::Quad;
 use sophia_api::serializer::{QuadSerializer, Stringifier};
 use sophia_api::source::{QuadSource, SinkError, SourceError, StreamResult};
-use sophia_api::term::{CmpTerm, Term};
+use sophia_api::term::Term;
 use sophia_rio::serializer::rio_format_quads;
 use std::io;
 
@@ -67,8 +67,8 @@ where
             source
                 .for_each_quad(|t| {
                     let (spo, g) = t.spog();
-                    let spo = spo.map(|t| CmpTerm(t.into_term()));
-                    let g = g.map(|t| CmpTerm(t.into_term()));
+                    let spo = spo.map(|t| t.into_term());
+                    let g = g.map(|t| t.into_term());
                     dataset.insert((g, spo));
                 })
                 .map_err(SourceError)?;

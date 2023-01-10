@@ -412,7 +412,7 @@ mod test {
     crate::test_graph_impl!(hashset, HashSetAsGraph);
 
     #[cfg(feature = "all_tests")]
-    type BTreeSetAsGraph = BTreeSet<[crate::term::CmpTerm<SimpleTerm<'static>>; 3]>;
+    type BTreeSetAsGraph = BTreeSet<[crate::term::SimpleTerm<'static>; 3]>;
     #[cfg(feature = "all_tests")]
     crate::test_graph_impl!(btreeset, BTreeSetAsGraph);
 }

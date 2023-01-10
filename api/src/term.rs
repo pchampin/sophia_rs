@@ -789,9 +789,9 @@ mod test_term_impl {
     fn cmp_terms(t1: &str, t2: &str) {
         let t1 = ez_term(t1);
         let t2 = ez_term(t2);
-        assert_eq!(t1.cmp(&t1), std::cmp::Ordering::Equal);
-        assert_eq!(t2.cmp(&t2), std::cmp::Ordering::Equal);
-        assert_eq!(t1.cmp(&t2), std::cmp::Ordering::Less);
-        assert_eq!(t2.cmp(&t1), std::cmp::Ordering::Greater);
+        assert_eq!(Term::cmp(&t1, &t1), std::cmp::Ordering::Equal);
+        assert_eq!(Term::cmp(&t2, &t2), std::cmp::Ordering::Equal);
+        assert_eq!(Term::cmp(&t1, &t2), std::cmp::Ordering::Less);
+        assert_eq!(Term::cmp(&t2, &t1), std::cmp::Ordering::Greater);
     }
 }

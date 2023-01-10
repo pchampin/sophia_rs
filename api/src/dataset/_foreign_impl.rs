@@ -708,8 +708,6 @@ impl<T: Quad> SetDataset for BTreeSet<T> {}
 mod test {
     use super::*;
     #[cfg(feature = "all_tests")]
-    use crate::term::CmpTerm;
-
     // NB: implementation of Dataset by &D and &mut D are not tested,
     // as the code is trivial to review.
 
@@ -734,12 +732,12 @@ mod test {
     crate::test_dataset_impl!(hashset2, HashSetAsDataset2);
 
     #[cfg(feature = "all_tests")]
-    type BTreeSetAsDataset = BTreeSet<Spog<CmpTerm<SimpleTerm<'static>>>>;
+    type BTreeSetAsDataset = BTreeSet<Spog<SimpleTerm<'static>>>;
     #[cfg(feature = "all_tests")]
     crate::test_dataset_impl!(btreeset, BTreeSetAsDataset);
 
     #[cfg(feature = "all_tests")]
-    type BTreeSetAsDataset2 = BTreeSet<Gspo<CmpTerm<SimpleTerm<'static>>>>;
+    type BTreeSetAsDataset2 = BTreeSet<Gspo<SimpleTerm<'static>>>;
     #[cfg(feature = "all_tests")]
     crate::test_dataset_impl!(btreeset2, BTreeSetAsDataset2);
 }

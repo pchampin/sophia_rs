@@ -13,7 +13,7 @@ use rio_turtle::TurtleFormatter;
 use sophia_api::prefix::{Prefix, PrefixMap, PrefixMapPair};
 use sophia_api::serializer::{Stringifier, TripleSerializer};
 use sophia_api::source::{SinkError, SourceError, StreamResult, TripleSource};
-use sophia_api::term::{CmpTerm, SimpleTerm, Term};
+use sophia_api::term::{SimpleTerm, Term};
 use sophia_api::triple::Triple;
 use sophia_iri::Iri;
 use sophia_rio::serializer::rio_format_triples;
@@ -167,10 +167,10 @@ where
     {
         if self.config.pretty {
             let mut dataset = PrettifiableDataset::new();
-            let default = None as Option<CmpTerm<SimpleTerm>>;
+            let default = None as Option<SimpleTerm>;
             source
                 .for_each_triple(|t| {
-                    let spo = t.spo().map(|t| CmpTerm(t.into_term()));
+                    let spo = t.spo().map(Term::into_term);
                     dataset.insert((default.clone(), spo));
                 })
                 .map_err(SourceError)?;
