@@ -1,6 +1,6 @@
 use super::*;
 use sophia_api::ns::xsd;
-use sophia_api::term::{test_term_impl, BnodeId, IriRef, Term, TermKind};
+use sophia_api::term::{assert_consistent_term_impl, BnodeId, IriRef, Term, TermKind};
 use sophia_api::MownStr;
 use std::error::Error;
 
@@ -362,7 +362,7 @@ impl Term for MyTerm {
         }
     }
 
-    fn lexical_value(&self) -> Option<MownStr<'_>> {
+    fn lexical_form(&self) -> Option<MownStr<'_>> {
         if let MyTerm::String(val) = *self {
             Some(val.into())
         } else if let MyTerm::Number(n) = *self {
@@ -411,9 +411,9 @@ impl Term for MyTerm {
 
 #[test]
 fn my_term() {
-    test_term_impl(&MyTerm::Iri("tag:1"));
-    test_term_impl(&MyTerm::Bnode("b1"));
-    test_term_impl(&MyTerm::String("hello world"));
-    test_term_impl(&MyTerm::Number(42));
-    test_term_impl(&MyTerm::Triple("b1 p b2"));
+    assert_consistent_term_impl(&MyTerm::Iri("tag:1"));
+    assert_consistent_term_impl(&MyTerm::Bnode("b1"));
+    assert_consistent_term_impl(&MyTerm::String("hello world"));
+    assert_consistent_term_impl(&MyTerm::Number(42));
+    assert_consistent_term_impl(&MyTerm::Triple("b1 p b2"));
 }

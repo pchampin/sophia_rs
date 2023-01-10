@@ -341,7 +341,7 @@ impl<'a, W: Write> Prettifier<'a, W> {
     fn write_literal(&mut self, lit: MyBTerm<'a>) -> io::Result<()> {
         debug_assert!(lit.kind() == TermKind::Literal);
         let datatype = lit.datatype().unwrap();
-        let value = lit.lexical_value().unwrap();
+        let value = lit.lexical_form().unwrap();
         if xsd::integer == datatype && INTEGER.is_match(&value)
             || xsd::decimal == datatype && DECIMAL.is_match(&value)
             || xsd::double == datatype && DOUBLE.is_match(&value)

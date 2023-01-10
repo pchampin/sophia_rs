@@ -50,7 +50,7 @@ impl<'a> Term for SimpleTerm<'a> {
             None
         }
     }
-    fn lexical_value(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr> {
         match self {
             LiteralDatatype(val, _) | LiteralLanguage(val, _) => Some(MownStr::from(&val[..])),
             _ => None,
@@ -116,7 +116,7 @@ impl FromTerm for SimpleTerm<'static> {
                 SimpleTerm::BlankNode(term.bnode_id().unwrap().map_unchecked(ensure_owned))
             }
             TermKind::Literal => {
-                let lex = ensure_owned(term.lexical_value().unwrap());
+                let lex = ensure_owned(term.lexical_form().unwrap());
                 if let Some(tag) = term.language_tag() {
                     let tag = tag.map_unchecked(ensure_owned);
                     SimpleTerm::LiteralLanguage(lex, tag)
@@ -161,7 +161,7 @@ impl<'a> SimpleTerm<'a> {
             TermKind::Iri => SimpleTerm::Iri(term.iri().unwrap()),
             TermKind::BlankNode => SimpleTerm::BlankNode(term.bnode_id().unwrap()),
             TermKind::Literal => {
-                let lex = term.lexical_value().unwrap();
+                let lex = term.lexical_form().unwrap();
                 if let Some(tag) = term.language_tag() {
                     SimpleTerm::LiteralLanguage(lex, tag)
                 } else {
@@ -214,7 +214,7 @@ mod test {
     fn iri_from_scratch() {
         let value = IriRef::new_unchecked(MownStr::from_str("http://example.org/"));
         let t = SimpleTerm::Iri(value.clone());
-        test_term_impl(&t);
+        assert_consistent_term_impl(&t);
         assert_eq!(t.borrow_term(), &t);
         assert_eq!(t.kind(), TermKind::Iri);
         assert_eq!(t.iri(), Some(value));
@@ -224,7 +224,7 @@ mod test {
     fn bnode_from_scratch() {
         let value = BnodeId::new_unchecked(MownStr::from_str("b1"));
         let t = SimpleTerm::BlankNode(value.clone());
-        test_term_impl(&t);
+        assert_consistent_term_impl(&t);
         assert_eq!(t.borrow_term(), &t);
         assert_eq!(t.kind(), TermKind::BlankNode);
         assert_eq!(t.bnode_id(), Some(value));
@@ -235,10 +235,10 @@ mod test {
         let value = MownStr::from_str("hello world");
         let datatype = IriRef::new_unchecked(MownStr::from_str("http://example.org/"));
         let t = SimpleTerm::LiteralDatatype(value.clone(), datatype.clone());
-        test_term_impl(&t);
+        assert_consistent_term_impl(&t);
         assert_eq!(t.borrow_term(), &t);
         assert_eq!(t.kind(), TermKind::Literal);
-        assert_eq!(t.lexical_value(), Some(value));
+        assert_eq!(t.lexical_form(), Some(value));
         assert_eq!(t.datatype(), Some(datatype));
     }
 
@@ -247,10 +247,10 @@ mod test {
         let value = MownStr::from_str("hello world");
         let tag = LanguageTag::new_unchecked(MownStr::from_str("en-US"));
         let t = SimpleTerm::LiteralLanguage(value.clone(), tag.clone());
-        test_term_impl(&t);
+        assert_consistent_term_impl(&t);
         assert_eq!(t.borrow_term(), &t);
         assert_eq!(t.kind(), TermKind::Literal);
-        assert_eq!(t.lexical_value(), Some(value));
+        assert_eq!(t.lexical_form(), Some(value));
         assert_eq!(t.language_tag(), Some(tag));
     }
 
@@ -258,7 +258,7 @@ mod test {
     fn variable_from_scratch() {
         let value = VarName::new_unchecked(MownStr::from_str("x"));
         let t = SimpleTerm::Variable(value.clone());
-        test_term_impl(&t);
+        assert_consistent_term_impl(&t);
         assert_eq!(t.borrow_term(), &t);
         assert_eq!(t.kind(), TermKind::Variable);
         assert_eq!(t.variable(), Some(value));
@@ -271,7 +271,7 @@ mod test {
         let o: SimpleTerm<'_> = "o".into_term();
         let spo = [s.clone(), p.clone(), o.clone()];
         let t = SimpleTerm::Triple(Box::new(spo.clone()));
-        test_term_impl(&t);
+        assert_consistent_term_impl(&t);
         assert_eq!(t.borrow_term(), &t);
         assert_eq!(t.kind(), TermKind::Triple);
         assert_eq!(t.triple(), Some([&s, &p, &o]));
@@ -300,7 +300,7 @@ mod test {
         let o = t1.clone();
         let spo2 = [s.clone(), p.clone(), o.clone()];
         let t = SimpleTerm::Triple(Box::new(spo2.clone()));
-        test_term_impl(&t);
+        assert_consistent_term_impl(&t);
         assert_eq!(t.borrow_term(), &t);
         assert_eq!(t.kind(), TermKind::Triple);
         assert_eq!(t.triple(), Some([&s, &p, &o]));
@@ -323,7 +323,7 @@ mod test {
     #[test]
     fn iri_from_term() {
         let t: SimpleTerm<'_> = rdf::type_.into_term();
-        test_term_impl(&t);
+        assert_consistent_term_impl(&t);
         assert_eq!(t.kind(), TermKind::Iri);
         assert_eq!(t.iri(), rdf::type_.iri());
     }
@@ -331,15 +331,15 @@ mod test {
     #[test]
     fn literal_from_term() {
         let t: SimpleTerm<'_> = "hello world".into_term();
-        test_term_impl(&t);
+        assert_consistent_term_impl(&t);
         assert_eq!(t.kind(), TermKind::Literal);
-        assert_eq!(t.lexical_value().unwrap(), "hello world");
+        assert_eq!(t.lexical_form().unwrap(), "hello world");
         assert_eq!(t.datatype(), xsd::string.iri());
 
         let t: SimpleTerm<'_> = 42.into_term();
-        test_term_impl(&t);
+        assert_consistent_term_impl(&t);
         assert_eq!(t.kind(), TermKind::Literal);
-        assert_eq!(t.lexical_value().unwrap(), "42");
+        assert_eq!(t.lexical_form().unwrap(), "42");
         assert_eq!(t.datatype(), xsd::integer.iri());
     }
 
@@ -347,7 +347,7 @@ mod test {
     fn bnode_from_term() {
         let b1 = BnodeId::new("b1").unwrap();
         let t: SimpleTerm<'_> = b1.into_term();
-        test_term_impl(&t);
+        assert_consistent_term_impl(&t);
         assert_eq!(t.kind(), TermKind::BlankNode);
         assert_eq!(t.bnode_id().unwrap(), b1);
     }
@@ -360,7 +360,7 @@ mod test {
         let spo = [s.clone(), p.clone(), o.clone()];
         let tr = SimpleTerm::from_triple(spo.spo());
         let t: SimpleTerm<'_> = tr.into_term();
-        test_term_impl(&t);
+        assert_consistent_term_impl(&t);
         assert_eq!(t.borrow_term(), &t);
         assert_eq!(t.kind(), TermKind::Triple);
         assert_eq!(t.triple(), Some([&s, &p, &o]));
@@ -381,7 +381,7 @@ mod test {
     fn variable_from_term() {
         let v1 = VarName::new("v1").unwrap();
         let t: SimpleTerm<'_> = v1.into_term();
-        test_term_impl(&t);
+        assert_consistent_term_impl(&t);
         assert_eq!(t.kind(), TermKind::Variable);
         assert_eq!(t.variable().unwrap(), v1);
     }
@@ -389,9 +389,9 @@ mod test {
     #[test]
     fn try_from_term() {
         let t: SimpleTerm<'_> = 42.try_into_term().unwrap();
-        test_term_impl(&t);
+        assert_consistent_term_impl(&t);
         assert_eq!(t.kind(), TermKind::Literal);
-        assert_eq!(t.lexical_value().unwrap(), "42");
+        assert_eq!(t.lexical_form().unwrap(), "42");
         assert_eq!(t.datatype(), xsd::integer.iri());
     }
 
@@ -399,7 +399,7 @@ mod test {
     fn iri_from_term_ref() {
         let i = sophia_iri::Iri::new("http://example.com/").unwrap();
         let t = SimpleTerm::from_term_ref(&i);
-        test_term_impl(&t);
+        assert_consistent_term_impl(&t);
         assert_eq!(t.kind(), TermKind::Iri);
         assert_eq!(t.iri(), i.iri());
         assert!(t.iri().unwrap().unwrap().is_borrowed());
@@ -409,17 +409,17 @@ mod test {
     fn literal_from_term_ref() {
         let l = "hello world";
         let t = SimpleTerm::from_term_ref(&l);
-        test_term_impl(&t);
+        assert_consistent_term_impl(&t);
         assert_eq!(t.kind(), TermKind::Literal);
-        assert_eq!(t.lexical_value().unwrap(), l);
-        assert!(t.lexical_value().unwrap().is_borrowed());
+        assert_eq!(t.lexical_form().unwrap(), l);
+        assert!(t.lexical_form().unwrap().is_borrowed());
     }
 
     #[test]
     fn bnode_from_term_ref() {
         let b = BnodeId::new("b1").unwrap();
         let t = SimpleTerm::from_term_ref(&b);
-        test_term_impl(&t);
+        assert_consistent_term_impl(&t);
         assert_eq!(t.kind(), TermKind::BlankNode);
         assert_eq!(t.bnode_id().unwrap(), b);
         assert!(t.bnode_id().unwrap().unwrap().is_borrowed());
@@ -433,7 +433,7 @@ mod test {
         let spo = [s.clone(), p.clone(), o.clone()];
         let tr = SimpleTerm::from_triple(spo.spo());
         let t = SimpleTerm::from_term_ref(&tr);
-        test_term_impl(&t);
+        assert_consistent_term_impl(&t);
         assert_eq!(t.kind(), TermKind::Triple);
         let inner_s = t.to_atoms().next().unwrap();
         assert!(inner_s.bnode_id().unwrap().unwrap().is_borrowed());
@@ -443,7 +443,7 @@ mod test {
     fn variable_from_term_ref() {
         let v = VarName::new("v1").unwrap();
         let t = SimpleTerm::from_term_ref(&v);
-        test_term_impl(&t);
+        assert_consistent_term_impl(&t);
         assert_eq!(t.kind(), TermKind::Variable);
         assert_eq!(t.variable().unwrap(), v);
         assert!(t.variable().unwrap().unwrap().is_borrowed());

@@ -80,7 +80,7 @@ pub enum TermKind {
 ///
 /// However, this would have caused performance issues in some cases,
 /// because the [`MownStr`] returned by, e.g.,
-/// [`iri`](Term::iri) or [`lexical_value`](Term::lexical_value),
+/// [`iri`](Term::iri) or [`lexical_form`](Term::lexical_form),
 /// can be allocated *on demand* by some implementations.
 ///
 /// [generalized]: crate#generalized-vs-strict-rdf-model
@@ -188,14 +188,14 @@ pub trait Term: std::fmt::Debug {
     }
 
     /// If [`kind`](Term::kind) returns [`TermKind::Literal`],
-    /// return the lexical value of this literal.
+    /// return the lexical form of this literal.
     /// Otherwise return `None`.
     ///
     /// # Note to implementors
     /// The default implementation assumes that [`Term::is_literal`] always return false.
     /// If that is not the case, this method must be explicit implemented.
     #[inline]
-    fn lexical_value(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr> {
         self.is_literal()
             .then(|| unimplemented!("Default implementation should have been overridden"))
     }
@@ -356,7 +356,7 @@ pub trait Term: std::fmt::Debug {
             TermKind::Iri => self.iri() == other.iri(),
             TermKind::BlankNode => self.bnode_id() == other.bnode_id(),
             TermKind::Literal => {
-                self.lexical_value() == other.lexical_value()
+                self.lexical_form() == other.lexical_form()
                     && match (self.language_tag(), other.language_tag()) {
                         (None, None) => self.datatype() == other.datatype(),
                         (Some(tag1), Some(tag2)) if tag1 == tag2 => true,
@@ -372,7 +372,7 @@ pub trait Term: std::fmt::Debug {
     /// * IRIs < literals < blank nodes < quoted triples < variables
     /// * IRIs, blank nodes and variables are ordered by their value
     /// * Literals are ordered by their datatype, then their language (if any),
-    ///   then their lexical value
+    ///   then their lexical form
     /// * Quoted triples are ordered in lexicographical order
     ///
     /// NB: literals are ordered by their *lexical* value,
@@ -392,17 +392,17 @@ pub trait Term: std::fmt::Debug {
                 let tag2 = other.language_tag();
                 if let (Some(tag1), Some(tag2)) = (tag1, tag2) {
                     tag1.cmp(&tag2).then_with(|| {
-                        self.lexical_value()
+                        self.lexical_form()
                             .unwrap()
-                            .cmp(&other.lexical_value().unwrap())
+                            .cmp(&other.lexical_form().unwrap())
                     })
                 } else {
                     let dt1 = self.datatype().unwrap();
                     let dt2 = other.datatype().unwrap();
                     Ord::cmp(&dt1, &dt2).then_with(|| {
-                        self.lexical_value()
+                        self.lexical_form()
                             .unwrap()
-                            .cmp(&other.lexical_value().unwrap())
+                            .cmp(&other.lexical_form().unwrap())
                     })
                 }
             }
@@ -424,7 +424,7 @@ pub trait Term: std::fmt::Debug {
             TermKind::Iri => Hash::hash(self.iri().unwrap().as_str(), state),
             TermKind::BlankNode => Hash::hash(self.bnode_id().unwrap().as_str(), state),
             TermKind::Literal => {
-                self.lexical_value().unwrap().hash(state);
+                self.lexical_form().unwrap().hash(state);
                 match self.language_tag() {
                     None => {
                         Hash::hash(self.datatype().unwrap().as_str(), state);
@@ -510,8 +510,8 @@ where
     fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
         (*self).bnode_id()
     }
-    fn lexical_value(&self) -> Option<MownStr> {
-        (*self).lexical_value()
+    fn lexical_form(&self) -> Option<MownStr> {
+        (*self).lexical_form()
     }
     fn datatype(&self) -> Option<IriRef<MownStr>> {
         (*self).datatype()
@@ -562,8 +562,8 @@ pub trait TryFromTerm: Sized {
 /// Test that the given term is consistent in its implementation of the [`Term`] trait.
 ///
 /// NB: it may be necessary to explicitly specify the parameter `T`,
-/// even when the type of `t` is known. E.g.: ``test_term_impl::<MyTerm>(&t)``.
-pub fn test_term_impl<T>(t: &T)
+/// even when the type of `t` is known. E.g.: ``assert_consistent_term_impl::<MyTerm>(&t)``.
+pub fn assert_consistent_term_impl<T>(t: &T)
 where
     T: Term + Clone,
 {
@@ -584,7 +584,7 @@ where
     }
     if k == TermKind::Literal {
         assert!(t.is_literal());
-        assert!(t.lexical_value().is_some());
+        assert!(t.lexical_form().is_some());
         assert!(t.datatype().is_some());
         if t.datatype() == crate::ns::rdf::langString.iri() {
             assert!(t.language_tag().is_some());
@@ -593,7 +593,7 @@ where
         }
     } else {
         assert!(!t.is_literal());
-        assert!(t.lexical_value().is_none());
+        assert!(t.lexical_form().is_none());
         assert!(t.datatype().is_none());
         assert!(t.language_tag().is_none());
     }

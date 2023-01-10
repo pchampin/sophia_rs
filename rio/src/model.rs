@@ -86,8 +86,8 @@ impl<'a> Term for Trusted<Literal<'a>> {
         TermKind::Literal
     }
 
-    fn lexical_value(&self) -> Option<MownStr> {
-        Some(lexical_value(self.0))
+    fn lexical_form(&self) -> Option<MownStr> {
+        Some(lexical_form(self.0))
     }
 
     fn datatype(&self) -> Option<IriRef<MownStr>> {
@@ -103,7 +103,7 @@ impl<'a> Term for Trusted<Literal<'a>> {
     }
 }
 
-fn lexical_value(l: Literal) -> MownStr {
+fn lexical_form(l: Literal) -> MownStr {
     use Literal::*;
     let value = match l {
         Simple { value } => value,
@@ -263,9 +263,9 @@ impl<'a> Term for Trusted<RioTerm<'a>> {
         }
     }
 
-    fn lexical_value(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr> {
         if let RioTerm::Literal(l) = self.0 {
-            Some(lexical_value(l))
+            Some(lexical_form(l))
         } else {
             None
         }
@@ -340,9 +340,9 @@ impl<'a> Term for Trusted<GeneralizedTerm<'a>> {
         }
     }
 
-    fn lexical_value(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr> {
         if let GeneralizedTerm::Literal(l) = self.0 {
-            Some(lexical_value(l))
+            Some(lexical_form(l))
         } else {
             None
         }
@@ -522,31 +522,31 @@ impl<T> std::ops::Deref for Trusted<T> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use sophia_api::term::test_term_impl;
+    use sophia_api::term::assert_consistent_term_impl;
 
     #[test]
     fn blank_node() {
-        test_term_impl(&Trusted(BlankNode { id: "foo" }))
+        assert_consistent_term_impl(&Trusted(BlankNode { id: "foo" }))
     }
 
     #[test]
     fn named_node() {
-        test_term_impl(&Trusted(NamedNode { iri: "tag:foo" }));
+        assert_consistent_term_impl(&Trusted(NamedNode { iri: "tag:foo" }));
     }
 
     #[test]
     fn variable() {
-        test_term_impl(&Trusted(Variable { name: "foo" }));
+        assert_consistent_term_impl(&Trusted(Variable { name: "foo" }));
     }
 
     #[test]
     fn literal_simple() {
-        test_term_impl(&Trusted(Literal::Simple { value: "foo" }));
+        assert_consistent_term_impl(&Trusted(Literal::Simple { value: "foo" }));
     }
 
     #[test]
     fn literal_language() {
-        test_term_impl(&Trusted(Literal::LanguageTaggedString {
+        assert_consistent_term_impl(&Trusted(Literal::LanguageTaggedString {
             value: "foo",
             language: "en",
         }));
@@ -556,7 +556,7 @@ mod test {
     fn literal_typed() {
         let datatype = xsd::integer.iriref().to_string();
         let datatype = NamedNode { iri: &datatype };
-        test_term_impl(&Trusted(Literal::Typed {
+        assert_consistent_term_impl(&Trusted(Literal::Typed {
             value: "42",
             datatype,
         }));
@@ -566,13 +566,13 @@ mod test {
     #[test]
     fn subject_blank_node() {
         let t: Subject = BlankNode { id: "foo" }.into();
-        test_term_impl(&Trusted(t))
+        assert_consistent_term_impl(&Trusted(t))
     }
 
     #[test]
     fn subject_named_node() {
         let t: Subject = NamedNode { iri: "tag:foo" }.into();
-        test_term_impl(&Trusted(t));
+        assert_consistent_term_impl(&Trusted(t));
     }
 
     #[test]
@@ -595,31 +595,31 @@ mod test {
     #[test]
     fn graph_name_blank_node() {
         let t: GraphName = BlankNode { id: "foo" }.into();
-        test_term_impl(&Trusted(t))
+        assert_consistent_term_impl(&Trusted(t))
     }
 
     #[test]
     fn graph_name_named_node() {
         let t: GraphName = NamedNode { iri: "tag:foo" }.into();
-        test_term_impl(&Trusted(t));
+        assert_consistent_term_impl(&Trusted(t));
     }
 
     #[test]
     fn term_blank_node() {
         let t: RioTerm = BlankNode { id: "foo" }.into();
-        test_term_impl(&Trusted(t))
+        assert_consistent_term_impl(&Trusted(t))
     }
 
     #[test]
     fn term_named_node() {
         let t: RioTerm = NamedNode { iri: "tag:foo" }.into();
-        test_term_impl(&Trusted(t));
+        assert_consistent_term_impl(&Trusted(t));
     }
 
     #[test]
     fn term_literal_simple() {
         let t: RioTerm = Literal::Simple { value: "foo" }.into();
-        test_term_impl(&Trusted(t));
+        assert_consistent_term_impl(&Trusted(t));
     }
 
     #[test]
@@ -629,7 +629,7 @@ mod test {
             language: "en",
         }
         .into();
-        test_term_impl(&Trusted(t));
+        assert_consistent_term_impl(&Trusted(t));
     }
 
     #[test]
@@ -641,7 +641,7 @@ mod test {
             datatype,
         }
         .into();
-        test_term_impl(&Trusted(t));
+        assert_consistent_term_impl(&Trusted(t));
     }
 
     #[test]
@@ -655,25 +655,25 @@ mod test {
             object,
         };
         let t = RioTerm::Triple(&tr);
-        test_term_impl(&Trusted(t));
+        assert_consistent_term_impl(&Trusted(t));
     }
 
     #[test]
     fn gterm_blank_node() {
         let t: RioTerm = BlankNode { id: "foo" }.into();
-        test_term_impl(&Trusted(t))
+        assert_consistent_term_impl(&Trusted(t))
     }
 
     #[test]
     fn gterm_named_node() {
         let t: RioTerm = NamedNode { iri: "tag:foo" }.into();
-        test_term_impl(&Trusted(t));
+        assert_consistent_term_impl(&Trusted(t));
     }
 
     #[test]
     fn gterm_literal_simple() {
         let t: RioTerm = Literal::Simple { value: "foo" }.into();
-        test_term_impl(&Trusted(t));
+        assert_consistent_term_impl(&Trusted(t));
     }
 
     #[test]
@@ -683,7 +683,7 @@ mod test {
             language: "en",
         }
         .into();
-        test_term_impl(&Trusted(t));
+        assert_consistent_term_impl(&Trusted(t));
     }
 
     #[test]
@@ -695,7 +695,7 @@ mod test {
             datatype,
         }
         .into();
-        test_term_impl(&Trusted(t));
+        assert_consistent_term_impl(&Trusted(t));
     }
 
     #[test]
@@ -709,12 +709,12 @@ mod test {
             object,
         };
         let t = RioTerm::Triple(&tr);
-        test_term_impl(&Trusted(t));
+        assert_consistent_term_impl(&Trusted(t));
     }
 
     #[test]
     fn gterm_variable() {
         let t: GeneralizedTerm = Variable { name: "foo" }.into();
-        test_term_impl(&Trusted(t))
+        assert_consistent_term_impl(&Trusted(t))
     }
 }

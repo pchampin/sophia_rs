@@ -29,7 +29,7 @@ impl Term for f64 {
     fn kind(&self) -> TermKind {
         TermKind::Literal
     }
-    fn lexical_value(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr> {
         Some(MownStr::from(format!("{}", self)))
     }
     fn datatype(&self) -> Option<IriRef<MownStr>> {
@@ -65,7 +65,7 @@ impl Term for i32 {
     fn kind(&self) -> TermKind {
         TermKind::Literal
     }
-    fn lexical_value(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr> {
         Some(MownStr::from(format!("{}", self)))
     }
     fn datatype(&self) -> Option<IriRef<MownStr>> {
@@ -101,7 +101,7 @@ impl Term for str {
     fn kind(&self) -> TermKind {
         TermKind::Literal
     }
-    fn lexical_value(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr> {
         Some(MownStr::from(self))
     }
     fn datatype(&self) -> Option<IriRef<MownStr>> {
@@ -122,9 +122,9 @@ mod test {
     #[test]
     fn i32_as_literal() {
         let lit = 42;
-        test_term_impl::<i32>(&lit);
+        assert_consistent_term_impl::<i32>(&lit);
         assert_eq!(lit.kind(), TermKind::Literal);
-        assert_eq!(lit.lexical_value().unwrap(), "42");
+        assert_eq!(lit.lexical_form().unwrap(), "42");
         assert_eq!(lit.datatype(), xsd::integer.iri());
         assert_eq!(lit.borrow_term(), lit);
     }
@@ -133,9 +133,9 @@ mod test {
     fn f64_as_literal() {
         #[allow(clippy::approx_constant)]
         let lit = 3.14;
-        test_term_impl::<f64>(&lit);
+        assert_consistent_term_impl::<f64>(&lit);
         assert_eq!(lit.kind(), TermKind::Literal);
-        assert_eq!(lit.lexical_value().unwrap(), "3.14");
+        assert_eq!(lit.lexical_form().unwrap(), "3.14");
         assert_eq!(lit.datatype(), xsd::double.iri());
         assert_eq!(lit.borrow_term(), lit);
     }
@@ -143,9 +143,9 @@ mod test {
     #[test]
     fn str_as_literal() {
         let lit = "hello world";
-        test_term_impl::<&str>(&lit);
+        assert_consistent_term_impl::<&str>(&lit);
         assert_eq!(lit.kind(), TermKind::Literal);
-        assert_eq!(lit.lexical_value().unwrap(), lit);
+        assert_eq!(lit.lexical_form().unwrap(), lit);
         assert_eq!(lit.datatype(), xsd::string.iri());
         assert_eq!(lit.borrow_term(), lit);
     }

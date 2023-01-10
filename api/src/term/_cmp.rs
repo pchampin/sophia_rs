@@ -35,8 +35,8 @@ impl<T: Term> Term for CmpTerm<T> {
     fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
         self.0.bnode_id()
     }
-    fn lexical_value(&self) -> Option<MownStr> {
-        self.0.lexical_value()
+    fn lexical_form(&self) -> Option<MownStr> {
+        self.0.lexical_form()
     }
     fn datatype(&self) -> Option<IriRef<MownStr>> {
         self.0.datatype()

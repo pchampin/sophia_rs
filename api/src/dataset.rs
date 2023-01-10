@@ -146,7 +146,7 @@ pub trait Dataset {
     /// for q in dataset.quads_matching(
     ///     Any,
     ///     [&rdfs::label],
-    ///     |t: SimpleTerm| t.lexical_value().map(|v| v.contains("needle")).unwrap_or(false),
+    ///     |t: SimpleTerm| t.lexical_form().map(|v| v.contains("needle")).unwrap_or(false),
     ///     Any,
     /// ) {
     ///     println!("{:?} was found", q?.s());
@@ -717,9 +717,9 @@ mod check_implementability_lazy_term {
             }
         }
 
-        fn lexical_value(&self) -> Option<mownstr::MownStr> {
+        fn lexical_form(&self) -> Option<mownstr::MownStr> {
             if let Atom(t) = &self.dataset.terms[self.index] {
-                t.lexical_value()
+                t.lexical_form()
             } else {
                 None
             }

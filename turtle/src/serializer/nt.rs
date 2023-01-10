@@ -138,7 +138,7 @@ where
         }
         Literal => {
             w.write_all(b"\"")?;
-            quoted_string(w, t.lexical_value().unwrap().as_bytes())?;
+            quoted_string(w, t.lexical_form().unwrap().as_bytes())?;
             match t.language_tag() {
                 Some(tag) => {
                     w.write_all(b"\"@")?;

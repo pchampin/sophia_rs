@@ -47,7 +47,7 @@ mod test {
         let iri_str = "https://example.org/";
         let iri = Iri::new_unchecked(iri_str);
         assert_eq!(iri.kind(), TermKind::Iri);
-        assert_eq!(iri.lexical_value(), None);
+        assert_eq!(iri.lexical_form(), None);
         assert_eq!(iri.iri().unwrap().as_str(), iri_str);
         assert_eq!(iri.borrow_term(), &iri);
     }
@@ -57,7 +57,7 @@ mod test {
         let iri_str = "#me";
         let iriref = IriRef::new_unchecked(iri_str);
         assert_eq!(iriref.kind(), TermKind::Iri);
-        assert_eq!(iriref.lexical_value(), None);
+        assert_eq!(iriref.lexical_form(), None);
         assert_eq!(iriref.iri().unwrap().as_str(), iri_str);
         assert_eq!(iriref.borrow_term(), &iriref);
     }

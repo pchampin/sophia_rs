@@ -11,7 +11,7 @@
 //! let fr = LanguageTag::new_unchecked("fr");
 //! let message = "Bonjour le monde" * fr;
 //! assert!(message.is_literal());
-//! assert_eq!(message.lexical_value().unwrap(), "Bonjour le monde");
+//! assert_eq!(message.lexical_form().unwrap(), "Bonjour le monde");
 //! assert_eq!(message.language_tag().unwrap(), fr);
 //! ```
 
@@ -252,15 +252,15 @@ mod test {
         let frfr = LanguageTag::new("fr-FR").unwrap();
         let t1 = "chat" * en;
         assert!(t1.is_literal());
-        assert_eq!(t1.lexical_value().unwrap(), "chat");
+        assert_eq!(t1.lexical_form().unwrap(), "chat");
         assert_eq!(t1.language_tag().unwrap(), en);
         let t2 = "chat" * frfr;
         assert!(t2.is_literal());
-        assert_eq!(t2.lexical_value().unwrap(), "chat");
+        assert_eq!(t2.lexical_form().unwrap(), "chat");
         assert_eq!(t2.language_tag().unwrap(), frfr);
         let t3 = "cat" * en;
         assert!(t3.is_literal());
-        assert_eq!(t3.lexical_value().unwrap(), "cat");
+        assert_eq!(t3.lexical_form().unwrap(), "cat");
         assert_eq!(t3.language_tag().unwrap(), en);
     }
 }

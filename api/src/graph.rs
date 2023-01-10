@@ -143,7 +143,7 @@ pub trait Graph {
     /// for t in graph.triples_matching(
     ///     Any,
     ///     [&rdfs::label],
-    ///     |t: SimpleTerm| t.lexical_value().map(|v| v.contains("needle")).unwrap_or(false),
+    ///     |t: SimpleTerm| t.lexical_form().map(|v| v.contains("needle")).unwrap_or(false),
     /// ) {
     ///     println!("{:?} was found", t?.s());
     /// }
@@ -646,9 +646,9 @@ mod check_implementability_lazy_term {
             }
         }
 
-        fn lexical_value(&self) -> Option<mownstr::MownStr> {
+        fn lexical_form(&self) -> Option<mownstr::MownStr> {
             if let Atom(t) = &self.graph.terms[self.index] {
-                t.lexical_value()
+                t.lexical_form()
             } else {
                 None
             }
