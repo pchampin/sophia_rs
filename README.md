@@ -19,6 +19,7 @@ It comprises the following crates:
 * [`sophia_turtle`] provides parsers and serializers for the Turtle-family of concrete syntaxes.
 * [`sophia_xml`] provides parsers and serializers for RDF/XML.
 * [`sophia_jsonld`] provides preliminary support for JSON-LD.
+* [`sophia_c14n`] implements [RDF canonicalization].
 * [`sophia_rio`] is a lower-level crate, used by the ones above. 
 
 and finally:
@@ -74,9 +75,11 @@ An outdated comparison of Sophia with other RDF libraries is still available
 [`sophia_turtle`]: https://crates.io/crates/sophia_turtle
 [`sophia_xml`]: https://crates.io/crates/sophia_xml
 [`sophia_jsonld`]: https://crates.io/crates/sophia_jsonld
+[`sophia_c14n`]: https://crates.io/crates/sophia_c14n
 [`sophia_indexed`]: https://crates.io/crates/sophia_indexed
 [`sophia_rio`]: https://crates.io/crates/sophia_rio
 [`sophia`]: https://crates.io/crates/sophia
 [CECILL-B]: https://cecill.info/licences/Licence_CeCILL-B_V1-en.html
 [RDF test-suite]: https://github.com/w3c/rdf-tests/
 [JSON-LD test-suite]: https://github.com/w3c/json-ld-api/
+[RDF canonicalization]: https://www.w3.org/TR/rdf-canon/

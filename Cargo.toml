@@ -2,6 +2,7 @@
 
 members = [
     "api",
+    "c14n",
     "inmem",
     "iri",
     "isomorphism",
