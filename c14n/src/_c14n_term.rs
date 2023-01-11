@@ -65,8 +65,9 @@ impl<T: Term> Term for C14nTerm<T> {
 
     fn triple(&self) -> Option<[Self::BorrowTerm<'_>; 3]> {
         unimplemented!()
-        // when we need to support RDF-star, the idea will probably be to split
-        // Other() into Atom(T) and Triple(Box[Self; 3])
+        // TODO when we need to support RDF-star,
+        // a good way to implement it will probably be to split Other()
+        // into Atom(T) and Triple(Box[Self; 3])
     }
 
     fn to_triple(self) -> Option<[Self; 3]>
@@ -74,7 +75,7 @@ impl<T: Term> Term for C14nTerm<T> {
         Self: Sized,
     {
         unimplemented!()
+        // TODO when we need to support RDF-star,
+        // see triple() above
     }
 }
-
-// TODO test
