@@ -1,6 +1,7 @@
-use std::rc::Rc;
-
 use sophia_api::term::{BnodeId, Term, TermKind};
+use std::{cmp::Ordering, rc::Rc};
+
+use crate::_cnq::nq;
 
 #[derive(Clone, Debug)]
 pub enum C14nTerm<T: Term> {
@@ -78,4 +79,15 @@ impl<T: Term> Term for C14nTerm<T> {
         // TODO when we need to support RDF-star,
         // see triple() above
     }
+}
+
+pub fn cmp_c14n_terms<'a, 'b, T: Term>(
+    t1: &'a C14nTerm<T>,
+    t2: &'a C14nTerm<T>,
+    buf1: &'b mut String,
+    buf2: &'b mut String,
+) -> Ordering {
+    nq(t1, buf1);
+    nq(t2, buf2);
+    buf1.cmp(&buf2)
 }

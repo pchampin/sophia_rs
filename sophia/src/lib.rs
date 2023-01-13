@@ -49,6 +49,7 @@
 //! ```
 
 pub use sophia_api as api;
+pub use sophia_c14n as c14n;
 pub use sophia_inmem as inmem;
 pub use sophia_iri as iri;
 pub use sophia_isomorphism as isomorphism;

@@ -24,6 +24,7 @@ test_macro = ["sophia_api/test_macro"]
 sophia_iri = { version = "0.8.0-alpha", path = "../iri" }
 sophia_api = { version = "0.8.0-alpha", path = "../api" }
 sophia_inmem = { version = "0.8.0-alpha", path = "../inmem" }
+sophia_c14n = { version = "0.8.0-alpha", path = "../c14n" }
 sophia_isomorphism = { version = "0.8.0-alpha", path = "../isomorphism" }
 sophia_rio = { version = "0.8.0-alpha", path = "../rio" }
 sophia_turtle = { version = "0.8.0-alpha", path = "../turtle" }
