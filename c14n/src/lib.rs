@@ -22,13 +22,17 @@ use thiserror::Error;
 
 /// Canonicalization error.
 #[derive(Debug, Error)]
-pub enum C14nError<E> {
+pub enum C14nError<E: std::error::Error> {
     /// The dataset raised an error during canonicalization
+    #[error("Error from dataset: {0}")]
     Dataset(#[from] E),
     /// An IO error occurrend while writing the normalized form
+    #[error("IO error: {0}")]
     Io(std::io::Error),
     /// The graph was deemed too complex by the configured safeguards of the algorithm
+    #[error("Toxic graph detected: {0}")]
     ToxicGraph(String),
     /// The c14n algorithm does not support this dataset
+    #[error("Unsupported feature: {0}")]
     Unsupported(String),
 }

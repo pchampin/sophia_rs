@@ -241,7 +241,7 @@ impl<'a, T: Term> C14nState<'a, T> {
     }
 
     /// Implements https://www.w3.org/TR/rdf-canon/#hash-nd-quads
-    fn hash_n_degree_quads<E>(
+    fn hash_n_degree_quads<E: std::error::Error>(
         &self,
         identifier: &str,
         issuer: &BnodeIssuer,
@@ -333,7 +333,7 @@ impl<'a, T: Term> C14nState<'a, T> {
         }
         let ret = (data_to_hash.finalize(), ret_issuer.unwrap());
         debug_assert!({
-            println!(
+            eprintln!(
                 "hash-n-degree({}, {})\n-> {}",
                 identifier,
                 depth,
@@ -410,7 +410,7 @@ fn hash_first_degree_quads<Q: Quad>(bnid: &str, quads: &[&Q]) -> Hash {
     }
     let ret = hasher.finalize();
     debug_assert!({
-        println!("hash-fisrt-degree({})\n-> {}", bnid, hex(&ret));
+        eprintln!("hash-fisrt-degree({})\n-> {}", bnid, hex(&ret));
         true
     });
     ret
