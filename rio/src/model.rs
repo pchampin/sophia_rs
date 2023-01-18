@@ -54,7 +54,7 @@ impl<'a> Term for Trusted<NamedNode<'a>> {
 }
 
 fn iri(n: NamedNode) -> IriRef<MownStr> {
-    debug_assert!(Iri::new(n.iri).is_ok());
+    debug_assert!(IriRef::new(n.iri).is_ok());
     IriRef::new_unchecked(n.iri.into())
 }
 
