@@ -8,16 +8,16 @@ use std::io::BufRead;
 
 /// N-Quads parser based on RIO.
 #[derive(Clone, Debug, Default)]
-pub struct NQuadsParser {}
+pub struct GNQuadsParser {}
 
-impl<B: BufRead> QuadParser<B> for NQuadsParser {
+impl<B: BufRead> QuadParser<B> for GNQuadsParser {
     type Source = GeneralizedRioSource<RioGNQParser<B>>;
     fn parse(&self, data: B) -> Self::Source {
         GeneralizedRioSource(RioGNQParser::new(data))
     }
 }
 
-sophia_api::def_mod_functions_for_bufread_parser!(NQuadsParser, QuadParser);
+sophia_api::def_mod_functions_for_bufread_parser!(GNQuadsParser, QuadParser);
 
 // ---------------------------------------------------------------------------------
 //                                      tests
@@ -46,7 +46,7 @@ mod test {
         "#;
 
         let mut d = MyDataset::new();
-        let p = NQuadsParser {};
+        let p = GNQuadsParser {};
         let c = p.parse_str(nq).add_to_dataset(&mut d)?;
         assert_eq!(c, 4);
         assert_eq!(
