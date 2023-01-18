@@ -101,6 +101,19 @@ pub trait QuadSource {
     }
 
     /// Returns a source which yield the result of `map` for each quad.
+    ///
+    /// See also [`QuadSource::to_triples`].
+    ///
+    /// NB: due to [some limitations in GATs (Generic) Associated Types](https://blog.rust-lang.org/2022/10/28/gats-stabilization.html),
+    /// the `map` function is currently restricted in what it can return.
+    /// In particular, passing functions as trivial as `|q| q` or `|q| q.to_spog()`
+    /// currently do not compile on all implementations of [`QuadSource`].
+    /// Furthermore, some functions returning a [`Quad`] are accepted,
+    /// but fail to make the resulting [`map::MapQuadSource`] recognized as a [`QuadSource`].
+    ///
+    /// As a rule of thumb,
+    /// whenever `map` returns something satisfying the `'static` lifetime,
+    /// things should work as expected.
     #[inline]
     fn map_quads<F, T>(self, map: F) -> map::MapQuadSource<Self, F>
     where
@@ -108,6 +121,14 @@ pub trait QuadSource {
         F: FnMut(Self::Quad<'_>) -> T,
     {
         map::MapQuadSource { source: self, map }
+    }
+
+    // Convert of quads in this source to triples (stripping the graph name).
+    fn to_triples(self) -> convert::ToTriples<Self>
+    where
+        Self: Sized,
+    {
+        convert::ToTriples(self)
     }
 
     /// Returns the bounds on the remaining length of the source.
@@ -271,4 +292,14 @@ mod check_quad_source {
             .for_each_quad(|q| println!("{:?}", q.s()))
             .unwrap();
     }
+
+    /* Currently does not work...
+    #[allow(dead_code)]
+    fn check_quad_source_map<S: QuadSource>(mut qs: S) {
+        qs.for_each_quad(|q| println!("{:?}", q.s())).unwrap();
+        qs.map_quads(|q| q)
+            .for_each_quad(|q| println!("{:?}", q.s()))
+            .unwrap();
+    }
+    */
 }

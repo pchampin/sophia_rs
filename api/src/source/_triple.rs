@@ -101,6 +101,19 @@ pub trait TripleSource {
     }
 
     /// Returns a source which yield the result of `map` for each triple.
+    ///
+    /// See also [`TripleSource::to_quads`].
+    ///
+    /// NB: due to [some limitations in GATs (Generic) Associated Types](https://blog.rust-lang.org/2022/10/28/gats-stabilization.html),
+    /// the `map` function is currently restricted in what it can return.
+    /// In particular, passing functions as trivial as `|t| t` or `|t| t.to_spo()`
+    /// currently do not compile on all implementations of [`TripleSource`].
+    /// Furthermore, some functions returning a [`Triple`] are accepted,
+    /// but fail to make the resulting [`map::MapTripleSource`] recognized as a [`TripleSource`].
+    ///
+    /// As a rule of thumb,
+    /// whenever `map` returns something satisfying the `'static` lifetime,
+    /// things should work as expected.
     #[inline]
     fn map_triples<F, T>(self, map: F) -> map::MapTripleSource<Self, F>
     where
@@ -108,6 +121,15 @@ pub trait TripleSource {
         F: FnMut(Self::Triple<'_>) -> T,
     {
         map::MapTripleSource { source: self, map }
+    }
+
+    // Convert of triples in this source to quads (belonging to the default graph).
+    #[inline]
+    fn to_quads(self) -> convert::ToQuads<Self>
+    where
+        Self: Sized,
+    {
+        convert::ToQuads(self)
     }
 
     /// Returns the bounds on the remaining length of the source.

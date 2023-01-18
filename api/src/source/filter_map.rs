@@ -263,7 +263,7 @@ mod test {
     use crate::term::{SimpleTerm, Term};
     use crate::triple::Triple;
 
-    // check that the result of TripleSource::map_triples implements the expected traits,
+    // check that the result of TripleSource::filter_map_triples implements the expected traits,
     // and that they work as expected
 
     #[test]
@@ -332,7 +332,7 @@ mod test {
         assert_eq!(h.unwrap(), vec!["tag:a".to_string(), "tag:g".to_string(),])
     }
 
-    // check that the result of QuadSource::map_quads implements the expected traits
+    // check that the result of QuadSource::filter_map_quads implements the expected traits
     // and that they work as expected
 
     #[test]

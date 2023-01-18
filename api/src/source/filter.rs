@@ -93,9 +93,6 @@ mod test {
     use crate::term::{SimpleTerm, Term};
     use crate::triple::Triple;
 
-    // check that the result of TripleSource::map_triples implements the expected traits,
-    // and that they work as expected
-
     #[test]
     fn ts_filter_to_triples() {
         let g = vec![
@@ -118,6 +115,7 @@ mod test {
             ]
         )
     }
+
     #[test]
     fn qs_filter_to_triples() {
         let d = vec![
