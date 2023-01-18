@@ -1,14 +1,14 @@
 [package]
 name = "sophia_api"
-version = "0.8.0-alpha"
-authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
-edition = "2021"
 description = "A Rust toolkit for RDF and Linked Data - Core API"
-repository = "https://github.com/pchampin/sophia_rs"
 documentation = "https://docs.rs/sophia_api"
-readme = "../README.md"
-license = "CECILL-B"
-keywords = ["rdf", "linked-data", "semantic-web"]
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
+keywords = ["rdf", "linked-data", "semantic-web", "w3c"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -23,13 +23,13 @@ all_tests = []
 test_macro = []
 
 [dependencies]
-sophia_iri = { version = "0.8.0-alpha", path = "../iri" }
-lazy_static = "1.4.0"
-mownstr = { git="https://github.com/pchampin/mownstr", rev="c88467d" }
-regex = "1.6.0"
-resiter = "0.4.0"
-thiserror = "1.0.32"
+sophia_iri.workspace = true
+lazy_static.workspace = true
+mownstr.workspace = true
+regex.workspace = true
+resiter.workspace = true
+thiserror.workspace = true
 
 [dev-dependencies]
-sophia_iri = { version = "0.8.0-alpha", path = "../iri", features = ["test_data"] }
-test-case = "2.2.1"
+sophia_iri = { workspace = true, features = ["test_data"] }
+test-case.workspace = true

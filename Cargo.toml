@@ -13,5 +13,35 @@ members = [
     "xml",
 ]
 
+[workspace.package]
+version = "0.8.0-alpha"
+authors = ["Pierre-Antoine Champin <pierre-antoine@champin.net>"]
+edition = "2021"
+repository = "https://github.com/pchampin/sophia_rs"
+readme = "./README.md"
+license = "CECILL-B"
+
+[workspace.dependencies]
+sophia_api = { version = "0.8.0-alpha", path = "./api" }
+sophia_c14n = { version = "0.8.0-alpha", path = "./c14n" }
+sophia_inmem = { version = "0.8.0-alpha", path = "./inmem" }
+sophia_iri = { version = "0.8.0-alpha", path = "./iri" }
+sophia_isomorphism = { version = "0.8.0-alpha", path = "./isomorphism" }
+sophia_rio = { version = "0.8.0-alpha", path = "./rio" }
+sophia_turtle = { version = "0.8.0-alpha", path = "./turtle" }
+sophia_xml = { version = "0.8.0-alpha", path = "./xml" }
+
+criterion = "0.3.6"
+lazy_static = "1.4.0"
+mownstr = { git="https://github.com/pchampin/mownstr", rev="c88467d" }
+oxiri = "0.2.2"
+regex = "1.6.0"
+resiter = "0.4.0"
+rio_api = { version = "0.8", features = ["generalized"] }
+rio_turtle = { version = "0.8", features = ["generalized"] }
+rio_xml = { version = "0.8" }
+test-case = "2.2.1"
+thiserror = "1.0.32"
+
 [profile.release]
 lto = true

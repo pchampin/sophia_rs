@@ -1,23 +1,23 @@
 [package]
 name = "sophia_xml"
-version = "0.8.0-alpha"
-authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
-edition = "2021"
 description = "A Rust toolkit for RDF and Linked Data - RDF/XML parser and serializer"
-repository = "https://github.com/pchampin/sophia_rs"
 documentation = "https://docs.rs/sophia_xml"
-readme = "../README.md"
-license = "CECILL-B"
-keywords = ["rdf", "linked-data", "semantic-web"]
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
+keywords = ["rdf", "linked-data", "semantic-web", "w3c", "rdf/xml", "parser", "serializer"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-oxiri = "0.2.2"
-rio_xml = { version = "0.8" }
-sophia_api = { version = "0.8.0-alpha", path = "../api" }
-sophia_iri = { version = "0.8.0-alpha", path = "../iri" }
-sophia_rio = { version = "0.8.0-alpha", path = "../rio" }
+oxiri.workspace = true
+rio_xml.workspace = true
+sophia_api.workspace = true
+sophia_iri.workspace = true
+sophia_rio.workspace = true
 
 [dev-dependencies]
-sophia_isomorphism = { version = "0.8.0-alpha", path = "../isomorphism" }
+sophia_isomorphism.workspace = true

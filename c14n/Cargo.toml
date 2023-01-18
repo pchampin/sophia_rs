@@ -1,19 +1,19 @@
 [package]
 name = "sophia_c14n"
-version = "0.8.0-alpha"
-authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
-edition = "2021"
 description = "A Rust toolkit for RDF and Linked Data - Graph and Dataset canonicalization"
-repository = "https://github.com/pchampin/sophia_rs"
 documentation = "https://docs.rs/sophia_c14n"
-readme = "../README.md"
-license = "CECILL-B"
-keywords = ["rdf", "linked-data", "semantic-web"]
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
+keywords = ["rdf", "linked-data", "semantic-web", "w3c"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 hmac-sha256 = "1.1.6"
-sophia_api = { version = "0.8.0-alpha", path = "../api" }
-sophia_iri = { version = "0.8.0-alpha", path = "../iri" }
-thiserror = "1.0.38"
+sophia_api.workspace = true
+sophia_iri.workspace = true
+thiserror.workspace = true

@@ -1,14 +1,14 @@
 [package]
 name = "sophia"
-version = "0.8.0-alpha"
-authors = ["Pierre-Antoine Champin <pchampin@liris.cnrs.fr>"]
-edition = "2021"
 description = "A Rust toolkit for RDF and Linked Data"
-repository = "https://github.com/pchampin/sophia_rs"
 documentation = "https://docs.rs/sophia"
-readme = "../README.md"
-license = "CECILL-B"
-keywords = ["rdf", "linked-data", "semantic-web"]
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
+keywords = ["rdf", "linked-data", "semantic-web", "w3c"]
 
 [package.metadata.docs.rs]
 all-features = true
@@ -21,11 +21,11 @@ xml = ["sophia_xml"]
 test_macro = ["sophia_api/test_macro"]
 
 [dependencies]
-sophia_iri = { version = "0.8.0-alpha", path = "../iri" }
-sophia_api = { version = "0.8.0-alpha", path = "../api" }
-sophia_inmem = { version = "0.8.0-alpha", path = "../inmem" }
-sophia_c14n = { version = "0.8.0-alpha", path = "../c14n" }
-sophia_isomorphism = { version = "0.8.0-alpha", path = "../isomorphism" }
-sophia_rio = { version = "0.8.0-alpha", path = "../rio" }
-sophia_turtle = { version = "0.8.0-alpha", path = "../turtle" }
-sophia_xml = { version = "0.8.0-alpha", path = "../xml", optional = true }
+sophia_iri.workspace = true
+sophia_api.workspace = true
+sophia_inmem.workspace = true
+sophia_c14n.workspace = true
+sophia_isomorphism.workspace = true
+sophia_rio.workspace = true
+sophia_turtle.workspace = true
+sophia_xml = { workspace = true, optional = true }
