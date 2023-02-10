@@ -5,7 +5,7 @@ use super::*;
 mod _triple {
     use super::*;
 
-    /// The result type of [`Triple::filter_triples`].
+    /// The result type of [`TripleSource::filter_triples`].
     pub struct FilterTripleSource<S, P> {
         pub(in super::super) source: S,
         pub(in super::super) predicate: P,

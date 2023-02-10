@@ -9,9 +9,9 @@ use crate::quad::Quad;
 /// # Common implementors
 ///
 /// Any iterator yielding [results](std::result::Result) of [`Quad`]
-/// implements the [`Source`] trait.
+/// implements the [`QuadSource`] trait.
 ///
-/// Any iterator of [`Quad`] can also be converted to an [`Infallible`] [`Source`]
+/// Any iterator of [`Quad`] can also be converted to an [`Infallible`] [`QuadSource`]
 /// thanks to the [`IntoQuadSource`] extension trait.
 pub trait QuadSource {
     /// The type of quads this source yields.
@@ -87,7 +87,7 @@ pub trait QuadSource {
 
     /// Returns a source that both filters and maps.
     ///
-    /// See also [`Source::filter_quads`] and [`Source::map_quads`].
+    /// See also [`QuadSource::filter_quads`] and [`QuadSource::map_quads`].
     #[inline]
     fn filter_map_quads<F, T>(self, filter_map: F) -> filter_map::FilterMapQuadSource<Self, F>
     where
@@ -195,9 +195,9 @@ where
 }
 
 /// An extension trait for iterators,
-/// converting them to an [`Infallible`] [`Source`].
+/// converting them to an [`Infallible`] [`QuadSource`].
 pub trait IntoQuadSource: Iterator + Sized {
-    /// Convert this iterator into an [`Infallible`] [`Source`].
+    /// Convert this iterator into an [`Infallible`] [`QuadSource`].
     #[allow(clippy::type_complexity)]
     fn into_quad_source(
         self,

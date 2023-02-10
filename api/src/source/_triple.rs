@@ -9,9 +9,9 @@ use crate::triple::Triple;
 /// # Common implementors
 ///
 /// Any iterator yielding [results](std::result::Result) of [`Triple`]
-/// implements the [`Source`] trait.
+/// implements the [`TripleSource`] trait.
 ///
-/// Any iterator of [`Triple`] can also be converted to an [`Infallible`] [`Source`]
+/// Any iterator of [`Triple`] can also be converted to an [`Infallible`] [`TripleSource`]
 /// thanks to the [`IntoTripleSource`] extension trait.
 pub trait TripleSource {
     /// The type of triples this source yields.
@@ -198,7 +198,7 @@ where
 /// An extension trait for iterators,
 /// converting them to an [`Infallible`] [`TripleSource`].
 pub trait IntoTripleSource: Iterator + Sized {
-    /// Convert this iterator into an [`Infallible`] [`Source`].
+    /// Convert this iterator into an [`Infallible`] [`TripleSource`].
     #[allow(clippy::type_complexity)]
     fn into_triple_source(
         self,

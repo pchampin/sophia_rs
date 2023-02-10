@@ -118,7 +118,7 @@ where
 /// [`Dataset`], [`CollectibleDataset`] and [`MutableDataset`].
 ///
 /// If your type only implements [`Dataset`] and [`CollectibleDataset`],
-/// you should use [`test_immutable_dataset_impl`] instead.
+/// you should use [`test_immutable_dataset_impl`](crate::test_immutable_dataset_impl) instead.
 ///
 /// This macro is only available when the feature `test_macro` is enabled.
 ///

@@ -1,6 +1,5 @@
-//! I provide the implementation of the URDNA2015 algorithm described at:
-//!
-//!   https://www.w3.org/TR/rdf-canon/
+//! I provide the implementation of the URDNA2015 algorithm described at
+//! <https://www.w3.org/TR/rdf-canon/>
 
 use std::cmp::Ordering;
 use std::collections::btree_map::Entry::*;
@@ -71,7 +70,7 @@ pub fn normalize_with<D: Dataset, W: io::Write>(
 ///
 /// This calls [`relabel_with`] with the [`DEFAULT_MAX_DEPTH`] value.
 ///
-/// Implements https://www.w3.org/TR/rdf-canon/#canon-algorithm
+/// Implements <https://www.w3.org/TR/rdf-canon/#canon-algorithm>
 ///
 /// See also [`normalize`].
 pub fn relabel<D: Dataset>(d: &D) -> Result<C14nQuads<D>, C14nError<D::Error>> {
@@ -79,7 +78,7 @@ pub fn relabel<D: Dataset>(d: &D) -> Result<C14nQuads<D>, C14nError<D::Error>> {
 }
 
 /// The default value of `max_depth` in [`normalize`] and [`relabel`].
-const DEFAULT_MAX_DEPTH: usize = 16;
+pub const DEFAULT_MAX_DEPTH: usize = 16;
 
 /// Return a [`Dataset`] isomorphic to `d`, with canonical blank node labels,
 /// restricting the number of recursion of URDNA2015 to `max_depth`.
@@ -87,7 +86,7 @@ const DEFAULT_MAX_DEPTH: usize = 16;
 /// Limiting the recursion depth prevents the algorithm from blocking on pathological graphs with little practical utility
 /// (e.g. big cycles or cliques of undistinguishable blank nodes).
 ///
-/// Implements https://www.w3.org/TR/rdf-canon/#canon-algorithm
+/// Implements <https://www.w3.org/TR/rdf-canon/#canon-algorithm>
 ///
 /// See also [`relabel`], [`normalize_with`].
 pub fn relabel_with<'a, D: Dataset>(
@@ -322,7 +321,6 @@ impl<'a, T: Term> C14nState<'a, T> {
                 }
                 // Step 5.4.6
                 if chosen_path.is_empty() || path < chosen_path {
-                    // FIX? code point order ?
                     chosen_path = path;
                     chosen_issuer = Some(issuer_copy);
                 }
@@ -403,7 +401,7 @@ fn hash_first_degree_quads<Q: Quad>(bnid: &str, quads: &[&Q]) -> Hash {
             line
         })
         .collect();
-    nquads.sort_unstable(); // FIX? code point order ?
+    nquads.sort_unstable();
     let mut hasher = hmac_sha256::Hash::new();
     for line in nquads.into_iter() {
         hasher.update(&line);

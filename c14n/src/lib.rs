@@ -6,9 +6,12 @@
 //! It currently implements the [`urdna2015`] algorithm.
 //!
 //! TODO list:
-//! - [ ] check that UTF-8 byte-by-byte ordering is indeed equivalent to code point ordering.
-//!       If not, fix all the places with a 'FIX? code point ordering' comment
+//! - [x] check that UTF-8 byte-by-byte ordering is indeed equivalent to code point ordering.
 //! - [ ] use c14n in sophia_isomorphism, replacing the current incomplete algorithm
+//!
+//! [Sophia]: https://docs.rs/sophia/latest/sophia/
+//! [RDF]: https://www.w3.org/TR/rdf-primer/
+//! [Linked Data]: http://linkeddata.org/
 
 #![deny(missing_docs)]
 

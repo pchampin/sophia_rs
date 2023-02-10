@@ -152,7 +152,7 @@ where
 /// [`Graph`], [`CollectibleGraph`] and [`MutableGraph`].
 ///
 /// If your type only implements [`Graph`] and [`CollectibleGraph`],
-/// you should use [`test_immutable_graph_impl`] instead.
+/// you should use [`test_immutable_graph_impl`](crate::test_immutable_graph_impl) instead.
 ///
 /// This macro is only available when the feature `test_macro` is enabled.
 ///

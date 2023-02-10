@@ -7,7 +7,7 @@ mod _triple {
     use super::*;
     use crate::triple::Triple;
 
-    /// The result of [`Source::map_triples`].
+    /// The result of [`TripleSource::map_triples`].
     pub struct MapTripleSource<S, F> {
         pub(in super::super) source: S,
         pub(in super::super) map: F,
@@ -129,7 +129,7 @@ mod _quad {
     use super::*;
     use crate::quad::Quad;
 
-    /// The result of [`Source::map_quads`].
+    /// The result of [`QuadSource::map_quads`].
     pub struct MapQuadSource<S, F> {
         pub(in super::super) source: S,
         pub(in super::super) map: F,
