@@ -20,6 +20,7 @@ edition = "2021"
 repository = "https://github.com/pchampin/sophia_rs"
 readme = "./README.md"
 license = "CECILL-B"
+keywords = ["rdf", "linked-data", "semantic-web", "w3c"] # no more than 5
 
 [workspace.dependencies]
 sophia_api = { version = "0.8.0-alpha.0", path = "./api" }

@@ -8,7 +8,7 @@ edition.workspace = true
 repository.workspace = true
 readme.workspace = true
 license.workspace = true
-keywords = ["rdf", "linked-data", "semantic-web", "w3c"]
+keywords.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
