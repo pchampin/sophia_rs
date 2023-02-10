@@ -22,14 +22,14 @@ readme = "./README.md"
 license = "CECILL-B"
 
 [workspace.dependencies]
-sophia_api = { version = "0.8.0-alpha", path = "./api" }
-sophia_c14n = { version = "0.8.0-alpha", path = "./c14n" }
-sophia_inmem = { version = "0.8.0-alpha", path = "./inmem" }
-sophia_iri = { version = "0.8.0-alpha", path = "./iri" }
-sophia_isomorphism = { version = "0.8.0-alpha", path = "./isomorphism" }
-sophia_rio = { version = "0.8.0-alpha", path = "./rio" }
-sophia_turtle = { version = "0.8.0-alpha", path = "./turtle" }
-sophia_xml = { version = "0.8.0-alpha", path = "./xml" }
+sophia_api = { version = "0.8.0-alpha.0", path = "./api" }
+sophia_c14n = { version = "0.8.0-alpha.0", path = "./c14n" }
+sophia_inmem = { version = "0.8.0-alpha.0", path = "./inmem" }
+sophia_iri = { version = "0.8.0-alpha.0", path = "./iri" }
+sophia_isomorphism = { version = "0.8.0-alpha.0", path = "./isomorphism" }
+sophia_rio = { version = "0.8.0-alpha.0", path = "./rio" }
+sophia_turtle = { version = "0.8.0-alpha.0", path = "./turtle" }
+sophia_xml = { version = "0.8.0-alpha.0", path = "./xml" }
 
 criterion = "0.3.6"
 lazy_static = "1.4.0"
