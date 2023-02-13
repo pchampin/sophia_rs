@@ -34,7 +34,7 @@ sophia_xml = { version = "0.8.0-alpha.0", path = "./xml" }
 
 criterion = "0.3.6"
 lazy_static = "1.4.0"
-mownstr = "0.2.0"
+mownstr = "0.2.1"
 oxiri = "0.2.2"
 regex = "1.6.0"
 resiter = "0.4.0"
