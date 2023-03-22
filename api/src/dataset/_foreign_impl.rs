@@ -707,7 +707,6 @@ impl<T: Quad> SetDataset for BTreeSet<T> {}
 #[cfg(test)]
 mod test {
     use super::*;
-    #[cfg(feature = "all_tests")]
     // NB: implementation of Dataset by &D and &mut D are not tested,
     // as the code is trivial to review.
 
