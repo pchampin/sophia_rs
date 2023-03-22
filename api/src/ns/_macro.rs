@@ -24,10 +24,10 @@ macro_rules! namespace {
                 #[allow(non_snake_case)]
                 #[test]
                 fn $suffix() {
-                    let iri = $crate::ns::NsTerm {
-                        ns: super::PREFIX,
-                        suffix: stringify!($suffix),
-                    };
+                    let iri = $crate::ns::NsTerm::new_unchecked(
+                        super::PREFIX,
+                        stringify!($suffix),
+                    );
                     assert!($crate::ns::IriRef::new(iri.to_string()).is_ok());
                 }
             )*
@@ -35,10 +35,10 @@ macro_rules! namespace {
                 #[allow(non_snake_case)]
                 #[test]
                 fn $r_id() {
-                    let iri = $crate::ns::NsTerm {
-                        ns: super::PREFIX,
-                        suffix: $r_sf,
-                    };
+                    let iri = $crate::ns::NsTerm::new_unchecked(
+                        super::PREFIX,
+                        $r_sf,
+                    );
                     assert!($crate::ns::IriRef::new(iri.to_string()).is_ok());
                 }
             )*
