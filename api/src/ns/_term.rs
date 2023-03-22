@@ -22,6 +22,11 @@ impl fmt::Display for NsTerm<'_> {
 }
 
 impl<'a> NsTerm<'a> {
+    /// Make an NsTerm without checking that it produces a valid IRI.
+    pub const fn new_unchecked(ns: IriRef<&'a str>, suffix: &'a str) -> Self {
+        NsTerm { ns, suffix }
+    }
+
     /// Return an [`IriRef`] representing this term.
     pub fn iriref(&self) -> IriRef<MownStr> {
         IriRef::new_unchecked(if self.suffix.is_empty() {

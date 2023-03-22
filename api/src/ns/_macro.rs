@@ -63,9 +63,6 @@ macro_rules! ns_iri {
     ($prefix:expr, $ident:ident, $suffix:expr) => {
         /// Generated term.
         #[allow(non_upper_case_globals)]
-        pub static $ident: $crate::ns::NsTerm = $crate::ns::NsTerm {
-            ns: $prefix,
-            suffix: $suffix,
-        };
+        pub static $ident: $crate::ns::NsTerm = $crate::ns::NsTerm::new_unchecked($prefix, $suffix);
     };
 }
