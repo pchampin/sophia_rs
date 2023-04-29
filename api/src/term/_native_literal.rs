@@ -79,6 +79,80 @@ impl Term for i32 {
     }
 }
 
+/// [`isize`] implements [`Term`]
+/// so that Rust values can be used as RDF literals in code.
+///
+/// E.g.:
+/// ```
+/// # use sophia_api::graph::{MutableGraph, Graph};
+/// # use sophia_api::term::SimpleTerm;
+/// # use sophia_api::ns::{rdf, rdfs};
+/// # use sophia_iri::IriRef;
+/// # fn test<T: MutableGraph>(graph: &mut T) -> Result<(), Box<dyn std::error::Error>> {
+/// # let subject: IriRef<&'static str> = IriRef::new("")?;
+/// #
+/// let answer: isize = 42;
+/// graph.insert(&subject, &rdf::value, answer)?;
+/// #
+/// # Ok(()) }
+/// ```
+impl Term for isize {
+    type BorrowTerm<'x> = Self;
+
+    fn kind(&self) -> TermKind {
+        TermKind::Literal
+    }
+    fn lexical_form(&self) -> Option<MownStr> {
+        Some(MownStr::from(format!("{}", self)))
+    }
+    fn datatype(&self) -> Option<IriRef<MownStr>> {
+        Some(IriRef::new_unchecked(MownStr::from_str(&XSD_INTEGER)))
+    }
+    fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+        None
+    }
+    fn borrow_term(&self) -> Self::BorrowTerm<'_> {
+        *self
+    }
+}
+
+/// [`usize`] implements [`Term`]
+/// so that Rust values can be used as RDF literals in code.
+///
+/// E.g.:
+/// ```
+/// # use sophia_api::graph::{MutableGraph, Graph};
+/// # use sophia_api::term::SimpleTerm;
+/// # use sophia_api::ns::{rdf, rdfs};
+/// # use sophia_iri::IriRef;
+/// # fn test<T: MutableGraph>(graph: &mut T) -> Result<(), Box<dyn std::error::Error>> {
+/// # let subject: IriRef<&'static str> = IriRef::new("")?;
+/// #
+/// let answer: usize = 42;
+/// graph.insert(&subject, &rdf::value, answer)?;
+/// #
+/// # Ok(()) }
+/// ```
+impl Term for usize {
+    type BorrowTerm<'x> = Self;
+
+    fn kind(&self) -> TermKind {
+        TermKind::Literal
+    }
+    fn lexical_form(&self) -> Option<MownStr> {
+        Some(MownStr::from(format!("{}", self)))
+    }
+    fn datatype(&self) -> Option<IriRef<MownStr>> {
+        Some(IriRef::new_unchecked(MownStr::from_str(&XSD_INTEGER)))
+    }
+    fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+        None
+    }
+    fn borrow_term(&self) -> Self::BorrowTerm<'_> {
+        *self
+    }
+}
+
 /// [`str`] implements [`Term`]
 /// so that Rust literals can be used as RDF literals in code.
 ///
@@ -115,6 +189,110 @@ impl Term for str {
     }
 }
 
+/// [`f64`] implements [`TryFromTerm`]
+/// so that compatible datatypes can easily be converted to native Rust values.
+impl TryFromTerm for f64 {
+    type Error = std::num::ParseFloatError;
+
+    fn try_from_term<T: Term>(term: T) -> Result<Self, Self::Error> {
+        if let Some(lex) = term.lexical_form() {
+            if Term::eq(&term.datatype().unwrap(), xsd::double)
+                || Term::eq(&term.datatype().unwrap(), xsd::float)
+            {
+                lex.parse()
+            } else {
+                "wrong datatype".parse()
+            }
+        } else {
+            "not a literal".parse()
+        }
+    }
+}
+
+/// [`i32`] implements [`TryFromTerm`]
+/// so that compatible datatypes can easily be converted to native Rust values.
+impl TryFromTerm for i32 {
+    type Error = std::num::ParseIntError;
+
+    fn try_from_term<T: Term>(term: T) -> Result<Self, Self::Error> {
+        if let Some(lex) = term.lexical_form() {
+            if Term::eq(&term.datatype().unwrap(), xsd::integer)
+                || Term::eq(&term.datatype().unwrap(), xsd::long)
+                || Term::eq(&term.datatype().unwrap(), xsd::int)
+                || Term::eq(&term.datatype().unwrap(), xsd::short)
+                || Term::eq(&term.datatype().unwrap(), xsd::unsignedLong)
+                || Term::eq(&term.datatype().unwrap(), xsd::unsignedInt)
+                || Term::eq(&term.datatype().unwrap(), xsd::unsignedShort)
+                || Term::eq(&term.datatype().unwrap(), xsd::unsignedByte)
+                || Term::eq(&term.datatype().unwrap(), xsd::nonNegativeInteger)
+                || Term::eq(&term.datatype().unwrap(), xsd::nonPositiveInteger)
+            {
+                lex.parse()
+            } else {
+                "wrong datatype".parse()
+            }
+        } else {
+            "not a literal".parse()
+        }
+    }
+}
+
+/// [`isize`] implements [`TryFromTerm`]
+/// so that compatible datatypes can easily be converted to native Rust values.
+impl TryFromTerm for isize {
+    type Error = std::num::ParseIntError;
+
+    fn try_from_term<T: Term>(term: T) -> Result<Self, Self::Error> {
+        if let Some(lex) = term.lexical_form() {
+            if Term::eq(&term.datatype().unwrap(), xsd::integer)
+                || Term::eq(&term.datatype().unwrap(), xsd::long)
+                || Term::eq(&term.datatype().unwrap(), xsd::int)
+                || Term::eq(&term.datatype().unwrap(), xsd::short)
+                || Term::eq(&term.datatype().unwrap(), xsd::unsignedLong)
+                || Term::eq(&term.datatype().unwrap(), xsd::unsignedInt)
+                || Term::eq(&term.datatype().unwrap(), xsd::unsignedShort)
+                || Term::eq(&term.datatype().unwrap(), xsd::unsignedByte)
+                || Term::eq(&term.datatype().unwrap(), xsd::nonNegativeInteger)
+                || Term::eq(&term.datatype().unwrap(), xsd::nonPositiveInteger)
+            {
+                lex.parse()
+            } else {
+                "wrong datatype".parse()
+            }
+        } else {
+            "not a literal".parse()
+        }
+    }
+}
+
+/// [`usize`] implements [`TryFromTerm`]
+/// so that compatible datatypes can easily be converted to native Rust values.
+impl TryFromTerm for usize {
+    type Error = std::num::ParseIntError;
+
+    fn try_from_term<T: Term>(term: T) -> Result<Self, Self::Error> {
+        if let Some(lex) = term.lexical_form() {
+            if Term::eq(&term.datatype().unwrap(), xsd::integer)
+                || Term::eq(&term.datatype().unwrap(), xsd::long)
+                || Term::eq(&term.datatype().unwrap(), xsd::int)
+                || Term::eq(&term.datatype().unwrap(), xsd::short)
+                || Term::eq(&term.datatype().unwrap(), xsd::unsignedLong)
+                || Term::eq(&term.datatype().unwrap(), xsd::unsignedInt)
+                || Term::eq(&term.datatype().unwrap(), xsd::unsignedShort)
+                || Term::eq(&term.datatype().unwrap(), xsd::unsignedByte)
+                || Term::eq(&term.datatype().unwrap(), xsd::nonNegativeInteger)
+                || Term::eq(&term.datatype().unwrap(), xsd::nonPositiveInteger)
+            {
+                lex.parse()
+            } else {
+                "wrong datatype".parse()
+            }
+        } else {
+            "not a literal".parse()
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -123,6 +301,26 @@ mod test {
     fn i32_as_literal() {
         let lit = 42;
         assert_consistent_term_impl::<i32>(&lit);
+        assert_eq!(lit.kind(), TermKind::Literal);
+        assert_eq!(lit.lexical_form().unwrap(), "42");
+        assert_eq!(lit.datatype(), xsd::integer.iri());
+        assert_eq!(lit.borrow_term(), lit);
+    }
+
+    #[test]
+    fn isize_as_literal() {
+        let lit = 42;
+        assert_consistent_term_impl::<isize>(&lit);
+        assert_eq!(lit.kind(), TermKind::Literal);
+        assert_eq!(lit.lexical_form().unwrap(), "42");
+        assert_eq!(lit.datatype(), xsd::integer.iri());
+        assert_eq!(lit.borrow_term(), lit);
+    }
+
+    #[test]
+    fn usize_as_literal() {
+        let lit = 42;
+        assert_consistent_term_impl::<usize>(&lit);
         assert_eq!(lit.kind(), TermKind::Literal);
         assert_eq!(lit.lexical_form().unwrap(), "42");
         assert_eq!(lit.datatype(), xsd::integer.iri());
@@ -148,5 +346,29 @@ mod test {
         assert_eq!(lit.lexical_form().unwrap(), lit);
         assert_eq!(lit.datatype(), xsd::string.iri());
         assert_eq!(lit.borrow_term(), lit);
+    }
+
+    #[test]
+    fn iri_to_native() {
+        assert!(f64::try_from_term(xsd::ID).is_err());
+        assert!(i32::try_from_term(xsd::ID).is_err());
+        assert!(isize::try_from_term(xsd::ID).is_err());
+        assert!(usize::try_from_term(xsd::ID).is_err());
+    }
+
+    #[test]
+    fn wrong_datatype_to_native() {
+        assert!(f64::try_from_term("foo").is_err());
+        assert!(i32::try_from_term("foo").is_err());
+        assert!(isize::try_from_term("foo").is_err());
+        assert!(usize::try_from_term("foo").is_err());
+    }
+
+    #[test]
+    fn correct_datatype_to_native() {
+        assert_eq!(f64::try_from_term(3.14).unwrap(), 3.14);
+        assert_eq!(i32::try_from_term(42).unwrap(), 42);
+        assert_eq!(isize::try_from_term(42).unwrap(), 42);
+        assert_eq!(usize::try_from_term(42).unwrap(), 42);
     }
 }

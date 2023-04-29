@@ -436,7 +436,7 @@ fn hex(hash: &Hash) -> String {
 
 fn smaller_path(path1: &str, path2: &str) -> bool {
     use std::cmp::Ordering::*;
-    match path1.len().cmp(&path2.len()) {
+    match Ord::cmp(&path1.len(), &path2.len()) {
         Less => true,
         Equal => path1 < path2,
         Greater => false,
