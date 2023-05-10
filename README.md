@@ -20,6 +20,7 @@ It comprises the following crates:
 * [`sophia_xml`] provides parsers and serializers for RDF/XML.
 * [`sophia_jsonld`] provides preliminary support for JSON-LD.
 * [`sophia_c14n`] implements [RDF canonicalization].
+* [`sophia_resource`] provides a resource-centric API.
 * [`sophia_rio`] is a lower-level crate, used by the ones above. 
 
 and finally:

@@ -1,0 +1,27 @@
+@prefix ex: <http://example.org/ns#>.
+
+<#res1>
+    ex:id "res1" ;
+    ex:next <#res2> ;
+    ex:related <#res2>, <#res3>, _:b ;
+    ex:foreign1 <file2.ttl#res1> ;
+    ex:foreign2 <file2.ttl#res2> ;
+    ex:unreachable <http://somewhere.else/> ;
+    ex:list (<#res3> <#res2> <file2.ttl#res1>) ;
+.
+
+<#res2>
+    ex:id "res2" ;
+    ex:list () ;
+.
+
+<#res3>
+    ex:id "res3" ;
+    ex:related <#res2> ;
+.
+
+_:b
+    ex:id "res4" ;
+.
+
+

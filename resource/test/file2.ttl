@@ -1,0 +1,9 @@
+@prefix ex: <http://example.org/ns#>.
+
+<#res1>
+    ex:id "res1" ;
+.
+
+<#res2>
+    ex:next <#res1> ;
+.

@@ -56,6 +56,7 @@ pub use sophia_c14n as c14n;
 pub use sophia_inmem as inmem;
 pub use sophia_iri as iri;
 pub use sophia_isomorphism as isomorphism;
+pub use sophia_resource as resource;
 pub use sophia_turtle as turtle;
 #[cfg(feature = "xml")]
 pub use sophia_xml as xml;

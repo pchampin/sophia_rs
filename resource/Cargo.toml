@@ -1,0 +1,23 @@
+[package]
+name = "sophia_resource"
+description = "A Rust toolkit for RDF and Linked Data - Resource-centric API"
+documentation = "https://docs.rs/sophia_resource"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
+keywords.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+
+[dependencies]
+sophia_api.workspace = true
+sophia_iri.workspace = true
+sophia_turtle.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]

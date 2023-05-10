@@ -26,6 +26,7 @@ sophia_api.workspace = true
 sophia_inmem.workspace = true
 sophia_c14n.workspace = true
 sophia_isomorphism.workspace = true
+sophia_resource.workspace = true
 sophia_rio.workspace = true
 sophia_turtle.workspace = true
 sophia_xml = { workspace = true, optional = true }
