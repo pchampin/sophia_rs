@@ -326,7 +326,7 @@ impl<'a, W: Write> Prettifier<'a, W> {
             write!(self.write, "_:{}", bn.bnode_id().unwrap().as_str())?;
         } else if let Some(i) = self.find_st_index(bn) {
             let (_, s, st) = self.subject_types[i];
-            match dbg!(st) {
+            match st {
                 SubjectType::SubTree => {
                     self.write_bytes(b"[")?;
                     self.write_properties(s)?;
