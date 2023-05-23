@@ -1,6 +1,9 @@
 //! Canonical N-Quads
 
-use sophia_api::term::{Term, TermKind};
+use sophia_api::{
+    ns::xsd,
+    term::{Term, TermKind},
+};
 
 /// Serialize a term in canonical n-quads
 pub fn nq<T: Term>(term: T, buffer: &mut String) {
@@ -18,6 +21,11 @@ pub fn nq<T: Term>(term: T, buffer: &mut String) {
                     '\\' => buffer.push_str("\\\\"),
                     '\n' => buffer.push_str("\\n"),
                     '\r' => buffer.push_str("\\r"),
+                    '\t' => buffer.push_str("\\t"),
+                    '\x08' => buffer.push_str("\\b"),
+                    '\x0c' => buffer.push_str("\\f"),
+                    '\x7f' => buffer.push_str("\\u007F"),
+                    c if c <= '\x1f' => buffer.push_str(&format!("\\u{:04X}", c as u8)),
                     _ => buffer.push(c),
                 }
             }
@@ -26,9 +34,12 @@ pub fn nq<T: Term>(term: T, buffer: &mut String) {
                 buffer.push('@');
                 buffer.push_str(&tag);
             } else {
-                buffer.push_str("^^");
-                nq(term.datatype().unwrap(), buffer);
-                buffer.pop(); // remove spurious space after datatype
+                let datatype = term.datatype().unwrap();
+                if !Term::eq(&datatype, xsd::string) {
+                    buffer.push_str("^^");
+                    nq(term.datatype().unwrap(), buffer);
+                    buffer.pop(); // remove spurious space after datatype
+                }
             }
         }
         TermKind::BlankNode => {

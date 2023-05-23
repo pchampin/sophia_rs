@@ -329,7 +329,10 @@ impl<'a, T: Term> C14nState<'a, T> {
             data_to_hash.update(chosen_path.as_bytes());
             ret_issuer = chosen_issuer;
         }
-        let ret = (data_to_hash.finalize(), ret_issuer.unwrap());
+        let ret = (
+            data_to_hash.finalize(),
+            ret_issuer.unwrap_or_else(|| issuer.clone()),
+        );
         debug_assert!({
             eprintln!(
                 "hash-n-degree({}, {})\n-> {}",
@@ -549,9 +552,9 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
             "<tag:a> <tag:p> 'a!' .",
             "<tag:a9> <tag:p> 'a!' .",
         ]);
-        let exp = r#"<tag:a9> <tag:p> "a!"^^<http://www.w3.org/2001/XMLSchema#string> .
-<tag:a> <tag:p> "a!"^^<http://www.w3.org/2001/XMLSchema#string> .
-<tag:a> <tag:p> "a"^^<http://www.w3.org/2001/XMLSchema#string> .
+        let exp = r#"<tag:a9> <tag:p> "a!" .
+<tag:a> <tag:p> "a!" .
+<tag:a> <tag:p> "a" .
 <tag:a> <tag:p> <tag:a> .
 <tag:a> <tag:p> _:c14n0 .
 "#;
