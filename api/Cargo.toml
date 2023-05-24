@@ -16,11 +16,14 @@ all-features = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = []
+default = ["serde"]
 # This feature increases the number of tests
 all_tests = []
 # This feature enables to use the graph and dataset test macros in other crates
 test_macro = []
+# This feature (enabled by default) makes prefixes seralizable/deserializable
+serde = ["dep:serde"]
+
 
 [dependencies]
 sophia_iri.workspace = true
@@ -29,7 +32,9 @@ mownstr.workspace = true
 regex.workspace = true
 resiter.workspace = true
 thiserror.workspace = true
+serde = { version = "1.0", features = ["derive"], optional = true }
 
 [dev-dependencies]
 sophia_iri = { workspace = true, features = ["test_data"] }
 test-case.workspace = true
+toml = "0.7.4"
