@@ -3,7 +3,7 @@ use sophia_api::{prelude::*, term::SimpleTerm};
 use std::error::Error;
 use std::fmt;
 
-/// An error raised when creating a [`Resource`]
+/// An error raised when creating a [`Resource`](crate::Resource)
 #[derive(Debug)]
 pub enum ResourceError<E: Error> {
     /// The IRI is not absolute (an can therefore not be dereferenced)
@@ -64,7 +64,7 @@ pub enum ResourceError<E: Error> {
 impl<E: Error> ResourceError<E> {
     /// The identifier of the resource raising the error.
     ///
-    /// NB: for errors raised during creation ([`ResourcError::IriNotAbsolute`], [`ResourceError::LoaderError`]),
+    /// NB: for errors raised during creation ([`ResourceError::IriNotAbsolute`], [`ResourceError::LoaderError`]),
     /// the identifier of the to-be-created resource is returned
     /// (*not* the resource from which it was discovered).
     pub fn resource_id(&self) -> SimpleTerm {

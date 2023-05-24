@@ -1,7 +1,7 @@
 use super::util::IriBuf;
 use std::io;
 
-/// An error raised by a [`Looader`].
+/// An error raised by a [`Loader`](crate::Loader).
 #[derive(Debug, thiserror::Error)]
 pub enum LoaderError {
     /// The requested IRI is not supported by this loader
@@ -14,7 +14,7 @@ pub enum LoaderError {
     #[error("IO error when reading {0:?}: {1}")]
     IoError(IriBuf, io::Error),
     /// Can not guess the syntax of the resource
-    /// (some loaders, such as [`LocalLoader`],
+    /// (some loaders, such as [`LocalLoader`](crate::LocalLoader),
     /// do not always have access to content-type metadata)
     #[error("Can not guess syntax of {0:?}")]
     CantGuessSyntax(IriBuf),
