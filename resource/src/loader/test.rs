@@ -40,7 +40,7 @@ fn get_file1_no_ext() -> TestResult {
 fn get_file1_with_add() -> TestResult {
     let mut ldr = LocalLoader::default();
     let ns = NS.map_unchecked(MownStr::from);
-    ldr.add(ns, Path::new("test").canonicalize()?.into())?;
+    ldr.add(ns, Path::new("test").canonicalize()?)?;
     assert_eq!(
         ldr.get(F1R1)?,
         (read("test/file1.ttl")?, "text/turtle".into()),

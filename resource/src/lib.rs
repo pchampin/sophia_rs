@@ -60,7 +60,7 @@ mod test {
         let ns = NS.map_unchecked(MownStr::from);
         LocalLoader::new(vec![(
             ns,
-            std::path::Path::new("test").canonicalize().unwrap().into(),
+            std::path::Path::new("test").canonicalize().unwrap(),
         )])
         .unwrap()
     }
@@ -72,7 +72,7 @@ mod test {
         type Error = ResourceError<<MyGraph as Graph>::Error>;
 
         fn try_from(value: Resource<MyGraph, LocalLoader>) -> Result<Self, Self::Error> {
-            if value.get_any_term(&EX_ID)?.is_none() {
+            if value.get_any_term(EX_ID)?.is_none() {
                 Err(ResourceError::NoValueFor {
                     id: value.id().into_term(),
                     predicate: EX_ID.into_term(),

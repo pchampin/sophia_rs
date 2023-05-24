@@ -366,7 +366,7 @@ mod test {
 
     #[test]
     fn correct_datatype_to_native() {
-        assert_eq!(f64::try_from_term(3.14).unwrap(), 3.14);
+        assert_eq!(f64::try_from_term(3.15).unwrap(), 3.15);
         assert_eq!(i32::try_from_term(42).unwrap(), 42);
         assert_eq!(isize::try_from_term(42).unwrap(), 42);
         assert_eq!(usize::try_from_term(42).unwrap(), 42);
