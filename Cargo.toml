@@ -34,7 +34,7 @@ sophia_rio = { version = "0.8.0-alpha.0", path = "./rio" }
 sophia_turtle = { version = "0.8.0-alpha.0", path = "./turtle" }
 sophia_xml = { version = "0.8.0-alpha.0", path = "./xml" }
 
-criterion = "0.3.6"
+criterion = "0.5"
 lazy_static = "1.4.0"
 mownstr = "0.2.1"
 oxiri = "0.2.2"

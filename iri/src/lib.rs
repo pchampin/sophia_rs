@@ -30,6 +30,8 @@ mod _trait;
 pub use self::_trait::*;
 mod _wrapper;
 pub use _wrapper::*;
+#[cfg(feature = "serde")]
+mod _serde;
 
 pub mod resolve;
 
