@@ -15,7 +15,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.8.0-alpha.0"
+version = "0.8.0-alpha.1"
 authors = ["Pierre-Antoine Champin <pierre-antoine@champin.net>"]
 edition = "2021"
 repository = "https://github.com/pchampin/sophia_rs"
@@ -24,26 +24,26 @@ license = "CECILL-B"
 keywords = ["rdf", "linked-data", "semantic-web", "w3c"] # no more than 5
 
 [workspace.dependencies]
-sophia_api = { version = "0.8.0-alpha.0", path = "./api" }
-sophia_c14n = { version = "0.8.0-alpha.0", path = "./c14n" }
-sophia_inmem = { version = "0.8.0-alpha.0", path = "./inmem" }
-sophia_iri = { version = "0.8.0-alpha.0", path = "./iri" }
-sophia_isomorphism = { version = "0.8.0-alpha.0", path = "./isomorphism" }
-sophia_resource = { version = "0.8.0-alpha.0", path = "./resource" }
-sophia_rio = { version = "0.8.0-alpha.0", path = "./rio" }
-sophia_turtle = { version = "0.8.0-alpha.0", path = "./turtle" }
-sophia_xml = { version = "0.8.0-alpha.0", path = "./xml" }
+sophia_api = { version = "0.8.0-alpha.1", path = "./api" }
+sophia_c14n = { version = "0.8.0-alpha.1", path = "./c14n" }
+sophia_inmem = { version = "0.8.0-alpha.1", path = "./inmem" }
+sophia_iri = { version = "0.8.0-alpha.1", path = "./iri" }
+sophia_isomorphism = { version = "0.8.0-alpha.1", path = "./isomorphism" }
+sophia_resource = { version = "0.8.0-alpha.1", path = "./resource" }
+sophia_rio = { version = "0.8.0-alpha.1", path = "./rio" }
+sophia_turtle = { version = "0.8.0-alpha.1", path = "./turtle" }
+sophia_xml = { version = "0.8.0-alpha.1", path = "./xml" }
 
 criterion = "0.5"
 lazy_static = "1.4.0"
 mownstr = "0.2.1"
 oxiri = "0.2.2"
 regex = "1.6.0"
-resiter = "0.4.0"
+resiter = "0.5.0"
 rio_api = { version = "0.8", features = ["generalized"] }
 rio_turtle = { version = "0.8", features = ["generalized"] }
 rio_xml = { version = "0.8" }
-test-case = "2.2.1"
+test-case = "3.1.0"
 thiserror = "1.0.32"
 
 [profile.release]
