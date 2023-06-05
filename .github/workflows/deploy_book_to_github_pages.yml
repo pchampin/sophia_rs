@@ -18,6 +18,8 @@ jobs:
 
       - run: mdbook build
 
+      - run: cp sophia_doap.ttl book/out/doap.ttl
+
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
