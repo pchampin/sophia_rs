@@ -294,9 +294,10 @@ impl<'a, W: Write> Prettifier<'a, W> {
         if rdf::nil == iri {
             return self.write_bytes(b"()");
         }
-        // Let's pretend iri is absolute;
-        // anyway, if it is not, no match will be found in prefix_map.
-        let iri = Iri::new_unchecked(iri.as_str());
+        let iri = match Iri::new(iri.as_str()).ok() {
+            None => return write!(self.write, "<{}>", iri.as_str()),
+            Some(iri) => iri,
+        };
         match self
             .config
             .prefix_map
@@ -794,5 +795,21 @@ pub(crate) mod test {
         ] {
             assert!(DOUBLE.is_match(positive), "{}", positive);
         }
+    }
+
+    #[test]
+    fn relative_iri() -> Result<(), Box<dyn std::error::Error>> {
+        let iri = IriRef::new_unchecked("");
+        let graph = vec![[iri, iri, iri]];
+        let config = TurtleConfig::new().with_pretty(true);
+        use sophia_api::prelude::*;
+        let pretty =
+            crate::serializer::turtle::TurtleSerializer::new_stringifier_with_config(config)
+                .serialize_triples(graph.triples())?
+                .to_string();
+        assert!(pretty.contains("<>"));
+        // the goal is not to check the exact serialization,
+        // but only that relative IRIs are supported even in debug mode
+        Ok(())
     }
 }
