@@ -18,25 +18,25 @@ use crate::_cnq::nq;
 use crate::_permutations::for_each_permutation_of;
 
 /// Return a canonical N-quads representation of `d`, where
-/// - blank nodes are canonically [relabelled](`relabel`) with the [`DEFAULT_MAX_DEPTH`],
+/// - blank nodes are canonically [relabelled](`relabel`) with the [`DEFAULT_DEPTH_FACTOR`],
 /// - quads are sorted in codepoint order.
 ///
 /// See also [`normalize_with`].
 pub fn normalize<D: Dataset, W: io::Write>(d: &D, w: W) -> Result<(), C14nError<D::Error>> {
-    normalize_with(d, w, DEFAULT_MAX_DEPTH)
+    normalize_with(d, w, DEFAULT_DEPTH_FACTOR)
 }
 
 /// Return a canonical N-quads representation of `d`, where
-/// - blank nodes are canonically [relabelled](`relabel_with`) with the given `max_depth`,
+/// - blank nodes are canonically [relabelled](`relabel_with`) with the given `depth_factor`,
 /// - quads are sorted in codepoint order.
 ///
 /// See also [`normalize`].
 pub fn normalize_with<D: Dataset, W: io::Write>(
     d: &D,
     mut w: W,
-    max_depth: usize,
+    depth_factor: usize,
 ) -> Result<(), C14nError<D::Error>> {
-    let mut quads: Vec<_> = relabel_with(d, max_depth)?;
+    let mut quads: Vec<_> = relabel_with(d, depth_factor)?;
     let mut buf1 = String::new();
     let mut buf2 = String::new();
     // we sort the quads, but comparing the terms based on ther NQ serialization,
@@ -68,20 +68,20 @@ pub fn normalize_with<D: Dataset, W: io::Write>(
 
 /// Return a [`Dataset`] isomorphic to `d`, with canonical blank node labels.
 ///
-/// This calls [`relabel_with`] with the [`DEFAULT_MAX_DEPTH`] value.
+/// This calls [`relabel_with`] with the [`DEFAULT_DEPTH_FACTOR`] value.
 ///
 /// Implements <https://www.w3.org/TR/rdf-canon/#canon-algorithm>
 ///
 /// See also [`normalize`].
 pub fn relabel<D: Dataset>(d: &D) -> Result<C14nQuads<D>, C14nError<D::Error>> {
-    relabel_with(d, DEFAULT_MAX_DEPTH)
+    relabel_with(d, DEFAULT_DEPTH_FACTOR)
 }
 
-/// The default value of `max_depth` in [`normalize`] and [`relabel`].
-pub const DEFAULT_MAX_DEPTH: usize = 16;
+/// The default value of `depth_factor` in [`normalize`] and [`relabel`].
+pub const DEFAULT_DEPTH_FACTOR: usize = 1;
 
 /// Return a [`Dataset`] isomorphic to `d`, with canonical blank node labels,
-/// restricting the number of recursion of URDNA2015 to `max_depth`.
+/// restricting the number of recursion of URDNA2015 to `depth_factor` per blank node.
 ///
 /// Limiting the recursion depth prevents the algorithm from blocking on pathological graphs with little practical utility
 /// (e.g. big cycles or cliques of undistinguishable blank nodes).
@@ -91,13 +91,13 @@ pub const DEFAULT_MAX_DEPTH: usize = 16;
 /// See also [`relabel`], [`normalize_with`].
 pub fn relabel_with<'a, D: Dataset>(
     d: &'a D,
-    max_depth: usize,
+    depth_factor: usize,
 ) -> Result<C14nQuads<'a, D>, C14nError<D::Error>> {
     let quads: Result<Vec<Spog<DTerm<'a, D>>>, _> =
         d.quads().map(|res| res.map(Quad::to_spog)).collect();
     let quads = quads?;
     // Step 1
-    let mut state = C14nState::new(max_depth);
+    let mut state = C14nState::new(depth_factor);
     // Step 2
     for quad in &quads {
         for component in iter_spog(quad.spog()) {
@@ -196,17 +196,17 @@ struct C14nState<'a, T: Term> {
     /// Not specified in the spec: memozing the results of hash 1st degree
     b2h: BTreeMap<Rc<str>, Hash>,
     /// Not specified in the spec: maximum recursion in hash_n_degree_quads
-    max_depth: usize,
+    depth_factor: usize,
 }
 
 impl<'a, T: Term> C14nState<'a, T> {
-    fn new(max_depth: usize) -> Self {
+    fn new(depth_factor: usize) -> Self {
         C14nState {
             b2q: BTreeMap::new(),
             h2b: BTreeMap::new(),
             canonical: BnodeIssuer::new(BnodeId::new_unchecked("c14n")),
             b2h: BTreeMap::new(),
-            max_depth,
+            depth_factor,
         }
     }
 
@@ -246,10 +246,10 @@ impl<'a, T: Term> C14nState<'a, T> {
         issuer: &BnodeIssuer,
         depth: usize,
     ) -> Result<(Hash, BnodeIssuer), C14nError<E>> {
-        if depth > self.max_depth {
+        if depth > self.depth_factor * self.b2q.len() {
             return Err(C14nError::ToxicGraph(format!(
-                "too many recursions (limit={})",
-                self.max_depth
+                "too many recursions (limit={} per bnode)",
+                self.depth_factor
             )));
         }
         // Step 1
@@ -519,7 +519,7 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
             "_:e4 <http://example.com/#p> _:e0 .",
         ]);
         let mut output = Vec::<u8>::new();
-        let res = normalize_with(&dataset, &mut output, 3);
+        let res = normalize_with(&dataset, &mut output, 0);
         assert!(matches!(res, Err(C14nError::ToxicGraph(_))));
     }
 
