@@ -473,7 +473,9 @@ pub trait Term: std::fmt::Debug {
         T::try_from_term(self)
     }
 
-    /// Copies this term into a [`SimpleTerm`], calling [`SimpleTerm::from_term_ref`].
+    /// Copies this term into a [`SimpleTerm`],
+    /// borrowing as much as possible from `self`
+    /// (calling [`SimpleTerm::from_term_ref`]).
     #[inline]
     fn as_simple(&self) -> SimpleTerm<'_> {
         SimpleTerm::from_term_ref(self)

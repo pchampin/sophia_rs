@@ -107,8 +107,7 @@ impl<I: Index> TermIndex for SimpleTermIndex<I> {
     type Error = Infallible;
 
     fn get_index<T: Term>(&self, t: T) -> Option<Self::Index> {
-        let key = SimpleTerm::from_term_ref(&t);
-        self.t2i.get(&key).copied()
+        self.t2i.get(&t.as_simple()).copied()
     }
 
     fn ensure_index<T: Term>(&mut self, t: T) -> Result<Self::Index, Self::Error> {
@@ -116,7 +115,7 @@ impl<I: Index> TermIndex for SimpleTermIndex<I> {
         match self.t2i.entry(t) {
             Entry::Vacant(e) => {
                 let i = I::from_usize(self.i2t.len());
-                let t2 = SimpleTerm::from_term_ref(e.key());
+                let t2 = e.key().as_simple();
                 // the following is safe,
                 // because t2 borrows data from the key in self.t2i,
                 // which will live as long as self, and will not be moved (Box<str>).

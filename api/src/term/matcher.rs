@@ -135,7 +135,7 @@ where
     type Term = SimpleTerm<'static>; // not actually used
 
     fn matches<T2: Term + ?Sized>(&self, term: &T2) -> bool {
-        (self)(SimpleTerm::from_term_ref(term))
+        (self)(term.as_simple())
     }
 }
 
@@ -300,7 +300,7 @@ where
     type Term = SimpleTerm<'static>; // not actually used
 
     fn matches<T2: Term + ?Sized>(&self, graph_name: GraphName<&T2>) -> bool {
-        (self)(graph_name.map(SimpleTerm::from_term_ref))
+        (self)(graph_name.map(Term::as_simple))
     }
 }
 

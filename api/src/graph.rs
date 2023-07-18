@@ -559,7 +559,7 @@ mod check_implementability {
     impl MyGraph {
         fn make_term(&self, i: usize) -> SimpleTerm<'_> {
             match &self.terms[i] {
-                Atom(t) => SimpleTerm::from_term_ref(t),
+                Atom(t) => t.as_simple(),
                 QuotedTriple(j) => {
                     SimpleTerm::Triple(Box::new(self.make_triple(self.triples[*j].spo)))
                 }

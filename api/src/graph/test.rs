@@ -302,7 +302,7 @@ macro_rules! test_graph_impl {
             use $crate::graph::test::*;
             use $crate::graph::*;
             use $crate::ns::*;
-            use $crate::term::{FromTerm, SimpleTerm, Term, TermKind};
+            use $crate::term::{SimpleTerm, Term, TermKind};
             use $crate::term::matcher::Any;
             use std::collections::HashSet;
 
@@ -600,23 +600,23 @@ macro_rules! test_graph_impl {
                     let triples: HashSet<StaticTerm> = g.quoted_triples().map(|t| t.unwrap().into_term()).collect();
                     assert_eq!(triples.len(), 4);
                     let t1 = StaticTerm::from_triple([
-                        StaticTerm::from_term_ref(&V1),
-                        StaticTerm::from_term_ref(&B1),
-                        StaticTerm::from_term_ref("lit1"),
+                        V1.as_simple(),
+                        B1.as_simple(),
+                        "lit1".as_simple(),
                     ]);
                     let t2 = StaticTerm::from_triple([
-                        StaticTerm::from_term_ref(&B2),
-                        StaticTerm::from_term_ref("lit2"),
-                        StaticTerm::from_term_ref(&V2),
+                        B2.as_simple(),
+                        "lit2".as_simple(),
+                        V2.as_simple(),
                     ]);
                     let t3 = StaticTerm::from_triple([
-                        StaticTerm::from_term_ref(&V2),
-                        StaticTerm::from_term(rdf::value),
-                        StaticTerm::from_term(rdf::type_),
+                        V2.as_simple(),
+                        rdf::value.as_simple(),
+                        rdf::type_.as_simple(),
                     ]);
                     let t4 = StaticTerm::from_triple([
-                        StaticTerm::from_term("lit2"*EN),
-                        StaticTerm::from_term_ref(&B1),
+                        "lit2"*EN,
+                        B1.as_simple(),
                         t3.clone(),
                     ]);
                     assert_contains(&triples, &t1);

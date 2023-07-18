@@ -324,7 +324,7 @@ macro_rules! test_dataset_impl {
             use $crate::dataset::*;
             use $crate::graph::test::*;
             use $crate::ns::*;
-            use $crate::term::{FromTerm, TermKind};
+            use $crate::term::{Term, TermKind};
             use $crate::term::matcher::Any;
             use std::collections::HashSet;
 
@@ -801,29 +801,29 @@ macro_rules! test_dataset_impl {
                     let quads: HashSet<StaticTerm> = d.quoted_triples().map(|t| t.unwrap().into_term()).collect();
                     assert_eq!(quads.len(), 5);
                     let t1 = StaticTerm::from_triple([
-                        StaticTerm::from_term_ref(&V1),
-                        StaticTerm::from_term_ref(&B1),
-                        StaticTerm::from_term_ref("lit1"),
+                        V1.as_simple(),
+                        B1.as_simple(),
+                        "lit1".as_simple(),
                     ]);
                     let t2 = StaticTerm::from_triple([
-                        StaticTerm::from_term_ref(&B2),
-                        StaticTerm::from_term_ref("lit2"),
-                        StaticTerm::from_term_ref(&V2),
+                        B2.as_simple(),
+                        "lit2".as_simple(),
+                        V2.as_simple(),
                     ]);
                     let t3 = StaticTerm::from_triple([
-                        StaticTerm::from_term_ref(&V2),
-                        StaticTerm::from_term(rdf::value),
-                        StaticTerm::from_term(rdf::type_),
+                        V2.as_simple(),
+                        rdf::value.as_simple(),
+                        rdf::type_.as_simple(), //StaticTerm::from_term(rdf::type_),
                     ]);
                     let t4 = StaticTerm::from_triple([
-                        StaticTerm::from_term("lit2"*EN),
-                        StaticTerm::from_term_ref(&B1),
+                        "lit2"*EN,
+                        B1.as_simple(),
                         t3.clone(),
                     ]);
                     let t5 = StaticTerm::from_triple([
-                        StaticTerm::from_term_ref(&V3),
-                        StaticTerm::from_term(rdf::value),
-                        StaticTerm::from_term(rdf::type_),
+                        V3.as_simple(),
+                        rdf::value.as_simple(),
+                        rdf::type_.as_simple(),
                     ]);
                     assert_contains(&quads, &t1);
                     assert_contains(&quads, &t2);
