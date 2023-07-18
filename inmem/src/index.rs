@@ -2,7 +2,6 @@
 use sophia_api::term::{FromTerm, SimpleTerm, Term};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-use std::convert::Infallible;
 use std::error::Error;
 
 /// Abstraction of the short numeric indices representing [terms](`Term`) in a [`TermIndex`].
@@ -75,6 +74,8 @@ pub trait TermIndex {
     /// `i` must have been returned previously by [`get_index`](TermIndex::get_index) or (`ensure_index`)(TermIndex::ensure_index),
     /// otherwise this method may panic.
     fn get_term(&self, i: Self::Index) -> <Self::Term as Term>::BorrowTerm<'_>;
+    /// Get the index corresponding to the default Graph
+    fn get_default_graph_index(&self) -> Self::Index;
 }
 
 /// A generic implementation of [`TermIndex`].
@@ -104,7 +105,7 @@ impl<I: Index> SimpleTermIndex<I> {
 impl<I: Index> TermIndex for SimpleTermIndex<I> {
     type Term = SimpleTerm<'static>;
     type Index = I;
-    type Error = Infallible;
+    type Error = TermIndexFullError;
 
     fn get_index<T: Term>(&self, t: T) -> Option<Self::Index> {
         self.t2i.get(&t.as_simple()).copied()
@@ -115,6 +116,9 @@ impl<I: Index> TermIndex for SimpleTermIndex<I> {
         match self.t2i.entry(t) {
             Entry::Vacant(e) => {
                 let i = I::from_usize(self.i2t.len());
+                if i >= I::MAX {
+                    return Err(TermIndexFullError());
+                }
                 let t2 = e.key().as_simple();
                 // the following is safe,
                 // because t2 borrows data from the key in self.t2i,
@@ -132,7 +136,15 @@ impl<I: Index> TermIndex for SimpleTermIndex<I> {
         let i = i.into_usize();
         self.i2t[i].borrow_term()
     }
+
+    fn get_default_graph_index(&self) -> Self::Index {
+        Self::Index::MAX
+    }
 }
+
+#[derive(thiserror::Error, Copy, Clone, Debug)]
+#[error("This TermIndex can not contain more terms")]
+pub struct TermIndexFullError();
 
 #[cfg(test)]
 mod test {
@@ -150,6 +162,7 @@ mod test {
         let mut sti = SimpleTermIndex::<u32>::new();
         assert!(sti.is_empty());
         assert_eq!(sti.len(), 0);
+        assert_eq!(sti.get_default_graph_index(), u32::MAX);
 
         assert_eq!(sti.get_index(exa), None);
         assert_eq!(sti.get_index(exb), None);
@@ -235,5 +248,28 @@ mod test {
         for i in 0..MAX {
             assert!(Term::eq(sti.get_term(i as u32), i));
         }
+    }
+
+    impl Index for i8 {
+        const ZERO: Self = 0;
+        const MAX: Self = i8::MAX;
+        fn from_usize(other: usize) -> Self {
+            other
+                .try_into()
+                .map_err(|_| ())
+                .expect("usize too big to be converted to i8")
+        }
+        fn into_usize(self) -> usize {
+            self as usize
+        }
+    }
+
+    #[test]
+    fn full_simple_term_index() {
+        let mut sti = SimpleTermIndex::<i8>::new();
+        for i in 0..127 {
+            assert_eq!(sti.ensure_index(i).unwrap(), i as i8);
+        }
+        assert!(sti.ensure_index(127).is_err());
     }
 }

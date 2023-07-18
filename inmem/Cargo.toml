@@ -18,6 +18,7 @@ all_tests = []
 
 [dependencies]
 sophia_api.workspace = true
+thiserror.workspace = true
 
 [dev-dependencies]
 sophia_api = { workspace = true, features = ["test_macro"] }
