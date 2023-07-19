@@ -294,9 +294,8 @@ impl<'a, W: Write> Prettifier<'a, W> {
         if rdf::nil == iri {
             return self.write_bytes(b"()");
         }
-        let iri = match Iri::new(iri.as_str()).ok() {
-            None => return write!(self.write, "<{}>", iri.as_str()),
-            Some(iri) => iri,
+        let Some(iri) = Iri::new(iri.as_str()).ok()  else {
+            return write!(self.write, "<{}>", iri.as_str())
         };
         match self
             .config

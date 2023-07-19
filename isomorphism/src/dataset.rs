@@ -92,25 +92,13 @@ where
 }
 
 fn prepare_dataset<D: Dataset>(d: &D) -> Result<PreparedDataset<D>, D::Error> {
-    let mut err = None;
-    let ret: Vec<_> = d
+    d
         .quads()
-        .filter_map(|q| {
-            let q = match q {
-                Err(e) => {
-                    err = Some(e);
-                    return None;
-                }
-                Ok(q) => q,
-            };
+        .map(|res| res.map(|q| {
             let (spo, g) = q.to_spog();
-            Some((spo.map(IsoTerm), g.map(IsoTerm)))
-        })
-        .collect();
-    match err {
-        None => Ok(ret),
-        Some(e) => Err(e),
-    }
+            (spo.map(IsoTerm), g.map(IsoTerm))
+        }))
+        .collect()
 }
 
 type PreparedDataset<'a, D> = Vec<Spog<IsoTerm<DTerm<'a, D>>>>;
