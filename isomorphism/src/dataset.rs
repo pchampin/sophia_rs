@@ -92,12 +92,13 @@ where
 }
 
 fn prepare_dataset<D: Dataset>(d: &D) -> Result<PreparedDataset<D>, D::Error> {
-    d
-        .quads()
-        .map(|res| res.map(|q| {
-            let (spo, g) = q.to_spog();
-            (spo.map(IsoTerm), g.map(IsoTerm))
-        }))
+    d.quads()
+        .map(|res| {
+            res.map(|q| {
+                let (spo, g) = q.to_spog();
+                (spo.map(IsoTerm), g.map(IsoTerm))
+            })
+        })
         .collect()
 }
 
