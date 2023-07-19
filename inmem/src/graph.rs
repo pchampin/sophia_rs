@@ -51,21 +51,18 @@ impl<TI: TermIndex> Graph for GenericLightGraph<TI> {
         O: sophia_api::term::matcher::TermMatcher + 's,
     {
         if let Some(sc) = sm.constant() {
-            let si = match self.terms.get_index(sc.borrow_term()) {
-                Some(i) => i,
-                None => return Box::new(empty()),
+            let Some(si) = self.terms.get_index(sc.borrow_term()) else {
+                return Box::new(empty())
             };
             let s = self.terms.get_term(si);
             if let Some(pc) = pm.constant() {
-                let pi = match self.terms.get_index(pc.borrow_term()) {
-                    Some(i) => i,
-                    None => return Box::new(empty()),
+                let Some(pi) = self.terms.get_index(pc.borrow_term()) else {
+                    return Box::new(empty())
                 };
                 let p = self.terms.get_term(pi);
                 if let Some(oc) = om.constant() {
-                    let oi = match self.terms.get_index(oc.borrow_term()) {
-                        Some(i) => i,
-                        None => return Box::new(empty()),
+                    let Some(oi) = self.terms.get_index(oc.borrow_term()) else {
+                        return Box::new(empty())
                     };
                     let o = self.terms.get_term(oi);
 
@@ -87,7 +84,7 @@ impl<TI: TermIndex> Graph for GenericLightGraph<TI> {
             } else {
                 let r =
                     [si, TI::Index::ZERO, TI::Index::ZERO]..=[si, TI::Index::MAX, TI::Index::MAX];
-                BcMatchingIterator::boxed(&self.terms, self.triples.range(r), pm, om)
+                BcMatchingIterator::boxed(&self.terms, self.triples.range(r), pm, om, |spo| spo)
             }
         } else {
             SpoMatchingIterator::boxed(&self.terms, self.triples.iter(), sm, pm, om)
@@ -116,17 +113,14 @@ impl<TI: TermIndex> MutableGraph for GenericLightGraph<TI> {
         TP: Term,
         TO: Term,
     {
-        let is = match self.terms.get_index(s) {
-            Some(i) => i,
-            None => return Ok(false),
+        let Some(is) = self.terms.get_index(s) else {
+            return Ok(false);
         };
-        let ip = match self.terms.get_index(p) {
-            Some(i) => i,
-            None => return Ok(false),
+        let Some(ip) = self.terms.get_index(p) else {
+            return Ok(false);
         };
-        let io = match self.terms.get_index(o) {
-            Some(i) => i,
-            None => return Ok(false),
+        let Some(io) = self.terms.get_index(o) else {
+            return Ok(false);
         };
         Ok(self.triples.remove(&[is, ip, io]))
     }
@@ -228,7 +222,7 @@ impl<TI: TermIndex> Graph for GenericFastGraph<TI> {
             (Some(si), None, None) => {
                 let r =
                     [si, TI::Index::ZERO, TI::Index::ZERO]..=[si, TI::Index::MAX, TI::Index::MAX];
-                BcMatchingIterator::boxed(&self.terms, self.spo.range(r), pm, om)
+                BcMatchingIterator::boxed(&self.terms, self.spo.range(r), pm, om, |spo| spo)
             }
             (None, Some(pi), Some(oi)) => {
                 let [p, o] = [pi, oi].map(|i| self.terms.get_term(i));
@@ -244,14 +238,9 @@ impl<TI: TermIndex> Graph for GenericFastGraph<TI> {
             (None, Some(pi), None) => {
                 let r =
                     [pi, TI::Index::ZERO, TI::Index::ZERO]..=[pi, TI::Index::MAX, TI::Index::MAX];
-                let pos = self.pos.range(r);
-                match pos.clone().next() {
-                    None => Box::new(empty()),
-                    Some(first) => Box::new(
-                        BcMatchingIterator::new(&self.terms, pos, om, sm, first)
-                            .map(|[p, o, s]| Ok([s, p, o])),
-                    ),
-                }
+                BcMatchingIterator::boxed(&self.terms, self.pos.range(r), om, sm, |[p, o, s]| {
+                    [s, p, o]
+                })
             }
             (Some(si), None, Some(oi)) => {
                 let [o, s] = [oi, si].map(|i| self.terms.get_term(i));
@@ -267,14 +256,9 @@ impl<TI: TermIndex> Graph for GenericFastGraph<TI> {
             (None, None, Some(oi)) => {
                 let r =
                     [oi, TI::Index::ZERO, TI::Index::ZERO]..=[oi, TI::Index::MAX, TI::Index::MAX];
-                let osp = self.osp.range(r);
-                match osp.clone().next() {
-                    None => Box::new(empty()),
-                    Some(first) => Box::new(
-                        BcMatchingIterator::new(&self.terms, osp, sm, pm, first)
-                            .map(|[o, s, p]| Ok([s, p, o])),
-                    ),
-                }
+                BcMatchingIterator::boxed(&self.terms, self.osp.range(r), sm, pm, |[o, s, p]| {
+                    [s, p, o]
+                })
             }
             (None, None, None) => {
                 SpoMatchingIterator::boxed(&self.terms, self.spo.iter(), sm, pm, om)
@@ -312,17 +296,14 @@ impl<TI: TermIndex> MutableGraph for GenericFastGraph<TI> {
         TP: Term,
         TO: Term,
     {
-        let is = match self.terms.get_index(s) {
-            Some(i) => i,
-            None => return Ok(false),
+        let Some(is) = self.terms.get_index(s) else {
+            return Ok(false);
         };
-        let ip = match self.terms.get_index(p) {
-            Some(i) => i,
-            None => return Ok(false),
+        let Some(ip) = self.terms.get_index(p) else {
+            return Ok(false);
         };
-        let io = match self.terms.get_index(o) {
-            Some(i) => i,
-            None => return Ok(false),
+        let Some(io) = self.terms.get_index(o) else {
+            return Ok(false);
         };
         if self.spo.remove(&[is, ip, io]) {
             let i = self.pos.remove(&[ip, io, is]);

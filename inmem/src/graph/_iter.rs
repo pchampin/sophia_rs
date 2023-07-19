@@ -122,19 +122,25 @@ where
     BM: TermMatcher + 'a,
     CM: TermMatcher + 'a,
 {
-    pub fn boxed(
+    pub fn boxed<F>(
         terms: &'a TI,
         abc: Range<'a, [TI::Index; 3]>,
         bm: BM,
         cm: CM,
-    ) -> Box<dyn Iterator<Item = Result<Trpl<'a, TI>, TI::Error>> + 'a> {
+        mut to_spo: F,
+    ) -> Box<dyn Iterator<Item = Result<Trpl<'a, TI>, TI::Error>> + 'a>
+    where
+        F: FnMut(Trpl<'a, TI>) -> Trpl<'a, TI> + 'a,
+    {
         match abc.clone().next() {
             None => Box::new(empty()),
-            Some(first) => Box::new(Self::new(terms, abc, bm, cm, first).map(Ok)),
+            Some(first) => {
+                Box::new(Self::new(terms, abc, bm, cm, first).map(move |t| Ok(to_spo(t))))
+            }
         }
     }
 
-    pub fn new(
+    fn new(
         terms: &'a TI,
         abc: Range<'a, [TI::Index; 3]>,
         bm: BM,
