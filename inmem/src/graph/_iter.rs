@@ -185,16 +185,16 @@ where
 
 //
 
-struct TermData<'a, TI, M>
+pub struct TermData<'a, TI, M>
 where
     TI: TermIndex,
     TI::Term: 'a,
     M: TermMatcher + 'a,
 {
-    m: M,
-    i: TI::Index,
-    t: <TI::Term as Term>::BorrowTerm<'a>,
-    b: bool,
+    pub m: M,
+    pub i: TI::Index,
+    pub t: <TI::Term as Term>::BorrowTerm<'a>,
+    pub b: bool,
 }
 
 impl<'a, TI, M> TermData<'a, TI, M>
@@ -203,19 +203,19 @@ where
     TI::Term: 'a,
     M: TermMatcher + 'a,
 {
-    fn uninit(m: M, i: TI::Index, terms: &'a TI) -> Self {
+    pub fn uninit(m: M, i: TI::Index, terms: &'a TI) -> Self {
         let t = terms.get_term(i);
         let b = true;
         Self { m, i, t, b }
     }
 
-    fn new(m: M, i: TI::Index, terms: &'a TI) -> Self {
+    pub fn new(m: M, i: TI::Index, terms: &'a TI) -> Self {
         let t = terms.get_term(i);
         let b = m.matches(&t);
         Self { m, i, t, b }
     }
 
-    fn update(&mut self, i: TI::Index, terms: &'a TI) {
+    pub fn update(&mut self, i: TI::Index, terms: &'a TI) {
         self.i = i;
         self.t = terms.get_term(i);
         self.b = self.m.matches(&self.t);

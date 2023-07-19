@@ -1,5 +1,5 @@
 //! A [`TermIndex`] is a bidirectional assocuation of [terms](`Term`) with short numeric [indices](`Index`).
-use sophia_api::term::{FromTerm, SimpleTerm, Term};
+use sophia_api::term::{FromTerm, GraphName, SimpleTerm, Term};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::error::Error;
@@ -74,9 +74,38 @@ pub trait TermIndex {
     /// `i` must have been returned previously by [`get_index`](TermIndex::get_index) or (`ensure_index`)(TermIndex::ensure_index),
     /// otherwise this method may panic.
     fn get_term(&self, i: Self::Index) -> <Self::Term as Term>::BorrowTerm<'_>;
-    /// Get the index corresponding to the default Graph
-    fn get_default_graph_index(&self) -> Self::Index;
 }
+
+/// [`GraphNameIndex`] extends [`TermIndex`] to support graph names.
+///
+/// This implies that one index value is reserved for the default graph.
+pub trait GraphNameIndex: TermIndex {
+    /// Get the index corresponding to the default Graph.
+    ///
+    /// This value is never returned by `get_index` or `ensure_index`.
+    fn get_default_graph_index(&self) -> Self::Index;
+    /// Get the graph name corresponding to index `i`.
+    ///
+    /// # Precondition
+    /// `i` must have been returned previously by [`get_index`](TermIndex::get_index) or (`ensure_index`)(TermIndex::ensure_index),
+    /// otherwise this method may panic.
+    fn get_graph_name(&self, i: Self::Index) -> GraphName<<Self::Term as Term>::BorrowTerm<'_>> {
+        if i == self.get_default_graph_index() {
+            None
+        } else {
+            Some(self.get_term(i))
+        }
+    }
+    /// Get the index corresponding to graph name `n`, if it exists.
+    fn get_graph_name_index<T: Term>(&self, g: GraphName<T>) -> Option<Self::Index> {
+        match g {
+            None => Some(self.get_default_graph_index()),
+            Some(t) => self.get_index(t),
+        }
+    }
+}
+
+//
 
 /// A generic implementation of [`TermIndex`].
 #[derive(Clone, Debug, Default)]
@@ -136,7 +165,9 @@ impl<I: Index> TermIndex for SimpleTermIndex<I> {
         let i = i.into_usize();
         self.i2t[i].borrow_term()
     }
+}
 
+impl<I: Index> GraphNameIndex for SimpleTermIndex<I> {
     fn get_default_graph_index(&self) -> Self::Index {
         Self::Index::MAX
     }

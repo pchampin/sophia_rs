@@ -7,6 +7,7 @@ use sophia_api::prelude::*;
 use crate::index::*;
 
 mod _iter;
+pub(crate) use _iter::TermData;
 use _iter::*;
 
 /// A graph with a single triple index (SPO).

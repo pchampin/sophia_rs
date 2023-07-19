@@ -33,8 +33,14 @@ pub trait TermMatcher {
         None
     }
 
-    /// Convert this [`TermMatcher`] into a [`GraphNameMatcher`]
-    fn gn(&self) -> TermMatcherGn<Self> {
+    /// Converts this [`TermMatcher`] into a [`GraphNameMatcher`]
+    ///
+    /// If you only want to borrow this matcher as a [`GraphNameMatcher`],
+    /// call [`gn`](TermMatcher::gn) on the result of [`matcher_ref`](TermMatcher::matcher_ref).
+    fn gn(self) -> TermMatcherGn<Self>
+    where
+        Self: Sized,
+    {
         TermMatcherGn(self)
     }
 
@@ -314,11 +320,11 @@ impl GraphNameMatcher for Any {
 
 /// Wrapper type returned by [`TermMatcher::gn`]
 #[derive(Clone, Copy, Debug)]
-pub struct TermMatcherGn<'a, T: ?Sized>(&'a T);
+pub struct TermMatcherGn<T>(T);
 
-impl<M> GraphNameMatcher for TermMatcherGn<'_, M>
+impl<M> GraphNameMatcher for TermMatcherGn<M>
 where
-    M: TermMatcher + ?Sized,
+    M: TermMatcher,
 {
     type Term = M::Term;
 
