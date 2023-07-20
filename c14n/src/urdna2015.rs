@@ -23,7 +23,7 @@ use crate::_permutations::for_each_permutation_of;
 ///
 /// See also [`normalize_with`].
 pub fn normalize<D: Dataset, W: io::Write>(d: &D, w: W) -> Result<(), C14nError<D::Error>> {
-    normalize_with(d, w, DEFAULT_DEPTH_FACTOR)
+    normalize_with(d, w, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
 /// Return a canonical N-quads representation of `d`, where
@@ -34,9 +34,10 @@ pub fn normalize<D: Dataset, W: io::Write>(d: &D, w: W) -> Result<(), C14nError<
 pub fn normalize_with<D: Dataset, W: io::Write>(
     d: &D,
     mut w: W,
-    depth_factor: usize,
+    depth_factor: f32,
+    permutation_limit: usize,
 ) -> Result<(), C14nError<D::Error>> {
-    let mut quads: Vec<_> = relabel_with(d, depth_factor)?;
+    let mut quads: Vec<_> = relabel_with(d, depth_factor, permutation_limit)?;
     let mut buf1 = String::new();
     let mut buf2 = String::new();
     // we sort the quads, but comparing the terms based on ther NQ serialization,
@@ -74,11 +75,14 @@ pub fn normalize_with<D: Dataset, W: io::Write>(
 ///
 /// See also [`normalize`].
 pub fn relabel<D: Dataset>(d: &D) -> Result<C14nQuads<D>, C14nError<D::Error>> {
-    relabel_with(d, DEFAULT_DEPTH_FACTOR)
+    relabel_with(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
 /// The default value of `depth_factor` in [`normalize`] and [`relabel`].
-pub const DEFAULT_DEPTH_FACTOR: usize = 1;
+pub const DEFAULT_DEPTH_FACTOR: f32 = 1.0;
+
+/// The default value of `permutation_limit` in [`normalize`] and [`relabel`].
+pub const DEFAULT_PERMUTATION_LIMIT: usize = 6;
 
 /// Return a [`Dataset`] isomorphic to `d`, with canonical blank node labels,
 /// restricting the number of recursion of URDNA2015 to `depth_factor` per blank node.
@@ -91,13 +95,14 @@ pub const DEFAULT_DEPTH_FACTOR: usize = 1;
 /// See also [`relabel`], [`normalize_with`].
 pub fn relabel_with<'a, D: Dataset>(
     d: &'a D,
-    depth_factor: usize,
+    depth_factor: f32,
+    permutation_limit: usize,
 ) -> Result<C14nQuads<'a, D>, C14nError<D::Error>> {
     let quads: Result<Vec<Spog<DTerm<'a, D>>>, _> =
         d.quads().map(|res| res.map(Quad::to_spog)).collect();
     let quads = quads?;
     // Step 1
-    let mut state = C14nState::new(depth_factor);
+    let mut state = C14nState::new(depth_factor, permutation_limit);
     // Step 2
     for quad in &quads {
         for component in iter_spog(quad.spog()) {
@@ -195,18 +200,21 @@ struct C14nState<'a, T: Term> {
     canonical: BnodeIssuer,
     /// Not specified in the spec: memozing the results of hash 1st degree
     b2h: BTreeMap<Rc<str>, Hash>,
-    /// Not specified in the spec: maximum recursion in hash_n_degree_quads
-    depth_factor: usize,
+    /// Not specified in the spec: maximum recursion factor in hash_n_degree_quads
+    depth_factor: f32,
+    /// Not specified in the spec: maximum number of nodes on which permutations will be computed
+    permutation_limit: usize,
 }
 
 impl<'a, T: Term> C14nState<'a, T> {
-    fn new(depth_factor: usize) -> Self {
+    fn new(depth_factor: f32, permutation_limit: usize) -> Self {
         C14nState {
             b2q: BTreeMap::new(),
             h2b: BTreeMap::new(),
             canonical: BnodeIssuer::new(BnodeId::new_unchecked("c14n")),
             b2h: BTreeMap::new(),
             depth_factor,
+            permutation_limit,
         }
     }
 
@@ -246,7 +254,7 @@ impl<'a, T: Term> C14nState<'a, T> {
         issuer: &BnodeIssuer,
         depth: usize,
     ) -> Result<(Hash, BnodeIssuer), C14nError<E>> {
-        if depth > self.depth_factor * self.b2q.len() {
+        if depth as f32 > self.depth_factor * self.b2q.len() as f32 {
             return Err(C14nError::ToxicGraph(format!(
                 "too many recursions (limit={} per bnode)",
                 self.depth_factor
@@ -284,6 +292,13 @@ impl<'a, T: Term> C14nState<'a, T> {
             let mut chosen_path = String::new();
             let mut chosen_issuer: Option<BnodeIssuer> = None;
             // Step 5.4
+            if blank_node.len() > self.permutation_limit {
+                return Err(C14nError::ToxicGraph(format!(
+                    "Too many permutations ({} nodes, limit set to {})",
+                    blank_node.len(),
+                    self.permutation_limit,
+                )));
+            }
             for_each_permutation_of(&mut blank_node, |p| -> Result<(), C14nError<_>> {
                 let mut issuer_copy = ret_issuer.as_ref().unwrap_or(issuer).clone();
                 let mut path = String::new();
@@ -519,7 +534,88 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
             "_:e4 <http://example.com/#p> _:e0 .",
         ]);
         let mut output = Vec::<u8>::new();
-        let res = normalize_with(&dataset, &mut output, 0);
+        // set depth_factor too low for this graph
+        let res = normalize_with(&dataset, &mut output, 0.5, 2 * DEFAULT_PERMUTATION_LIMIT);
+        assert!(matches!(res, Err(C14nError::ToxicGraph(_))));
+    }
+
+    #[test]
+    fn clique5() {
+        let dataset = ez_quads(&[
+            "_:e0 <http://example.com/#p> _:e1 .",
+            "_:e0 <http://example.com/#p> _:e2 .",
+            "_:e0 <http://example.com/#p> _:e3 .",
+            "_:e0 <http://example.com/#p> _:e4 .",
+            "_:e1 <http://example.com/#p> _:e0 .",
+            "_:e1 <http://example.com/#p> _:e2 .",
+            "_:e1 <http://example.com/#p> _:e3 .",
+            "_:e1 <http://example.com/#p> _:e4 .",
+            "_:e2 <http://example.com/#p> _:e0 .",
+            "_:e2 <http://example.com/#p> _:e1 .",
+            "_:e2 <http://example.com/#p> _:e3 .",
+            "_:e2 <http://example.com/#p> _:e4 .",
+            "_:e3 <http://example.com/#p> _:e0 .",
+            "_:e3 <http://example.com/#p> _:e1 .",
+            "_:e3 <http://example.com/#p> _:e2 .",
+            "_:e3 <http://example.com/#p> _:e4 .",
+            "_:e4 <http://example.com/#p> _:e0 .",
+            "_:e4 <http://example.com/#p> _:e1 .",
+            "_:e4 <http://example.com/#p> _:e2 .",
+            "_:e4 <http://example.com/#p> _:e3 .",
+        ]);
+        let exp = r#"_:c14n0 <http://example.com/#p> _:c14n1 .
+_:c14n0 <http://example.com/#p> _:c14n2 .
+_:c14n0 <http://example.com/#p> _:c14n3 .
+_:c14n0 <http://example.com/#p> _:c14n4 .
+_:c14n1 <http://example.com/#p> _:c14n0 .
+_:c14n1 <http://example.com/#p> _:c14n2 .
+_:c14n1 <http://example.com/#p> _:c14n3 .
+_:c14n1 <http://example.com/#p> _:c14n4 .
+_:c14n2 <http://example.com/#p> _:c14n0 .
+_:c14n2 <http://example.com/#p> _:c14n1 .
+_:c14n2 <http://example.com/#p> _:c14n3 .
+_:c14n2 <http://example.com/#p> _:c14n4 .
+_:c14n3 <http://example.com/#p> _:c14n0 .
+_:c14n3 <http://example.com/#p> _:c14n1 .
+_:c14n3 <http://example.com/#p> _:c14n2 .
+_:c14n3 <http://example.com/#p> _:c14n4 .
+_:c14n4 <http://example.com/#p> _:c14n0 .
+_:c14n4 <http://example.com/#p> _:c14n1 .
+_:c14n4 <http://example.com/#p> _:c14n2 .
+_:c14n4 <http://example.com/#p> _:c14n3 .
+"#;
+        let got = c14n_nquads(&dataset).unwrap();
+        println!(">>>> GOT\n{}>>>> EXPECTED\n{}<<<<", got, exp);
+        assert!(got == exp);
+    }
+
+    #[test]
+    fn clique5_toxic() {
+        let dataset = ez_quads(&[
+            "_:e0 <http://example.com/#p> _:e1 .",
+            "_:e0 <http://example.com/#p> _:e2 .",
+            "_:e0 <http://example.com/#p> _:e3 .",
+            "_:e0 <http://example.com/#p> _:e4 .",
+            "_:e1 <http://example.com/#p> _:e0 .",
+            "_:e1 <http://example.com/#p> _:e2 .",
+            "_:e1 <http://example.com/#p> _:e3 .",
+            "_:e1 <http://example.com/#p> _:e4 .",
+            "_:e2 <http://example.com/#p> _:e0 .",
+            "_:e2 <http://example.com/#p> _:e1 .",
+            "_:e2 <http://example.com/#p> _:e3 .",
+            "_:e2 <http://example.com/#p> _:e4 .",
+            "_:e3 <http://example.com/#p> _:e0 .",
+            "_:e3 <http://example.com/#p> _:e1 .",
+            "_:e3 <http://example.com/#p> _:e2 .",
+            "_:e3 <http://example.com/#p> _:e4 .",
+            "_:e4 <http://example.com/#p> _:e0 .",
+            "_:e4 <http://example.com/#p> _:e1 .",
+            "_:e4 <http://example.com/#p> _:e2 .",
+            "_:e4 <http://example.com/#p> _:e3 .",
+        ]);
+        let mut output = Vec::<u8>::new();
+        // set permutation limit too low for this graph
+        let res = normalize_with(&dataset, &mut output, 2.0 * DEFAULT_DEPTH_FACTOR, 3);
         assert!(matches!(res, Err(C14nError::ToxicGraph(_))));
     }
 
