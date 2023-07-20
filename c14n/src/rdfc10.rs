@@ -37,7 +37,7 @@ pub fn normalize_with<D: Dataset, W: io::Write>(
     depth_factor: f32,
     permutation_limit: usize,
 ) -> Result<(), C14nError<D::Error>> {
-    let mut quads: Vec<_> = relabel_with(d, depth_factor, permutation_limit)?;
+    let (mut quads, _) = relabel_with(d, depth_factor, permutation_limit)?;
     let mut buf1 = String::new();
     let mut buf2 = String::new();
     // we sort the quads, but comparing the terms based on ther NQ serialization,
@@ -74,7 +74,7 @@ pub fn normalize_with<D: Dataset, W: io::Write>(
 /// Implements <https://www.w3.org/TR/rdf-canon/#canon-algorithm>
 ///
 /// See also [`normalize`].
-pub fn relabel<D: Dataset>(d: &D) -> Result<C14nQuads<D>, C14nError<D::Error>> {
+pub fn relabel<D: Dataset>(d: &D) -> Result<(C14nQuads<D>, C14nIdMap), C14nError<D::Error>> {
     relabel_with(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
@@ -98,7 +98,7 @@ pub fn relabel_with<'a, D: Dataset>(
     d: &'a D,
     depth_factor: f32,
     permutation_limit: usize,
-) -> Result<C14nQuads<'a, D>, C14nError<D::Error>> {
+) -> Result<(C14nQuads<'a, D>, C14nIdMap), C14nError<D::Error>> {
     let quads: Result<Vec<Spog<DTerm<'a, D>>>, _> =
         d.quads().map(|res| res.map(Quad::to_spog)).collect();
     let quads = quads?;
@@ -172,7 +172,7 @@ pub fn relabel_with<'a, D: Dataset>(
     }
     // Step 6
     let issued = state.canonical.issued;
-    Ok(quads
+    let quads = quads
         .into_iter()
         .map(|q| {
             let (spo, g) = q;
@@ -187,12 +187,16 @@ pub fn relabel_with<'a, D: Dataset>(
             let g = g.map(convert);
             (spo, g)
         })
-        .collect())
+        .collect();
+    Ok((quads, issued))
 }
 
 /// An impl of [`Dataset`] that contains canonical labels for blank nodes,
 /// and guarantees that
 type C14nQuads<'a, D> = Vec<Spog<C14nTerm<DTerm<'a, D>>>>;
+
+/// A n identifier map as returned by [`relabel`] and [`relabel_with`]
+type C14nIdMap = BTreeMap<Rc<str>, BnodeId<Rc<str>>>;
 
 #[derive(Clone, Debug)]
 struct C14nState<'a, T: Term> {
@@ -366,7 +370,7 @@ impl<'a, T: Term> C14nState<'a, T> {
 struct BnodeIssuer {
     prefix: BnodeId<&'static str>,
     //counter: usize, // use issued_order.len() instead
-    issued: BTreeMap<Rc<str>, BnodeId<Rc<str>>>,
+    issued: C14nIdMap,
     // Not specified in the spec: allows to keep the order in which identifiers were issued
     issued_order: Vec<Rc<str>>,
 }
