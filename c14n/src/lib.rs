@@ -3,7 +3,7 @@
 //!
 //! This crate provides function to canonicalize graphs and datasets.
 //!
-//! It currently implements the [`urdna2015`] algorithm.
+//! It currently implements the [RDFC-1.0](rdfc10) algorithm.
 //!
 //! TODO list:
 //! - [x] check that UTF-8 byte-by-byte ordering is indeed equivalent to code point ordering.
@@ -19,7 +19,7 @@ mod _c14n_term;
 mod _cnq;
 mod _permutations;
 
-pub mod urdna2015;
+pub mod rdfc10;
 
 use thiserror::Error;
 

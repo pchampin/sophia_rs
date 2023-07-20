@@ -1,4 +1,4 @@
-//! I provide the implementation of the URDNA2015 algorithm described at
+//! I provide the implementation of the RDFC-1.0 algorithm described at
 //! <https://www.w3.org/TR/rdf-canon/>
 
 use std::cmp::Ordering;
@@ -85,9 +85,10 @@ pub const DEFAULT_DEPTH_FACTOR: f32 = 1.0;
 pub const DEFAULT_PERMUTATION_LIMIT: usize = 6;
 
 /// Return a [`Dataset`] isomorphic to `d`, with canonical blank node labels,
-/// restricting the number of recursion of URDNA2015 to `depth_factor` per blank node.
+/// restricting the number of recursion of RDFC-1.0 to `depth_factor` per blank node,
+/// and restricting the size of permutations to `permutation_limit`!.
 ///
-/// Limiting the recursion depth prevents the algorithm from blocking on pathological graphs with little practical utility
+/// These restrictions prevents the algorithm from blocking on pathological graphs with little practical utility
 /// (e.g. big cycles or cliques of undistinguishable blank nodes).
 ///
 /// Implements <https://www.w3.org/TR/rdf-canon/#canon-algorithm>
@@ -108,7 +109,7 @@ pub fn relabel_with<'a, D: Dataset>(
         for component in iter_spog(quad.spog()) {
             if component.is_triple() || component.is_variable() {
                 return Err(C14nError::Unsupported(
-                    "URDNA2015 does not support variables nor quoted triples".to_string(),
+                    "RDFC-1.0 does not support variables nor quoted triples".to_string(),
                 ));
             }
             if let Some(bnid) = component.bnode_id() {
@@ -122,7 +123,7 @@ pub fn relabel_with<'a, D: Dataset>(
         }
         if quad.p().is_blank_node() {
             return Err(C14nError::Unsupported(
-                "URDNA2015 does not support blank node as predicate".to_string(),
+                "RDFC-1.0 does not support blank node as predicate".to_string(),
             ));
         }
     }
