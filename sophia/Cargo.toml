@@ -29,4 +29,5 @@ sophia_isomorphism.workspace = true
 sophia_resource.workspace = true
 sophia_rio.workspace = true
 sophia_turtle.workspace = true
+sophia_term.workspace = true
 sophia_xml = { workspace = true, optional = true }

@@ -1,0 +1,23 @@
+[package]
+name = "sophia_term"
+description = "A Rust toolkit for RDF and Linked Data - In-memory Graph and Dataset implementations"
+documentation = "https://docs.rs/sophia_term"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
+keywords.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+# This feature increases the number of tests
+all_tests = []
+
+[dependencies]
+sophia_api.workspace = true
+lazy_static.workspace = true
+
+[dev-dependencies]

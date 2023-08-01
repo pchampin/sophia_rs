@@ -5,10 +5,13 @@
 //! that make the Sophia toolkit:
 //!
 //! * [`api`]
+//! * [`c14n`]
 //! * [`inmem`]
 //! * [`iri`]
 //! * [`isomorphism`]
+//! * [`resource`]
 //! * [`turtle`]
+//! * [`term`]
 //! * [`xml`] (with the `xml` feature enabled)
 //!
 //! # Getting Started
@@ -57,6 +60,7 @@ pub use sophia_inmem as inmem;
 pub use sophia_iri as iri;
 pub use sophia_isomorphism as isomorphism;
 pub use sophia_resource as resource;
+pub use sophia_term as term;
 pub use sophia_turtle as turtle;
 #[cfg(feature = "xml")]
 pub use sophia_xml as xml;

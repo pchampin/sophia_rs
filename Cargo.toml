@@ -9,6 +9,7 @@ members = [
     "resource",
     "rio",
     "sophia",
+    "term",
     "turtle",
     #"jsonld",
     "xml",
@@ -31,6 +32,7 @@ sophia_iri = { version = "0.8.0-alpha.1", path = "./iri" }
 sophia_isomorphism = { version = "0.8.0-alpha.1", path = "./isomorphism" }
 sophia_resource = { version = "0.8.0-alpha.1", path = "./resource" }
 sophia_rio = { version = "0.8.0-alpha.1", path = "./rio" }
+sophia_term = { version = "0.8.0-alpha.1", path = "./term" }
 sophia_turtle = { version = "0.8.0-alpha.1", path = "./turtle" }
 sophia_xml = { version = "0.8.0-alpha.1", path = "./xml" }
 

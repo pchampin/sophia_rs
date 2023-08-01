@@ -16,6 +16,7 @@ It comprises the following crates:
   - parsers and serializers
 * [`sophia_iri`] provides functions, types and traits for validating and resolving IRIs.
 * [`sophia_inmem`] defines in-memory implementations of the `Graph` and `Dataset` traits from `sophia_api`.
+* [`sophia_term`] defines various implementations of the `Term` trait from `sophia_api`.
 * [`sophia_turtle`] provides parsers and serializers for the Turtle-family of concrete syntaxes.
 * [`sophia_xml`] provides parsers and serializers for RDF/XML.
 * [`sophia_jsonld`] provides preliminary support for JSON-LD.
@@ -73,11 +74,11 @@ An outdated comparison of Sophia with other RDF libraries is still available
 [`sophia_iri`]: https://crates.io/crates/sophia_iri
 [`sophia_term`]: https://crates.io/crates/sophia_term
 [`sophia_inmem`]: https://crates.io/crates/sophia_inmem
+[`sophia_term`]: https://crates.io/crates/sophia_inmem
 [`sophia_turtle`]: https://crates.io/crates/sophia_turtle
 [`sophia_xml`]: https://crates.io/crates/sophia_xml
 [`sophia_jsonld`]: https://crates.io/crates/sophia_jsonld
 [`sophia_c14n`]: https://crates.io/crates/sophia_c14n
-[`sophia_indexed`]: https://crates.io/crates/sophia_indexed
 [`sophia_rio`]: https://crates.io/crates/sophia_rio
 [`sophia`]: https://crates.io/crates/sophia
 [CECILL-B]: https://cecill.info/licences/Licence_CeCILL-B_V1-en.html
