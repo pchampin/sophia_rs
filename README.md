@@ -64,6 +64,12 @@ Bibtex:
 }
 ```
 
+## Third-party crates
+
+The following third-party crates are using or extending Sophia
+
+* [`hdt`](https://crates.io/crates/hdt) provides an implementation of Sophia's traits based on the [HDT](https://www.rdfhdt.org/) format.
+
 ## History
 
 An outdated comparison of Sophia with other RDF libraries is still available
@@ -79,6 +85,7 @@ An outdated comparison of Sophia with other RDF libraries is still available
 [`sophia_xml`]: https://crates.io/crates/sophia_xml
 [`sophia_jsonld`]: https://crates.io/crates/sophia_jsonld
 [`sophia_c14n`]: https://crates.io/crates/sophia_c14n
+[`sophia_resource`]: https://crates.io/crates/sophia_resource
 [`sophia_rio`]: https://crates.io/crates/sophia_rio
 [`sophia`]: https://crates.io/crates/sophia
 [CECILL-B]: https://cecill.info/licences/Licence_CeCILL-B_V1-en.html
