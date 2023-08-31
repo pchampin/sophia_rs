@@ -147,6 +147,9 @@ impl<D: Dataset, M: GraphNameMatcher + Copy> Graph for PartialUnionGraph<D, M> {
 /// corresponding to a specific graph (default or named) of the wrapped dataset.
 ///
 /// This graph is also [mutable](`MutableGraph`) if the underlying dataset is.
+///
+/// NB: this type is design to be the return type of [`Dataset::graph`] and [`Dataset::graph_mut`].
+/// It is not designed to be usable "from scratch".
 #[derive(Clone, Copy, Debug)]
 pub struct DatasetGraph<D: Dataset, G: Term> {
     d: D,
