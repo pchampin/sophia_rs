@@ -149,6 +149,33 @@ impl<T: Borrow<str> + Debug> Term for GenericTerm<T> {
     }
 }
 
+impl<T: Borrow<str> + Debug, T2: Term> PartialEq<T2> for GenericTerm<T> {
+    fn eq(&self, other: &T2) -> bool {
+        Term::eq(self, other.borrow_term())
+    }
+}
+
+impl<T: Borrow<str> + Debug> Eq for GenericTerm<T> {
+}
+
+impl<T: Borrow<str> + Debug> std::hash::Hash for GenericTerm<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        Term::hash(self, state)
+    }
+}
+
+impl<T: Borrow<str> + Debug, T2: Term> PartialOrd<T2> for GenericTerm<T> {
+    fn partial_cmp(&self, other: &T2) -> Option<std::cmp::Ordering> {
+        Some(Term::cmp(self, other.borrow_term()))
+    }
+}
+
+impl<T: Borrow<str> + Debug> Ord for GenericTerm<T> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        Term::cmp(self, other.borrow_term())
+    }
+}
+
 impl<T: Borrow<str> + for<'x> From<&'x str>> FromTerm for GenericTerm<T> {
     fn from_term<U: Term>(term: U) -> Self {
         match term.kind() {
@@ -306,6 +333,33 @@ impl<T: Borrow<str> + for<'x> From<&'x str>> TryFromTerm for GenericLiteral<T> {
         } else {
             Err(GenericLiteralError(term.kind()))
         }
+    }
+}
+
+impl<T: Borrow<str> + Debug, T2: Term> PartialEq<T2> for GenericLiteral<T> {
+    fn eq(&self, other: &T2) -> bool {
+        Term::eq(self, other.borrow_term())
+    }
+}
+
+impl<T: Borrow<str> + Debug> Eq for GenericLiteral<T> {
+}
+
+impl<T: Borrow<str> + Debug> std::hash::Hash for GenericLiteral<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        Term::hash(self, state)
+    }
+}
+
+impl<T: Borrow<str> + Debug, T2: Term> PartialOrd<T2> for GenericLiteral<T> {
+    fn partial_cmp(&self, other: &T2) -> Option<std::cmp::Ordering> {
+        Some(Term::cmp(self, other.borrow_term()))
+    }
+}
+
+impl<T: Borrow<str> + Debug> Ord for GenericLiteral<T> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        Term::cmp(self, other.borrow_term())
     }
 }
 

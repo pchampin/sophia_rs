@@ -15,6 +15,8 @@ all-features = true
 
 [features]
 default = []
+# This feature enables the JSON-LD parser and serializer
+jsonld = ["sophia_jsonld"]
 # This feature enables the RDF/XML parser and serializer
 xml = ["sophia_xml"]
 # This feature enables to use the graph and dataset test macros in other crates
@@ -26,6 +28,7 @@ sophia_api.workspace = true
 sophia_inmem.workspace = true
 sophia_c14n.workspace = true
 sophia_isomorphism.workspace = true
+sophia_jsonld = { workspace = true, optional = true }
 sophia_resource.workspace = true
 sophia_rio.workspace = true
 sophia_turtle.workspace = true

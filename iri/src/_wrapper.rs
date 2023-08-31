@@ -3,6 +3,7 @@
 use super::resolve::{BaseIri, BaseIriRef};
 use super::{InvalidIri, IsIri, IsIriRef, *};
 use std::borrow::Borrow;
+use std::fmt::Display;
 
 wrap! { Iri borrowing str :
     /// This wrapper guarantees that the underlying `str`
@@ -49,6 +50,12 @@ wrap! { Iri borrowing str :
 impl<T: Borrow<str>> IsIriRef for Iri<T> {}
 impl<T: Borrow<str>> IsIri for Iri<T> {}
 
+impl<T: Borrow<str>> Display for Iri<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0.borrow())
+    }
+}
+
 //
 
 wrap! { IriRef borrowing str :
@@ -94,6 +101,12 @@ wrap! { IriRef borrowing str :
 }
 
 impl<T: Borrow<str>> IsIriRef for IriRef<T> {}
+
+impl<T: Borrow<str>> Display for IriRef<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0.borrow())
+    }
+}
 
 //
 

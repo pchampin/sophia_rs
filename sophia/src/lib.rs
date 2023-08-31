@@ -9,6 +9,7 @@
 //! * [`inmem`]
 //! * [`iri`]
 //! * [`isomorphism`]
+//! * [`jsonld`]
 //! * [`resource`]
 //! * [`turtle`]
 //! * [`term`]
@@ -59,6 +60,8 @@ pub use sophia_c14n as c14n;
 pub use sophia_inmem as inmem;
 pub use sophia_iri as iri;
 pub use sophia_isomorphism as isomorphism;
+#[cfg(feature = "jsonld")]
+pub use sophia_jsonld as jsonld;
 pub use sophia_resource as resource;
 pub use sophia_term as term;
 pub use sophia_turtle as turtle;

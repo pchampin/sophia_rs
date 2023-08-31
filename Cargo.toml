@@ -6,12 +6,12 @@ members = [
     "inmem",
     "iri",
     "isomorphism",
+    "jsonld",
     "resource",
     "rio",
     "sophia",
     "term",
     "turtle",
-    #"jsonld",
     "xml",
 ]
 resolver = "2"
@@ -32,6 +32,7 @@ sophia_c14n = { version = "0.8.0-alpha.2", path = "./c14n" }
 sophia_inmem = { version = "0.8.0-alpha.2", path = "./inmem" }
 sophia_iri = { version = "0.8.0-alpha.2", path = "./iri" }
 sophia_isomorphism = { version = "0.8.0-alpha.2", path = "./isomorphism" }
+sophia_jsonld = { version = "0.8.0-alpha.2", path = "./jsonld" }
 sophia_resource = { version = "0.8.0-alpha.2", path = "./resource" }
 sophia_rio = { version = "0.8.0-alpha.2", path = "./rio" }
 sophia_term = { version = "0.8.0-alpha.2", path = "./term" }

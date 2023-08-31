@@ -1,0 +1,38 @@
+[package]
+name = "sophia_jsonld"
+description = "A Rust toolkit for RDF and Linked Data - JSON-LD parser and serializer"
+documentation = "https://docs.rs/sophia_jsonld"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
+keywords.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = []
+# This feature enables the JSON-LD parser and serializer
+surf_loader = ["http-link", "surf", "url"]
+
+[dependencies]
+iref = "2.2"
+json-ld = "0.15.0"
+json-syntax = "0.9"
+futures-lite = "1.12.0"
+langtag = "0.3.4"
+locspan = "0.7.12"
+rdf-types = "0.15.4"
+sophia_api.workspace = true
+sophia_iri.workspace = true
+sophia_term.workspace = true
+thiserror.workspace = true
+# required by feature surf_loader
+http-link = { version = "1.0.1", optional = true }
+surf = { version = "2.3.2", optional = true }
+url = { version = "2.2.2", optional = true }
+
+[dev-dependencies]
+sophia_turtle.workspace = true
