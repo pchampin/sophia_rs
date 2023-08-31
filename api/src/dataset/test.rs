@@ -337,7 +337,7 @@ macro_rules! test_dataset_impl {
 
                 let quads = d.quads();
                 let hint = quads.size_hint();
-                for iter in vec![quads, d.quads_matching(Any, Any, Any, Any)] {
+                for iter in [quads, d.quads_matching(Any, Any, Any, Any)] {
                     let v: Vec<_> = iter.map(Result::unwrap).collect();
                     assert_eq!(v.len(), d.quads().count());
                     assert_consistent_hint(v.len(), hint);

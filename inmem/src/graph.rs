@@ -52,17 +52,17 @@ impl<TI: TermIndex> Graph for GenericLightGraph<TI> {
     {
         if let Some(sc) = sm.constant() {
             let Some(si) = self.terms.get_index(sc.borrow_term()) else {
-                return Box::new(empty())
+                return Box::new(empty());
             };
             let s = self.terms.get_term(si);
             if let Some(pc) = pm.constant() {
                 let Some(pi) = self.terms.get_index(pc.borrow_term()) else {
-                    return Box::new(empty())
+                    return Box::new(empty());
                 };
                 let p = self.terms.get_term(pi);
                 if let Some(oc) = om.constant() {
                     let Some(oi) = self.terms.get_index(oc.borrow_term()) else {
-                        return Box::new(empty())
+                        return Box::new(empty());
                     };
                     let o = self.terms.get_term(oi);
 

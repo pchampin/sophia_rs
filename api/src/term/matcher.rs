@@ -163,7 +163,7 @@ pub struct MatcherRef<'a, T: ?Sized>(&'a T);
 
 impl<'a, T> Clone for MatcherRef<'a, T> {
     fn clone(&self) -> Self {
-        MatcherRef(self.0)
+        *self
     }
 }
 impl<'a, T> Copy for MatcherRef<'a, T> {}

@@ -37,7 +37,7 @@ mod test {
     use super::*;
 
     #[test]
-    #[allow(clippy::needless_borrow,unused_assignments)]
+    #[allow(clippy::needless_borrow, unused_assignments)]
     fn arc_str_stash_iri() {
         let mut stash = ArcStrStash::new();
         assert_eq!(0, stash.len());
