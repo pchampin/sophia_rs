@@ -13,7 +13,7 @@ keywords.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-hmac-sha256 = "1.1.6"
+sha2 = "0.10.7"
 sophia_api.workspace = true
 sophia_iri.workspace = true
 thiserror.workspace = true

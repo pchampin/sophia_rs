@@ -1,4 +1,5 @@
 //! Define the [`HashFunction`] trait as well as standard hash functions.
+use sha2::Digest;
 
 /// Abstraction of hash function used by c14n algorithms.
 pub trait HashFunction {
@@ -16,20 +17,39 @@ pub trait HashFunction {
 }
 
 /// The [SHA-256](https://en.wikipedia.org/wiki/SHA-2) [`HashFunction`]
-pub struct Sha256(hmac_sha256::Hash);
+pub struct Sha256(sha2::Sha256);
 
 impl HashFunction for Sha256 {
     type Output = [u8; 32];
 
     fn initialize() -> Self {
-        Sha256(hmac_sha256::Hash::new())
+        Sha256(sha2::Sha256::new())
     }
 
     fn update(&mut self, data: impl AsRef<[u8]>) {
-        self.0.update(data);
+        self.0.update(data.as_ref());
     }
 
     fn finalize(self) -> Self::Output {
-        self.0.finalize()
+        self.0.finalize().into()
+    }
+}
+
+/// The [SHA-384](https://en.wikipedia.org/wiki/SHA-2) [`HashFunction`]
+pub struct Sha384(sha2::Sha384);
+
+impl HashFunction for Sha384 {
+    type Output = [u8; 48];
+
+    fn initialize() -> Self {
+        Sha384(sha2::Sha384::new())
+    }
+
+    fn update(&mut self, data: impl AsRef<[u8]>) {
+        self.0.update(data.as_ref());
+    }
+
+    fn finalize(self) -> Self::Output {
+        self.0.finalize().into()
     }
 }

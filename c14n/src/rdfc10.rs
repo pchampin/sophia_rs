@@ -15,8 +15,8 @@ use sophia_api::term::{BnodeId, Term};
 use crate::C14nError;
 use crate::_c14n_term::{cmp_c14n_terms, C14nTerm};
 use crate::_cnq::nq;
-use crate::hash::{HashFunction, Sha256};
 use crate::_permutations::for_each_permutation_of;
+use crate::hash::{HashFunction, Sha256};
 
 /// Return a canonical N-quads representation of `d`, where
 /// + blank nodes are canonically [relabelled](`relabel`) with
@@ -731,5 +731,31 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
             [b'?', ..] => VarName::new_unchecked(&txt[1..]).into_term(),
             _ => panic!("ez_term can not parse this"),
         }
+    }
+
+    #[test]
+    fn example2_sha384() {
+        let dataset = ez_quads(&[
+            "<http://example.com/#p> <http://example.com/#q> _:e0 .",
+            "<http://example.com/#p> <http://example.com/#r> _:e1 .",
+            "_:e0 <http://example.com/#s> <http://example.com/#u> .",
+            "_:e1 <http://example.com/#t> <http://example.com/#u> .",
+        ]);
+        let exp = r#"<http://example.com/#p> <http://example.com/#q> _:c14n1 .
+<http://example.com/#p> <http://example.com/#r> _:c14n0 .
+_:c14n0 <http://example.com/#t> <http://example.com/#u> .
+_:c14n1 <http://example.com/#s> <http://example.com/#u> .
+"#;
+        let mut dout = Vec::<u8>::new();
+        normalize_with::<crate::hash::Sha384, _, _>(
+            &dataset,
+            &mut dout,
+            DEFAULT_DEPTH_FACTOR,
+            DEFAULT_PERMUTATION_LIMIT,
+        )
+        .unwrap();
+        let got = unsafe { String::from_utf8_unchecked(dout) };
+        println!(">>>> GOT\n{}>>>> EXPECTED\n{}<<<<", got, exp);
+        assert!(got == exp);
     }
 }
