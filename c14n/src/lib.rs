@@ -19,6 +19,7 @@ mod _c14n_term;
 mod _cnq;
 mod _permutations;
 
+pub mod hash;
 pub mod rdfc10;
 
 use thiserror::Error;

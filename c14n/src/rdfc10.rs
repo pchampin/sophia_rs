@@ -15,15 +15,19 @@ use sophia_api::term::{BnodeId, Term};
 use crate::C14nError;
 use crate::_c14n_term::{cmp_c14n_terms, C14nTerm};
 use crate::_cnq::nq;
+use crate::hash::{HashFunction, Sha256};
 use crate::_permutations::for_each_permutation_of;
 
 /// Return a canonical N-quads representation of `d`, where
-/// - blank nodes are canonically [relabelled](`relabel`) with the [`DEFAULT_DEPTH_FACTOR`],
+/// + blank nodes are canonically [relabelled](`relabel`) with
+///   - the [SHA-256](Sha256) hash function,
+///   - the [`DEFAULT_DEPTH_FACTOR`],
+///   - the [`DEFAULT_PERMUTATION_LIMIT`];
 /// - quads are sorted in codepoint order.
 ///
 /// See also [`normalize_with`].
 pub fn normalize<D: Dataset, W: io::Write>(d: &D, w: W) -> Result<(), C14nError<D::Error>> {
-    normalize_with(d, w, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
+    normalize_with::<Sha256, D, W>(d, w, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
 /// Return a canonical N-quads representation of `d`, where
@@ -31,13 +35,13 @@ pub fn normalize<D: Dataset, W: io::Write>(d: &D, w: W) -> Result<(), C14nError<
 /// - quads are sorted in codepoint order.
 ///
 /// See also [`normalize`].
-pub fn normalize_with<D: Dataset, W: io::Write>(
+pub fn normalize_with<H: HashFunction, D: Dataset, W: io::Write>(
     d: &D,
     mut w: W,
     depth_factor: f32,
     permutation_limit: usize,
 ) -> Result<(), C14nError<D::Error>> {
-    let (mut quads, _) = relabel_with(d, depth_factor, permutation_limit)?;
+    let (mut quads, _) = relabel_with::<H, D>(d, depth_factor, permutation_limit)?;
     let mut buf1 = String::new();
     let mut buf2 = String::new();
     // we sort the quads, but comparing the terms based on ther NQ serialization,
@@ -75,7 +79,7 @@ pub fn normalize_with<D: Dataset, W: io::Write>(
 ///
 /// See also [`normalize`].
 pub fn relabel<D: Dataset>(d: &D) -> Result<(C14nQuads<D>, C14nIdMap), C14nError<D::Error>> {
-    relabel_with(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
+    relabel_with::<Sha256, D>(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
 /// The default value of `depth_factor` in [`normalize`] and [`relabel`].
@@ -94,7 +98,7 @@ pub const DEFAULT_PERMUTATION_LIMIT: usize = 6;
 /// Implements <https://www.w3.org/TR/rdf-canon/#canon-algorithm>
 ///
 /// See also [`relabel`], [`normalize_with`].
-pub fn relabel_with<'a, D: Dataset>(
+pub fn relabel_with<'a, H: HashFunction, D: Dataset>(
     d: &'a D,
     depth_factor: f32,
     permutation_limit: usize,
@@ -103,7 +107,7 @@ pub fn relabel_with<'a, D: Dataset>(
         d.quads().map(|res| res.map(Quad::to_spog)).collect();
     let quads = quads?;
     // Step 1
-    let mut state = C14nState::new(depth_factor, permutation_limit);
+    let mut state = C14nState::<H, _>::new(depth_factor, permutation_limit);
     // Step 2
     for quad in &quads {
         for component in iter_spog(quad.spog()) {
@@ -129,7 +133,7 @@ pub fn relabel_with<'a, D: Dataset>(
     }
     // Step 3
     for (bnid, quads) in state.b2q.iter() {
-        let hash = hash_first_degree_quads(bnid, &quads[..]);
+        let hash = hash_first_degree_quads::<H, _>(bnid, &quads[..]);
         let bnid2 = Rc::clone(bnid);
         match state.h2b.entry(hash) {
             Vacant(e) => {
@@ -199,19 +203,19 @@ type C14nQuads<'a, D> = Vec<Spog<C14nTerm<DTerm<'a, D>>>>;
 type C14nIdMap = BTreeMap<Rc<str>, BnodeId<Rc<str>>>;
 
 #[derive(Clone, Debug)]
-struct C14nState<'a, T: Term> {
+struct C14nState<'a, H: HashFunction, T: Term> {
     b2q: BTreeMap<Rc<str>, Vec<&'a Spog<T>>>,
-    h2b: BTreeMap<Hash, Vec<Rc<str>>>,
+    h2b: BTreeMap<H::Output, Vec<Rc<str>>>,
     canonical: BnodeIssuer,
     /// Not specified in the spec: memozing the results of hash 1st degree
-    b2h: BTreeMap<Rc<str>, Hash>,
+    b2h: BTreeMap<Rc<str>, H::Output>,
     /// Not specified in the spec: maximum recursion factor in hash_n_degree_quads
     depth_factor: f32,
     /// Not specified in the spec: maximum number of nodes on which permutations will be computed
     permutation_limit: usize,
 }
 
-impl<'a, T: Term> C14nState<'a, T> {
+impl<'a, H: HashFunction, T: Term> C14nState<'a, H, T> {
     fn new(depth_factor: f32, permutation_limit: usize) -> Self {
         C14nState {
             b2q: BTreeMap::new(),
@@ -230,8 +234,8 @@ impl<'a, T: Term> C14nState<'a, T> {
         quad: &Spog<T>,
         issuer: &BnodeIssuer,
         position: &str,
-    ) -> Hash {
-        let mut input = hmac_sha256::Hash::new();
+    ) -> H::Output {
+        let mut input = H::initialize();
         input.update(position.as_bytes());
         if position != "g" {
             input.update(b"<");
@@ -258,7 +262,7 @@ impl<'a, T: Term> C14nState<'a, T> {
         identifier: &str,
         issuer: &BnodeIssuer,
         depth: usize,
-    ) -> Result<(Hash, BnodeIssuer), C14nError<E>> {
+    ) -> Result<(H::Output, BnodeIssuer), C14nError<E>> {
         if depth as f32 > self.depth_factor * self.b2q.len() as f32 {
             return Err(C14nError::ToxicGraph(format!(
                 "too many recursions (limit={} per bnode)",
@@ -266,7 +270,7 @@ impl<'a, T: Term> C14nState<'a, T> {
             )));
         }
         // Step 1
-        let mut hn = BTreeMap::<Hash, Vec<Box<str>>>::new();
+        let mut hn = BTreeMap::<H::Output, Vec<Box<str>>>::new();
         // Step 2
         let quads = self.b2q.get(identifier).unwrap();
         // Step 3
@@ -289,7 +293,7 @@ impl<'a, T: Term> C14nState<'a, T> {
             }
         }
         // Step 4
-        let mut data_to_hash = hmac_sha256::Hash::new();
+        let mut data_to_hash = H::initialize();
         // Step 5
         let mut ret_issuer: Option<BnodeIssuer> = None;
         for (related_hash, mut blank_node) in hn.into_iter() {
@@ -404,12 +408,10 @@ impl BnodeIssuer {
     }
 }
 
-type Hash = [u8; 32];
-
 /// Implements https://www.w3.org/TR/rdf-canon/#hash-1d-quads
 /// with the difference that the C14n state is not passed;
 /// instead, the quad list corresponding to bnid is passed directly
-fn hash_first_degree_quads<Q: Quad>(bnid: &str, quads: &[&Q]) -> Hash {
+fn hash_first_degree_quads<H: HashFunction, Q: Quad>(bnid: &str, quads: &[&Q]) -> H::Output {
     let mut nquads: Vec<_> = quads
         .iter()
         .map(|q| {
@@ -425,7 +427,7 @@ fn hash_first_degree_quads<Q: Quad>(bnid: &str, quads: &[&Q]) -> Hash {
         })
         .collect();
     nquads.sort_unstable();
-    let mut hasher = hmac_sha256::Hash::new();
+    let mut hasher = H::initialize();
     for line in nquads.into_iter() {
         hasher.update(&line);
     }
@@ -449,9 +451,9 @@ fn nq_for_hash<T: Term>(term: T, buffer: &mut String, ref_bnid: &str) {
     }
 }
 
-fn hex(hash: &Hash) -> String {
+fn hex(hash: &impl AsRef<[u8]>) -> String {
     let mut digest = String::with_capacity(64);
-    for b in hash {
+    for b in hash.as_ref() {
         write!(&mut digest, "{:02x}", b).unwrap();
     }
     digest
@@ -540,7 +542,12 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
         ]);
         let mut output = Vec::<u8>::new();
         // set depth_factor too low for this graph
-        let res = normalize_with(&dataset, &mut output, 0.5, 2 * DEFAULT_PERMUTATION_LIMIT);
+        let res = normalize_with::<Sha256, _, _>(
+            &dataset,
+            &mut output,
+            0.5,
+            2 * DEFAULT_PERMUTATION_LIMIT,
+        );
         assert!(matches!(res, Err(C14nError::ToxicGraph(_))));
     }
 
@@ -620,7 +627,8 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
         ]);
         let mut output = Vec::<u8>::new();
         // set permutation limit too low for this graph
-        let res = normalize_with(&dataset, &mut output, 2.0 * DEFAULT_DEPTH_FACTOR, 3);
+        let res =
+            normalize_with::<Sha256, _, _>(&dataset, &mut output, 2.0 * DEFAULT_DEPTH_FACTOR, 3);
         assert!(matches!(res, Err(C14nError::ToxicGraph(_))));
     }
 
