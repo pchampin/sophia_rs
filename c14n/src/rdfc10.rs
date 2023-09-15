@@ -16,7 +16,7 @@ use crate::C14nError;
 use crate::_c14n_term::{cmp_c14n_terms, C14nTerm};
 use crate::_cnq::nq;
 use crate::_permutations::for_each_permutation_of;
-use crate::hash::{HashFunction, Sha256};
+use crate::hash::{HashFunction, Sha256, Sha384};
 
 /// Return a canonical N-quads representation of `d`, where
 /// + blank nodes are canonically [relabelled](`relabel`) with
@@ -28,6 +28,18 @@ use crate::hash::{HashFunction, Sha256};
 /// See also [`normalize_with`].
 pub fn normalize<D: Dataset, W: io::Write>(d: &D, w: W) -> Result<(), C14nError<D::Error>> {
     normalize_with::<Sha256, D, W>(d, w, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
+}
+
+/// Return a canonical N-quads representation of `d`, where
+/// + blank nodes are canonically [relabelled](`relabel`) with
+///   - the [SHA-384](Sha384) hash function,
+///   - the [`DEFAULT_DEPTH_FACTOR`],
+///   - the [`DEFAULT_PERMUTATION_LIMIT`];
+/// - quads are sorted in codepoint order.
+///
+/// See also [`normalize_with`].
+pub fn normalize_sha384<D: Dataset, W: io::Write>(d: &D, w: W) -> Result<(), C14nError<D::Error>> {
+    normalize_with::<Sha384, D, W>(d, w, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
 /// Return a canonical N-quads representation of `d`, where
@@ -73,7 +85,10 @@ pub fn normalize_with<H: HashFunction, D: Dataset, W: io::Write>(
 
 /// Return a [`Dataset`] isomorphic to `d`, with canonical blank node labels.
 ///
-/// This calls [`relabel_with`] with the [`DEFAULT_DEPTH_FACTOR`] value.
+/// This calls [`relabel_with`] with
+///   - the [SHA-256](Sha256) hash function,
+///   - the [`DEFAULT_DEPTH_FACTOR`],
+///   - the [`DEFAULT_PERMUTATION_LIMIT`].
 ///
 /// Implements <https://www.w3.org/TR/rdf-canon/#canon-algorithm>
 ///
@@ -82,11 +97,19 @@ pub fn relabel<D: Dataset>(d: &D) -> Result<(C14nQuads<D>, C14nIdMap), C14nError
     relabel_with::<Sha256, D>(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
-/// The default value of `depth_factor` in [`normalize`] and [`relabel`].
-pub const DEFAULT_DEPTH_FACTOR: f32 = 1.0;
-
-/// The default value of `permutation_limit` in [`normalize`] and [`relabel`].
-pub const DEFAULT_PERMUTATION_LIMIT: usize = 6;
+/// Return a [`Dataset`] isomorphic to `d`, with canonical blank node labels.
+///
+/// This calls [`relabel_with`] with
+///   - the [SHA-384](Sha384) hash function,
+///   - the [`DEFAULT_DEPTH_FACTOR`],
+///   - the [`DEFAULT_PERMUTATION_LIMIT`].
+///
+/// Implements <https://www.w3.org/TR/rdf-canon/#canon-algorithm>
+///
+/// See also [`normalize`].
+pub fn relabel_sha384<D: Dataset>(d: &D) -> Result<(C14nQuads<D>, C14nIdMap), C14nError<D::Error>> {
+    relabel_with::<Sha384, D>(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
+}
 
 /// Return a [`Dataset`] isomorphic to `d`, with canonical blank node labels,
 /// restricting the number of recursion of RDFC-1.0 to `depth_factor` per blank node,
@@ -195,12 +218,18 @@ pub fn relabel_with<'a, H: HashFunction, D: Dataset>(
     Ok((quads, issued))
 }
 
+/// The default value of `depth_factor` in [`normalize`] and [`relabel`].
+pub const DEFAULT_DEPTH_FACTOR: f32 = 1.0;
+
+/// The default value of `permutation_limit` in [`normalize`] and [`relabel`].
+pub const DEFAULT_PERMUTATION_LIMIT: usize = 6;
+
 /// An impl of [`Dataset`] that contains canonical labels for blank nodes,
 /// and guarantees that
-type C14nQuads<'a, D> = Vec<Spog<C14nTerm<DTerm<'a, D>>>>;
+pub type C14nQuads<'a, D> = Vec<Spog<C14nTerm<DTerm<'a, D>>>>;
 
 /// A n identifier map as returned by [`relabel`] and [`relabel_with`]
-type C14nIdMap = BTreeMap<Rc<str>, BnodeId<Rc<str>>>;
+pub type C14nIdMap = BTreeMap<Rc<str>, BnodeId<Rc<str>>>;
 
 #[derive(Clone, Debug)]
 struct C14nState<'a, H: HashFunction, T: Term> {
@@ -747,13 +776,7 @@ _:c14n0 <http://example.com/#t> <http://example.com/#u> .
 _:c14n1 <http://example.com/#s> <http://example.com/#u> .
 "#;
         let mut dout = Vec::<u8>::new();
-        normalize_with::<crate::hash::Sha384, _, _>(
-            &dataset,
-            &mut dout,
-            DEFAULT_DEPTH_FACTOR,
-            DEFAULT_PERMUTATION_LIMIT,
-        )
-        .unwrap();
+        normalize_sha384(&dataset, &mut dout).unwrap();
         let got = unsafe { String::from_utf8_unchecked(dout) };
         println!(">>>> GOT\n{}>>>> EXPECTED\n{}<<<<", got, exp);
         assert!(got == exp);
