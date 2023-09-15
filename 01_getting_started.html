@@ -173,11 +173,10 @@
 <p>Following a short example how to build a graph, mutate it and serialize it back.</p>
 <p>Add the sophia crate to your dependencies in <code>Cargo.toml</code></p>
 <pre><code class="language-bash">[dependencies]
-sophia = &quot;0.8.0-alpha.1&quot;
+sophia = &quot;0.8.0-alpha.2&quot;
 </code></pre>
-<p>Add these lines of code and run the programm.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
+<p>Add these lines of code and run the program.</p>
+<pre><code class="language-rust noplayground"><span class="boring">extern crate sophia;
 </span>use sophia::api::prelude::*;
 use sophia::api::ns::Namespace;
 use sophia::inmem::graph::LightGraph;
@@ -207,8 +206,7 @@ graph.insert(
 let mut nt_stringifier = NtSerializer::new_stringifier();
 let example2 = nt_stringifier.serialize_graph(&amp;graph)?.as_str();
 println!(&quot;The resulting graph:\n{}&quot;, example2);
-<span class="boring">Ok::&lt;(), Box&lt;dyn std::error::Error&gt;&gt;(())
-</span><span class="boring">}</span></code></pre></pre>
+<span class="boring">Ok::&lt;(), Box&lt;dyn std::error::Error&gt;&gt;(())</span></code></pre>
 <p>You should get the following output:</p>
 <pre><code class="language-text">The resulting graph:
 &lt;http://example.org/alice&gt; &lt;http://xmlns.com/foaf/0.1/name&gt; &quot;Alice&quot;.

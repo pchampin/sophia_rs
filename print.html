@@ -245,11 +245,10 @@ $ git submodule update
 <p>Following a short example how to build a graph, mutate it and serialize it back.</p>
 <p>Add the sophia crate to your dependencies in <code>Cargo.toml</code></p>
 <pre><code class="language-bash">[dependencies]
-sophia = &quot;0.8.0-alpha.1&quot;
+sophia = &quot;0.8.0-alpha.2&quot;
 </code></pre>
-<p>Add these lines of code and run the programm.</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
+<p>Add these lines of code and run the program.</p>
+<pre><code class="language-rust noplayground"><span class="boring">extern crate sophia;
 </span>use sophia::api::prelude::*;
 use sophia::api::ns::Namespace;
 use sophia::inmem::graph::LightGraph;
@@ -279,8 +278,7 @@ graph.insert(
 let mut nt_stringifier = NtSerializer::new_stringifier();
 let example2 = nt_stringifier.serialize_graph(&amp;graph)?.as_str();
 println!(&quot;The resulting graph:\n{}&quot;, example2);
-<span class="boring">Ok::&lt;(), Box&lt;dyn std::error::Error&gt;&gt;(())
-</span><span class="boring">}</span></code></pre></pre>
+<span class="boring">Ok::&lt;(), Box&lt;dyn std::error::Error&gt;&gt;(())</span></code></pre>
 <p>You should get the following output:</p>
 <pre><code class="language-text">The resulting graph:
 &lt;http://example.org/alice&gt; &lt;http://xmlns.com/foaf/0.1/name&gt; &quot;Alice&quot;.
@@ -291,15 +289,15 @@ println!(&quot;The resulting graph:\n{}&quot;, example2);
 <div style="break-before: page; page-break-before: always;"></div><h1 id="changes-since-version-07"><a class="header" href="#changes-since-version-07">Changes since version 0.7</a></h1>
 <p>Sophia has been heavily refactored between version 0.7 and 0.8. This refactoring was triggered by the use of <a href="https://blog.rust-lang.org/2022/10/28/gats-stabilization.html">Generic Ascciated Types</a> (GATs), that have finally landed in stable Rust. But this was also an opportunity to make a number of other changes.</p>
 <h2 id="the-benefit-of-gats"><a class="header" href="#the-benefit-of-gats">The benefit of GATs</a></h2>
-<p>The main benefit of GATs is to get rid of <a href="https://docs.rs/sophia/0.7.2/sophia/triple/streaming_mode/index.html">odd patterns</a> that were introduced in Sophia in order to keep it genetic enough to support multiple implementation choices. The drawback of this approach was that implementing Sophia's traits (especially <code>Graph</code> and <code>Dataset</code>) could be cumbersome.</p>
+<p>The main benefit of GATs is to get rid of <a href="https://docs.rs/sophia/0.7.2/sophia/triple/streaming_mode/index.html">odd patterns</a> that were introduced in Sophia in order to keep it generic enough to support multiple implementation choices. The drawback of this approach was that implementing Sophia's traits (especially <code>Graph</code> and <code>Dataset</code>) could be cumbersome.</p>
 <p>As an example, the <a href="https://docs.rs/sophia/0.7.2/sophia/graph/trait.Graph.html"><code>Graph</code></a> trait used to be</p>
-<pre><code class="language-rust noplayground">pub trait Graph {
+<pre><code class="language-rust noplayground ignore">pub trait Graph {
     type Triple: TripleStreamingMode;
     // ...
 }</code></pre>
 <p>Given a type <code>MyGraph</code> implementing that trait, the actual type of triples yielded by <a href="https://docs.rs/sophia/0.7.2/sophia/graph/trait.Graph.html#tymethod.triples"><code>MyGraph::triples</code></a> could not be immediately determined, and was <a href="https://docs.rs/sophia/latest/sophia/graph/type.GTriple.html">quite intricate</a>. This could be inconvenient for some users of <code>MyGraph</code>, and was usually cumbersome for the implementer.</p>
 <p>Compare to the new definition of the <code>Graph</code> trait:</p>
-<pre><code class="language-rust noplayground">pub trait Graph {
+<pre><code class="language-rust noplayground ignore">pub trait Graph {
     type Triple&lt;'x&gt;: Triple where Self: 'x;
     // ...
 }</code></pre>
@@ -338,11 +336,16 @@ or <a href="https://docs.rs/sophia_api/0.7.2/sophia_api/graph/trait.Graph.html#m
 (and similarly for <code>Dataset</code>: <code>quads_with_s</code>, etc.).</p>
 <p>All these methods have disappeared in favor of <code>triples_matching</code>,
 so that instead of:</p>
-<pre><code class="language-rust noplayground">for t in g.triples_with_s(mys) {
+<pre><code class="language-rust noplayground ignore">for t in g.triples_with_s(mys) {
     // ...
 }</code></pre>
 <p>one should now write</p>
-<pre><code class="language-rust noplayground">for t in g.triples_matching([mys], Any, Any) {
+<pre><code class="language-rust noplayground"><span class="boring">extern crate sophia;
+</span><span class="boring">use sophia::api::graph::Graph;
+</span><span class="boring">use sophia::api::term::matcher::Any;
+</span><span class="boring">let g: Vec&lt;[i32; 3]&gt; = vec![]; // dummy graph type
+</span><span class="boring">let mys = 42;
+</span>for t in g.triples_matching([mys], Any, Any) {
     // ...
 }</code></pre>
 <p>and the performances will be the same
