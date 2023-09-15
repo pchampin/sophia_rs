@@ -10,8 +10,9 @@ sophia = "0.8.0-alpha.1"
 ```
 
 
-Add these lines of code and run the programm.
-```rust
+Add these lines of code and run the program.
+```rust,noplayground
+# extern crate sophia;
 use sophia::api::prelude::*;
 use sophia::api::ns::Namespace;
 use sophia::inmem::graph::LightGraph;

@@ -4,10 +4,10 @@ Sophia has been heavily refactored between version 0.7 and 0.8. This refactoring
 
 ## The benefit of GATs
 
-The main benefit of GATs is to get rid of [odd patterns](https://docs.rs/sophia/0.7.2/sophia/triple/streaming_mode/index.html) that were introduced in Sophia in order to keep it genetic enough to support multiple implementation choices. The drawback of this approach was that implementing Sophia's traits (especially `Graph` and `Dataset`) could be cumbersome.
+The main benefit of GATs is to get rid of [odd patterns](https://docs.rs/sophia/0.7.2/sophia/triple/streaming_mode/index.html) that were introduced in Sophia in order to keep it generic enough to support multiple implementation choices. The drawback of this approach was that implementing Sophia's traits (especially `Graph` and `Dataset`) could be cumbersome.
 
 As an example, the [`Graph`](https://docs.rs/sophia/0.7.2/sophia/graph/trait.Graph.html) trait used to be
-```rust,noplayground
+```rust,noplayground,ignore
 pub trait Graph {
     type Triple: TripleStreamingMode;
     // ...
@@ -17,7 +17,7 @@ pub trait Graph {
 Given a type `MyGraph` implementing that trait, the actual type of triples yielded by [`MyGraph::triples`](https://docs.rs/sophia/0.7.2/sophia/graph/trait.Graph.html#tymethod.triples) could not be immediately determined, and was [quite intricate](https://docs.rs/sophia/latest/sophia/graph/type.GTriple.html). This could be inconvenient for some users of `MyGraph`, and was usually cumbersome for the implementer.
 
 Compare to the new definition of the `Graph` trait:
-```rust,noplayground
+```rust,noplayground,ignore
 pub trait Graph {
     type Triple<'x>: Triple where Self: 'x;
     // ...
@@ -68,13 +68,18 @@ or [`triples_with_po`](https://docs.rs/sophia_api/0.7.2/sophia_api/graph/trait.G
 
 All these methods have disappeared in favor of `triples_matching`,
 so that instead of:
-```rust,noplayground
+```rust,noplayground,ignore
 for t in g.triples_with_s(mys) {
     // ...
 }
 ```
 one should now write
 ```rust,noplayground
+# extern crate sophia;
+# use sophia::api::graph::Graph;
+# use sophia::api::term::matcher::Any;
+# let g: Vec<[i32; 3]> = vec![]; // dummy graph type
+# let mys = 42;
 for t in g.triples_matching([mys], Any, Any) {
     // ...
 }
