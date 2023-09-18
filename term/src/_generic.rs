@@ -155,8 +155,7 @@ impl<T: Borrow<str> + Debug, T2: Term> PartialEq<T2> for GenericTerm<T> {
     }
 }
 
-impl<T: Borrow<str> + Debug> Eq for GenericTerm<T> {
-}
+impl<T: Borrow<str> + Debug> Eq for GenericTerm<T> {}
 
 impl<T: Borrow<str> + Debug> std::hash::Hash for GenericTerm<T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
@@ -342,8 +341,7 @@ impl<T: Borrow<str> + Debug, T2: Term> PartialEq<T2> for GenericLiteral<T> {
     }
 }
 
-impl<T: Borrow<str> + Debug> Eq for GenericLiteral<T> {
-}
+impl<T: Borrow<str> + Debug> Eq for GenericLiteral<T> {}
 
 impl<T: Borrow<str> + Debug> std::hash::Hash for GenericLiteral<T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
