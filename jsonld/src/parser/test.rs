@@ -11,7 +11,7 @@ use crate::{JsonLdOptions, JsonLdParser};
 fn check_no_loader() {
     let loader = crate::loader::NoLoader::default();
     let options = JsonLdOptions::new().with_document_loader(loader);
-    let p = JsonLdParser::new_with(options);
+    let p = JsonLdParser::new_with_options(options);
     let got: TestDataset = p
         .parse_str(r#"{"@id": "tag:foo", "tag:bar": "BAZ"}"#)
         .collect_quads()
@@ -29,7 +29,7 @@ fn check_no_loader() {
 fn check_fs_loader() {
     let loader = crate::loader::FsLoader::default();
     let options = JsonLdOptions::new().with_document_loader(loader);
-    let p = JsonLdParser::new_with(options);
+    let p = JsonLdParser::new_with_options(options);
     let got: TestDataset = p
         .parse_str(r#"{"@id": "tag:foo", "tag:bar": "BAZ"}"#)
         .collect_quads()
@@ -47,7 +47,7 @@ fn check_fs_loader() {
 fn check_static_loader() {
     let loader = crate::loader::StaticLoader::default();
     let options = JsonLdOptions::new().with_document_loader(loader);
-    let p = JsonLdParser::new_with(options);
+    let p = JsonLdParser::new_with_options(options);
     let got: TestDataset = p
         .parse_str(r#"{"@id": "tag:foo", "tag:bar": "BAZ"}"#)
         .collect_quads()
@@ -66,7 +66,7 @@ fn check_static_loader() {
 fn check_surf_loader() {
     let loader = crate::loader::SurfLoader::new(0);
     let options = JsonLdOptions::new().with_document_loader(loader);
-    let p = JsonLdParser::new_with(options);
+    let p = JsonLdParser::new_with_options(options);
     let got: TestDataset = p
         .parse_str(r#"{"@id": "tag:foo", "tag:bar": "BAZ"}"#)
         .collect_quads()
@@ -87,7 +87,7 @@ fn check_chain_loader() {
         crate::loader::FsLoader::default(),
     );
     let options = JsonLdOptions::new().with_document_loader(loader);
-    let p = JsonLdParser::new_with(options);
+    let p = JsonLdParser::new_with_options(options);
     let got: TestDataset = p
         .parse_str(r#"{"@id": "tag:foo", "tag:bar": "BAZ"}"#)
         .collect_quads()

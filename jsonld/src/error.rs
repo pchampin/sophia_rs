@@ -83,15 +83,3 @@ where
         JsonLdError::ExpandError(format!("{value}"))
     }
 }
-
-impl JsonLdError {
-    /// Make a new `InvalidJsonLiteral` error
-    pub fn invalid_json_literal(other: Meta<Error<Span>, Span>, literal_start: usize) -> Self {
-        let location = Span::new(
-            other.1.start() + literal_start,
-            other.1.end() + literal_start,
-        );
-        let error = other.0;
-        JsonLdError::InvalidJsonLiteral { error, location }
-    }
-}

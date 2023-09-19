@@ -33,7 +33,7 @@ pub struct Engine<'a, L> {
 
 impl<'a, L> Engine<'a, L> {
     /// Build a new JSON-LD serializer writing to `write`, with the given options.
-    pub fn new_with(options: &'a JsonLdOptions<L>) -> Self {
+    pub fn new_with_options(options: &'a JsonLdOptions<L>) -> Self {
         Engine {
             options,
             index: HashMap::new(),
@@ -312,9 +312,7 @@ impl<'a, L> Engine<'a, L> {
                     }
                 }
                 if dt_str == RDF_JSON {
-                    let literal_start = 0; // TODO extract actual position; this will require changing the signature of convert_rdf_object, to accept a Meta<_, Span>
-                    let _json_value = JsonValue::parse_str(txt, |span| span)
-                        .map_err(|err| JsonLdError::invalid_json_literal(err, literal_start))?;
+                    let _json_value = JsonValue::parse_str(txt, |span| span)?;
                     // TODO Ideally, we should be able to strip the metadata like that:
                     //let json_value = json_value.map_metadata_recursively(|_| ());
                     // but because of a bug <https://github.com/timothee-haudebourg/json-syntax/issues/3>

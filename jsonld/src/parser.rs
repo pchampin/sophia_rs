@@ -50,7 +50,7 @@ impl JsonLdParser<NoLoader> {
 
 impl<L> JsonLdParser<L> {
     /// Make a new [`JsonLdParser`] with the given options
-    pub fn new_with(options: JsonLdOptions<L>) -> Self {
+    pub fn new_with_options(options: JsonLdOptions<L>) -> Self {
         JsonLdParser { options }
     }
 

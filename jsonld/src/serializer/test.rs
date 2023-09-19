@@ -94,7 +94,7 @@ fn native_value() -> TestResult {
         .unwrap();
 
     let options = JsonLdOptions::new().with_use_native_types(true);
-    let got = Jsonifier::new_jsonifier_with(options)
+    let got = Jsonifier::new_jsonifier_with_options(options)
         .serialize_dataset(&dataset)?
         .to_json();
     let exp = json_syntax::Value::parse_str(

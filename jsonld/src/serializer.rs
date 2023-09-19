@@ -32,13 +32,13 @@ impl<W> JsonLdSerializer<W> {
     /// Build a new JSON-LD serializer with the default options (no document loader).
     #[inline]
     pub fn new(target: W) -> Self {
-        Self::new_with(target, JsonLdOptions::default())
+        Self::new_with_options(target, JsonLdOptions::default())
     }
 }
 
 impl<W, L> JsonLdSerializer<W, L> {
     /// Build a new JSON-LD serializer writing to `write`, with the given options.
-    pub fn new_with(target: W, options: JsonLdOptions<L>) -> Self {
+    pub fn new_with_options(target: W, options: JsonLdOptions<L>) -> Self {
         JsonLdSerializer { target, options }
     }
 
@@ -55,7 +55,7 @@ impl<W, L> JsonLdSerializer<W, L> {
     where
         QS: QuadSource,
     {
-        let mut engine = engine::Engine::new_with(&self.options);
+        let mut engine = engine::Engine::new_with_options(&self.options);
         engine.process_quads(source)?;
         engine.into_json().map_err(SinkError)
     }
@@ -123,8 +123,8 @@ impl Jsonifier {
 impl<L> Jsonifier<L> {
     /// Create a new serializer which targets a [`JsonValue`] with a custom options.
     #[inline]
-    pub fn new_jsonifier_with(options: JsonLdOptions<L>) -> Self {
-        JsonLdSerializer::new_with(JsonTarget(JsonValue::Null), options)
+    pub fn new_jsonifier_with_options(options: JsonLdOptions<L>) -> Self {
+        JsonLdSerializer::new_with_options(JsonTarget(JsonValue::Null), options)
     }
 
     /// Get a reference to the converted JsonValue
@@ -173,8 +173,8 @@ impl JsonLdStringifier<NoLoader> {
 impl<L> JsonLdStringifier<L> {
     /// Create a new serializer which targets a string with a custom options.
     #[inline]
-    pub fn new_stringifier_with(options: JsonLdOptions<L>) -> Self {
-        JsonLdSerializer::new_with(Vec::new(), options)
+    pub fn new_stringifier_with_options(options: JsonLdOptions<L>) -> Self {
+        JsonLdSerializer::new_with_options(Vec::new(), options)
     }
 }
 
