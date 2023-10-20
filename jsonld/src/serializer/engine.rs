@@ -32,7 +32,7 @@ pub struct Engine<'a, L> {
 }
 
 impl<'a, L> Engine<'a, L> {
-    /// Build a new JSON-LD serializer writing to `write`, with the given options.
+    /// Build a new conversion engine
     pub fn new_with_options(options: &'a JsonLdOptions<L>) -> Self {
         Engine {
             options,
@@ -69,10 +69,15 @@ impl<'a, L> Engine<'a, L> {
             let is = self.index(g_id.clone(), s_id.clone());
             if q.g().is_some() {
                 let ig = self.index(" ".to_string(), g_id.clone());
-                self.node[ig].push_if_new("@graph".to_string(), RdfObject::Node(is, s_id));
+                self.node[ig].push_if_new("@graph", RdfObject::Node(is, s_id));
             }
             let obj = self.make_rdf_object(q.o(), &g_id);
-            self.node[is].push_if_new(q.p().as_id(), obj);
+            let p = if rdf::type_ == q.p() && obj.is_iri() && !self.options.use_rdf_type() {
+                Box::from("@type")
+            } else {
+                q.p().as_id()
+            };
+            self.node[is].push_if_new(p, obj);
 
             if q.s().is_bnode() {
                 if rdf::rest == q.p() && rdf::nil == q.o() {
@@ -247,12 +252,12 @@ impl<'a, L> Engine<'a, L> {
             if key.as_ref() == "@graph" {
                 continue;
             }
-            let (key, vals) = if !self.options.use_rdf_type() && key.as_ref() == RDF_TYPE {
+            let (key, vals) = if key.as_ref() == "@type" {
                 let vals = vals
                     .iter()
                     .filter_map(|o| match o {
                         RdfObject::Node(_, nid) => Some(Meta::from(JsonValue::from(nid.as_ref()))),
-                        _ => None,
+                        _ => unreachable!(),
                     })
                     .collect::<Vec<_>>();
                 ("@type", vals)
@@ -401,8 +406,8 @@ fn is_list_node(node: &HashMap<Box<str>, Vec<RdfObject>>) -> bool {
             .unwrap_or(false)
         && (node.len() == 2
             || node
-                .get(RDF_TYPE)
-                .map(|v| v.len() == 1 && v[0].is_node() && v[0].eq_node(RDF_LIST))
+                .get("@type")
+                .map(|v| v.len() == 1 && v[0].eq_node(RDF_LIST))
                 .unwrap_or(false))
 }
 
@@ -433,7 +438,6 @@ const RDF_LANGUAGE: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#language"
 const RDF_LIST: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#List";
 const RDF_NIL: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#nil";
 const RDF_REST: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#rest";
-const RDF_TYPE: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 const RDF_VALUE: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#value";
 const XSD_BOOLEAN: &str = "http://www.w3.org/2001/XMLSchema#boolean";
 const XSD_DOUBLE: &str = "http://www.w3.org/2001/XMLSchema#double";

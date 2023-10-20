@@ -18,6 +18,9 @@ impl RdfObject {
     pub fn is_node(&self) -> bool {
         matches!(self, RdfObject::Node(..))
     }
+    pub fn is_iri(&self) -> bool {
+        matches!(self, RdfObject::Node(_, id) if !id.starts_with("_:"))
+    }
     pub fn eq_node(&self, other_id: &str) -> bool {
         matches!(self, RdfObject::Node(_, id) if id.as_ref()==other_id)
     }
