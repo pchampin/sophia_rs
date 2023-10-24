@@ -2,6 +2,7 @@ use crate::Loader;
 use sophia_api::graph::CollectibleGraph;
 use sophia_api::ns::rdf;
 use sophia_api::term::matcher::Any;
+use sophia_api::MownStr;
 use sophia_api::{prelude::*, term::SimpleTerm};
 use sophia_iri::is_absolute_iri_ref;
 use std::borrow::Borrow;
@@ -510,6 +511,47 @@ where
                         error,
                     })
             })
+    }
+
+    /// A utility method for checking that a literal matches expected values,
+    /// and raise the correct error otherwise.
+    ///
+    /// * `value` is the value to check
+    /// * `datatype` is the expected datatype
+    /// * `lexical_values` is the list of expected values
+    ///   (empty slice if any value is acceptable)
+    /// * `predicate` is the predicate used to get value,
+    ///    (required to generate errors)
+    pub fn check_literal<'a, T: Term, U: Term>(
+        &self,
+        value: &'a SimpleTerm<'static>,
+        datatype: T,
+        lexical_forms: &[&str],
+        predicate: U,
+    ) -> ResourceResult<MownStr<'a>, G> {
+        let Some(dt) = value.datatype() else {
+            return Err(ResourceError::UnexpectedKind {
+                id: self.id.clone(),
+                predicate: predicate.into_term(),
+                found_kind: value.kind(),
+            });
+        };
+        if !Term::eq(dt.borrow_term(), datatype) {
+            return Err(ResourceError::UnexpectedDatatype {
+                id: self.id.clone(),
+                predicate: predicate.into_term(),
+                found_datatype: dt.into_term(),
+            });
+        }
+        let lex = value.lexical_form().unwrap();
+        if !lexical_forms.is_empty() && lexical_forms.iter().all(|i| *i != &*lex) {
+            return Err(ResourceError::UnexpectedValue {
+                id: self.id.clone(),
+                predicate: predicate.into_term(),
+                found_value: value.borrow_term().into_term(),
+            });
+        }
+        Ok(lex)
     }
 
     pub(crate) fn get_neighbour<T: Term>(

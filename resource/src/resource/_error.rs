@@ -59,6 +59,15 @@ pub enum ResourceError<E: Error> {
         /// The datatype that was found
         found_datatype: SimpleTerm<'static>,
     },
+    /// The literal was expected to have a different value
+    UnexpectedValue {
+        /// The identifier of the resource
+        id: SimpleTerm<'static>,
+        /// The predicate
+        predicate: SimpleTerm<'static>,
+        /// The datatype that was found
+        found_value: SimpleTerm<'static>,
+    },
 }
 
 impl<E: Error> ResourceError<E> {
@@ -77,6 +86,7 @@ impl<E: Error> ResourceError<E> {
             ResourceError::MissingType { id, .. } => id.as_simple(),
             ResourceError::UnexpectedKind { id, .. } => id.as_simple(),
             ResourceError::UnexpectedDatatype { id, .. } => id.as_simple(),
+            ResourceError::UnexpectedValue { id, .. } => id.as_simple(),
         }
     }
 }
