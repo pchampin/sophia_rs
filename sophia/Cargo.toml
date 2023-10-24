@@ -36,3 +36,6 @@ sophia_rio.workspace = true
 sophia_turtle.workspace = true
 sophia_term.workspace = true
 sophia_xml = { workspace = true, optional = true }
+
+[dev-dependencies]
+url.workspace = true

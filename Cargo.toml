@@ -52,6 +52,7 @@ rio_xml = { version = "0.8" }
 test-case = "3.1.0"
 thiserror = "1.0.32"
 tokio = { version="1.33.0", features = ["rt"] }
+url = "2.4.1"
 
 [profile.release]
 lto = true
