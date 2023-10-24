@@ -60,6 +60,12 @@ impl LocalLoader {
     fn ctype(&self, iri: &str) -> String {
         if iri.ends_with(".ttl") {
             "text/turtle".into()
+        } else if iri.ends_with(".nt") {
+            "application/n-triples".into()
+        } else if cfg!(feature = "jsonld") && iri.ends_with(".jsonld") {
+            "application/ld+json".into()
+        } else if cfg!(feature = "xml") && iri.ends_with(".rdf") {
+            "application/rdf+xml".into()
         } else {
             "application/octet-stream".into()
         }
@@ -80,7 +86,14 @@ impl Loader for LocalLoader {
                         // emulate conneg if there is no extension
                         let no_ext = iri.as_bytes()[iri.rfind(['.', '/']).unwrap_or(0)] != b'.';
                         if no_ext {
-                            for ext in ["ttl", "nt"] {
+                            for ext in [
+                                "ttl",
+                                "nt",
+                                #[cfg(feature = "jsonld")]
+                                "jsonld",
+                                #[cfg(feature = "xml")]
+                                "rdf",
+                            ] {
                                 let alt = Iri::new_unchecked(format!("{}.{}", iri, ext));
                                 if let Ok(res) = self.get(alt) {
                                     return Ok(res);

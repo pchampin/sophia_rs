@@ -49,6 +49,70 @@ fn get_file1_with_add() -> TestResult {
 }
 
 #[test]
+fn get_file3() -> TestResult {
+    let ldr = make_loader();
+    assert_eq!(
+        ldr.get(F3)?,
+        (read("test/file3.nt")?, "application/n-triples".into()),
+    );
+    Ok(())
+}
+
+#[test]
+fn get_file3_no_ext() -> TestResult {
+    let ldr = make_loader();
+    assert_eq!(
+        ldr.get(F3X)?,
+        (read("test/file3.nt")?, "application/n-triples".into()),
+    );
+    Ok(())
+}
+
+#[cfg(feature = "jsonld")]
+#[test]
+fn get_file4() -> TestResult {
+    let ldr = make_loader();
+    assert_eq!(
+        ldr.get(F4)?,
+        (read("test/file4.jsonld")?, "application/ld+json".into()),
+    );
+    Ok(())
+}
+
+#[cfg(feature = "jsonld")]
+#[test]
+fn get_file4_no_ext() -> TestResult {
+    let ldr = make_loader();
+    assert_eq!(
+        ldr.get(F4X)?,
+        (read("test/file4.jsonld")?, "application/ld+json".into()),
+    );
+    Ok(())
+}
+
+#[cfg(feature = "xml")]
+#[test]
+fn get_file5() -> TestResult {
+    let ldr = make_loader();
+    assert_eq!(
+        ldr.get(F5)?,
+        (read("test/file5.rdf")?, "application/rdf+xml".into()),
+    );
+    Ok(())
+}
+
+#[cfg(feature = "xml")]
+#[test]
+fn get_file5_no_ext() -> TestResult {
+    let ldr = make_loader();
+    assert_eq!(
+        ldr.get(F5X)?,
+        (read("test/file5.rdf")?, "application/rdf+xml".into()),
+    );
+    Ok(())
+}
+
+#[test]
 fn file_not_found() -> TestResult {
     let ldr = make_loader();
     assert!(matches!(ldr.get(FAIL), Err(LoaderError::NotFound(..)),));
@@ -73,10 +137,36 @@ fn io_error() -> TestResult {
 }
 
 #[test]
-fn graph() -> TestResult {
+fn graph_from_ttl() -> TestResult {
     let ldr = make_loader();
     let g: MyGraph = ldr.get_graph(F1)?;
     assert_eq!(g.len(), F1_LEN);
+    Ok(())
+}
+
+#[test]
+fn graph_from_nt() -> TestResult {
+    let ldr = make_loader();
+    let g: MyGraph = ldr.get_graph(F3)?;
+    assert_eq!(g.len(), F3_LEN);
+    Ok(())
+}
+
+#[cfg(feature = "jsonld")]
+#[test]
+fn graph_from_jsonld() -> TestResult {
+    let ldr = make_loader();
+    let g: MyGraph = ldr.get_graph(F4)?;
+    assert_eq!(g.len(), F4_LEN);
+    Ok(())
+}
+
+#[cfg(feature = "xml")]
+#[test]
+fn graph_from_rdfxml() -> TestResult {
+    let ldr = make_loader();
+    let g: MyGraph = ldr.get_graph(F5)?;
+    assert_eq!(g.len(), F5_LEN);
     Ok(())
 }
 

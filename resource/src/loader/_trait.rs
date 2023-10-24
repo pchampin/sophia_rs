@@ -5,7 +5,7 @@ use sophia_api::parser::TripleParser;
 use sophia_api::source::TripleSource;
 use sophia_api::term::Term;
 use sophia_iri::Iri;
-use sophia_turtle::parser::turtle;
+use sophia_turtle::parser::{nt, turtle};
 use std::borrow::Borrow;
 use std::fmt::Debug;
 use std::io;
@@ -40,6 +40,36 @@ pub trait Loader: Sized {
             .parse(bufread)
             .collect_triples()
             .map_err(|err| LoaderError::ParseError(iri_buf(iri_str), Box::new(err))),
+
+            "application/n-triples" => nt::NTriplesParser {}
+                .parse(bufread)
+                .collect_triples()
+                .map_err(|err| LoaderError::ParseError(iri_buf(iri_str), Box::new(err))),
+
+            #[cfg(feature = "jsonld")]
+            "application/ld+json" => {
+                use sophia_api::prelude::{Quad, QuadParser, QuadSource};
+                use sophia_jsonld::{JsonLdOptions, JsonLdParser};
+                let options =
+                    JsonLdOptions::new().with_base(iri.as_ref().map_unchecked(|t| t.into()));
+                // TODO use this loader as the document loader for the JSON-LD parser
+                // (requires to provide an adaptater)
+                JsonLdParser::new_with_options(options)
+                    .parse(bufread)
+                    .filter_quads(|q| q.g().is_none())
+                    .map_quads(Quad::into_triple)
+                    .collect_triples()
+                    .map_err(|err| LoaderError::ParseError(iri_buf(iri_str), Box::new(err)))
+            }
+
+            #[cfg(feature = "xml")]
+            "application/rdf+xml" => sophia_xml::parser::RdfXmlParser {
+                base: Some(iri.as_ref().map_unchecked(|t| t.borrow().to_string())),
+            }
+            .parse(bufread)
+            .collect_triples()
+            .map_err(|err| LoaderError::ParseError(iri_buf(iri_str), Box::new(err))),
+
             _ => Err(LoaderError::CantGuessSyntax(iri_buf(iri_str))),
         }
     }

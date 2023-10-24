@@ -1,0 +1,88 @@
+[
+  {
+    "@id": "file:///home/pa/dev/sophia_rs/resource/test/file1.ttl#res1",
+    "http://example.org/ns#next": [
+      {
+        "@id": "file:///home/pa/dev/sophia_rs/resource/test/file1.ttl#res2"
+      }
+    ],
+    "http://example.org/ns#id": [
+      {
+        "@value": "res1"
+      }
+    ],
+    "http://example.org/ns#list": [
+      {
+        "@list": [
+          {
+            "@id": "file:///home/pa/dev/sophia_rs/resource/test/file1.ttl#res3"
+          },
+          {
+            "@id": "file:///home/pa/dev/sophia_rs/resource/test/file1.ttl#res2"
+          },
+          {
+            "@id": "file:///home/pa/dev/sophia_rs/resource/test/file2.ttl#res1"
+          }
+        ]
+      }
+    ],
+    "http://example.org/ns#foreign1": [
+      {
+        "@id": "file:///home/pa/dev/sophia_rs/resource/test/file2.ttl#res1"
+      }
+    ],
+    "http://example.org/ns#related": [
+      {
+        "@id": "file:///home/pa/dev/sophia_rs/resource/test/file1.ttl#res2"
+      },
+      {
+        "@id": "file:///home/pa/dev/sophia_rs/resource/test/file1.ttl#res3"
+      },
+      { "@id": "_:b" }
+    ],
+    "http://example.org/ns#foreign2": [
+      {
+        "@id": "file:///home/pa/dev/sophia_rs/resource/test/file2.ttl#res2"
+      }
+    ],
+    "http://example.org/ns#unreachable": [
+      {
+        "@id": "http://somewhere.else/"
+      }
+    ]
+  },
+  {
+    "@id": "file:///home/pa/dev/sophia_rs/resource/test/file1.ttl#res2",
+    "http://example.org/ns#list": [
+      {
+        "@list": []
+      }
+    ],
+    "http://example.org/ns#id": [
+      {
+        "@value": "res2"
+      }
+    ]
+  },
+  {
+    "@id": "file:///home/pa/dev/sophia_rs/resource/test/file1.ttl#res3",
+    "http://example.org/ns#id": [
+      {
+        "@value": "res3"
+      }
+    ],
+    "http://example.org/ns#related": [
+      {
+        "@id": "file:///home/pa/dev/sophia_rs/resource/test/file1.ttl#res2"
+      }
+    ]
+  },
+  {
+    "@id": "_:b",
+    "http://example.org/ns#id": [
+      {
+        "@value": "res4"
+      }
+    ]
+  }
+]

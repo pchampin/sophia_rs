@@ -33,10 +33,20 @@ mod test {
     pub const F2R1: Iri<&str> = Iri::new_unchecked_const("http://example.org/file2.ttl#res1");
     pub const F2R2: Iri<&str> = Iri::new_unchecked_const("http://example.org/file2.ttl#res2");
     pub const FAIL: Iri<&str> = Iri::new_unchecked_const("http://example.org/not_there");
+    pub const F3: Iri<&str> = Iri::new_unchecked_const("http://example.org/file3.nt");
+    #[cfg(feature = "jsonld")]
+    pub const F4: Iri<&str> = Iri::new_unchecked_const("http://example.org/file4.jsonld");
+    #[cfg(feature = "xml")]
+    pub const F5: Iri<&str> = Iri::new_unchecked_const("http://example.org/file5.rdf");
     pub const SUBDIR: Iri<&str> = Iri::new_unchecked_const("http://example.org/subdir");
     // test with no extension (conneg emulation)
     pub const F1X: Iri<&str> = Iri::new_unchecked_const("http://example.org/file1");
     pub const F1XR1: Iri<&str> = Iri::new_unchecked_const("http://example.org/file1#res1");
+    pub const F3X: Iri<&str> = Iri::new_unchecked_const("http://example.org/file3");
+    #[cfg(feature = "jsonld")]
+    pub const F4X: Iri<&str> = Iri::new_unchecked_const("http://example.org/file4");
+    #[cfg(feature = "xml")]
+    pub const F5X: Iri<&str> = Iri::new_unchecked_const("http://example.org/file5");
 
     pub const EX_ID: Iri<&str> = Iri::new_unchecked_const("http://example.org/ns#id");
     pub const EX_LIST: Iri<&str> = Iri::new_unchecked_const("http://example.org/ns#list");
@@ -52,6 +62,14 @@ mod test {
     pub const F1_LEN: usize = 20;
     /// Number of triples in F2
     pub const F2_LEN: usize = 2;
+    /// Number of triples in F3
+    pub const F3_LEN: usize = 20;
+    /// Number of triples in F4
+    #[cfg(feature = "jsonld")]
+    pub const F4_LEN: usize = 20;
+    /// Number of triples in F5
+    #[cfg(feature = "xml")]
+    pub const F5_LEN: usize = 20;
 
     pub type MyGraph = Vec<[SimpleTerm<'static>; 3]>;
     pub type TestResult = Result<(), Box<dyn std::error::Error>>;
