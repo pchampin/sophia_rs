@@ -57,7 +57,7 @@ pub enum ResourceError<E: Error> {
         /// The predicate
         predicate: SimpleTerm<'static>,
         /// The datatype that was found
-        found_datatype: TermKind,
+        found_datatype: SimpleTerm<'static>,
     },
 }
 
