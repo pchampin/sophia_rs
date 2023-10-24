@@ -2,7 +2,7 @@
 //! * [`NoLoader`]: does not load anything (to be used with self-sufficient JSON-LD documents)
 //! * [`FsLoader`]: loads documents from the file system, by mapping directories to specific URLs
 //! * [`StaticLoader`]: loads a selected set of URLs from memory (useful to embed in a program normative contexts)
-//! * [`SurfLoader`]: loads documents directly from the web (only if the `surf_loader` feature is enabled)
+//! * [`SurfLoader`]: loads documents directly from the web (only if the `http_client` feature is enabled)
 //! * [`ChainLoader`]: loads document from the first loader, otherwise falls back to the second one.
 use std::sync::Arc;
 
@@ -24,9 +24,9 @@ pub type FsLoader =
 mod static_loader;
 pub use static_loader::*;
 
-#[cfg(feature = "surf_loader")]
+#[cfg(feature = "http_client")]
 mod surf_loader;
-#[cfg(feature = "surf_loader")]
+#[cfg(feature = "http_client")]
 pub use surf_loader::*;
 
 mod chain_loader;

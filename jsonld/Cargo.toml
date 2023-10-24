@@ -15,7 +15,7 @@ keywords.workspace = true
 [features]
 default = []
 # This feature enables the JSON-LD parser and serializer
-surf_loader = ["http-link", "surf", "url"]
+http_client = ["http-link", "surf", "url"]
 
 [dependencies]
 iref = "2.2"
@@ -29,7 +29,7 @@ sophia_api.workspace = true
 sophia_iri.workspace = true
 sophia_term.workspace = true
 thiserror.workspace = true
-# required by feature surf_loader
+# required by feature http_client
 http-link = { version = "1.0.1", optional = true }
 surf = { version = "2.3.2", optional = true }
 url = { version = "2.2.2", optional = true }

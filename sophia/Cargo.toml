@@ -21,8 +21,8 @@ jsonld = ["sophia_jsonld"]
 xml = ["sophia_xml"]
 # This feature enables to use the graph and dataset test macros in other crates
 test_macro = ["sophia_api/test_macro"]
-# This feature enables the use of the surf crate in dependencies
-surf = ["sophia_jsonld/surf_loader"]
+# This feature enables the HTTP client crate in dependencies
+http_client = ["sophia_jsonld/http_client"]
 
 [dependencies]
 sophia_iri.workspace = true
