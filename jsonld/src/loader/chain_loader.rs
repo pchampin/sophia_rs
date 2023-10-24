@@ -48,7 +48,7 @@ where
     }
 }
 
-/// Error type raised by [`StaticLoader`]
+/// Error type raised by [`ChainLoader`]
 #[derive(thiserror::Error, Debug)]
 #[error("Document not found {0}")]
 pub struct ChainLoaderError<E1, E2>(E1, E2)

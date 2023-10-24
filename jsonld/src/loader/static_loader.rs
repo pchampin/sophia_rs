@@ -12,7 +12,7 @@ type MetaVal<I, S> = Meta<JsonVal<I, S>, Location<I, S>>;
 /// A document loader that stores a selected set of documents in memory.
 /// This is useful for stable (e.g. normative) contexts that are expected to be used a lot.
 ///
-/// See https://www.w3.org/TR/json-ld11/#privacy
+/// See <https://www.w3.org/TR/json-ld11/#privacy>
 ///
 /// NB: The type parameter `I` for IRI-indexes is bound to `IsIri`,
 /// meaning that they must allow the IRI to be retrieved without resorting on a [`Vocabulary`](rdf_types::Vocabulary).

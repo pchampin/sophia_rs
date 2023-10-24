@@ -1,4 +1,4 @@
-//! A Sophia-friendly implementation of [`rdf_type::Vocabulary`]
+//! A Sophia-friendly implementation of [`rdf_types::Vocabulary`]
 use std::sync::Arc;
 
 use rdf_types::{
