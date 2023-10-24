@@ -1,11 +1,9 @@
-use std::{fmt::Debug, pin::Pin};
+use std::fmt::Debug;
 
-use futures_lite::{Future, FutureExt};
+use futures_util::future::{BoxFuture, FutureExt};
 use json_ld::Loader;
 use json_syntax::Value;
 use locspan::Location;
-
-type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
 /// * [`ChainLoader`]: loads document from the first loader, otherwise falls back to the second one.
 pub struct ChainLoader<L1, L2>(L1, L2);

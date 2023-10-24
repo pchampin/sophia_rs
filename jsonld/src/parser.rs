@@ -2,7 +2,6 @@
 
 use std::{fmt::Display, io::BufRead, ops::DerefMut, sync::Arc};
 
-use futures_lite::future::block_on;
 use json_ld::{JsonLdProcessor, Loader, RemoteDocument, ToRdfError};
 use json_syntax::{Parse, Value};
 use locspan::{Location, Span};
@@ -83,7 +82,11 @@ impl<L> JsonLdParser<L> {
         let loader = g_loader.deref_mut();
         let mut vocab = ArcVoc {};
         let options = self.options.inner().clone();
-        match block_on(data.to_rdf_with_using(&mut vocab, &mut generator, loader, options)) {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("Could not build tokio runtime");
+        match rt.block_on(data.to_rdf_with_using(&mut vocab, &mut generator, loader, options)) {
             Err(ToRdfError::Expand(err)) => JsonLdQuadSource::from_err(err),
             Ok(mut to_rdf) => JsonLdQuadSource::Quads(
                 to_rdf

@@ -1,12 +1,11 @@
-use std::{collections::HashMap, fmt::Debug, pin::Pin};
+use std::{collections::HashMap, fmt::Debug};
 
-use futures_lite::{Future, FutureExt};
+use futures_util::future::{BoxFuture, FutureExt};
 use json_ld::{Loader, RemoteDocument};
 use json_syntax::Value;
 use locspan::{Location, Meta};
 use sophia_iri::IsIri;
 
-type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 type JsonVal<I, S> = Value<Location<I, S>>;
 type MetaVal<I, S> = Meta<JsonVal<I, S>, Location<I, S>>;
 

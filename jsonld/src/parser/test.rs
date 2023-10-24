@@ -58,13 +58,13 @@ fn check_static_loader() {
     assert_eq!(got, exp);
 }
 
-// Check whether JsonLdParser<SurfLoader> correctly implements QuadParser
+// Check whether JsonLdParser<HttpLoader> correctly implements QuadParser
 // (i.e. it has the correct trait bounds).
 // NB: the goal is NOT to check the loader itself -- we actually don't use it.
 #[cfg(feature = "http_client")]
 #[test]
-fn check_surf_loader() {
-    let loader = crate::loader::SurfLoader::new(0);
+fn check_http_loader() {
+    let loader = crate::loader::HttpLoader::default();
     let options = JsonLdOptions::new().with_document_loader(loader);
     let p = JsonLdParser::new_with_options(options);
     let got: TestDataset = p

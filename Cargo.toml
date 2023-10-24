@@ -40,6 +40,7 @@ sophia_turtle = { version = "0.8.0-alpha.2", path = "./turtle" }
 sophia_xml = { version = "0.8.0-alpha.2", path = "./xml" }
 
 criterion = "0.5"
+futures-util = "0.3.28"
 lazy_static = "1.4.0"
 mownstr = "0.2.1"
 oxiri = "0.2.2"
@@ -50,6 +51,7 @@ rio_turtle = { version = "0.8", features = ["generalized"] }
 rio_xml = { version = "0.8" }
 test-case = "3.1.0"
 thiserror = "1.0.32"
+tokio = { version="1.33.0", features = ["rt"] }
 
 [profile.release]
 lto = true

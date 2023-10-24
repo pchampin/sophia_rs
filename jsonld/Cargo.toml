@@ -15,13 +15,13 @@ keywords.workspace = true
 [features]
 default = []
 # This feature enables the JSON-LD parser and serializer
-http_client = ["http-link", "surf", "url"]
+http_client = ["json-ld/reqwest"]
 
 [dependencies]
+futures-util.workspace = true
 iref = "2.2"
 json-ld = "0.15.0"
 json-syntax = "0.9"
-futures-lite = "1.12.0"
 langtag = "0.3.4"
 locspan = "0.7.12"
 rdf-types = "0.15.4"
@@ -29,10 +29,7 @@ sophia_api.workspace = true
 sophia_iri.workspace = true
 sophia_term.workspace = true
 thiserror.workspace = true
-# required by feature http_client
-http-link = { version = "1.0.1", optional = true }
-surf = { version = "2.3.2", optional = true }
-url = { version = "2.2.2", optional = true }
+tokio.workspace = true
 
 [dev-dependencies]
 sophia_turtle.workspace = true

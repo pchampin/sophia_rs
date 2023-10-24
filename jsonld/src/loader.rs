@@ -17,7 +17,7 @@ pub type NoLoader =
 /// A document loader that can load documents from the file system,
 /// by mapping directories to specific URLs.
 ///
-/// See [`jsonld::FsLoader`]
+/// See [`json_ld::FsLoader`]
 pub type FsLoader =
     json_ld::FsLoader<Iri<Arc<str>>, Location<Iri<Arc<str>>>, Value<Location<Iri<Arc<str>>>>>;
 
@@ -25,9 +25,11 @@ mod static_loader;
 pub use static_loader::*;
 
 #[cfg(feature = "http_client")]
-mod surf_loader;
-#[cfg(feature = "http_client")]
-pub use surf_loader::*;
+/// A document loader that can load documents from the web.
+///
+/// See [`jsonl_ld::ReqwestLoader`]
+pub type HttpLoader =
+    json_ld::ReqwestLoader<Iri<Arc<str>>, Location<Iri<Arc<str>>>, Value<Location<Iri<Arc<str>>>>>;
 
 mod chain_loader;
 pub use chain_loader::*;
