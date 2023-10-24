@@ -433,7 +433,7 @@ fn is_compound_literal(node: &HashMap<Box<str>, Vec<RdfObject>>) -> bool {
 const NS_18N: &str = "https://www.w3.org/ns/i18n#";
 const RDF_DIRECTION: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#direction";
 const RDF_FIRST: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#first";
-const RDF_JSON: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#json";
+const RDF_JSON: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#JSON";
 const RDF_LANGUAGE: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#language";
 const RDF_LIST: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#List";
 const RDF_NIL: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#nil";
