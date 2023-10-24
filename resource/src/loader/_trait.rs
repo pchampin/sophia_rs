@@ -14,7 +14,7 @@ use std::sync::Arc;
 /// A loader resolves URLs into [`Resource`]s.
 ///
 /// TODO:once async traits are stable, make this trait async
-pub trait Loader: Sized {
+pub trait Loader: Sync + Sized {
     /// Get the representation of the resource identified by `iri`, with its content-type.
     ///
     /// NB: the content-type must not contain any parameter.
@@ -49,11 +49,16 @@ pub trait Loader: Sized {
             #[cfg(feature = "jsonld")]
             "application/ld+json" => {
                 use sophia_api::prelude::{Quad, QuadParser, QuadSource};
-                use sophia_jsonld::{JsonLdOptions, JsonLdParser};
-                let options =
-                    JsonLdOptions::new().with_base(iri.as_ref().map_unchecked(|t| t.into()));
-                // TODO use this loader as the document loader for the JSON-LD parser
-                // (requires to provide an adaptater)
+                use sophia_jsonld::{loader::ClosureLoader, JsonLdOptions, JsonLdParser};
+                let options = JsonLdOptions::new()
+                    .with_base(iri.as_ref().map_unchecked(|t| t.into()))
+                    .with_document_loader(ClosureLoader::new(|url| {
+                        let (content, ctype) = self.get(url).map_err(|e| e.to_string())?;
+                        if ctype != "application/ld+json" {
+                            return Err(format!("{url} is not JSON-LD: {ctype}"));
+                        }
+                        String::from_utf8(content).map_err(|e| e.to_string())
+                    }));
                 JsonLdParser::new_with_options(options)
                     .parse(bufread)
                     .filter_quads(|q| q.g().is_none())

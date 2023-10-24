@@ -37,3 +37,6 @@ pub type HttpLoader =
 
 mod chain_loader;
 pub use chain_loader::*;
+
+mod closure_loader;
+pub use closure_loader::*;

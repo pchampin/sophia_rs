@@ -1,88 +1,22 @@
-[
-  {
-    "@id": "file:///home/pa/dev/sophia_rs/resource/test/file1.ttl#res1",
-    "http://example.org/ns#next": [
-      {
-        "@id": "file:///home/pa/dev/sophia_rs/resource/test/file1.ttl#res2"
-      }
-    ],
-    "http://example.org/ns#id": [
-      {
-        "@value": "res1"
-      }
-    ],
-    "http://example.org/ns#list": [
-      {
-        "@list": [
-          {
-            "@id": "file:///home/pa/dev/sophia_rs/resource/test/file1.ttl#res3"
-          },
-          {
-            "@id": "file:///home/pa/dev/sophia_rs/resource/test/file1.ttl#res2"
-          },
-          {
-            "@id": "file:///home/pa/dev/sophia_rs/resource/test/file2.ttl#res1"
-          }
-        ]
-      }
-    ],
-    "http://example.org/ns#foreign1": [
-      {
-        "@id": "file:///home/pa/dev/sophia_rs/resource/test/file2.ttl#res1"
-      }
-    ],
-    "http://example.org/ns#related": [
-      {
-        "@id": "file:///home/pa/dev/sophia_rs/resource/test/file1.ttl#res2"
-      },
-      {
-        "@id": "file:///home/pa/dev/sophia_rs/resource/test/file1.ttl#res3"
-      },
-      { "@id": "_:b" }
-    ],
-    "http://example.org/ns#foreign2": [
-      {
-        "@id": "file:///home/pa/dev/sophia_rs/resource/test/file2.ttl#res2"
-      }
-    ],
-    "http://example.org/ns#unreachable": [
-      {
-        "@id": "http://somewhere.else/"
-      }
-    ]
+{
+  "@context": "ctx.jsonld",
+  "@id": "#res1",
+  "id": "res1",
+  "next": {
+    "@id": "#res2",
+    "id": "res2",
+    "list": []
   },
-  {
-    "@id": "file:///home/pa/dev/sophia_rs/resource/test/file1.ttl#res2",
-    "http://example.org/ns#list": [
-      {
-        "@list": []
-      }
-    ],
-    "http://example.org/ns#id": [
-      {
-        "@value": "res2"
-      }
-    ]
-  },
-  {
-    "@id": "file:///home/pa/dev/sophia_rs/resource/test/file1.ttl#res3",
-    "http://example.org/ns#id": [
-      {
-        "@value": "res3"
-      }
-    ],
-    "http://example.org/ns#related": [
-      {
-        "@id": "file:///home/pa/dev/sophia_rs/resource/test/file1.ttl#res2"
-      }
-    ]
-  },
-  {
+  "related": ["#res2", {
+    "@id": "#res3",
+    "id": "res3",
+    "related": "#res2"
+  }, {
     "@id": "_:b",
-    "http://example.org/ns#id": [
-      {
-        "@value": "res4"
-      }
-    ]
-  }
-]
+    "id": "res4"
+  }],
+  "foreign1": "file2.ttl#res1",
+  "foreign2": "file2.ttl#res2",
+  "unreachable": "http://somewhere.else/",
+  "list": ["#res3", "#res2", "file2.ttl#res1" ]
+}

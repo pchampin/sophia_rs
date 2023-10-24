@@ -14,7 +14,7 @@ keywords.workspace = true
 
 [features]
 # This feature enables the JSON-LD parser and serializer
-jsonld = ["sophia_jsonld"]
+jsonld = ["sophia_jsonld", "futures-util"]
 # This feature enables the RDF/XML parser and serializer
 xml = ["sophia_xml"]
 # This feature enables the HTTP client in dependencies
@@ -22,6 +22,7 @@ http_client = []
 
 
 [dependencies]
+futures-util = { workspace = true, optional = true }
 sophia_api.workspace = true
 sophia_iri.workspace = true
 sophia_jsonld = { workspace = true, optional = true }

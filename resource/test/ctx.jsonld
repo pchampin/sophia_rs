@@ -1,0 +1,11 @@
+{
+    "@context": {
+        "@vocab": "http://example.org/ns#",
+        "next": {"@type": "@id"},
+        "related": {"@type": "@id"},
+        "foreign1": {"@type": "@id"},
+        "foreign2": {"@type": "@id"},
+        "unreachable": {"@type": "@id"},
+        "list": {"@type": "@id", "@container": "@list"}
+    }
+}
