@@ -24,6 +24,9 @@ pub type FsLoader =
 mod static_loader;
 pub use static_loader::*;
 
+mod file_url_loader;
+pub use file_url_loader::*;
+
 #[cfg(feature = "http_client")]
 /// A document loader that can load documents from the web.
 ///

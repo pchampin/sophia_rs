@@ -77,6 +77,24 @@ fn check_http_loader() {
     assert_eq!(got, exp);
 }
 
+// Check whether JsonLdParser<FileUrlLoader> correctly implements QuadParser
+// (i.e. it has the correct trait bounds).
+// NB: the goal is NOT to check the loader itself -- we actually don't use it.
+#[test]
+fn check_file_url_loader() {
+    let loader = crate::loader::FileUrlLoader::default();
+    let options = JsonLdOptions::new().with_document_loader(loader);
+    let p = JsonLdParser::new_with_options(options);
+    let got: TestDataset = p
+        .parse_str(r#"{"@id": "tag:foo", "tag:bar": "BAZ"}"#)
+        .collect_quads()
+        .unwrap();
+    let exp: TestDataset = nq::parse_str(r#"<tag:foo> <tag:bar> "BAZ"."#)
+        .collect_quads()
+        .unwrap();
+    assert_eq!(got, exp);
+}
+
 // Check whether JsonLdParser<ChainLoader> correctly implements QuadParser
 // (i.e. it has the correct trait bounds).
 // NB: the goal is NOT to check the loader itself -- we actually don't use it.

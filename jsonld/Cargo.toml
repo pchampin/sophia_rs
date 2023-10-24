@@ -30,6 +30,7 @@ sophia_iri.workspace = true
 sophia_term.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
+url = "2.4.1"
 
 [dev-dependencies]
 sophia_turtle.workspace = true
