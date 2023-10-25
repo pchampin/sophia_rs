@@ -14,7 +14,9 @@ keywords.workspace = true
 
 [features]
 default = []
-# This feature enables the JSON-LD parser and serializer
+# This feature enables retrieval of context via file: URLs
+file_url = []
+# This feature enables retrieval of context over HTTP(S)
 http_client = ["json-ld/reqwest"]
 
 [dependencies]

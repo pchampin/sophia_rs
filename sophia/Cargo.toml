@@ -21,6 +21,8 @@ jsonld = ["sophia_jsonld", "sophia_resource/jsonld"]
 xml = ["sophia_xml", "sophia_resource/xml"]
 # This feature enables to use the graph and dataset test macros in other crates
 test_macro = ["sophia_api/test_macro"]
+# This feature enables the file: URL support in dependencies
+file_url = ["sophia_jsonld/file_url", "sophia_resource/file_url"]
 # This feature enables the HTTP client in dependencies
 http_client = ["sophia_jsonld/http_client", "sophia_resource/http_client"]
 

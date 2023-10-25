@@ -17,7 +17,9 @@ keywords.workspace = true
 jsonld = ["sophia_jsonld", "futures-util"]
 # This feature enables the RDF/XML parser and serializer
 xml = ["sophia_xml"]
-# This feature enables the HTTP client in dependencies
+# NOT IMPLEMENTED YET: This feature enables retrieval of resource graphs over file: URLs
+file_url = []
+# NOT IMPLEMENTED YET: This feature enables retrieval of resource graphs over HTTP(S)
 http_client = []
 
 

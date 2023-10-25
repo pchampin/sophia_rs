@@ -25,7 +25,9 @@ pub type FsLoader =
 mod static_loader;
 pub use static_loader::*;
 
+#[cfg(feature = "file_url")]
 mod file_url_loader;
+#[cfg(feature = "file_url")]
 pub use file_url_loader::*;
 
 #[cfg(feature = "http_client")]
