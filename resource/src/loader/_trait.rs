@@ -1,5 +1,6 @@
 use super::{util::*, *};
 use crate::{Resource, ResourceError, TypedResource};
+use futures_util::FutureExt;
 use sophia_api::graph::CollectibleGraph;
 use sophia_api::parser::TripleParser;
 use sophia_api::source::TripleSource;
@@ -53,11 +54,16 @@ pub trait Loader: Sync + Sized {
                 let options = JsonLdOptions::new()
                     .with_base(iri.as_ref().map_unchecked(|t| t.into()))
                     .with_document_loader(ClosureLoader::new(|url| {
-                        let (content, ctype) = self.get(url).map_err(|e| e.to_string())?;
-                        if ctype != "application/ld+json" {
-                            return Err(format!("{url} is not JSON-LD: {ctype}"));
+                        async move {
+                            let (content, ctype) =
+                                self.get(url.as_ref()).map_err(|e| e.to_string())?;
+                            if ctype == "application/ld+json" {
+                                String::from_utf8(content).map_err(|e| e.to_string())
+                            } else {
+                                Err(format!("{url} is not JSON-LD: {ctype}"))
+                            }
                         }
-                        String::from_utf8(content).map_err(|e| e.to_string())
+                        .boxed()
                     }));
                 JsonLdParser::new_with_options(options)
                     .parse(bufread)

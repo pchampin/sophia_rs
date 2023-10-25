@@ -13,9 +13,9 @@ pub struct ClosureLoader<F> {
     closure: F,
 }
 
-impl<F> Loader<Iri<Arc<str>>, Location<Iri<Arc<str>>>> for ClosureLoader<F>
+impl<'f, F> Loader<Iri<Arc<str>>, Location<Iri<Arc<str>>>> for ClosureLoader<F>
 where
-    F: Send + FnMut(Iri<&str>) -> Result<String, String>,
+    F: Send + FnMut(Iri<String>) -> BoxFuture<'f, Result<String, String>>,
 {
     type Output = Value<Location<Iri<Arc<str>>>>;
     type Error = ClosureLoaderError;
@@ -36,9 +36,10 @@ where
     {
         async move {
             let iri = vocabulary.iri(&url).unwrap();
-            let url_str = iri.as_str();
-            let content =
-                (self.closure)(Iri::new_unchecked(url_str)).map_err(Self::Error::Internal)?;
+            let url_str = iri.as_str().to_string();
+            let content = (self.closure)(Iri::new_unchecked(url_str))
+                .await
+                .map_err(Self::Error::Internal)?;
             let doc = json_syntax::Value::parse_str(content.as_str(), |span| {
                 locspan::Location::new(url.clone(), span)
             })
@@ -53,9 +54,9 @@ where
     }
 }
 
-impl<F> ClosureLoader<F>
+impl<'f, F> ClosureLoader<F>
 where
-    F: Send + FnMut(Iri<&str>) -> Result<String, String>,
+    F: Send + FnMut(Iri<String>) -> BoxFuture<'f, Result<String, String>>,
 {
     /// Creates a new closure loader with the given closure.
     pub fn new(f: F) -> Self {
