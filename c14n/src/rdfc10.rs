@@ -18,7 +18,7 @@ use crate::_cnq::nq;
 use crate::_permutations::for_each_permutation_of;
 use crate::hash::{HashFunction, Sha256, Sha384};
 
-/// Return a canonical N-quads representation of `d`, where
+/// Write into `w` a canonical N-quads representation of `d`, where
 /// + blank nodes are canonically [relabelled](`relabel`) with
 ///   - the [SHA-256](Sha256) hash function,
 ///   - the [`DEFAULT_DEPTH_FACTOR`],
@@ -30,8 +30,8 @@ pub fn normalize<D: Dataset, W: io::Write>(d: &D, w: W) -> Result<(), C14nError<
     normalize_with::<Sha256, D, W>(d, w, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
-/// Return a canonical N-quads representation of `d`, where
-/// + blank nodes are canonically [relabelled](`relabel`) with
+/// Write into `w` a canonical N-quads representation of `d`, where
+/// + blank nodes are canonically [relabelled](`relabel_sha384`) with
 ///   - the [SHA-384](Sha384) hash function,
 ///   - the [`DEFAULT_DEPTH_FACTOR`],
 ///   - the [`DEFAULT_PERMUTATION_LIMIT`];
@@ -42,8 +42,11 @@ pub fn normalize_sha384<D: Dataset, W: io::Write>(d: &D, w: W) -> Result<(), C14
     normalize_with::<Sha384, D, W>(d, w, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
-/// Return a canonical N-quads representation of `d`, where
-/// - blank nodes are canonically [relabelled](`relabel_with`) with the given `depth_factor`,
+/// Write into `w` a canonical N-quads representation of `d`, where
+/// + blank nodes are canonically [relabelled](`relabel_with`) with
+///   - the [hash function](HashFunction) `H`,
+///   - the given `depth_factor`,
+///   - the given `permutation_limit`;
 /// - quads are sorted in codepoint order.
 ///
 /// See also [`normalize`].
@@ -111,12 +114,24 @@ pub fn relabel_sha384<D: Dataset>(d: &D) -> Result<(C14nQuads<D>, C14nIdMap), C1
     relabel_with::<Sha384, D>(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
-/// Return a [`Dataset`] isomorphic to `d`, with canonical blank node labels,
-/// restricting the number of recursion of RDFC-1.0 to `depth_factor` per blank node,
-/// and restricting the size of permutations to `permutation_limit`!.
+/// Return a [`Dataset`] isomorphic to `d`, with canonical blank node labels.
 ///
-/// These restrictions prevents the algorithm from blocking on pathological graphs with little practical utility
-/// (e.g. big cycles or cliques of undistinguishable blank nodes).
+/// The generic parameter `H` determines which [hash function](HashFunction)
+/// the algorithm should use internally
+/// (RDFC-1.0 uses [SHA-256](Sha256) by default).
+///
+/// The parameters `depth_factor` and `permutation_limit`
+/// are used to stop the algorithm if the computation becomes too complex,
+/// in order to secure it agains [dataset poisoning](https://www.w3.org/TR/rdf-canon/#dataset-poisoning).
+/// The default values ([`DEFAULT_DEPTH_FACTOR`]) and [`DEFAULT_PERMUTATION_LIMIT`])
+/// are expected to work with any "realistic" dataset.
+///
+/// More preciselity:
+/// * the algorithm will not recurse more deeply than`depth_factor`*N,
+///   where N is the total number of blank nodes in the dataset;
+/// * the algorithl will not try to disambiguate more than
+///   `permutation_limit` undistinguishable blank nodes
+///   (blank nodes with the same immediate neighbourhood).
 ///
 /// Implements <https://www.w3.org/TR/rdf-canon/#canon-algorithm>
 ///
@@ -133,6 +148,11 @@ pub fn relabel_with<'a, H: HashFunction, D: Dataset>(
     let mut state = C14nState::<H, _>::new(depth_factor, permutation_limit);
     // Step 2
     for quad in &quads {
+        if quad.p().is_blank_node() {
+            return Err(C14nError::Unsupported(
+                "RDFC-1.0 does not support blank node as predicate".to_string(),
+            ));
+        }
         for component in iter_spog(quad.spog()) {
             if component.is_triple() || component.is_variable() {
                 return Err(C14nError::Unsupported(
@@ -147,11 +167,6 @@ pub fn relabel_with<'a, H: HashFunction, D: Dataset>(
                     Occupied(mut e) => e.get_mut().push(quad),
                 }
             }
-        }
-        if quad.p().is_blank_node() {
-            return Err(C14nError::Unsupported(
-                "RDFC-1.0 does not support blank node as predicate".to_string(),
-            ));
         }
     }
     // Step 3
