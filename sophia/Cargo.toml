@@ -16,9 +16,9 @@ all-features = true
 [features]
 default = []
 # This feature enables the JSON-LD parser and serializer
-jsonld = ["sophia_jsonld", "sophia_resource/jsonld"]
+jsonld = ["dep:sophia_jsonld", "sophia_resource/jsonld"]
 # This feature enables the RDF/XML parser and serializer
-xml = ["sophia_xml", "sophia_resource/xml"]
+xml = ["dep:sophia_xml", "sophia_resource/xml"]
 # This feature enables to use the graph and dataset test macros in other crates
 test_macro = ["sophia_api/test_macro"]
 # This feature enables the file: URL support in dependencies
