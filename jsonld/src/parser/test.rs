@@ -77,6 +77,7 @@ fn check_http_loader() {
     assert_eq!(got, exp);
 }
 
+#[cfg(feature = "file_url")]
 // Check whether JsonLdParser<FileUrlLoader> correctly implements QuadParser
 // (i.e. it has the correct trait bounds).
 // NB: the goal is NOT to check the loader itself -- we actually don't use it.

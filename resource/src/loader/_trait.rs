@@ -1,5 +1,6 @@
 use super::{util::*, *};
 use crate::{Resource, ResourceError, TypedResource};
+#[cfg(feature = "jsonld")]
 use futures_util::FutureExt;
 use sophia_api::graph::CollectibleGraph;
 use sophia_api::parser::TripleParser;

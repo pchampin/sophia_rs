@@ -15,7 +15,7 @@ keywords.workspace = true
 [features]
 default = []
 # This feature enables retrieval of context via file: URLs
-file_url = []
+file_url = ["dep:url"]
 # This feature enables retrieval of context over HTTP(S)
 http_client = ["json-ld/reqwest"]
 
@@ -32,7 +32,7 @@ sophia_iri.workspace = true
 sophia_term.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
-url.workspace = true
+url = { workspace = true, optional = true }
 
 [dev-dependencies]
 sophia_turtle.workspace = true
