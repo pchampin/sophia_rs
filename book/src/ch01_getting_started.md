@@ -1,6 +1,6 @@
 # Getting Started
 
-Following a short example how to build a graph, mutate it and serialize it back.
+Below is a short example demonstrating how to build a graph, mutate it and serialize it back.
 
 
 Add the sophia crate to your dependencies in `Cargo.toml`
@@ -12,7 +12,6 @@ sophia = "0.8.0-alpha.3"
 
 Add these lines of code and run the program.
 ```rust,noplayground
-# extern crate sophia;
 use sophia::api::prelude::*;
 use sophia::api::ns::Namespace;
 use sophia::inmem::graph::LightGraph;

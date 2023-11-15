@@ -1,12 +1,14 @@
 //! Standard and custom namespaces.
 //!
 //! This module provides:
-//! * the [`Namespace`](struct.Namespace.html) type for defining custom namespace;
-//! * modules corresponding to the most common namespaces.
+//! * the [`Namespace`](struct.Namespace.html) type for defining custom dynamic namespace;
+//! * the [`namespace`] macro, for defning custom static namespaces;
+//! * modules corresponding to the most common namespaces
+//!   (generated via the [`namespace`] macro).
 //!
-//! # Example
+//! # Example use
 //! ```
-//! use sophia_api::ns::{Namespace, NsTerm, rdf, rdfs, xsd};
+//! use sophia_api::ns::{Namespace, rdf, rdfs, xsd};
 //!
 //! let schema = Namespace::new("http://schema.org/").unwrap();
 //! let s_name = schema.get("name").unwrap();
@@ -15,6 +17,20 @@
 //! let mut g = vec![];
 //! g.push([&s_name, &rdf::type_, &rdf::Property]);
 //! g.push([&s_name, &rdfs::range, &xsd::string]);
+//! ```
+//!
+//! # Datatyped literals
+//!
+//! Note also that the terms generated via the [`namespace`] macro
+//! can be used to easily produced datatyped literals,
+//! by simply "multiplying" a string by its datatype:
+//!
+//! ```
+//! # use sophia_api::{term::Term, ns::xsd};
+//! let date = "2023-11-15" * xsd::date ;
+//! assert!(date.is_literal());
+//! assert_eq!(date.lexical_form().unwrap(), "2023-11-15");
+//! assert_eq!(date.datatype().unwrap(), xsd::date.iri().unwrap());
 //! ```
 use mownstr::MownStr;
 use sophia_iri::InvalidIri;

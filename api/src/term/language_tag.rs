@@ -1,19 +1,6 @@
 //! I define the [`LanguageTag`] wrapper type,
 //! which guarantees that the underlying `str`
 //! is a valid [BCP47](https://tools.ietf.org/search/bcp47) language tag.
-//!
-//! A [`LanguageTag`] can be combined to a `&str` with the `*` operator,
-//! to produce an RDF [language tagged string](https://www.w3.org/TR/rdf11-concepts/#dfn-language-tagged-string)
-//! implementing the [`Term`](crate::term::Term) trait:
-//!
-//! ```
-//! # use sophia_api::term::{LanguageTag, Term};
-//! let fr = LanguageTag::new_unchecked("fr");
-//! let message = "Bonjour le monde" * fr;
-//! assert!(message.is_literal());
-//! assert_eq!(message.lexical_form().unwrap(), "Bonjour le monde");
-//! assert_eq!(message.language_tag().unwrap(), fr);
-//! ```
 
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -42,6 +29,20 @@ lazy_static! {
 /// is a valid [BCP47](https://tools.ietf.org/search/bcp47) language tag.
 ///
 /// NB: it is actually more permissive than BCP47.
+///
+/// A [`LanguageTag`] can be combined to a `&str` with the `*` operator,
+/// to produce an RDF [language tagged string](https://www.w3.org/TR/rdf11-concepts/#dfn-language-tagged-string)
+/// implementing the [`Term`](crate::term::Term) trait:
+///
+/// ```
+/// # use sophia_api::{ns::rdf, term::{LanguageTag, Term}};
+/// let fr = LanguageTag::new_unchecked("fr");
+/// let message = "Bonjour le monde" * fr;
+/// assert!(message.is_literal());
+/// assert_eq!(message.lexical_form().unwrap(), "Bonjour le monde");
+/// assert_eq!(message.datatype().unwrap(), rdf::langString.iri().unwrap());
+/// assert_eq!(message.language_tag().unwrap(), fr);
+/// ```
 #[derive(Clone, Copy, Debug)]
 pub struct LanguageTag<T: Borrow<str>>(T);
 

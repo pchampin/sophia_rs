@@ -35,6 +35,15 @@ impl<'a> NsTerm<'a> {
             self.to_string().into()
         })
     }
+
+    /// Return an [`IriRef`] representing this term.
+    pub fn to_iriref(self) -> IriRef<MownStr<'a>> {
+        if self.suffix.is_empty() {
+            self.ns.map_unchecked(MownStr::from)
+        } else {
+            IriRef::new_unchecked(self.to_string().into())
+        }
+    }
 }
 
 impl<'a> Term for NsTerm<'a> {
@@ -91,5 +100,13 @@ mod test {
         assert!(t1a != t2b);
         assert!(t2a != t3b);
         assert!(t3a != t1b);
+    }
+}
+
+impl<'a> std::ops::Mul<NsTerm<'a>> for &'a str {
+    type Output = crate::term::SimpleTerm<'a>;
+
+    fn mul(self, rhs: NsTerm<'a>) -> Self::Output {
+        crate::term::SimpleTerm::LiteralDatatype(self.into(), rhs.to_iriref())
     }
 }

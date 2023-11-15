@@ -28,20 +28,13 @@ and finally:
 * [`sophia`] is the “all-inclusive” crate,
   re-exporting symbols from all the crates above.
   (actually, `sophia_xml` is only available if the `xml` feature is enabled)
+
+In addition to the [API documentation](https://docs.rs/sophia/),
+a high-level [user documentation](https://pchampin.github.io/sophia_rs/) is available (although not quite complete yet).
   
 ## Licence
 
 [CECILL-B] (compatible with BSD)
-
-## Testing
-
-The test suite depends on the [the [JSON-LD test-suite]
-which is included as a `git` submodule.
-In order to run all the tests, you need to execute the following commands:
-```bash
-$ git submodule init
-$ git submodule update
-```
 
 ## Citation
 
@@ -69,6 +62,7 @@ Bibtex:
 The following third-party crates are using or extending Sophia
 
 * [`hdt`](https://crates.io/crates/hdt) provides an implementation of Sophia's traits based on the [HDT](https://www.rdfhdt.org/) format.
+* [`manas`](https://crates.io/crates/manas) is a modular framework for implementing [Solid](https://solidproject.org/) compatible servers
 
 ## History
 

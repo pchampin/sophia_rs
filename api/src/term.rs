@@ -64,8 +64,12 @@ pub enum TermKind {
 /// However, while all other methods have a default implementtation (returning `None`),
 /// those corresponding to the supported kinds MUST be overridden accordingly,
 /// otherwise they will panic.
-///
 /// See below for an explaination of this design choice.
+///
+/// In order to test that all the methods are implemented consistently,
+/// consider using the macro [`assert_consistent_term_impl`].
+/// The macro should be invoked on various instances of the type,
+/// at least one for each [kind](Term::kind) that the type supports.
 ///
 /// # Design rationale
 ///
@@ -88,23 +92,19 @@ pub trait Term: std::fmt::Debug {
     /// A type of [`Term`] that can be borrowed from this type
     /// (i.e. that can be obtained from a simple reference to this type).
     /// It is used in particular for accessing constituents of quoted tripes ([`Term::triple`])
-    /// or for sharing this term with a function that expects `T: Term` (rather than `&T`).
+    /// or for sharing this term with a function that expects `T: Term` (rather than `&T`)
+    /// using [`Term::borrow_term`].
     ///
-    /// In "standard" cases, this type is `&Self`.
-    ///
-    /// Exceptions, where this type is `Self` instead, are
-    /// * some [`Term`] implementations implementing [`Copy`];
-    /// * in particular, the implementation of [`Term`] by *references* to "standard" [`Term`] implementations.
-    ///
-    /// This design makes `T: Term` conceptually equivalent `T: Borrow<Term>`
-    /// (but the latter is not valid, since `Term` is a trait).
-    /// In this pattern, [`Term::borrow_term`] plays the rols of [`Borrow::borrow`](std::borrow).
+    /// In "standard" cases, this type is either `&Self` or `Self`
+    /// (for types implementing [`Copy`]).
     ///
     /// # Note to implementors
-    /// When in doubt, set this to `&Self`.
-    /// If that is not possible and your type implements [`Copy`],
-    /// consider setting this to `Self`.
-    /// Otherwise, your implementations is probably not a good fit for implementing [`Term`].
+    /// * When in doubt, set `BorrowTerm<'x>` to `&'x Self`.
+    /// * If your type implements [`Copy`],
+    ///   consider setting it to `Self`.
+    /// * If your type is a wrapper `W(T)` where `T: Term`,
+    ///   consider setting it to `W(T::BorrowTerm<'x>)`.
+    /// * If none of the options above are possible, your type is probably not a good fit for implementing [`Term`].
     type BorrowTerm<'x>: Term + Copy
     where
         Self: 'x;
@@ -272,9 +272,30 @@ pub trait Term: std::fmt::Debug {
             .then(|| unimplemented!("Default implementation should have been overridden"))
     }
 
-    /// Get something implementing [`Term`] from a simple reference to `self`.
+    /// Get something implementing [`Term`] from a simple reference to `self`,
+    /// representing the same RDF term as `self`.
     ///
-    /// See [`Term::BorrowTerm`] for more detail.
+    /// # Wny do functions in Sophia expect `T: Term` and never `&T: Term`?
+    /// To understand the rationale of this design choice,
+    /// consider an imaginary type `Foo`.
+    /// A function `f(x: Foo)` requires users to waive the ownership of the `Foo` value they want to pass to the function.
+    /// This is not always suited to the users needs.
+    /// On the other hand, a function `g(x: &Foo)` not only allows, but *forces* its users to maintain ownership of the `Foo` value they want to pass to the function.
+    /// Again, there are situations where this is not suitable.
+    /// The standard solution to this problem is to use the [`Borrow`](std::borrow) trait:
+    /// a function `h<T>(x: T) where T: Borrow<Foo>` allows `x` to be passed either by *value* (transferring ownership)
+    /// or by reference (simply borrowing the caller's `Foo`).
+    ///
+    /// While this design pattern is usable with a single type (`Foo` in our example above),
+    /// it is not usable with a trait, such as `Term`:
+    /// the following trait bound is not valid in Rust: `T: Borrow<Term>`.
+    /// Yet, we would like any function expecting a terms to be able to either take its ownership or simply borrow it,
+    /// depending on the caller's needs and preferences.
+    ///
+    /// The `borrow_term` methods offer a solution to this problem,
+    /// and therefore the trait bound `T: Term` must be thought of as equivalent to `T: Borrow<Term>`:
+    /// the caller can chose to either waive ownership of its term (by passing it directly)
+    /// or keep it (by passing the result of `borrow_term()` instead).
     fn borrow_term(&self) -> Self::BorrowTerm<'_>;
 
     /// Iter over all the constituents of this term.
@@ -376,7 +397,7 @@ pub trait Term: std::fmt::Debug {
     /// * Quoted triples are ordered in lexicographical order
     ///
     /// NB: literals are ordered by their *lexical* value,
-    /// so for example, `"10"^^xsd:integer` come *before* `"2"^^xsd:integer`.
+    /// so for example, `"10"^^xsd:integer` comes *before* `"2"^^xsd:integer`.
     fn cmp<T>(&self, other: T) -> Ordering
     where
         T: Term,
@@ -447,7 +468,7 @@ pub trait Term: std::fmt::Debug {
 
     /// Convert this term in another type.
     ///
-    /// This method is to [`FromTerm`] was [`Into::into`] is to [`From`].
+    /// This method is to [`FromTerm`] what [`Into::into`] is to [`From`].
     ///
     /// NB: if you want to make a *copy* of this term without consuming it,
     /// you can use `this_term.`[`borrow_term`](Term::borrow_term)`().into_term::<T>()`.
@@ -461,10 +482,10 @@ pub trait Term: std::fmt::Debug {
 
     /// Try to convert this term into another type.
     ///
-    /// This method is to [`FromTerm`] was [`TryInto::try_into`] is to [`TryFrom`].
+    /// This method is to [`TryFromTerm`] what [`TryInto::try_into`] is to [`TryFrom`].
     ///
     /// NB: if you want to make a *copy* of this term without consuming it,
-    /// you can use `this_term.`[`borrow_term`](Term::borrow_term)`().into_term::<T>()`.
+    /// you can use `this_term.`[`borrow_term`](Term::borrow_term)`().try_into_term::<T>()`.
     #[inline]
     fn try_into_term<T: TryFromTerm>(self) -> Result<T, T::Error>
     where

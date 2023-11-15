@@ -41,7 +41,7 @@ trait, with a significantly different API, that serves several purposes:
   (they are interpreted as `xsd:string` and `xsd:integer` literals, respectively).
 
 Any code that handles terms will need some significant rewriting.
-Eventually, a chapter of this book will extensively document the new `Term` trait.
+See the chapter on [RDF terms](ch02_rdf_terms.md) for more detail.
 
 ### The end of the "IRI zoo"
 
@@ -49,15 +49,18 @@ Historically, a number of different types have been created in Sophia for repres
 which was [causing some confusion](https://github.com/pchampin/sophia_rs/discussions/112).
 Most of them have now disappeared, in favor of the types defined in [`sophia_iri`](https://docs.rs/sophia_iri/latest/sophia_iri/).
 
-### The end of the [`sophia_term`](https://docs.rs/sophia_term/0.7.2/sophia_term/) crate
+### Reducing the [`sophia_term`](https://docs.rs/sophia_term/latest/sophia_term/) crate
 
-The [`sophia_term`](https://docs.rs/sophia_term/0.7.2/sophia_term/)
-crate no longer exists in version 0.8.0.
+The [`sophia_term`](https://docs.rs/sophia_term/latest/sophia_term/) crate,
+from which most term implementations came in 0.7, has been significantly reduced.
 The most general types that it provided ([`BoxTerm`](https://docs.rs/sophia_term/0.7.2/sophia_term/type.BoxTerm.html), [`RefTerm`](https://docs.rs/sophia_term/0.7.2/sophia_term/type.RefTerm.html))
-are now subsumed by [`SimpleTerm`](https://github.com/pchampin/sophia_rs/blob/a925e6177cfdd7e90dafd4b917ae0790c40a0165/api/src/term/_simple.rs#L8),
-a straightforward implementation of the `Term` trait, provided by `sophia_api`.
-More specific types (such as [`RcTerm`](https://docs.rs/sophia_term/0.7.2/sophia_term/type.RcTerm.html) or [`ArcTerm`](https://docs.rs/sophia_term/0.7.2/sophia_term/type.ArcTerm.html))
-have been deemed non-essential, and are no longer provided at the moment.
+are now subsumed by [`SimpleTerm`](https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/enum.SimpleTerm.html),
+a straightforward implementation of the `Term` trait, provided by
+[`sophia_api`](https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/index.html).
+More specific types (such as
+[`RcTerm`](https://docs.rs/sophia_term/0.8.0-alpha.3/sophia_term/type.RcTerm.html) or 
+[`ArcTerm`](https://docs.rs/sophia_term/0.8.0-alpha.3/sophia_term/type.ArcTerm.html))
+are still provided by `sophia_term`.
 
 ## Simplification of the `Graph` and `Dataset` traits
 
@@ -66,7 +69,7 @@ such as [`triples_with_s`](https://docs.rs/sophia_api/0.7.2/sophia_api/graph/tra
 or [`triples_with_po`](https://docs.rs/sophia_api/0.7.2/sophia_api/graph/trait.Graph.html#method.triples_with_po)
 (and similarly for `Dataset`: `quads_with_s`, etc.).
 
-All these methods have disappeared in favor of `triples_matching`,
+All these methods have disappeared in favor of [`triples_matching`](https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.triples_matching),
 so that instead of:
 ```rust,noplayground,ignore
 for t in g.triples_with_s(mys) {
