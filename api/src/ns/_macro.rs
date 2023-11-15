@@ -5,6 +5,24 @@
 /// This macro also create a test module to check that all created IRIs are valid.
 ///
 /// This allows to skip those checks at runtime, keeping the initialization of the namespace fast.
+///
+/// # Example
+/// ```
+/// # #[macro_use] extern crate sophia_api;
+/// # use sophia_iri::IriRef;
+/// /// An example namespace module
+/// pub mod ex {
+///   namespace! {
+///     "http://example.org/ns#",
+///     Foo,
+///     Bar,
+///     Baz
+///   }
+/// }
+///
+/// assert_eq!(ex::Foo, IriRef::new_unchecked("http://example.org/ns#Foo"));
+/// assert_eq!(ex::Bar, IriRef::new_unchecked("http://example.org/ns#Bar"));
+/// ```
 #[macro_export]
 macro_rules! namespace {
     ($iri_prefix:expr, $($suffix:ident),*; $($r_id:ident, $r_sf:expr),*) => {

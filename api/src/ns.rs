@@ -2,9 +2,9 @@
 //!
 //! This module provides:
 //! * the [`Namespace`](struct.Namespace.html) type for defining custom dynamic namespace;
-//! * the [`namespace`] macro, for defning custom static namespaces;
+//! * the [`namespace`](crate::namespace) macro, for defning custom static namespaces;
 //! * modules corresponding to the most common namespaces
-//!   (generated via the [`namespace`] macro).
+//!   (generated via the [`namespace`](crate::namespace) macro).
 //!
 //! # Example use
 //! ```
@@ -21,8 +21,8 @@
 //!
 //! # Datatyped literals
 //!
-//! Note also that the terms generated via the [`namespace`] macro
-//! can be used to easily produced datatyped literals,
+//! Note also that the terms generated via the [`namespace`](crate::namespace) macro
+//! can be used to easily produce datatyped literals,
 //! by simply "multiplying" a string by its datatype:
 //!
 //! ```
