@@ -88,7 +88,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Executive summary</a></li><li class="chapter-item expanded "><a href="00_introduction.html" class="active"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="01_getting_started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="90_changes_since_07.html"><strong aria-hidden="true">3.</strong> Changes since version 0.7</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Executive summary</a></li><li class="chapter-item expanded "><a href="ch00_introduction.html" class="active"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="ch01_getting_started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="ch02_rdf_terms.html"><strong aria-hidden="true">3.</strong> RDF Terms</a></li><li class="chapter-item expanded "><a href="ch90_changes_since_07.html"><strong aria-hidden="true">4.</strong> Changes since version 0.7</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -175,8 +175,28 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
-<p>The <a href="https://crates.io/crates/sophia">sophia crate</a> aims to provide a comprehensive toolkit for working with RDF and Linked Data in Rust.</p>
-<p>RDF is a data model designed to exchange knowledge on the Web in an interoperable way. Each piece of knowledge in RDF (a statement) is represented by a triple, made of three terms. A set of triples forms an RDF graph. Finally, several graphs can be grouped in a collection called a dataset, where each graph is identified by a unique name.</p>
+<p>The <a href="https://crates.io/crates/sophia">sophia crate</a> aims at providing a comprehensive toolkit for working with RDF and Linked Data in Rust.</p>
+<p><a href="https://www.w3.org/TR/rdf-concepts/">RDF</a> is a data model designed to exchange knowledge on the Web in an interoperable way. Each piece of knowledge in RDF (a <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-statement">statement</a>) is represented by a <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-triple">triple</a>, made of three <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-term">terms</a>. A set of triples forms an RDF <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-graph">graph</a>. Finally, several graphs can be grouped in a collection called a <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-dataset">dataset</a>, where each graph is identified by a unique name.</p>
+<p>In Sophia, each of these core concepts is modeled by a trait, which can be implemented in multiple ways (see for example the <a href="https://docs.rs/sophia_api/latest/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> trait and <a href="https://docs.rs/sophia_api/latest/sophia_api/graph/trait.Graph.html#foreign-impls">some of the types implementing it</a>). Sophia is therefore not meant to provide the &quot;ultimate&quot; implementation of RDF in Rust, but a generic framework to help various implementations to interoperate with each other (in the spirit of <a href="https://github.com/apache/commons-rdf/">Apache Commons RDF</a> for Java or [RDFJS] for Javascript/Typescript).</p>
+<h2 id="generalized-vs-strict-rdf-model"><a class="header" href="#generalized-vs-strict-rdf-model">Generalized vs. Strict RDF model</a></h2>
+<p>The data model supported by this Sophia is in fact
+a superset of the RDF data model as defined by the W3C.
+When the distinction matters,
+they will be called, respectively,
+the <em>generalized</em> RDF model, and the <em>strict</em> RDF model.
+The generalized RDF model extends RDF as follows:</p>
+<ul>
+<li>In addition to standard RDF terms (IRIs, blank nodes and literals),
+Sophia supports
+<ul>
+<li>RDF-star <a href="https://www.w3.org/2021/12/rdf-star.html#dfn-quoted">quoted triples</a></li>
+<li>Variables (a concept borrowed from [SPARQL] or [Notation3])</li>
+</ul>
+</li>
+<li>Sophia allows any kind of term in any position (subject, predicate, object, graph name).</li>
+<li>Sophia allow IRIs to be relative IRI references
+(while in strict RDF, <a href="https://www.w3.org/TR/rdf11-concepts/#h3_section-IRIs">IRIs must be absolute</a>).</li>
+</ul>
 
                     </main>
 
@@ -186,7 +206,7 @@
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="01_getting_started.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="ch01_getting_started.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -200,7 +220,7 @@
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="01_getting_started.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="ch01_getting_started.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

@@ -88,7 +88,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Executive summary</a></li><li class="chapter-item expanded "><a href="00_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="01_getting_started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="90_changes_since_07.html" class="active"><strong aria-hidden="true">3.</strong> Changes since version 0.7</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Executive summary</a></li><li class="chapter-item expanded "><a href="ch00_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="ch01_getting_started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="ch02_rdf_terms.html"><strong aria-hidden="true">3.</strong> RDF Terms</a></li><li class="chapter-item expanded "><a href="ch90_changes_since_07.html" class="active"><strong aria-hidden="true">4.</strong> Changes since version 0.7</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -204,25 +204,28 @@ trait, with a significantly different API, that serves several purposes:</p>
 (they are interpreted as <code>xsd:string</code> and <code>xsd:integer</code> literals, respectively).</li>
 </ul>
 <p>Any code that handles terms will need some significant rewriting.
-Eventually, a chapter of this book will extensively document the new <code>Term</code> trait.</p>
+See the chapter on <a href="ch02_rdf_terms.html">RDF terms</a> for more detail.</p>
 <h3 id="the-end-of-the-iri-zoo"><a class="header" href="#the-end-of-the-iri-zoo">The end of the &quot;IRI zoo&quot;</a></h3>
 <p>Historically, a number of different types have been created in Sophia for representing IRIs,
 which was <a href="https://github.com/pchampin/sophia_rs/discussions/112">causing some confusion</a>.
 Most of them have now disappeared, in favor of the types defined in <a href="https://docs.rs/sophia_iri/latest/sophia_iri/"><code>sophia_iri</code></a>.</p>
-<h3 id="the-end-of-the-sophia_term-crate"><a class="header" href="#the-end-of-the-sophia_term-crate">The end of the <a href="https://docs.rs/sophia_term/0.7.2/sophia_term/"><code>sophia_term</code></a> crate</a></h3>
-<p>The <a href="https://docs.rs/sophia_term/0.7.2/sophia_term/"><code>sophia_term</code></a>
-crate no longer exists in version 0.8.0.
+<h3 id="reducing-the-sophia_term-crate"><a class="header" href="#reducing-the-sophia_term-crate">Reducing the <a href="https://docs.rs/sophia_term/latest/sophia_term/"><code>sophia_term</code></a> crate</a></h3>
+<p>The <a href="https://docs.rs/sophia_term/latest/sophia_term/"><code>sophia_term</code></a> crate,
+from which most term implementations came in 0.7, has been significantly reduced.
 The most general types that it provided (<a href="https://docs.rs/sophia_term/0.7.2/sophia_term/type.BoxTerm.html"><code>BoxTerm</code></a>, <a href="https://docs.rs/sophia_term/0.7.2/sophia_term/type.RefTerm.html"><code>RefTerm</code></a>)
-are now subsumed by <a href="https://github.com/pchampin/sophia_rs/blob/a925e6177cfdd7e90dafd4b917ae0790c40a0165/api/src/term/_simple.rs#L8"><code>SimpleTerm</code></a>,
-a straightforward implementation of the <code>Term</code> trait, provided by <code>sophia_api</code>.
-More specific types (such as <a href="https://docs.rs/sophia_term/0.7.2/sophia_term/type.RcTerm.html"><code>RcTerm</code></a> or <a href="https://docs.rs/sophia_term/0.7.2/sophia_term/type.ArcTerm.html"><code>ArcTerm</code></a>)
-have been deemed non-essential, and are no longer provided at the moment.</p>
+are now subsumed by <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/enum.SimpleTerm.html"><code>SimpleTerm</code></a>,
+a straightforward implementation of the <code>Term</code> trait, provided by
+<a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/index.html"><code>sophia_api</code></a>.
+More specific types (such as
+<a href="https://docs.rs/sophia_term/0.8.0-alpha.3/sophia_term/type.RcTerm.html"><code>RcTerm</code></a> or 
+<a href="https://docs.rs/sophia_term/0.8.0-alpha.3/sophia_term/type.ArcTerm.html"><code>ArcTerm</code></a>)
+are still provided by <code>sophia_term</code>.</p>
 <h2 id="simplification-of-the-graph-and-dataset-traits"><a class="header" href="#simplification-of-the-graph-and-dataset-traits">Simplification of the <code>Graph</code> and <code>Dataset</code> traits</a></h2>
 <p>In version 0.7, the <code>Graph</code> trait had a number of specialized methods for retrieving selected triples,
 such as <a href="https://docs.rs/sophia_api/0.7.2/sophia_api/graph/trait.Graph.html#method.triples_with_s"><code>triples_with_s</code></a>
 or <a href="https://docs.rs/sophia_api/0.7.2/sophia_api/graph/trait.Graph.html#method.triples_with_po"><code>triples_with_po</code></a>
 (and similarly for <code>Dataset</code>: <code>quads_with_s</code>, etc.).</p>
-<p>All these methods have disappeared in favor of <code>triples_matching</code>,
+<p>All these methods have disappeared in favor of <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.triples_matching"><code>triples_matching</code></a>,
 so that instead of:</p>
 <pre><code class="language-rust noplayground ignore">for t in g.triples_with_s(mys) {
     // ...
@@ -256,7 +259,7 @@ has been added on the github repository of Sophia to mark migration issues and r
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="01_getting_started.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="ch02_rdf_terms.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
@@ -267,7 +270,7 @@ has been added on the github repository of Sophia to mark migration issues and r
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="01_getting_started.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="ch02_rdf_terms.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 

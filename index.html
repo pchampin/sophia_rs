@@ -88,7 +88,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html" class="active">Executive summary</a></li><li class="chapter-item expanded "><a href="00_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="01_getting_started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="90_changes_since_07.html"><strong aria-hidden="true">3.</strong> Changes since version 0.7</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html" class="active">Executive summary</a></li><li class="chapter-item expanded "><a href="ch00_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="ch01_getting_started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="ch02_rdf_terms.html"><strong aria-hidden="true">3.</strong> RDF Terms</a></li><li class="chapter-item expanded "><a href="ch90_changes_since_07.html"><strong aria-hidden="true">4.</strong> Changes since version 0.7</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -207,15 +207,10 @@ more precisely, it provides traits for describing
 re-exporting symbols from all the crates above.
 (actually, <code>sophia_xml</code> is only available if the <code>xml</code> feature is enabled)</li>
 </ul>
+<p>In addition to the <a href="https://docs.rs/sophia/">API documentation</a>,
+a high-level <a href="https://pchampin.github.io/sophia_rs/">user documentation</a> is available (although not quite complete yet).</p>
 <h2 id="licence"><a class="header" href="#licence">Licence</a></h2>
 <p><a href="https://cecill.info/licences/Licence_CeCILL-B_V1-en.html">CECILL-B</a> (compatible with BSD)</p>
-<h2 id="testing"><a class="header" href="#testing">Testing</a></h2>
-<p>The test suite depends on the [the <a href="https://github.com/w3c/json-ld-api/">JSON-LD test-suite</a>
-which is included as a <code>git</code> submodule.
-In order to run all the tests, you need to execute the following commands:</p>
-<pre><code class="language-bash">$ git submodule init
-$ git submodule update
-</code></pre>
 <h2 id="citation"><a class="header" href="#citation">Citation</a></h2>
 <p>When using Sophia, please use the following citation:</p>
 <blockquote>
@@ -238,6 +233,7 @@ $ git submodule update
 <p>The following third-party crates are using or extending Sophia</p>
 <ul>
 <li><a href="https://crates.io/crates/hdt"><code>hdt</code></a> provides an implementation of Sophia's traits based on the <a href="https://www.rdfhdt.org/">HDT</a> format.</li>
+<li><a href="https://crates.io/crates/manas"><code>manas</code></a> is a modular framework for implementing <a href="https://solidproject.org/">Solid</a> compatible servers</li>
 </ul>
 <h2 id="history"><a class="header" href="#history">History</a></h2>
 <p>An outdated comparison of Sophia with other RDF libraries is still available
@@ -248,7 +244,7 @@ $ git submodule update
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
 
-                            <a rel="next prefetch" href="00_introduction.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="ch00_introduction.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -259,7 +255,7 @@ $ git submodule update
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
 
-                    <a rel="next prefetch" href="00_introduction.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="ch00_introduction.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
