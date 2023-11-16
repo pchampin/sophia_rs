@@ -14,11 +14,13 @@ use crate::{
     JsonLdOptions,
 };
 
-use self::adapter::{convert_quad, RdfTerm};
-
 mod adapter;
+use adapter::convert_quad;
+pub use adapter::RdfTerm;
+
 mod source;
-use source::JsonLdQuadSource;
+pub use source::JsonLdQuadSource;
+
 #[cfg(test)]
 mod test;
 
