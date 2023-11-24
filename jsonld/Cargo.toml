@@ -20,9 +20,8 @@ file_url = ["dep:url"]
 http_client = ["json-ld/reqwest"]
 
 [dependencies]
-futures-util.workspace = true
 iref = "2.2"
-json-ld = "0.15.0"
+json-ld = { version = "0.15.0", git = "https://github.com/pchampin/json-ld", branch="wasm-0.15.0" }
 json-syntax = "0.9"
 langtag = "0.3.4"
 locspan = "0.7.12"
