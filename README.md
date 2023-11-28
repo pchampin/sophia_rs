@@ -63,6 +63,7 @@ The following third-party crates are using or extending Sophia
 
 * [`hdt`](https://crates.io/crates/hdt) provides an implementation of Sophia's traits based on the [HDT](https://www.rdfhdt.org/) format.
 * [`manas`](https://crates.io/crates/manas) is a modular framework for implementing [Solid](https://solidproject.org/) compatible servers
+* [`nanopub`](https://crates.io/crates/nanopub) is a toolkit for managing [nanopublications(https://nanopub.net/)
 
 ## History
 
