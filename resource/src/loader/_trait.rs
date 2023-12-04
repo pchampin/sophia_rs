@@ -37,7 +37,7 @@ pub trait Loader: Sync + Sized {
         let bufread = io::BufReader::new(&data[..]);
         match &ctype[..] {
             "text/turtle" => turtle::TurtleParser {
-                base: Some(iri.as_ref().map_unchecked(|t| t.borrow().to_string())),
+                base: Some(iri.as_ref().map_unchecked(|t| t.to_string())),
             }
             .parse(bufread)
             .collect_triples()
@@ -76,7 +76,7 @@ pub trait Loader: Sync + Sized {
 
             #[cfg(feature = "xml")]
             "application/rdf+xml" => sophia_xml::parser::RdfXmlParser {
-                base: Some(iri.as_ref().map_unchecked(|t| t.borrow().to_string())),
+                base: Some(iri.as_ref().map_unchecked(|t| t.to_string())),
             }
             .parse(bufread)
             .collect_triples()

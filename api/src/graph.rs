@@ -579,7 +579,8 @@ mod check_implementability {
             Box::new(
                 self.triples
                     .iter()
-                    .filter_map(|t| t.asserted.then(|| Ok(self.make_triple(t.spo)))),
+                    .filter(|t| t.asserted)
+                    .map(|t| Ok(self.make_triple(t.spo))),
             )
         }
     }
@@ -704,13 +705,11 @@ mod check_implementability_lazy_term {
         type Error = std::convert::Infallible;
 
         fn triples(&self) -> GTripleSource<Self> {
-            Box::new(self.triples.iter().filter_map(|t| {
-                t.asserted.then(|| {
-                    Ok(t.spo.map(|i| MyTerm {
-                        graph: self,
-                        index: i,
-                    }))
-                })
+            Box::new(self.triples.iter().filter(|t| t.asserted).map(|t| {
+                Ok(t.spo.map(|i| MyTerm {
+                    graph: self,
+                    index: i,
+                }))
             }))
         }
     }

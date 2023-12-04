@@ -6,7 +6,7 @@
 //! [`GraphNameMatcher`'s implementors lists](GraphNameMatcher#foreign-impls).
 //!
 //! For methods using matchers (with examples), see for example
-//! [`Triple::matched_by`](crate::triple::Triple::matched_by),
+//! [`Triple::matched_by`],
 //! [`Graph::triples_matching`](crate::graph::Graph::triples_matching),
 //! [`MutableGraph::remove_matching`](crate::graph::MutableGraph::remove_matching),
 //! [`MutableGraph::retain_matching`](crate::graph::MutableGraph::retain_matching),

@@ -3,7 +3,7 @@
 //!
 //! This module is based on <https://docs.rs/oxiri/>.
 //!
-//! NB: compared to [`Iri`](crate::Iri) and [`IriRef`](crate::IriRef),
+//! NB: compared to [`Iri`] and [`IriRef`],
 //! [`BaseIri`] and [`BaseIriRef`] are slower to build,
 //! because they analyse the internal structure of the IRI,
 //! in order to allow for efficient resolution of relative IRIs.

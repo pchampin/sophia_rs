@@ -73,10 +73,7 @@ impl<T: Borrow<str> + Debug> Term for GenericTerm<T> {
 
     fn iri(&self) -> Option<IriRef<sophia_api::MownStr>> {
         if let GenericTerm::Iri(iri) = self {
-            Some(
-                iri.as_ref()
-                    .map_unchecked(|t| MownStr::from_str(t.borrow())),
-            )
+            Some(iri.as_ref().map_unchecked(MownStr::from_str))
         } else {
             None
         }
@@ -84,7 +81,7 @@ impl<T: Borrow<str> + Debug> Term for GenericTerm<T> {
 
     fn bnode_id(&self) -> Option<BnodeId<sophia_api::MownStr>> {
         if let GenericTerm::BlankNode(id) = self {
-            Some(id.as_ref().map_unchecked(|t| MownStr::from_str(t.borrow())))
+            Some(id.as_ref().map_unchecked(MownStr::from_str))
         } else {
             None
         }
@@ -116,10 +113,7 @@ impl<T: Borrow<str> + Debug> Term for GenericTerm<T> {
 
     fn variable(&self) -> Option<VarName<sophia_api::MownStr>> {
         if let GenericTerm::Variable(name) = self {
-            Some(
-                name.as_ref()
-                    .map_unchecked(|t| MownStr::from_str(t.borrow())),
-            )
+            Some(name.as_ref().map_unchecked(MownStr::from_str))
         } else {
             None
         }

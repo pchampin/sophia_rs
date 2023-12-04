@@ -44,7 +44,7 @@ mod test {
         let mut old_len = stash.len();
 
         let t1a = sophia_api::ns::xsd::integer;
-        let t1b = stash.copy_term(&t1a);
+        let t1b = stash.copy_term(t1a);
         assert!(Term::eq(&t1a, &t1b));
         assert_eq!(old_len + 1, stash.len());
         old_len = stash.len();
@@ -68,13 +68,13 @@ mod test {
         old_len = stash.len();
 
         let t5a = BnodeId::new_unchecked("foo");
-        let t5b = stash.copy_term(&t5a);
+        let t5b = stash.copy_term(t5a);
         assert!(Term::eq(&t5a, &t5b));
         assert_eq!(old_len, stash.len()); // all values where alreadt there
         old_len = stash.len();
 
         let t6a = VarName::new_unchecked("foobar");
-        let t6b = stash.copy_term(&t6a);
+        let t6b = stash.copy_term(t6a);
         assert!(Term::eq(&t6a, &t6b));
         assert_eq!(old_len + 1, stash.len()); // all values where alreadt there
         old_len = stash.len();
