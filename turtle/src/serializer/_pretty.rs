@@ -407,6 +407,7 @@ impl<'a, W: Write> Prettifier<'a, W> {
 
     fn find_st_index<T: Term>(&self, term: T) -> Option<usize> {
         find_subject(term, &self.subject_types[self.graph_range.clone()])
+            .map(|i| i + self.graph_range.start)
     }
 }
 

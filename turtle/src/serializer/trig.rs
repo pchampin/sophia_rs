@@ -169,6 +169,11 @@ pub(crate) mod test {
                 _:b rdf:first 43; rdf:rest ().
             }
         "#,
+        r#"# issue 149
+            PREFIX : <https://example.org/>
+            :s :p :o .
+            GRAPH :g { _:b :p2 :o2 }
+        "#,
     ];
 
     #[test]
