@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Debug};
 
-use json_ld::{BoxFuture, FutureExt};
+use json_ld::future::{BoxFuture, FutureExt};
 use json_ld::{Loader, RemoteDocument};
 use json_syntax::Value;
 use locspan::{Location, Meta};

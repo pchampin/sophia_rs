@@ -1,5 +1,5 @@
 use super::*;
-use json_ld::{BoxFuture, FutureExt};
+use json_ld::future::{BoxFuture, FutureExt};
 use json_ld::{Loader, RemoteDocument};
 use json_syntax::Parse;
 use locspan::{Location, Meta};
