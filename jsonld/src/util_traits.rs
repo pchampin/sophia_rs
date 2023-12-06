@@ -72,10 +72,13 @@ pub trait HashMapUtil<T> {
 
 impl<T, U: From<T> + PartialEq> HashMapUtil<T> for HashMap<Box<str>, Vec<U>> {
     fn push_if_new<V: Into<Box<str>>>(&mut self, key: V, val: T) {
-        let vals = match self.entry(key.into()) {
-            Vacant(e) => e.insert(Vec::new()),
-            Occupied(e) => e.into_mut(),
+        match self.entry(key.into()) {
+            Occupied(e) => {
+                e.into_mut().push_if_new(val);
+            }
+            Vacant(e) => {
+                e.insert(vec![val.into()]);
+            }
         };
-        vals.push_if_new(val);
     }
 }

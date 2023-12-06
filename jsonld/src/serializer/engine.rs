@@ -9,7 +9,6 @@ use sophia_api::ns::rdf;
 use sophia_api::quad::Quad;
 use sophia_api::source::{QuadSource, SinkError, StreamResult};
 use sophia_api::term::{Term, TermKind, TryFromTerm};
-use std::collections::hash_map::Entry::*;
 use std::collections::{HashMap, HashSet};
 
 /// JSON-LD serializer engine
@@ -90,18 +89,16 @@ impl<'a, L> Engine<'a, L> {
             }
             if q.o().is_bnode() {
                 let parent = (is, q.p().as_id());
-                match self.unique_parent.entry(q.o().as_id()) {
-                    Vacant(e) => {
-                        e.insert(Some(parent));
-                    }
-                    Occupied(mut e) => {
-                        if let Some(p) = e.get() {
+                self.unique_parent
+                    .entry(q.o().as_id())
+                    .and_modify(|opt| {
+                        if let Some(p) = opt {
                             if p != &parent {
-                                e.insert(None);
+                                opt.take();
                             }
                         }
-                    }
-                }
+                    })
+                    .or_insert_with(|| Some(parent));
             }
             Ok(())
         })
@@ -110,16 +107,15 @@ impl<'a, L> Engine<'a, L> {
     fn index<T: Into<Box<str>>, U: Into<Box<str>>>(&mut self, g_id: T, s_id: U) -> usize {
         let g_id: Box<str> = g_id.into();
         let s_id: Box<str> = s_id.into();
-        match self.index.entry((g_id.clone(), s_id.clone())) {
-            Vacant(e) => {
+        *self
+            .index
+            .entry((g_id.clone(), s_id.clone()))
+            .or_insert_with(|| {
                 let i = self.gs_id.len();
-                e.insert(i);
                 self.gs_id.push((g_id, s_id));
                 self.node.push(HashMap::new());
                 i
-            }
-            Occupied(e) => *e.get(),
-        }
+            })
     }
 
     fn make_rdf_object<T>(&mut self, o: T, g_id: &str) -> RdfObject

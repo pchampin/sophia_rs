@@ -2,7 +2,6 @@
 //! <https://www.w3.org/TR/rdf-canon/>
 
 use std::cmp::Ordering;
-use std::collections::btree_map::Entry::*;
 use std::collections::BTreeMap;
 use std::fmt::Write;
 use std::io;
@@ -160,12 +159,11 @@ pub fn relabel_with<'a, H: HashFunction, D: Dataset>(
                 ));
             }
             if let Some(bnid) = component.bnode_id() {
-                match state.b2q.entry(Rc::from(bnid.as_str())) {
-                    Vacant(e) => {
-                        e.insert(vec![quad]);
-                    }
-                    Occupied(mut e) => e.get_mut().push(quad),
-                }
+                state
+                    .b2q
+                    .entry(Rc::from(bnid.as_str()))
+                    .or_default()
+                    .push(quad);
             }
         }
     }
@@ -173,12 +171,7 @@ pub fn relabel_with<'a, H: HashFunction, D: Dataset>(
     for (bnid, quads) in state.b2q.iter() {
         let hash = hash_first_degree_quads::<H, _>(bnid, &quads[..]);
         let bnid2 = Rc::clone(bnid);
-        match state.h2b.entry(hash) {
-            Vacant(e) => {
-                e.insert(vec![bnid2]);
-            }
-            Occupied(mut e) => e.get_mut().push(bnid2),
-        }
+        state.h2b.entry(hash).or_default().push(bnid2);
         state.b2h.insert(Rc::clone(bnid), hash);
     }
     // Step 4
@@ -327,12 +320,7 @@ impl<'a, H: HashFunction, T: Term> C14nState<'a, H, T> {
                     }
                     let hash = self.hash_related_bnode(&bnid, quad, issuer, position);
                     let bnid = Box::from(bnid.as_str());
-                    match hn.entry(hash) {
-                        Vacant(e) => {
-                            e.insert(vec![bnid]);
-                        }
-                        Occupied(mut e) => e.get_mut().push(bnid),
-                    }
+                    hn.entry(hash).or_default().push(bnid);
                 }
             }
         }
@@ -438,17 +426,14 @@ impl BnodeIssuer {
     fn issue(&mut self, bnid: &str) -> (&str, bool) {
         let key = Rc::from(bnid);
         let key2 = Rc::clone(&key);
-        match self.issued.entry(key) {
-            Occupied(e) => (e.into_mut().as_str(), false),
-            Vacant(e) => {
-                let counter = self.issued_order.len();
-                let ret = e.insert(BnodeId::new_unchecked(
-                    format!("{}{}", self.prefix.as_str(), counter).into(),
-                ));
-                self.issued_order.push(key2);
-                (ret.as_str(), true)
-            }
-        }
+        let mut new = false;
+        let ret = self.issued.entry(key).or_insert_with(|| {
+            new = true;
+            let counter = self.issued_order.len();
+            self.issued_order.push(key2);
+            BnodeId::new_unchecked(format!("{}{}", self.prefix.as_str(), counter).into())
+        });
+        (ret.as_str(), new)
     }
 }
 

@@ -431,24 +431,23 @@ fn build_labelled<'a>(d: &'a PrettifiableDataset) -> BTreeSet<&'a SimpleTerm<'a>
         let q = q.unwrap();
         for (i, t) in iter_spog(q).enumerate() {
             match t.kind() {
-                TermKind::BlankNode => match profiles.entry(t) {
-                    Vacant(e) => {
-                        e.insert(BnodeProfile {
+                TermKind::BlankNode => {
+                    profiles
+                        .entry(t)
+                        .and_modify(|profile: &mut BnodeProfile| {
+                            if !profile.bad {
+                                profile.add_named_graph(q.g());
+                                profile.update_positions(i, &q);
+                            }
+                        })
+                        .or_insert_with(|| BnodeProfile {
                             bad: (i == 1 || i == 3),
                             named_graphs: [q.g()].into_iter().collect(),
                             out_degree: usize::from(i == 0),
                             predecessor: if i == 2 { Some(q.s()) } else { None },
                             visited: false,
                         });
-                    }
-                    Occupied(mut e) => {
-                        let profile = e.get_mut();
-                        if !profile.bad {
-                            profile.add_named_graph(q.g());
-                            profile.update_positions(i, &q);
-                        }
-                    }
-                },
+                }
                 TermKind::Triple => {
                     let mut atoms = t.atoms();
                     let [s, p, o] = t.triple().unwrap().spo();
@@ -458,21 +457,16 @@ fn build_labelled<'a>(d: &'a PrettifiableDataset) -> BTreeSet<&'a SimpleTerm<'a>
                                       // if it must be labelled or not
                     }
                     for a in t.atoms().filter(Term::is_blank_node) {
-                        match profiles.entry(a) {
-                            Vacant(e) => {
-                                e.insert(BnodeProfile {
-                                    bad: true,
-                                    named_graphs: Default::default(),
-                                    out_degree: 0,
-                                    predecessor: None,
-                                    visited: false,
-                                });
-                            }
-                            Occupied(mut e) => {
-                                let profile = e.get_mut();
-                                profile.bad = true;
-                            }
-                        }
+                        profiles
+                            .entry(a)
+                            .and_modify(|profile| profile.bad = true)
+                            .or_insert_with(|| BnodeProfile {
+                                bad: true,
+                                named_graphs: Default::default(),
+                                out_degree: 0,
+                                predecessor: None,
+                                visited: false,
+                            });
                     }
                 }
                 _ => (),
