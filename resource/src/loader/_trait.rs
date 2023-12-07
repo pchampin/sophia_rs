@@ -7,6 +7,7 @@ use sophia_api::parser::TripleParser;
 use sophia_api::source::TripleSource;
 use sophia_api::term::Term;
 use sophia_iri::Iri;
+use sophia_jsonld::loader_factory::ClosureLoaderFactory;
 use sophia_turtle::parser::{nt, turtle};
 use std::borrow::Borrow;
 use std::fmt::Debug;
@@ -54,17 +55,19 @@ pub trait Loader: Sync + Sized {
                 use sophia_jsonld::{loader::ClosureLoader, JsonLdOptions, JsonLdParser};
                 let options = JsonLdOptions::new()
                     .with_base(iri.as_ref().map_unchecked(|t| t.into()))
-                    .with_document_loader(ClosureLoader::new(|url| {
-                        async move {
-                            let (content, ctype) =
-                                self.get(url.as_ref()).map_err(|e| e.to_string())?;
-                            if ctype == "application/ld+json" {
-                                String::from_utf8(content).map_err(|e| e.to_string())
-                            } else {
-                                Err(format!("{url} is not JSON-LD: {ctype}"))
+                    .with_document_loader_factory(ClosureLoaderFactory::new(|| {
+                        ClosureLoader::new(|url| {
+                            async move {
+                                let (content, ctype) =
+                                    self.get(url.as_ref()).map_err(|e| e.to_string())?;
+                                if ctype == "application/ld+json" {
+                                    String::from_utf8(content).map_err(|e| e.to_string())
+                                } else {
+                                    Err(format!("{url} is not JSON-LD: {ctype}"))
+                                }
                             }
-                        }
-                        .boxed()
+                            .boxed()
+                        })
                     }));
                 JsonLdParser::new_with_options(options)
                     .parse(bufread)
