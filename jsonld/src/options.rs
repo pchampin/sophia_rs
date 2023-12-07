@@ -1,17 +1,17 @@
 //! Defines types for configuring JSON-LD processing.
 
-use std::sync::{LockResult, Mutex, MutexGuard};
-
 use json_ld::expansion::Policy;
 pub use json_ld::rdf::RdfDirection;
 use json_ld::syntax::context::Value;
+use json_ld::NoLoader;
 pub use json_ld::Options;
 pub use json_ld::ProcessingMode;
 use locspan::Location;
 use locspan::Span;
 use sophia_iri::Iri;
 
-use crate::loader::NoLoader;
+use crate::loader_factory::DefaultLoaderFactory;
+use crate::loader_factory::LoaderFactory;
 use crate::vocabulary::ArcIri;
 
 /// JSON-LD option, as defined by <https://www.w3.org/TR/json-ld11-api/#dom-jsonldoptions-processingmode>.
@@ -24,9 +24,9 @@ use crate::vocabulary::ArcIri;
 ///
 /// * the generic parameter `L` is the type of the [document loader](`json_ld::Loader`)
 #[derive(Default)]
-pub struct JsonLdOptions<L> {
+pub struct JsonLdOptions<LF> {
     inner: InnerOptions,
-    loader: Mutex<L>,
+    loader_factory: LF,
     use_native_types: bool,
     use_rdf_type: bool,
     // non standard:
@@ -34,14 +34,14 @@ pub struct JsonLdOptions<L> {
     compact_context: Option<ContextRef>,
 }
 
-impl JsonLdOptions<NoLoader> {
+impl JsonLdOptions<DefaultLoaderFactory<NoLoader>> {
     /// Build a new JSON-LD options.
     pub fn new() -> Self {
         Self::default()
     }
 }
 
-impl<L> JsonLdOptions<L> {
+impl<LF> JsonLdOptions<LF> {
     /// The [`base`] IRI against which to resolve relative IRIs.
     ///
     /// [`base`]: https://www.w3.org/TR/json-ld11-api/#dom-jsonldoptions-base
@@ -66,10 +66,11 @@ impl<L> JsonLdOptions<L> {
     }
 
     /// The [`documentLoader`] is used to retrieve remote documents and contexts.
+    /// The returned factory can yield a [`documentLoader`].
     ///
     /// [`documentLoader`]: https://www.w3.org/TR/json-ld11-api/#dom-jsonldoptions-documentloader
-    pub fn document_loader(&self) -> LockResult<MutexGuard<L>> {
-        self.loader.lock()
+    pub fn document_loader_factory(&self) -> &LF {
+        &self.loader_factory
     }
 
     /// [`expandContext`] is a context that is used to initialize the active context when expanding a document.
@@ -191,10 +192,13 @@ impl<L> JsonLdOptions<L> {
     }
 
     /// Change the [`document_loader`](Self::document_loader)
-    pub fn with_document_loader<L2>(self, document_loader: L2) -> JsonLdOptions<L2> {
+    pub fn with_document_loader_factory<LF2>(
+        self,
+        document_loader_factory: LF2,
+    ) -> JsonLdOptions<LF2> {
         JsonLdOptions {
             inner: self.inner,
-            loader: Mutex::new(document_loader),
+            loader_factory: document_loader_factory,
             use_native_types: self.use_native_types,
             use_rdf_type: self.use_native_types,
             spaces: self.spaces,
@@ -293,7 +297,15 @@ impl<L> JsonLdOptions<L> {
     }
 }
 
-impl<L> std::ops::Deref for JsonLdOptions<L> {
+impl<LF: LoaderFactory> JsonLdOptions<LF> {
+    /// The [`documentLoader`] is used to retrieve remote documents and contexts.
+    /// [`documentLoader`]: https://www.w3.org/TR/json-ld11-api/#dom-jsonldoptions-documentloader
+    pub fn document_loader(&self) -> LF::Loader<'_> {
+        self.loader_factory.yield_loader()
+    }
+}
+
+impl<LF> std::ops::Deref for JsonLdOptions<LF> {
     type Target = InnerOptions;
 
     fn deref(&self) -> &Self::Target {

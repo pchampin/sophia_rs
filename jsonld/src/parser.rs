@@ -1,8 +1,8 @@
 //! A JSON-LD parser based on Thimothée Haudebourg's [`json_ld`] crate.
 
-use std::{fmt::Display, io::BufRead, ops::DerefMut, sync::Arc};
+use std::{io::BufRead, sync::Arc};
 
-use json_ld::{JsonLdProcessor, Loader, RemoteDocument, ToRdfError};
+use json_ld::{JsonLdProcessor, RemoteDocument, ToRdfError};
 use json_syntax::{Parse, Value};
 use locspan::{Location, Span};
 use sophia_api::{prelude::QuadParser, quad::Spog};
@@ -10,6 +10,7 @@ use sophia_iri::Iri;
 
 use crate::{
     loader::NoLoader,
+    loader_factory::{DefaultLoaderFactory, LoaderFactory},
     vocabulary::{ArcIri, ArcVoc},
     JsonLdOptions,
 };
@@ -30,17 +31,17 @@ mod test;
 ///
 /// * the generic parameter `L` is the type of the [document loader](`json_ld::Loader`)
 ///   (determined by the `options` parameters)
-pub struct JsonLdParser<L = NoLoader> {
-    options: JsonLdOptions<L>,
+pub struct JsonLdParser<LF = DefaultLoaderFactory<NoLoader>> {
+    options: JsonLdOptions<LF>,
 }
 
-impl Default for JsonLdParser<NoLoader> {
+impl Default for JsonLdParser<DefaultLoaderFactory<NoLoader>> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl JsonLdParser<NoLoader> {
+impl JsonLdParser<DefaultLoaderFactory<NoLoader>> {
     /// Make a new [`JsonLdParser`] with the default options
     pub fn new() -> Self {
         JsonLdParser {
@@ -49,46 +50,36 @@ impl JsonLdParser<NoLoader> {
     }
 }
 
-impl<L> JsonLdParser<L> {
+impl<LF> JsonLdParser<LF> {
     /// Make a new [`JsonLdParser`] with the given options
-    pub fn new_with_options(options: JsonLdOptions<L>) -> Self {
+    pub fn new_with_options(options: JsonLdOptions<LF>) -> Self {
         JsonLdParser { options }
     }
 
     /// Borrow the options of this parser
-    pub fn options(&self) -> &JsonLdOptions<L> {
+    pub fn options(&self) -> &JsonLdOptions<LF> {
         &self.options
     }
 
     /// Parse (as RDF) a pre-parsed (as JSON) document
     pub fn parse_json(&self, data: &RemoteDocument<ArcIri>) -> JsonLdQuadSource
     where
-        L: Loader<ArcIri, Location<ArcIri>>
-            + json_ld::ContextLoader<ArcIri, Location<ArcIri>>
-            + Send
-            + Sync,
-        L::Output: Into<Value<Location<ArcIri>>>,
-        L::Error: Display + Send,
-        L::Context: Into<json_ld::syntax::context::Value<Location<ArcIri>>>,
-        L::ContextError: Display + Send,
+        LF: LoaderFactory,
     {
         let gen_loc = Location::new(
             Iri::new_unchecked(Arc::from("x-bnode-gen://")),
             Span::default(),
         );
         let mut generator = rdf_types::generator::Blank::new().with_metadata(gen_loc);
-        let mut g_loader = match self.options.document_loader() {
-            Ok(g) => g,
-            Err(err) => return JsonLdQuadSource::from_err(err),
-        };
-        let loader = g_loader.deref_mut();
+        let mut loader = self.options.document_loader();
         let mut vocab = ArcVoc {};
         let options = self.options.inner().clone();
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .expect("Could not build tokio runtime");
-        match rt.block_on(data.to_rdf_with_using(&mut vocab, &mut generator, loader, options)) {
+        match rt.block_on(data.to_rdf_with_using(&mut vocab, &mut generator, &mut loader, options))
+        {
             Err(ToRdfError::Expand(err)) => JsonLdQuadSource::from_err(err),
             Ok(mut to_rdf) => JsonLdQuadSource::Quads(
                 to_rdf
@@ -101,16 +92,9 @@ impl<L> JsonLdParser<L> {
     }
 }
 
-impl<B: BufRead, L> QuadParser<B> for JsonLdParser<L>
+impl<B: BufRead, LF> QuadParser<B> for JsonLdParser<LF>
 where
-    L: Loader<ArcIri, Location<ArcIri>>
-        + json_ld::ContextLoader<ArcIri, Location<ArcIri>>
-        + Send
-        + Sync,
-    L::Output: Into<Value<Location<ArcIri>>>,
-    L::Error: Display + Send,
-    L::Context: Into<json_ld::syntax::context::Value<Location<ArcIri>>>,
-    L::ContextError: Display + Send,
+    LF: LoaderFactory,
 {
     type Source = JsonLdQuadSource;
 

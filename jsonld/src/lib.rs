@@ -16,6 +16,7 @@ pub use options::*;
 pub mod error;
 pub use error::*;
 pub mod loader;
+pub mod loader_factory;
 pub mod parser;
 pub use parser::*;
 pub mod serializer;
