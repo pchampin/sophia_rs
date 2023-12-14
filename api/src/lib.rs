@@ -48,6 +48,7 @@
 //!
 //! [SPARQL]: https://www.w3.org/TR/sparql11-query/
 //! [Notation3]: https://www.w3.org/TeamSubmission/n3/
+#![deny(missing_docs)]
 
 pub mod dataset;
 pub mod graph;

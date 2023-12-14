@@ -1,5 +1,4 @@
 //! Contains helper functions and macros for testing Dataset implementations
-#![allow(missing_docs)]
 
 use std::fmt::Debug;
 
@@ -10,14 +9,19 @@ use crate::quad::*;
 use crate::source::*;
 use lazy_static::lazy_static;
 
-lazy_static! {
-    pub static ref G1: NsTerm<'static>  = NS.get("G1").unwrap();
-    pub static ref G2: NsTerm<'static> = NS.get("G2").unwrap();
-    //
-    pub static ref DG: Option<NsTerm<'static>> = None;
-    pub static ref GN1: Option<NsTerm<'static>> = Some(*G1);
-    pub static ref GN2: Option<NsTerm<'static>> = Some(*G2);
+#[allow(missing_docs)]
+mod ns {
+    use super::*;
+    lazy_static! {
+        pub static ref G1: NsTerm<'static>  = NS.get("G1").unwrap();
+        pub static ref G2: NsTerm<'static> = NS.get("G2").unwrap();
+        //
+        pub static ref DG: Option<NsTerm<'static>> = None;
+        pub static ref GN1: Option<NsTerm<'static>> = Some(*G1);
+        pub static ref GN2: Option<NsTerm<'static>> = Some(*G2);
+    }
 }
+pub use ns::*;
 
 /// Generates an empty quad source.
 pub fn no_quad() -> impl QuadSource {
@@ -102,6 +106,7 @@ pub fn generalized_node_types_quads() -> impl QuadSource {
     v.into_iter().into_quad_source()
 }
 
+/// Prints d on stdout (for debugging purposes only)
 pub fn dump_dataset<D: Dataset>(d: &D)
 where
     for<'x> DTerm<'x, D>: Debug,

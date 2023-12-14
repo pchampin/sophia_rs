@@ -94,7 +94,7 @@ impl<T: Deref<Target = str>> BaseIriRef<T> {
     /// Convert this to a [`BaseIri`].
     ///
     /// # Precondition
-    /// This [`BaseIriRef`] must be [absolute](`OxiriRef::is_absolute`)
+    /// This [`BaseIriRef`] must be [absolute](OxiriRef::is_absolute)
     pub fn to_base_iri(self) -> BaseIri<T> {
         assert!(self.is_absolute());
         BaseIri(Oxiri::try_from(self.0).unwrap())
@@ -117,7 +117,7 @@ impl<T: Deref<Target = str>> Deref for BaseIriRef<T> {
 //
 
 /// A trait for anything that can be resolved against a
-/// [`BaseIri`](`BaseIri::resolve`) or a [`BaseIriRef`](`BaseIriRef::resolve`).
+/// [`BaseIri`](BaseIri::resolve) or a [`BaseIriRef`](BaseIriRef::resolve).
 pub trait Resolvable<T: Borrow<str>>: Borrow<str> {
     /// The output type when joining to an absolute base.
     type OutputAbs;

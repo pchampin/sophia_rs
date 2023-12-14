@@ -123,7 +123,7 @@ pub trait TripleSource {
         map::MapTripleSource { source: self, map }
     }
 
-    // Convert of triples in this source to quads (belonging to the default graph).
+    /// Convert of triples in this source to quads (belonging to the default graph).
     #[inline]
     fn to_quads(self) -> convert::ToQuads<Self>
     where

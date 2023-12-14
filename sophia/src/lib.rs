@@ -22,6 +22,7 @@
 //!
 //! [RDF]: https://www.w3.org/TR/rdf-primer/
 //! [Linked Data]: http://linkeddata.org/
+#![deny(missing_docs)]
 
 pub use sophia_api as api;
 pub use sophia_c14n as c14n;

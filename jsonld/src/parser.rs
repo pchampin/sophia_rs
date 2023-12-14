@@ -28,7 +28,7 @@ mod test;
 ///
 /// ## Developers
 ///
-/// * the generic parameter `L` is the type of the [document loader](`json_ld::Loader`)
+/// * the generic parameter `L` is the type of the [document loader](json_ld::Loader)
 ///   (determined by the `options` parameters)
 pub struct JsonLdParser<L = NoLoader> {
     options: JsonLdOptions<L>,

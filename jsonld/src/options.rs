@@ -22,7 +22,7 @@ use crate::vocabulary::ArcIri;
 ///
 /// ## Developers
 ///
-/// * the generic parameter `L` is the type of the [document loader](`json_ld::Loader`)
+/// * the generic parameter `L` is the type of the [document loader](json_ld::Loader)
 #[derive(Default)]
 pub struct JsonLdOptions<L> {
     inner: InnerOptions,

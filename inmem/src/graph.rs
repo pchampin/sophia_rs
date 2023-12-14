@@ -1,3 +1,4 @@
+//! In-memory implementations of [`Graph`]
 use std::collections::BTreeSet;
 use std::iter::{empty, once};
 
@@ -19,6 +20,7 @@ pub struct GenericLightGraph<TI: TermIndex> {
 }
 
 impl<TI: TermIndex + Default> GenericLightGraph<TI> {
+    /// Construct an empty graph
     pub fn new() -> Self {
         Self {
             terms: TI::default(),
@@ -151,6 +153,7 @@ pub struct GenericFastGraph<TI: TermIndex> {
 }
 
 impl<TI: TermIndex + Default> GenericFastGraph<TI> {
+    /// Construct an empty graph
     pub fn new() -> Self {
         Self {
             terms: TI::default(),
@@ -329,7 +332,16 @@ impl<TI: TermIndex + Default> CollectibleGraph for GenericFastGraph<TI> {
 
 impl<TI: TermIndex> SetGraph for GenericFastGraph<TI> {}
 
+/// A graph with a single triple index (SPO).
+/// Fast to load but slow to query, with a relatively low memory footprint.
+///
+/// Default configuration of [`GenericLightGraph`].
 pub type LightGraph = GenericLightGraph<SimpleTermIndex<u32>>;
+
+/// A heavily indexed graph.
+/// Fast to query but slow to load, with a relatively high memory footprint.
+///
+/// Default configuration of [`GenericFastGraph`].
 pub type FastGraph = GenericFastGraph<SimpleTermIndex<u32>>;
 
 #[cfg(test)]

@@ -45,6 +45,8 @@
 //! The choice has been made to accept this flaw,
 //! as such undistinguishable blank nodes are very rare in real data,
 //! and not particularly useful.
+#![deny(missing_docs)]
+
 mod dataset;
 mod graph;
 mod hash;

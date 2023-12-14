@@ -1,3 +1,4 @@
+//! In-memory implementations of [`Dataset`]
 use std::collections::BTreeSet;
 use std::iter::{empty, once};
 
@@ -12,7 +13,7 @@ mod _iter;
 use _iter::*;
 
 /// A dataset with a single quad index (GSPO).
-/// Fast to load but slow to query, with a relatively low memory footprint.
+/// Fast to load but slow on some queries, with a relatively low memory footprint.
 #[derive(Clone, Debug, Default)]
 pub struct GenericLightDataset<TI: TermIndex> {
     terms: TI,
@@ -20,6 +21,7 @@ pub struct GenericLightDataset<TI: TermIndex> {
 }
 
 impl<TI: GraphNameIndex + Default> GenericLightDataset<TI> {
+    /// Construct an empty dataset
     pub fn new() -> Self {
         Self {
             terms: TI::default(),
@@ -203,6 +205,7 @@ pub struct GenericFastDataset<TI: GraphNameIndex> {
 }
 
 impl<TI: GraphNameIndex + Default> GenericFastDataset<TI> {
+    /// Construct an empty dataset
     pub fn new() -> Self {
         Self {
             terms: TI::default(),
@@ -539,7 +542,16 @@ impl<TI: GraphNameIndex + Default> CollectibleDataset for GenericFastDataset<TI>
 
 impl<TI: GraphNameIndex> SetDataset for GenericFastDataset<TI> {}
 
+/// A dataset with a single quad index (GSPO).
+/// Fast to load but slow on some queries, with a relatively low memory footprint.
+///
+/// Default configuration of [`GenericLightDataset`].
 pub type LightDataset = GenericLightDataset<SimpleTermIndex<u32>>;
+
+/// A heavily indexed dataset.
+/// Fast to query but slow to load, with a relatively high memory footprint.
+///
+/// Default configuration of [`GenericFastDataset`].
 pub type FastDataset = GenericFastDataset<SimpleTermIndex<u32>>;
 
 #[cfg(test)]

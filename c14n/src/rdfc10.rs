@@ -18,7 +18,7 @@ use crate::_permutations::for_each_permutation_of;
 use crate::hash::{HashFunction, Sha256, Sha384};
 
 /// Write into `w` a canonical N-quads representation of `d`, where
-/// + blank nodes are canonically [relabelled](`relabel`) with
+/// + blank nodes are canonically [relabelled](relabel) with
 ///   - the [SHA-256](Sha256) hash function,
 ///   - the [`DEFAULT_DEPTH_FACTOR`],
 ///   - the [`DEFAULT_PERMUTATION_LIMIT`];
@@ -30,7 +30,7 @@ pub fn normalize<D: Dataset, W: io::Write>(d: &D, w: W) -> Result<(), C14nError<
 }
 
 /// Write into `w` a canonical N-quads representation of `d`, where
-/// + blank nodes are canonically [relabelled](`relabel_sha384`) with
+/// + blank nodes are canonically [relabelled](relabel_sha384) with
 ///   - the [SHA-384](Sha384) hash function,
 ///   - the [`DEFAULT_DEPTH_FACTOR`],
 ///   - the [`DEFAULT_PERMUTATION_LIMIT`];
@@ -42,7 +42,7 @@ pub fn normalize_sha384<D: Dataset, W: io::Write>(d: &D, w: W) -> Result<(), C14
 }
 
 /// Write into `w` a canonical N-quads representation of `d`, where
-/// + blank nodes are canonically [relabelled](`relabel_with`) with
+/// + blank nodes are canonically [relabelled](relabel_with) with
 ///   - the [hash function](HashFunction) `H`,
 ///   - the given `depth_factor`,
 ///   - the given `permutation_limit`;

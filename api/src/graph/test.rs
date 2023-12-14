@@ -1,34 +1,38 @@
 //! Contains helper functions and macros for testing Graph implementations
-#![allow(missing_docs)]
-
+use lazy_static::lazy_static;
 use std::fmt::Debug;
 
 use super::*;
 use crate::ns::*;
 use crate::source::*;
 use crate::term::*;
-use lazy_static::lazy_static;
 
+/// Shortcut type alias for self-sustained [`SimpleTerm`]
 pub type StaticTerm = SimpleTerm<'static>;
 
-pub const NS: Namespace<&str> = Namespace::new_unchecked_const("http://example.org/");
-lazy_static! {
-    pub static ref C1: NsTerm<'static> = NS.get("C1").unwrap();
-    pub static ref C2: NsTerm<'static> = NS.get("C2").unwrap();
-    pub static ref P1: NsTerm<'static> = NS.get("p1").unwrap();
-    pub static ref P2: NsTerm<'static> = NS.get("p2").unwrap();
-    pub static ref I1A: NsTerm<'static> = NS.get("I1A").unwrap();
-    pub static ref I1B: NsTerm<'static> = NS.get("I1B").unwrap();
-    pub static ref I2A: NsTerm<'static> = NS.get("I2A").unwrap();
-    pub static ref I2B: NsTerm<'static> = NS.get("I2B").unwrap();
+#[allow(missing_docs)]
+mod ns {
+    use super::*;
+    pub const NS: Namespace<&str> = Namespace::new_unchecked_const("http://example.org/");
+    lazy_static! {
+        pub static ref C1: NsTerm<'static> = NS.get("C1").unwrap();
+        pub static ref C2: NsTerm<'static> = NS.get("C2").unwrap();
+        pub static ref P1: NsTerm<'static> = NS.get("p1").unwrap();
+        pub static ref P2: NsTerm<'static> = NS.get("p2").unwrap();
+        pub static ref I1A: NsTerm<'static> = NS.get("I1A").unwrap();
+        pub static ref I1B: NsTerm<'static> = NS.get("I1B").unwrap();
+        pub static ref I2A: NsTerm<'static> = NS.get("I2A").unwrap();
+        pub static ref I2B: NsTerm<'static> = NS.get("I2B").unwrap();
+    }
+    pub const B1: BnodeId<&str> = BnodeId::new_unchecked_const("1");
+    pub const B2: BnodeId<&str> = BnodeId::new_unchecked_const("2");
+    pub const B3: BnodeId<&str> = BnodeId::new_unchecked_const("3");
+    pub const EN: LanguageTag<&str> = LanguageTag::new_unchecked_const("en");
+    pub const V1: VarName<&str> = VarName::new_unchecked_const("v1");
+    pub const V2: VarName<&str> = VarName::new_unchecked_const("v2");
+    pub const V3: VarName<&str> = VarName::new_unchecked_const("v3");
 }
-pub const B1: BnodeId<&str> = BnodeId::new_unchecked_const("1");
-pub const B2: BnodeId<&str> = BnodeId::new_unchecked_const("2");
-pub const B3: BnodeId<&str> = BnodeId::new_unchecked_const("3");
-pub const EN: LanguageTag<&str> = LanguageTag::new_unchecked_const("en");
-pub const V1: VarName<&str> = VarName::new_unchecked_const("v1");
-pub const V2: VarName<&str> = VarName::new_unchecked_const("v2");
-pub const V3: VarName<&str> = VarName::new_unchecked_const("v3");
+pub use ns::*;
 
 /// Generates an empty triple source.
 pub fn no_triple() -> impl TripleSource {
@@ -114,6 +118,7 @@ pub fn generalized_node_types_triples() -> impl TripleSource {
     v.into_iter().into_triple_source()
 }
 
+/// Prints g on stdout
 pub fn dump_graph<G: Graph>(g: &G)
 where
     for<'x> GTerm<'x, G>: Debug,

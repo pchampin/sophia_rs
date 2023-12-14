@@ -1,14 +1,18 @@
-//! A [`TermIndex`] is a bidirectional assocuation of [terms](`Term`) with short numeric [indices](`Index`).
+//! A [`TermIndex`] is a bidirectional assocuation of [terms](Term) with short numeric [indices](Index).
 use sophia_api::term::{FromTerm, GraphName, SimpleTerm, Term};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::error::Error;
 
-/// Abstraction of the short numeric indices representing [terms](`Term`) in a [`TermIndex`].
+/// Abstraction of the short numeric indices representing [terms](Term) in a [`TermIndex`].
 pub trait Index: Copy + std::fmt::Debug + Ord {
+    /// The minimal value of this index type
     const ZERO: Self;
+    /// The maximal value of this index type
     const MAX: Self;
+    /// Convert from usize
     fn from_usize(other: usize) -> Self;
+    /// Convert to usize
     fn into_usize(self) -> usize;
 }
 
@@ -53,10 +57,13 @@ impl Index for u16 {
 
 //
 
-/// A [`TermIndex`] is a bidirectional association of [terms](`Term`) with short numeric [indices](`Index`).
+/// A [`TermIndex`] is a bidirectional association of [terms](Term) with short numeric [indices](Index).
 pub trait TermIndex {
+    /// The type of [`Term`]s contained in this [`TermIndex`]
     type Term: Term;
+    /// The type of [indices](Index) used by this [`TermIndex`]
     type Index: Index;
+    /// The type of error that this [`TermIndex`] may raise
     type Error: Error + 'static;
 
     /// Get the index corresponding to term `t`, if it exists.
@@ -71,7 +78,7 @@ pub trait TermIndex {
     /// Get the term corresponding to index `i`.
     ///
     /// # Precondition
-    /// `i` must have been returned previously by [`get_index`](TermIndex::get_index) or (`ensure_index`)(TermIndex::ensure_index),
+    /// `i` must have been returned previously by [`get_index`](TermIndex::get_index) or [`ensure_index`](TermIndex::ensure_index),
     /// otherwise this method may panic.
     fn get_term(&self, i: Self::Index) -> <Self::Term as Term>::BorrowTerm<'_>;
 }
@@ -87,7 +94,7 @@ pub trait GraphNameIndex: TermIndex {
     /// Get the graph name corresponding to index `i`.
     ///
     /// # Precondition
-    /// `i` must have been returned previously by [`get_index`](TermIndex::get_index) or (`ensure_index`)(TermIndex::ensure_index),
+    /// `i` must have been returned previously by [`get_index`](TermIndex::get_index) or [`ensure_index`](TermIndex::ensure_index),
     /// otherwise this method may panic.
     fn get_graph_name(&self, i: Self::Index) -> GraphName<<Self::Term as Term>::BorrowTerm<'_>> {
         if i == self.get_default_graph_index() {
@@ -115,6 +122,7 @@ pub struct SimpleTermIndex<I: Index> {
 }
 
 impl<I: Index> SimpleTermIndex<I> {
+    /// Construct an empty index
     pub fn new() -> Self {
         SimpleTermIndex {
             t2i: HashMap::new(),
@@ -122,10 +130,12 @@ impl<I: Index> SimpleTermIndex<I> {
         }
     }
 
+    /// The numver of terms in this index
     pub fn len(&self) -> usize {
         self.i2t.len()
     }
 
+    /// Whether this index is empty
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -173,6 +183,7 @@ impl<I: Index> GraphNameIndex for SimpleTermIndex<I> {
     }
 }
 
+/// An error type to indicate that a [`SimpleTermIndex`] is full
 #[derive(thiserror::Error, Copy, Clone, Debug)]
 #[error("This TermIndex can not contain more terms")]
 pub struct TermIndexFullError();

@@ -123,7 +123,7 @@ pub trait QuadSource {
         map::MapQuadSource { source: self, map }
     }
 
-    // Convert of quads in this source to triples (stripping the graph name).
+    /// Convert of quads in this source to triples (stripping the graph name).
     fn to_triples(self) -> convert::ToTriples<Self>
     where
         Self: Sized,

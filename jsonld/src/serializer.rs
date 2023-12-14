@@ -22,7 +22,7 @@ mod test;
 /// ## Developers
 ///
 /// * the generic parameter `W` is the output type of the serializer (typically a [`std::io::Write`])
-/// * the generic parameter `L` is the type of the [document loader](`json_ld::Loader`)
+/// * the generic parameter `L` is the type of the [document loader](json_ld::Loader)
 pub struct JsonLdSerializer<W, L = NoLoader> {
     options: JsonLdOptions<L>,
     target: W,
@@ -99,7 +99,7 @@ where
 ///
 /// ## Developers
 ///
-/// * the generic parameter `L` is the type of the [document loader](`json_ld::Loader`)
+/// * the generic parameter `L` is the type of the [document loader](json_ld::Loader)
 ///   (determined by the `options` parameters)
 pub type Jsonifier<L = NoLoader> = JsonLdSerializer<JsonTarget, L>;
 
@@ -158,7 +158,7 @@ impl<L> QuadSerializer for Jsonifier<L> {
 ///
 /// ## Developers
 ///
-/// * the generic parameter `L` is the type of the [document loader](`json_ld::Loader`)
+/// * the generic parameter `L` is the type of the [document loader](json_ld::Loader)
 ///   (determined by the `options` parameters)
 pub type JsonLdStringifier<L = NoLoader> = JsonLdSerializer<Vec<u8>, L>;
 

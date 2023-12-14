@@ -8,7 +8,7 @@
 //! [RDF]: https://www.w3.org/TR/rdf-primer/
 //! [Linked Data]: http://linkeddata.org/
 //! [RDF/XML]: https://www.w3.org/TR/rdf-syntax-grammar/
+#![deny(missing_docs)]
 
 pub mod parser;
-
 pub mod serializer;

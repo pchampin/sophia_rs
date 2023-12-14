@@ -7,7 +7,7 @@
 //!
 //! # Feature gates
 //!
-//! - **test_data** exposes the [`test`](mod@test) module,
+//! - **test_data** exposes the [`test`](`mod@test`) module,
 //!   which contains arrays of good and bad IRIs,
 //!   useful for testing purposes, possibly in other crates.
 //!
