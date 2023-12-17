@@ -480,7 +480,7 @@ pub trait MutableGraph: Graph {
     {
         let to_remove: Result<Vec<[SimpleTerm; 3]>, _> = self
             .triples_matching(ms, mp, mo)
-            .map_ok(|t| [t.s().into_term(), t.p().into_term(), t.o().into_term()])
+            .map_ok(|t| t.spo().map(Term::into_term))
             .collect();
         self.remove_all(to_remove?.into_iter().into_triple_source())
             .map_err(|err| err.unwrap_sink_error())
@@ -500,8 +500,8 @@ pub trait MutableGraph: Graph {
     {
         let to_remove: Result<Vec<[SimpleTerm; 3]>, _> = self
             .triples()
-            .filter_ok(|t| !(ms.matches(&t.s()) && mp.matches(&t.p()) && mo.matches(&t.o())))
-            .map_ok(|t| [t.s().into_term(), t.p().into_term(), t.o().into_term()])
+            .filter_ok(|t| !t.matched_by(ms.matcher_ref(), mp.matcher_ref(), mo.matcher_ref()))
+            .map_ok(|t| t.spo().map(Term::into_term))
             .collect();
         self.remove_all(to_remove?.into_iter().into_triple_source())
             .map_err(|err| err.unwrap_sink_error())?;

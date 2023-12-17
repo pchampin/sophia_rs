@@ -533,10 +533,8 @@ pub trait MutableDataset: Dataset {
         let to_remove: Result<Vec<([SimpleTerm; 3], GraphName<SimpleTerm>)>, _> = self
             .quads_matching(ms, mp, mo, mg)
             .map_ok(|q| {
-                (
-                    [q.s().into_term(), q.p().into_term(), q.o().into_term()],
-                    q.g().map(Term::into_term),
-                )
+                let (spo, g) = q.spog();
+                (spo.map(Term::into_term), g.map(Term::into_term))
             })
             .collect();
         self.remove_all(to_remove?.into_iter().into_quad_source())
@@ -565,16 +563,16 @@ pub trait MutableDataset: Dataset {
         let to_remove: Result<Vec<([SimpleTerm; 3], GraphName<SimpleTerm>)>, _> = self
             .quads()
             .filter_ok(|q| {
-                !(ms.matches(&q.s())
-                    && mp.matches(&q.p())
-                    && mo.matches(&q.o())
-                    && mg.matches(q.g().as_ref()))
+                !q.matched_by(
+                    ms.matcher_ref(),
+                    mp.matcher_ref(),
+                    mo.matcher_ref(),
+                    mg.matcher_ref(),
+                )
             })
             .map_ok(|q| {
-                (
-                    [q.s().into_term(), q.p().into_term(), q.o().into_term()],
-                    q.g().map(Term::into_term),
-                )
+                let (spo, g) = q.spog();
+                (spo.map(Term::into_term), g.map(Term::into_term))
             })
             .collect();
         self.remove_all(to_remove?.into_iter().into_quad_source())
