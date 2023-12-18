@@ -1,6 +1,6 @@
 # RDF Terms
 
-The [`Term`] trait defines how you interad with [RDF terms] in Sophia.
+The [`Term`] trait defines how you interact with [RDF terms] in Sophia.
 
 ## Using terms
 
@@ -9,9 +9,9 @@ The kind is described by the [`TermKind`] enum,
 and available from the [`Term::kind`] method.
 
 ```rust,noplayground
-# use sophia::api::term::{FromTerm, SimpleTerm, Term, TermKind};
+# use sophia::api::term::{SimpleTerm, Term, TermKind};
 # use TermKind::*;
-# let some_term = SimpleTerm::from_term("foo");
+# let some_term: SimpleTerm = "foo".into_term();
 match some_term.kind() {
     Iri => { /* ... */ }
     Literal => { /* ... */ }
@@ -24,12 +24,12 @@ Alternatively, when only one kind is of interest, you can use [`Term::is_iri`], 
 
 If you are interested in the "value" of the term, the trait provides the following methods. All of them return an `Option`, which will be `None` if the term does not have the corresponding kind.
 
-* If the term is an IRI, [`Term::iri`] returns that IRI.
+* If the term is an IRI, [`Term::iri`] returns that IRI[^relative_iris].
 * If the term is a blank node, [`Term::bnode_id`] returns its [blank node identifier].
 * If the term is a literal:
 
   + [`Term::lexical_form`] returns its [lexical form] (the "textual value" of the literal),
-  + [`Term::datatype`] returns its datatype IRI,
+  + [`Term::datatype`] returns its datatype IRI[^relative_iris],
   + [`Term::language_tag`] returns its [language tag], if any.
 
 * If the term is a [quoted triple]:
@@ -39,7 +39,7 @@ If you are interested in the "value" of the term, the trait provides the followi
   + [`Term::atoms`] iterates over all its atomic (i.e. non quoted-triple) constituents.
   + (those three methods also have a `to_X` version that destructs the original term instead of borrowing it)
 
-* If the term is a variable, [`Term::variable`] returns its name.
+* If the term is a variable[^variables], [`Term::variable`] returns its name.
 
 Finally, the method [`Term::eq`] can be used to check whether two values implementing [`Term`] represent the same RDF term. Note that the `==` operator may give a different result than [`Term::eq`] on some types implementing the [`Term`] trait.
 
@@ -49,7 +49,7 @@ Finally, the method [`Term::eq`] can be used to check whether two values impleme
 Below is a list of useful types implementing the [`Term`] trait:
 
 * [`Iri`]`<T>` and [`IriRef`]`<T>`, where `T: Borrow<str>`, representing IRIs
-* [`BnodeId`]`<T>, where `T: Borrow<str>`, representing blank nodes
+* [`BnodeId`]`<T>`, where `T: Borrow<str>`, representing blank nodes
 * `str`, representing literals of type `xsd:string`,
 * `i32`, `isize` and `usize` representing literals of type `xsd:integer`,
 * `f64` representing literals of type `xsd:double`,
@@ -57,7 +57,9 @@ Below is a list of useful types implementing the [`Term`] trait:
 
 [`SimpleTerm`] is a straightforward implementation of [`Term`], that can represent any kind of term, and can either own its own underlying data or borrow it from something else.
 
-Any term can be converted to a [`SimpleTerm`] using the [`Term::as_simple`] method. This method borrows as much as possible from the initial term. Alternatively, to convert any term to a self-sufficient [`SimpleTerm`], you can use [`Term::into_term`]
+Any term can be converted to a [`SimpleTerm`] using the [`Term::as_simple`] method.
+This method borrows as much as possible from the initial term to avoid spurious memory allocation.
+Alternatively, to convert any term to a self-sufficient [`SimpleTerm`], you can use [`Term::into_term`]
 
 See also the list of [recipes](#recipes-for-constructing-terms) below.
 
@@ -129,10 +131,27 @@ let b = BnodeId::new("x");
 # Ok(()) }
 ```
 
+### Converting terms into a different type
+```rust,noplayground
+# use sophia::api::{ns::xsd, term::{SimpleTerm, Term}};
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+# let some_term = "42" * xsd::integer;
+let t1: SimpleTerm = "hello".into_term();
+let t2: i32 = some_term.try_into_term()?;
+# Ok(()) }
+```
+
+----
+
+[^relative_iris]: Note that in Sophia's [generalized RDF] model,
+IRIs can be *relative* IRI reference.
+
+[^variables]: Note that this kind only exist in Sophia's [generalized RDF] model.
+
 
 [`Term`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html
 [RDF terms]: https://www.w3.org/TR/rdf-concepts/#dfn-rdf-term
-[generalized RDF]: ch00_introduction.html#generalized-vs-strict-rdf-model
+[generalized RDF]: ch00_introduction.html#generalized
 [`TermKind`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/enum.TermKind.html
 [`Term::kind`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#tymethod.kind
 [`Term::is_iri`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.is_iri

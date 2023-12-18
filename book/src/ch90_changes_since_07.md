@@ -79,8 +79,7 @@ for t in g.triples_with_s(mys) {
 one should now write
 ```rust,noplayground
 # extern crate sophia;
-# use sophia::api::graph::Graph;
-# use sophia::api::term::matcher::Any;
+# use sophia::api::prelude::*;
 # let g: Vec<[i32; 3]> = vec![]; // dummy graph type
 # let mys = 42;
 for t in g.triples_matching([mys], Any, Any) {

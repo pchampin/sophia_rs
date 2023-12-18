@@ -572,7 +572,7 @@ mod test {
 
 /// Flavors of Dataset implementations with a smaller memory-footprint.
 ///
-/// The trade-off is that these implementations can only contain a small number (2^16) of terms.
+/// The trade-off is that these implementations can only contain a small number (2^16) of distinct terms.
 ///
 pub mod small {
     use crate::index::SimpleTermIndex;

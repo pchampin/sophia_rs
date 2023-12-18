@@ -6,7 +6,7 @@ The [sophia crate](https://crates.io/crates/sophia) aims at providing a comprehe
 
 In Sophia, each of these core concepts is modeled by a trait, which can be implemented in multiple ways (see for example the [`Graph`] trait and [some of the types implementing it](https://docs.rs/sophia_api/latest/sophia_api/graph/trait.Graph.html#foreign-impls)). Sophia is therefore not meant to provide the "ultimate" implementation of RDF in Rust, but a generic framework to help various implementations to interoperate with each other (in the spirit of [Apache Commons RDF] for Java or [RDFJS] for Javascript/Typescript).
 
-## Generalized vs. Strict RDF model
+## Generalized vs. Strict RDF model {#generialized}
 The data model supported by this Sophia is in fact
 a superset of the RDF data model as defined by the W3C.
 When the distinction matters,

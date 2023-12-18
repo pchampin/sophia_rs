@@ -80,7 +80,7 @@ pub trait Triple: Sized {
 
     /// Check whether `other` is term-wise equal (using [`Term::eq`]) to `self`.
     ///
-    /// See also [`eq_spo`](Triple::eq_spo).
+    /// See also [`eq_spo`](Triple::eq_spo), [`matched_by`](Triple::matched_by).
     #[inline]
     fn eq<T: Triple>(&self, other: T) -> bool {
         self.eq_spo(other.s(), other.p(), other.o())
@@ -88,7 +88,7 @@ pub trait Triple: Sized {
 
     /// Check whether the triple (`s`, `p`, `o`) is term-wise equal (using [`Term::eq`]) to `self`.
     ///
-    /// See also [`eq`](Triple::eq).
+    /// See also [`eq`](Triple::eq), [`matched_by`](Triple::matched_by).
     fn eq_spo<S: Term, P: Term, O: Term>(&self, s: S, p: P, o: O) -> bool {
         self.s().eq(s) && self.p().eq(p) && self.o().eq(o)
     }

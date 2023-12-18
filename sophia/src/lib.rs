@@ -49,5 +49,10 @@ mod booktest {
     }
     booktest!(ch01_getting_started);
     booktest!(ch02_rdf_terms);
+    booktest!(ch03_rdf_statements);
+    booktest!(ch04_rdf_graphs);
+    booktest!(ch05_term_matchers);
+    booktest!(ch06_rdf_datasets);
+    booktest!(ch07_parsing_and_serializing);
     booktest!(ch90_changes_since_07);
 }

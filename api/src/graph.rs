@@ -103,8 +103,7 @@ pub trait Graph {
     /// [`SimpleTerm`]: crate::term::SimpleTerm
     /// [`Any`]: crate::term::matcher::Any
     /// ```
-    /// # use sophia_api::graph::Graph;
-    /// # use sophia_api::triple::Triple;
+    /// # use sophia_api::prelude::*;
     /// # use sophia_api::ns::{Namespace, rdf};
     /// #
     /// # fn test<G: Graph>(graph: &G) -> Result<(), Box<dyn std::error::Error>>
@@ -112,8 +111,6 @@ pub trait Graph {
     /// #     G: Graph,
     /// # {
     /// #
-    /// use sophia_api::term::matcher::Any;
-    ///
     /// let s = Namespace::new("http://schema.org/")?;
     /// let city = s.get("City")?;
     /// let country = s.get("Country")?;
@@ -128,18 +125,15 @@ pub trait Graph {
     /// Here is another example using a closure as a [`TermMatcher`].
     ///
     /// ```
-    /// # use sophia_api::graph::Graph;
-    /// # use sophia_api::term::{SimpleTerm, Term};
-    /// # use sophia_api::triple::Triple;
+    /// # use sophia_api::prelude::*;
     /// # use sophia_api::ns::rdfs;
+    /// # use sophia_api::term::SimpleTerm;
     /// #
     /// # fn test<G>(graph: &G) -> Result<(), Box<dyn std::error::Error>>
     /// # where
     /// #     G: Graph,
     /// # {
     /// #
-    /// use sophia_api::term::matcher::Any;
-    ///
     /// for t in graph.triples_matching(
     ///     Any,
     ///     [&rdfs::label],
@@ -323,6 +317,8 @@ pub trait MutableGraph: Graph {
     /// a return value of `false` means that the graph was not changed,
     /// because the triple was already present in this [`SetGraph`].
     ///
+    /// See also [`insert_triple`](MutableGraph::insert_triple)
+    ///
     /// # Usage
     /// ```
     /// # use sophia_api::graph::{MutableGraph, MgResult};
@@ -350,7 +346,7 @@ pub trait MutableGraph: Graph {
     /// NB: if you want to insert a triple `t` while keeping its ownership,
     /// you can still pass [`t.spo()`](Triple::spo).
     ///
-    /// See also [MutableGraph::insert]
+    /// See also [`MutableGraph::insert`]
     fn insert_triple<T>(&mut self, triple: T) -> MgResult<Self, bool>
     where
         T: Triple,

@@ -106,8 +106,7 @@ pub trait Dataset {
     /// [`SimpleTerm`]: crate::term::SimpleTerm
     /// [`Any`]: crate::term::matcher::Any
     /// ```
-    /// # use sophia_api::dataset::Dataset;
-    /// # use sophia_api::quad::Quad;
+    /// # use sophia_api::prelude::*;
     /// # use sophia_api::ns::{Namespace, rdf};
     /// #
     /// # fn test<G: Dataset>(dataset: &G) -> Result<(), Box<dyn std::error::Error>>
@@ -115,8 +114,6 @@ pub trait Dataset {
     /// #     G: Dataset,
     /// # {
     /// #
-    /// use sophia_api::term::matcher::Any;
-    ///
     /// let s = Namespace::new("http://schema.org/")?;
     /// let city = s.get("City")?;
     /// let country = s.get("Country")?;
@@ -357,6 +354,8 @@ pub trait MutableDataset: Dataset {
     /// a return value of `false` means that the dataset was not changed,
     /// because the quad was already present in this [`SetDataset`].
     ///
+    /// See also [`MutableDataset::insert_quad`]
+    ///
     /// # Usage
     /// ```
     /// # use sophia_api::dataset::{MutableDataset, MdResult};
@@ -393,7 +392,7 @@ pub trait MutableDataset: Dataset {
     /// NB: if you want to insert a quad `q` while keeping its ownership,
     /// you can still pass [`q.spog()`](Quad::spog).
     ///
-    /// See also [MutableDataset::insert]
+    /// See also [`MutableDataset::insert`]
     fn insert_quad<T>(&mut self, quad: T) -> MdResult<Self, bool>
     where
         T: Quad,

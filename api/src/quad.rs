@@ -86,7 +86,7 @@ pub trait Quad: Sized {
 
     /// Check whether `other` is term-wise equal (using [`Term::eq`]) to `self`.
     ///
-    /// See also [`eq_spog`](Quad::eq_spog).
+    /// See also [`eq_spog`](Quad::eq_spog), [`matched_by`](Quad::matched_by).
     #[inline]
     fn eq<T: Quad>(&self, other: T) -> bool {
         self.eq_spog(other.s(), other.p(), other.o(), other.g())
@@ -94,7 +94,7 @@ pub trait Quad: Sized {
 
     /// Check whether the quad (`s`, `p`, `o`) is term-wise equal (using [`Term::eq`]) to `self`.
     ///
-    /// See also [`eq`](Quad::eq).
+    /// See also [`eq`](Quad::eq), [`matched_by`](Quad::matched_by).
     fn eq_spog<S: Term, P: Term, O: Term, G: Term>(
         &self,
         s: S,
