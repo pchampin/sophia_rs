@@ -196,45 +196,45 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn no_duplicate() -> Result<(), Box<dyn std::error::Error>> {
+            fn handle_duplicate() -> Result<(), Box<dyn std::error::Error>> {
+                let mut d: $dataset_impl = $dataset_collector(no_quad()).unwrap();
+                assert_eq!(d.quads().count(), 0);
+                assert!(MutableDataset::insert(
+                    &mut d,
+                    &*C1,
+                    &rdf::type_,
+                    &rdfs::Class,
+                    DG.as_ref(),
+                )? || !$is_set);
+                assert_eq!(d.quads().count(), 1);
+                assert!(!MutableDataset::insert(
+                    &mut d,
+                    &*C1,
+                    &rdf::type_,
+                    &rdfs::Class,
+                    DG.as_ref(),
+                )? || !$is_set);
                 if $is_set {
-                    let mut d: $dataset_impl = $dataset_collector(no_quad()).unwrap();
-                    assert_eq!(d.quads().count(), 0);
-                    assert!(MutableDataset::insert(
-                        &mut d,
-                        &*C1,
-                        &rdf::type_,
-                        &rdfs::Class,
-                        DG.as_ref(),
-                    )? || !$is_set);
                     assert_eq!(d.quads().count(), 1);
-                    assert!(!MutableDataset::insert(
-                        &mut d,
-                        &*C1,
-                        &rdf::type_,
-                        &rdfs::Class,
-                        DG.as_ref(),
-                    )? || !$is_set);
-                    assert_eq!(d.quads().count(), 1);
-                    assert!(MutableDataset::remove(
-                        &mut d,
-                        &*C1,
-                        &rdf::type_,
-                        &rdfs::Class,
-                        DG.as_ref(),
-                    )? || !$is_set);
-                    assert_eq!(d.quads().count(), 0);
-                    assert!(!MutableDataset::remove(
-                        &mut d,
-                        &*C1,
-                        &rdf::type_,
-                        &rdfs::Class,
-                        DG.as_ref(),
-                    )? || !$is_set);
-                    assert_eq!(d.quads().count(), 0);
                 } else {
-                    println!("effectively skipped, since is_set is false");
+                    assert!(d.quads().count() >= 1);
                 }
+                assert!(MutableDataset::remove(
+                    &mut d,
+                    &*C1,
+                    &rdf::type_,
+                    &rdfs::Class,
+                    DG.as_ref(),
+                )? || !$is_set);
+                assert_eq!(d.quads().count(), 0);
+                assert!(!MutableDataset::remove(
+                    &mut d,
+                    &*C1,
+                    &rdf::type_,
+                    &rdfs::Class,
+                    DG.as_ref(),
+                )? || !$is_set);
+                assert_eq!(d.quads().count(), 0);
                 Ok(())
             }
 

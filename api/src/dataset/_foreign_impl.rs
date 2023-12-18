@@ -325,13 +325,15 @@ where
         let p = p.borrow_term();
         let o = o.borrow_term();
         let g = g.as_ref().map(|gn| gn.borrow_term());
-        match self.iter().position(|q| q.matched_by([s], [p], [o], [g])) {
-            None => Ok(false),
-            Some(i) => {
+        let mut i = 0;
+        while i < self.len() {
+            if self[i].matched_by([s], [p], [o], [g]) {
                 self.swap_remove(i);
-                Ok(true)
+            } else {
+                i += 1;
             }
         }
+        Ok(true)
     }
 }
 

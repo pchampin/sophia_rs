@@ -1,6 +1,6 @@
 //! I define adapters for the [`graph`](super) related traits.
 use super::*;
-use crate::dataset::{DTerm, Dataset, MutableDataset};
+use crate::dataset::{DTerm, Dataset, MutableDataset, SetDataset};
 use crate::quad::Quad;
 use crate::term::{
     matcher::{Any, GraphNameMatcher},
@@ -204,6 +204,8 @@ impl<D: Dataset, G: Term> Graph for DatasetGraph<D, G> {
         )
     }
 }
+
+impl<D: SetDataset, G: Term> SetGraph for DatasetGraph<D, G> {}
 
 impl<D: MutableDataset, G: Term> MutableGraph for DatasetGraph<D, G> {
     type MutationError = D::MutationError;

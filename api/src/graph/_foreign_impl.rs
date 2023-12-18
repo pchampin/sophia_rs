@@ -263,13 +263,15 @@ where
         let s = s.borrow_term();
         let p = p.borrow_term();
         let o = o.borrow_term();
-        match self.iter().position(|t| t.matched_by([s], [p], [o])) {
-            None => Ok(false),
-            Some(i) => {
+        let mut i = 0;
+        while i < self.len() {
+            if self[i].matched_by([s], [p], [o]) {
                 self.swap_remove(i);
-                Ok(true)
+            } else {
+                i += 1;
             }
         }
+        Ok(true)
     }
 }
 

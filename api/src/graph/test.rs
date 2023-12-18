@@ -216,41 +216,41 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn no_duplicate() -> Result<(), Box<dyn std::error::Error>> {
+            fn handle_duplicate() -> Result<(), Box<dyn std::error::Error>> {
+                let mut g: $graph_impl = $graph_collector(no_triple()).unwrap();
+                assert_eq!(g.triples().count(), 0);
+                assert!(MutableGraph::insert(
+                    &mut g,
+                    &*C1,
+                    &rdf::type_,
+                    &rdfs::Class
+                )? || !$is_set);
+                assert_eq!(g.triples().count(), 1);
+                assert!(!MutableGraph::insert(
+                    &mut g,
+                    &*C1,
+                    &rdf::type_,
+                    &rdfs::Class
+                )? || !$is_set);
                 if $is_set {
-                    let mut g: $graph_impl = $graph_collector(no_triple()).unwrap();
-                    assert_eq!(g.triples().count(), 0);
-                    assert!(MutableGraph::insert(
-                        &mut g,
-                        &*C1,
-                        &rdf::type_,
-                        &rdfs::Class
-                    )? || !$is_set);
                     assert_eq!(g.triples().count(), 1);
-                    assert!(!MutableGraph::insert(
-                        &mut g,
-                        &*C1,
-                        &rdf::type_,
-                        &rdfs::Class
-                    )? || !$is_set);
-                    assert_eq!(g.triples().count(), 1);
-                    assert!(MutableGraph::remove(
-                        &mut g,
-                        &*C1,
-                        &rdf::type_,
-                        &rdfs::Class
-                    )? || !$is_set);
-                    assert_eq!(g.triples().count(), 0);
-                    assert!(!MutableGraph::remove(
-                        &mut g,
-                        &*C1,
-                        &rdf::type_,
-                        &rdfs::Class
-                    )? || !$is_set);
-                    assert_eq!(g.triples().count(), 0);
                 } else {
-                    println!("effectively skipped, since is_set is false");
+                    assert!(g.triples().count() >= 1);
                 }
+                assert!(MutableGraph::remove(
+                    &mut g,
+                    &*C1,
+                    &rdf::type_,
+                    &rdfs::Class
+                )? || !$is_set);
+                assert_eq!(g.triples().count(), 0);
+                assert!(!MutableGraph::remove(
+                    &mut g,
+                    &*C1,
+                    &rdf::type_,
+                    &rdfs::Class
+                )? || !$is_set);
+                assert_eq!(g.triples().count(), 0);
                 Ok(())
             }
 
