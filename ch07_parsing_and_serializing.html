@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Getting Started - Sophia</title>
+        <title>Parsing and Serializing - Sophia</title>
 
 
         <!-- Custom HTML head -->
@@ -88,7 +88,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Executive summary</a></li><li class="chapter-item expanded "><a href="ch00_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="ch01_getting_started.html" class="active"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="ch02_rdf_terms.html"><strong aria-hidden="true">3.</strong> RDF Terms</a></li><li class="chapter-item expanded "><a href="ch03_rdf_statements.html"><strong aria-hidden="true">4.</strong> RDF Statements</a></li><li class="chapter-item expanded "><a href="ch04_rdf_graphs.html"><strong aria-hidden="true">5.</strong> RDF Graphs</a></li><li class="chapter-item expanded "><a href="ch05_term_matchers.html"><strong aria-hidden="true">6.</strong> Term Matchers</a></li><li class="chapter-item expanded "><a href="ch06_rdf_datasets.html"><strong aria-hidden="true">7.</strong> RDF Datasets</a></li><li class="chapter-item expanded "><a href="ch07_parsing_and_serializing.html"><strong aria-hidden="true">8.</strong> Parsing and Serializing</a></li><li class="chapter-item expanded "><a href="ch90_changes_since_07.html"><strong aria-hidden="true">9.</strong> Changes since version 0.7</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Executive summary</a></li><li class="chapter-item expanded "><a href="ch00_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="ch01_getting_started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="ch02_rdf_terms.html"><strong aria-hidden="true">3.</strong> RDF Terms</a></li><li class="chapter-item expanded "><a href="ch03_rdf_statements.html"><strong aria-hidden="true">4.</strong> RDF Statements</a></li><li class="chapter-item expanded "><a href="ch04_rdf_graphs.html"><strong aria-hidden="true">5.</strong> RDF Graphs</a></li><li class="chapter-item expanded "><a href="ch05_term_matchers.html"><strong aria-hidden="true">6.</strong> Term Matchers</a></li><li class="chapter-item expanded "><a href="ch06_rdf_datasets.html"><strong aria-hidden="true">7.</strong> RDF Datasets</a></li><li class="chapter-item expanded "><a href="ch07_parsing_and_serializing.html" class="active"><strong aria-hidden="true">8.</strong> Parsing and Serializing</a></li><li class="chapter-item expanded "><a href="ch90_changes_since_07.html"><strong aria-hidden="true">9.</strong> Changes since version 0.7</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -176,60 +176,19 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
-<p>Below is a short example demonstrating how to build a graph, mutate it and serialize it back.</p>
-<p>Add the sophia crate to your dependencies in <code>Cargo.toml</code></p>
-<pre><code class="language-bash">[dependencies]
-sophia = &quot;0.8.0-alpha.3&quot;
-</code></pre>
-<p>Add these lines of code and run the program.</p>
-<pre><code class="language-rust noplayground">use sophia::api::prelude::*;
-use sophia::api::ns::Namespace;
-use sophia::inmem::graph::LightGraph;
-use sophia::turtle::parser::turtle;
-use sophia::turtle::serializer::nt::NtSerializer;
-
-// loading a graph
-let example = r#&quot;
-    @prefix : &lt;http://example.org/&gt;.
-    @prefix foaf: &lt;http://xmlns.com/foaf/0.1/&gt;.
-    :alice foaf:name &quot;Alice&quot;;
-           foaf:mbox &lt;mailto:alice@work.example&gt; .
-    :bob foaf:name &quot;Bob&quot;.
-&quot;#;
-let mut graph: LightGraph = turtle::parse_str(example).collect_triples()?;
-
-// mutating the graph
-let ex = Namespace::new(&quot;http://example.org/&quot;)?;
-let foaf = Namespace::new(&quot;http://xmlns.com/foaf/0.1/&quot;)?;
-graph.insert(
-    ex.get(&quot;bob&quot;)?,
-    foaf.get(&quot;knows&quot;)?,
-    ex.get(&quot;alice&quot;)?,
-)?;
-
-// serializing the graph
-let mut nt_stringifier = NtSerializer::new_stringifier();
-let example2 = nt_stringifier.serialize_graph(&amp;graph)?.as_str();
-println!(&quot;The resulting graph:\n{}&quot;, example2);
-<span class="boring">Ok::&lt;(), Box&lt;dyn std::error::Error&gt;&gt;(())</span></code></pre>
-<p>You should get the following output:</p>
-<pre><code class="language-text">The resulting graph:
-&lt;http://example.org/alice&gt; &lt;http://xmlns.com/foaf/0.1/name&gt; &quot;Alice&quot;.
-&lt;http://example.org/alice&gt; &lt;http://xmlns.com/foaf/0.1/mbox&gt; &lt;mailto:alice@work.example&gt;.
-&lt;http://example.org/bob&gt; &lt;http://xmlns.com/foaf/0.1/name&gt; &quot;Bob&quot;.
-&lt;http://example.org/bob&gt; &lt;http://xmlns.com/foaf/0.1/knows&gt; &lt;http://example.org/alice&gt;.
-</code></pre>
+                        <h1 id="parsing-and-serializing"><a class="header" href="#parsing-and-serializing">Parsing and Serializing</a></h1>
+<p>TODO describe the different parsers and serializers available in Sophia (mentioning the feature gates)</p>
+<p>TODO explain how to use the options (e.g. to produce pretty Turtle)</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="ch00_introduction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="ch06_rdf_datasets.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="ch02_rdf_terms.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="ch90_changes_since_07.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -239,11 +198,11 @@ println!(&quot;The resulting graph:\n{}&quot;, example2);
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="ch00_introduction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="ch06_rdf_datasets.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="ch02_rdf_terms.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="ch90_changes_since_07.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

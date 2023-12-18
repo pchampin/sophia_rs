@@ -88,7 +88,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Executive summary</a></li><li class="chapter-item expanded "><a href="ch00_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="ch01_getting_started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="ch02_rdf_terms.html"><strong aria-hidden="true">3.</strong> RDF Terms</a></li><li class="chapter-item expanded "><a href="ch90_changes_since_07.html" class="active"><strong aria-hidden="true">4.</strong> Changes since version 0.7</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Executive summary</a></li><li class="chapter-item expanded "><a href="ch00_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="ch01_getting_started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="ch02_rdf_terms.html"><strong aria-hidden="true">3.</strong> RDF Terms</a></li><li class="chapter-item expanded "><a href="ch03_rdf_statements.html"><strong aria-hidden="true">4.</strong> RDF Statements</a></li><li class="chapter-item expanded "><a href="ch04_rdf_graphs.html"><strong aria-hidden="true">5.</strong> RDF Graphs</a></li><li class="chapter-item expanded "><a href="ch05_term_matchers.html"><strong aria-hidden="true">6.</strong> Term Matchers</a></li><li class="chapter-item expanded "><a href="ch06_rdf_datasets.html"><strong aria-hidden="true">7.</strong> RDF Datasets</a></li><li class="chapter-item expanded "><a href="ch07_parsing_and_serializing.html"><strong aria-hidden="true">8.</strong> Parsing and Serializing</a></li><li class="chapter-item expanded "><a href="ch90_changes_since_07.html" class="active"><strong aria-hidden="true">9.</strong> Changes since version 0.7</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -234,8 +234,7 @@ so that instead of:</p>
 }</code></pre>
 <p>one should now write</p>
 <pre><code class="language-rust noplayground"><span class="boring">extern crate sophia;
-</span><span class="boring">use sophia::api::graph::Graph;
-</span><span class="boring">use sophia::api::term::matcher::Any;
+</span><span class="boring">use sophia::api::prelude::*;
 </span><span class="boring">let g: Vec&lt;[i32; 3]&gt; = vec![]; // dummy graph type
 </span><span class="boring">let mys = 42;
 </span>for t in g.triples_matching([mys], Any, Any) {
@@ -261,7 +260,7 @@ has been added on the github repository of Sophia to mark migration issues and r
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="ch02_rdf_terms.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="ch07_parsing_and_serializing.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
@@ -272,7 +271,7 @@ has been added on the github repository of Sophia to mark migration issues and r
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="ch02_rdf_terms.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="ch07_parsing_and_serializing.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 

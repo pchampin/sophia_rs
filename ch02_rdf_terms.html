@@ -88,7 +88,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Executive summary</a></li><li class="chapter-item expanded "><a href="ch00_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="ch01_getting_started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="ch02_rdf_terms.html" class="active"><strong aria-hidden="true">3.</strong> RDF Terms</a></li><li class="chapter-item expanded "><a href="ch90_changes_since_07.html"><strong aria-hidden="true">4.</strong> Changes since version 0.7</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Executive summary</a></li><li class="chapter-item expanded "><a href="ch00_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="ch01_getting_started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="ch02_rdf_terms.html" class="active"><strong aria-hidden="true">3.</strong> RDF Terms</a></li><li class="chapter-item expanded "><a href="ch03_rdf_statements.html"><strong aria-hidden="true">4.</strong> RDF Statements</a></li><li class="chapter-item expanded "><a href="ch04_rdf_graphs.html"><strong aria-hidden="true">5.</strong> RDF Graphs</a></li><li class="chapter-item expanded "><a href="ch05_term_matchers.html"><strong aria-hidden="true">6.</strong> Term Matchers</a></li><li class="chapter-item expanded "><a href="ch06_rdf_datasets.html"><strong aria-hidden="true">7.</strong> RDF Datasets</a></li><li class="chapter-item expanded "><a href="ch07_parsing_and_serializing.html"><strong aria-hidden="true">8.</strong> Parsing and Serializing</a></li><li class="chapter-item expanded "><a href="ch90_changes_since_07.html"><strong aria-hidden="true">9.</strong> Changes since version 0.7</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -177,14 +177,14 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="rdf-terms"><a class="header" href="#rdf-terms">RDF Terms</a></h1>
-<p>The <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html"><code>Term</code></a> trait defines how you interad with <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-term">RDF terms</a> in Sophia.</p>
+<p>The <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html"><code>Term</code></a> trait defines how you interact with <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-term">RDF terms</a> in Sophia.</p>
 <h2 id="using-terms"><a class="header" href="#using-terms">Using terms</a></h2>
 <p>The first thing you usually need to know about a term is its <em>kind</em> (IRI, Literal...).
 The kind is described by the <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/enum.TermKind.html"><code>TermKind</code></a> enum,
 and available from the <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#tymethod.kind"><code>Term::kind</code></a> method.</p>
-<pre><code class="language-rust noplayground"><span class="boring">use sophia::api::term::{FromTerm, SimpleTerm, Term, TermKind};
+<pre><code class="language-rust noplayground"><span class="boring">use sophia::api::term::{SimpleTerm, Term, TermKind};
 </span><span class="boring">use TermKind::*;
-</span><span class="boring">let some_term = SimpleTerm::from_term(&quot;foo&quot;);
+</span><span class="boring">let some_term: SimpleTerm = &quot;foo&quot;.into_term();
 </span>match some_term.kind() {
     Iri =&gt; { /* ... */ }
     Literal =&gt; { /* ... */ }
@@ -195,7 +195,7 @@ and available from the <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_
 <p>If you are interested in the &quot;value&quot; of the term, the trait provides the following methods. All of them return an <code>Option</code>, which will be <code>None</code> if the term does not have the corresponding kind.</p>
 <ul>
 <li>
-<p>If the term is an IRI, <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.iri"><code>Term::iri</code></a> returns that IRI.</p>
+<p>If the term is an IRI, <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.iri"><code>Term::iri</code></a> returns that IRI<sup class="footnote-reference"><a href="#relative_iris">1</a></sup>.</p>
 </li>
 <li>
 <p>If the term is a blank node, <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.bnode_id"><code>Term::bnode_id</code></a> returns its <a href="https://www.w3.org/TR/rdf-concepts/#dfn-blank-node-identifier">blank node identifier</a>.</p>
@@ -204,7 +204,7 @@ and available from the <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_
 <p>If the term is a literal:</p>
 <ul>
 <li><a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.lexical_form"><code>Term::lexical_form</code></a> returns its <a href="https://www.w3.org/TR/rdf-concepts/#dfn-lexical-form">lexical form</a> (the &quot;textual value&quot; of the literal),</li>
-<li><a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.datatype"><code>Term::datatype</code></a> returns its datatype IRI,</li>
+<li><a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.datatype"><code>Term::datatype</code></a> returns its datatype IRI<sup class="footnote-reference"><a href="#relative_iris">1</a></sup>,</li>
 <li><a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.language_tag"><code>Term::language_tag</code></a> returns its <a href="https://www.w3.org/TR/rdf-concepts/#dfn-language-tag">language tag</a>, if any.</li>
 </ul>
 </li>
@@ -218,7 +218,7 @@ and available from the <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_
 </ul>
 </li>
 <li>
-<p>If the term is a variable, <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.variable"><code>Term::variable</code></a> returns its name.</p>
+<p>If the term is a variable<sup class="footnote-reference"><a href="#variables">2</a></sup>, <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.variable"><code>Term::variable</code></a> returns its name.</p>
 </li>
 </ul>
 <p>Finally, the method <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.eq"><code>Term::eq</code></a> can be used to check whether two values implementing <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html"><code>Term</code></a> represent the same RDF term. Note that the <code>==</code> operator may give a different result than <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.eq"><code>Term::eq</code></a> on some types implementing the <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html"><code>Term</code></a> trait.</p>
@@ -226,14 +226,16 @@ and available from the <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_
 <p>Below is a list of useful types implementing the <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html"><code>Term</code></a> trait:</p>
 <ul>
 <li><a href="https://docs.rs/sophia_iri/0.8.0-alpha.3/sophia_iri/struct.Iri.html"><code>Iri</code></a><code>&lt;T&gt;</code> and <a href="https://docs.rs/sophia_iri/0.8.0-alpha.3/sophia_iri/struct.IriRef.html"><code>IriRef</code></a><code>&lt;T&gt;</code>, where <code>T: Borrow&lt;str&gt;</code>, representing IRIs</li>
-<li><a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/bnode_id/struct.BnodeId.html"><code>BnodeId</code></a><code>&lt;T&gt;, where </code>T: Borrow<str>`, representing blank nodes</li>
+<li><a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/bnode_id/struct.BnodeId.html"><code>BnodeId</code></a><code>&lt;T&gt;</code>, where <code>T: Borrow&lt;str&gt;</code>, representing blank nodes</li>
 <li><code>str</code>, representing literals of type <code>xsd:string</code>,</li>
 <li><code>i32</code>, <code>isize</code> and <code>usize</code> representing literals of type <code>xsd:integer</code>,</li>
 <li><code>f64</code> representing literals of type <code>xsd:double</code>,</li>
 <li><a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/enum.SimpleTerm.html"><code>SimpleTerm</code></a>(see below).</li>
 </ul>
 <p><a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/enum.SimpleTerm.html"><code>SimpleTerm</code></a> is a straightforward implementation of <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html"><code>Term</code></a>, that can represent any kind of term, and can either own its own underlying data or borrow it from something else.</p>
-<p>Any term can be converted to a <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/enum.SimpleTerm.html"><code>SimpleTerm</code></a> using the <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.as_simple"><code>Term::as_simple</code></a> method. This method borrows as much as possible from the initial term. Alternatively, to convert any term to a self-sufficient <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/enum.SimpleTerm.html"><code>SimpleTerm</code></a>, you can use <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.into_term"><code>Term::into_term</code></a></p>
+<p>Any term can be converted to a <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/enum.SimpleTerm.html"><code>SimpleTerm</code></a> using the <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.as_simple"><code>Term::as_simple</code></a> method.
+This method borrows as much as possible from the initial term to avoid spurious memory allocation.
+Alternatively, to convert any term to a self-sufficient <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/enum.SimpleTerm.html"><code>SimpleTerm</code></a>, you can use <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.into_term"><code>Term::into_term</code></a></p>
 <p>See also the list of <a href="#recipes-for-constructing-terms">recipes</a> below.</p>
 <h2 id="borrowing-terms-with-termborrow_term"><a class="header" href="#borrowing-terms-with-termborrow_term">Borrowing terms with <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#tymethod.borrow_term"><code>Term::borrow_term</code></a></a></h2>
 <p>In Sophia, all functions accepting terms as parameters are expecting a type <code>T: Term</code> -- not <code>&amp;T</code>, but the type <code>T</code> itself. So what happens when you want to call such a function with a term <code>t</code>, but still want to retain ownership of <code>t</code>?</p>
@@ -286,6 +288,21 @@ let lit_date = &quot;2023-11-15&quot; * xsd::date;
 </span>let b = BnodeId::new(&quot;x&quot;);
 <span class="boring">
 </span><span class="boring">Ok(()) }</span></code></pre>
+<h3 id="converting-terms-into-a-different-type"><a class="header" href="#converting-terms-into-a-different-type">Converting terms into a different type</a></h3>
+<pre><code class="language-rust noplayground"><span class="boring">use sophia::api::{ns::xsd, term::{SimpleTerm, Term}};
+</span>fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
+<span class="boring">let some_term = &quot;42&quot; * xsd::integer;
+</span>let t1: SimpleTerm = &quot;hello&quot;.into_term();
+let t2: i32 = some_term.try_into_term()?;
+<span class="boring">Ok(()) }</span></code></pre>
+<hr />
+<div class="footnote-definition" id="relative_iris"><sup class="footnote-definition-label">1</sup>
+<p>Note that in Sophia's <a href="ch00_introduction.html#generalized">generalized RDF</a> model,
+IRIs can be <em>relative</em> IRI reference.</p>
+</div>
+<div class="footnote-definition" id="variables"><sup class="footnote-definition-label">2</sup>
+<p>Note that this kind only exist in Sophia's <a href="ch00_introduction.html#generalized">generalized RDF</a> model.</p>
+</div>
 
                     </main>
 
@@ -295,7 +312,7 @@ let lit_date = &quot;2023-11-15&quot; * xsd::date;
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="ch90_changes_since_07.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="ch03_rdf_statements.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -309,7 +326,7 @@ let lit_date = &quot;2023-11-15&quot; * xsd::date;
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="ch90_changes_since_07.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="ch03_rdf_statements.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

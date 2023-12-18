@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Getting Started - Sophia</title>
+        <title>RDF Statements - Sophia</title>
 
 
         <!-- Custom HTML head -->
@@ -88,7 +88,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Executive summary</a></li><li class="chapter-item expanded "><a href="ch00_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="ch01_getting_started.html" class="active"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="ch02_rdf_terms.html"><strong aria-hidden="true">3.</strong> RDF Terms</a></li><li class="chapter-item expanded "><a href="ch03_rdf_statements.html"><strong aria-hidden="true">4.</strong> RDF Statements</a></li><li class="chapter-item expanded "><a href="ch04_rdf_graphs.html"><strong aria-hidden="true">5.</strong> RDF Graphs</a></li><li class="chapter-item expanded "><a href="ch05_term_matchers.html"><strong aria-hidden="true">6.</strong> Term Matchers</a></li><li class="chapter-item expanded "><a href="ch06_rdf_datasets.html"><strong aria-hidden="true">7.</strong> RDF Datasets</a></li><li class="chapter-item expanded "><a href="ch07_parsing_and_serializing.html"><strong aria-hidden="true">8.</strong> Parsing and Serializing</a></li><li class="chapter-item expanded "><a href="ch90_changes_since_07.html"><strong aria-hidden="true">9.</strong> Changes since version 0.7</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Executive summary</a></li><li class="chapter-item expanded "><a href="ch00_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="ch01_getting_started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="ch02_rdf_terms.html"><strong aria-hidden="true">3.</strong> RDF Terms</a></li><li class="chapter-item expanded "><a href="ch03_rdf_statements.html" class="active"><strong aria-hidden="true">4.</strong> RDF Statements</a></li><li class="chapter-item expanded "><a href="ch04_rdf_graphs.html"><strong aria-hidden="true">5.</strong> RDF Graphs</a></li><li class="chapter-item expanded "><a href="ch05_term_matchers.html"><strong aria-hidden="true">6.</strong> Term Matchers</a></li><li class="chapter-item expanded "><a href="ch06_rdf_datasets.html"><strong aria-hidden="true">7.</strong> RDF Datasets</a></li><li class="chapter-item expanded "><a href="ch07_parsing_and_serializing.html"><strong aria-hidden="true">8.</strong> Parsing and Serializing</a></li><li class="chapter-item expanded "><a href="ch90_changes_since_07.html"><strong aria-hidden="true">9.</strong> Changes since version 0.7</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -176,60 +176,70 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
-<p>Below is a short example demonstrating how to build a graph, mutate it and serialize it back.</p>
-<p>Add the sophia crate to your dependencies in <code>Cargo.toml</code></p>
-<pre><code class="language-bash">[dependencies]
-sophia = &quot;0.8.0-alpha.3&quot;
-</code></pre>
-<p>Add these lines of code and run the program.</p>
-<pre><code class="language-rust noplayground">use sophia::api::prelude::*;
-use sophia::api::ns::Namespace;
-use sophia::inmem::graph::LightGraph;
-use sophia::turtle::parser::turtle;
-use sophia::turtle::serializer::nt::NtSerializer;
-
-// loading a graph
-let example = r#&quot;
-    @prefix : &lt;http://example.org/&gt;.
-    @prefix foaf: &lt;http://xmlns.com/foaf/0.1/&gt;.
-    :alice foaf:name &quot;Alice&quot;;
-           foaf:mbox &lt;mailto:alice@work.example&gt; .
-    :bob foaf:name &quot;Bob&quot;.
-&quot;#;
-let mut graph: LightGraph = turtle::parse_str(example).collect_triples()?;
-
-// mutating the graph
-let ex = Namespace::new(&quot;http://example.org/&quot;)?;
-let foaf = Namespace::new(&quot;http://xmlns.com/foaf/0.1/&quot;)?;
-graph.insert(
-    ex.get(&quot;bob&quot;)?,
-    foaf.get(&quot;knows&quot;)?,
-    ex.get(&quot;alice&quot;)?,
-)?;
-
-// serializing the graph
-let mut nt_stringifier = NtSerializer::new_stringifier();
-let example2 = nt_stringifier.serialize_graph(&amp;graph)?.as_str();
-println!(&quot;The resulting graph:\n{}&quot;, example2);
-<span class="boring">Ok::&lt;(), Box&lt;dyn std::error::Error&gt;&gt;(())</span></code></pre>
-<p>You should get the following output:</p>
-<pre><code class="language-text">The resulting graph:
-&lt;http://example.org/alice&gt; &lt;http://xmlns.com/foaf/0.1/name&gt; &quot;Alice&quot;.
-&lt;http://example.org/alice&gt; &lt;http://xmlns.com/foaf/0.1/mbox&gt; &lt;mailto:alice@work.example&gt;.
-&lt;http://example.org/bob&gt; &lt;http://xmlns.com/foaf/0.1/name&gt; &quot;Bob&quot;.
-&lt;http://example.org/bob&gt; &lt;http://xmlns.com/foaf/0.1/knows&gt; &lt;http://example.org/alice&gt;.
-</code></pre>
+                        <h1 id="rdf-statements"><a class="header" href="#rdf-statements">RDF Statements</a></h1>
+<p>The <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> and <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html"><code>Quad</code></a> traits define how you interact with <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-statement">RDF statements</a> in Sophia.</p>
+<p>Note that in Sophia's <a href="ch00_introduction.html#generalized">generalized RDF</a> model, terms of any kind can occur in any position in a statement.
+This contrasts to strict RDF where only IRIs can occur in predicate position,
+and where literals can not occur in the subject position.</p>
+<h2 id="using-triples"><a class="header" href="#using-triples">Using triples</a></h2>
+<p>Triples in RDF are made of a subject, a predicate and an object.
+They can be obtained respectively via the methods <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html#tymethod.s"><code>Triple::s</code></a>, <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html#tymethod.p"><code>Triple::p</code></a> and <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html#tymethod.o"><code>Triple::o</code></a>,
+or all at once (as an array of three terms) via the method <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html#method.spo"><code>Triple::spo</code></a>.
+These methods also have a <code>to_X</code> version that destructs the original triple instead of borrowing it.</p>
+<pre><code class="language-rust noplayground"><span class="boring">use sophia::api::{ns::rdf, prelude::*};
+</span>// Example: yield all the tems besing used as types in the given triples
+fn all_types&lt;IT, T&gt;(triples: IT) -&gt; impl Iterator&lt;Item=T::Term&gt;
+where
+  IT: IntoIterator&lt;Item=T&gt;,
+  T: Triple,
+{
+  triples
+    .into_iter()
+    .filter(|t| rdf::type_ == t.p())
+    .map(|t| t.to_o())
+}</code></pre>
+<h2 id="using-quads"><a class="header" href="#using-quads">Using quads</a></h2>
+<p>Quads are used to represent triples in the context of an optional <a href="https://www.w3.org/TR/rdf-concepts/#dfn-named-graph">named graph</a>.
+Like triples, they have methods <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html#tymethod.s"><code>Quad::s</code></a>, <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html#tymethod.p"><code>Quad::p</code></a> and <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html#tymethod.o"><code>Quad::o</code></a>,
+but also <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html#tymethod.g"><code>Quad::g</code></a> to access the optional graph name,
+and <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html#method.spog"><code>Quad::spog</code></a> to obtain all four components all at once.
+These methods also have a <code>to_X</code> version that destructs the original quad instead of borrowing it.</p>
+<pre><code class="language-rust noplayground"><span class="boring">use sophia::api::{ns::rdf, prelude::*};
+</span>// Example: yield all the triples in the default graph, from a list of quads
+fn all_types&lt;IQ, Q&gt;(quads: IQ) -&gt; impl Iterator&lt;Item=[Q::Term; 3]&gt;
+where
+  IQ: IntoIterator&lt;Item=Q&gt;,
+  Q: Quad,
+{
+  quads
+    .into_iter()
+    .filter(|q| q.g().is_none())
+    .map(|q| { let (spo, _g) = q.to_spog(); spo })
+}</code></pre>
+<h2 id="comparing-triples-or-quads"><a class="header" href="#comparing-triples-or-quads">Comparing triples or quads</a></h2>
+<p>To check whether two values implementing <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> (resp. <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html"><code>Quad</code></a>)
+represent the same RDF statements, the method <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html#method.eq"><code>Triple::eq</code></a> (resp. <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html#method.eq"><code>Quad::eq</code></a>)
+must be used.r
+It will compare each component of the statements using the <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.eq"><code>Term::eq</code></a> method.
+Note that the <code>==</code> operator may give a different result than <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html#method.eq"><code>Triple::eq</code></a> or <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html#method.eq"><code>Quad::eq</code></a>
+on some types implementing the <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> or the <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html"><code>Quad</code></a> trait.</p>
+<h2 id="useful-types-implementing-triple"><a class="header" href="#useful-types-implementing-triple">Useful types implementing <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html"><code>Triple</code></a></a></h2>
+<p>While the <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> and <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html"><code>Quad</code></a> traits can be implemented by multiple types,
+in most situations the following types will be used:</p>
+<ul>
+<li><code>[T; 3]</code> where <code>T: </code><a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html"><code>Term</code></a> implements <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html"><code>Triple</code></a></li>
+<li><code>([T; 3], Option&lt;T&gt;)</code> where <code>T: </code><a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html"><code>Term</code></a> implements <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html"><code>Quad</code></a></li>
+</ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="ch00_introduction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="ch02_rdf_terms.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="ch02_rdf_terms.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="ch04_rdf_graphs.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -239,11 +249,11 @@ println!(&quot;The resulting graph:\n{}&quot;, example2);
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="ch00_introduction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="ch02_rdf_terms.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="ch02_rdf_terms.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="ch04_rdf_graphs.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
