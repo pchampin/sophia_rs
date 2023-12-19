@@ -21,7 +21,7 @@ http_client = ["json-ld/reqwest"]
 
 [dependencies]
 iref = "2.2"
-json-ld = { version = "0.15.0", git = "https://github.com/timothee-haudebourg/json-ld", branch="0.15-wasm32" }
+json-ld = { version = "0.15.1" }
 json-syntax = "0.9"
 langtag = "0.3.4"
 locspan = "0.7.12"
