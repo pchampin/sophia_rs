@@ -11,6 +11,8 @@ use json_syntax::Value;
 use locspan::Location;
 use sophia_iri::Iri;
 
+pub use json_ld::future::{BoxFuture, FutureExt};
+
 /// A dummy document loader, that does not load anything.
 pub type NoLoader =
     json_ld::NoLoader<Iri<Arc<str>>, Location<Iri<Arc<str>>>, Value<Location<Iri<Arc<str>>>>>;

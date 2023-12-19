@@ -30,6 +30,14 @@ mod test;
 ///
 /// * the generic parameter `L` is the type of the [document loader](json_ld::Loader)
 ///   (determined by the `options` parameters)
+///
+/// ## WebAssembly
+///
+/// In some situations,
+/// the methods from the [`QuadParser`] trait panic when executed as WebAssembly
+/// (this is not the case when using the [`NoLoader`],
+/// but occurs when using the [`HttpLoader`](crate::loader::HttpLoader)).
+/// Those panics can be avoided by using the [`JsonLdParser::async_parse_str`] method.
 pub struct JsonLdParser<L = NoLoader> {
     options: JsonLdOptions<L>,
 }
@@ -61,7 +69,7 @@ impl<L> JsonLdParser<L> {
     }
 
     /// Parse (as RDF) a pre-parsed (as JSON) document
-    pub fn parse_json(&self, data: &RemoteDocument<ArcIri>) -> JsonLdQuadSource
+    pub async fn parse_json(&self, data: &RemoteDocument<ArcIri>) -> JsonLdQuadSource
     where
         L: Loader<ArcIri, Location<ArcIri>>
             + json_ld::ContextLoader<ArcIri, Location<ArcIri>>
@@ -77,18 +85,14 @@ impl<L> JsonLdParser<L> {
             Span::default(),
         );
         let mut generator = rdf_types::generator::Blank::new().with_metadata(gen_loc);
-        let mut g_loader = match self.options.document_loader() {
-            Ok(g) => g,
-            Err(err) => return JsonLdQuadSource::from_err(err),
-        };
+        let mut g_loader = self.options.document_loader().await;
         let loader = g_loader.deref_mut();
         let mut vocab = ArcVoc {};
         let options = self.options.inner().clone();
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .expect("Could not build tokio runtime");
-        match rt.block_on(data.to_rdf_with_using(&mut vocab, &mut generator, loader, options)) {
+        match data
+            .to_rdf_with_using(&mut vocab, &mut generator, loader, options)
+            .await
+        {
             Err(ToRdfError::Expand(err)) => JsonLdQuadSource::from_err(err),
             Ok(mut to_rdf) => JsonLdQuadSource::Quads(
                 to_rdf
@@ -98,6 +102,34 @@ impl<L> JsonLdParser<L> {
                     .into_iter(),
             ),
         }
+    }
+
+    /// Parse (as RDF) a JSON-LD string, asynchronously
+    pub async fn async_parse_str<'t>(&self, txt: &'t str) -> JsonLdQuadSource
+    where
+        L: Loader<ArcIri, Location<ArcIri>>
+            + json_ld::ContextLoader<ArcIri, Location<ArcIri>>
+            + Send
+            + Sync,
+        L::Output: Into<Value<Location<ArcIri>>>,
+        L::Error: Display + Send,
+        L::Context: Into<json_ld::syntax::context::Value<Location<ArcIri>>>,
+        L::ContextError: Display + Send,
+    {
+        let base = self
+            .options()
+            .base()
+            .unwrap_or(Iri::new_unchecked_const("x-string://"))
+            .map_unchecked(Arc::from);
+        let json_res = Value::parse_str(txt, |span| Location::new(base.clone(), span));
+        let json = match json_res {
+            Ok(json) => json,
+            Err(err) => {
+                return JsonLdQuadSource::from_err(err);
+            }
+        };
+        let doc = RemoteDocument::new(Some(base), None, json);
+        self.parse_json(&doc).await
     }
 }
 
@@ -130,20 +162,11 @@ where
     where
         &'t str: sophia_api::parser::IntoParsable<Target = B>,
     {
-        let base = self
-            .options()
-            .base()
-            .unwrap_or(Iri::new_unchecked_const("x-string://"))
-            .map_unchecked(Arc::from);
-        let json_res = Value::parse_str(txt, |span| Location::new(base.clone(), span));
-        let json = match json_res {
-            Ok(json) => json,
-            Err(err) => {
-                return JsonLdQuadSource::from_err(err);
-            }
-        };
-        let doc = RemoteDocument::new(Some(base), None, json);
-        self.parse_json(&doc)
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("Could not build tokio runtime");
+        rt.block_on(self.async_parse_str(txt))
     }
 }
 

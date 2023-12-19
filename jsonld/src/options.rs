@@ -1,7 +1,5 @@
 //! Defines types for configuring JSON-LD processing.
 
-use std::sync::{LockResult, Mutex, MutexGuard};
-
 use json_ld::expansion::Policy;
 pub use json_ld::rdf::RdfDirection;
 use json_ld::syntax::context::Value;
@@ -10,6 +8,7 @@ pub use json_ld::ProcessingMode;
 use locspan::Location;
 use locspan::Span;
 use sophia_iri::Iri;
+use tokio::sync::{Mutex, MutexGuard};
 
 use crate::loader::NoLoader;
 use crate::vocabulary::ArcIri;
@@ -68,8 +67,8 @@ impl<L> JsonLdOptions<L> {
     /// The [`documentLoader`] is used to retrieve remote documents and contexts.
     ///
     /// [`documentLoader`]: https://www.w3.org/TR/json-ld11-api/#dom-jsonldoptions-documentloader
-    pub fn document_loader(&self) -> LockResult<MutexGuard<L>> {
-        self.loader.lock()
+    pub async fn document_loader(&self) -> MutexGuard<L> {
+        self.loader.lock().await
     }
 
     /// [`expandContext`] is a context that is used to initialize the active context when expanding a document.
