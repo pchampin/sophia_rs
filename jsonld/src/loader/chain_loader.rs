@@ -6,6 +6,7 @@ use json_syntax::Value;
 use locspan::Location;
 
 /// * [`ChainLoader`]: loads document from the first loader, otherwise falls back to the second one.
+#[derive(Clone, Debug, Default)]
 pub struct ChainLoader<L1, L2>(L1, L2);
 
 impl<L1, L2> ChainLoader<L1, L2> {

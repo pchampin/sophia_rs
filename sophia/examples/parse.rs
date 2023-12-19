@@ -34,7 +34,6 @@ use sophia::turtle::parser::{
 use sophia::turtle::serializer::{nq::NqSerializer, nt::NtSerializer};
 #[cfg(feature = "xml")]
 use sophia::xml::parser::RdfXmlParser;
-use sophia_jsonld::loader_factory::{ClosureLoaderFactory, DefaultLoaderFactory, LoaderFactory};
 
 fn main() {
     let format = std::env::args()
@@ -65,16 +64,15 @@ fn main() {
         "json-ld" | "jsonld" => {
             let options = JsonLdOptions::new()
                 .with_base(base.clone().unwrap().map_unchecked(std::sync::Arc::from));
-            let loader_factory =
-                DefaultLoaderFactory::<sophia::jsonld::loader::FileUrlLoader>::default();
+            let loader_factory = sophia::jsonld::loader::FileUrlLoader::default;
             #[cfg(feature = "http_client")]
-            let loader_factory = ClosureLoaderFactory::new(|| {
+            let loader_factory = || {
                 sophia::jsonld::loader::ChainLoader::new(
-                    loader_factory.yield_loader(),
+                    (loader_factory)(),
                     sophia::jsonld::loader::HttpLoader::default(),
                 )
-            });
-            let options = options.with_document_loader_factory(loader_factory);
+            };
+            let options = options.with_document_loader_closure(loader_factory);
             dump_quads(input, JsonLdParser::new_with_options(options))
         }
         #[cfg(feature = "xml")]

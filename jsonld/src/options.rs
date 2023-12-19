@@ -1,8 +1,12 @@
 //! Defines types for configuring JSON-LD processing.
 
+use std::fmt::Display;
+use std::sync::Arc;
+
 use json_ld::expansion::Policy;
 pub use json_ld::rdf::RdfDirection;
 use json_ld::syntax::context::Value;
+use json_ld::Loader;
 use json_ld::NoLoader;
 pub use json_ld::Options;
 pub use json_ld::ProcessingMode;
@@ -10,6 +14,7 @@ use locspan::Location;
 use locspan::Span;
 use sophia_iri::Iri;
 
+use crate::loader_factory::ClosureLoaderFactory;
 use crate::loader_factory::DefaultLoaderFactory;
 use crate::loader_factory::LoaderFactory;
 use crate::vocabulary::ArcIri;
@@ -191,7 +196,12 @@ impl<LF> JsonLdOptions<LF> {
         self
     }
 
-    /// Change the [`document_loader`](Self::document_loader)
+    /// Change the [`document_loader_factory`](Self::document_loader_factory)
+    ///
+    /// See also
+    /// [`JsonLdOptions::with_default_document_loader`],
+    /// [`JsonLdOptions::with_document_loader_closure`],
+    /// [`JsonLdOptions::with_document_loader`],
     pub fn with_document_loader_factory<LF2: LoaderFactory>(
         self,
         document_loader_factory: LF2,
@@ -199,6 +209,87 @@ impl<LF> JsonLdOptions<LF> {
         JsonLdOptions {
             inner: self.inner,
             loader_factory: document_loader_factory,
+            use_native_types: self.use_native_types,
+            use_rdf_type: self.use_native_types,
+            spaces: self.spaces,
+            compact_context: self.compact_context,
+        }
+    }
+
+    /// Change the [`document_loader_factory`](Self::document_loader_factory)
+    /// to one that encapsulate the given closure.
+    ///
+    /// See also
+    /// [`JsonLdOptions::with_document_loader_factory`],
+    /// [`JsonLdOptions::with_default_document_loader`],
+    /// [`JsonLdOptions::with_document_loader`],
+    pub fn with_document_loader_closure<L, F>(
+        self,
+        f: F,
+    ) -> JsonLdOptions<ClosureLoaderFactory<L, F>>
+    where
+        L: Loader<ArcIri, Location<Iri<Arc<str>>>, Output = json_syntax::Value<Location<ArcIri>>>
+            + Send
+            + Sync,
+        L::Error: Display + Send,
+        F: Fn() -> L,
+    {
+        JsonLdOptions {
+            inner: self.inner,
+            loader_factory: ClosureLoaderFactory::new(f),
+            use_native_types: self.use_native_types,
+            use_rdf_type: self.use_native_types,
+            spaces: self.spaces,
+            compact_context: self.compact_context,
+        }
+    }
+
+    /// Change the [`document_loader_factory`](Self::document_loader_factory)
+    /// to one that produces default values for L.
+    ///
+    /// See also
+    /// [`JsonLdOptions::with_document_loader_factory`],
+    /// [`JsonLdOptions::with_document_loader_closure`],
+    /// [`JsonLdOptions::with_document_loader`],
+    pub fn with_default_document_loader<L>(self) -> JsonLdOptions<DefaultLoaderFactory<L>>
+    where
+        L: Loader<ArcIri, Location<Iri<Arc<str>>>, Output = json_syntax::Value<Location<ArcIri>>>
+            + Default
+            + Send
+            + Sync,
+        L::Error: Display + Send,
+    {
+        JsonLdOptions {
+            inner: self.inner,
+            loader_factory: DefaultLoaderFactory::new(),
+            use_native_types: self.use_native_types,
+            use_rdf_type: self.use_native_types,
+            spaces: self.spaces,
+            compact_context: self.compact_context,
+        }
+    }
+
+    /// Change the [`document_loader_factory`](Self::document_loader_factory)
+    /// to one that produces clones of `document_loader`.
+    ///
+    /// See also
+    /// [`JsonLdOptions::with_document_loader_factory`],
+    /// [`JsonLdOptions::with_document_loader_closure`],
+    /// [`JsonLdOptions::with_default_document_loader`],
+    pub fn with_document_loader<L>(
+        self,
+        document_loader: L,
+    ) -> JsonLdOptions<ClosureLoaderFactory<L, impl Fn() -> L>>
+    where
+        L: Loader<ArcIri, Location<Iri<Arc<str>>>, Output = json_syntax::Value<Location<ArcIri>>>
+            + Clone
+            + Send
+            + Sync,
+        L::Error: Display + Send,
+    {
+        JsonLdOptions {
+            inner: self.inner,
+            loader_factory: ClosureLoaderFactory::new_cloning(document_loader),
             use_native_types: self.use_native_types,
             use_rdf_type: self.use_native_types,
             spaces: self.spaces,
@@ -299,6 +390,7 @@ impl<LF> JsonLdOptions<LF> {
 
 impl<LF: LoaderFactory> JsonLdOptions<LF> {
     /// The [`documentLoader`] is used to retrieve remote documents and contexts.
+    ///
     /// [`documentLoader`]: https://www.w3.org/TR/json-ld11-api/#dom-jsonldoptions-documentloader
     pub fn document_loader(&self) -> LF::Loader<'_> {
         self.loader_factory.yield_loader()
