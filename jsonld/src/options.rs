@@ -192,7 +192,7 @@ impl<LF> JsonLdOptions<LF> {
     }
 
     /// Change the [`document_loader`](Self::document_loader)
-    pub fn with_document_loader_factory<LF2>(
+    pub fn with_document_loader_factory<LF2: LoaderFactory>(
         self,
         document_loader_factory: LF2,
     ) -> JsonLdOptions<LF2> {
