@@ -32,10 +32,17 @@ pub trait LoaderFactory {
 /// A loader factory that yields default loaders.
 #[derive(Debug, Clone, Default)]
 pub struct DefaultLoaderFactory<L> {
-    _phantom: PhantomData<fn() -> L>,
+    _phantom: PhantomData<L>,
 }
 
-impl<L: Default> DefaultLoaderFactory<L> {
+impl<L> DefaultLoaderFactory<L>
+where
+    L: Loader<Iri<Arc<str>>, Location<Iri<Arc<str>>>, Output = Value<Location<Iri<Arc<str>>>>>
+        + Default
+        + Send
+        + Sync,
+    L::Error: Display + Send,
+{
     /// Create a new [`DefaultLoaderFactory`].
     #[inline]
     pub fn new() -> Self {
@@ -70,7 +77,14 @@ pub struct ClosureLoaderFactory<L, F> {
     _phantom: PhantomData<fn() -> L>,
 }
 
-impl<L, F> ClosureLoaderFactory<L, F> {
+impl<L, F> ClosureLoaderFactory<L, F>
+where
+    L: Loader<Iri<Arc<str>>, Location<Iri<Arc<str>>>, Output = Value<Location<Iri<Arc<str>>>>>
+        + Send
+        + Sync,
+    L::Error: Display + Send,
+    F: Fn() -> L,
+{
     /// Create a new [`ClosureLoaderFactory`] with given closure.
     #[inline]
     pub fn new(closure: F) -> Self {
@@ -79,7 +93,15 @@ impl<L, F> ClosureLoaderFactory<L, F> {
             _phantom: PhantomData,
         }
     }
+}
 
+impl<L> ClosureLoaderFactory<L, fn() -> L>
+where
+    L: Loader<Iri<Arc<str>>, Location<Iri<Arc<str>>>, Output = Value<Location<Iri<Arc<str>>>>>
+        + Send
+        + Sync,
+    L::Error: Display + Send,
+{
     /// Create a new [`ClosureLoaderFactory`] that yields loaders by cloning a template loader.
     #[inline]
     pub fn new_cloning(template_loader: L) -> ClosureLoaderFactory<L, impl Fn() -> L>
