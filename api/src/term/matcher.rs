@@ -19,6 +19,7 @@ use super::*;
 mod _any;
 mod _datatype_matcher;
 mod _graph_name_matcher;
+mod _language_tag_matcher;
 mod _matcher_ref;
 mod _term_matcher_gn;
 mod _trait;
@@ -26,6 +27,7 @@ mod _trait;
 pub use _any::*;
 pub use _datatype_matcher::*;
 pub use _graph_name_matcher::*;
+pub use _language_tag_matcher::*;
 pub use _matcher_ref::*;
 pub use _term_matcher_gn::*;
 pub use _trait::*;
@@ -185,6 +187,20 @@ mod test {
         assert!(!TermMatcher::matches(&m1, &T1));
         assert!(!TermMatcher::matches(&m1, &42));
         assert!(TermMatcher::matches(&m1, "hello"));
+    }
+
+    #[test]
+    fn language_tag_matcher() {
+        let en = LanguageTag::new_unchecked("en");
+        let enus = LanguageTag::new_unchecked("en-US");
+        let fr = LanguageTag::new_unchecked("fr");
+        let m1 = Any * en; // testing Mul<NsTerm>
+        assert!(!TermMatcher::matches(&m1, &T1));
+        assert!(!TermMatcher::matches(&m1, &42));
+        assert!(!TermMatcher::matches(&m1, "hello"));
+        assert!(TermMatcher::matches(&m1, &("hello" * en)));
+        assert!(!TermMatcher::matches(&m1, &("hello" * enus)));
+        assert!(!TermMatcher::matches(&m1, &("hello" * fr)));
     }
 
     #[test]
