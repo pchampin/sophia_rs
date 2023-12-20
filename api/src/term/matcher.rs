@@ -17,12 +17,14 @@
 use super::*;
 
 mod _any;
+mod _datatype_matcher;
 mod _graph_name_matcher;
 mod _matcher_ref;
 mod _term_matcher_gn;
 mod _trait;
 
 pub use _any::*;
+pub use _datatype_matcher::*;
 pub use _graph_name_matcher::*;
 pub use _matcher_ref::*;
 pub use _term_matcher_gn::*;
@@ -31,6 +33,7 @@ pub use _trait::*;
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::ns::xsd;
     use sophia_iri::IriRef;
 
     const T1: IriRef<&str> = IriRef::new_unchecked_const("tag:t1");
@@ -49,6 +52,7 @@ mod test {
         is_term_matcher(TermKind::Iri);
         is_term_matcher(([T1], [T2], [T3]));
         is_term_matcher([T1, T2].matcher_ref());
+        is_term_matcher(Any * xsd::string);
     }
 
     fn is_graph_name_matcher<M: GraphNameMatcher>(_: M) {}
@@ -169,6 +173,18 @@ mod test {
         assert!(TermMatcher::matches(&Any, &T2));
         assert!(TermMatcher::matches(&Any, &T3));
         assert!(TermMatcher::constant(&Any).is_none());
+    }
+
+    #[test]
+    fn datatype_matcher() {
+        let m1 = Any * xsd::string; // testing Mul<NsTerm>
+        assert!(!TermMatcher::matches(&m1, &T1));
+        assert!(!TermMatcher::matches(&m1, &42));
+        assert!(TermMatcher::matches(&m1, "hello"));
+        let m1 = Any * xsd::string.iri().unwrap(); // testing Mul<IriRef>
+        assert!(!TermMatcher::matches(&m1, &T1));
+        assert!(!TermMatcher::matches(&m1, &42));
+        assert!(TermMatcher::matches(&m1, "hello"));
     }
 
     #[test]
