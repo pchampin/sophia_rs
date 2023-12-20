@@ -7,6 +7,7 @@ use sophia_api::parser::TripleParser;
 use sophia_api::source::TripleSource;
 use sophia_api::term::Term;
 use sophia_iri::Iri;
+#[cfg(feature = "jsonld")]
 use sophia_jsonld::loader_factory::ClosureLoaderFactory;
 use sophia_turtle::parser::{nt, turtle};
 use std::borrow::Borrow;
