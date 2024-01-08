@@ -54,12 +54,12 @@ Most of them have now disappeared, in favor of the types defined in [`sophia_iri
 The [`sophia_term`](https://docs.rs/sophia_term/latest/sophia_term/) crate,
 from which most term implementations came in 0.7, has been significantly reduced.
 The most general types that it provided ([`BoxTerm`](https://docs.rs/sophia_term/0.7.2/sophia_term/type.BoxTerm.html), [`RefTerm`](https://docs.rs/sophia_term/0.7.2/sophia_term/type.RefTerm.html))
-are now subsumed by [`SimpleTerm`](https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/enum.SimpleTerm.html),
+are now subsumed by [`SimpleTerm`](https://docs.rs/sophia_api/0.8.0/sophia_api/term/enum.SimpleTerm.html),
 a straightforward implementation of the `Term` trait, provided by
-[`sophia_api`](https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/index.html).
+[`sophia_api`](https://docs.rs/sophia_api/0.8.0/sophia_api/index.html).
 More specific types (such as
-[`RcTerm`](https://docs.rs/sophia_term/0.8.0-alpha.3/sophia_term/type.RcTerm.html) or 
-[`ArcTerm`](https://docs.rs/sophia_term/0.8.0-alpha.3/sophia_term/type.ArcTerm.html))
+[`RcTerm`](https://docs.rs/sophia_term/0.8.0/sophia_term/type.RcTerm.html) or 
+[`ArcTerm`](https://docs.rs/sophia_term/0.8.0/sophia_term/type.ArcTerm.html))
 are still provided by `sophia_term`.
 
 ## Simplification of the `Graph` and `Dataset` traits
@@ -69,7 +69,7 @@ such as [`triples_with_s`](https://docs.rs/sophia_api/0.7.2/sophia_api/graph/tra
 or [`triples_with_po`](https://docs.rs/sophia_api/0.7.2/sophia_api/graph/trait.Graph.html#method.triples_with_po)
 (and similarly for `Dataset`: `quads_with_s`, etc.).
 
-All these methods have disappeared in favor of [`triples_matching`](https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.triples_matching),
+All these methods have disappeared in favor of [`triples_matching`](https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.triples_matching),
 so that instead of:
 ```rust,noplayground,ignore
 for t in g.triples_with_s(mys) {

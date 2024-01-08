@@ -20,12 +20,12 @@ file_url = ["dep:url"]
 http_client = ["json-ld/reqwest"]
 
 [dependencies]
-iref = "2.2"
-json-ld = { version = "0.15.1" }
-json-syntax = "0.9"
+iref = "^2.2"
+json-ld = "0.15.1"
+json-syntax = "^0.9"
 langtag = "0.3.4"
-locspan = "0.7.12"
-rdf-types = "0.15.4"
+locspan = "^0.7.13"
+rdf-types = "^0.15.2"
 sophia_api.workspace = true
 sophia_iri.workspace = true
 sophia_term.workspace = true

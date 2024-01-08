@@ -74,19 +74,19 @@ in most situations the following types will be used:
 
 [RDF statements]: https://www.w3.org/TR/rdf-concepts/#dfn-rdf-statement
 [generalized RDF]: ch00_introduction.html#generalized
-[`Triple`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html
-[`Quad`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html
-[`Triple::s`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html#tymethod.s
-[`Triple::p`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html#tymethod.p
-[`Triple::o`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html#tymethod.o
-[`Triple::spo`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html#method.spo
+[`Triple`]: https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html
+[`Quad`]: https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html
+[`Triple::s`]: https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#tymethod.s
+[`Triple::p`]: https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#tymethod.p
+[`Triple::o`]: https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#tymethod.o
+[`Triple::spo`]: https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#method.spo
 [named graph]: https://www.w3.org/TR/rdf-concepts/#dfn-named-graph
-[`Quad::s`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html#tymethod.s
-[`Quad::p`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html#tymethod.p
-[`Quad::o`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html#tymethod.o
-[`Quad::g`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html#tymethod.g
-[`Quad::spog`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html#method.spog
-[`Term::eq`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.eq
-[`Triple::eq`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html#method.eq
-[`Quad::eq`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html#method.eq
-[`Term`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html
+[`Quad::s`]: https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#tymethod.s
+[`Quad::p`]: https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#tymethod.p
+[`Quad::o`]: https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#tymethod.o
+[`Quad::g`]: https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#tymethod.g
+[`Quad::spog`]: https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#method.spog
+[`Term::eq`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.eq
+[`Triple::eq`]: https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#method.eq
+[`Quad::eq`]: https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#method.eq
+[`Term`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html

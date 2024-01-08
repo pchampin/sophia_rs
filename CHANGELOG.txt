@@ -1,3 +1,14 @@
+0.8.0
+    New features
+    - long awaited "big refactoring":
+      new traits use GATs (Generic Associated Types)
+    - JSON-LD parser and serializer
+    - RDF-canon implementation
+    - experimental resource centric API
+    Documentation
+    - more content in the book
+      (although there is still much to add)
+
 0.7.2
     Bug fixes
     - update dependency on oxiri to fix build issue

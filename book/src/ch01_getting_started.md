@@ -6,7 +6,7 @@ Below is a short example demonstrating how to build a graph, mutate it and seria
 Add the sophia crate to your dependencies in `Cargo.toml`
 ```bash
 [dependencies]
-sophia = "0.8.0-alpha.3"
+sophia = "0.8.0"
 ```
 
 

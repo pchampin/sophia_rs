@@ -37,10 +37,14 @@
 <https://champin.net/#pa> a foaf:Person;
    rdfs:isDefinedBy <https://champin.net/>;
    foaf:made <https://github.com/pchampin/sophia_rs>;
-   foaf:mbox <mailto:pchampin@liris.cnrs.fr>;
+   foaf:mbox <mailto:pierre-antoine@w3.org>;
    foaf:name "Pierre-Antoine Champin".
 
 <https://github.com/pchampin/sophia_rs> doap:release [
+  doap:name "sophia-0.8.0";
+  doap:revision "0.8.0";
+  doap:created "2024-01-08"^^xsd:date;
+],[
   doap:name "sophia-0.8.0-alpha.3";
   doap:revision "0.8.0-alpha.3";
   doap:created "2023-10-24"^^xsd:date;

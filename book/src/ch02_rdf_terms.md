@@ -149,31 +149,31 @@ IRIs can be *relative* IRI reference.
 [^variables]: Note that this kind only exist in Sophia's [generalized RDF] model.
 
 
-[`Term`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html
+[`Term`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html
 [RDF terms]: https://www.w3.org/TR/rdf-concepts/#dfn-rdf-term
 [generalized RDF]: ch00_introduction.html#generalized
-[`TermKind`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/enum.TermKind.html
-[`Term::kind`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#tymethod.kind
-[`Term::is_iri`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.is_iri
-[`Term::is_blank_node`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.is_blank_node
-[`Term::is_literal`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.is_literal
-[`Term::iri`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.iri
-[`Term::bnode_id`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.bnode_id
-[`Term::bnode_id`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.bnode_id
-[`Term::bnode_id`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.bnode_id
-[`Term::lexical_form`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.lexical_form
-[`Term::datatype`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.datatype
-[`Term::language_tag`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.language_tag
-[`Term::triple`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.triple
-[`Term::constituents`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.constituents
-[`Term::atoms`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.atoms
-[`Term::variable`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.variable
-[`Term::eq`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.eq
-[`Term::as_simple`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.as_simple
-[`Term::into_term`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.into_term
-[`Term::borrow_term`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#tymethod.borrow_term
-[`t.borrow_term()`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#tymethod.borrow_term
-[`Term::BorrowTerm`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#associatedtype.BorrowTerm
+[`TermKind`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/enum.TermKind.html
+[`Term::kind`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#tymethod.kind
+[`Term::is_iri`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.is_iri
+[`Term::is_blank_node`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.is_blank_node
+[`Term::is_literal`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.is_literal
+[`Term::iri`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.iri
+[`Term::bnode_id`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.bnode_id
+[`Term::bnode_id`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.bnode_id
+[`Term::bnode_id`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.bnode_id
+[`Term::lexical_form`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.lexical_form
+[`Term::datatype`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.datatype
+[`Term::language_tag`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.language_tag
+[`Term::triple`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.triple
+[`Term::constituents`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.constituents
+[`Term::atoms`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.atoms
+[`Term::variable`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.variable
+[`Term::eq`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.eq
+[`Term::as_simple`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.as_simple
+[`Term::into_term`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.into_term
+[`Term::borrow_term`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#tymethod.borrow_term
+[`t.borrow_term()`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#tymethod.borrow_term
+[`Term::BorrowTerm`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#associatedtype.BorrowTerm
 
 [blank node identifier]: https://www.w3.org/TR/rdf-concepts/#dfn-blank-node-identifier
 [lexical form]: https://www.w3.org/TR/rdf-concepts/#dfn-lexical-form
@@ -182,7 +182,7 @@ IRIs can be *relative* IRI reference.
 [quoted triple]: https://www.w3.org/2021/12/rdf-star.html#dfn-quoted
 [constituents]: https://www.w3.org/2021/12/rdf-star.html#dfn-constituent
 
-[`Iri`]: https://docs.rs/sophia_iri/0.8.0-alpha.3/sophia_iri/struct.Iri.html
-[`IriRef`]: https://docs.rs/sophia_iri/0.8.0-alpha.3/sophia_iri/struct.IriRef.html
-[`BnodeId`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/bnode_id/struct.BnodeId.html
-[`SimpleTerm`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/enum.SimpleTerm.html
+[`Iri`]: https://docs.rs/sophia_iri/0.8.0/sophia_iri/struct.Iri.html
+[`IriRef`]: https://docs.rs/sophia_iri/0.8.0/sophia_iri/struct.IriRef.html
+[`BnodeId`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/bnode_id/struct.BnodeId.html
+[`SimpleTerm`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/enum.SimpleTerm.html

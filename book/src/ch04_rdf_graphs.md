@@ -48,9 +48,9 @@ graph
 [`Graph::triples_matching`] accepts a large variety of parameters,
 which will be described in more detail [in the next chapter](./ch05_term_matchers.md).
 
-[`Graph`] also provide methods to iterate over all unique [subjects](https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.subjects),
-[predicate](https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.predicates)
-and [object](https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.objects)
+[`Graph`] also provide methods to iterate over all unique [subjects](https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.subjects),
+[predicate](https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.predicates)
+and [object](https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.objects)
 in the graph,
 as well as over all unique terms of a certain kind
 ([`Graph::iris`], [`Graph::blank_nodes`], [`Graph::literals`], etc.).
@@ -83,13 +83,13 @@ g.insert(s, rdf::value, old_value + 1)?;
 
 Batch modifications can also be performed on mutable graphs:
 
-* [`MutableGraph::insert_all`](https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.MutableGraph.html#method.insert_all)
+* [`MutableGraph::insert_all`](https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html#method.insert_all)
   inserts all the triples from a triple source[^triple_source];
-* [`MutableGraph::remove_all`](https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.MutableGraph.html#method.remove_all)
+* [`MutableGraph::remove_all`](https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html#method.remove_all)
   removes all the triples from a triple source[^triple_source];
-* [`MutableGraph::remove_matching`](https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.MutableGraph.html#method.remove_matching)
+* [`MutableGraph::remove_matching`](https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html#method.remove_matching)
   removes all the triples matching the parameters;
-* [`MutableGraph::retain_matching`](https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.MutableGraphremove.html#method.retain_matching)
+* [`MutableGraph::retain_matching`](https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraphremove.html#method.retain_matching)
   removes all the triples *except* those matching the parameters.
 	
 The parameters of `remove_matching` and `retain_matching` are similar to those of [`Graph::triples_matching`]
@@ -168,28 +168,28 @@ or those returned by [parsers].
 In particular, any iterator of `Result<T, E>` where `T: `[`Triple`] is a [`TripleSource`].
 
 
-[`Graph`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html
-[`MutableGraph`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.MutableGraph.html
+[`Graph`]: https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html
+[`MutableGraph`]: https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html
 [RDF graphs]: https://www.w3.org/TR/rdf-concepts/#dfn-rdf-graph
-[`Graph::triples`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#tymethod.triples
+[`Graph::triples`]: https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#tymethod.triples
 [`Result`]: https://doc.rust-lang.org/std/result/enum.Result.html
-[`Graph::triples_matching`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.triples_matching
-[`Graph::iris`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.iris
-[`Graph::literals`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.literals
-[`Graph::blank_nodes`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.blank_nodes
-[`Graph::contains`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.contains
-[`MutableGraph::insert`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.MutableGraph.html#tymethod.insert
-[`MutableGraph::remove`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.MutableGraph.html#tymethod.remove
-[`MutableGraph::insert_triple`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.MutableGraph.html#method.insert_triple
-[`MutableGraph::remove_triple`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.MutableGraph.html#method.remove_triple
-[`Triple`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html
-[triple source]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/source/trait.TripleSource.html
-[triples]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html
+[`Graph::triples_matching`]: https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.triples_matching
+[`Graph::iris`]: https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.iris
+[`Graph::literals`]: https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.literals
+[`Graph::blank_nodes`]: https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.blank_nodes
+[`Graph::contains`]: https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.contains
+[`MutableGraph::insert`]: https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html#tymethod.insert
+[`MutableGraph::remove`]: https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html#tymethod.remove
+[`MutableGraph::insert_triple`]: https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html#method.insert_triple
+[`MutableGraph::remove_triple`]: https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html#method.remove_triple
+[`Triple`]: https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html
+[triple source]: https://docs.rs/sophia_api/0.8.0/sophia_api/source/trait.TripleSource.html
+[triples]: https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html
 [`Vec`]: https://doc.rust-lang.org/std/vec/struct.Vec.html
 [`HashSet`]: https://doc.rust-lang.org/std/collections/struct.HashSet.html
 [`BTreeSet`]: https://doc.rust-lang.org/std/collections/struct.BTreeSet.html
-[`sophia::inmem::LightGraph`]: https://docs.rs/sophia_inmem/0.8.0-alpha.3/sophia_inmem/graph/type.LightGraph.html
-[`sophia::inmem::FastGraph`]: https://docs.rs/sophia_inmem/0.8.0-alpha.3/sophia_inmem/graph/type.FastGraph.html
-[`TripleSource`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/source/trait.TripleSource.html
+[`sophia::inmem::LightGraph`]: https://docs.rs/sophia_inmem/0.8.0/sophia_inmem/graph/type.LightGraph.html
+[`sophia::inmem::FastGraph`]: https://docs.rs/sophia_inmem/0.8.0/sophia_inmem/graph/type.FastGraph.html
+[`TripleSource`]: https://docs.rs/sophia_api/0.8.0/sophia_api/source/trait.TripleSource.html
 [parsers]: ./ch07_parsing_and_serializing.md
-[`CollectibeGraph`]: https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.CollectibleGraph.html
+[`CollectibeGraph`]: https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.CollectibleGraph.html
