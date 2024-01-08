@@ -214,7 +214,7 @@ graph
 	})</code></pre>
 <p><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.triples_matching"><code>Graph::triples_matching</code></a> accepts a large variety of parameters,
 which will be described in more detail <a href="./ch05_term_matchers.html">in the next chapter</a>.</p>
-<p><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> also provide methods to iterate over all unique <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.subjects">subjects</a>,
+<p><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> also provide methods to iterate over all <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.subjects">subjects</a>,
 <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.predicates">predicate</a>
 and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.objects">object</a>
 in the graph,
@@ -257,11 +257,12 @@ and are described in more detail in the <a href="./ch05_term_matchers.html">next
 <li>slices of <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html">triples</a> implement <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a>;</li>
 <li>standard collections (<a href="https://doc.rust-lang.org/std/vec/struct.Vec.html"><code>Vec</code></a>, <a href="https://doc.rust-lang.org/std/collections/struct.HashSet.html"><code>HashSet</code></a> and <a href="https://doc.rust-lang.org/std/collections/struct.BTreeSet.html"><code>BTreeSet</code></a>) of <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html">triples</a> implement <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html"><code>MutableGraph</code></a>;</li>
 <li><a href="https://docs.rs/sophia_inmem/0.8.0/sophia_inmem/graph/type.LightGraph.html"><code>sophia::inmem::LightGraph</code></a> provides a <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html"><code>MutableGraph</code></a> implementation with a low memory footprint;</li>
-<li><a href="https://docs.rs/sophia_inmem/0.8.0/sophia_inmem/graph/type.FastGraph.html"><code>sophia::inmem::FastGraph</code></a> provides a <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html"><code>MutableGraph</code></a> implementation design for fast retrieval of any given triple.</li>
+<li><a href="https://docs.rs/sophia_inmem/0.8.0/sophia_inmem/graph/type.FastGraph.html"><code>sophia::inmem::FastGraph</code></a> provides a <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html"><code>MutableGraph</code></a> implementation designed for fast retrieval of any given triple.</li>
 </ul>
 <h2 id="recipies-for-constructing-graphs"><a class="header" href="#recipies-for-constructing-graphs">Recipies for constructing graphs</a></h2>
 <h3 id="constructing-and-populating-an-empty-graph"><a class="header" href="#constructing-and-populating-an-empty-graph">Constructing and populating an empty graph</a></h3>
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::{api::{ns::{Namespace, rdf}, prelude::*}, inmem::graph::FastGraph};
+</span><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 </span>let mut g = FastGraph::new();
 let ex = Namespace::new_unchecked(&quot;https://example.org/ns#&quot;);
 let alice = ex.get_unchecked(&quot;alice&quot;);
@@ -270,12 +271,13 @@ g.insert(
 	&amp;alice,
 	rdf::type_,
 	s.get_unchecked(&quot;Person&quot;)
-).unwrap();
+)?;
 g.insert(
 	&amp;alice,
 	s.get_unchecked(&quot;name&quot;),
   &quot;Alice&quot;
-).unwrap();</code></pre>
+)?;
+<span class="boring">Ok(()) }</span></code></pre>
 <h3 id="constructing-a-graph-from-a-triple-source1"><a class="header" href="#constructing-a-graph-from-a-triple-source1">Constructing a graph from a triple source<sup class="footnote-reference"><a href="#triple_source">1</a></sup></a></h3>
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::{api::prelude::*, inmem::graph::FastGraph, iri::Iri};
 </span><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
@@ -286,9 +288,9 @@ let graph: FastGraph = big_graph
 	.triples_matching([alice], Any, Any)
 	.collect_triples()?;
 <span class="boring">Ok(()) }</span></code></pre>
-<p>NB: Only types implementing [<code>CollectibleGraph</code>]
+<p>NB: Only types implementing <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.CollectibleGraph.html"><code>CollectibleGraph</code></a>
 can actually be constructed with the <code>collected_triples</code> method as above.
-However, most types implementing <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> should implement [<code>CollectibleGraph</code>].</p>
+However, most types implementing <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> should implement <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.CollectibleGraph.html"><code>CollectibleGraph</code></a>.</p>
 <h3 id="constructing-a-graph-from-a-file"><a class="header" href="#constructing-a-graph-from-a-file">Constructing a graph from a file</a></h3>
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::{api::prelude::*, inmem::graph::FastGraph, iri::Iri};
 </span><span class="boring">use std::{io::BufReader, fs::File};

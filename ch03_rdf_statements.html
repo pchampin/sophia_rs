@@ -180,14 +180,14 @@
 <p>The <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html"><code>Quad</code></a> traits define how you interact with <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-statement">RDF statements</a> in Sophia.</p>
 <p>Note that in Sophia's <a href="ch00_introduction.html#generalized">generalized RDF</a> model, terms of any kind can occur in any position in a statement.
 This contrasts to strict RDF where only IRIs can occur in predicate position,
-and where literals can not occur in the subject position.</p>
+and where literals can only occur in the object position.</p>
 <h2 id="using-triples"><a class="header" href="#using-triples">Using triples</a></h2>
 <p>Triples in RDF are made of a subject, a predicate and an object.
 They can be obtained respectively via the methods <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#tymethod.s"><code>Triple::s</code></a>, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#tymethod.p"><code>Triple::p</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#tymethod.o"><code>Triple::o</code></a>,
 or all at once (as an array of three terms) via the method <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#method.spo"><code>Triple::spo</code></a>.
 These methods also have a <code>to_X</code> version that destructs the original triple instead of borrowing it.</p>
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::api::{ns::rdf, prelude::*};
-</span>// Example: yield all the tems besing used as types in the given triples
+</span>// Example: yield all the terms being used as types in the given triples
 fn all_types&lt;IT, T&gt;(triples: IT) -&gt; impl Iterator&lt;Item=T::Term&gt;
 where
   IT: IntoIterator&lt;Item=T&gt;,
@@ -219,7 +219,7 @@ where
 <h2 id="comparing-triples-or-quads"><a class="header" href="#comparing-triples-or-quads">Comparing triples or quads</a></h2>
 <p>To check whether two values implementing <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> (resp. <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html"><code>Quad</code></a>)
 represent the same RDF statements, the method <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#method.eq"><code>Triple::eq</code></a> (resp. <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#method.eq"><code>Quad::eq</code></a>)
-must be used.r
+must be used.
 It will compare each component of the statements using the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.eq"><code>Term::eq</code></a> method.
 Note that the <code>==</code> operator may give a different result than <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#method.eq"><code>Triple::eq</code></a> or <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#method.eq"><code>Quad::eq</code></a>
 on some types implementing the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> or the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html"><code>Quad</code></a> trait.</p>

@@ -240,7 +240,7 @@ Alternatively, to convert any term to a self-sufficient <a href="https://docs.rs
 <h2 id="borrowing-terms-with-termborrow_term"><a class="header" href="#borrowing-terms-with-termborrow_term">Borrowing terms with <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#tymethod.borrow_term"><code>Term::borrow_term</code></a></a></h2>
 <p>In Sophia, all functions accepting terms as parameters are expecting a type <code>T: Term</code> -- not <code>&amp;T</code>, but the type <code>T</code> itself. So what happens when you want to call such a function with a term <code>t</code>, but still want to retain ownership of <code>t</code>?</p>
 <p>The solution is to pass <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#tymethod.borrow_term"><code>t.borrow_term()</code></a> to the function. This method returns <em>something</em> implementing <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html"><code>Term</code></a>, representing the same RDF term as <code>t</code>, without waiving ownership. This is a very common pattern in Sophia.</p>
-<p>More precisely, the type returned by <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#tymethod.borrow_term"><code>t.borrow_term()</code></a> is the associated type <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#associatedtype.BorrowTerm"><code>Term::BorrowTerm</code></a>. In most cases, this is a reference a reference or a copy of <code>t</code>.</p>
+<p>More precisely, the type returned by <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#tymethod.borrow_term"><code>t.borrow_term()</code></a> is the associated type <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#associatedtype.BorrowTerm"><code>Term::BorrowTerm</code></a>. In most cases, this is a reference or a copy of <code>t</code>.</p>
 <h2 id="recipes-for-constructing-terms"><a class="header" href="#recipes-for-constructing-terms">Recipes for constructing terms</a></h2>
 <h3 id="constructing-iris"><a class="header" href="#constructing-iris">Constructing IRIs</a></h3>
 <pre><code class="language-rust noplayground"><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
@@ -285,13 +285,13 @@ let lit_date = &quot;2023-11-15&quot; * xsd::date;
 <pre><code class="language-rust noplayground"><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 </span><span class="boring">
 </span><span class="boring">use sophia::api::term::BnodeId;
-</span>let b = BnodeId::new(&quot;x&quot;);
+</span>let b = BnodeId::new_unchecked(&quot;x&quot;);
 <span class="boring">
 </span><span class="boring">Ok(()) }</span></code></pre>
 <h3 id="converting-terms-into-a-different-type"><a class="header" href="#converting-terms-into-a-different-type">Converting terms into a different type</a></h3>
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::api::{ns::xsd, term::{SimpleTerm, Term}};
-</span>fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
-<span class="boring">let some_term = &quot;42&quot; * xsd::integer;
+</span><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
+</span><span class="boring">let some_term = &quot;42&quot; * xsd::integer;
 </span>let t1: SimpleTerm = &quot;hello&quot;.into_term();
 let t2: i32 = some_term.try_into_term()?;
 <span class="boring">Ok(()) }</span></code></pre>

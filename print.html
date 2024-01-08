@@ -373,7 +373,7 @@ Alternatively, to convert any term to a self-sufficient <a href="https://docs.rs
 <h2 id="borrowing-terms-with-termborrow_term"><a class="header" href="#borrowing-terms-with-termborrow_term">Borrowing terms with <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#tymethod.borrow_term"><code>Term::borrow_term</code></a></a></h2>
 <p>In Sophia, all functions accepting terms as parameters are expecting a type <code>T: Term</code> -- not <code>&amp;T</code>, but the type <code>T</code> itself. So what happens when you want to call such a function with a term <code>t</code>, but still want to retain ownership of <code>t</code>?</p>
 <p>The solution is to pass <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#tymethod.borrow_term"><code>t.borrow_term()</code></a> to the function. This method returns <em>something</em> implementing <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html"><code>Term</code></a>, representing the same RDF term as <code>t</code>, without waiving ownership. This is a very common pattern in Sophia.</p>
-<p>More precisely, the type returned by <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#tymethod.borrow_term"><code>t.borrow_term()</code></a> is the associated type <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#associatedtype.BorrowTerm"><code>Term::BorrowTerm</code></a>. In most cases, this is a reference a reference or a copy of <code>t</code>.</p>
+<p>More precisely, the type returned by <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#tymethod.borrow_term"><code>t.borrow_term()</code></a> is the associated type <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#associatedtype.BorrowTerm"><code>Term::BorrowTerm</code></a>. In most cases, this is a reference or a copy of <code>t</code>.</p>
 <h2 id="recipes-for-constructing-terms"><a class="header" href="#recipes-for-constructing-terms">Recipes for constructing terms</a></h2>
 <h3 id="constructing-iris"><a class="header" href="#constructing-iris">Constructing IRIs</a></h3>
 <pre><code class="language-rust noplayground"><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
@@ -418,13 +418,13 @@ let lit_date = &quot;2023-11-15&quot; * xsd::date;
 <pre><code class="language-rust noplayground"><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 </span><span class="boring">
 </span><span class="boring">use sophia::api::term::BnodeId;
-</span>let b = BnodeId::new(&quot;x&quot;);
+</span>let b = BnodeId::new_unchecked(&quot;x&quot;);
 <span class="boring">
 </span><span class="boring">Ok(()) }</span></code></pre>
 <h3 id="converting-terms-into-a-different-type"><a class="header" href="#converting-terms-into-a-different-type">Converting terms into a different type</a></h3>
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::api::{ns::xsd, term::{SimpleTerm, Term}};
-</span>fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
-<span class="boring">let some_term = &quot;42&quot; * xsd::integer;
+</span><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
+</span><span class="boring">let some_term = &quot;42&quot; * xsd::integer;
 </span>let t1: SimpleTerm = &quot;hello&quot;.into_term();
 let t2: i32 = some_term.try_into_term()?;
 <span class="boring">Ok(()) }</span></code></pre>
@@ -440,14 +440,14 @@ IRIs can be <em>relative</em> IRI reference.</p>
 <p>The <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html"><code>Quad</code></a> traits define how you interact with <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-statement">RDF statements</a> in Sophia.</p>
 <p>Note that in Sophia's <a href="ch00_introduction.html#generalized">generalized RDF</a> model, terms of any kind can occur in any position in a statement.
 This contrasts to strict RDF where only IRIs can occur in predicate position,
-and where literals can not occur in the subject position.</p>
+and where literals can only occur in the object position.</p>
 <h2 id="using-triples"><a class="header" href="#using-triples">Using triples</a></h2>
 <p>Triples in RDF are made of a subject, a predicate and an object.
 They can be obtained respectively via the methods <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#tymethod.s"><code>Triple::s</code></a>, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#tymethod.p"><code>Triple::p</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#tymethod.o"><code>Triple::o</code></a>,
 or all at once (as an array of three terms) via the method <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#method.spo"><code>Triple::spo</code></a>.
 These methods also have a <code>to_X</code> version that destructs the original triple instead of borrowing it.</p>
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::api::{ns::rdf, prelude::*};
-</span>// Example: yield all the tems besing used as types in the given triples
+</span>// Example: yield all the terms being used as types in the given triples
 fn all_types&lt;IT, T&gt;(triples: IT) -&gt; impl Iterator&lt;Item=T::Term&gt;
 where
   IT: IntoIterator&lt;Item=T&gt;,
@@ -479,7 +479,7 @@ where
 <h2 id="comparing-triples-or-quads"><a class="header" href="#comparing-triples-or-quads">Comparing triples or quads</a></h2>
 <p>To check whether two values implementing <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> (resp. <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html"><code>Quad</code></a>)
 represent the same RDF statements, the method <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#method.eq"><code>Triple::eq</code></a> (resp. <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#method.eq"><code>Quad::eq</code></a>)
-must be used.r
+must be used.
 It will compare each component of the statements using the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.eq"><code>Term::eq</code></a> method.
 Note that the <code>==</code> operator may give a different result than <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#method.eq"><code>Triple::eq</code></a> or <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#method.eq"><code>Quad::eq</code></a>
 on some types implementing the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> or the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html"><code>Quad</code></a> trait.</p>
@@ -528,7 +528,7 @@ graph
 	})</code></pre>
 <p><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.triples_matching"><code>Graph::triples_matching</code></a> accepts a large variety of parameters,
 which will be described in more detail <a href="./ch05_term_matchers.html">in the next chapter</a>.</p>
-<p><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> also provide methods to iterate over all unique <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.subjects">subjects</a>,
+<p><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> also provide methods to iterate over all <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.subjects">subjects</a>,
 <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.predicates">predicate</a>
 and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.objects">object</a>
 in the graph,
@@ -571,11 +571,12 @@ and are described in more detail in the <a href="./ch05_term_matchers.html">next
 <li>slices of <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html">triples</a> implement <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a>;</li>
 <li>standard collections (<a href="https://doc.rust-lang.org/std/vec/struct.Vec.html"><code>Vec</code></a>, <a href="https://doc.rust-lang.org/std/collections/struct.HashSet.html"><code>HashSet</code></a> and <a href="https://doc.rust-lang.org/std/collections/struct.BTreeSet.html"><code>BTreeSet</code></a>) of <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html">triples</a> implement <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html"><code>MutableGraph</code></a>;</li>
 <li><a href="https://docs.rs/sophia_inmem/0.8.0/sophia_inmem/graph/type.LightGraph.html"><code>sophia::inmem::LightGraph</code></a> provides a <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html"><code>MutableGraph</code></a> implementation with a low memory footprint;</li>
-<li><a href="https://docs.rs/sophia_inmem/0.8.0/sophia_inmem/graph/type.FastGraph.html"><code>sophia::inmem::FastGraph</code></a> provides a <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html"><code>MutableGraph</code></a> implementation design for fast retrieval of any given triple.</li>
+<li><a href="https://docs.rs/sophia_inmem/0.8.0/sophia_inmem/graph/type.FastGraph.html"><code>sophia::inmem::FastGraph</code></a> provides a <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html"><code>MutableGraph</code></a> implementation designed for fast retrieval of any given triple.</li>
 </ul>
 <h2 id="recipies-for-constructing-graphs"><a class="header" href="#recipies-for-constructing-graphs">Recipies for constructing graphs</a></h2>
 <h3 id="constructing-and-populating-an-empty-graph"><a class="header" href="#constructing-and-populating-an-empty-graph">Constructing and populating an empty graph</a></h3>
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::{api::{ns::{Namespace, rdf}, prelude::*}, inmem::graph::FastGraph};
+</span><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 </span>let mut g = FastGraph::new();
 let ex = Namespace::new_unchecked(&quot;https://example.org/ns#&quot;);
 let alice = ex.get_unchecked(&quot;alice&quot;);
@@ -584,12 +585,13 @@ g.insert(
 	&amp;alice,
 	rdf::type_,
 	s.get_unchecked(&quot;Person&quot;)
-).unwrap();
+)?;
 g.insert(
 	&amp;alice,
 	s.get_unchecked(&quot;name&quot;),
   &quot;Alice&quot;
-).unwrap();</code></pre>
+)?;
+<span class="boring">Ok(()) }</span></code></pre>
 <h3 id="constructing-a-graph-from-a-triple-source1"><a class="header" href="#constructing-a-graph-from-a-triple-source1">Constructing a graph from a triple source<sup class="footnote-reference"><a href="#triple_source">1</a></sup></a></h3>
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::{api::prelude::*, inmem::graph::FastGraph, iri::Iri};
 </span><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
@@ -600,9 +602,9 @@ let graph: FastGraph = big_graph
 	.triples_matching([alice], Any, Any)
 	.collect_triples()?;
 <span class="boring">Ok(()) }</span></code></pre>
-<p>NB: Only types implementing [<code>CollectibleGraph</code>]
+<p>NB: Only types implementing <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.CollectibleGraph.html"><code>CollectibleGraph</code></a>
 can actually be constructed with the <code>collected_triples</code> method as above.
-However, most types implementing <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> should implement [<code>CollectibleGraph</code>].</p>
+However, most types implementing <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> should implement <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.CollectibleGraph.html"><code>CollectibleGraph</code></a>.</p>
 <h3 id="constructing-a-graph-from-a-file"><a class="header" href="#constructing-a-graph-from-a-file">Constructing a graph from a file</a></h3>
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::{api::prelude::*, inmem::graph::FastGraph, iri::Iri};
 </span><span class="boring">use std::{io::BufReader, fs::File};
