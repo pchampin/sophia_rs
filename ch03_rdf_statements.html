@@ -177,14 +177,14 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="rdf-statements"><a class="header" href="#rdf-statements">RDF Statements</a></h1>
-<p>The <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> and <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html"><code>Quad</code></a> traits define how you interact with <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-statement">RDF statements</a> in Sophia.</p>
+<p>The <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html"><code>Quad</code></a> traits define how you interact with <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-statement">RDF statements</a> in Sophia.</p>
 <p>Note that in Sophia's <a href="ch00_introduction.html#generalized">generalized RDF</a> model, terms of any kind can occur in any position in a statement.
 This contrasts to strict RDF where only IRIs can occur in predicate position,
 and where literals can not occur in the subject position.</p>
 <h2 id="using-triples"><a class="header" href="#using-triples">Using triples</a></h2>
 <p>Triples in RDF are made of a subject, a predicate and an object.
-They can be obtained respectively via the methods <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html#tymethod.s"><code>Triple::s</code></a>, <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html#tymethod.p"><code>Triple::p</code></a> and <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html#tymethod.o"><code>Triple::o</code></a>,
-or all at once (as an array of three terms) via the method <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html#method.spo"><code>Triple::spo</code></a>.
+They can be obtained respectively via the methods <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#tymethod.s"><code>Triple::s</code></a>, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#tymethod.p"><code>Triple::p</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#tymethod.o"><code>Triple::o</code></a>,
+or all at once (as an array of three terms) via the method <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#method.spo"><code>Triple::spo</code></a>.
 These methods also have a <code>to_X</code> version that destructs the original triple instead of borrowing it.</p>
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::api::{ns::rdf, prelude::*};
 </span>// Example: yield all the tems besing used as types in the given triples
@@ -200,9 +200,9 @@ where
 }</code></pre>
 <h2 id="using-quads"><a class="header" href="#using-quads">Using quads</a></h2>
 <p>Quads are used to represent triples in the context of an optional <a href="https://www.w3.org/TR/rdf-concepts/#dfn-named-graph">named graph</a>.
-Like triples, they have methods <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html#tymethod.s"><code>Quad::s</code></a>, <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html#tymethod.p"><code>Quad::p</code></a> and <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html#tymethod.o"><code>Quad::o</code></a>,
-but also <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html#tymethod.g"><code>Quad::g</code></a> to access the optional graph name,
-and <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html#method.spog"><code>Quad::spog</code></a> to obtain all four components all at once.
+Like triples, they have methods <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#tymethod.s"><code>Quad::s</code></a>, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#tymethod.p"><code>Quad::p</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#tymethod.o"><code>Quad::o</code></a>,
+but also <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#tymethod.g"><code>Quad::g</code></a> to access the optional graph name,
+and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#method.spog"><code>Quad::spog</code></a> to obtain all four components all at once.
 These methods also have a <code>to_X</code> version that destructs the original quad instead of borrowing it.</p>
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::api::{ns::rdf, prelude::*};
 </span>// Example: yield all the triples in the default graph, from a list of quads
@@ -217,18 +217,18 @@ where
     .map(|q| { let (spo, _g) = q.to_spog(); spo })
 }</code></pre>
 <h2 id="comparing-triples-or-quads"><a class="header" href="#comparing-triples-or-quads">Comparing triples or quads</a></h2>
-<p>To check whether two values implementing <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> (resp. <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html"><code>Quad</code></a>)
-represent the same RDF statements, the method <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html#method.eq"><code>Triple::eq</code></a> (resp. <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html#method.eq"><code>Quad::eq</code></a>)
+<p>To check whether two values implementing <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> (resp. <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html"><code>Quad</code></a>)
+represent the same RDF statements, the method <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#method.eq"><code>Triple::eq</code></a> (resp. <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#method.eq"><code>Quad::eq</code></a>)
 must be used.r
-It will compare each component of the statements using the <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html#method.eq"><code>Term::eq</code></a> method.
-Note that the <code>==</code> operator may give a different result than <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html#method.eq"><code>Triple::eq</code></a> or <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html#method.eq"><code>Quad::eq</code></a>
-on some types implementing the <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> or the <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html"><code>Quad</code></a> trait.</p>
-<h2 id="useful-types-implementing-triple"><a class="header" href="#useful-types-implementing-triple">Useful types implementing <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html"><code>Triple</code></a></a></h2>
-<p>While the <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> and <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html"><code>Quad</code></a> traits can be implemented by multiple types,
+It will compare each component of the statements using the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.eq"><code>Term::eq</code></a> method.
+Note that the <code>==</code> operator may give a different result than <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#method.eq"><code>Triple::eq</code></a> or <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#method.eq"><code>Quad::eq</code></a>
+on some types implementing the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> or the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html"><code>Quad</code></a> trait.</p>
+<h2 id="useful-types-implementing-triple"><a class="header" href="#useful-types-implementing-triple">Useful types implementing <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html"><code>Triple</code></a></a></h2>
+<p>While the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html"><code>Quad</code></a> traits can be implemented by multiple types,
 in most situations the following types will be used:</p>
 <ul>
-<li><code>[T; 3]</code> where <code>T: </code><a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html"><code>Term</code></a> implements <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html"><code>Triple</code></a></li>
-<li><code>([T; 3], Option&lt;T&gt;)</code> where <code>T: </code><a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/trait.Term.html"><code>Term</code></a> implements <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/quad/trait.Quad.html"><code>Quad</code></a></li>
+<li><code>[T; 3]</code> where <code>T: </code><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html"><code>Term</code></a> implements <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html"><code>Triple</code></a></li>
+<li><code>([T; 3], Option&lt;T&gt;)</code> where <code>T: </code><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html"><code>Term</code></a> implements <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html"><code>Quad</code></a></li>
 </ul>
 
                     </main>

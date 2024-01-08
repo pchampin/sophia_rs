@@ -215,19 +215,19 @@ Most of them have now disappeared, in favor of the types defined in <a href="htt
 <p>The <a href="https://docs.rs/sophia_term/latest/sophia_term/"><code>sophia_term</code></a> crate,
 from which most term implementations came in 0.7, has been significantly reduced.
 The most general types that it provided (<a href="https://docs.rs/sophia_term/0.7.2/sophia_term/type.BoxTerm.html"><code>BoxTerm</code></a>, <a href="https://docs.rs/sophia_term/0.7.2/sophia_term/type.RefTerm.html"><code>RefTerm</code></a>)
-are now subsumed by <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/term/enum.SimpleTerm.html"><code>SimpleTerm</code></a>,
+are now subsumed by <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/enum.SimpleTerm.html"><code>SimpleTerm</code></a>,
 a straightforward implementation of the <code>Term</code> trait, provided by
-<a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/index.html"><code>sophia_api</code></a>.
+<a href="https://docs.rs/sophia_api/0.8.0/sophia_api/index.html"><code>sophia_api</code></a>.
 More specific types (such as
-<a href="https://docs.rs/sophia_term/0.8.0-alpha.3/sophia_term/type.RcTerm.html"><code>RcTerm</code></a> or 
-<a href="https://docs.rs/sophia_term/0.8.0-alpha.3/sophia_term/type.ArcTerm.html"><code>ArcTerm</code></a>)
+<a href="https://docs.rs/sophia_term/0.8.0/sophia_term/type.RcTerm.html"><code>RcTerm</code></a> or 
+<a href="https://docs.rs/sophia_term/0.8.0/sophia_term/type.ArcTerm.html"><code>ArcTerm</code></a>)
 are still provided by <code>sophia_term</code>.</p>
 <h2 id="simplification-of-the-graph-and-dataset-traits"><a class="header" href="#simplification-of-the-graph-and-dataset-traits">Simplification of the <code>Graph</code> and <code>Dataset</code> traits</a></h2>
 <p>In version 0.7, the <code>Graph</code> trait had a number of specialized methods for retrieving selected triples,
 such as <a href="https://docs.rs/sophia_api/0.7.2/sophia_api/graph/trait.Graph.html#method.triples_with_s"><code>triples_with_s</code></a>
 or <a href="https://docs.rs/sophia_api/0.7.2/sophia_api/graph/trait.Graph.html#method.triples_with_po"><code>triples_with_po</code></a>
 (and similarly for <code>Dataset</code>: <code>quads_with_s</code>, etc.).</p>
-<p>All these methods have disappeared in favor of <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.triples_matching"><code>triples_matching</code></a>,
+<p>All these methods have disappeared in favor of <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.triples_matching"><code>triples_matching</code></a>,
 so that instead of:</p>
 <pre><code class="language-rust noplayground ignore">for t in g.triples_with_s(mys) {
     // ...

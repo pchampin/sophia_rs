@@ -177,11 +177,11 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="rdf-graphs"><a class="header" href="#rdf-graphs">RDF Graphs</a></h1>
-<p>The <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> and <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.MutableGraph.html"><code>MutableGraph</code></a> traits define how you interact with <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-graph">RDF graphs</a> in Sophia.</p>
+<p>The <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html"><code>MutableGraph</code></a> traits define how you interact with <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-graph">RDF graphs</a> in Sophia.</p>
 <h2 id="using-graphs"><a class="header" href="#using-graphs">Using graphs</a></h2>
 <p>RDF graphs are sets of triples,
 so the most common thing you need to do with a graph is to iterate over its triples.
-This is achieved with the <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#tymethod.triples"><code>Graph::triples</code></a> method:</p>
+This is achieved with the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#tymethod.triples"><code>Graph::triples</code></a> method:</p>
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::api::prelude::*;
 </span><span class="boring">use sophia::inmem::graph::LightGraph;
 </span><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
@@ -191,10 +191,10 @@ This is achieved with the <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/soph
 	// do something with t;
 }
 <span class="boring">Ok(()) }</span></code></pre>
-<p>Notice that <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#tymethod.triples"><code>Graph::triples</code></a> yields <a href="https://doc.rust-lang.org/std/result/enum.Result.html"><code>Result</code></a>s,
-as some implementations of <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> may fail at any point of the iteration.</p>
+<p>Notice that <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#tymethod.triples"><code>Graph::triples</code></a> yields <a href="https://doc.rust-lang.org/std/result/enum.Result.html"><code>Result</code></a>s,
+as some implementations of <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> may fail at any point of the iteration.</p>
 <p>When only a subset of the triples in the graph are of interest,
-you will want to use the <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.triples_matching"><code>Graph::triples_matching</code></a> method:</p>
+you will want to use the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.triples_matching"><code>Graph::triples_matching</code></a> method:</p>
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::api::{ns::rdf, prelude::*, term::SimpleTerm};
 </span><span class="boring">use sophia::inmem::graph::LightGraph;
 </span>
@@ -212,20 +212,20 @@ graph
 	.for_each(|(instance, typ)| {
 		// do something 
 	})</code></pre>
-<p><a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.triples_matching"><code>Graph::triples_matching</code></a> accepts a large variety of parameters,
+<p><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.triples_matching"><code>Graph::triples_matching</code></a> accepts a large variety of parameters,
 which will be described in more detail <a href="./ch05_term_matchers.html">in the next chapter</a>.</p>
-<p><a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> also provide methods to iterate over all unique <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.subjects">subjects</a>,
-<a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.predicates">predicate</a>
-and <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.objects">object</a>
+<p><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> also provide methods to iterate over all unique <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.subjects">subjects</a>,
+<a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.predicates">predicate</a>
+and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.objects">object</a>
 in the graph,
 as well as over all unique terms of a certain kind
-(<a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.iris"><code>Graph::iris</code></a>, <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.blank_nodes"><code>Graph::blank_nodes</code></a>, <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.literals"><code>Graph::literals</code></a>, etc.).</p>
-<p>Finally, it is possible to check whether a graph contains a specific triple with the method <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.contains"><code>Graph::contains</code></a>.</p>
+(<a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.iris"><code>Graph::iris</code></a>, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.blank_nodes"><code>Graph::blank_nodes</code></a>, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.literals"><code>Graph::literals</code></a>, etc.).</p>
+<p>Finally, it is possible to check whether a graph contains a specific triple with the method <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.contains"><code>Graph::contains</code></a>.</p>
 <h2 id="mutating-graphs"><a class="header" href="#mutating-graphs">Mutating graphs</a></h2>
-<p>Any implementation of <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> that can be mutated should also implement <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.MutableGraph.html"><code>MutableGraph</code></a>,
+<p>Any implementation of <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> that can be mutated should also implement <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html"><code>MutableGraph</code></a>,
 which comes with additional methods for modifying the graph.
 Individual triples can be added to the graph (resp. removed from the graph)
-with <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.MutableGraph.html#tymethod.insert"><code>MutableGraph::insert</code></a> (resp. <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.MutableGraph.html#tymethod.remove"><code>MutableGraph::remove</code></a>).
+with <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html#tymethod.insert"><code>MutableGraph::insert</code></a> (resp. <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html#tymethod.remove"><code>MutableGraph::remove</code></a>).
 Inserting (resp. removing) a triple that is already (resp. not) present in the graph will be essentially a noop.</p>
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::{api::{ns::rdf, prelude::*}, iri::*};
 </span>/// Example: increment the rdf:value of a given subject
@@ -241,23 +241,23 @@ g.insert(s, rdf::value, old_value + 1)?;
 <span class="boring">Ok(()) }</span></code></pre>
 <p>Batch modifications can also be performed on mutable graphs:</p>
 <ul>
-<li><a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.MutableGraph.html#method.insert_all"><code>MutableGraph::insert_all</code></a>
+<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html#method.insert_all"><code>MutableGraph::insert_all</code></a>
 inserts all the triples from a triple source<sup class="footnote-reference"><a href="#triple_source">1</a></sup>;</li>
-<li><a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.MutableGraph.html#method.remove_all"><code>MutableGraph::remove_all</code></a>
+<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html#method.remove_all"><code>MutableGraph::remove_all</code></a>
 removes all the triples from a triple source<sup class="footnote-reference"><a href="#triple_source">1</a></sup>;</li>
-<li><a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.MutableGraph.html#method.remove_matching"><code>MutableGraph::remove_matching</code></a>
+<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html#method.remove_matching"><code>MutableGraph::remove_matching</code></a>
 removes all the triples matching the parameters;</li>
-<li><a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.MutableGraphremove.html#method.retain_matching"><code>MutableGraph::retain_matching</code></a>
+<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraphremove.html#method.retain_matching"><code>MutableGraph::retain_matching</code></a>
 removes all the triples <em>except</em> those matching the parameters.</li>
 </ul>
-<p>The parameters of <code>remove_matching</code> and <code>retain_matching</code> are similar to those of <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.triples_matching"><code>Graph::triples_matching</code></a>
+<p>The parameters of <code>remove_matching</code> and <code>retain_matching</code> are similar to those of <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.triples_matching"><code>Graph::triples_matching</code></a>
 and are described in more detail in the <a href="./ch05_term_matchers.html">next chapter</a>.</p>
-<h2 id="useful-types-implementing-graph"><a class="header" href="#useful-types-implementing-graph">Useful types implementing <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html"><code>Graph</code></a></a></h2>
+<h2 id="useful-types-implementing-graph"><a class="header" href="#useful-types-implementing-graph">Useful types implementing <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a></a></h2>
 <ul>
-<li>slices of <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html">triples</a> implement <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html"><code>Graph</code></a>;</li>
-<li>standard collections (<a href="https://doc.rust-lang.org/std/vec/struct.Vec.html"><code>Vec</code></a>, <a href="https://doc.rust-lang.org/std/collections/struct.HashSet.html"><code>HashSet</code></a> and <a href="https://doc.rust-lang.org/std/collections/struct.BTreeSet.html"><code>BTreeSet</code></a>) of <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html">triples</a> implement <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> and <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.MutableGraph.html"><code>MutableGraph</code></a>;</li>
-<li><a href="https://docs.rs/sophia_inmem/0.8.0-alpha.3/sophia_inmem/graph/type.LightGraph.html"><code>sophia::inmem::LightGraph</code></a> provides a <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> and <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.MutableGraph.html"><code>MutableGraph</code></a> implementation with a low memory footprint;</li>
-<li><a href="https://docs.rs/sophia_inmem/0.8.0-alpha.3/sophia_inmem/graph/type.FastGraph.html"><code>sophia::inmem::FastGraph</code></a> provides a <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> and <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.MutableGraph.html"><code>MutableGraph</code></a> implementation design for fast retrieval of any given triple.</li>
+<li>slices of <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html">triples</a> implement <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a>;</li>
+<li>standard collections (<a href="https://doc.rust-lang.org/std/vec/struct.Vec.html"><code>Vec</code></a>, <a href="https://doc.rust-lang.org/std/collections/struct.HashSet.html"><code>HashSet</code></a> and <a href="https://doc.rust-lang.org/std/collections/struct.BTreeSet.html"><code>BTreeSet</code></a>) of <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html">triples</a> implement <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html"><code>MutableGraph</code></a>;</li>
+<li><a href="https://docs.rs/sophia_inmem/0.8.0/sophia_inmem/graph/type.LightGraph.html"><code>sophia::inmem::LightGraph</code></a> provides a <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html"><code>MutableGraph</code></a> implementation with a low memory footprint;</li>
+<li><a href="https://docs.rs/sophia_inmem/0.8.0/sophia_inmem/graph/type.FastGraph.html"><code>sophia::inmem::FastGraph</code></a> provides a <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html"><code>MutableGraph</code></a> implementation design for fast retrieval of any given triple.</li>
 </ul>
 <h2 id="recipies-for-constructing-graphs"><a class="header" href="#recipies-for-constructing-graphs">Recipies for constructing graphs</a></h2>
 <h3 id="constructing-and-populating-an-empty-graph"><a class="header" href="#constructing-and-populating-an-empty-graph">Constructing and populating an empty graph</a></h3>
@@ -288,7 +288,7 @@ let graph: FastGraph = big_graph
 <span class="boring">Ok(()) }</span></code></pre>
 <p>NB: Only types implementing [<code>CollectibleGraph</code>]
 can actually be constructed with the <code>collected_triples</code> method as above.
-However, most types implementing <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> should implement [<code>CollectibleGraph</code>].</p>
+However, most types implementing <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> should implement [<code>CollectibleGraph</code>].</p>
 <h3 id="constructing-a-graph-from-a-file"><a class="header" href="#constructing-a-graph-from-a-file">Constructing a graph from a file</a></h3>
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::{api::prelude::*, inmem::graph::FastGraph, iri::Iri};
 </span><span class="boring">use std::{io::BufReader, fs::File};
@@ -303,10 +303,10 @@ let graph: FastGraph = turtle::parse_bufread(f)
 <p>For more about parsing (and serializing), see <a href="./ch07_parsing_and_serializing.html">the corresponding chapter</a>.</p>
 <hr />
 <div class="footnote-definition" id="triple_source"><sup class="footnote-definition-label">1</sup>
-<p>a <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/source/trait.TripleSource.html"><code>TripleSource</code></a> is a fallible stream of triples,
-such as those returned by <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#tymethod.triples"><code>Graph::triples</code></a> or <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/graph/trait.Graph.html#method.triples_matching"><code>Graph::triples_matching</code></a>,
+<p>a <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/source/trait.TripleSource.html"><code>TripleSource</code></a> is a fallible stream of triples,
+such as those returned by <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#tymethod.triples"><code>Graph::triples</code></a> or <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.triples_matching"><code>Graph::triples_matching</code></a>,
 or those returned by <a href="./ch07_parsing_and_serializing.html">parsers</a>.
-In particular, any iterator of <code>Result&lt;T, E&gt;</code> where <code>T: </code><a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> is a <a href="https://docs.rs/sophia_api/0.8.0-alpha.3/sophia_api/source/trait.TripleSource.html"><code>TripleSource</code></a>.</p>
+In particular, any iterator of <code>Result&lt;T, E&gt;</code> where <code>T: </code><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> is a <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/source/trait.TripleSource.html"><code>TripleSource</code></a>.</p>
 </div>
 
                     </main>
