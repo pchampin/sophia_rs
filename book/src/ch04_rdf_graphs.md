@@ -48,7 +48,7 @@ graph
 [`Graph::triples_matching`] accepts a large variety of parameters,
 which will be described in more detail [in the next chapter](./ch05_term_matchers.md).
 
-[`Graph`] also provide methods to iterate over all unique [subjects](https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.subjects),
+[`Graph`] also provide methods to iterate over all [subjects](https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.subjects),
 [predicate](https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.predicates)
 and [object](https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.objects)
 in the graph,
@@ -101,7 +101,7 @@ and are described in more detail in the [next chapter](./ch05_term_matchers.md).
 * slices of [triples] implement [`Graph`];
 * standard collections ([`Vec`], [`HashSet`] and [`BTreeSet`]) of [triples] implement [`Graph`] and [`MutableGraph`];
 * [`sophia::inmem::LightGraph`] provides a [`Graph`] and [`MutableGraph`] implementation with a low memory footprint;
-* [`sophia::inmem::FastGraph`] provides a [`Graph`] and [`MutableGraph`] implementation design for fast retrieval of any given triple.
+* [`sophia::inmem::FastGraph`] provides a [`Graph`] and [`MutableGraph`] implementation designed for fast retrieval of any given triple.
 
 ## Recipies for constructing graphs
 
@@ -109,6 +109,7 @@ and are described in more detail in the [next chapter](./ch05_term_matchers.md).
 
 ```rust,noplayground
 # use sophia::{api::{ns::{Namespace, rdf}, prelude::*}, inmem::graph::FastGraph};
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut g = FastGraph::new();
 let ex = Namespace::new_unchecked("https://example.org/ns#");
 let alice = ex.get_unchecked("alice");
@@ -117,12 +118,13 @@ g.insert(
 	&alice,
 	rdf::type_,
 	s.get_unchecked("Person")
-).unwrap();
+)?;
 g.insert(
 	&alice,
 	s.get_unchecked("name"),
   "Alice"
-).unwrap();
+)?;
+# Ok(()) }
 ```
 
 ### Constructing a graph from a triple source[^triple_source]
@@ -192,4 +194,4 @@ In particular, any iterator of `Result<T, E>` where `T: `[`Triple`] is a [`Tripl
 [`sophia::inmem::FastGraph`]: https://docs.rs/sophia_inmem/0.8.0/sophia_inmem/graph/type.FastGraph.html
 [`TripleSource`]: https://docs.rs/sophia_api/0.8.0/sophia_api/source/trait.TripleSource.html
 [parsers]: ./ch07_parsing_and_serializing.md
-[`CollectibeGraph`]: https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.CollectibleGraph.html
+[`CollectibleGraph`]: https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.CollectibleGraph.html

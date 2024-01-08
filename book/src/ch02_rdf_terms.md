@@ -70,7 +70,7 @@ In Sophia, all functions accepting terms as parameters are expecting a type `T: 
 
 The solution is to pass [`t.borrow_term()`] to the function. This method returns *something* implementing [`Term`], representing the same RDF term as `t`, without waiving ownership. This is a very common pattern in Sophia.
 
-More precisely, the type returned by [`t.borrow_term()`] is the associated type [`Term::BorrowTerm`]. In most cases, this is a reference a reference or a copy of `t`.
+More precisely, the type returned by [`t.borrow_term()`] is the associated type [`Term::BorrowTerm`]. In most cases, this is a reference or a copy of `t`.
 
 
 ## Recipes for constructing terms
@@ -126,7 +126,7 @@ let lit_date = "2023-11-15" * xsd::date;
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 #
 # use sophia::api::term::BnodeId;
-let b = BnodeId::new("x");
+let b = BnodeId::new_unchecked("x");
 #
 # Ok(()) }
 ```
@@ -134,7 +134,7 @@ let b = BnodeId::new("x");
 ### Converting terms into a different type
 ```rust,noplayground
 # use sophia::api::{ns::xsd, term::{SimpleTerm, Term}};
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+#fn main() -> Result<(), Box<dyn std::error::Error>> {
 # let some_term = "42" * xsd::integer;
 let t1: SimpleTerm = "hello".into_term();
 let t2: i32 = some_term.try_into_term()?;

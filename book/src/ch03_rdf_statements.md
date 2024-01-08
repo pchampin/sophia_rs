@@ -4,7 +4,7 @@ The [`Triple`] and [`Quad`] traits define how you interact with [RDF statements]
 
 Note that in Sophia's [generalized RDF] model, terms of any kind can occur in any position in a statement.
 This contrasts to strict RDF where only IRIs can occur in predicate position,
-and where literals can not occur in the subject position.
+and where literals can only occur in the object position.
 
 
 ## Using triples
@@ -16,7 +16,7 @@ These methods also have a `to_X` version that destructs the original triple inst
 
 ```rust,noplayground
 # use sophia::api::{ns::rdf, prelude::*};
-// Example: yield all the tems besing used as types in the given triples
+// Example: yield all the terms being used as types in the given triples
 fn all_types<IT, T>(triples: IT) -> impl Iterator<Item=T::Term>
 where
   IT: IntoIterator<Item=T>,
@@ -56,7 +56,7 @@ where
 
 To check whether two values implementing [`Triple`] (resp. [`Quad`])
 represent the same RDF statements, the method [`Triple::eq`] (resp. [`Quad::eq`])
-must be used.r
+must be used.
 It will compare each component of the statements using the [`Term::eq`] method.
 Note that the `==` operator may give a different result than [`Triple::eq`] or [`Quad::eq`]
 on some types implementing the [`Triple`] or the [`Quad`] trait.
