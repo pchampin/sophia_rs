@@ -134,7 +134,7 @@ let b = BnodeId::new_unchecked("x");
 ### Converting terms into a different type
 ```rust,noplayground
 # use sophia::api::{ns::xsd, term::{SimpleTerm, Term}};
-#fn main() -> Result<(), Box<dyn std::error::Error>> {
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
 # let some_term = "42" * xsd::integer;
 let t1: SimpleTerm = "hello".into_term();
 let t2: i32 = some_term.try_into_term()?;
