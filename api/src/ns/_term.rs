@@ -77,6 +77,14 @@ impl<'a, T: Term> PartialEq<T> for NsTerm<'a> {
 
 impl<'a> Eq for NsTerm<'a> {}
 
+impl<'a> std::ops::Mul<NsTerm<'a>> for &'a str {
+    type Output = crate::term::SimpleTerm<'a>;
+
+    fn mul(self, rhs: NsTerm<'a>) -> Self::Output {
+        crate::term::SimpleTerm::LiteralDatatype(self.into(), rhs.to_iriref())
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -100,13 +108,5 @@ mod test {
         assert!(t1a != t2b);
         assert!(t2a != t3b);
         assert!(t3a != t1b);
-    }
-}
-
-impl<'a> std::ops::Mul<NsTerm<'a>> for &'a str {
-    type Output = crate::term::SimpleTerm<'a>;
-
-    fn mul(self, rhs: NsTerm<'a>) -> Self::Output {
-        crate::term::SimpleTerm::LiteralDatatype(self.into(), rhs.to_iriref())
     }
 }

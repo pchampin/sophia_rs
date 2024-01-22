@@ -42,7 +42,6 @@ pub use sophia_iri::IriRef;
 
 #[macro_use]
 mod _macro;
-pub use _macro::*;
 mod _namespace;
 pub use _namespace::*;
 mod _term;

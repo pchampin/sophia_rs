@@ -16,9 +16,7 @@ pub use _cmp::*;
 mod _graph_name;
 pub use _graph_name::*;
 mod _native_iri;
-pub use _native_iri::*;
 mod _native_literal;
-pub use _native_literal::*;
 mod _simple;
 pub use _simple::*;
 
