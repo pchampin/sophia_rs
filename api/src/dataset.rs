@@ -26,12 +26,20 @@ pub type DResult<D, T> = Result<T, <D as Dataset>::Error>;
 /// Type alias for fallible quad iterators produced by a dataset.
 ///
 /// See [`Dataset::quads`] for more information about how to use it.
+#[deprecated(
+    since = "0.8.1",
+    note = "prototypes of `quads` and `quads_matching` have changed"
+)]
 pub type DQuadSource<'a, D> = Box<dyn Iterator<Item = DResult<D, <D as Dataset>::Quad<'a>>> + 'a>;
 /// Type alias for terms produced by a dataset.
 pub type DTerm<'a, D> = <<D as Dataset>::Quad<'a> as Quad>::Term;
 /// Type alias for fallible term iterators produced by a dataset.
 ///
 /// See [`Dataset::subjects`] for more information about how to use it.
+#[deprecated(
+    since = "0.8.1",
+    note = "prototypes of term-yielding methods have changed"
+)]
 pub type DTermSource<'a, D> = Box<dyn Iterator<Item = DResult<D, DTerm<'a, D>>> + 'a>;
 
 /// Generic trait for RDF datasets.
@@ -90,7 +98,7 @@ pub trait Dataset {
     /// # Ok(())
     /// # }
     /// ```
-    fn quads(&self) -> DQuadSource<Self>;
+    fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_;
 
     /// An iterator visiting all quads matching the given subject, predicate and object.
     /// See [`crate::term::matcher`]
@@ -151,21 +159,27 @@ pub trait Dataset {
     /// #
     /// # Ok(()) }
     /// ```
-    fn quads_matching<'s, S, P, O, G>(&'s self, sm: S, pm: P, om: O, gm: G) -> DQuadSource<'s, Self>
+    fn quads_matching<'s, S, P, O, G>(
+        &'s self,
+        sm: S,
+        pm: P,
+        om: O,
+        gm: G,
+    ) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_
     where
         S: TermMatcher + 's,
         P: TermMatcher + 's,
         O: TermMatcher + 's,
         G: GraphNameMatcher + 's,
     {
-        Box::new(self.quads().filter_ok(move |q| {
+        self.quads().filter_ok(move |q| {
             q.matched_by(
                 sm.matcher_ref(),
                 pm.matcher_ref(),
                 om.matcher_ref(),
                 gm.matcher_ref(),
             )
-        }))
+        })
     }
 
     /// Return `true` if this dataset contains the given quad.
@@ -186,32 +200,32 @@ pub trait Dataset {
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
-    fn subjects(&self) -> DTermSource<Self> {
-        Box::new(self.quads().map_ok(Quad::to_s))
+    fn subjects(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
+        self.quads().map_ok(Quad::to_s)
     }
 
     /// Build a fallible iterator of all the terms used as predicate in this Dataset.
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
-    fn predicates(&self) -> DTermSource<Self> {
-        Box::new(self.quads().map_ok(Quad::to_p))
+    fn predicates(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
+        self.quads().map_ok(Quad::to_p)
     }
 
     /// Build a fallible iterator of all the terms used as object in this Dataset.
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
-    fn objects(&self) -> DTermSource<Self> {
-        Box::new(self.quads().map_ok(Quad::to_o))
+    fn objects(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
+        self.quads().map_ok(Quad::to_o)
     }
 
     /// Build a fallible iterator of all the terms used as graph name in this Dataset.
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
-    fn graph_names(&self) -> DTermSource<Self> {
-        Box::new(self.quads().filter_map_ok(Quad::to_g))
+    fn graph_names(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
+        self.quads().filter_map_ok(Quad::to_g)
     }
 
     /// Build a fallible iterator of all the IRIs used in this Dataset
@@ -219,13 +233,11 @@ pub trait Dataset {
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
-    fn iris(&self) -> DTermSource<Self> {
-        Box::new(
-            self.quads()
-                .flat_map_ok(iter_spog)
-                .flat_map_ok(Term::to_atoms)
-                .filter_ok(Term::is_iri),
-        )
+    fn iris(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
+        self.quads()
+            .flat_map_ok(iter_spog)
+            .flat_map_ok(Term::to_atoms)
+            .filter_ok(Term::is_iri)
     }
 
     /// Build a fallible iterator of all the blank nodes used in this Dataset
@@ -233,13 +245,11 @@ pub trait Dataset {
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
-    fn blank_nodes(&self) -> DTermSource<Self> {
-        Box::new(
-            self.quads()
-                .flat_map_ok(iter_spog)
-                .flat_map_ok(Term::to_atoms)
-                .filter_ok(Term::is_blank_node),
-        )
+    fn blank_nodes(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
+        self.quads()
+            .flat_map_ok(iter_spog)
+            .flat_map_ok(Term::to_atoms)
+            .filter_ok(Term::is_blank_node)
     }
 
     /// Build a fallible iterator of all the literals used in this Dataset
@@ -247,13 +257,11 @@ pub trait Dataset {
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
-    fn literals(&self) -> DTermSource<Self> {
-        Box::new(
-            self.quads()
-                .flat_map_ok(iter_spog)
-                .flat_map_ok(Term::to_atoms)
-                .filter_ok(Term::is_literal),
-        )
+    fn literals(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
+        self.quads()
+            .flat_map_ok(iter_spog)
+            .flat_map_ok(Term::to_atoms)
+            .filter_ok(Term::is_literal)
     }
 
     /// Build a fallible iterator of all the quoted triples used in this Dataset
@@ -261,7 +269,7 @@ pub trait Dataset {
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
-    fn quoted_triples<'s>(&'s self) -> DTermSource<'s, Self>
+    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_>
     where
         DTerm<'s, Self>: Clone,
     {
@@ -278,13 +286,11 @@ pub trait Dataset {
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
-    fn variables(&self) -> DTermSource<Self> {
-        Box::new(
-            self.quads()
-                .flat_map_ok(iter_spog)
-                .flat_map_ok(Term::to_atoms)
-                .filter_ok(Term::is_variable),
-        )
+    fn variables(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
+        self.quads()
+            .flat_map_ok(iter_spog)
+            .flat_map_ok(Term::to_atoms)
+            .filter_ok(Term::is_variable)
     }
 
     /// Borrows one of the graphs of this dataset
@@ -639,14 +645,14 @@ mod check_implementability {
         type Quad<'x> = [SimpleTerm<'x>; 4] where Self: 'x;
         type Error = std::convert::Infallible;
 
-        fn quads(&self) -> DQuadSource<Self> {
-            Box::new(self.graphs.iter().flat_map(move |(gi, tis)| {
+        fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {
+            self.graphs.iter().flat_map(move |(gi, tis)| {
                 let g = self.make_term(*gi);
                 tis.iter().copied().map(move |ti| {
                     let [s, p, o] = self.triples[ti].map(|j| self.make_term(j));
                     Ok([s, p, o, g.clone()])
                 })
-            }))
+            })
         }
     }
 }
@@ -770,8 +776,8 @@ mod check_implementability_lazy_term {
         type Quad<'x> = [MyTerm<'x>; 4] where Self: 'x;
         type Error = std::convert::Infallible;
 
-        fn quads(&self) -> DQuadSource<Self> {
-            Box::new(self.graphs.iter().flat_map(move |(gi, tis)| {
+        fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {
+            self.graphs.iter().flat_map(move |(gi, tis)| {
                 let g = MyTerm {
                     dataset: self,
                     index: *gi,
@@ -783,7 +789,7 @@ mod check_implementability_lazy_term {
                     });
                     Ok([s, p, o, g])
                 })
-            }))
+            })
         }
     }
 }

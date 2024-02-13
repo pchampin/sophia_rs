@@ -23,12 +23,20 @@ pub type GResult<G, T> = Result<T, <G as Graph>::Error>;
 /// Type alias for fallible triple iterators produced by a graph.
 ///
 /// See [`Graph::triples`] for more information about how to use it.
+#[deprecated(
+    since = "0.8.1",
+    note = "prototypes of `triples` and `triples_matching` have changed"
+)]
 pub type GTripleSource<'a, G> = Box<dyn Iterator<Item = GResult<G, <G as Graph>::Triple<'a>>> + 'a>;
 /// Type alias for terms produced by a graph.
 pub type GTerm<'a, G> = <<G as Graph>::Triple<'a> as Triple>::Term;
 /// Type alias for fallible term iterators produced by a graph.
 ///
 /// See [`Graph::subjects`] for more information about how to use it.
+#[deprecated(
+    since = "0.8.1",
+    note = "prototypes of term-yielding methods have changed"
+)]
 pub type GTermSource<'a, G> = Box<dyn Iterator<Item = GResult<G, GTerm<'a, G>>> + 'a>;
 
 /// Generic trait for RDF graphs.
@@ -87,7 +95,7 @@ pub trait Graph {
     /// # Ok(())
     /// # }
     /// ```
-    fn triples(&self) -> GTripleSource<Self>;
+    fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_;
 
     /// An iterator visiting all triples matching the given subject, predicate and object.
     /// See [`crate::term::matcher`].
@@ -144,17 +152,19 @@ pub trait Graph {
     /// #
     /// # Ok(()) }
     /// ```
-    fn triples_matching<'s, S, P, O>(&'s self, sm: S, pm: P, om: O) -> GTripleSource<'s, Self>
+    fn triples_matching<'s, S, P, O>(
+        &'s self,
+        sm: S,
+        pm: P,
+        om: O,
+    ) -> impl Iterator<Item = GResult<Self, Self::Triple<'s>>> + 's
     where
         S: TermMatcher + 's,
         P: TermMatcher + 's,
         O: TermMatcher + 's,
     {
-        Box::new(
-            self.triples().filter_ok(move |t| {
-                t.matched_by(sm.matcher_ref(), pm.matcher_ref(), om.matcher_ref())
-            }),
-        )
+        self.triples()
+            .filter_ok(move |t| t.matched_by(sm.matcher_ref(), pm.matcher_ref(), om.matcher_ref()))
     }
 
     /// Return `true` if this graph contains the given triple.
@@ -174,24 +184,24 @@ pub trait Graph {
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
-    fn subjects(&self) -> GTermSource<Self> {
-        Box::new(self.triples().map_ok(Triple::to_s))
+    fn subjects(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
+        self.triples().map_ok(Triple::to_s)
     }
 
     /// Build a fallible iterator of all the terms used as predicate in this Graph.
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
-    fn predicates(&self) -> GTermSource<Self> {
-        Box::new(self.triples().map_ok(Triple::to_p))
+    fn predicates(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
+        self.triples().map_ok(Triple::to_p)
     }
 
     /// Build a fallible iterator of all the terms used as object in this Graph.
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
-    fn objects(&self) -> GTermSource<Self> {
-        Box::new(self.triples().map_ok(Triple::to_o))
+    fn objects(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
+        self.triples().map_ok(Triple::to_o)
     }
 
     /// Build a fallible iterator of all the IRIs used in this Graph
@@ -199,13 +209,11 @@ pub trait Graph {
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
-    fn iris(&self) -> GTermSource<Self> {
-        Box::new(
-            self.triples()
-                .flat_map_ok(Triple::to_spo)
-                .flat_map_ok(Term::to_atoms)
-                .filter_ok(Term::is_iri),
-        )
+    fn iris(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
+        self.triples()
+            .flat_map_ok(Triple::to_spo)
+            .flat_map_ok(Term::to_atoms)
+            .filter_ok(Term::is_iri)
     }
 
     /// Build a fallible iterator of all the blank nodes used in this Graph
@@ -213,13 +221,11 @@ pub trait Graph {
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
-    fn blank_nodes(&self) -> GTermSource<Self> {
-        Box::new(
-            self.triples()
-                .flat_map_ok(Triple::to_spo)
-                .flat_map_ok(Term::to_atoms)
-                .filter_ok(Term::is_blank_node),
-        )
+    fn blank_nodes(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
+        self.triples()
+            .flat_map_ok(Triple::to_spo)
+            .flat_map_ok(Term::to_atoms)
+            .filter_ok(Term::is_blank_node)
     }
 
     /// Build a fallible iterator of all the literals used in this Graph
@@ -227,13 +233,11 @@ pub trait Graph {
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
-    fn literals(&self) -> GTermSource<Self> {
-        Box::new(
-            self.triples()
-                .flat_map_ok(Triple::to_spo)
-                .flat_map_ok(Term::to_atoms)
-                .filter_ok(Term::is_literal),
-        )
+    fn literals(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
+        self.triples()
+            .flat_map_ok(Triple::to_spo)
+            .flat_map_ok(Term::to_atoms)
+            .filter_ok(Term::is_literal)
     }
 
     /// Build a fallible iterator of all the quoted triples used in this Graph
@@ -241,7 +245,7 @@ pub trait Graph {
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
-    fn quoted_triples<'s>(&'s self) -> GTermSource<'s, Self>
+    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_>
     where
         GTerm<'s, Self>: Clone,
     {
@@ -258,13 +262,11 @@ pub trait Graph {
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
-    fn variables(&self) -> GTermSource<Self> {
-        Box::new(
-            self.triples()
-                .flat_map_ok(Triple::to_spo)
-                .flat_map_ok(Term::to_atoms)
-                .filter_ok(Term::is_variable),
-        )
+    fn variables(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
+        self.triples()
+            .flat_map_ok(Triple::to_spo)
+            .flat_map_ok(Term::to_atoms)
+            .filter_ok(Term::is_variable)
     }
 
     /// [`Dataset`](crate::dataset::Dataset) adapter borrowing this graph
@@ -571,13 +573,11 @@ mod check_implementability {
         type Triple<'x> = [SimpleTerm<'x>; 3] where Self: 'x;
         type Error = std::convert::Infallible;
 
-        fn triples(&self) -> GTripleSource<Self> {
-            Box::new(
-                self.triples
-                    .iter()
-                    .filter(|t| t.asserted)
-                    .map(|t| Ok(self.make_triple(t.spo))),
-            )
+        fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
+            self.triples
+                .iter()
+                .filter(|t| t.asserted)
+                .map(|t| Ok(self.make_triple(t.spo)))
         }
     }
 }
@@ -700,13 +700,13 @@ mod check_implementability_lazy_term {
 
         type Error = std::convert::Infallible;
 
-        fn triples(&self) -> GTripleSource<Self> {
-            Box::new(self.triples.iter().filter(|t| t.asserted).map(|t| {
+        fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
+            self.triples.iter().filter(|t| t.asserted).map(|t| {
                 Ok(t.spo.map(|i| MyTerm {
                     graph: self,
                     index: i,
                 }))
-            }))
+            })
         }
     }
 }

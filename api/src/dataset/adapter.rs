@@ -31,16 +31,21 @@ where
     type Quad<'x> = Spog<GTerm<'x, T>> where Self: 'x;
     type Error = T::Error;
 
-    fn quads(&self) -> DQuadSource<Self> {
-        Box::new(
-            self.0
-                .triples()
-                // NB: for some reason, .map_ok(...) below does not compile since 1.66 nightly
-                .map(|r| r.map(Triple::into_quad)),
-        )
+    fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {
+        self.0
+            .triples()
+            // NB: for some reason, .map_ok(...) below does not compile since 1.66 nightly
+            .map(|r| r.map(Triple::into_quad))
     }
 
-    fn quads_matching<'s, S, P, O, G>(&'s self, sm: S, pm: P, om: O, gm: G) -> DQuadSource<'s, Self>
+    #[allow(refining_impl_trait)]
+    fn quads_matching<'s, S, P, O, G>(
+        &'s self,
+        sm: S,
+        pm: P,
+        om: O,
+        gm: G,
+    ) -> Box<dyn Iterator<Item = DResult<Self, Self::Quad<'s>>> + 's>
     where
         S: TermMatcher + 's,
         P: TermMatcher + 's,
@@ -73,42 +78,42 @@ where
         }
     }
 
-    fn subjects(&self) -> DTermSource<Self> {
+    fn subjects(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         self.0.subjects()
     }
 
-    fn predicates(&self) -> DTermSource<Self> {
+    fn predicates(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         self.0.predicates()
     }
 
-    fn objects(&self) -> DTermSource<Self> {
+    fn objects(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         self.0.objects()
     }
 
-    fn graph_names(&self) -> DTermSource<Self> {
-        Box::new(std::iter::empty())
+    fn graph_names(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
+        std::iter::empty()
     }
 
-    fn iris(&self) -> DTermSource<Self> {
+    fn iris(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         self.0.iris()
     }
 
-    fn blank_nodes(&self) -> DTermSource<Self> {
+    fn blank_nodes(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         self.0.blank_nodes()
     }
 
-    fn literals(&self) -> DTermSource<Self> {
+    fn literals(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         self.0.literals()
     }
 
-    fn quoted_triples<'s>(&'s self) -> DTermSource<'s, Self>
+    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_>
     where
         GTerm<'s, T>: Clone,
     {
         self.0.quoted_triples()
     }
 
-    fn variables(&self) -> DTermSource<Self> {
+    fn variables(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         self.0.variables()
     }
 }

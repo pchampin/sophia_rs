@@ -17,11 +17,16 @@ impl<'a, T: Graph + ?Sized> Graph for &'a T {
 
     type Error = T::Error;
 
-    fn triples(&self) -> GTripleSource<Self> {
+    fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
         T::triples(*self)
     }
 
-    fn triples_matching<'s, S, P, O>(&'s self, sm: S, pm: P, om: O) -> GTripleSource<'s, Self>
+    fn triples_matching<'s, S, P, O>(
+        &'s self,
+        sm: S,
+        pm: P,
+        om: O,
+    ) -> impl Iterator<Item = GResult<Self, Self::Triple<'s>>> + 's
     where
         S: TermMatcher + 's,
         P: TermMatcher + 's,
@@ -39,38 +44,38 @@ impl<'a, T: Graph + ?Sized> Graph for &'a T {
         T::contains(*self, s, p, o)
     }
 
-    fn subjects(&self) -> GTermSource<Self> {
+    fn subjects(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         T::subjects(*self)
     }
 
-    fn predicates(&self) -> GTermSource<Self> {
+    fn predicates(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         T::predicates(*self)
     }
 
-    fn objects(&self) -> GTermSource<Self> {
+    fn objects(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         T::objects(*self)
     }
 
-    fn iris(&self) -> GTermSource<Self> {
+    fn iris(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         T::iris(*self)
     }
 
-    fn blank_nodes(&self) -> GTermSource<Self> {
+    fn blank_nodes(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         T::blank_nodes(*self)
     }
 
-    fn literals(&self) -> GTermSource<Self> {
+    fn literals(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         T::literals(*self)
     }
 
-    fn quoted_triples<'s>(&'s self) -> GTermSource<'s, Self>
+    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_>
     where
         GTerm<'s, Self>: Clone,
     {
         T::quoted_triples(*self)
     }
 
-    fn variables(&self) -> GTermSource<Self> {
+    fn variables(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         T::variables(*self)
     }
 }
@@ -81,11 +86,16 @@ impl<'a, T: Graph + ?Sized> Graph for &'a mut T {
 
     type Error = T::Error;
 
-    fn triples(&self) -> GTripleSource<Self> {
+    fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
         T::triples(*self)
     }
 
-    fn triples_matching<'s, S, P, O>(&'s self, sm: S, pm: P, om: O) -> GTripleSource<'s, Self>
+    fn triples_matching<'s, S, P, O>(
+        &'s self,
+        sm: S,
+        pm: P,
+        om: O,
+    ) -> impl Iterator<Item = GResult<Self, Self::Triple<'s>>> + 's
     where
         S: TermMatcher + 's,
         P: TermMatcher + 's,
@@ -103,38 +113,38 @@ impl<'a, T: Graph + ?Sized> Graph for &'a mut T {
         T::contains(*self, s, p, o)
     }
 
-    fn subjects(&self) -> GTermSource<Self> {
+    fn subjects(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         T::subjects(*self)
     }
 
-    fn predicates(&self) -> GTermSource<Self> {
+    fn predicates(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         T::predicates(*self)
     }
 
-    fn objects(&self) -> GTermSource<Self> {
+    fn objects(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         T::objects(*self)
     }
 
-    fn iris(&self) -> GTermSource<Self> {
+    fn iris(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         T::iris(*self)
     }
 
-    fn blank_nodes(&self) -> GTermSource<Self> {
+    fn blank_nodes(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         T::blank_nodes(*self)
     }
 
-    fn literals(&self) -> GTermSource<Self> {
+    fn literals(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         T::literals(*self)
     }
 
-    fn quoted_triples<'s>(&'s self) -> GTermSource<'s, Self>
+    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_>
     where
         GTerm<'s, Self>: Clone,
     {
         T::quoted_triples(*self)
     }
 
-    fn variables(&self) -> GTermSource<Self> {
+    fn variables(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         T::variables(*self)
     }
 }
@@ -206,8 +216,8 @@ impl<T: Triple> Graph for [T] {
     type Error = Infallible;
     type Triple<'x> = [TBorrowTerm<'x, T>; 3] where Self: 'x;
 
-    fn triples(&self) -> GTripleSource<Self> {
-        Box::new(self.iter().map(Triple::spo).map(Ok))
+    fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
+        self.iter().map(Triple::spo).map(Ok)
     }
 }
 
@@ -217,7 +227,7 @@ impl<T: Triple> Graph for Vec<T> {
     type Error = Infallible;
     type Triple<'x> = [TBorrowTerm<'x, T>; 3] where Self: 'x;
 
-    fn triples(&self) -> GTripleSource<Self> {
+    fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
         self[..].triples()
     }
 }
@@ -281,8 +291,8 @@ impl<T: Triple, S> Graph for HashSet<T, S> {
     type Error = Infallible;
     type Triple<'x> = [TBorrowTerm<'x, T>; 3] where Self: 'x;
 
-    fn triples(&self) -> GTripleSource<Self> {
-        Box::new(self.iter().map(Triple::spo).map(Ok))
+    fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
+        self.iter().map(Triple::spo).map(Ok)
     }
 }
 
@@ -342,8 +352,8 @@ impl<T: Triple> Graph for BTreeSet<T> {
     type Error = Infallible;
     type Triple<'x> = [TBorrowTerm<'x, T>; 3] where Self: 'x;
 
-    fn triples(&self) -> GTripleSource<Self> {
-        Box::new(self.iter().map(Triple::spo).map(Ok))
+    fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
+        self.iter().map(Triple::spo).map(Ok)
     }
 }
 

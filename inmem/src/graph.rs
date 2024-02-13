@@ -2,7 +2,7 @@
 use std::collections::BTreeSet;
 use std::iter::{empty, once};
 
-use sophia_api::graph::{CollectibleGraph, SetGraph};
+use sophia_api::graph::{CollectibleGraph, GResult, SetGraph};
 use sophia_api::prelude::*;
 
 use crate::index::*;
@@ -33,20 +33,19 @@ impl<TI: TermIndex> Graph for GenericLightGraph<TI> {
     type Triple<'x> = [<TI::Term as Term>::BorrowTerm<'x>; 3] where Self: 'x;
     type Error = TI::Error;
 
-    fn triples(&self) -> sophia_api::graph::GTripleSource<Self> {
-        Box::new(
-            self.triples
-                .iter()
-                .map(|ti| Ok(ti.map(|i| self.terms.get_term(i)))),
-        )
+    fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
+        self.triples
+            .iter()
+            .map(|ti| Ok(ti.map(|i| self.terms.get_term(i))))
     }
 
+    #[allow(refining_impl_trait)]
     fn triples_matching<'s, S, P, O>(
         &'s self,
         sm: S,
         pm: P,
         om: O,
-    ) -> sophia_api::graph::GTripleSource<'s, Self>
+    ) -> Box<dyn Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_>
     where
         S: sophia_api::term::matcher::TermMatcher + 's,
         P: sophia_api::term::matcher::TermMatcher + 's,
@@ -168,20 +167,19 @@ impl<TI: TermIndex> Graph for GenericFastGraph<TI> {
     type Triple<'x> = [<TI::Term as Term>::BorrowTerm<'x>; 3] where Self: 'x;
     type Error = TI::Error;
 
-    fn triples(&self) -> sophia_api::graph::GTripleSource<Self> {
-        Box::new(
-            self.spo
-                .iter()
-                .map(|ti| Ok(ti.map(|i| self.terms.get_term(i)))),
-        )
+    fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
+        self.spo
+            .iter()
+            .map(|ti| Ok(ti.map(|i| self.terms.get_term(i))))
     }
 
+    #[allow(refining_impl_trait)]
     fn triples_matching<'s, S, P, O>(
         &'s self,
         sm: S,
         pm: P,
         om: O,
-    ) -> sophia_api::graph::GTripleSource<'s, Self>
+    ) -> Box<dyn Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_>
     where
         S: sophia_api::term::matcher::TermMatcher + 's,
         P: sophia_api::term::matcher::TermMatcher + 's,

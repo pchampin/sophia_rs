@@ -2,7 +2,7 @@
 use std::collections::BTreeSet;
 use std::iter::{empty, once};
 
-use sophia_api::dataset::{CollectibleDataset, SetDataset};
+use sophia_api::dataset::{CollectibleDataset, DResult, SetDataset};
 use sophia_api::prelude::*;
 use sophia_api::quad::Gspo;
 use sophia_api::term::GraphName;
@@ -34,22 +34,23 @@ impl<TI: GraphNameIndex> Dataset for GenericLightDataset<TI> {
     type Quad<'x> = Gspo<<TI::Term as Term>::BorrowTerm<'x>> where Self: 'x;
     type Error = TI::Error;
 
-    fn quads(&self) -> sophia_api::dataset::DQuadSource<Self> {
-        Box::new(self.quads.iter().map(|[gi, ti @ ..]| {
+    fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {
+        self.quads.iter().map(|[gi, ti @ ..]| {
             Ok((
                 self.terms.get_graph_name(*gi),
                 ti.map(|i| self.terms.get_term(i)),
             ))
-        }))
+        })
     }
 
+    #[allow(refining_impl_trait)]
     fn quads_matching<'s, S, P, O, G>(
         &'s self,
         sm: S,
         pm: P,
         om: O,
         gm: G,
-    ) -> sophia_api::dataset::DQuadSource<'s, Self>
+    ) -> Box<dyn Iterator<Item = DResult<Self, Self::Quad<'s>>> + 's>
     where
         S: sophia_api::term::matcher::TermMatcher + 's,
         P: sophia_api::term::matcher::TermMatcher + 's,
@@ -223,22 +224,23 @@ impl<TI: GraphNameIndex> Dataset for GenericFastDataset<TI> {
     type Quad<'x> = Gspo<<TI::Term as Term>::BorrowTerm<'x>> where Self: 'x;
     type Error = TI::Error;
 
-    fn quads(&self) -> sophia_api::dataset::DQuadSource<Self> {
-        Box::new(self.gspo.iter().map(|[gi, ti @ ..]| {
+    fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {
+        self.gspo.iter().map(|[gi, ti @ ..]| {
             Ok((
                 self.terms.get_graph_name(*gi),
                 ti.map(|i| self.terms.get_term(i)),
             ))
-        }))
+        })
     }
 
+    #[allow(refining_impl_trait)]
     fn quads_matching<'s, S, P, O, G>(
         &'s self,
         sm: S,
         pm: P,
         om: O,
         gm: G,
-    ) -> sophia_api::dataset::DQuadSource<'s, Self>
+    ) -> Box<dyn Iterator<Item = DResult<Self, Self::Quad<'s>>> + 's>
     where
         S: sophia_api::term::matcher::TermMatcher + 's,
         P: sophia_api::term::matcher::TermMatcher + 's,

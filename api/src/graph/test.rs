@@ -318,7 +318,7 @@ macro_rules! test_graph_impl {
             fn triples() -> Result<(), Box<dyn std::error::Error>> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
-                for iter in [g.triples(), g.triples_matching(Any, Any, Any)] {
+                for iter in [Box::new(g.triples()) as Box<dyn Iterator<Item=_>>, Box::new(g.triples_matching(Any, Any, Any))] {
                     let hint = iter.size_hint();
                     let v: Vec<_> = iter.map(Result::unwrap).collect();
                     assert_eq!(v.len(), SOME_TRIPLES_COUNT);

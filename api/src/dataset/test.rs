@@ -340,9 +340,8 @@ macro_rules! test_dataset_impl {
             fn quads() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
-                let quads = d.quads();
-                let hint = quads.size_hint();
-                for iter in [quads, d.quads_matching(Any, Any, Any, Any)] {
+                for iter in [Box::new(d.quads()) as Box<dyn Iterator<Item=_>>, Box::new(d.quads_matching(Any, Any, Any, Any))] {
+                    let hint = iter.size_hint();
                     let v: Vec<_> = iter.map(Result::unwrap).collect();
                     assert_eq!(v.len(), d.quads().count());
                     assert_consistent_hint(v.len(), hint);

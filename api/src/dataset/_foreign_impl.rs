@@ -17,11 +17,17 @@ impl<'a, T: Dataset + ?Sized> Dataset for &'a T {
 
     type Error = T::Error;
 
-    fn quads(&self) -> DQuadSource<Self> {
+    fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {
         T::quads(*self)
     }
 
-    fn quads_matching<'s, S, P, O, G>(&'s self, sm: S, pm: P, om: O, gm: G) -> DQuadSource<'s, Self>
+    fn quads_matching<'s, S, P, O, G>(
+        &'s self,
+        sm: S,
+        pm: P,
+        om: O,
+        gm: G,
+    ) -> impl Iterator<Item = DResult<Self, Self::Quad<'s>>> + 's
     where
         S: TermMatcher + 's,
         P: TermMatcher + 's,
@@ -41,42 +47,42 @@ impl<'a, T: Dataset + ?Sized> Dataset for &'a T {
         T::contains(*self, s, p, o, g)
     }
 
-    fn subjects(&self) -> DTermSource<Self> {
+    fn subjects(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         T::subjects(*self)
     }
 
-    fn predicates(&self) -> DTermSource<Self> {
+    fn predicates(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         T::predicates(*self)
     }
 
-    fn objects(&self) -> DTermSource<Self> {
+    fn objects(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         T::objects(*self)
     }
 
-    fn graph_names(&self) -> DTermSource<Self> {
+    fn graph_names(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         T::graph_names(*self)
     }
 
-    fn iris(&self) -> DTermSource<Self> {
+    fn iris(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         T::iris(*self)
     }
 
-    fn blank_nodes(&self) -> DTermSource<Self> {
+    fn blank_nodes(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         T::blank_nodes(*self)
     }
 
-    fn literals(&self) -> DTermSource<Self> {
+    fn literals(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         T::literals(*self)
     }
 
-    fn quoted_triples<'s>(&'s self) -> DTermSource<'s, Self>
+    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_>
     where
         DTerm<'s, Self>: Clone,
     {
         T::quoted_triples(*self)
     }
 
-    fn variables(&self) -> DTermSource<Self> {
+    fn variables(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         T::variables(*self)
     }
 }
@@ -87,11 +93,17 @@ impl<'a, T: Dataset + ?Sized> Dataset for &'a mut T {
 
     type Error = T::Error;
 
-    fn quads(&self) -> DQuadSource<Self> {
+    fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {
         T::quads(*self)
     }
 
-    fn quads_matching<'s, S, P, O, G>(&'s self, sm: S, pm: P, om: O, gm: G) -> DQuadSource<'s, Self>
+    fn quads_matching<'s, S, P, O, G>(
+        &'s self,
+        sm: S,
+        pm: P,
+        om: O,
+        gm: G,
+    ) -> impl Iterator<Item = DResult<Self, Self::Quad<'s>>> + 's
     where
         S: TermMatcher + 's,
         P: TermMatcher + 's,
@@ -111,42 +123,42 @@ impl<'a, T: Dataset + ?Sized> Dataset for &'a mut T {
         T::contains(*self, s, p, o, g)
     }
 
-    fn subjects(&self) -> DTermSource<Self> {
+    fn subjects(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         T::subjects(*self)
     }
 
-    fn predicates(&self) -> DTermSource<Self> {
+    fn predicates(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         T::predicates(*self)
     }
 
-    fn objects(&self) -> DTermSource<Self> {
+    fn objects(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         T::objects(*self)
     }
 
-    fn graph_names(&self) -> DTermSource<Self> {
+    fn graph_names(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         T::graph_names(*self)
     }
 
-    fn iris(&self) -> DTermSource<Self> {
+    fn iris(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         T::iris(*self)
     }
 
-    fn blank_nodes(&self) -> DTermSource<Self> {
+    fn blank_nodes(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         T::blank_nodes(*self)
     }
 
-    fn literals(&self) -> DTermSource<Self> {
+    fn literals(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         T::literals(*self)
     }
 
-    fn quoted_triples<'s>(&'s self) -> DTermSource<'s, Self>
+    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_>
     where
         DTerm<'s, Self>: Clone,
     {
         T::quoted_triples(*self)
     }
 
-    fn variables(&self) -> DTermSource<Self> {
+    fn variables(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         T::variables(*self)
     }
 }
@@ -245,8 +257,8 @@ impl<Q: Quad> Dataset for [Q] {
     type Error = Infallible;
     type Quad<'x> = Spog<QBorrowTerm<'x, Q>> where Self: 'x;
 
-    fn quads(&self) -> DQuadSource<Self> {
-        Box::new(self.iter().map(Quad::spog).map(Ok))
+    fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {
+        self.iter().map(Quad::spog).map(Ok)
     }
 }
 
@@ -256,7 +268,7 @@ impl<Q: Quad> Dataset for Vec<Q> {
     type Error = Infallible;
     type Quad<'x> = Spog<QBorrowTerm<'x, Q>> where Self: 'x;
 
-    fn quads(&self) -> DQuadSource<Self> {
+    fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {
         self[..].quads()
     }
 }
@@ -417,8 +429,8 @@ impl<Q: Quad, S> Dataset for HashSet<Q, S> {
     type Error = Infallible;
     type Quad<'x> = Spog<QBorrowTerm<'x, Q>> where Self: 'x;
 
-    fn quads(&self) -> DQuadSource<Self> {
-        Box::new(self.iter().map(Quad::spog).map(Ok))
+    fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {
+        self.iter().map(Quad::spog).map(Ok)
     }
 }
 
@@ -569,8 +581,8 @@ impl<Q: Quad> Dataset for BTreeSet<Q> {
     type Error = Infallible;
     type Quad<'x> = Spog<QBorrowTerm<'x, Q>> where Self: 'x;
 
-    fn quads(&self) -> DQuadSource<Self> {
-        Box::new(self.iter().map(Quad::spog).map(Ok))
+    fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {
+        self.iter().map(Quad::spog).map(Ok)
     }
 }
 

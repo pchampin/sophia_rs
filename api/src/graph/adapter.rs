@@ -30,61 +30,62 @@ impl<T: Dataset> Graph for UnionGraph<T> {
     type Triple<'x> = [DTerm<'x, T>; 3] where Self: 'x;
     type Error = T::Error;
 
-    fn triples(&self) -> GTripleSource<Self> {
-        Box::new(
-            self.0
-                .quads()
-                // NB: for some reason, .map_ok(...) below does not compile since 1.66 nightly
-                .map(|r| r.map(Quad::into_triple)),
-        )
+    fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
+        self.0
+            .quads()
+            // NB: for some reason, .map_ok(...) below does not compile since 1.66 nightly
+            .map(|r| r.map(Quad::into_triple))
     }
 
-    fn triples_matching<'s, S, P, O>(&'s self, sm: S, pm: P, om: O) -> GTripleSource<'s, Self>
+    fn triples_matching<'s, S, P, O>(
+        &'s self,
+        sm: S,
+        pm: P,
+        om: O,
+    ) -> impl Iterator<Item = GResult<Self, Self::Triple<'s>>> + 's
     where
         S: TermMatcher + 's,
         P: TermMatcher + 's,
         O: TermMatcher + 's,
     {
-        Box::new(
-            self.0
-                .quads_matching(sm, pm, om, Any)
-                // NB: for some reason, .map_ok(...) below does not compile since 1.66 nightly
-                .map(|r| r.map(Quad::into_triple)),
-        )
+        self.0
+            .quads_matching(sm, pm, om, Any)
+            // NB: for some reason, .map_ok(...) below does not compile since 1.66 nightly
+            .map(|r| r.map(Quad::into_triple))
     }
 
-    fn subjects(&self) -> GTermSource<Self> {
+    fn subjects(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         self.0.subjects()
     }
 
-    fn predicates(&self) -> GTermSource<Self> {
+    fn predicates(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         self.0.predicates()
     }
 
-    fn objects(&self) -> GTermSource<Self> {
+    fn objects(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         self.0.objects()
     }
 
-    fn iris(&self) -> GTermSource<Self> {
+    fn iris(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         self.0.iris()
     }
 
-    fn blank_nodes(&self) -> GTermSource<Self> {
+    fn blank_nodes(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         self.0.blank_nodes()
     }
 
-    fn literals(&self) -> GTermSource<Self> {
+    fn literals(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         self.0.literals()
     }
 
-    fn quoted_triples<'s>(&'s self) -> GTermSource<'s, Self>
+    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_>
     where
         GTerm<'s, Self>: Clone,
     {
         self.0.quoted_triples()
     }
 
-    fn variables(&self) -> GTermSource<Self> {
+    fn variables(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         self.0.variables()
     }
 }
@@ -117,27 +118,28 @@ impl<D: Dataset, M: GraphNameMatcher + Copy> Graph for PartialUnionGraph<D, M> {
     type Triple<'x> = [DTerm<'x, D>; 3] where Self: 'x;
     type Error = D::Error;
 
-    fn triples(&self) -> GTripleSource<Self> {
-        Box::new(
-            self.d
-                .quads_matching(Any, Any, Any, self.m)
-                // NB: for some reason, .map_ok(...) below does not compile since 1.66 nightly
-                .map(|r| r.map(Quad::into_triple)),
-        )
+    fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
+        self.d
+            .quads_matching(Any, Any, Any, self.m)
+            // NB: for some reason, .map_ok(...) below does not compile since 1.66 nightly
+            .map(|r| r.map(Quad::into_triple))
     }
 
-    fn triples_matching<'s, S, P, O>(&'s self, sm: S, pm: P, om: O) -> GTripleSource<'s, Self>
+    fn triples_matching<'s, S, P, O>(
+        &'s self,
+        sm: S,
+        pm: P,
+        om: O,
+    ) -> impl Iterator<Item = GResult<Self, Self::Triple<'s>>> + 's
     where
         S: TermMatcher + 's,
         P: TermMatcher + 's,
         O: TermMatcher + 's,
     {
-        Box::new(
-            self.d
-                .quads_matching(sm, pm, om, self.m)
-                // NB: for some reason, .map_ok(...) below does not compile since 1.66 nightly
-                .map(|r| r.map(Quad::into_triple)),
-        )
+        self.d
+            .quads_matching(sm, pm, om, self.m)
+            // NB: for some reason, .map_ok(...) below does not compile since 1.66 nightly
+            .map(|r| r.map(Quad::into_triple))
     }
 }
 
@@ -181,27 +183,28 @@ impl<D: Dataset, G: Term> Graph for DatasetGraph<D, G> {
     type Triple<'x> = [DTerm<'x, D>; 3] where Self: 'x;
     type Error = D::Error;
 
-    fn triples(&self) -> GTripleSource<Self> {
-        Box::new(
-            self.d
-                .quads_matching(Any, Any, Any, [self.g()])
-                // NB: for some reason, .map_ok(...) below does not compile since 1.66 nightly
-                .map(|r| r.map(Quad::into_triple)),
-        )
+    fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
+        self.d
+            .quads_matching(Any, Any, Any, [self.g()])
+            // NB: for some reason, .map_ok(...) below does not compile since 1.66 nightly
+            .map(|r| r.map(Quad::into_triple))
     }
 
-    fn triples_matching<'s, S, P, O>(&'s self, sm: S, pm: P, om: O) -> GTripleSource<'s, Self>
+    fn triples_matching<'s, S, P, O>(
+        &'s self,
+        sm: S,
+        pm: P,
+        om: O,
+    ) -> impl Iterator<Item = GResult<Self, Self::Triple<'s>>> + 's
     where
         S: TermMatcher + 's,
         P: TermMatcher + 's,
         O: TermMatcher + 's,
     {
-        Box::new(
-            self.d
-                .quads_matching(sm, pm, om, [self.g()])
-                // NB: for some reason, .map_ok(...) below does not compile since 1.66 nightly
-                .map(|r| r.map(Quad::into_triple)),
-        )
+        self.d
+            .quads_matching(sm, pm, om, [self.g()])
+            // NB: for some reason, .map_ok(...) below does not compile since 1.66 nightly
+            .map(|r| r.map(Quad::into_triple))
     }
 }
 
