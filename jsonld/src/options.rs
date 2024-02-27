@@ -7,13 +7,13 @@ use json_ld::expansion::Policy;
 pub use json_ld::rdf::RdfDirection;
 use json_ld::syntax::context::Value;
 use json_ld::Loader;
-use json_ld::NoLoader;
 pub use json_ld::Options;
 pub use json_ld::ProcessingMode;
 use locspan::Location;
 use locspan::Span;
 use sophia_iri::Iri;
 
+use crate::loader::NoLoader;
 use crate::loader_factory::ClosureLoaderFactory;
 use crate::loader_factory::DefaultLoaderFactory;
 use crate::loader_factory::LoaderFactory;
