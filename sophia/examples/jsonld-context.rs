@@ -1,0 +1,68 @@
+//! Convert a JSON-LD file to TriG, using an optional external context.
+//!
+//! usage: cargo run --example jsonld-context <JSON-LD file> [context file]
+//!
+//! Thanks to Jos van den Oever for this example.
+
+use json_ld::{expansion::Policy, syntax::Value, RemoteDocument, RemoteDocumentReference};
+use sophia::{
+    api::{
+        parser::QuadParser,
+        serializer::{Stringifier, QuadSerializer},
+        source::QuadSource,
+    },
+    jsonld::{
+        vocabulary::ArcIri, ContextRef, JsonLdOptions, JsonLdParser,
+    },
+    turtle::serializer::trig::{TrigConfig, TrigSerializer},
+};
+use std::sync::Arc;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut args = std::env::args();
+    let json_ld_path = args.nth(1).expect("Missing jsonld file.");
+    let context_path = args.next();
+    if let Some(context_path) = &context_path {
+        eprintln!(
+            "Loading {} with @context from {}",
+            json_ld_path, context_path
+        );
+    } else {
+        eprintln!("Loading {}", json_ld_path);
+    }
+    let json_str = std::fs::read_to_string(&json_ld_path)
+        .unwrap_or_else(|e| panic!("Could not read file {}: {}", json_ld_path, e));
+
+    let mut options = JsonLdOptions::new().with_expansion_policy(Policy::Standard);
+    if let Some(context_path) = context_path {
+        let context = parse_context(&context_path)?;
+        options = options.with_expand_context::<()>(context);
+    }
+    let parser = JsonLdParser::new_with_options(options);
+    let quads = parser.parse_str(&json_str);
+    let trig = to_trig(quads)?;
+    println!("{}", trig.as_str());
+    Ok(())
+}
+
+fn parse_context(context_path: &str) -> Result<ContextRef, Box<dyn std::error::Error>> {
+    let context_str = std::fs::read_to_string(context_path)
+        .map_err(|e| format!("Could not read file {}: {}", context_path, e))?;
+    let iri = ArcIri::new(Arc::from(format!("file:{}", &context_path)))?;
+    use json_ld::syntax::Parse;
+    let doc = Value::parse_str(&context_str, |span| {
+        locspan::Location::new(iri.clone(), span)
+    })?;
+    use json_ld::ExtractContext;
+    let context =
+        Value::extract_context(doc).map_err(|e| format!("Could not extract @context: {}", e))?;
+    let rdoc = RemoteDocument::new(Some(iri), None, context);
+    Ok(RemoteDocumentReference::Loaded(rdoc))
+}
+
+fn to_trig(quads: impl QuadSource) -> Result<String, Box<dyn std::error::Error>> {
+    let mut stringifier =
+        TrigSerializer::new_stringifier_with_config(TrigConfig::new().with_pretty(true));
+    stringifier.serialize_quads(quads)?;
+    Ok(stringifier.to_string())
+}

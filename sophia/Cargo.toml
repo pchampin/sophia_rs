@@ -41,3 +41,10 @@ sophia_xml = { workspace = true, optional = true }
 
 [dev-dependencies]
 url.workspace = true
+# dependencies for the jsonld-context example
+json-ld = "0.15.1"
+locspan = "0.7"
+
+[[example]]
+name = "jsonld-context"
+required-features = ["jsonld"]
