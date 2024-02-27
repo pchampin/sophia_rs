@@ -202,7 +202,7 @@ you will want to use the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/gr
 </span>// Utility closure to recognize IRIs in the schema.org namespace
 let in_schema_org = |t: SimpleTerm| -&gt; bool {
 	t.iri()
-	 .map(|iri| iri.as_str().starts_with((&quot;http://schema.org/&quot;)))
+	 .map(|iri| iri.as_str().starts_with(("http://schema.org/")))
 	 .unwrap_or(false)
 };
 // Iter over all instances of schema.org types
@@ -230,7 +230,7 @@ Inserting (resp. removing) a triple that is already (resp. not) present in the g
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::{api::{ns::rdf, prelude::*}, iri::*};
 </span>/// Example: increment the rdf:value of a given subject
 <span class="boring">fn f&lt;G: MutableGraph&gt;(mut g: G) -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
-</span><span class="boring">let s = Iri::new_unchecked(&quot;https://example.org/foo&quot;);
+</span><span class="boring">let s = Iri::new_unchecked("https://example.org/foo");
 </span>let old_value: i32 = g.triples_matching([s], [rdf::value], Any)
 	.next()
 	.unwrap()?
@@ -264,18 +264,18 @@ and are described in more detail in the <a href="./ch05_term_matchers.html">next
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::{api::{ns::{Namespace, rdf}, prelude::*}, inmem::graph::FastGraph};
 </span><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 </span>let mut g = FastGraph::new();
-let ex = Namespace::new_unchecked(&quot;https://example.org/ns#&quot;);
-let alice = ex.get_unchecked(&quot;alice&quot;);
-let s = Namespace::new_unchecked(&quot;http://schema.org/&quot;);
+let ex = Namespace::new_unchecked("https://example.org/ns#");
+let alice = ex.get_unchecked("alice");
+let s = Namespace::new_unchecked("http://schema.org/");
 g.insert(
 	&amp;alice,
 	rdf::type_,
-	s.get_unchecked(&quot;Person&quot;)
+	s.get_unchecked("Person")
 )?;
 g.insert(
 	&amp;alice,
-	s.get_unchecked(&quot;name&quot;),
-  &quot;Alice&quot;
+	s.get_unchecked("name"),
+  "Alice"
 )?;
 <span class="boring">Ok(()) }</span></code></pre>
 <h3 id="constructing-a-graph-from-a-triple-source1"><a class="header" href="#constructing-a-graph-from-a-triple-source1">Constructing a graph from a triple source<sup class="footnote-reference"><a href="#triple_source">1</a></sup></a></h3>
@@ -283,7 +283,7 @@ g.insert(
 </span><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 </span><span class="boring">let big_graph = FastGraph::new();
 </span>// Extract all triples about 'alice' from big_graph in a new graph
-let alice = Iri::new_unchecked(&quot;https://example.org/ns#alice&quot;);
+let alice = Iri::new_unchecked("https://example.org/ns#alice");
 let graph: FastGraph = big_graph
 	.triples_matching([alice], Any, Any)
 	.collect_triples()?;
@@ -298,7 +298,7 @@ However, most types implementing <a href="https://docs.rs/sophia_api/0.8.0/sophi
 
 <span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 </span>dbg!(std::env::current_dir());
-let f = BufReader::new(File::open(&quot;../sophia_doap.ttl&quot;)?);
+let f = BufReader::new(File::open("../sophia_doap.ttl")?);
 let graph: FastGraph = turtle::parse_bufread(f)
 	.collect_triples()?;
 <span class="boring">Ok(()) }</span></code></pre>

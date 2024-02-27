@@ -202,7 +202,7 @@ more precisely, it provides traits for describing
 <li><a href="https://crates.io/crates/sophia_jsonld"><code>sophia_jsonld</code></a> provides preliminary support for JSON-LD.</li>
 <li><a href="https://crates.io/crates/sophia_c14n"><code>sophia_c14n</code></a> implements <a href="https://www.w3.org/TR/rdf-canon/">RDF canonicalization</a>.</li>
 <li><a href="https://crates.io/crates/sophia_resource"><code>sophia_resource</code></a> provides a resource-centric API.</li>
-<li><a href="https://crates.io/crates/sophia_rio"><code>sophia_rio</code></a> is a lower-level crate, used by the ones above. </li>
+<li><a href="https://crates.io/crates/sophia_rio"><code>sophia_rio</code></a> is a lower-level crate, used by the ones above.</li>
 </ul>
 <p>and finally:</p>
 <ul>
@@ -245,7 +245,7 @@ a high-level <a href="https://pchampin.github.io/sophia_rs/">user documentation<
 <div style="break-before: page; page-break-before: always;"></div><h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
 <p>The <a href="https://crates.io/crates/sophia">sophia crate</a> aims at providing a comprehensive toolkit for working with RDF and Linked Data in Rust.</p>
 <p><a href="https://www.w3.org/TR/rdf-concepts/">RDF</a> is a data model designed to exchange knowledge on the Web in an interoperable way. Each piece of knowledge in RDF (a <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-statement">statement</a>) is represented by a <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-triple">triple</a>, made of three <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-term">terms</a>. A set of triples forms an RDF <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-graph">graph</a>. Finally, several graphs can be grouped in a collection called a <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-dataset">dataset</a>, where each graph is identified by a unique name.</p>
-<p>In Sophia, each of these core concepts is modeled by a trait, which can be implemented in multiple ways (see for example the <a href="https://docs.rs/sophia_api/latest/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> trait and <a href="https://docs.rs/sophia_api/latest/sophia_api/graph/trait.Graph.html#foreign-impls">some of the types implementing it</a>). Sophia is therefore not meant to provide the &quot;ultimate&quot; implementation of RDF in Rust, but a generic framework to help various implementations to interoperate with each other (in the spirit of <a href="https://github.com/apache/commons-rdf/">Apache Commons RDF</a> for Java or [RDFJS] for Javascript/Typescript).</p>
+<p>In Sophia, each of these core concepts is modeled by a trait, which can be implemented in multiple ways (see for example the <a href="https://docs.rs/sophia_api/latest/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> trait and <a href="https://docs.rs/sophia_api/latest/sophia_api/graph/trait.Graph.html#foreign-impls">some of the types implementing it</a>). Sophia is therefore not meant to provide the "ultimate" implementation of RDF in Rust, but a generic framework to help various implementations to interoperate with each other (in the spirit of <a href="https://github.com/apache/commons-rdf/">Apache Commons RDF</a> for Java or [RDFJS] for Javascript/Typescript).</p>
 <h2 id="generialized"><a class="header" href="#generialized">Generalized vs. Strict RDF model</a></h2>
 <p>The data model supported by this Sophia is in fact
 a superset of the RDF data model as defined by the W3C.
@@ -269,7 +269,7 @@ Sophia supports
 <p>Below is a short example demonstrating how to build a graph, mutate it and serialize it back.</p>
 <p>Add the sophia crate to your dependencies in <code>Cargo.toml</code></p>
 <pre><code class="language-bash">[dependencies]
-sophia = &quot;0.8.0&quot;
+sophia = "0.8.0"
 </code></pre>
 <p>Add these lines of code and run the program.</p>
 <pre><code class="language-rust noplayground">use sophia::api::prelude::*;
@@ -279,34 +279,34 @@ use sophia::turtle::parser::turtle;
 use sophia::turtle::serializer::nt::NtSerializer;
 
 // loading a graph
-let example = r#&quot;
+let example = r#"
     @prefix : &lt;http://example.org/&gt;.
     @prefix foaf: &lt;http://xmlns.com/foaf/0.1/&gt;.
-    :alice foaf:name &quot;Alice&quot;;
+    :alice foaf:name "Alice";
            foaf:mbox &lt;mailto:alice@work.example&gt; .
-    :bob foaf:name &quot;Bob&quot;.
-&quot;#;
+    :bob foaf:name "Bob".
+"#;
 let mut graph: LightGraph = turtle::parse_str(example).collect_triples()?;
 
 // mutating the graph
-let ex = Namespace::new(&quot;http://example.org/&quot;)?;
-let foaf = Namespace::new(&quot;http://xmlns.com/foaf/0.1/&quot;)?;
+let ex = Namespace::new("http://example.org/")?;
+let foaf = Namespace::new("http://xmlns.com/foaf/0.1/")?;
 graph.insert(
-    ex.get(&quot;bob&quot;)?,
-    foaf.get(&quot;knows&quot;)?,
-    ex.get(&quot;alice&quot;)?,
+    ex.get("bob")?,
+    foaf.get("knows")?,
+    ex.get("alice")?,
 )?;
 
 // serializing the graph
 let mut nt_stringifier = NtSerializer::new_stringifier();
 let example2 = nt_stringifier.serialize_graph(&amp;graph)?.as_str();
-println!(&quot;The resulting graph:\n{}&quot;, example2);
+println!("The resulting graph:\n{}", example2);
 <span class="boring">Ok::&lt;(), Box&lt;dyn std::error::Error&gt;&gt;(())</span></code></pre>
 <p>You should get the following output:</p>
 <pre><code class="language-text">The resulting graph:
-&lt;http://example.org/alice&gt; &lt;http://xmlns.com/foaf/0.1/name&gt; &quot;Alice&quot;.
+&lt;http://example.org/alice&gt; &lt;http://xmlns.com/foaf/0.1/name&gt; "Alice".
 &lt;http://example.org/alice&gt; &lt;http://xmlns.com/foaf/0.1/mbox&gt; &lt;mailto:alice@work.example&gt;.
-&lt;http://example.org/bob&gt; &lt;http://xmlns.com/foaf/0.1/name&gt; &quot;Bob&quot;.
+&lt;http://example.org/bob&gt; &lt;http://xmlns.com/foaf/0.1/name&gt; "Bob".
 &lt;http://example.org/bob&gt; &lt;http://xmlns.com/foaf/0.1/knows&gt; &lt;http://example.org/alice&gt;.
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="rdf-terms"><a class="header" href="#rdf-terms">RDF Terms</a></h1>
@@ -317,7 +317,7 @@ The kind is described by the <a href="https://docs.rs/sophia_api/0.8.0/sophia_ap
 and available from the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#tymethod.kind"><code>Term::kind</code></a> method.</p>
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::api::term::{SimpleTerm, Term, TermKind};
 </span><span class="boring">use TermKind::*;
-</span><span class="boring">let some_term: SimpleTerm = &quot;foo&quot;.into_term();
+</span><span class="boring">let some_term: SimpleTerm = "foo".into_term();
 </span>match some_term.kind() {
     Iri =&gt; { /* ... */ }
     Literal =&gt; { /* ... */ }
@@ -325,7 +325,7 @@ and available from the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term
     _ =&gt; { /* ... */ }
 }</code></pre>
 <p>Alternatively, when only one kind is of interest, you can use <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.is_iri"><code>Term::is_iri</code></a>, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.is_literal"><code>Term::is_literal</code></a>, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.is_blank_node"><code>Term::is_blank_node</code></a>, etc.</p>
-<p>If you are interested in the &quot;value&quot; of the term, the trait provides the following methods. All of them return an <code>Option</code>, which will be <code>None</code> if the term does not have the corresponding kind.</p>
+<p>If you are interested in the "value" of the term, the trait provides the following methods. All of them return an <code>Option</code>, which will be <code>None</code> if the term does not have the corresponding kind.</p>
 <ul>
 <li>
 <p>If the term is an IRI, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.iri"><code>Term::iri</code></a> returns that IRI<sup class="footnote-reference"><a href="#relative_iris">1</a></sup>.</p>
@@ -336,7 +336,7 @@ and available from the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term
 <li>
 <p>If the term is a literal:</p>
 <ul>
-<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.lexical_form"><code>Term::lexical_form</code></a> returns its <a href="https://www.w3.org/TR/rdf-concepts/#dfn-lexical-form">lexical form</a> (the &quot;textual value&quot; of the literal),</li>
+<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.lexical_form"><code>Term::lexical_form</code></a> returns its <a href="https://www.w3.org/TR/rdf-concepts/#dfn-lexical-form">lexical form</a> (the "textual value" of the literal),</li>
 <li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.datatype"><code>Term::datatype</code></a> returns its datatype IRI<sup class="footnote-reference"><a href="#relative_iris">1</a></sup>,</li>
 <li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.language_tag"><code>Term::language_tag</code></a> returns its <a href="https://www.w3.org/TR/rdf-concepts/#dfn-language-tag">language tag</a>, if any.</li>
 </ul>
@@ -379,16 +379,16 @@ Alternatively, to convert any term to a self-sufficient <a href="https://docs.rs
 <pre><code class="language-rust noplayground"><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 </span><span class="boring">
 </span><span class="boring">use sophia::{iri::IriRef, api::ns::Namespace};
-</span><span class="boring">let some_text = &quot;http://example.org&quot;;
+</span><span class="boring">let some_text = "http://example.org";
 </span>// construct an IRI from a constant
-let iri1 = IriRef::new_unchecked(&quot;http://example.org&quot;);
+let iri1 = IriRef::new_unchecked("http://example.org");
 
 // construct an IRI from an untrusted string
 let iri2 = IriRef::new(some_text)?;
 
 // construct multiple IRIs from a namespace
-let ns = Namespace::new_unchecked(&quot;http://example.org/ns#&quot;);
-let iri3 = ns.get_unchecked(&quot;foo&quot;);
+let ns = Namespace::new_unchecked("http://example.org/ns#");
+let iri3 = ns.get_unchecked("foo");
 let iri4 = ns.get(some_text)?;
 
 // standard namespaces
@@ -402,30 +402,30 @@ let iri6 = xsd::string ;
 </span><span class="boring">
 </span><span class="boring">use sophia::api::{ns::xsd, term::{LanguageTag, SimpleTerm, Term}};
 </span>// use native types for xsd::string, xsd::integer, xsd::double
-let lit_string = &quot;hello world&quot;;
+let lit_string = "hello world";
 let lit_integer = 42;
 let lit_double = 1.23;
 
 // construct a language-tagged string
-let fr = LanguageTag::new_unchecked(&quot;fr&quot;);
-let lit_fr = &quot;Bonjour le monde&quot; * fr;
+let fr = LanguageTag::new_unchecked("fr");
+let lit_fr = "Bonjour le monde" * fr;
 
 // construct a literal with an arbitrary datatype
-let lit_date = &quot;2023-11-15&quot; * xsd::date;
+let lit_date = "2023-11-15" * xsd::date;
 <span class="boring">
 </span><span class="boring">Ok(()) }</span></code></pre>
 <h3 id="constructing-blank-nodes"><a class="header" href="#constructing-blank-nodes">Constructing blank nodes</a></h3>
 <pre><code class="language-rust noplayground"><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 </span><span class="boring">
 </span><span class="boring">use sophia::api::term::BnodeId;
-</span>let b = BnodeId::new_unchecked(&quot;x&quot;);
+</span>let b = BnodeId::new_unchecked("x");
 <span class="boring">
 </span><span class="boring">Ok(()) }</span></code></pre>
 <h3 id="converting-terms-into-a-different-type"><a class="header" href="#converting-terms-into-a-different-type">Converting terms into a different type</a></h3>
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::api::{ns::xsd, term::{SimpleTerm, Term}};
 </span><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
-</span><span class="boring">let some_term = &quot;42&quot; * xsd::integer;
-</span>let t1: SimpleTerm = &quot;hello&quot;.into_term();
+</span><span class="boring">let some_term = "42" * xsd::integer;
+</span>let t1: SimpleTerm = "hello".into_term();
 let t2: i32 = some_term.try_into_term()?;
 <span class="boring">Ok(()) }</span></code></pre>
 <hr />
@@ -516,7 +516,7 @@ you will want to use the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/gr
 </span>// Utility closure to recognize IRIs in the schema.org namespace
 let in_schema_org = |t: SimpleTerm| -&gt; bool {
 	t.iri()
-	 .map(|iri| iri.as_str().starts_with((&quot;http://schema.org/&quot;)))
+	 .map(|iri| iri.as_str().starts_with(("http://schema.org/")))
 	 .unwrap_or(false)
 };
 // Iter over all instances of schema.org types
@@ -544,7 +544,7 @@ Inserting (resp. removing) a triple that is already (resp. not) present in the g
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::{api::{ns::rdf, prelude::*}, iri::*};
 </span>/// Example: increment the rdf:value of a given subject
 <span class="boring">fn f&lt;G: MutableGraph&gt;(mut g: G) -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
-</span><span class="boring">let s = Iri::new_unchecked(&quot;https://example.org/foo&quot;);
+</span><span class="boring">let s = Iri::new_unchecked("https://example.org/foo");
 </span>let old_value: i32 = g.triples_matching([s], [rdf::value], Any)
 	.next()
 	.unwrap()?
@@ -578,18 +578,18 @@ and are described in more detail in the <a href="./ch05_term_matchers.html">next
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::{api::{ns::{Namespace, rdf}, prelude::*}, inmem::graph::FastGraph};
 </span><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 </span>let mut g = FastGraph::new();
-let ex = Namespace::new_unchecked(&quot;https://example.org/ns#&quot;);
-let alice = ex.get_unchecked(&quot;alice&quot;);
-let s = Namespace::new_unchecked(&quot;http://schema.org/&quot;);
+let ex = Namespace::new_unchecked("https://example.org/ns#");
+let alice = ex.get_unchecked("alice");
+let s = Namespace::new_unchecked("http://schema.org/");
 g.insert(
 	&amp;alice,
 	rdf::type_,
-	s.get_unchecked(&quot;Person&quot;)
+	s.get_unchecked("Person")
 )?;
 g.insert(
 	&amp;alice,
-	s.get_unchecked(&quot;name&quot;),
-  &quot;Alice&quot;
+	s.get_unchecked("name"),
+  "Alice"
 )?;
 <span class="boring">Ok(()) }</span></code></pre>
 <h3 id="constructing-a-graph-from-a-triple-source1"><a class="header" href="#constructing-a-graph-from-a-triple-source1">Constructing a graph from a triple source<sup class="footnote-reference"><a href="#triple_source">1</a></sup></a></h3>
@@ -597,7 +597,7 @@ g.insert(
 </span><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 </span><span class="boring">let big_graph = FastGraph::new();
 </span>// Extract all triples about 'alice' from big_graph in a new graph
-let alice = Iri::new_unchecked(&quot;https://example.org/ns#alice&quot;);
+let alice = Iri::new_unchecked("https://example.org/ns#alice");
 let graph: FastGraph = big_graph
 	.triples_matching([alice], Any, Any)
 	.collect_triples()?;
@@ -612,7 +612,7 @@ However, most types implementing <a href="https://docs.rs/sophia_api/0.8.0/sophi
 
 <span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 </span>dbg!(std::env::current_dir());
-let f = BufReader::new(File::open(&quot;../sophia_doap.ttl&quot;)?);
+let f = BufReader::new(File::open("../sophia_doap.ttl")?);
 let graph: FastGraph = turtle::parse_bufread(f)
 	.collect_triples()?;
 <span class="boring">Ok(()) }</span></code></pre>
@@ -665,7 +665,7 @@ trait, with a significantly different API, that serves several purposes:</p>
 </ul>
 <p>Any code that handles terms will need some significant rewriting.
 See the chapter on <a href="ch02_rdf_terms.html">RDF terms</a> for more detail.</p>
-<h3 id="the-end-of-the-iri-zoo"><a class="header" href="#the-end-of-the-iri-zoo">The end of the &quot;IRI zoo&quot;</a></h3>
+<h3 id="the-end-of-the-iri-zoo"><a class="header" href="#the-end-of-the-iri-zoo">The end of the "IRI zoo"</a></h3>
 <p>Historically, a number of different types have been created in Sophia for representing IRIs,
 which was <a href="https://github.com/pchampin/sophia_rs/discussions/112">causing some confusion</a>.
 Most of them have now disappeared, in favor of the types defined in <a href="https://docs.rs/sophia_iri/latest/sophia_iri/"><code>sophia_iri</code></a>.</p>
@@ -677,7 +677,7 @@ are now subsumed by <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/en
 a straightforward implementation of the <code>Term</code> trait, provided by
 <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/index.html"><code>sophia_api</code></a>.
 More specific types (such as
-<a href="https://docs.rs/sophia_term/0.8.0/sophia_term/type.RcTerm.html"><code>RcTerm</code></a> or 
+<a href="https://docs.rs/sophia_term/0.8.0/sophia_term/type.RcTerm.html"><code>RcTerm</code></a> or
 <a href="https://docs.rs/sophia_term/0.8.0/sophia_term/type.ArcTerm.html"><code>ArcTerm</code></a>)
 are still provided by <code>sophia_term</code>.</p>
 <h2 id="simplification-of-the-graph-and-dataset-traits"><a class="header" href="#simplification-of-the-graph-and-dataset-traits">Simplification of the <code>Graph</code> and <code>Dataset</code> traits</a></h2>

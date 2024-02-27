@@ -180,7 +180,7 @@
 <p>Below is a short example demonstrating how to build a graph, mutate it and serialize it back.</p>
 <p>Add the sophia crate to your dependencies in <code>Cargo.toml</code></p>
 <pre><code class="language-bash">[dependencies]
-sophia = &quot;0.8.0&quot;
+sophia = "0.8.0"
 </code></pre>
 <p>Add these lines of code and run the program.</p>
 <pre><code class="language-rust noplayground">use sophia::api::prelude::*;
@@ -190,34 +190,34 @@ use sophia::turtle::parser::turtle;
 use sophia::turtle::serializer::nt::NtSerializer;
 
 // loading a graph
-let example = r#&quot;
+let example = r#"
     @prefix : &lt;http://example.org/&gt;.
     @prefix foaf: &lt;http://xmlns.com/foaf/0.1/&gt;.
-    :alice foaf:name &quot;Alice&quot;;
+    :alice foaf:name "Alice";
            foaf:mbox &lt;mailto:alice@work.example&gt; .
-    :bob foaf:name &quot;Bob&quot;.
-&quot;#;
+    :bob foaf:name "Bob".
+"#;
 let mut graph: LightGraph = turtle::parse_str(example).collect_triples()?;
 
 // mutating the graph
-let ex = Namespace::new(&quot;http://example.org/&quot;)?;
-let foaf = Namespace::new(&quot;http://xmlns.com/foaf/0.1/&quot;)?;
+let ex = Namespace::new("http://example.org/")?;
+let foaf = Namespace::new("http://xmlns.com/foaf/0.1/")?;
 graph.insert(
-    ex.get(&quot;bob&quot;)?,
-    foaf.get(&quot;knows&quot;)?,
-    ex.get(&quot;alice&quot;)?,
+    ex.get("bob")?,
+    foaf.get("knows")?,
+    ex.get("alice")?,
 )?;
 
 // serializing the graph
 let mut nt_stringifier = NtSerializer::new_stringifier();
 let example2 = nt_stringifier.serialize_graph(&amp;graph)?.as_str();
-println!(&quot;The resulting graph:\n{}&quot;, example2);
+println!("The resulting graph:\n{}", example2);
 <span class="boring">Ok::&lt;(), Box&lt;dyn std::error::Error&gt;&gt;(())</span></code></pre>
 <p>You should get the following output:</p>
 <pre><code class="language-text">The resulting graph:
-&lt;http://example.org/alice&gt; &lt;http://xmlns.com/foaf/0.1/name&gt; &quot;Alice&quot;.
+&lt;http://example.org/alice&gt; &lt;http://xmlns.com/foaf/0.1/name&gt; "Alice".
 &lt;http://example.org/alice&gt; &lt;http://xmlns.com/foaf/0.1/mbox&gt; &lt;mailto:alice@work.example&gt;.
-&lt;http://example.org/bob&gt; &lt;http://xmlns.com/foaf/0.1/name&gt; &quot;Bob&quot;.
+&lt;http://example.org/bob&gt; &lt;http://xmlns.com/foaf/0.1/name&gt; "Bob".
 &lt;http://example.org/bob&gt; &lt;http://xmlns.com/foaf/0.1/knows&gt; &lt;http://example.org/alice&gt;.
 </code></pre>
 

@@ -184,7 +184,7 @@ The kind is described by the <a href="https://docs.rs/sophia_api/0.8.0/sophia_ap
 and available from the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#tymethod.kind"><code>Term::kind</code></a> method.</p>
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::api::term::{SimpleTerm, Term, TermKind};
 </span><span class="boring">use TermKind::*;
-</span><span class="boring">let some_term: SimpleTerm = &quot;foo&quot;.into_term();
+</span><span class="boring">let some_term: SimpleTerm = "foo".into_term();
 </span>match some_term.kind() {
     Iri =&gt; { /* ... */ }
     Literal =&gt; { /* ... */ }
@@ -192,7 +192,7 @@ and available from the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term
     _ =&gt; { /* ... */ }
 }</code></pre>
 <p>Alternatively, when only one kind is of interest, you can use <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.is_iri"><code>Term::is_iri</code></a>, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.is_literal"><code>Term::is_literal</code></a>, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.is_blank_node"><code>Term::is_blank_node</code></a>, etc.</p>
-<p>If you are interested in the &quot;value&quot; of the term, the trait provides the following methods. All of them return an <code>Option</code>, which will be <code>None</code> if the term does not have the corresponding kind.</p>
+<p>If you are interested in the "value" of the term, the trait provides the following methods. All of them return an <code>Option</code>, which will be <code>None</code> if the term does not have the corresponding kind.</p>
 <ul>
 <li>
 <p>If the term is an IRI, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.iri"><code>Term::iri</code></a> returns that IRI<sup class="footnote-reference"><a href="#relative_iris">1</a></sup>.</p>
@@ -203,7 +203,7 @@ and available from the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term
 <li>
 <p>If the term is a literal:</p>
 <ul>
-<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.lexical_form"><code>Term::lexical_form</code></a> returns its <a href="https://www.w3.org/TR/rdf-concepts/#dfn-lexical-form">lexical form</a> (the &quot;textual value&quot; of the literal),</li>
+<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.lexical_form"><code>Term::lexical_form</code></a> returns its <a href="https://www.w3.org/TR/rdf-concepts/#dfn-lexical-form">lexical form</a> (the "textual value" of the literal),</li>
 <li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.datatype"><code>Term::datatype</code></a> returns its datatype IRI<sup class="footnote-reference"><a href="#relative_iris">1</a></sup>,</li>
 <li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.language_tag"><code>Term::language_tag</code></a> returns its <a href="https://www.w3.org/TR/rdf-concepts/#dfn-language-tag">language tag</a>, if any.</li>
 </ul>
@@ -246,16 +246,16 @@ Alternatively, to convert any term to a self-sufficient <a href="https://docs.rs
 <pre><code class="language-rust noplayground"><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 </span><span class="boring">
 </span><span class="boring">use sophia::{iri::IriRef, api::ns::Namespace};
-</span><span class="boring">let some_text = &quot;http://example.org&quot;;
+</span><span class="boring">let some_text = "http://example.org";
 </span>// construct an IRI from a constant
-let iri1 = IriRef::new_unchecked(&quot;http://example.org&quot;);
+let iri1 = IriRef::new_unchecked("http://example.org");
 
 // construct an IRI from an untrusted string
 let iri2 = IriRef::new(some_text)?;
 
 // construct multiple IRIs from a namespace
-let ns = Namespace::new_unchecked(&quot;http://example.org/ns#&quot;);
-let iri3 = ns.get_unchecked(&quot;foo&quot;);
+let ns = Namespace::new_unchecked("http://example.org/ns#");
+let iri3 = ns.get_unchecked("foo");
 let iri4 = ns.get(some_text)?;
 
 // standard namespaces
@@ -269,30 +269,30 @@ let iri6 = xsd::string ;
 </span><span class="boring">
 </span><span class="boring">use sophia::api::{ns::xsd, term::{LanguageTag, SimpleTerm, Term}};
 </span>// use native types for xsd::string, xsd::integer, xsd::double
-let lit_string = &quot;hello world&quot;;
+let lit_string = "hello world";
 let lit_integer = 42;
 let lit_double = 1.23;
 
 // construct a language-tagged string
-let fr = LanguageTag::new_unchecked(&quot;fr&quot;);
-let lit_fr = &quot;Bonjour le monde&quot; * fr;
+let fr = LanguageTag::new_unchecked("fr");
+let lit_fr = "Bonjour le monde" * fr;
 
 // construct a literal with an arbitrary datatype
-let lit_date = &quot;2023-11-15&quot; * xsd::date;
+let lit_date = "2023-11-15" * xsd::date;
 <span class="boring">
 </span><span class="boring">Ok(()) }</span></code></pre>
 <h3 id="constructing-blank-nodes"><a class="header" href="#constructing-blank-nodes">Constructing blank nodes</a></h3>
 <pre><code class="language-rust noplayground"><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 </span><span class="boring">
 </span><span class="boring">use sophia::api::term::BnodeId;
-</span>let b = BnodeId::new_unchecked(&quot;x&quot;);
+</span>let b = BnodeId::new_unchecked("x");
 <span class="boring">
 </span><span class="boring">Ok(()) }</span></code></pre>
 <h3 id="converting-terms-into-a-different-type"><a class="header" href="#converting-terms-into-a-different-type">Converting terms into a different type</a></h3>
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::api::{ns::xsd, term::{SimpleTerm, Term}};
 </span><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
-</span><span class="boring">let some_term = &quot;42&quot; * xsd::integer;
-</span>let t1: SimpleTerm = &quot;hello&quot;.into_term();
+</span><span class="boring">let some_term = "42" * xsd::integer;
+</span>let t1: SimpleTerm = "hello".into_term();
 let t2: i32 = some_term.try_into_term()?;
 <span class="boring">Ok(()) }</span></code></pre>
 <hr />
