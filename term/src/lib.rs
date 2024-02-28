@@ -1,34 +1,22 @@
-//! I define implementations of [`sophia_api::term::Term`]
-//! as well as associated types.
+//! I define implementations of [`sophia_api::term::Term`]:
+//! * [`ArcTerm`] using [`Arc<str>`](std::sync::Arc) as the underlying text,
+//!   making it cheap to clone and thread-safe;
+//!   see also [`ArcStrStash`].
+//! * [`RcTerm`] using [`Rc<str>`](std::rc::Rc) as the underlying text,
+//!   making it cheap to clone;
+//!   see also [`RcStrStash`].
 #![deny(missing_docs)]
-use std::{rc::Rc, sync::Arc};
 
 mod _generic;
 pub use _generic::*;
-mod _stash;
-pub use _stash::*;
+#[macro_use]
+mod _macro;
 
-/// A [`Term`](sophia_api::term::Term) implementation
-/// using [`Arc<str>`] as the underlying text,
-/// making it cheap to clone and thread-safe.
-///
-/// See also [`ArcStrStash`].
-pub type ArcTerm = GenericTerm<Arc<str>>;
+gen_term!(ArcTerm, std::sync::Arc, arc_term);
+gen_term!(RcTerm, std::rc::Rc, rc_term);
 
-/// A [`Term`](sophia_api::term::Term) implementation
-/// using [`Rc<str>`] as the underlying text,
-/// making it cheap to clone.
-///
-/// See also [`RcStrStash`].
-pub type RcTerm = GenericTerm<Rc<str>>;
-
-/// A stash for generating [`ArcTerm`]s (with [`copy_term`](GenericStash::copy_term))
-/// or any [`Arc<str>`].
-pub type ArcStrStash = GenericStash<Arc<str>>;
-
-/// A stash for generating [`RcTerm`]s (with [`copy_term`](GenericStash::copy_term))
-/// or any [`Rc<str>`].
-pub type RcStrStash = GenericStash<Rc<str>>;
+gen_stash!(ArcStrStash, ArcTerm, std::sync::Arc, arc_stash);
+gen_stash!(RcStrStash, RcTerm, std::rc::Rc, rc_stash);
 
 #[cfg(test)]
 mod test {
