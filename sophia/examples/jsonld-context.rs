@@ -4,19 +4,15 @@
 //!
 //! Thanks to Jos van den Oever for this example.
 
-use json_ld::{expansion::Policy, syntax::Value, RemoteDocument, RemoteDocumentReference};
 use sophia::{
     api::{
         parser::QuadParser,
-        serializer::{Stringifier, QuadSerializer},
+        serializer::{QuadSerializer, Stringifier},
         source::QuadSource,
     },
-    jsonld::{
-        vocabulary::ArcIri, ContextRef, JsonLdOptions, JsonLdParser,
-    },
+    jsonld::{JsonLdOptions, JsonLdParser, Policy},
     turtle::serializer::trig::{TrigConfig, TrigSerializer},
 };
-use std::sync::Arc;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args();
@@ -35,29 +31,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut options = JsonLdOptions::new().with_expansion_policy(Policy::Standard);
     if let Some(context_path) = context_path {
-        let context = parse_context(&context_path)?;
-        options = options.with_expand_context::<()>(context);
+        let context_str = std::fs::read_to_string(&context_path)
+            .map_err(|e| format!("Could not read file {}: {}", &context_path, e))?;
+        options = options.try_with_expand_context(context_str.as_str())?;
     }
     let parser = JsonLdParser::new_with_options(options);
     let quads = parser.parse_str(&json_str);
     let trig = to_trig(quads)?;
     println!("{}", trig.as_str());
     Ok(())
-}
-
-fn parse_context(context_path: &str) -> Result<ContextRef, Box<dyn std::error::Error>> {
-    let context_str = std::fs::read_to_string(context_path)
-        .map_err(|e| format!("Could not read file {}: {}", context_path, e))?;
-    let iri = ArcIri::new(Arc::from(format!("file:{}", &context_path)))?;
-    use json_ld::syntax::Parse;
-    let doc = Value::parse_str(&context_str, |span| {
-        locspan::Location::new(iri.clone(), span)
-    })?;
-    use json_ld::ExtractContext;
-    let context =
-        Value::extract_context(doc).map_err(|e| format!("Could not extract @context: {}", e))?;
-    let rdoc = RemoteDocument::new(Some(iri), None, context);
-    Ok(RemoteDocumentReference::Loaded(rdoc))
 }
 
 fn to_trig(quads: impl QuadSource) -> Result<String, Box<dyn std::error::Error>> {

@@ -3,16 +3,18 @@
 use std::fmt::Display;
 use std::sync::Arc;
 
-use json_ld::expansion::Policy;
+pub use json_ld::expansion::Policy;
 pub use json_ld::rdf::RdfDirection;
-use json_ld::syntax::context::Value;
+use json_ld::syntax::context::Value as ContextValue;
 use json_ld::Loader;
 pub use json_ld::Options;
 pub use json_ld::ProcessingMode;
+use json_syntax::Value;
 use locspan::Location;
 use locspan::Span;
 use sophia_iri::Iri;
 
+use crate::context::*;
 use crate::loader::NoLoader;
 use crate::loader_factory::ClosureLoaderFactory;
 use crate::loader_factory::DefaultLoaderFactory;
@@ -228,9 +230,7 @@ impl<LF> JsonLdOptions<LF> {
         f: F,
     ) -> JsonLdOptions<ClosureLoaderFactory<L, F>>
     where
-        L: Loader<ArcIri, Location<Iri<Arc<str>>>, Output = json_syntax::Value<Location<ArcIri>>>
-            + Send
-            + Sync,
+        L: Loader<ArcIri, Location<Iri<Arc<str>>>, Output = Value<Location<ArcIri>>> + Send + Sync,
         L::Error: Display + Send,
         F: Fn() -> L,
     {
@@ -253,7 +253,7 @@ impl<LF> JsonLdOptions<LF> {
     /// [`JsonLdOptions::with_document_loader`],
     pub fn with_default_document_loader<L>(self) -> JsonLdOptions<DefaultLoaderFactory<L>>
     where
-        L: Loader<ArcIri, Location<Iri<Arc<str>>>, Output = json_syntax::Value<Location<ArcIri>>>
+        L: Loader<ArcIri, Location<Iri<Arc<str>>>, Output = Value<Location<ArcIri>>>
             + Default
             + Send
             + Sync,
@@ -281,7 +281,7 @@ impl<LF> JsonLdOptions<LF> {
         document_loader: L,
     ) -> JsonLdOptions<ClosureLoaderFactory<L, impl Fn() -> L>>
     where
-        L: Loader<ArcIri, Location<Iri<Arc<str>>>, Output = json_syntax::Value<Location<ArcIri>>>
+        L: Loader<ArcIri, Location<Iri<Arc<str>>>, Output = Value<Location<ArcIri>>>
             + Clone
             + Send
             + Sync,
@@ -299,18 +299,32 @@ impl<LF> JsonLdOptions<LF> {
 
     /// Change the [`expand_context`](Self::expand_context)
     ///
-    /// See also [`with_no_expand_context`](Self::with_no_expand_context)
-    pub fn with_expand_context<SE2>(mut self, expand_context: ContextRef) -> Self {
-        self.inner.expand_context = Some(expand_context);
+    /// See also [`with_no_expand_context`](Self::with_no_expand_context),
+    /// [`try_with_expand_context`](Self::try_with_expand_context)
+    pub fn with_expand_context<C: IntoContextRef>(mut self, expand_context: C) -> Self {
+        self.inner.expand_context = Some(expand_context.into_context_ref());
         self
     }
 
     /// Change the [`expand_context`](Self::expand_context)
     ///
     /// See also [`with_expand_context`](Self::with_expand_context)
+    /// [`try_with_expand_context`](Self::try_with_expand_context)
     pub fn with_no_expand_context(mut self) -> Self {
         self.inner.expand_context = None;
         self
+    }
+
+    /// Change the [`expand_context`](Self::expand_context)
+    ///
+    /// See also [`with_expand_context`](Self::with_expand_context),
+    /// [`with_no_expand_context`](Self::with_no_expand_context)
+    pub fn try_with_expand_context<C: TryIntoContextRef>(
+        mut self,
+        expand_context: C,
+    ) -> Result<Self, C::Error> {
+        self.inner.expand_context = Some(expand_context.try_into_context_ref()?);
+        Ok(self)
     }
 
     /// Change the [`ordered`](Self::ordered) flag
@@ -373,18 +387,32 @@ impl<LF> JsonLdOptions<LF> {
 
     /// Change the [`compact_context`](Self::compact_context)
     ///
-    /// See also [`with_no_compact_context`](Self::with_no_compact_context)
-    pub fn with_compact_context<SE2>(mut self, compact_context: ContextRef) -> Self {
-        self.compact_context = Some(compact_context);
+    /// See also [`with_no_compact_context`](Self::with_no_compact_context),
+    /// [`try_with_compact_context`](Self::try_with_compact_context)
+    pub fn with_compact_context<C: IntoContextRef>(mut self, compact_context: C) -> Self {
+        self.compact_context = Some(compact_context.into_context_ref());
         self
     }
 
     /// Change the [`compact_context`](Self::compact_context)
     ///
     /// See also [`with_compact_context`](Self::with_compact_context)
+    /// [`try_with_compact_context`](Self::try_with_compact_context)
     pub fn with_no_compact_context(mut self) -> Self {
         self.compact_context = None;
         self
+    }
+
+    /// Change the [`compact_context`](Self::compact_context)
+    ///
+    /// See also [`with_compact_context`](Self::with_compact_context),
+    /// [`with_no_compact_context`](Self::with_no_compact_context)
+    pub fn try_with_compact_context<C: TryIntoContextRef>(
+        mut self,
+        compact_context: C,
+    ) -> Result<Self, C::Error> {
+        self.compact_context = Some(compact_context.try_into_context_ref()?);
+        Ok(self)
     }
 }
 
@@ -405,9 +433,6 @@ impl<LF> std::ops::Deref for JsonLdOptions<LF> {
     }
 }
 
-/// Type alias for the context references used by the JSON-LD options.
-pub type ContextRef =
-    json_ld::RemoteDocumentReference<ArcIri, Location<ArcIri, Span>, Value<Location<ArcIri, Span>>>;
-
 /// Type alias for [`json_ld::Options`] as used in this crate.
-type InnerOptions = json_ld::Options<ArcIri, Location<ArcIri, Span>, Value<Location<ArcIri, Span>>>;
+type InnerOptions =
+    json_ld::Options<ArcIri, Location<ArcIri, Span>, ContextValue<Location<ArcIri, Span>>>;

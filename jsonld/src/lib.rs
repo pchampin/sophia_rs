@@ -11,6 +11,8 @@
 
 #![deny(missing_docs)]
 
+pub mod context;
+pub use context::ContextRef;
 pub mod options;
 pub use options::*;
 pub mod error;
