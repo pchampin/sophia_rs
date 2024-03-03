@@ -7,7 +7,7 @@ use std::fmt::Write;
 use std::io;
 use std::rc::Rc;
 
-use sophia_api::dataset::{DTerm, Dataset};
+use sophia_api::dataset::{DTerm, SetDataset};
 use sophia_api::quad::{iter_spog, Quad, Spog};
 use sophia_api::term::{BnodeId, Term};
 
@@ -25,7 +25,7 @@ use crate::hash::{HashFunction, Sha256, Sha384};
 /// - quads are sorted in codepoint order.
 ///
 /// See also [`normalize_with`].
-pub fn normalize<D: Dataset, W: io::Write>(d: &D, w: W) -> Result<(), C14nError<D::Error>> {
+pub fn normalize<D: SetDataset, W: io::Write>(d: &D, w: W) -> Result<(), C14nError<D::Error>> {
     normalize_with::<Sha256, D, W>(d, w, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
@@ -37,7 +37,10 @@ pub fn normalize<D: Dataset, W: io::Write>(d: &D, w: W) -> Result<(), C14nError<
 /// - quads are sorted in codepoint order.
 ///
 /// See also [`normalize_with`].
-pub fn normalize_sha384<D: Dataset, W: io::Write>(d: &D, w: W) -> Result<(), C14nError<D::Error>> {
+pub fn normalize_sha384<D: SetDataset, W: io::Write>(
+    d: &D,
+    w: W,
+) -> Result<(), C14nError<D::Error>> {
     normalize_with::<Sha384, D, W>(d, w, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
@@ -49,7 +52,7 @@ pub fn normalize_sha384<D: Dataset, W: io::Write>(d: &D, w: W) -> Result<(), C14
 /// - quads are sorted in codepoint order.
 ///
 /// See also [`normalize`].
-pub fn normalize_with<H: HashFunction, D: Dataset, W: io::Write>(
+pub fn normalize_with<H: HashFunction, D: SetDataset, W: io::Write>(
     d: &D,
     mut w: W,
     depth_factor: f32,
@@ -61,7 +64,7 @@ pub fn normalize_with<H: HashFunction, D: Dataset, W: io::Write>(
     // we sort the quads, but comparing the terms based on ther NQ serialization,
     // which amounts to sorting the N-Quads lines without materializing them
     quads.sort_unstable_by(|q1, q2| {
-        for (t1, t2) in iter_spog(q1.spog()).zip(iter_spog(q2.spog())) {
+        for (t1, t2) in iter_spog_opt(q1.spog()).zip(iter_spog_opt(q2.spog())) {
             buf1.clear();
             buf2.clear();
             let o = cmp_c14n_terms(t1, t2, &mut buf1, &mut buf2);
@@ -95,7 +98,7 @@ pub fn normalize_with<H: HashFunction, D: Dataset, W: io::Write>(
 /// Implements <https://www.w3.org/TR/rdf-canon/#canon-algorithm>
 ///
 /// See also [`normalize`].
-pub fn relabel<D: Dataset>(d: &D) -> Result<(C14nQuads<D>, C14nIdMap), C14nError<D::Error>> {
+pub fn relabel<D: SetDataset>(d: &D) -> Result<(C14nQuads<D>, C14nIdMap), C14nError<D::Error>> {
     relabel_with::<Sha256, D>(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
@@ -109,7 +112,9 @@ pub fn relabel<D: Dataset>(d: &D) -> Result<(C14nQuads<D>, C14nIdMap), C14nError
 /// Implements <https://www.w3.org/TR/rdf-canon/#canon-algorithm>
 ///
 /// See also [`normalize`].
-pub fn relabel_sha384<D: Dataset>(d: &D) -> Result<(C14nQuads<D>, C14nIdMap), C14nError<D::Error>> {
+pub fn relabel_sha384<D: SetDataset>(
+    d: &D,
+) -> Result<(C14nQuads<D>, C14nIdMap), C14nError<D::Error>> {
     relabel_with::<Sha384, D>(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
@@ -135,7 +140,7 @@ pub fn relabel_sha384<D: Dataset>(d: &D) -> Result<(C14nQuads<D>, C14nIdMap), C1
 /// Implements <https://www.w3.org/TR/rdf-canon/#canon-algorithm>
 ///
 /// See also [`relabel`], [`normalize_with`].
-pub fn relabel_with<'a, H: HashFunction, D: Dataset>(
+pub fn relabel_with<'a, H: HashFunction, D: SetDataset>(
     d: &'a D,
     depth_factor: f32,
     permutation_limit: usize,
@@ -497,6 +502,14 @@ fn smaller_path(path1: &str, path2: &str) -> bool {
     }
 }
 
+/// Iter over all the components of a [`Quad`] as Option.
+///
+/// Compared to [`iter_spog`], this function always return 4 components.
+fn iter_spog_opt<T: Quad>(q: T) -> impl Iterator<Item = Option<T::Term>> {
+    let (spo, g) = q.to_spog();
+    spo.into_iter().map(Some).chain(std::iter::once(g))
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -701,7 +714,7 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
         assert!(got == exp);
     }
 
-    pub fn c14n_nquads<D: Dataset>(d: &D) -> Result<String, C14nError<D::Error>> {
+    pub fn c14n_nquads<D: SetDataset>(d: &D) -> Result<String, C14nError<D::Error>> {
         let mut output = Vec::<u8>::new();
         normalize(d, &mut output)?;
         Ok(unsafe { String::from_utf8_unchecked(output) })
@@ -709,7 +722,7 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
 
     /// Simplisitic Quad parser, useful for writing test cases.
     /// It is based on eq_quad below.
-    fn ez_quads<'a>(lines: &[&'a str]) -> Vec<Spog<SimpleTerm<'a>>> {
+    fn ez_quads<'a>(lines: &[&'a str]) -> std::collections::HashSet<Spog<SimpleTerm<'a>>> {
         lines.iter().map(|line| ez_quad(line)).collect()
     }
 

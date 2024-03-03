@@ -82,12 +82,16 @@ impl<T: Term> Term for C14nTerm<T> {
 }
 
 pub fn cmp_c14n_terms<'a, 'b, T: Term>(
-    t1: &'a C14nTerm<T>,
-    t2: &'a C14nTerm<T>,
+    t1: Option<&'a C14nTerm<T>>,
+    t2: Option<&'a C14nTerm<T>>,
     buf1: &'b mut String,
     buf2: &'b mut String,
 ) -> Ordering {
-    nq(t1, buf1);
-    nq(t2, buf2);
+    if let Some(t1) = t1 {
+        nq(t1, buf1);
+    }
+    if let Some(t2) = t2 {
+        nq(t2, buf2);
+    }
     buf1.cmp(&buf2)
 }
