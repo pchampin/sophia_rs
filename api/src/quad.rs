@@ -16,7 +16,7 @@ pub type Gspo<T> = (GraphName<T>, [T; 3]);
 
 /// This trait represents an abstract RDF quad,
 /// and provide convenient methods for working with quads.
-pub trait Quad: Sized {
+pub trait Quad {
     /// The type of [`Term`] used by this quad when borrowing it
     type Term: Term;
 
@@ -43,32 +43,32 @@ pub trait Quad: Sized {
     }
 
     /// Consume this quad, returning its subject.
-    fn to_s(self) -> Self::Term {
+    fn to_s(self) -> Self::Term where Self: Sized {
         let [s, _, _] = self.to_spog().0;
         s
     }
 
     /// Consume this quad, returning its predicate.
-    fn to_p(self) -> Self::Term {
+    fn to_p(self) -> Self::Term where Self: Sized {
         let [_, p, _] = self.to_spog().0;
         p
     }
 
     /// Consume this quad, returning its object.
-    fn to_o(self) -> Self::Term {
+    fn to_o(self) -> Self::Term where Self: Sized {
         let [_, _, o] = self.to_spog().0;
         o
     }
 
     /// Consume this quad, returning its graph name.
-    fn to_g(self) -> GraphName<Self::Term> {
+    fn to_g(self) -> GraphName<Self::Term> where Self: Sized {
         self.to_spog().1
     }
 
     /// Consume this quad, returning all its components.
     ///
     /// See also [`Quad::spog`].
-    fn to_spog(self) -> Spog<Self::Term>;
+    fn to_spog(self) -> Spog<Self::Term> where Self: Sized;
 
     /// Checks that the constituents terms of this quad match the respective matchers.
     fn matched_by<S, P, O, G>(&self, sm: S, pm: P, om: O, gm: G) -> bool
@@ -116,7 +116,7 @@ pub trait Quad: Sized {
     ///     q.spog().into_triple()   
     /// # }
     /// ```
-    fn into_triple(self) -> [Self::Term; 3] {
+    fn into_triple(self) -> [Self::Term; 3] where Self: Sized {
         self.to_spog().0
     }
 }
