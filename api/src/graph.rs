@@ -6,7 +6,7 @@
 //! as well as a few implementations for them.
 
 use crate::dataset::adapter::GraphAsDataset;
-use crate::source::{IntoTripleSource, StreamResult, TripleSource};
+use crate::source::{IntoSource, StreamResult, TripleSource};
 use crate::term::{matcher::TermMatcher, SimpleTerm, Term};
 use crate::triple::Triple;
 use resiter::{filter::*, flat_map::*, map::*};
@@ -480,7 +480,7 @@ pub trait MutableGraph: Graph {
             .triples_matching(ms, mp, mo)
             .map_ok(|t| t.spo().map(Term::into_term))
             .collect();
-        self.remove_all(to_remove?.into_iter().into_triple_source())
+        self.remove_all(to_remove?.into_iter().into_source())
             .map_err(|err| err.unwrap_sink_error())
     }
 
@@ -501,7 +501,7 @@ pub trait MutableGraph: Graph {
             .filter_ok(|t| !t.matched_by(ms.matcher_ref(), mp.matcher_ref(), mo.matcher_ref()))
             .map_ok(|t| t.spo().map(Term::into_term))
             .collect();
-        self.remove_all(to_remove?.into_iter().into_triple_source())
+        self.remove_all(to_remove?.into_iter().into_source())
             .map_err(|err| err.unwrap_sink_error())?;
         Ok(())
     }

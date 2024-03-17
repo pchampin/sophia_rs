@@ -17,19 +17,19 @@ use std::error::Error;
 /// respectivelly.
 pub struct StrictRioSource<T>(pub T);
 
-impl<T> sophia_api::source::TripleSource for StrictRioSource<T>
+impl<T> sophia_api::source::Source for StrictRioSource<T>
 where
     T: rio_api::parser::TriplesParser,
     T::Error: Error + 'static,
 {
-    type Triple<'x> = Trusted<rio_api::model::Triple<'x>>;
+    type Item<'x> = Trusted<rio_api::model::Triple<'x>>;
 
     type Error = T::Error;
 
-    fn try_for_some_triple<EF, F>(&mut self, mut f: F) -> StreamResult<bool, T::Error, EF>
+    fn try_for_some_item<EF, F>(&mut self, mut f: F) -> StreamResult<bool, T::Error, EF>
     where
         EF: Error,
-        F: FnMut(Self::Triple<'_>) -> Result<(), EF>,
+        F: FnMut(Self::Item<'_>) -> Result<(), EF>,
     {
         let parser = &mut self.0;
         if parser.is_end() {

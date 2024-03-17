@@ -4,9 +4,9 @@
 use crate::quad::{Quad, Spog};
 use crate::triple::Triple;
 
-use super::{QuadSource, TripleSource};
+use super::{Source, QuadSource, TripleSource};
 
-/// The result type of [`TripleSource::to_quads`].
+/// The result type of [`Source::to_quads`].
 pub struct ToQuads<TS>(pub(super) TS);
 
 impl<TS: TripleSource> QuadSource for ToQuads<TS> {
@@ -29,15 +29,15 @@ impl<TS: TripleSource> QuadSource for ToQuads<TS> {
 /// The result type of [`QuadSource::to_triples`].
 pub struct ToTriples<QS>(pub(super) QS);
 
-impl<QS: QuadSource> TripleSource for ToTriples<QS> {
-    type Triple<'x> = [<QS::Quad<'x> as Quad>::Term; 3];
+impl<QS: QuadSource> Source for ToTriples<QS> {
+    type Item<'x> = [<QS::Quad<'x> as Quad>::Term; 3];
 
     type Error = QS::Error;
 
-    fn try_for_some_triple<E, F>(&mut self, mut f: F) -> super::StreamResult<bool, Self::Error, E>
+    fn try_for_some_item<E, F>(&mut self, mut f: F) -> super::StreamResult<bool, Self::Error, E>
     where
         E: std::error::Error,
-        F: FnMut(Self::Triple<'_>) -> Result<(), E>,
+        F: FnMut(Self::Item<'_>) -> Result<(), E>,
     {
         self.0.try_for_some_quad(|q| {
             let triple = q.to_spog().0;

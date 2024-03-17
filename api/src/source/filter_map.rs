@@ -3,46 +3,109 @@
 use super::*;
 use std::collections::VecDeque;
 
-mod _triple {
-    use super::*;
-    use triple::Triple;
+/// The result of [`::filter_map_items`] and [`QuadSource::filter_map_quads`].
+pub struct FilterMapSource<S, F> {
+    pub(in super::super) source: S,
+    pub(in super::super) filter_map: F,
+}
 
-    /// The result of [`TripleSource::filter_map_triples`] and [`QuadSource::filter_map_quads`].
-    pub struct FilterMapTripleSource<S, F> {
-        pub(in super::super) source: S,
-        pub(in super::super) filter_map: F,
-    }
+impl<S, F, T> Source for FilterMapSource<S, F>
+where
+    S: Source,
+    F: FnMut(S::Item<'_>) -> Option<T>,
+{
+    type Item<'x> = T;
+    type Error = S::Error;
 
-    impl<S, F, T> TripleSource for FilterMapTripleSource<S, F>
+    fn try_for_some_item<E, F2>(&mut self, mut f: F2) -> StreamResult<bool, Self::Error, E>
     where
-        S: TripleSource,
-        F: FnMut(S::Triple<'_>) -> Option<T>,
-        T: Triple,
+        E: Error,
+        F2: FnMut(Self::Item<'_>) -> Result<(), E>,
     {
-        type Triple<'x> = T;
-        type Error = S::Error;
-
-        fn try_for_some_triple<E, F2>(&mut self, mut f: F2) -> StreamResult<bool, Self::Error, E>
-        where
-            E: Error,
-            F2: FnMut(Self::Triple<'_>) -> Result<(), E>,
-        {
-            let filter_map = &mut self.filter_map;
-            self.source.try_for_some_triple(|t| match (filter_map)(t) {
-                None => Ok(()),
-                Some(out) => f(out),
-            })
-        }
-
-        fn size_hint_triples(&self) -> (usize, Option<usize>) {
-            (0, self.source.size_hint_triples().1)
-        }
+        let filter_map = &mut self.filter_map;
+        self.source.try_for_some_item(|t| match (filter_map)(t) {
+            None => Ok(()),
+            Some(out) => f(out),
+        })
     }
 
-    impl<S, F, T> QuadSource for FilterMapTripleSource<S, F>
+    fn size_hint_items(&self) -> (usize, Option<usize>) {
+        (0, self.source.size_hint_items().1)
+    }
+}
+
+impl<S, F, T> IntoIterator for FilterMapSource<S, F>
+where
+    S: Source,
+    F: FnMut(S::Item<'_>) -> Option<T>,
+{
+    type Item = Result<T, S::Error>;
+    type IntoIter = FilterMapSourceIterator<S, F, T, S::Error>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        FilterMapSourceIterator {
+            source: self.source,
+            filter_map: self.filter_map,
+            buffer: VecDeque::new(),
+        }
+    }
+}
+
+/// [`Iterator`] implementation for [`FilterMapSource`]
+pub struct FilterMapSourceIterator<S, F, T, E> {
+    source: S,
+    filter_map: F,
+    buffer: VecDeque<Result<T, E>>,
+}
+
+impl<S, F, T> Iterator for FilterMapSourceIterator<S, F, T, S::Error>
+where
+    S: Source,
+    F: FnMut(S::Item<'_>) -> Option<T>,
+{
+    type Item = Result<T, S::Error>;
+    fn next(&mut self) -> Option<Result<T, S::Error>> {
+        let mut remaining = true;
+        let mut buffer = VecDeque::new();
+        std::mem::swap(&mut self.buffer, &mut buffer);
+        while buffer.is_empty() && remaining {
+            match self.source.for_some_item(&mut |i| {
+                if let Some(t) = (self.filter_map)(i) {
+                    buffer.push_back(Ok(t));
+                }
+            }) {
+                Ok(b) => {
+                    remaining = b;
+                }
+                Err(err) => {
+                    buffer.push_back(Err(err));
+                    remaining = false;
+                }
+            }
+        }
+        std::mem::swap(&mut self.buffer, &mut buffer);
+        self.buffer.pop_front()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.source.size_hint_items()
+    }
+}
+
+/// Maintenance: any change in the _triple module above
+/// should be reflected in the _quad module below.
+///
+/// An easy way to do this is to replace _quad with the code of _triple,
+/// replacing all occurrences of `Triple` with `Quad`,
+/// and all occurrences of `triple` with `quad`.
+mod _quad {
+    use super::*;
+    use quad::Quad;
+
+    impl<S, F, T> QuadSource for FilterMapSource<S, F>
     where
-        S: TripleSource,
-        F: FnMut(S::Triple<'_>) -> Option<T>,
+        S: Source,
+        F: FnMut(S::Item<'_>) -> Option<T>,
         T: crate::quad::Quad,
     {
         type Quad<'x> = T;
@@ -54,86 +117,16 @@ mod _triple {
             F2: FnMut(Self::Quad<'_>) -> Result<(), E>,
         {
             let filter_map = &mut self.filter_map;
-            self.source.try_for_some_triple(|t| match (filter_map)(t) {
+            self.source.try_for_some_item(|t| match (filter_map)(t) {
                 None => Ok(()),
                 Some(out) => f(out),
             })
         }
 
         fn size_hint_quads(&self) -> (usize, Option<usize>) {
-            (0, self.source.size_hint_triples().1)
+            (0, self.source.size_hint_items().1)
         }
     }
-
-    impl<S, F, T> IntoIterator for FilterMapTripleSource<S, F>
-    where
-        S: TripleSource,
-        F: FnMut(S::Triple<'_>) -> Option<T>,
-    {
-        type Item = Result<T, S::Error>;
-        type IntoIter = FilterMapTripleSourceIterator<S, F, T, S::Error>;
-
-        fn into_iter(self) -> Self::IntoIter {
-            FilterMapTripleSourceIterator {
-                source: self.source,
-                filter_map: self.filter_map,
-                buffer: VecDeque::new(),
-            }
-        }
-    }
-
-    /// [`Iterator`] implementation for [`FilterMapTripleSource`]
-    pub struct FilterMapTripleSourceIterator<S, F, T, E> {
-        source: S,
-        filter_map: F,
-        buffer: VecDeque<Result<T, E>>,
-    }
-
-    impl<S, F, T> Iterator for FilterMapTripleSourceIterator<S, F, T, S::Error>
-    where
-        S: TripleSource,
-        F: FnMut(S::Triple<'_>) -> Option<T>,
-    {
-        type Item = Result<T, S::Error>;
-        fn next(&mut self) -> Option<Result<T, S::Error>> {
-            let mut remaining = true;
-            let mut buffer = VecDeque::new();
-            std::mem::swap(&mut self.buffer, &mut buffer);
-            while buffer.is_empty() && remaining {
-                match self.source.for_some_triple(&mut |i| {
-                    if let Some(t) = (self.filter_map)(i) {
-                        buffer.push_back(Ok(t));
-                    }
-                }) {
-                    Ok(b) => {
-                        remaining = b;
-                    }
-                    Err(err) => {
-                        buffer.push_back(Err(err));
-                        remaining = false;
-                    }
-                }
-            }
-            std::mem::swap(&mut self.buffer, &mut buffer);
-            self.buffer.pop_front()
-        }
-
-        fn size_hint(&self) -> (usize, Option<usize>) {
-            self.source.size_hint_triples()
-        }
-    }
-}
-pub use _triple::*;
-
-/// Maintenance: any change in the _triple module above
-/// should be reflected in the _quad module below.
-///
-/// An easy way to do this is to replace _quad with the code of _triple,
-/// replacing all occurrences of `Triple` with `Quad`,
-/// and all occurrences of `triple` with `quad`.
-mod _quad {
-    use super::*;
-    use quad::Quad;
 
     /// The result of [`QuadSource::filter_map_quads`] and [`QuadSource::filter_map_quads`].
     pub struct FilterMapQuadSource<S, F> {
@@ -167,19 +160,18 @@ mod _quad {
         }
     }
 
-    impl<S, F, T> TripleSource for FilterMapQuadSource<S, F>
+    impl<S, F, T> Source for FilterMapQuadSource<S, F>
     where
         S: QuadSource,
         F: FnMut(S::Quad<'_>) -> Option<T>,
-        T: crate::triple::Triple,
     {
-        type Triple<'x> = T;
+        type Item<'x> = T;
         type Error = S::Error;
 
-        fn try_for_some_triple<E, F2>(&mut self, mut f: F2) -> StreamResult<bool, Self::Error, E>
+        fn try_for_some_item<E, F2>(&mut self, mut f: F2) -> StreamResult<bool, Self::Error, E>
         where
             E: Error,
-            F2: FnMut(Self::Triple<'_>) -> Result<(), E>,
+            F2: FnMut(Self::Item<'_>) -> Result<(), E>,
         {
             let filter_map = &mut self.filter_map;
             self.source.try_for_some_quad(|t| match (filter_map)(t) {
@@ -188,7 +180,7 @@ mod _quad {
             })
         }
 
-        fn size_hint_triples(&self) -> (usize, Option<usize>) {
+        fn size_hint_items(&self) -> (usize, Option<usize>) {
             (0, self.source.size_hint_quads().1)
         }
     }

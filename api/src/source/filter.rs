@@ -1,6 +1,40 @@
 //! I define [`FilterTripleSource`] and [`FilterQuadSource`],
 //! the result type of [`TripleSource::filter_triples`] and [`QuadSource::filter_quads`] respectively.
+
 use super::*;
+
+/// The result type of [`Source::filter_items`].
+pub struct FilterSource<S, P> {
+    pub(in super) source: S,
+    pub(in super) predicate: P,
+}
+
+impl<S, P> Source for FilterSource<S, P>
+where
+    S: Source,
+    P: FnMut(&S::Item<'_>) -> bool,
+{
+    type Item<'x> = S::Item<'x>;
+    type Error = S::Error;
+
+    fn try_for_some_item<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
+    where
+        E: Error,
+        F: FnMut(Self::Item<'_>) -> Result<(), E>,
+    {
+        let p = &mut self.predicate;
+        self.source.try_for_some_item(|i| {
+            if p(&i) {
+                f(i)?;
+            }
+            Ok(())
+        })
+    }
+
+    fn size_hint_items(&self) -> (usize, Option<usize>) {
+        (0, self.source.size_hint_items().1)
+    }
+}
 
 mod _triple {
     use super::*;
@@ -11,30 +45,30 @@ mod _triple {
         pub(in super::super) predicate: P,
     }
 
-    impl<S, P> TripleSource for FilterTripleSource<S, P>
+    impl<S, P> Source for FilterTripleSource<S, P>
     where
         S: TripleSource,
-        P: FnMut(&S::Triple<'_>) -> bool,
+        P: FnMut(&TSTriple<S>) -> bool,
     {
-        type Triple<'x> = S::Triple<'x>;
+        type Item<'x> = TSTriple<'x, S>;
         type Error = S::Error;
 
-        fn try_for_some_triple<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
+        fn try_for_some_item<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
         where
             E: Error,
-            F: FnMut(Self::Triple<'_>) -> Result<(), E>,
+            F: FnMut(Self::Item<'_>) -> Result<(), E>,
         {
             let p = &mut self.predicate;
-            self.source.try_for_some_triple(|t| {
-                if p(&t) {
-                    f(t)?;
+            self.source.try_for_some_item(|t| {
+                if p(S::ri2t(&t)) {
+                    f(S::i2t(t))?;
                 }
                 Ok(())
             })
         }
 
-        fn size_hint_triples(&self) -> (usize, Option<usize>) {
-            (0, self.source.size_hint_triples().1)
+        fn size_hint_items(&self) -> (usize, Option<usize>) {
+            (0, self.source.size_hint_items().1)
         }
     }
 }
@@ -94,7 +128,28 @@ mod test {
     use crate::triple::Triple;
 
     #[test]
-    fn ts_filter_to_triples() {
+    fn s_filter_items() {
+        let v = vec![
+            "foo",
+            "bar",
+            "baz",
+        ];
+        let mut w = vec![];
+        v.into_iter()
+            .into_source()
+            .filter_items(|t| t.starts_with("b"))
+            .for_each_item(|t| {
+                w.push(t);
+            })
+            .unwrap();
+        assert_eq!(
+            w,
+            vec![ "bar", "baz", ],
+        )
+    }
+
+    #[test]
+    fn ts_filter_triples() {
         let g = vec![
             [ez_term(":a"), ez_term(":b"), ez_term(":c")],
             [ez_term(":d"), ez_term(":e"), ez_term(":f")],
@@ -117,7 +172,7 @@ mod test {
     }
 
     #[test]
-    fn qs_filter_to_triples() {
+    fn qs_filter_triples() {
         let d = vec![
             ([ez_term(":a"), ez_term(":b"), ez_term(":c")], None),
             ([ez_term(":d"), ez_term(":e"), ez_term(":f")], None),
