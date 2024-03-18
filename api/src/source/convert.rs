@@ -24,6 +24,10 @@ impl<TS: TripleSource> QuadSource for ToQuads<TS> {
             f(quad)
         })
     }
+
+    fn size_hint_quads(&self) -> (usize, Option<usize>) {
+        self.0.size_hint_triples()
+    }
 }
 
 /// The result type of [`QuadSource::to_triples`].
@@ -43,6 +47,10 @@ impl<QS: QuadSource> Source for ToTriples<QS> {
             let triple = q.to_spog().0;
             f(triple)
         })
+    }
+
+    fn size_hint_items(&self) -> (usize, Option<usize>) {
+        self.0.size_hint_quads()
     }
 }
 
