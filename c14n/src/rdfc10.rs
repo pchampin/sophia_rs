@@ -88,7 +88,8 @@ pub fn normalize_with<H: HashFunction, D: SetDataset, W: io::Write>(
     Ok(())
 }
 
-/// Return a [`Dataset`] isomorphic to `d`, with canonical blank node labels.
+/// Return a [`Dataset`](sophia_api::dataset::Dataset) isomorphic to `d`,
+/// paired with a mapping from original blank node labels to canonical ones.
 ///
 /// This calls [`relabel_with`] with
 ///   - the [SHA-256](Sha256) hash function,
@@ -102,7 +103,8 @@ pub fn relabel<D: SetDataset>(d: &D) -> Result<(C14nQuads<D>, C14nIdMap), C14nEr
     relabel_with::<Sha256, D>(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
-/// Return a [`Dataset`] isomorphic to `d`, with canonical blank node labels.
+/// Return a [`Dataset`](sophia_api::dataset::Dataset) isomorphic to `d`,
+/// paired with a mapping from original blank node labels to canonical ones.
 ///
 /// This calls [`relabel_with`] with
 ///   - the [SHA-384](Sha384) hash function,
@@ -118,7 +120,8 @@ pub fn relabel_sha384<D: SetDataset>(
     relabel_with::<Sha384, D>(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
-/// Return a [`Dataset`] isomorphic to `d`, with canonical blank node labels.
+/// Return a [`Dataset`](sophia_api::dataset::Dataset) isomorphic to `d`,
+/// paired with a mapping from original blank node labels to canonical ones.
 ///
 /// The generic parameter `H` determines which [hash function](HashFunction)
 /// the algorithm should use internally
@@ -237,11 +240,11 @@ pub const DEFAULT_DEPTH_FACTOR: f32 = 1.0;
 /// The default value of `permutation_limit` in [`normalize`] and [`relabel`].
 pub const DEFAULT_PERMUTATION_LIMIT: usize = 6;
 
-/// An impl of [`Dataset`] that contains canonical labels for blank nodes,
-/// and guarantees that
+/// An impl of [`Dataset`](sophia_api::dataset::Dataset)
+/// that contains canonical labels for blank nodes.
 pub type C14nQuads<'a, D> = Vec<Spog<C14nTerm<DTerm<'a, D>>>>;
 
-/// A n identifier map as returned by [`relabel`] and [`relabel_with`]
+/// An identifier map as returned by [`relabel`] and [`relabel_with`]
 pub type C14nIdMap = BTreeMap<Rc<str>, BnodeId<Rc<str>>>;
 
 #[derive(Clone, Debug)]
