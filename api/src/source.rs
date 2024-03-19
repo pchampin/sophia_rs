@@ -197,8 +197,6 @@ pub trait Source {
     }
 }
 
-
-
 impl<'a, I, T, E> Source for I
 where
     I: Iterator<Item = Result<T, E>> + 'a,
@@ -242,8 +240,4 @@ pub trait IntoSource: Iterator + Sized {
     }
 }
 
-impl<I> IntoSource for I
-where
-    I: Iterator,
-{
-}
+impl<I> IntoSource for I where I: Iterator {}

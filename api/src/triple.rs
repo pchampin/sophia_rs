@@ -46,19 +46,28 @@ pub trait Triple {
     }
 
     /// Consume this triple, returning its subject.
-    fn to_s(self) -> Self::Term where Self: Sized {
+    fn to_s(self) -> Self::Term
+    where
+        Self: Sized,
+    {
         let [s, _, _] = self.to_spo();
         s
     }
 
     /// Consume this triple, returning its predicate.
-    fn to_p(self) -> Self::Term where Self: Sized {
+    fn to_p(self) -> Self::Term
+    where
+        Self: Sized,
+    {
         let [_, p, _] = self.to_spo();
         p
     }
 
     /// Consume this triple, returning its object.
-    fn to_o(self) -> Self::Term where Self: Sized {
+    fn to_o(self) -> Self::Term
+    where
+        Self: Sized,
+    {
         let [_, _, o] = self.to_spo();
         o
     }
@@ -66,7 +75,9 @@ pub trait Triple {
     /// Consume this triple, returning all its components.
     ///
     /// See also [`Triple::spo`].
-    fn to_spo(self) -> [Self::Term; 3] where Self: Sized ;
+    fn to_spo(self) -> [Self::Term; 3]
+    where
+        Self: Sized;
 
     /// Checks that the constituents terms of this triple match the respective matchers.
     fn matched_by<S, P, O>(&self, sm: S, pm: P, om: O) -> bool
@@ -106,14 +117,20 @@ pub trait Triple {
     /// ```
     ///
     /// See also [`Triple::into_quad_from`].
-    fn into_quad(self) -> Spog<Self::Term> where Self: Sized {
+    fn into_quad(self) -> Spog<Self::Term>
+    where
+        Self: Sized,
+    {
         (self.to_spo(), None)
     }
 
     /// Convert this triple to a [`Quad`](crate::quad::Quad) in the given named graph.
     ///
     /// See also [`Triple::into_quad`].
-    fn into_quad_from(self, graph_name: GraphName<Self::Term>) -> Spog<Self::Term> where Self: Sized {
+    fn into_quad_from(self, graph_name: GraphName<Self::Term>) -> Spog<Self::Term>
+    where
+        Self: Sized,
+    {
         (self.to_spo(), graph_name)
     }
 }

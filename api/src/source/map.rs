@@ -4,8 +4,8 @@ use std::collections::VecDeque;
 
 /// The result of [`Source::map_items`].
 pub struct MapSource<S, F> {
-    pub(in super) source: S,
-    pub(in super) map: F,
+    pub(super) source: S,
+    pub(super) map: F,
 }
 
 impl<S, F, T> Source for MapSource<S, F>

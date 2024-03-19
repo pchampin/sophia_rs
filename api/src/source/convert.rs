@@ -4,7 +4,7 @@
 use crate::quad::{Quad, Spog};
 use crate::triple::Triple;
 
-use super::{Source, QuadSource, TripleSource};
+use super::{QuadSource, Source, TripleSource};
 
 /// The result type of [`TripleSource::to_quads`].
 pub struct ToQuads<TS>(pub(super) TS);

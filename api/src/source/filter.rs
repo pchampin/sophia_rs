@@ -8,8 +8,8 @@ use super::*;
 
 /// The result type of [`Source::filter_items`].
 pub struct FilterSource<S, P> {
-    pub(in super) source: S,
-    pub(in super) predicate: P,
+    pub(super) source: S,
+    pub(super) predicate: P,
 }
 
 impl<S, P> Source for FilterSource<S, P>
@@ -109,11 +109,7 @@ mod test {
 
     #[test]
     fn s_filter_items() {
-        let v = vec![
-            "foo",
-            "bar",
-            "baz",
-        ];
+        let v = vec!["foo", "bar", "baz"];
         let mut w = vec![];
         v.into_iter()
             .into_source()
@@ -122,10 +118,7 @@ mod test {
                 w.push(t);
             })
             .unwrap();
-        assert_eq!(
-            w,
-            vec![ "bar", "baz", ],
-        )
+        assert_eq!(w, vec!["bar", "baz",],)
     }
 
     #[test]

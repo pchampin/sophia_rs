@@ -37,7 +37,7 @@ pub trait TripleSource: Source + IsTripleSource {
     {
         self.try_for_each_item(|i| f(Self::i2t(i)))
     }
-    
+
     /// Call f for some triple(s) (possibly zero) from this source, if any.
     ///
     /// Return false if there are no more triples in this source.
@@ -61,10 +61,13 @@ pub trait TripleSource: Source + IsTripleSource {
     {
         self.for_each_item(|i| f(Self::i2t(i)))
     }
-    
+
     /// Returns a source which uses `predicate` to determine if an triple should be yielded.
     #[inline]
-    fn filter_triples<'f, F>(self, mut predicate: F) -> filter::FilterTripleSource<Self, impl FnMut(&Self::Item<'_>) -> bool + 'f>
+    fn filter_triples<'f, F>(
+        self,
+        mut predicate: F,
+    ) -> filter::FilterTripleSource<Self, impl FnMut(&Self::Item<'_>) -> bool + 'f>
     where
         Self: Sized,
         F: FnMut(&TSTriple<Self>) -> bool + 'f,
@@ -76,7 +79,10 @@ pub trait TripleSource: Source + IsTripleSource {
     ///
     /// See also [`TripleSource::filter_triples`] and [`TripleSource::map_triples`].
     #[inline]
-    fn filter_map_triples<'f, F, T>(self, mut filter_map: F) -> filter_map::FilterMapSource<Self, impl FnMut(Self::Item<'_>) -> Option<T> + 'f>
+    fn filter_map_triples<'f, F, T>(
+        self,
+        mut filter_map: F,
+    ) -> filter_map::FilterMapSource<Self, impl FnMut(Self::Item<'_>) -> Option<T> + 'f>
     where
         Self: Sized,
         F: FnMut(TSTriple<Self>) -> Option<T> + 'f,
@@ -99,7 +105,10 @@ pub trait TripleSource: Source + IsTripleSource {
     /// whenever `map` returns something satisfying the `'static` lifetime,
     /// things should work as expected.
     #[inline]
-    fn map_triples<'m, F, T>(self, mut map: F) -> map::MapSource<Self, impl FnMut(Self::Item<'_>) -> T + 'm>
+    fn map_triples<'m, F, T>(
+        self,
+        mut map: F,
+    ) -> map::MapSource<Self, impl FnMut(Self::Item<'_>) -> T + 'm>
     where
         Self: Sized,
         F: FnMut(TSTriple<Self>) -> T + 'm,
@@ -149,9 +158,7 @@ pub trait TripleSource: Source + IsTripleSource {
 }
 
 /// Ensures that TripleSource acts as an type alias for any Source satisfying the conditions.
-impl<T> TripleSource for T where
-    T: Source + IsTripleSource,
-{}
+impl<T> TripleSource for T where T: Source + IsTripleSource {}
 
 /// Type alias to denote the type of triples yielded by a [`TripleSource`].
 ///
@@ -173,7 +180,7 @@ mod sealed {
     impl<TS> IsTripleSource for TS
     where
         TS: Source,
-        for <'x> TS::Item<'x>: Triple,
+        for<'x> TS::Item<'x>: Triple,
     {
         type Triple<'x> = Self::Item<'x>;
 

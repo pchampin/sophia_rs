@@ -21,7 +21,7 @@ pub trait QuadSource: Source + IsQuadSource {
     fn try_for_some_quad<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
     where
         E: Error,
-        F: FnMut(Self::Quad<'_>) -> Result<(), E>
+        F: FnMut(Self::Quad<'_>) -> Result<(), E>,
     {
         self.try_for_some_item(|i| f(Self::i2q(i)))
     }
@@ -64,7 +64,10 @@ pub trait QuadSource: Source + IsQuadSource {
 
     /// Returns a source which uses `predicate` to determine if an quad should be yielded.
     #[inline]
-    fn filter_quads<'f, F>(self, mut predicate: F) -> filter::FilterQuadSource<Self, impl FnMut(&Self::Item<'_>) -> bool + 'f>
+    fn filter_quads<'f, F>(
+        self,
+        mut predicate: F,
+    ) -> filter::FilterQuadSource<Self, impl FnMut(&Self::Item<'_>) -> bool + 'f>
     where
         Self: Sized,
         F: FnMut(&QSQuad<Self>) -> bool + 'f,
@@ -76,7 +79,10 @@ pub trait QuadSource: Source + IsQuadSource {
     ///
     /// See also [`QuadSource::filter_quads`] and [`QuadSource::map_quads`].
     #[inline]
-    fn filter_map_quads<'f, F, T>(self, mut filter_map: F) -> filter_map::FilterMapSource<Self, impl FnMut(Self::Item<'_>) -> Option<T> + 'f>
+    fn filter_map_quads<'f, F, T>(
+        self,
+        mut filter_map: F,
+    ) -> filter_map::FilterMapSource<Self, impl FnMut(Self::Item<'_>) -> Option<T> + 'f>
     where
         Self: Sized,
         F: FnMut(Self::Quad<'_>) -> Option<T> + 'f,
@@ -99,7 +105,10 @@ pub trait QuadSource: Source + IsQuadSource {
     /// whenever `map` returns something satisfying the `'static` lifetime,
     /// things should work as expected.
     #[inline]
-    fn map_quads<'f, F, T>(self, mut map: F) -> map::MapSource<Self, impl FnMut(Self::Item<'_>) -> T + 'f>
+    fn map_quads<'f, F, T>(
+        self,
+        mut map: F,
+    ) -> map::MapSource<Self, impl FnMut(Self::Item<'_>) -> T + 'f>
     where
         Self: Sized,
         F: FnMut(Self::Quad<'_>) -> T + 'f,
@@ -150,9 +159,7 @@ pub trait QuadSource: Source + IsQuadSource {
 }
 
 /// Ensures that QuadSource acts as an type alias for any Source satisfying the conditions.
-impl<T> QuadSource for T where
-    T: Source + IsQuadSource,
-{}
+impl<T> QuadSource for T where T: Source + IsQuadSource {}
 
 /// Type alias to denote the type of quads yielded by a [`QuadSource`].
 ///
@@ -174,7 +181,7 @@ mod sealed {
     impl<TS> IsQuadSource for TS
     where
         TS: Source,
-        for <'x> TS::Item<'x>: Quad,
+        for<'x> TS::Item<'x>: Quad,
     {
         type Quad<'x> = Self::Item<'x>;
 
@@ -188,7 +195,6 @@ mod sealed {
     }
 }
 use sealed::IsQuadSource;
-
 
 #[cfg(test)]
 mod check_quad_source {
