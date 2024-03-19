@@ -1,7 +1,7 @@
 use sophia_api::{
     quad::Spog,
     source::{
-        QuadSource,
+        Source,
         StreamError::{SinkError, SourceError},
         StreamResult,
     },
@@ -25,15 +25,15 @@ impl JsonLdQuadSource {
     }
 }
 
-impl QuadSource for JsonLdQuadSource {
-    type Quad<'x> = Spog<RdfTerm>;
+impl Source for JsonLdQuadSource {
+    type Item<'x> = Spog<RdfTerm>;
 
     type Error = JsonLdError;
 
-    fn try_for_some_quad<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
+    fn try_for_some_item<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
     where
         E: std::error::Error,
-        F: FnMut(Self::Quad<'_>) -> Result<(), E>,
+        F: FnMut(Self::Item<'_>) -> Result<(), E>,
     {
         match self {
             JsonLdQuadSource::Quads(quads) => {

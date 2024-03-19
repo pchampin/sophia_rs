@@ -23,7 +23,7 @@ pub trait TripleSource: Source + IsTripleSource {
         E: Error,
         F: FnMut(TSTriple<Self>) -> Result<(), E>,
     {
-        self.try_for_some_item(|i| f(Self::i2t(i.into())))
+        self.try_for_some_item(|i| f(Self::i2t(i)))
     }
 
     /// Call f for all triples from this source.
@@ -35,7 +35,7 @@ pub trait TripleSource: Source + IsTripleSource {
         F: FnMut(TSTriple<Self>) -> Result<(), E>,
         E: Error,
     {
-        self.try_for_each_item(|i| f(Self::i2t(i.into())))
+        self.try_for_each_item(|i| f(Self::i2t(i)))
     }
     
     /// Call f for some triple(s) (possibly zero) from this source, if any.
@@ -48,7 +48,7 @@ pub trait TripleSource: Source + IsTripleSource {
     where
         F: FnMut(TSTriple<Self>),
     {
-        self.for_some_item(&mut |i| f(Self::i2t(i.into())))
+        self.for_some_item(&mut |i| f(Self::i2t(i)))
     }
 
     /// Call f for all triples from this source.
@@ -59,7 +59,7 @@ pub trait TripleSource: Source + IsTripleSource {
     where
         F: FnMut(TSTriple<Self>),
     {
-        self.for_each_item(|i| f(Self::i2t(i.into())))
+        self.for_each_item(|i| f(Self::i2t(i)))
     }
     
     /// Returns a source which uses `predicate` to determine if an triple should be yielded.
@@ -187,7 +187,6 @@ mod sealed {
         }
     }
 }
-
 use sealed::IsTripleSource;
 
 #[cfg(test)]

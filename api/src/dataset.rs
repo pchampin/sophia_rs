@@ -9,7 +9,7 @@
 
 use crate::graph::adapter::{DatasetGraph, PartialUnionGraph, UnionGraph};
 use crate::quad::{iter_spog, Quad};
-use crate::source::{IntoQuadSource, QuadSource, StreamResult};
+use crate::source::{IntoSource, QuadSource, StreamResult};
 use crate::term::matcher::{GraphNameMatcher, TermMatcher};
 use crate::term::{GraphName, SimpleTerm, Term};
 use resiter::{filter::*, filter_map::*, flat_map::*, map::*};
@@ -542,7 +542,7 @@ pub trait MutableDataset: Dataset {
                 (spo.map(Term::into_term), g.map(Term::into_term))
             })
             .collect();
-        self.remove_all(to_remove?.into_iter().into_quad_source())
+        self.remove_all(to_remove?.into_iter().into_source())
             .map_err(|err| err.unwrap_sink_error())
     }
 
@@ -580,7 +580,7 @@ pub trait MutableDataset: Dataset {
                 (spo.map(Term::into_term), g.map(Term::into_term))
             })
             .collect();
-        self.remove_all(to_remove?.into_iter().into_quad_source())
+        self.remove_all(to_remove?.into_iter().into_source())
             .map_err(|err| err.unwrap_sink_error())?;
         Ok(())
     }

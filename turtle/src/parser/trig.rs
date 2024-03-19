@@ -14,7 +14,7 @@ pub struct TriGParser {
 }
 
 impl<B: BufRead> QuadParser<B> for TriGParser {
-    type Source = StrictRioSource<RioTriGParser<B>>;
+    type Source = StrictRioQuadSource<RioTriGParser<B>>;
     fn parse(&self, data: B) -> Self::Source {
         let base = self
             .base
@@ -22,7 +22,7 @@ impl<B: BufRead> QuadParser<B> for TriGParser {
             .map(Iri::unwrap)
             .map(oxiri::Iri::parse)
             .map(Result::unwrap);
-        StrictRioSource(RioTriGParser::new(data, base))
+        StrictRioQuadSource(RioTriGParser::new(data, base))
     }
 }
 

@@ -9,15 +9,15 @@ use super::{Source, QuadSource, TripleSource};
 /// The result type of [`Source::to_quads`].
 pub struct ToQuads<TS>(pub(super) TS);
 
-impl<TS: TripleSource> QuadSource for ToQuads<TS> {
-    type Quad<'x> = Spog<<TS::Triple<'x> as Triple>::Term>;
+impl<TS: TripleSource> Source for ToQuads<TS> {
+    type Item<'x> = Spog<<TS::Triple<'x> as Triple>::Term>;
 
     type Error = TS::Error;
 
-    fn try_for_some_quad<E, F>(&mut self, mut f: F) -> super::StreamResult<bool, Self::Error, E>
+    fn try_for_some_item<E, F>(&mut self, mut f: F) -> super::StreamResult<bool, Self::Error, E>
     where
         E: std::error::Error,
-        F: FnMut(Self::Quad<'_>) -> Result<(), E>,
+        F: FnMut(Self::Item<'_>) -> Result<(), E>,
     {
         self.0.try_for_some_triple(|t| {
             let quad = (t.to_spo(), None);
@@ -25,7 +25,7 @@ impl<TS: TripleSource> QuadSource for ToQuads<TS> {
         })
     }
 
-    fn size_hint_quads(&self) -> (usize, Option<usize>) {
+    fn size_hint_items(&self) -> (usize, Option<usize>) {
         self.0.size_hint_triples()
     }
 }

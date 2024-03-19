@@ -11,13 +11,10 @@ use sophia_api::source::{StreamError, StreamError::*, StreamResult};
 use std::error::Error;
 
 /// Wrap a Rio [`TriplesParser`](rio_api::parser::TriplesParser)
-/// or [`QuadsParser`](rio_api::parser::QuadsParser)
-/// into a Sophia [`TripleSource`](sophia_api::source::TripleSource)
-/// or [`QuadSource`](sophia_api::source::QuadSource)
-/// respectivelly.
-pub struct StrictRioSource<T>(pub T);
+/// into a Sophia [`TripleSource`](sophia_api::source::TripleSource).
+pub struct StrictRioTripleSource<T>(pub T);
 
-impl<T> sophia_api::source::Source for StrictRioSource<T>
+impl<T> sophia_api::source::Source for StrictRioTripleSource<T>
 where
     T: rio_api::parser::TriplesParser,
     T::Error: Error + 'static,
@@ -46,19 +43,23 @@ where
     }
 }
 
-impl<T> sophia_api::source::QuadSource for StrictRioSource<T>
+/// Wrap a Rio [`QuadsParser`](rio_api::parser::QuadsParser)
+/// into a Sophia [`QuadSource`](sophia_api::source::QuadSource).
+pub struct StrictRioQuadSource<T>(pub T);
+
+impl<T> sophia_api::source::Source for StrictRioQuadSource<T>
 where
     T: rio_api::parser::QuadsParser,
     T::Error: Error + 'static,
 {
-    type Quad<'x> = Trusted<rio_api::model::Quad<'x>>;
+    type Item<'x> = Trusted<rio_api::model::Quad<'x>>;
 
     type Error = T::Error;
 
-    fn try_for_some_quad<EF, F>(&mut self, mut f: F) -> StreamResult<bool, T::Error, EF>
+    fn try_for_some_item<EF, F>(&mut self, mut f: F) -> StreamResult<bool, T::Error, EF>
     where
         EF: Error,
-        F: FnMut(Self::Quad<'_>) -> Result<(), EF>,
+        F: FnMut(Self::Item<'_>) -> Result<(), EF>,
     {
         let parser = &mut self.0;
         if parser.is_end() {
@@ -79,19 +80,19 @@ where
 /// into a Sophia [`QuadSource`](sophia_api::source::QuadSource).
 pub struct GeneralizedRioSource<T>(pub T);
 
-impl<T> sophia_api::source::QuadSource for GeneralizedRioSource<T>
+impl<T> sophia_api::source::Source for GeneralizedRioSource<T>
 where
     T: rio_api::parser::GeneralizedQuadsParser,
     T::Error: Error + 'static,
 {
-    type Quad<'x> = Trusted<rio_api::model::GeneralizedQuad<'x>>;
+    type Item<'x> = Trusted<rio_api::model::GeneralizedQuad<'x>>;
 
     type Error = T::Error;
 
-    fn try_for_some_quad<EF, F>(&mut self, mut f: F) -> StreamResult<bool, T::Error, EF>
+    fn try_for_some_item<EF, F>(&mut self, mut f: F) -> StreamResult<bool, T::Error, EF>
     where
         EF: Error,
-        F: FnMut(Self::Quad<'_>) -> Result<(), EF>,
+        F: FnMut(Self::Item<'_>) -> Result<(), EF>,
     {
         let parser = &mut self.0;
         if parser.is_end() {

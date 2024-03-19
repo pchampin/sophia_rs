@@ -58,7 +58,6 @@ pub use _stream_error::*;
 mod _triple;
 pub use _triple::*;
 
-use super::*;
 use std::convert::Infallible;
 
 /// A source produces [items](Source::Item), and may also fail in the process.

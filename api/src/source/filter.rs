@@ -1,5 +1,8 @@
-//! I define [`FilterTripleSource`] and [`FilterQuadSource`],
-//! the result type of [`TripleSource::filter_triples`] and [`QuadSource::filter_quads`] respectively.
+//! I define [`FilterSource`], the result type of [`Source::filter_items`].
+//! I also define [`FilterTripleSource`] and [`FilterQuadSource`],
+//! which are required to ensure that the output of
+//! [`TripleSource::filter_triples`] and [`QuadSource::filter_quads`]
+//! are recognied as a [`TripleSource`] and a [`QuadSource`], respectively.
 
 use super::*;
 
@@ -74,12 +77,6 @@ mod _triple {
 }
 pub use _triple::*;
 
-/// Maintenance: any change in the _triple module above
-/// should be reflected in the _quad module below.
-///
-/// An easy way to do this is to replace _quad with the code of _triple,
-/// replacing all occurrences of `Triple` with `Quad`,
-/// and all occurrences of `triple` with `quad`.
 mod _quad {
     use super::*;
     /// The result type of [`QuadSource::filter_quads`].
@@ -88,30 +85,30 @@ mod _quad {
         pub(in super::super) predicate: P,
     }
 
-    impl<S, P> QuadSource for FilterQuadSource<S, P>
+    impl<S, P> Source for FilterQuadSource<S, P>
     where
         S: QuadSource,
         P: FnMut(&S::Quad<'_>) -> bool,
     {
-        type Quad<'x> = S::Quad<'x>;
+        type Item<'x> = S::Quad<'x>;
         type Error = S::Error;
 
-        fn try_for_some_quad<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
+        fn try_for_some_item<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
         where
             E: Error,
-            F: FnMut(Self::Quad<'_>) -> Result<(), E>,
+            F: FnMut(Self::Item<'_>) -> Result<(), E>,
         {
             let p = &mut self.predicate;
-            self.source.try_for_some_quad(|t| {
-                if p(&t) {
-                    f(t)?;
+            self.source.try_for_some_item(|i| {
+                if p(S::ri2q(&i)) {
+                    f(S::i2q(i))?;
                 }
                 Ok(())
             })
         }
 
-        fn size_hint_quads(&self) -> (usize, Option<usize>) {
-            (0, self.source.size_hint_quads().1)
+        fn size_hint_items(&self) -> (usize, Option<usize>) {
+            (0, self.source.size_hint_items().1)
         }
     }
 }

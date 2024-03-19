@@ -17,7 +17,7 @@ pub struct RdfXmlParser {
 }
 
 impl<B: BufRead> TripleParser<B> for RdfXmlParser {
-    type Source = StrictRioSource<RioRdfXmlParser<B>>;
+    type Source = StrictRioTripleSource<RioRdfXmlParser<B>>;
     fn parse(&self, data: B) -> Self::Source {
         let base = self
             .base
@@ -25,7 +25,7 @@ impl<B: BufRead> TripleParser<B> for RdfXmlParser {
             .map(Iri::unwrap)
             .map(oxiri::Iri::parse)
             .map(Result::unwrap);
-        StrictRioSource(RioRdfXmlParser::new(data, base))
+        StrictRioTripleSource(RioRdfXmlParser::new(data, base))
     }
 }
 

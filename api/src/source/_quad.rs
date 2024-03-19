@@ -13,21 +13,20 @@ use crate::quad::Quad;
 ///
 /// Any iterator of [`Quad`] can also be converted to an [`Infallible`] [`QuadSource`]
 /// thanks to the [`IntoQuadSource`] extension trait.
-pub trait QuadSource {
-    /// The type of quads this source yields.
-    type Quad<'x>: Quad;
-    /// The type of errors produced by this source.
-    type Error: Error + 'static;
-
+pub trait QuadSource: Source + IsQuadSource {
     /// Call f for some quad(s) (possibly zero) from this source, if any.
     ///
     /// Return `Ok(false)` if there are no more quads in this source.
     ///
     /// Return an error if either the source or `f` errs.
-    fn try_for_some_quad<E, F>(&mut self, f: F) -> StreamResult<bool, Self::Error, E>
+    #[inline]
+    fn try_for_some_quad<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
     where
         E: Error,
-        F: FnMut(Self::Quad<'_>) -> Result<(), E>;
+        F: FnMut(Self::Quad<'_>) -> Result<(), E>
+    {
+        self.try_for_some_item(|i| f(Self::i2q(i)))
+    }
 
     /// Call f for all quads from this source.
     ///
@@ -38,8 +37,7 @@ pub trait QuadSource {
         F: FnMut(Self::Quad<'_>) -> Result<(), E>,
         E: Error,
     {
-        while self.try_for_some_quad(&mut f)? {}
-        Ok(())
+        self.try_for_each_item(|i| f(Self::i2q(i)))
     }
 
     /// Call f for some quad(s) (possibly zero) from this source, if any.
@@ -48,28 +46,22 @@ pub trait QuadSource {
     ///
     /// Return an error if either the source errs.
     #[inline]
-    fn for_some_quad<F>(&mut self, f: &mut F) -> Result<bool, Self::Error>
+    fn for_some_quad<F>(&mut self, mut f: F) -> Result<bool, Self::Error>
     where
         F: FnMut(Self::Quad<'_>),
     {
-        self.try_for_some_quad(|t| -> Result<(), Self::Error> {
-            f(t);
-            Ok(())
-        })
-        .map_err(StreamError::inner_into)
+        self.for_some_item(&mut |i| f(Self::i2q(i)))
     }
 
     /// Call f for all quads from this source.
     ///
     /// Return an error if either the source errs.
     #[inline]
-    fn for_each_quad<F>(&mut self, f: F) -> Result<(), Self::Error>
+    fn for_each_quad<F>(&mut self, mut f: F) -> Result<(), Self::Error>
     where
         F: FnMut(Self::Quad<'_>),
     {
-        let mut f = f;
-        while self.for_some_quad(&mut f)? {}
-        Ok(())
+        self.for_each_item(|i| f(Self::i2q(i)))
     }
 
     /// Returns a source which uses `predicate` to determine if an quad should be yielded.
@@ -89,15 +81,12 @@ pub trait QuadSource {
     ///
     /// See also [`QuadSource::filter_quads`] and [`QuadSource::map_quads`].
     #[inline]
-    fn filter_map_quads<F, T>(self, filter_map: F) -> filter_map::FilterMapQuadSource<Self, F>
+    fn filter_map_quads<'f, F, T>(self, mut filter_map: F) -> filter_map::FilterMapSource<Self, impl FnMut(Self::Item<'_>) -> Option<T> + 'f>
     where
         Self: Sized,
-        F: FnMut(Self::Quad<'_>) -> Option<T>,
+        F: FnMut(Self::Quad<'_>) -> Option<T> + 'f,
     {
-        filter_map::FilterMapQuadSource {
-            source: self,
-            filter_map,
-        }
+        self.filter_map_items(move |i| filter_map(Self::i2q(i)))
     }
 
     /// Returns a source which yield the result of `map` for each quad.
@@ -115,12 +104,12 @@ pub trait QuadSource {
     /// whenever `map` returns something satisfying the `'static` lifetime,
     /// things should work as expected.
     #[inline]
-    fn map_quads<F, T>(self, map: F) -> map::MapQuadSource<Self, F>
+    fn map_quads<'f, F, T>(self, mut map: F) -> map::MapSource<Self, impl FnMut(Self::Item<'_>) -> T + 'f>
     where
         Self: Sized,
-        F: FnMut(Self::Quad<'_>) -> T,
+        F: FnMut(Self::Quad<'_>) -> T + 'f,
     {
-        map::MapQuadSource { source: self, map }
+        self.map_items(move |i| map(Self::i2q(i)))
     }
 
     /// Convert of quads in this source to triples (stripping the graph name).
@@ -165,56 +154,46 @@ pub trait QuadSource {
     }
 }
 
-impl<'a, I, T, E> QuadSource for I
-where
-    I: Iterator<Item = Result<T, E>> + 'a,
-    T: Quad,
-    E: Error + 'static,
-{
-    type Quad<'x> = T;
-    type Error = E;
+/// Ensures that QuadSource acts as an type alias for any Source satisfying the conditions.
+impl<T> QuadSource for T where
+    T: Source + IsQuadSource,
+{}
 
-    fn try_for_some_quad<E2, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E2>
+/// Type alias to denote the type of quads yielded by a [`QuadSource`].
+///
+/// **Why not using `TS::Item<'a>` instead?**
+/// [`QuadSource::Item`] being a generic associated type (GAT),
+/// the compiler will not always "know" that `TS::Item<'a>` implements the [`Quad`] trait.
+/// This type alias, on the other hand, will always be recognized as a [`Quad`] implementation.
+pub type QSQuad<'a, TS> = <TS as IsQuadSource>::Quad<'a>;
+
+mod sealed {
+    use super::*;
+
+    pub trait IsQuadSource: Source {
+        type Quad<'x>: Quad;
+        fn i2q(i: Self::Item<'_>) -> Self::Quad<'_>;
+        fn ri2q<'a, 'b>(i: &'a Self::Item<'b>) -> &'a Self::Quad<'b>;
+    }
+
+    impl<TS> IsQuadSource for TS
     where
-        E2: Error,
-        F: FnMut(Self::Quad<'_>) -> Result<(), E2>,
+        TS: Source,
+        for <'x> TS::Item<'x>: Quad,
     {
-        match self.next() {
-            Some(Err(e)) => Err(SourceError(e)),
-            Some(Ok(t)) => {
-                f(t).map_err(SinkError)?;
-                Ok(true)
-            }
-            None => Ok(false),
+        type Quad<'x> = Self::Item<'x>;
+
+        fn i2q(i: Self::Item<'_>) -> Self::Quad<'_> {
+            i
+        }
+
+        fn ri2q<'a, 'b>(i: &'a Self::Item<'b>) -> &'a Self::Quad<'b> {
+            i
         }
     }
-
-    fn size_hint_quads(&self) -> (usize, Option<usize>) {
-        self.size_hint()
-    }
 }
+use sealed::IsQuadSource;
 
-/// An extension trait for iterators,
-/// converting them to an [`Infallible`] [`QuadSource`].
-pub trait IntoQuadSource: Iterator + Sized {
-    /// Convert this iterator into an [`Infallible`] [`QuadSource`].
-    #[allow(clippy::type_complexity)]
-    fn into_quad_source(
-        self,
-    ) -> std::iter::Map<
-        Self,
-        fn(<Self as Iterator>::Item) -> Result<<Self as Iterator>::Item, Infallible>,
-    > {
-        self.map(Ok::<_, Infallible>)
-    }
-}
-
-impl<I> IntoQuadSource for I
-where
-    I: Iterator,
-    I::Item: Quad,
-{
-}
 
 #[cfg(test)]
 mod check_quad_source {
@@ -258,14 +237,14 @@ mod check_quad_source {
         buffers: [String; 3],
     }
 
-    impl<'a> QuadSource for DummyParser<'a> {
-        type Quad<'x> = Spog<SimpleTerm<'x>>;
+    impl<'a> Source for DummyParser<'a> {
+        type Item<'x> = Spog<SimpleTerm<'x>>;
         type Error = Infallible;
 
-        fn try_for_some_quad<E2, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E2>
+        fn try_for_some_item<E2, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E2>
         where
             E2: Error,
-            F: FnMut(Self::Quad<'_>) -> Result<(), E2>,
+            F: FnMut(Self::Item<'_>) -> Result<(), E2>,
         {
             if self.tokens.len() - self.pos < 3 {
                 Ok(false)
