@@ -1,244 +1,90 @@
-//! I define [`MapTripleSource`] and [`MapQuadSource`],
-//! the result type of [`TripleSource::map_triples`] and [`QuadSource::map_quads`] respectively.
+//! I define [`MapSource`], the result type of [`Source::map_items`].
 use super::*;
 use std::collections::VecDeque;
 
-mod _triple {
-    use super::*;
-    use crate::triple::Triple;
+/// The result of [`Source::map_items`].
+pub struct MapSource<S, F> {
+    pub(super) source: S,
+    pub(super) map: F,
+}
 
-    /// The result of [`TripleSource::map_triples`].
-    pub struct MapTripleSource<S, F> {
-        pub(in super::super) source: S,
-        pub(in super::super) map: F,
-    }
+impl<S, F, T> Source for MapSource<S, F>
+where
+    S: Source,
+    F: FnMut(S::Item<'_>) -> T,
+{
+    type Item<'x> = T;
+    type Error = S::Error;
 
-    impl<S, F, T> TripleSource for MapTripleSource<S, F>
+    fn try_for_some_item<E, F2>(&mut self, mut f: F2) -> StreamResult<bool, Self::Error, E>
     where
-        S: TripleSource,
-        F: FnMut(S::Triple<'_>) -> T,
-        T: Triple,
+        E: Error,
+        F2: FnMut(Self::Item<'_>) -> Result<(), E>,
     {
-        type Triple<'x> = T;
-        type Error = S::Error;
-
-        fn try_for_some_triple<E, F2>(&mut self, mut f: F2) -> StreamResult<bool, Self::Error, E>
-        where
-            E: Error,
-            F2: FnMut(Self::Triple<'_>) -> Result<(), E>,
-        {
-            let map = &mut self.map;
-            self.source.try_for_some_triple(|t| f((map)(t)))
-        }
-
-        fn size_hint_triples(&self) -> (usize, Option<usize>) {
-            self.source.size_hint_triples()
-        }
+        let map = &mut self.map;
+        self.source.try_for_some_item(|t| f((map)(t)))
     }
 
-    impl<S, F, T> QuadSource for MapTripleSource<S, F>
-    where
-        S: TripleSource,
-        F: FnMut(S::Triple<'_>) -> T,
-        T: crate::quad::Quad,
-    {
-        type Quad<'x> = T;
-        type Error = S::Error;
-
-        fn try_for_some_quad<E, F2>(&mut self, mut f: F2) -> StreamResult<bool, Self::Error, E>
-        where
-            E: Error,
-            F2: FnMut(Self::Quad<'_>) -> Result<(), E>,
-        {
-            let map = &mut self.map;
-            self.source.try_for_some_triple(|t| f((map)(t)))
-        }
-
-        fn size_hint_quads(&self) -> (usize, Option<usize>) {
-            self.source.size_hint_triples()
-        }
+    fn size_hint_items(&self) -> (usize, Option<usize>) {
+        self.source.size_hint_items()
     }
+}
 
-    impl<S, F, T> IntoIterator for MapTripleSource<S, F>
-    where
-        S: TripleSource,
-        F: FnMut(S::Triple<'_>) -> T,
-    {
-        type Item = Result<T, S::Error>;
-        type IntoIter = MapTripleSourceIterator<S, F, T, S::Error>;
+impl<S, F, T> IntoIterator for MapSource<S, F>
+where
+    S: Source,
+    F: FnMut(S::Item<'_>) -> T,
+{
+    type Item = Result<T, S::Error>;
+    type IntoIter = MapSourceIterator<S, F, T, S::Error>;
 
-        fn into_iter(self) -> Self::IntoIter {
-            MapTripleSourceIterator {
-                source: self.source,
-                map: self.map,
-                buffer: VecDeque::new(),
-            }
-        }
-    }
-
-    /// [`Iterator`] implementation for the returned value of [`TripleSource::map_triples`]
-    /// or [`QuadSource::map_quads`].
-    pub struct MapTripleSourceIterator<S, F, T, E> {
-        source: S,
-        map: F,
-        buffer: VecDeque<Result<T, E>>,
-    }
-
-    impl<S, F, T> Iterator for MapTripleSourceIterator<S, F, T, S::Error>
-    where
-        S: TripleSource,
-        F: FnMut(S::Triple<'_>) -> T,
-    {
-        type Item = Result<T, S::Error>;
-        fn next(&mut self) -> Option<Result<T, S::Error>> {
-            let mut remaining = true;
-            let mut buffer = VecDeque::new();
-            std::mem::swap(&mut self.buffer, &mut buffer);
-            while buffer.is_empty() && remaining {
-                match self.source.for_some_triple(&mut |i| {
-                    buffer.push_back(Ok((self.map)(i)));
-                }) {
-                    Ok(b) => {
-                        remaining = b;
-                    }
-                    Err(err) => {
-                        buffer.push_back(Err(err));
-                        remaining = false;
-                    }
-                }
-            }
-            std::mem::swap(&mut self.buffer, &mut buffer);
-            self.buffer.pop_front()
-        }
-
-        fn size_hint(&self) -> (usize, Option<usize>) {
-            self.source.size_hint_triples()
+    fn into_iter(self) -> Self::IntoIter {
+        MapSourceIterator {
+            source: self.source,
+            map: self.map,
+            buffer: VecDeque::new(),
         }
     }
 }
-pub use _triple::*;
 
-/// Maintenance: any change in the _triple module above
-/// should be reflected in the _quad module below.
-///
-/// An easy way to do this is to replace _quad with the code of _triple,
-/// replacing all occurrences of `Triple` with `Quad`,
-/// and all occurrences of `triple` with `quad`
-/// (modulo some adjustments)
-mod _quad {
-    use super::*;
-    use crate::quad::Quad;
+/// [`Iterator`] implementation for the returned value of [`Source::map_items`].
+pub struct MapSourceIterator<S, F, T, E> {
+    source: S,
+    map: F,
+    buffer: VecDeque<Result<T, E>>,
+}
 
-    /// The result of [`QuadSource::map_quads`].
-    pub struct MapQuadSource<S, F> {
-        pub(in super::super) source: S,
-        pub(in super::super) map: F,
-    }
-
-    impl<S, F, T> TripleSource for MapQuadSource<S, F>
-    where
-        S: QuadSource,
-        F: FnMut(S::Quad<'_>) -> T,
-        T: crate::triple::Triple,
-    {
-        type Triple<'x> = T;
-        type Error = S::Error;
-
-        fn try_for_some_triple<E, F2>(&mut self, mut f: F2) -> StreamResult<bool, Self::Error, E>
-        where
-            E: Error,
-            F2: FnMut(Self::Triple<'_>) -> Result<(), E>,
-        {
-            let map = &mut self.map;
-            self.source.try_for_some_quad(|t| f((map)(t)))
-        }
-
-        fn size_hint_triples(&self) -> (usize, Option<usize>) {
-            self.source.size_hint_quads()
-        }
-    }
-
-    impl<S, F, T> QuadSource for MapQuadSource<S, F>
-    where
-        S: QuadSource,
-        F: FnMut(S::Quad<'_>) -> T,
-        T: Quad,
-    {
-        type Quad<'x> = T;
-        type Error = S::Error;
-
-        fn try_for_some_quad<E, F2>(&mut self, mut f: F2) -> StreamResult<bool, Self::Error, E>
-        where
-            E: Error,
-            F2: FnMut(Self::Quad<'_>) -> Result<(), E>,
-        {
-            let map = &mut self.map;
-            self.source.try_for_some_quad(|t| f((map)(t)))
-        }
-
-        fn size_hint_quads(&self) -> (usize, Option<usize>) {
-            self.source.size_hint_quads()
-        }
-    }
-
-    impl<S, F, T> IntoIterator for MapQuadSource<S, F>
-    where
-        S: QuadSource,
-        F: FnMut(S::Quad<'_>) -> T,
-    {
-        type Item = Result<T, S::Error>;
-        type IntoIter = MapQuadSourceIterator<S, F, T, S::Error>;
-
-        fn into_iter(self) -> Self::IntoIter {
-            MapQuadSourceIterator {
-                source: self.source,
-                map: self.map,
-                buffer: VecDeque::new(),
-            }
-        }
-    }
-
-    /// [`Iterator`] implementation for the returned value of [`QuadSource::map_quads`]
-    /// or [`QuadSource::map_quads`].
-    pub struct MapQuadSourceIterator<S, F, T, E> {
-        source: S,
-        map: F,
-        buffer: VecDeque<Result<T, E>>,
-    }
-
-    impl<S, F, T> Iterator for MapQuadSourceIterator<S, F, T, S::Error>
-    where
-        S: QuadSource,
-        F: FnMut(S::Quad<'_>) -> T,
-    {
-        type Item = Result<T, S::Error>;
-        fn next(&mut self) -> Option<Result<T, S::Error>> {
-            let mut remaining = true;
-            let mut buffer = VecDeque::new();
-            std::mem::swap(&mut self.buffer, &mut buffer);
-            while buffer.is_empty() && remaining {
-                match self.source.for_some_quad(&mut |i| {
-                    buffer.push_back(Ok((self.map)(i)));
-                }) {
-                    Ok(b) => {
-                        remaining = b;
-                    }
-                    Err(err) => {
-                        buffer.push_back(Err(err));
-                        remaining = false;
-                    }
+impl<S, F, T> Iterator for MapSourceIterator<S, F, T, S::Error>
+where
+    S: Source,
+    F: FnMut(S::Item<'_>) -> T,
+{
+    type Item = Result<T, S::Error>;
+    fn next(&mut self) -> Option<Result<T, S::Error>> {
+        let mut remaining = true;
+        let mut buffer = VecDeque::new();
+        std::mem::swap(&mut self.buffer, &mut buffer);
+        while buffer.is_empty() && remaining {
+            match self.source.for_some_item(|i| {
+                buffer.push_back(Ok((self.map)(i)));
+            }) {
+                Ok(b) => {
+                    remaining = b;
+                }
+                Err(err) => {
+                    buffer.push_back(Err(err));
+                    remaining = false;
                 }
             }
-            std::mem::swap(&mut self.buffer, &mut buffer);
-            self.buffer.pop_front()
         }
+        std::mem::swap(&mut self.buffer, &mut buffer);
+        self.buffer.pop_front()
+    }
 
-        fn size_hint(&self) -> (usize, Option<usize>) {
-            self.source.size_hint_quads()
-        }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.source.size_hint_items()
     }
 }
-pub use _quad::*;
 
 #[cfg(test)]
 mod test {

@@ -13,7 +13,7 @@ pub struct TurtleParser {
 }
 
 impl<B: BufRead> TripleParser<B> for TurtleParser {
-    type Source = StrictRioSource<RioTurtleParser<B>>;
+    type Source = StrictRioTripleSource<RioTurtleParser<B>>;
     fn parse(&self, data: B) -> Self::Source {
         let base = self
             .base
@@ -21,7 +21,7 @@ impl<B: BufRead> TripleParser<B> for TurtleParser {
             .map(Iri::unwrap)
             .map(oxiri::Iri::parse)
             .map(Result::unwrap);
-        StrictRioSource(RioTurtleParser::new(data, base))
+        StrictRioTripleSource(RioTurtleParser::new(data, base))
     }
 }
 

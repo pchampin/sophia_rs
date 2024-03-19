@@ -11,9 +11,9 @@ use std::io::BufRead;
 pub struct NTriplesParser {}
 
 impl<B: BufRead> TripleParser<B> for NTriplesParser {
-    type Source = StrictRioSource<RioNTParser<B>>;
+    type Source = StrictRioTripleSource<RioNTParser<B>>;
     fn parse(&self, data: B) -> Self::Source {
-        StrictRioSource(RioNTParser::new(data))
+        StrictRioTripleSource(RioNTParser::new(data))
     }
 }
 

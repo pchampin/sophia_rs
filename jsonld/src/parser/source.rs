@@ -1,7 +1,7 @@
 use sophia_api::{
     quad::Spog,
     source::{
-        QuadSource,
+        Source,
         StreamError::{SinkError, SourceError},
         StreamResult,
     },
@@ -11,7 +11,8 @@ use crate::JsonLdError;
 
 use super::adapter::RdfTerm;
 
-/// The type of [`QuadSource`] returned by [`JsonLdParser`](super::JsonLdParser).
+/// The type of [`QuadSource`](sophia_api::source::QuadSource)
+/// returned by [`JsonLdParser`](super::JsonLdParser).
 pub enum JsonLdQuadSource {
     /// Some quads were parsed
     Quads(std::vec::IntoIter<Spog<RdfTerm>>),
@@ -25,15 +26,15 @@ impl JsonLdQuadSource {
     }
 }
 
-impl QuadSource for JsonLdQuadSource {
-    type Quad<'x> = Spog<RdfTerm>;
+impl Source for JsonLdQuadSource {
+    type Item<'x> = Spog<RdfTerm>;
 
     type Error = JsonLdError;
 
-    fn try_for_some_quad<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
+    fn try_for_some_item<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
     where
         E: std::error::Error,
-        F: FnMut(Self::Quad<'_>) -> Result<(), E>,
+        F: FnMut(Self::Item<'_>) -> Result<(), E>,
     {
         match self {
             JsonLdQuadSource::Quads(quads) => {

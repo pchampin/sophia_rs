@@ -11,9 +11,9 @@ use std::io::BufRead;
 pub struct NQuadsParser {}
 
 impl<B: BufRead> QuadParser<B> for NQuadsParser {
-    type Source = StrictRioSource<RioNQParser<B>>;
+    type Source = StrictRioQuadSource<RioNQParser<B>>;
     fn parse(&self, data: B) -> Self::Source {
-        StrictRioSource(RioNQParser::new(data))
+        StrictRioQuadSource(RioNQParser::new(data))
     }
 }
 
