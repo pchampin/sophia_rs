@@ -47,8 +47,7 @@ where
     }
 }
 
-/// [`Iterator`] implementation for the returned value of [`Source::map_triples`]
-/// or [`QuadSource::map_quads`].
+/// [`Iterator`] implementation for the returned value of [`Source::map_items`].
 pub struct MapSourceIterator<S, F, T, E> {
     source: S,
     map: F,

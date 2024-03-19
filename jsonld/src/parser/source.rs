@@ -11,7 +11,8 @@ use crate::JsonLdError;
 
 use super::adapter::RdfTerm;
 
-/// The type of [`QuadSource`] returned by [`JsonLdParser`](super::JsonLdParser).
+/// The type of [`QuadSource`](sophia_api::source::QuadSource)
+/// returned by [`JsonLdParser`](super::JsonLdParser).
 pub enum JsonLdQuadSource {
     /// Some quads were parsed
     Quads(std::vec::IntoIter<Spog<RdfTerm>>),

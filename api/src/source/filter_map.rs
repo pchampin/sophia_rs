@@ -2,7 +2,7 @@
 use super::*;
 use std::collections::VecDeque;
 
-/// The result of [`::filter_map_items`] and [`QuadSource::filter_map_quads`].
+/// The result of [`Source::filter_map_items`].
 pub struct FilterMapSource<S, F> {
     pub(in super::super) source: S,
     pub(in super::super) filter_map: F,
@@ -50,7 +50,7 @@ where
     }
 }
 
-/// [`Iterator`] implementation for [`FilterMapSource`]
+/// [`Iterator`] implementation for the returned value of [`Source::filter_map_items`].
 pub struct FilterMapSourceIterator<S, F, T, E> {
     source: S,
     filter_map: F,

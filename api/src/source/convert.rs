@@ -6,7 +6,7 @@ use crate::triple::Triple;
 
 use super::{Source, QuadSource, TripleSource};
 
-/// The result type of [`Source::to_quads`].
+/// The result type of [`TripleSource::to_quads`].
 pub struct ToQuads<TS>(pub(super) TS);
 
 impl<TS: TripleSource> Source for ToQuads<TS> {

@@ -2,17 +2,15 @@ use super::*;
 use crate::dataset::{CollectibleDataset, Dataset, MutableDataset};
 use crate::quad::Quad;
 
-/// A quad source produces [quads](Quad), and may also fail in the process.
+/// A quad source is a [`Source`] producing [quads](Quad).
 ///
-/// see [module documentation](super) for the rationale of his trait.
+/// This trait extends the [`Source`] trait with quad-specific methods.
 ///
-/// # Common implementors
+/// It does not need to be explicitly implemented:
+/// any [`Source`] implementation producing [quads](Quad)
+/// will automatically implement [`QuadSource`].
 ///
-/// Any iterator yielding [results](std::result::Result) of [`Quad`]
-/// implements the [`QuadSource`] trait.
-///
-/// Any iterator of [`Quad`] can also be converted to an [`Infallible`] [`QuadSource`]
-/// thanks to the [`IntoQuadSource`] extension trait.
+/// See also [`QSQuad`].
 pub trait QuadSource: Source + IsQuadSource {
     /// Call f for some quad(s) (possibly zero) from this source, if any.
     ///
@@ -95,7 +93,7 @@ pub trait QuadSource: Source + IsQuadSource {
     /// In particular, passing functions as trivial as `|q| q` or `|q| q.to_spog()`
     /// currently do not compile on all implementations of [`QuadSource`].
     /// Furthermore, some functions returning a [`Quad`] are accepted,
-    /// but fail to make the resulting [`map::MapQuadSource`] recognized as a [`QuadSource`].
+    /// but fail to make the resulting [`map::MapSource`] recognized as a [`QuadSource`].
     ///
     /// As a rule of thumb,
     /// whenever `map` returns something satisfying the `'static` lifetime,
@@ -159,7 +157,7 @@ impl<T> QuadSource for T where
 /// Type alias to denote the type of quads yielded by a [`QuadSource`].
 ///
 /// **Why not using `TS::Item<'a>` instead?**
-/// [`QuadSource::Item`] being a generic associated type (GAT),
+/// [`Source::Item`] being a generic associated type (GAT),
 /// the compiler will not always "know" that `TS::Item<'a>` implements the [`Quad`] trait.
 /// This type alias, on the other hand, will always be recognized as a [`Quad`] implementation.
 pub type QSQuad<'a, TS> = <TS as IsQuadSource>::Quad<'a>;

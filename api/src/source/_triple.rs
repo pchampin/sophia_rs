@@ -93,7 +93,7 @@ pub trait TripleSource: Source + IsTripleSource {
     /// In particular, passing functions as trivial as `|t| t` or `|t| t.to_spo()`
     /// currently do not compile on all implementations of [`TripleSource`].
     /// Furthermore, some functions returning a [`Triple`] are accepted,
-    /// but fail to make the resulting [`map::MapTripleSource`] recognized as a [`TripleSource`].
+    /// but fail to make the resulting [`map::MapSource`] recognized as a [`TripleSource`].
     ///
     /// As a rule of thumb,
     /// whenever `map` returns something satisfying the `'static` lifetime,
@@ -156,7 +156,7 @@ impl<T> TripleSource for T where
 /// Type alias to denote the type of triples yielded by a [`TripleSource`].
 ///
 /// **Why not using `TS::Item<'a>` instead?**
-/// [`TripleSource::Item`] being a generic associated type (GAT),
+/// [`Source::Item`] being a generic associated type (GAT),
 /// the compiler will not always "know" that `TS::Item<'a>` implements the [`Triple`] trait.
 /// This type alias, on the other hand, will always be recognized as a [`Triple`] implementation.
 pub type TSTriple<'a, TS> = <TS as IsTripleSource>::Triple<'a>;
