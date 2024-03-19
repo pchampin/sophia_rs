@@ -68,7 +68,7 @@ where
         let mut buffer = VecDeque::new();
         std::mem::swap(&mut self.buffer, &mut buffer);
         while buffer.is_empty() && remaining {
-            match self.source.for_some_item(&mut |i| {
+            match self.source.for_some_item(|i| {
                 if let Some(t) = (self.filter_map)(i) {
                     buffer.push_back(Ok(t));
                 }

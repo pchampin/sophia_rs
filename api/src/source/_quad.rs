@@ -50,7 +50,7 @@ pub trait QuadSource: Source + IsQuadSource {
     where
         F: FnMut(Self::Quad<'_>),
     {
-        self.for_some_item(&mut |i| f(Self::i2q(i)))
+        self.for_some_item(|i| f(Self::i2q(i)))
     }
 
     /// Call f for all quads from this source.

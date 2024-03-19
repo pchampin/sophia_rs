@@ -106,7 +106,7 @@ pub trait Source {
     ///
     /// Return an error if either the source errs.
     #[inline]
-    fn for_some_item<F>(&mut self, f: &mut F) -> Result<bool, Self::Error>
+    fn for_some_item<F>(&mut self, mut f: F) -> Result<bool, Self::Error>
     where
         F: FnMut(Self::Item<'_>),
     {

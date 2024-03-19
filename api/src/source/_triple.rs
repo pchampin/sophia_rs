@@ -48,7 +48,7 @@ pub trait TripleSource: Source + IsTripleSource {
     where
         F: FnMut(TSTriple<Self>),
     {
-        self.for_some_item(&mut |i| f(Self::i2t(i)))
+        self.for_some_item(|i| f(Self::i2t(i)))
     }
 
     /// Call f for all triples from this source.
