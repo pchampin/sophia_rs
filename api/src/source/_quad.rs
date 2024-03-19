@@ -66,15 +66,12 @@ pub trait QuadSource: Source + IsQuadSource {
 
     /// Returns a source which uses `predicate` to determine if an quad should be yielded.
     #[inline]
-    fn filter_quads<F>(self, predicate: F) -> filter::FilterQuadSource<Self, F>
+    fn filter_quads<'f, F>(self, mut predicate: F) -> filter::FilterQuadSource<Self, impl FnMut(&Self::Item<'_>) -> bool + 'f>
     where
         Self: Sized,
-        F: FnMut(&Self::Quad<'_>) -> bool,
+        F: FnMut(&QSQuad<Self>) -> bool + 'f,
     {
-        filter::FilterQuadSource {
-            source: self,
-            predicate,
-        }
+        filter::FilterQuadSource(self.filter_items(move |i| predicate(Self::ri2q(i))))
     }
 
     /// Returns a source that both filters and maps.

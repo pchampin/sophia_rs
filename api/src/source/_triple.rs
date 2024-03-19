@@ -64,13 +64,12 @@ pub trait TripleSource: Source + IsTripleSource {
     
     /// Returns a source which uses `predicate` to determine if an triple should be yielded.
     #[inline]
-
-    fn filter_triples<F>(self, predicate: F) -> filter::FilterTripleSource<Self, F>
+    fn filter_triples<'f, F>(self, mut predicate: F) -> filter::FilterTripleSource<Self, impl FnMut(&Self::Item<'_>) -> bool + 'f>
     where
         Self: Sized,
-        F: FnMut(&TSTriple<Self>) -> bool,
+        F: FnMut(&TSTriple<Self>) -> bool + 'f,
     {
-        filter::FilterTripleSource { source: self, predicate }
+        filter::FilterTripleSource(self.filter_items(move |i| predicate(Self::ri2t(i))))
     }
 
     /// Returns a source that both filters and maps.

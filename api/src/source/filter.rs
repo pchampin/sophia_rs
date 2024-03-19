@@ -2,7 +2,7 @@
 //! I also define [`FilterTripleSource`] and [`FilterQuadSource`],
 //! which are required to ensure that the output of
 //! [`TripleSource::filter_triples`] and [`QuadSource::filter_quads`]
-//! are recognied as a [`TripleSource`] and a [`QuadSource`], respectively.
+//! are recognized as a [`TripleSource`] and a [`QuadSource`], respectively.
 
 use super::*;
 
@@ -43,15 +43,12 @@ mod _triple {
     use super::*;
 
     /// The result type of [`TripleSource::filter_triples`].
-    pub struct FilterTripleSource<S, P> {
-        pub(in super::super) source: S,
-        pub(in super::super) predicate: P,
-    }
+    pub struct FilterTripleSource<S, P>(pub(crate) FilterSource<S, P>);
 
     impl<S, P> Source for FilterTripleSource<S, P>
     where
         S: TripleSource,
-        P: FnMut(&TSTriple<S>) -> bool,
+        P: FnMut(&S::Item<'_>) -> bool,
     {
         type Item<'x> = TSTriple<'x, S>;
         type Error = S::Error;
@@ -61,17 +58,11 @@ mod _triple {
             E: Error,
             F: FnMut(Self::Item<'_>) -> Result<(), E>,
         {
-            let p = &mut self.predicate;
-            self.source.try_for_some_item(|t| {
-                if p(S::ri2t(&t)) {
-                    f(S::i2t(t))?;
-                }
-                Ok(())
-            })
+            self.0.try_for_some_item(|i| f(S::i2t(i)))
         }
 
         fn size_hint_items(&self) -> (usize, Option<usize>) {
-            (0, self.source.size_hint_items().1)
+            (0, self.0.size_hint_items().1)
         }
     }
 }
@@ -79,18 +70,16 @@ pub use _triple::*;
 
 mod _quad {
     use super::*;
+
     /// The result type of [`QuadSource::filter_quads`].
-    pub struct FilterQuadSource<S, P> {
-        pub(in super::super) source: S,
-        pub(in super::super) predicate: P,
-    }
+    pub struct FilterQuadSource<S, P>(pub(crate) FilterSource<S, P>);
 
     impl<S, P> Source for FilterQuadSource<S, P>
     where
         S: QuadSource,
-        P: FnMut(&S::Quad<'_>) -> bool,
+        P: FnMut(&S::Item<'_>) -> bool,
     {
-        type Item<'x> = S::Quad<'x>;
+        type Item<'x> = QSQuad<'x, S>;
         type Error = S::Error;
 
         fn try_for_some_item<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
@@ -98,17 +87,11 @@ mod _quad {
             E: Error,
             F: FnMut(Self::Item<'_>) -> Result<(), E>,
         {
-            let p = &mut self.predicate;
-            self.source.try_for_some_item(|i| {
-                if p(S::ri2q(&i)) {
-                    f(S::i2q(i))?;
-                }
-                Ok(())
-            })
+            self.0.try_for_some_item(|i| f(S::i2q(i)))
         }
 
         fn size_hint_items(&self) -> (usize, Option<usize>) {
-            (0, self.source.size_hint_items().1)
+            (0, self.0.size_hint_items().1)
         }
     }
 }
