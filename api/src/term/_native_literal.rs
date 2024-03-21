@@ -5,6 +5,7 @@ lazy_static::lazy_static! {
     static ref XSD_DOUBLE: Box<str> = xsd::double.iri().unwrap().unwrap().into();
     static ref XSD_INTEGER: Box<str> = xsd::integer.iri().unwrap().unwrap().into();
     static ref XSD_STRING: Box<str> = xsd::string.iri().unwrap().unwrap().into();
+    static ref XSD_BOOLEAN: Box<str> = xsd::boolean.iri().unwrap().unwrap().into();
 }
 
 /// [`f64`] implements [`Term`]
@@ -189,6 +190,42 @@ impl Term for str {
     }
 }
 
+/// [`bool`] implements [`Term`]
+/// so that Rust literals can be used as RDF literals in code.
+///
+/// E.g.:
+/// ```
+/// # use sophia_api::graph::{MutableGraph, Graph};
+/// # use sophia_api::term::SimpleTerm;
+/// # use sophia_api::ns::{rdf, rdfs};
+/// # use sophia_iri::IriRef;
+/// # fn test<T: MutableGraph>(graph: &mut T) -> Result<(), Box<dyn std::error::Error>> {
+/// # let subject: IriRef<&'static str> = IriRef::new("")?;
+/// #
+/// graph.insert(&subject, &rdf::value, true)?;
+/// #
+/// # Ok(()) }
+/// ```
+impl Term for bool {
+    type BorrowTerm<'x> = Self;
+
+    fn kind(&self) -> TermKind {
+        TermKind::Literal
+    }
+    fn lexical_form(&self) -> Option<MownStr> {
+        Some(MownStr::from(if *self { "true" } else { "false" }))
+    }
+    fn datatype(&self) -> Option<IriRef<MownStr>> {
+        Some(IriRef::new_unchecked(MownStr::from_str(&XSD_BOOLEAN)))
+    }
+    fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+        None
+    }
+    fn borrow_term(&self) -> Self::BorrowTerm<'_> {
+        *self
+    }
+}
+
 /// [`f64`] implements [`TryFromTerm`]
 /// so that compatible datatypes can easily be converted to native Rust values.
 impl TryFromTerm for f64 {
@@ -226,6 +263,8 @@ impl TryFromTerm for i32 {
                 || Term::eq(&term.datatype().unwrap(), xsd::unsignedByte)
                 || Term::eq(&term.datatype().unwrap(), xsd::nonNegativeInteger)
                 || Term::eq(&term.datatype().unwrap(), xsd::nonPositiveInteger)
+                || Term::eq(&term.datatype().unwrap(), xsd::negativeInteger)
+                || Term::eq(&term.datatype().unwrap(), xsd::positiveInteger)
             {
                 lex.parse()
             } else {
@@ -254,6 +293,8 @@ impl TryFromTerm for isize {
                 || Term::eq(&term.datatype().unwrap(), xsd::unsignedByte)
                 || Term::eq(&term.datatype().unwrap(), xsd::nonNegativeInteger)
                 || Term::eq(&term.datatype().unwrap(), xsd::nonPositiveInteger)
+                || Term::eq(&term.datatype().unwrap(), xsd::negativeInteger)
+                || Term::eq(&term.datatype().unwrap(), xsd::positiveInteger)
             {
                 lex.parse()
             } else {
@@ -281,8 +322,26 @@ impl TryFromTerm for usize {
                 || Term::eq(&term.datatype().unwrap(), xsd::unsignedShort)
                 || Term::eq(&term.datatype().unwrap(), xsd::unsignedByte)
                 || Term::eq(&term.datatype().unwrap(), xsd::nonNegativeInteger)
-                || Term::eq(&term.datatype().unwrap(), xsd::nonPositiveInteger)
+                || Term::eq(&term.datatype().unwrap(), xsd::positiveInteger)
             {
+                lex.parse()
+            } else {
+                "wrong datatype".parse()
+            }
+        } else {
+            "not a literal".parse()
+        }
+    }
+}
+
+/// [`bool`] implements [`TryFromTerm`]
+/// so that compatible datatypes can easily be converted to native Rust values.
+impl TryFromTerm for bool {
+    type Error = std::str::ParseBoolError;
+
+    fn try_from_term<T: Term>(term: T) -> Result<Self, Self::Error> {
+        if let Some(lex) = term.lexical_form() {
+            if Term::eq(&term.datatype().unwrap(), xsd::boolean) {
                 lex.parse()
             } else {
                 "wrong datatype".parse()
@@ -345,6 +404,16 @@ mod test {
         assert_eq!(lit.kind(), TermKind::Literal);
         assert_eq!(lit.lexical_form().unwrap(), lit);
         assert_eq!(lit.datatype(), xsd::string.iri());
+        assert_eq!(lit.borrow_term(), lit);
+    }
+
+    #[test]
+    fn bool_as_literal() {
+        let lit = false;
+        assert_consistent_term_impl::<bool>(&lit);
+        assert_eq!(lit.kind(), TermKind::Literal);
+        assert_eq!(lit.lexical_form().unwrap(), "false");
+        assert_eq!(lit.datatype(), xsd::boolean.iri());
         assert_eq!(lit.borrow_term(), lit);
     }
 
