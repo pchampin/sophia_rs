@@ -36,6 +36,7 @@ fn main() {
     let input = BufReader::new(stdin());
     let quad_source = gnq::parse_bufread(input);
     let out = BufWriter::new(stdout());
+    let pretty: bool = std::env::var("SOPHIA_PRETTY").unwrap_or_else(|_| "false".into()).parse().unwrap();
 
     let format = std::env::args()
         .nth(1)
@@ -43,13 +44,13 @@ fn main() {
     let res = match &format[..] {
         "ntriples" | "nt" => serialize_triples(quad_source, NtSerializer::new(out)),
         "turtle" | "ttl" => {
-            let config = TurtleConfig::new().with_pretty(true);
+            let config = TurtleConfig::new().with_pretty(pretty);
             let ser = TurtleSerializer::new_with_config(out, config);
             serialize_triples(quad_source, ser)
         }
         "nquads" | "nq" => serialize_quads(quad_source, NqSerializer::new(out)),
         "trig" => {
-            let config = TrigConfig::new().with_pretty(true);
+            let config = TrigConfig::new().with_pretty(pretty);
             let ser = TrigSerializer::new_with_config(out, config);
             serialize_quads(quad_source, ser)
         }
