@@ -729,7 +729,7 @@ where
                 return None;
             }
             if some_item != self.previous {
-                self.previous = some_item.clone();
+                self.previous.clone_from(&some_item);
                 return some_item;
             }
         }

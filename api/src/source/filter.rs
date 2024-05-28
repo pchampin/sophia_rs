@@ -113,7 +113,7 @@ mod test {
         let mut w = vec![];
         v.into_iter()
             .into_source()
-            .filter_items(|t| t.starts_with("b"))
+            .filter_items(|t| t.starts_with('b'))
             .for_each_item(|t| {
                 w.push(t);
             })

@@ -674,12 +674,6 @@ mod check_implementability_lazy_term {
     }
     use MyInternalTerm::*;
 
-    #[derive(Clone, Debug, Eq, PartialEq)]
-    struct MyInternalTriple {
-        asserted: bool,
-        spog: [usize; 3],
-    }
-
     #[derive(Clone, Debug)]
     struct MyDataset {
         terms: Vec<MyInternalTerm>,

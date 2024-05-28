@@ -8,7 +8,6 @@ pub trait TermJsonLdUtil {
     fn is_subject(&self) -> bool;
     fn is_object(&self) -> bool;
     fn is_bnode(&self) -> bool;
-    fn is_literal(&self) -> bool;
     fn as_id(&self) -> Box<str>;
 }
 
@@ -24,10 +23,6 @@ impl<T: Term + ?Sized> TermJsonLdUtil for T {
     #[inline]
     fn is_bnode(&self) -> bool {
         matches!(self.kind(), BlankNode)
-    }
-    #[inline]
-    fn is_literal(&self) -> bool {
-        matches!(self.kind(), Literal)
     }
     #[inline]
     fn as_id(&self) -> Box<str> {
