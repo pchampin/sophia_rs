@@ -30,7 +30,7 @@ use sophia::turtle::serializer::{
     turtle::{TurtleConfig, TurtleSerializer},
 };
 #[cfg(feature = "xml")]
-use sophia::xml::serializer::RdfXmlSerializer;
+use sophia::xml::serializer::{RdfXmlConfig, RdfXmlSerializer};
 
 fn main() {
     let input = BufReader::new(stdin());
@@ -63,7 +63,12 @@ fn main() {
             JsonLdSerializer::new_with_options(out, JsonLdOptions::new().with_spaces(2)),
         ),
         #[cfg(feature = "xml")]
-        "rdfxml" | "rdf" => serialize_triples(quad_source, RdfXmlSerializer::new(out)),
+        "rdfxml" | "rdf" => {
+            let indent = if pretty { 4 } else { 0 };
+            let config = RdfXmlConfig::new().with_identation(indent);
+            let ser = RdfXmlSerializer::new_with_config(out, config);
+            serialize_triples(quad_source, ser)
+        }
         _ => {
             eprintln!("Unrecognized format: {}", format);
             std::process::exit(-1);

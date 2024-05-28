@@ -18,10 +18,27 @@ use std::io;
 
 /// RDF/XML serializer configuration.
 #[derive(Clone, Debug, Default)]
-pub struct RdfXmlConfig {}
+pub struct RdfXmlConfig {
+    indentation: usize,
+}
 
 impl RdfXmlConfig {
-    // TODO add ways to customize namespaces
+    /// Size of the indentation to use in the serialization.
+    /// (defaults to 0, meaning no indentation nor linebreaks)
+    pub fn indentation(&self) -> usize {
+        self.indentation
+    }
+
+    /// Build a new default [`RdfXmlConfig`]
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    /// Transform an [`RdfXmlConfig`] by setting the [`indentation`](RdfXmlConfig::indentation).
+    pub fn with_identation(mut self, i: usize) -> Self {
+        self.indentation = i;
+        self
+    }
 }
 
 /// RDF/XML serializer.
@@ -65,7 +82,12 @@ where
         TS: TripleSource,
     {
         // temporarily move out self.write
-        let mut tf = RdfXmlFormatter::new(&mut self.write).map_err(SinkError)?;
+        let res = if self.config.indentation > 0 {
+            RdfXmlFormatter::with_indentation(&mut self.write, self.config.indentation)
+        } else {
+            RdfXmlFormatter::new(&mut self.write)
+        };
+        let mut tf = res.map_err(SinkError)?;
         rio_format_triples(&mut tf, source)?;
         tf.finish().map_err(SinkError)?;
         Ok(self)
@@ -122,6 +144,25 @@ pub(crate) mod test {
             let g1: Vec<[SimpleTerm; 3]> = crate::parser::parse_str(rdfxml).collect_triples()?;
 
             let out = RdfXmlSerializer::new_stringifier()
+                .serialize_triples(g1.triples())?
+                .to_string();
+            println!("{}", &out);
+
+            let g2: Vec<[SimpleTerm; 3]> = crate::parser::parse_str(&out).collect_triples()?;
+
+            assert!(isomorphic_graphs(&g1, &g2)?);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn roundtrip_with_ident() -> Result<(), Box<dyn std::error::Error>> {
+        let config = RdfXmlConfig::new().with_identation(4);
+        for rdfxml in TESTS {
+            println!("==========\n{}\n----------", rdfxml);
+            let g1: Vec<[SimpleTerm; 3]> = crate::parser::parse_str(rdfxml).collect_triples()?;
+
+            let out = RdfXmlSerializer::new_stringifier_with_config(config.clone())
                 .serialize_triples(g1.triples())?
                 .to_string();
             println!("{}", &out);
