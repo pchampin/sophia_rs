@@ -36,7 +36,10 @@ fn main() {
     let input = BufReader::new(stdin());
     let quad_source = gnq::parse_bufread(input);
     let out = BufWriter::new(stdout());
-    let pretty: bool = std::env::var("SOPHIA_PRETTY").unwrap_or_else(|_| "false".into()).parse().unwrap();
+    let pretty: bool = std::env::var("SOPHIA_PRETTY")
+        .unwrap_or_else(|_| "false".into())
+        .parse()
+        .unwrap();
 
     let format = std::env::args()
         .nth(1)
