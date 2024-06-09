@@ -9,11 +9,15 @@
 /// # trait SomeTrait { fn check_some_property(&self) -> bool; }
 /// # #[derive(Debug)]
 /// # struct SomeError {}
-/// wrap! { MyWrapper<T: SomeTrait> :
+/// wrap! {
+///     #[derive(Clone, Debug)]
+///     MyWrapper<T: SomeTrait> :
+///
 ///     // NB: the trait bound is required, as well as the trailing colon (':').
+///     // The derive clause, however, is optional (it will default to Clone, Copy, Debug).
 ///
 ///     // You can include members in the impl of the wrapper type.
-///     // At the very least, you must define a `new` constructor,
+///     // At the very least, you must define a `new` constructor as the first member,
 ///     // that will check the appropriate condition on the wrapped value,
 ///     // and return a `Result`.
 ///
@@ -54,8 +58,10 @@
 ///
 /// NB: the documentation of the wrapper will point to the documentation of the `new` method.
 macro_rules! wrap {
-    ($wid:ident<$tid:ident: $bound:path>: $new:item $($item:item)*) => {
-        #[derive(Clone, Copy, Debug)]
+
+    // general wrapper definition
+    (#[derive($($derive:ident),*)] $wid:ident<$tid:ident: $bound:path>: $new:item $($item:item)*) => {
+        #[derive($($derive),*)]
 
         #[doc = concat!(
             "See [`",
@@ -173,8 +179,35 @@ macro_rules! wrap {
             }
         }
     };
-    ($wid:ident borrowing $bid:ty: $new:item $($item:item)*) => {
-        $crate::wrap!($wid<T: std::borrow::Borrow<$bid>>: $new $($item)*);
+
+    // general wrapper definition, with implicit derive clause
+    ($wid:ident<$tid:ident: $bound:path>: $new:item $($item:item)*) => {
+        $crate::wrap!( #[derive(Clone, Copy, Debug)] $wid<$tid: $bound>: $new $($item)* );
+
+    };
+
+    // very specific wrapper definition for Borrow<str>, relying on the less specific "borrowing" definition below
+    ($wid:ident borrowing str: $new:item $($item:item)*) => {
+        $crate::wrap!{
+            #[derive(Clone, Copy)]
+            $wid borrowing str:
+
+            $new
+
+            $($item)*
+        }
+
+        impl<T: std::borrow::Borrow<str>> std::fmt::Debug for $wid<T> {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> {
+                write!(f, "{}({:?})", stringify!($wid), self.0.borrow())
+            }
+        }
+    };
+
+    // specific wrapper definition with the "borrowing" keyword ;
+    // shortcut for Borrow<T>, and adds more trait implementation
+    (#[derive($($derive:ident),*)] $wid:ident borrowing $bid:ty: $new:item $($item:item)*) => {
+        $crate::wrap!( #[derive($($derive),*)] $wid<T: std::borrow::Borrow<$bid>>: $new $($item)* );
 
         impl<T> $wid<T>
         where
@@ -261,6 +294,11 @@ macro_rules! wrap {
                 self.partial_cmp(other.0.borrow())
             }
         }
+    };
+
+    // same as the specific "borrowing" wrapper declaration above, with implicit derive clause
+    ($wid:ident borrowing $bid:ty: $new:item $($item:item)*) => {
+        $crate::wrap!( #[derive(Clone, Copy, Debug)] $wid borrowing $bid: $new $($item)* );
     };
 }
 

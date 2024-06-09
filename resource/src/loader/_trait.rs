@@ -11,7 +11,6 @@ use sophia_iri::Iri;
 use sophia_jsonld::loader_factory::ClosureLoaderFactory;
 use sophia_turtle::parser::{nt, turtle};
 use std::borrow::Borrow;
-use std::fmt::Debug;
 use std::io;
 use std::sync::Arc;
 
@@ -93,7 +92,7 @@ pub trait Loader: Sync + Sized {
     /// Get the resource identified by `iri`
     fn get_resource<T, G>(self: &Arc<Self>, iri: Iri<T>) -> Result<Resource<G, Self>, LoaderError>
     where
-        T: Borrow<str> + Debug,
+        T: Borrow<str>,
         G: CollectibleGraph + 'static,
     {
         let url: Box<str> = iri.as_str().split('#').next().unwrap().into();
@@ -109,7 +108,7 @@ pub trait Loader: Sync + Sized {
     ) -> Result<Resource<G, Self>, LoaderError>
     where
         T: Term,
-        U: Borrow<str> + Debug,
+        U: Borrow<str>,
         G: CollectibleGraph + 'static,
     {
         let base = url.as_str().split('#').next().unwrap();
@@ -123,7 +122,7 @@ pub trait Loader: Sync + Sized {
     fn get_typed<R, T, G>(self: &Arc<Self>, iri: Iri<T>) -> Result<R, R::Error>
     where
         R: TypedResource<G, Self>,
-        T: Borrow<str> + Debug,
+        T: Borrow<str>,
         G: CollectibleGraph + 'static,
     {
         self.get_resource(iri)
@@ -137,7 +136,7 @@ pub trait Loader: Sync + Sized {
         R: TryFrom<Resource<G, Self>>,
         R::Error: From<ResourceError<G::Error>>,
         T: Term,
-        U: Borrow<str> + Debug,
+        U: Borrow<str>,
         G: CollectibleGraph + 'static,
         Self: 'static,
     {

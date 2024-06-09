@@ -53,7 +53,7 @@ pub struct InvalidVarName(pub String);
 
 impl<T> Term for VarName<T>
 where
-    T: Borrow<str> + Debug,
+    T: Borrow<str>,
 {
     type BorrowTerm<'x> = &'x Self where T: 'x;
 

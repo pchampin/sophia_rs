@@ -2,11 +2,10 @@ use super::*;
 use mownstr::MownStr;
 use sophia_iri::{Iri, IriRef};
 use std::borrow::Borrow;
-use std::fmt::Debug;
 
 impl<T> Term for Iri<T>
 where
-    T: Borrow<str> + Debug,
+    T: Borrow<str>,
 {
     type BorrowTerm<'x> = &'x Self where T: 'x;
 
@@ -23,7 +22,7 @@ where
 
 impl<T> Term for IriRef<T>
 where
-    T: Borrow<str> + Debug,
+    T: Borrow<str>,
 {
     type BorrowTerm<'x> = &'x Self where T: 'x;
 
