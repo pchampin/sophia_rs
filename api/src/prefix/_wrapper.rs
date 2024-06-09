@@ -11,11 +11,6 @@ sophia_iri::wrap! { Prefix borrowing str :
             Err(InvalidPrefix(prefix.borrow().to_string()))
         }
     }
-
-    /// Gets a reference to the underlying &str.
-    pub fn as_str(&self) -> &str {
-        self.0.borrow()
-    }
 }
 
 impl<T: Borrow<str>> IsPrefix for Prefix<T> {}

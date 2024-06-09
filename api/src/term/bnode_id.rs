@@ -51,11 +51,6 @@ wrap! { BnodeId borrowing str :
             Err(InvalidBnodeId(id.borrow().to_string()))
         }
     }
-
-    /// Gets a reference to the underlying &str.
-    pub fn as_str(&self) -> &str {
-        self.0.borrow()
-    }
 }
 /// This error is raised when trying to parse an invalid blank node identifier.
 #[derive(Debug, Error)]

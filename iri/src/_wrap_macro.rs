@@ -195,6 +195,11 @@ macro_rules! wrap {
             $new
 
             $($item)*
+
+            /// Gets a reference to the underlying &str.
+            pub fn as_str(&self) -> &str {
+                self.0.borrow()
+            }
         }
 
         impl<T: std::borrow::Borrow<str>> std::fmt::Debug for $wid<T> {
@@ -378,10 +383,6 @@ pub mod test_wrap_borrowing {
             } else {
                 Err(())
             }
-        }
-
-        pub fn as_str(&self) -> &str {
-            self.0.borrow()
         }
     }
 

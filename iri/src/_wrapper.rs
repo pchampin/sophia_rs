@@ -17,11 +17,6 @@ wrap! { Iri borrowing str :
         }
     }
 
-    /// Gets a reference to the underlying &str.
-    pub fn as_str(&self) -> &str {
-        self.0.borrow()
-    }
-
     /// Resolve a relative IRI reference against this one.
     ///
     /// NB: when resolving multiple IRI references against the same base,
@@ -68,11 +63,6 @@ wrap! { IriRef borrowing str :
         } else {
             Err(InvalidIri(iri.borrow().to_string()))
         }
-    }
-
-    /// Gets a reference to the underlying &str.
-    pub fn as_str(&self) -> &str {
-        self.0.borrow()
     }
 
     /// Resolve a relative IRI reference against this one.
