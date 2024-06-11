@@ -1,0 +1,10 @@
+[default]
+extend-ignore-identifiers-re = [
+  # appear in several grammars
+  "PN_[A-Z_]+",
+  "pn_local",
+]
+extend-ignore-re = [
+  "raison d'être",
+]
+

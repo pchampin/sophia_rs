@@ -10,7 +10,7 @@ use std::sync::Arc;
 /// A resource loader using local versions of the resources.
 ///
 /// It guesses content-type from the file extensions,
-/// and emulates content-negociation :
+/// and emulates content-negotiation :
 /// if a resource is not found, it will try adding a few well-known extensions to it.
 #[derive(Clone, Debug, Default)]
 pub struct LocalLoader {

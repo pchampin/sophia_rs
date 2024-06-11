@@ -103,7 +103,7 @@ and are described in more detail in the [next chapter](./ch05_term_matchers.md).
 * [`sophia::inmem::LightGraph`] provides a [`Graph`] and [`MutableGraph`] implementation with a low memory footprint;
 * [`sophia::inmem::FastGraph`] provides a [`Graph`] and [`MutableGraph`] implementation designed for fast retrieval of any given triple.
 
-## Recipies for constructing graphs
+## Recipes for constructing graphs
 
 ### Constructing and populating an empty graph
 

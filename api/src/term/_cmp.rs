@@ -68,11 +68,11 @@ impl<T: Term> Term for CmpTerm<T> {
     fn try_into_term<U: TryFromTerm>(self) -> Result<U, U::Error> {
         self.0.try_into_term()
     }
-    // NOT overridding the iterator methods
+    // NOT overriding the iterator methods
     // (constituents, to_constituents, atoms, to_atoms)
     // because this would introduce an additional Box<dyn ...> indirection,
     // potentially hurting performances,
-    // beyond the benefit of a hypotherical custom impl of these methods in T.
+    // beyond the benefit of a hypothetical custom impl of these methods in T.
 }
 
 impl<T1: Term, T2: Term> PartialEq<T2> for CmpTerm<T1> {

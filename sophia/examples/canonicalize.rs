@@ -1,5 +1,5 @@
-//! Read a Dataset serialized in [N-Quads] from the standart input,
-//! and write back to the standatd output its canonical form,
+//! Read a Dataset serialized in [N-Quads] from the standard input,
+//! and write back to the standard output its canonical form,
 //! using the [RDFC-1.0] canonicalization algorithm.
 //!
 //! Parameters of the RDFC-1.0 can be provided via the following environment variables:

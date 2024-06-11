@@ -35,7 +35,7 @@ macro_rules! namespace {
             $crate::ns_iri!(PREFIX, $r_id, $r_sf);
         )*
 
-        /// Test module for checking tha IRIs are valid
+        /// Test module for checking that IRIs are valid
         #[cfg(test)]
         mod test_valid_iri {
             $(

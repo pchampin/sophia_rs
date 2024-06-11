@@ -574,7 +574,7 @@ impl<T: Quad, S> SetDataset for HashSet<T, S> {}
 
 // BTreeSet of quads
 
-/// NB: This is a straighforward and minimal implementation,
+/// NB: This is a straightforward and minimal implementation,
 /// not taking advantage of the order of terms to optimize [`Dataset::quads_matching`]
 /// nor other methods.
 impl<Q: Quad> Dataset for BTreeSet<Q> {

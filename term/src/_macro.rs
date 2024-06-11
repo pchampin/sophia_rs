@@ -16,7 +16,7 @@ macro_rules! gen_term {
             #[doc = " under the hood."]
             #[derive(Clone, Debug)]
             pub enum $type_name {
-                /// A straighforward implementation of [`Term`] as an enum.
+                /// A straightforward implementation of [`Term`] as an enum.
                 /// An [RDF IRI](https://www.w3.org/TR/rdf11-concepts/#section-IRIs)
                 Iri(IriRef<W<str>>),
                 /// An RDF [blank node](https://www.w3.org/TR/rdf11-concepts/#section-blank-nodes)

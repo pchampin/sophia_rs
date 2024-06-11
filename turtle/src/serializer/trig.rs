@@ -153,7 +153,7 @@ pub(crate) mod test {
         "#,
         r#"# blank node graph name
             PREFIX : <http://example.org/ns/>
-            :lois :belives _:b.
+            :lois :believes _:b.
             GRAPH _:b1 { :clark a :Human }
         "#,
         r#"# blank node sharred across graphs

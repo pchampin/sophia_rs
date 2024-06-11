@@ -52,31 +52,31 @@ mod test {
         let t4a = "42";
         let t4b = stash.copy_term(t4a);
         assert!(Term::eq(&t4a, &t4b));
-        assert_eq!(old_len, stash.len()); // all values where alreadt there
+        assert_eq!(old_len, stash.len()); // all values where already there
         old_len = stash.len();
 
         let t5a = BnodeId::new_unchecked("foo");
         let t5b = stash.copy_term(t5a);
         assert!(Term::eq(&t5a, &t5b));
-        assert_eq!(old_len, stash.len()); // all values where alreadt there
+        assert_eq!(old_len, stash.len()); // all values where already there
         old_len = stash.len();
 
         let t6a = VarName::new_unchecked("foobar");
         let t6b = stash.copy_term(t6a);
         assert!(Term::eq(&t6a, &t6b));
-        assert_eq!(old_len + 1, stash.len()); // all values where alreadt there
+        assert_eq!(old_len + 1, stash.len()); // all values where already there
         old_len = stash.len();
 
         let t1c = stash.copy_term(&t1b);
         assert!(Term::eq(&t1a, &t1c));
-        assert_eq!(old_len, stash.len()); // all values where alreadt there
+        assert_eq!(old_len, stash.len()); // all values where already there
         old_len = stash.len();
 
         let t7a: SimpleTerm<'static> =
             SimpleTerm::Triple(Box::new(["s", "p", "o"].map(SimpleTerm::from_term)));
         let t7b = stash.copy_term(&t7a);
         assert!(Term::eq(&t7a, &t7b));
-        assert_eq!(old_len + 3, stash.len()); // all values where alreadt there
+        assert_eq!(old_len + 3, stash.len()); // all values where already there
         old_len = stash.len();
     }
 }

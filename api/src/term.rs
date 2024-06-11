@@ -62,7 +62,7 @@ pub enum TermKind {
 /// However, while all other methods have a default implementtation (returning `None`),
 /// those corresponding to the supported kinds MUST be overridden accordingly,
 /// otherwise they will panic.
-/// See below for an explaination of this design choice.
+/// See below for an explanation of this design choice.
 ///
 /// In order to test that all the methods are implemented consistently,
 /// consider using the macro [`assert_consistent_term_impl`].
@@ -71,7 +71,7 @@ pub enum TermKind {
 ///
 /// # Design rationale
 ///
-/// The methods defined by this trait are not independant:
+/// The methods defined by this trait are not independent:
 /// depending on the value returned by [`kind`](Term::kind),
 /// other methods are expected to return `Some(...)` or `None` accordingly.
 ///
@@ -111,28 +111,28 @@ pub trait Term: std::fmt::Debug {
     fn kind(&self) -> TermKind;
 
     /// Return true if this [`Term`] is an IRI,
-    /// i.e. if [`kind`](Term::kind) retuns [`TermKind::Iri`].
+    /// i.e. if [`kind`](Term::kind) returns [`TermKind::Iri`].
     #[inline]
     fn is_iri(&self) -> bool {
         self.kind() == TermKind::Iri
     }
 
     /// Return true if this [`Term`] is a blank node,
-    /// i.e. if [`kind`](Term::kind) retuns [`TermKind::BlankNode`].
+    /// i.e. if [`kind`](Term::kind) returns [`TermKind::BlankNode`].
     #[inline]
     fn is_blank_node(&self) -> bool {
         self.kind() == TermKind::BlankNode
     }
 
     /// Return true if this [`Term`] is a literal,
-    /// i.e. if [`kind`](Term::kind) retuns [`TermKind::Literal`].
+    /// i.e. if [`kind`](Term::kind) returns [`TermKind::Literal`].
     #[inline]
     fn is_literal(&self) -> bool {
         self.kind() == TermKind::Literal
     }
 
     /// Return true if this [`Term`] is a variable,
-    /// i.e. if [`kind`](Term::kind) retuns [`TermKind::Variable`].
+    /// i.e. if [`kind`](Term::kind) returns [`TermKind::Variable`].
     #[inline]
     fn is_variable(&self) -> bool {
         self.kind() == TermKind::Variable
@@ -153,7 +153,7 @@ pub trait Term: std::fmt::Debug {
     }
 
     /// Return true if this [`Term`] is an RDF-star quoted triple,
-    /// i.e. if [`kind`](Term::kind) retuns [`TermKind::Triple`].
+    /// i.e. if [`kind`](Term::kind) returns [`TermKind::Triple`].
     #[inline]
     fn is_triple(&self) -> bool {
         self.kind() == TermKind::Triple
@@ -311,7 +311,7 @@ pub trait Term: std::fmt::Debug {
         }
     }
 
-    /// Iter over all the constiutents of this term, consuming it.
+    /// Iter over all the constituents of this term, consuming it.
     ///
     /// See [Term::constituents].
     fn to_constituents<'a>(self) -> Box<dyn Iterator<Item = Self> + 'a>
@@ -435,7 +435,7 @@ pub trait Term: std::fmt::Debug {
         })
     }
 
-    /// Compute an implementation-independant hash of this RDF term.
+    /// Compute an implementation-independent hash of this RDF term.
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         let k = self.kind();
         k.hash(state);

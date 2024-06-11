@@ -104,7 +104,7 @@ where
 pub type Jsonifier<L = NoLoader> = JsonLdSerializer<JsonTarget, L>;
 
 /// This type is just a placeholder [`JsonLdSerializer`]
-/// targetting a [`JsonValue`].
+/// targeting a [`JsonValue`].
 /// See [`new_jsonifier`] and [`new_jsonifier_with`].
 ///
 /// [`new_jsonifier`]: struct.JsonLdSerializer.html#method.new_jsonifier

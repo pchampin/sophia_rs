@@ -5,7 +5,7 @@ lazy_static::lazy_static! {
     static ref RDF_LANG_STRING: Box<str> = rdf::langString.iri().unwrap().unwrap().into();
 }
 
-/// A straighforward implementation of [`Term`] as an enum.
+/// A straightforward implementation of [`Term`] as an enum.
 #[derive(Clone, Debug)]
 pub enum SimpleTerm<'a> {
     /// An [RDF IRI](https://www.w3.org/TR/rdf11-concepts/#section-IRIs)

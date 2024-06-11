@@ -265,7 +265,7 @@ mod test {
         let ns1 = Namespace::new("http://schema.org/").unwrap();
         assert_ne!(
             ns1.get("name").unwrap().to_string(),
-            ns1.get("nam").unwrap().to_string()
+            ns1.get("givenName").unwrap().to_string()
         );
     }
 

@@ -188,7 +188,7 @@ impl<'a> Term for Trusted<Subject<'a>> {
         Self: Sized,
     {
         if let Subject::Triple(_) = self.0 {
-            // there is an impedence mismatch between Sophia and Rio:
+            // there is an impedance mismatch between Sophia and Rio:
             // we can not convert a triple into [Subject; 3]
             unimplemented!()
         } else {

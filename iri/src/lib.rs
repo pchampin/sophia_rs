@@ -1,9 +1,9 @@
 //! This crate provides functions for validating IRIs and IRI references,
-//! as well as for resolving IRI references agains a given base IRI.
+//! as well as for resolving IRI references against a given base IRI.
 //!
 //! It is developed as a part of [Sophia],
 //! an [RDF] and [Linked Data] toolkit in Rust,
-//! but can be used independantly.
+//! but can be used independently.
 //!
 //! # Feature gates
 //!

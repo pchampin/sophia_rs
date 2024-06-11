@@ -27,7 +27,7 @@
     - new API for prefix map
     - new IRI wrappers and traits in sophia_iri
     - Serializers for Turtle and TriG (with 2 modes: fast and pretty)
-    Oher major changes
+    Other major changes
     - Now entirely modular: sophia is essentially only a compilation
       of smaller crates
     Documentation
@@ -95,7 +95,7 @@
     - Common traits for parsers and serializers
     - More idiomatic API for Triple- and QuadSource
     Dev
-    - reduced dependancies (coercible-errors, error-chain, pest)
+    - reduced dependencies (coercible-errors, error-chain, pest)
     - no more central Error type
 
 0.3.0

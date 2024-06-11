@@ -35,7 +35,7 @@
 //!
 //! are considered isomorphic by the algorithm of this crate,
 //! because they have the same number of blank nodes and arcs,
-//! and all of their blank nodes are locally indistinguisable
+//! and all of their blank nodes are locally indistinguishable
 //! (same number of incoming and outgoinc arcs,
 //! linking them to undistinguishable blank nodes).
 //!

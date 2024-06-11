@@ -44,7 +44,7 @@ pub trait SparqlDataset {
     type SparqlError: Error + 'static;
     /// The type representing pre-processed queries.
     ///
-    /// See [`prepare_query`](#tymethod.prepare_query) for more defail.
+    /// See [`prepare_query`](#tymethod.prepare_query) for more detail.
     type Query: Query<Error = Self::SparqlError>;
 
     /// Parse and immediately execute `query`.
@@ -61,7 +61,7 @@ pub trait SparqlDataset {
     ///
     /// This allows some implementation to separate parsing,
     /// (or any other pre-processing step)
-    /// of the query string from the actual exectution of the query.
+    /// of the query string from the actual execution of the query.
     /// There is however no guarantee on how much pre-processing is actually done by this method
     /// (see below).
     ///
@@ -96,7 +96,7 @@ impl Query for String {
 /// A utility trait to allow [`SparqlDataset::query`]
 /// to accept either `&str` or [`Self::Query`](SparqlDataset::Query).
 pub trait IntoQuery<Q: Query> {
-    /// The ouput type of [`into_query`](IntoQuery::into_query).
+    /// The output type of [`into_query`](IntoQuery::into_query).
     type Out: Borrow<Q>;
     /// Convert `self` to a [`Query`].
     fn into_query(self) -> Result<Self::Out, Q::Error>;

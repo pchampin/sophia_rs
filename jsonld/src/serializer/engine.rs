@@ -210,7 +210,7 @@ impl<'a, L> Engine<'a, L> {
             || (self.options.rdf_direction() == Some(RdfDirection::CompoundLiteral)
                 && self.compound_literals.contains(&inode))
         {
-            //println!("=== skiped (list node or compound literal)");
+            //println!("=== skipped (list node or compound literal)");
             return Ok(None);
         }
         //println!("=== --- doing it");

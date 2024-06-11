@@ -1,16 +1,16 @@
 //! Read a graph or a dataset from the standard input in [N-Triples]/[N-Quads],
-//! and serialize it back to the format specifed in the first argument.
+//! and serialize it back to the format specified in the first argument.
 //!
 //! Recognized formats are:
 //! - [`ntriples`](https://www.w3.org/TR/n-triples/) (alias `nt`)
 //! - [`turtle`](https://www.w3.org/TR/turtle/) (alias `ttl`)
 //! - [`nquads`](https://www.w3.org/TR/n-quads/) (alias `nq`)
 //! - [`trig`](https://www.w3.org/TR/trig/)
-//! - [`jsonld`](https://www.w3.org/TR/json-ld11) (if compiled witht the `jsonld` feature)
-//! - [`rdfxml`](https://www.w3.org/TR/rdf-syntax-grammar) (if compiled witht the `xml` feature, alias `rdf`)
+//! - [`jsonld`](https://www.w3.org/TR/json-ld11) (if compiled with the `jsonld` feature)
+//! - [`rdfxml`](https://www.w3.org/TR/rdf-syntax-grammar) (if compiled with the `xml` feature, alias `rdf`)
 //!
 //! NB: if the input is a dataset with named graphs,
-//! and the ouput format is a graph format,
+//! and the output format is a graph format,
 //! then only the default graph is serialized.
 //!
 //! [N-Triples]: https://www.w3.org/TR/n-triples/
@@ -65,7 +65,7 @@ fn main() {
         #[cfg(feature = "xml")]
         "rdfxml" | "rdf" => {
             let indent = if pretty { 4 } else { 0 };
-            let config = RdfXmlConfig::new().with_identation(indent);
+            let config = RdfXmlConfig::new().with_indentation(indent);
             let ser = RdfXmlSerializer::new_with_config(out, config);
             serialize_triples(quad_source, ser)
         }

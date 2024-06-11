@@ -345,7 +345,7 @@ impl<T: Triple, S> SetGraph for HashSet<T, S> {}
 
 // BTreeSet of triples
 
-/// NB: This is a straighforward and minimal implementation,
+/// NB: This is a straightforward and minimal implementation,
 /// not taking advantage of the order of terms to optimize [`Graph::triples_matching`]
 /// nor other methods.
 impl<T: Triple> Graph for BTreeSet<T> {

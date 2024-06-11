@@ -35,7 +35,7 @@ impl RdfXmlConfig {
     }
 
     /// Transform an [`RdfXmlConfig`] by setting the [`indentation`](RdfXmlConfig::indentation).
-    pub fn with_identation(mut self, i: usize) -> Self {
+    pub fn with_indentation(mut self, i: usize) -> Self {
         self.indentation = i;
         self
     }
@@ -157,7 +157,7 @@ pub(crate) mod test {
 
     #[test]
     fn roundtrip_with_ident() -> Result<(), Box<dyn std::error::Error>> {
-        let config = RdfXmlConfig::new().with_identation(4);
+        let config = RdfXmlConfig::new().with_indentation(4);
         for rdfxml in TESTS {
             println!("==========\n{}\n----------", rdfxml);
             let g1: Vec<[SimpleTerm; 3]> = crate::parser::parse_str(rdfxml).collect_triples()?;

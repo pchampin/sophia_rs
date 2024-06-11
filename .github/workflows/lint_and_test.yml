@@ -1,4 +1,3 @@
-
 name: Lint and Test
 
 on: [push, pull_request]
@@ -8,7 +7,7 @@ jobs:
     name: fmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - run: rustup update
       - run: rustup component add rustfmt
       - run: cargo fmt -- --check
@@ -17,7 +16,7 @@ jobs:
     name: clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - run: rustup update
       - run: rustup component add clippy
       - run: cargo clippy --all --all-targets --all-features
@@ -25,7 +24,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
         with:
           submodules: true
       - run: rustup update
@@ -33,3 +32,9 @@ jobs:
       - run: cargo test --verbose --all --all-features
         env:
           RUST_BACKTRACE: 1
+
+  typos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: crate-ci/typos@master

@@ -17,7 +17,7 @@ pub enum ResourceError<E: Error> {
         /// The error that was raised
         error: E,
     },
-    /// A value was expeced and not found for the given predicate on the given resource
+    /// A value was expected and not found for the given predicate on the given resource
     NoValueFor {
         /// The identifier of the resource
         id: SimpleTerm<'static>,

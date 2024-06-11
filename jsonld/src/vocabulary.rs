@@ -18,7 +18,7 @@ pub type ArcTag = sophia_api::term::LanguageTag<Arc<str>>;
 /// A [`Vocabulary`](rdf_types::Vocabulary) using `Arc<str>`-based types as index.
 ///
 /// These types match the notion of index in [`rdf_types`] as they are relatively cheap to clone,
-/// but offer the advantage of being self-explanatory, and resolvable to actual terms withour actually needing the vocabulary.
+/// but offer the advantage of being self-explanatory, and resolvable to actual terms without actually needing the vocabulary.
 #[derive(Clone, Debug, Default)]
 pub struct ArcVoc {}
 

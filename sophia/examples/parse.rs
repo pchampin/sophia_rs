@@ -14,8 +14,8 @@
 //! - [`trig`](https://www.w3.org/TR/trig/)
 //! - `gnq` (Generalized [N-Quads](https://www.w3.org/TR/n-quads/))
 //! - `gtrig` (Generalized [TriG](https://www.w3.org/TR/trig/), default)
-//! - [`jsonld`](https://www.w3.org/TR/json-ld11) (if compiled witht the `jsonld` feature)
-//! - [`rdfxml`](https://www.w3.org/TR/rdf-syntax-grammar) (if compiled witht the `xml` feature, alias `rdf`)
+//! - [`jsonld`](https://www.w3.org/TR/json-ld11) (if compiled with the `jsonld` feature)
+//! - [`rdfxml`](https://www.w3.org/TR/rdf-syntax-grammar) (if compiled with the `xml` feature, alias `rdf`)
 //!
 //! [N-Triples]: https://www.w3.org/TR/n-triples/
 //! [N-Quads]: https://www.w3.org/TR/n-quads/

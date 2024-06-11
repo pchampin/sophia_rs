@@ -4,8 +4,8 @@
 //! this module publicly exports arrays of test data,
 //! for the benefit of other crates.
 
-/// Structure of an IRI referece.
-/// See [`POSITIVIE_IRIS`](constant.POSITIVE_IRIS.html) for more details.
+/// Structure of an IRI reference.
+/// See [`POSITIVE_IRIS`](constant.POSITIVE_IRIS.html) for more details.
 pub type IriRefStructure<'a> = (
     bool,
     Option<&'a str>,

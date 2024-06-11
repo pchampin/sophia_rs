@@ -130,7 +130,7 @@ impl<I: Index> SimpleTermIndex<I> {
         }
     }
 
-    /// The numver of terms in this index
+    /// The number of terms in this index
     pub fn len(&self) -> usize {
         self.i2t.len()
     }

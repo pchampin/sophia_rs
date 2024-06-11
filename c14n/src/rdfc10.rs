@@ -61,7 +61,7 @@ pub fn normalize_with<H: HashFunction, D: SetDataset, W: io::Write>(
     let (mut quads, _) = relabel_with::<H, D>(d, depth_factor, permutation_limit)?;
     let mut buf1 = String::new();
     let mut buf2 = String::new();
-    // we sort the quads, but comparing the terms based on ther NQ serialization,
+    // we sort the quads, but comparing the terms based on their NQ serialization,
     // which amounts to sorting the N-Quads lines without materializing them
     quads.sort_unstable_by(|q1, q2| {
         for (t1, t2) in iter_spog_opt(q1.spog()).zip(iter_spog_opt(q2.spog())) {
@@ -129,7 +129,7 @@ pub fn relabel_sha384<D: SetDataset>(
 ///
 /// The parameters `depth_factor` and `permutation_limit`
 /// are used to stop the algorithm if the computation becomes too complex,
-/// in order to secure it agains [dataset poisoning](https://www.w3.org/TR/rdf-canon/#dataset-poisoning).
+/// in order to secure it against [dataset poisoning](https://www.w3.org/TR/rdf-canon/#dataset-poisoning).
 /// The default values ([`DEFAULT_DEPTH_FACTOR`]) and [`DEFAULT_PERMUTATION_LIMIT`])
 /// are expected to work with any "realistic" dataset.
 ///
@@ -470,7 +470,7 @@ fn hash_first_degree_quads<H: HashFunction, Q: Quad>(bnid: &str, quads: &[&Q]) -
     }
     let ret = hasher.finalize();
     debug_assert!({
-        eprintln!("hash-fisrt-degree({})\n-> {}", bnid, hex(&ret));
+        eprintln!("hash-first-degree({})\n-> {}", bnid, hex(&ret));
         true
     });
     ret
@@ -723,13 +723,13 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
         Ok(unsafe { String::from_utf8_unchecked(output) })
     }
 
-    /// Simplisitic Quad parser, useful for writing test cases.
+    /// Simplistic Quad parser, useful for writing test cases.
     /// It is based on eq_quad below.
     fn ez_quads<'a>(lines: &[&'a str]) -> std::collections::HashSet<Spog<SimpleTerm<'a>>> {
         lines.iter().map(|line| ez_quad(line)).collect()
     }
 
-    /// Simplisitic Quad parser, useful for writing test cases.
+    /// Simplistic Quad parser, useful for writing test cases.
     /// The syntax is a subset of N-Quads-star,
     /// where spaces are not allowed in literals, and a space is required before the ending '.'.
     fn ez_quad(txt: &str) -> Spog<SimpleTerm> {
@@ -791,9 +791,9 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
 _:c14n0 <http://example.com/#t> <http://example.com/#u> .
 _:c14n1 <http://example.com/#s> <http://example.com/#u> .
 "#;
-        let mut dout = Vec::<u8>::new();
-        normalize_sha384(&dataset, &mut dout).unwrap();
-        let got = unsafe { String::from_utf8_unchecked(dout) };
+        let mut got = Vec::<u8>::new();
+        normalize_sha384(&dataset, &mut got).unwrap();
+        let got = unsafe { String::from_utf8_unchecked(got) };
         println!(">>>> GOT\n{}>>>> EXPECTED\n{}<<<<", got, exp);
         assert!(got == exp);
     }
