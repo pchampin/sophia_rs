@@ -55,6 +55,7 @@ pub mod graph;
 pub mod ns;
 pub mod parser;
 pub mod prefix;
+#[doc(hidden)]
 pub mod prelude;
 pub mod quad;
 pub mod serializer;
