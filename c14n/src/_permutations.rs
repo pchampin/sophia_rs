@@ -37,6 +37,8 @@ mod test {
 
     #[test]
     fn check_empty() {
+        crate::test_setup();
+
         let mut a = [];
         let mut got = HashSet::<Vec<i32>>::new();
         for_each_permutation_of(&mut a, |a| {
@@ -49,6 +51,8 @@ mod test {
 
     #[test]
     fn check_1() {
+        crate::test_setup();
+
         let mut a = [1];
         let exp = [vec![1]].into_iter().collect::<HashSet<_>>();
         let mut got = HashSet::<Vec<i32>>::new();
@@ -62,6 +66,8 @@ mod test {
 
     #[test]
     fn check_12() {
+        crate::test_setup();
+
         let mut a = [1, 2];
         let exp = [vec![1, 2], vec![2, 1]].into_iter().collect::<HashSet<_>>();
         let mut got = HashSet::<Vec<i32>>::new();
@@ -75,6 +81,8 @@ mod test {
 
     #[test]
     fn check_123() {
+        crate::test_setup();
+
         let mut a = [1, 2, 3];
         let exp = [
             vec![1, 2, 3],
@@ -97,6 +105,8 @@ mod test {
 
     #[test]
     fn check_1234() {
+        crate::test_setup();
+
         let mut a = [1, 2, 3, 4];
         let exp = [
             vec![1, 2, 3, 4],
@@ -137,6 +147,8 @@ mod test {
 
     #[test]
     fn check_12345() {
+        crate::test_setup();
+
         let mut a = [1, 2, 3, 4, 5];
         let mut got = HashSet::<Vec<i32>>::new();
         for_each_permutation_of(&mut a, |a| {
@@ -149,6 +161,8 @@ mod test {
 
     #[test]
     fn check_err() {
+        crate::test_setup();
+
         let mut a = [1, 2, 3, 4];
         let exp = [
             vec![1, 2, 3, 4],

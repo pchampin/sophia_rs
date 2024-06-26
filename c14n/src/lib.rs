@@ -40,3 +40,13 @@ pub enum C14nError<E: std::error::Error> {
     #[error("Unsupported feature: {0}")]
     Unsupported(String),
 }
+
+#[cfg(test)]
+fn test_setup() {
+    TEST_SETUP.call_once(|| {
+        env_logger::init();
+    });
+}
+
+#[cfg(test)]
+static TEST_SETUP: std::sync::Once = std::sync::Once::new();

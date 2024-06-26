@@ -13,7 +13,11 @@ keywords.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+log.workspace = true
 sha2 = "0.10.7"
 sophia_api.workspace = true
 sophia_iri.workspace = true
 thiserror.workspace = true
+
+[dev-dependencies]
+env_logger.workspace = true

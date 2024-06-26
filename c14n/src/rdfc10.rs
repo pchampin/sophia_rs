@@ -398,7 +398,7 @@ impl<'a, H: HashFunction, T: Term> C14nState<'a, H, T> {
             ret_issuer.unwrap_or_else(|| issuer.clone()),
         );
         debug_assert!({
-            eprintln!(
+            log::trace!(
                 "hash-n-degree({}, {})\n-> {}",
                 identifier,
                 depth,
@@ -470,7 +470,7 @@ fn hash_first_degree_quads<H: HashFunction, Q: Quad>(bnid: &str, quads: &[&Q]) -
     }
     let ret = hasher.finalize();
     debug_assert!({
-        eprintln!("hash-first-degree({})\n-> {}", bnid, hex(&ret));
+        log::trace!("hash-first-degree({})\n-> {}", bnid, hex(&ret));
         true
     });
     ret
@@ -520,6 +520,8 @@ mod test {
 
     #[test]
     fn example2() {
+        crate::test_setup();
+
         let dataset = ez_quads(&[
             "<http://example.com/#p> <http://example.com/#q> _:e0 .",
             "<http://example.com/#p> <http://example.com/#r> _:e1 .",
@@ -538,6 +540,8 @@ _:c14n1 <http://example.com/#t> <http://example.com/#u> .
 
     #[test]
     fn example3() {
+        crate::test_setup();
+
         let dataset = ez_quads(&[
             "<http://example.com/#p> <http://example.com/#q> _:e0 .",
             "<http://example.com/#p> <http://example.com/#q> _:e1 .",
@@ -558,6 +562,8 @@ _:c14n3 <http://example.com/#p> _:c14n0 .
 
     #[test]
     fn cycle5() {
+        crate::test_setup();
+
         let dataset = ez_quads(&[
             "_:e0 <http://example.com/#p> _:e1 .",
             "_:e1 <http://example.com/#p> _:e2 .",
@@ -578,6 +584,8 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
 
     #[test]
     fn cycle5_toxic() {
+        crate::test_setup();
+
         let dataset = ez_quads(&[
             "_:e0 <http://example.com/#p> _:e1 .",
             "_:e1 <http://example.com/#p> _:e2 .",
@@ -598,6 +606,8 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
 
     #[test]
     fn clique5() {
+        crate::test_setup();
+
         let dataset = ez_quads(&[
             "_:e0 <http://example.com/#p> _:e1 .",
             "_:e0 <http://example.com/#p> _:e2 .",
@@ -648,6 +658,8 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
 
     #[test]
     fn clique5_toxic() {
+        crate::test_setup();
+
         let dataset = ez_quads(&[
             "_:e0 <http://example.com/#p> _:e1 .",
             "_:e0 <http://example.com/#p> _:e2 .",
@@ -679,6 +691,8 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
 
     #[test]
     fn cycle2plus3() {
+        crate::test_setup();
+
         let dataset = ez_quads(&[
             "_:e0 <http://example.com/#p> _:e1 .",
             "_:e1 <http://example.com/#p> _:e0 .",
@@ -699,6 +713,8 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
 
     #[test]
     fn tricky_order() {
+        crate::test_setup();
+
         let dataset = ez_quads(&[
             "<tag:a> <tag:p> _:a .",
             "<tag:a> <tag:p> <tag:a> .",
@@ -780,6 +796,8 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
 
     #[test]
     fn example2_sha384() {
+        crate::test_setup();
+
         let dataset = ez_quads(&[
             "<http://example.com/#p> <http://example.com/#q> _:e0 .",
             "<http://example.com/#p> <http://example.com/#r> _:e1 .",
