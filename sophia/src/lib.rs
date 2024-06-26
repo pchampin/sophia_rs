@@ -26,14 +26,19 @@
 
 #[doc(inline)]
 pub use sophia_api as api;
+#[doc(inline)]
 pub use sophia_c14n as c14n;
 #[doc(inline)]
 pub use sophia_inmem as inmem;
+#[doc(inline)]
 pub use sophia_iri as iri;
+#[doc(inline)]
 pub use sophia_isomorphism as isomorphism;
 #[cfg(feature = "jsonld")]
 pub use sophia_jsonld as jsonld;
+#[doc(inline)]
 pub use sophia_resource as resource;
+#[doc(inline)]
 pub use sophia_term as term;
 pub use sophia_turtle as turtle;
 #[cfg(feature = "xml")]
