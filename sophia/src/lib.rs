@@ -9,7 +9,7 @@
 //! * [`inmem`]
 //! * [`iri`]
 //! * [`isomorphism`]
-//! * [`jsonld`]
+//! * [`jsonld`] (with the `jsonld` feature enabled)
 //! * [`resource`]
 //! * [`turtle`]
 //! * [`term`]
