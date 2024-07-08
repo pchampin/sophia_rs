@@ -35,13 +35,16 @@ pub use sophia_iri as iri;
 #[doc(inline)]
 pub use sophia_isomorphism as isomorphism;
 #[cfg(feature = "jsonld")]
+#[doc(inline)]
 pub use sophia_jsonld as jsonld;
 #[doc(inline)]
 pub use sophia_resource as resource;
 #[doc(inline)]
 pub use sophia_term as term;
+#[doc(inline)]
 pub use sophia_turtle as turtle;
 #[cfg(feature = "xml")]
+#[doc(inline)]
 pub use sophia_xml as xml;
 
 /// Including tests from all code snippets in the book
