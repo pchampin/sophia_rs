@@ -87,7 +87,7 @@ pub trait Source {
     /// The type of items this source yields.
     type Item<'x>;
     /// The type of errors produced by this source.
-    type Error: Error + 'static;
+    type Error: Error + 'static + Send + Sync;
 
     /// Call f for some item(s) (possibly zero) from this source, if any.
     ///
@@ -200,7 +200,7 @@ pub trait Source {
 impl<'a, I, T, E> Source for I
 where
     I: Iterator<Item = Result<T, E>> + 'a,
-    E: Error + 'static,
+    E: Error + 'static + Send + Sync,
 {
     type Item<'x> = T;
     type Error = E;

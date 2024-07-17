@@ -53,7 +53,7 @@ pub trait Graph {
     where
         Self: 'x;
     /// The error type that this graph may raise.
-    type Error: Error + 'static;
+    type Error: Error + 'static + Send + Sync;
 
     /// An iterator visiting all triples of this graph in arbitrary order.
     ///

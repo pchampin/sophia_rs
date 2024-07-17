@@ -56,7 +56,7 @@ pub trait Dataset {
     where
         Self: 'x;
     /// The error type that this dataset may raise.
-    type Error: Error + 'static;
+    type Error: Error + 'static + Send + Sync;
 
     /// An iterator visiting all quads of this dataset in arbitrary order.
     ///
