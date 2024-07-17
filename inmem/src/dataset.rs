@@ -14,7 +14,7 @@ use _iter::*;
 
 /// A dataset with a single quad index (GSPO).
 /// Fast to load but slow on some queries, with a relatively low memory footprint.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default)]
 pub struct GenericLightDataset<TI: TermIndex> {
     terms: TI,
     quads: BTreeSet<[TI::Index; 4]>,
@@ -194,7 +194,7 @@ impl<TI: GraphNameIndex> SetDataset for GenericLightDataset<TI> {}
 
 /// A heavily indexed dataset.
 /// Fast to query but slow to load, with a relatively high memory footprint.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default)]
 pub struct GenericFastDataset<TI: GraphNameIndex> {
     terms: TI,
     gspo: BTreeSet<[TI::Index; 4]>,
