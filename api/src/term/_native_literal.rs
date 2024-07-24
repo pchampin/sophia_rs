@@ -235,6 +235,7 @@ impl TryFromTerm for f64 {
         if let Some(lex) = term.lexical_form() {
             if Term::eq(&term.datatype().unwrap(), xsd::double)
                 || Term::eq(&term.datatype().unwrap(), xsd::float)
+                || Term::eq(&term.datatype().unwrap(), xsd::decimal)
             {
                 lex.parse()
             } else {
