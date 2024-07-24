@@ -5,7 +5,7 @@ use std::fmt;
 
 /// An error raised when creating a [`Resource`](crate::Resource)
 #[derive(Debug)]
-pub enum ResourceError<E: Error> {
+pub enum ResourceError<E: Error + Send + Sync + 'static> {
     /// The IRI is not absolute (an can therefore not be dereferenced)
     IriNotAbsolute(IriRef<Box<str>>),
     /// The resource could not be loaded
@@ -70,7 +70,7 @@ pub enum ResourceError<E: Error> {
     },
 }
 
-impl<E: Error> ResourceError<E> {
+impl<E: Error + Send + Sync + 'static> ResourceError<E> {
     /// The identifier of the resource raising the error.
     ///
     /// NB: for errors raised during creation ([`ResourceError::IriNotAbsolute`], [`ResourceError::LoaderError`]),
@@ -91,19 +91,19 @@ impl<E: Error> ResourceError<E> {
     }
 }
 
-impl<E: Error> fmt::Display for ResourceError<E> {
+impl<E: Error + Send + Sync + 'static> fmt::Display for ResourceError<E> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
-impl<E: Error> From<crate::loader::LoaderError> for ResourceError<E> {
+impl<E: Error + Send + Sync + 'static> From<crate::loader::LoaderError> for ResourceError<E> {
     fn from(value: crate::loader::LoaderError) -> Self {
         Self::LoaderError(value)
     }
 }
 
-impl<E: Error> Error for ResourceError<E> {}
+impl<E: Error + Send + Sync + 'static> Error for ResourceError<E> {}
 
 /// A result whose error is a [`ResourceError`]
 pub type ResourceResult<T, G> = Result<T, ResourceError<<G as Graph>::Error>>;
