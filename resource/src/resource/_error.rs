@@ -70,7 +70,10 @@ pub enum ResourceError<E: Error + Send + Sync + 'static> {
     },
 }
 
-impl<E: Error + Send + Sync + 'static> ResourceError<E> {
+impl<E: Error + Send + Sync + 'static> ResourceError<E>
+where
+    Self: Send + Sync + 'static,
+{
     /// The identifier of the resource raising the error.
     ///
     /// NB: for errors raised during creation ([`ResourceError::IriNotAbsolute`], [`ResourceError::LoaderError`]),
@@ -103,7 +106,7 @@ impl<E: Error + Send + Sync + 'static> From<crate::loader::LoaderError> for Reso
     }
 }
 
-impl<E: Error + Send + Sync + 'static> Error for ResourceError<E> {}
+impl<E: Error + Send + Sync + 'static> Error for ResourceError<E> where Self: Send + Sync + 'static {}
 
 /// A result whose error is a [`ResourceError`]
 pub type ResourceResult<T, G> = Result<T, ResourceError<<G as Graph>::Error>>;

@@ -20,7 +20,7 @@ pub enum LoaderError {
     CantGuessSyntax(IriBuf),
     /// An error was encountered while parsing the data into an RDF graph
     #[error("Can not parse {0:?}: {1}")]
-    ParseError(IriBuf, Box<dyn std::error::Error>),
+    ParseError(IriBuf, Box<dyn std::error::Error + Send + Sync + 'static>),
 }
 
 impl LoaderError {

@@ -72,7 +72,7 @@ mod test {
     pub const F5_LEN: usize = 20;
 
     pub type MyGraph = Vec<[SimpleTerm<'static>; 3]>;
-    pub type TestResult = Result<(), Box<dyn std::error::Error>>;
+    pub type TestResult = Result<(), Box<dyn std::error::Error + Send + Sync + 'static>>;
 
     pub fn make_loader() -> LocalLoader {
         let ns = NS.map_unchecked(MownStr::from);

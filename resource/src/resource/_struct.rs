@@ -22,6 +22,7 @@ pub struct Resource<G, L> {
 impl<G, L> Resource<G, L>
 where
     G: Graph + 'static,
+    G::Error: Send + Sync + 'static,
     L: Loader,
 {
     /// Constructor
