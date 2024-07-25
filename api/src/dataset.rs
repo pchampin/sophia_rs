@@ -12,8 +12,8 @@ use crate::quad::{iter_spog, Quad};
 use crate::source::{IntoSource, QuadSource, StreamResult};
 use crate::term::matcher::{GraphNameMatcher, TermMatcher};
 use crate::term::{GraphName, SimpleTerm, Term};
+use crate::Error;
 use resiter::{filter::*, filter_map::*, flat_map::*, map::*};
-use std::error::Error;
 
 mod _foreign_impl;
 pub mod adapter;
@@ -56,7 +56,7 @@ pub trait Dataset {
     where
         Self: 'x;
     /// The error type that this dataset may raise.
-    type Error: Error + 'static + Send + Sync;
+    type Error: Error + 'static;
 
     /// An iterator visiting all quads of this dataset in arbitrary order.
     ///

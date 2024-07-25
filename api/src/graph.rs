@@ -9,8 +9,8 @@ use crate::dataset::adapter::GraphAsDataset;
 use crate::source::{IntoSource, StreamResult, TripleSource};
 use crate::term::{matcher::TermMatcher, SimpleTerm, Term};
 use crate::triple::Triple;
+use crate::Error;
 use resiter::{filter::*, flat_map::*, map::*};
-use std::error::Error;
 
 mod _foreign_impl;
 pub mod adapter;
@@ -53,7 +53,7 @@ pub trait Graph {
     where
         Self: 'x;
     /// The error type that this graph may raise.
-    type Error: Error + 'static + Send + Sync;
+    type Error: Error + 'static;
 
     /// An iterator visiting all triples of this graph in arbitrary order.
     ///

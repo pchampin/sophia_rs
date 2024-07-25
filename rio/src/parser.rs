@@ -8,7 +8,7 @@
 
 use crate::model::Trusted;
 use sophia_api::source::{StreamError, StreamError::*, StreamResult};
-use std::error::Error;
+use sophia_api::Error;
 
 /// Wrap a Rio [`TriplesParser`](rio_api::parser::TriplesParser)
 /// into a Sophia [`TripleSource`](sophia_api::source::TripleSource).
@@ -17,7 +17,7 @@ pub struct StrictRioTripleSource<T>(pub T);
 impl<T> sophia_api::source::Source for StrictRioTripleSource<T>
 where
     T: rio_api::parser::TriplesParser,
-    T::Error: Error + 'static + Send + Sync,
+    T::Error: Error + 'static,
 {
     type Item<'x> = Trusted<rio_api::model::Triple<'x>>;
 
@@ -50,7 +50,7 @@ pub struct StrictRioQuadSource<T>(pub T);
 impl<T> sophia_api::source::Source for StrictRioQuadSource<T>
 where
     T: rio_api::parser::QuadsParser,
-    T::Error: Error + 'static + Send + Sync,
+    T::Error: Error + 'static,
 {
     type Item<'x> = Trusted<rio_api::model::Quad<'x>>;
 
@@ -83,7 +83,7 @@ pub struct GeneralizedRioSource<T>(pub T);
 impl<T> sophia_api::source::Source for GeneralizedRioSource<T>
 where
     T: rio_api::parser::GeneralizedQuadsParser,
-    T::Error: Error + 'static + Send + Sync,
+    T::Error: Error + 'static,
 {
     type Item<'x> = Trusted<rio_api::model::GeneralizedQuad<'x>>;
 

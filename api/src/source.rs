@@ -56,7 +56,7 @@
 //! [`for_each_quad`]: QuadSource::for_each_quad
 //! [higher-rank trait bounds]: https://doc.rust-lang.org/nomicon/hrtb.html
 
-use std::error::Error;
+use crate::Error;
 
 pub mod convert;
 pub mod filter;
@@ -87,7 +87,7 @@ pub trait Source {
     /// The type of items this source yields.
     type Item<'x>;
     /// The type of errors produced by this source.
-    type Error: Error + 'static + Send + Sync;
+    type Error: Error + 'static;
 
     /// Call f for some item(s) (possibly zero) from this source, if any.
     ///
@@ -200,7 +200,7 @@ pub trait Source {
 impl<'a, I, T, E> Source for I
 where
     I: Iterator<Item = Result<T, E>> + 'a,
-    E: Error + 'static + Send + Sync,
+    E: Error + 'static,
 {
     type Item<'x> = T;
     type Error = E;

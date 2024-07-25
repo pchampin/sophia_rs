@@ -1,8 +1,8 @@
 //! A [`TermIndex`] is a bidirectional assocuation of [terms](Term) with short numeric [indices](Index).
 use sophia_api::term::{FromTerm, GraphName, SimpleTerm, Term};
+use sophia_api::Error;
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
-use std::error::Error;
 
 /// Abstraction of the short numeric indices representing [terms](Term) in a [`TermIndex`].
 pub trait Index: Copy + std::fmt::Debug + Ord {
@@ -64,7 +64,7 @@ pub trait TermIndex {
     /// The type of [indices](Index) used by this [`TermIndex`]
     type Index: Index;
     /// The type of error that this [`TermIndex`] may raise
-    type Error: Error + 'static + Send + Sync;
+    type Error: Error + 'static;
 
     /// Get the index corresponding to term `t`, if it exists.
     ///
@@ -195,7 +195,7 @@ mod test {
     use sophia_api::term::BnodeId;
 
     #[test]
-    fn simple_term_index() -> Result<(), Box<dyn std::error::Error>> {
+    fn simple_term_index() -> Result<(), Box<dyn Error>> {
         let ex = Namespace::new_unchecked("https://example.com/ns/");
         let exa = ex.get("a")?;
         let exb = ex.get("b")?;

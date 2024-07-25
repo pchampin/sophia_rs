@@ -27,6 +27,7 @@ criterion.workspace = true
 toml = "0.8.0"
 
 [features]
+threadsafe_err = []
 default = ["serde"]
 test_data = []
 examples = []
