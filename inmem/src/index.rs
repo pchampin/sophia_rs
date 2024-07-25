@@ -195,7 +195,7 @@ mod test {
     use sophia_api::term::BnodeId;
 
     #[test]
-    fn simple_term_index() -> Result<(), Box<dyn Error>> {
+    fn simple_term_index() -> Result<(), Box<dyn sophia_api::Error>> {
         let ex = Namespace::new_unchecked("https://example.com/ns/");
         let exa = ex.get("a")?;
         let exb = ex.get("b")?;

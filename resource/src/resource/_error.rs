@@ -69,10 +69,7 @@ pub enum ResourceError<E: Error> {
     },
 }
 
-impl<E: Error> ResourceError<E>
-where
-    Self: Send + Sync + 'static,
-{
+impl<E: Error> ResourceError<E> {
     /// The identifier of the resource raising the error.
     ///
     /// NB: for errors raised during creation ([`ResourceError::IriNotAbsolute`], [`ResourceError::LoaderError`]),

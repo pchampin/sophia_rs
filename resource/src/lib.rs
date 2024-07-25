@@ -20,7 +20,7 @@ mod test {
     use sophia_api::{
         prelude::{Graph, Term},
         term::SimpleTerm,
-        Error, MownStr,
+        MownStr,
     };
     use sophia_iri::Iri;
 
@@ -72,7 +72,7 @@ mod test {
     pub const F5_LEN: usize = 20;
 
     pub type MyGraph = Vec<[SimpleTerm<'static>; 3]>;
-    pub type TestResult = Result<(), Box<dyn Error>>;
+    pub type TestResult = Result<(), Box<dyn sophia_api::Error>>;
 
     pub fn make_loader() -> LocalLoader {
         let ns = NS.map_unchecked(MownStr::from);
