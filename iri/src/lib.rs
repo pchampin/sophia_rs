@@ -48,4 +48,4 @@ pub use ThreadSafeError as Error;
 
 /// An error trait meant to enable sending errors safely across threads.
 pub trait ThreadSafeError: std::error::Error + Send + Sync + 'static {}
-impl<E> ThreadSafeError for E where E: std::error::Error + Send + Sync + 'static + ?Sized {}
+impl<E> ThreadSafeError for E where E: std::error::Error + Send + Sync + 'static {}
