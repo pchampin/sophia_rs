@@ -41,7 +41,6 @@ pub mod wrap_macro_examples;
 #[cfg(any(test, feature = "test_data"))]
 pub mod test;
 
-use std::convert::Infallible;
 #[cfg(not(feature = "threadsafe_err"))]
 pub use std::error::Error;
 #[cfg(feature = "threadsafe_err")]
