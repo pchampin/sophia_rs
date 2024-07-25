@@ -111,7 +111,7 @@ pub(crate) mod test {
     use sophia_api::term::SimpleTerm;
     use sophia_api::{dataset::Dataset, quad::Spog};
     use sophia_isomorphism::isomorphic_datasets;
-    use std::error::Error;
+    use sophia_api::Error;
 
     const TESTS: &[&str] = &[
         "#empty trig",
@@ -177,7 +177,7 @@ pub(crate) mod test {
     ];
 
     #[test]
-    fn roundtrip_not_pretty() -> Result<(), Box<dyn std::error::Error>> {
+    fn roundtrip_not_pretty() -> Result<(), Box<dyn sophia_api::Error>> {
         for ttl in TESTS {
             println!("==========\n{}\n----------", ttl);
             let g1: Vec<Spog<SimpleTerm>> = crate::parser::trig::parse_str(ttl).collect_quads()?;

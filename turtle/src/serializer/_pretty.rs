@@ -792,7 +792,7 @@ pub(crate) mod test {
     }
 
     #[test]
-    fn relative_iri() -> Result<(), Box<dyn std::error::Error>> {
+    fn relative_iri() -> Result<(), Box<dyn sophia_api::Error>> {
         let iri = IriRef::new_unchecked("");
         let graph = vec![[iri, iri, iri]];
         let config = TurtleConfig::new().with_pretty(true);

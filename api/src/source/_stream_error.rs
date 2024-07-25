@@ -1,4 +1,4 @@
-use std::error::Error;
+use crate::Error;
 
 /// A error that is raised by functions that move fallible `Source`s into
 /// fallible `Sinks`.

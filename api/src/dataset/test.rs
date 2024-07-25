@@ -157,7 +157,7 @@ macro_rules! test_dataset_impl {
         $crate::test_dataset_impl!($module_name, $dataset_impl, $is_set, $is_gen, $dataset_collector, {
             // these tests will only be performed for implementations of `MutableDataset`
             #[test]
-            fn simple_mutations() -> Result<(), Box<dyn std::error::Error>> {
+            fn simple_mutations() -> Result<(), Box<dyn $crate::Error>> {
                 let mut d: $dataset_impl = $dataset_collector(no_quad()).unwrap();
                 assert_eq!(d.quads().count(), 0);
                 assert!(MutableDataset::insert(
@@ -196,7 +196,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn handle_duplicate() -> Result<(), Box<dyn std::error::Error>> {
+            fn handle_duplicate() -> Result<(), Box<dyn $crate::Error>> {
                 let mut d: $dataset_impl = $dataset_collector(no_quad()).unwrap();
                 assert_eq!(d.quads().count(), 0);
                 assert!(MutableDataset::insert(
@@ -239,7 +239,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn different_graphs_do_not_count_as_duplicate() -> Result<(), Box<dyn std::error::Error>> {
+            fn different_graphs_do_not_count_as_duplicate() -> Result<(), Box<dyn $crate::Error>> {
                 let mut d: $dataset_impl = $dataset_collector(no_quad()).unwrap();
                 assert_eq!(d.quads().count(), 0);
                 assert!(MutableDataset::insert(
@@ -304,7 +304,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn remove_matching() -> Result<(), Box<dyn std::error::Error>> {
+            fn remove_matching() -> Result<(), Box<dyn $crate::Error>> {
                 let mut d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 d.remove_matching(Any, [rdf::type_], [*C1, *C2], Any)?;
@@ -313,7 +313,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn retain_matching() -> Result<(), Box<dyn std::error::Error>> {
+            fn retain_matching() -> Result<(), Box<dyn $crate::Error>> {
                 let mut d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 d.retain_matching(Any, [rdf::type_], [*C1, *C2], Any)?;
@@ -337,7 +337,7 @@ macro_rules! test_dataset_impl {
             use super::*;
 
             #[test]
-            fn quads() -> Result<(), Box<dyn std::error::Error>> {
+            fn quads() -> Result<(), Box<dyn $crate::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 for iter in [Box::new(d.quads()) as Box<dyn Iterator<Item=_>>, Box::new(d.quads_matching(Any, Any, Any, Any))] {
@@ -353,7 +353,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn quads_with_s() -> Result<(), Box<dyn std::error::Error>> {
+            fn quads_with_s() -> Result<(), Box<dyn $crate::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let iter = d.quads_matching([*C2], Any, Any, Any);
@@ -380,7 +380,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn quads_with_p() -> Result<(), Box<dyn std::error::Error>> {
+            fn quads_with_p() -> Result<(), Box<dyn $crate::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let iter  = d.quads_matching(Any, [rdfs::subClassOf], Any, Any);
@@ -401,7 +401,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn quads_with_o() -> Result<(), Box<dyn std::error::Error>> {
+            fn quads_with_o() -> Result<(), Box<dyn $crate::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let iter = d.quads_matching(Any, Any, [*I2B], Any);
@@ -416,7 +416,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn quads_with_g() -> Result<(), Box<dyn std::error::Error>> {
+            fn quads_with_g() -> Result<(), Box<dyn $crate::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let iter = d.quads_matching(Any, Any, Any, [GN1.as_ref()]);
@@ -431,7 +431,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn quads_with_sp() -> Result<(), Box<dyn std::error::Error>> {
+            fn quads_with_sp() -> Result<(), Box<dyn $crate::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let iter = d.quads_matching([*C2], [rdf::type_], Any, Any);
@@ -452,7 +452,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn quads_with_so() -> Result<(), Box<dyn std::error::Error>> {
+            fn quads_with_so() -> Result<(), Box<dyn $crate::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let iter = d.quads_matching([*C2], Any, [*C1], Any);
@@ -467,7 +467,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn quads_with_po() -> Result<(), Box<dyn std::error::Error>> {
+            fn quads_with_po() -> Result<(), Box<dyn $crate::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let iter = d.quads_matching(Any, [rdf::type_], [rdfs::Class], Any);
@@ -496,7 +496,7 @@ macro_rules! test_dataset_impl {
 
 
             #[test]
-            fn quads_with_sg() -> Result<(), Box<dyn std::error::Error>> {
+            fn quads_with_sg() -> Result<(), Box<dyn $crate::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let iter = d.quads_matching([*C2], Any, Any, [GN1.as_ref()]);
@@ -511,7 +511,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn quads_with_pg() -> Result<(), Box<dyn std::error::Error>> {
+            fn quads_with_pg() -> Result<(), Box<dyn $crate::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let iter = d.quads_matching(Any, [rdf::type_], Any, [GN1.as_ref()]);
@@ -526,7 +526,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn quads_with_og() -> Result<(), Box<dyn std::error::Error>> {
+            fn quads_with_og() -> Result<(), Box<dyn $crate::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let iter = d.quads_matching(Any, Any, [*C1], [GN1.as_ref()]);
@@ -541,7 +541,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn quads_with_spo() -> Result<(), Box<dyn std::error::Error>> {
+            fn quads_with_spo() -> Result<(), Box<dyn $crate::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let iter = d.quads_matching([*C1], [rdf::type_], [rdfs::Class], Any);
@@ -556,7 +556,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn quads_with_spg() -> Result<(), Box<dyn std::error::Error>> {
+            fn quads_with_spg() -> Result<(), Box<dyn $crate::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let iter = d.quads_matching([*C1], [rdf::type_], Any, [DG.as_ref()]);
@@ -577,7 +577,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn quads_with_sog() -> Result<(), Box<dyn std::error::Error>> {
+            fn quads_with_sog() -> Result<(), Box<dyn $crate::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let iter = d.quads_matching([*C1], Any, [rdfs::Class], [DG.as_ref()]);
@@ -598,7 +598,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn quads_with_pog() -> Result<(), Box<dyn std::error::Error>> {
+            fn quads_with_pog() -> Result<(), Box<dyn $crate::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let iter = d.quads_matching(Any, [rdf::type_], [rdfs::Class],  [DG.as_ref()]);
@@ -619,7 +619,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn quads_with_spog() -> Result<(), Box<dyn std::error::Error>> {
+            fn quads_with_spog() -> Result<(), Box<dyn $crate::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let iter = d.quads_matching([*C1], [rdf::type_], [rdfs::Class], [DG.as_ref()]);
@@ -640,7 +640,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn contains() -> Result<(), Box<dyn std::error::Error>> {
+            fn contains() -> Result<(), Box<dyn $crate::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
                 assert!(Dataset::contains(&d, &*C2, &rdfs::subClassOf, &*C1, GN1.as_ref())?);
                 assert!(!Dataset::contains(&d, &*C1, &rdfs::subClassOf, &*C2, GN1.as_ref())?);
@@ -648,7 +648,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn subjects() -> Result<(), Box<dyn std::error::Error>> {
+            fn subjects() -> Result<(), Box<dyn $crate::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let subjects: HashSet<StaticTerm> = d.subjects().map(|t| t.unwrap().into_term()).collect();
@@ -675,7 +675,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn predicates() -> Result<(), Box<dyn std::error::Error>> {
+            fn predicates() -> Result<(), Box<dyn $crate::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let predicates: HashSet<StaticTerm> = d.predicates().map(|t| t.unwrap().into_term()).collect();
@@ -699,7 +699,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn objects() -> Result<(), Box<dyn std::error::Error>> {
+            fn objects() -> Result<(), Box<dyn $crate::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let objects: HashSet<StaticTerm> = d.objects().map(|t| t.unwrap().into_term()).collect();
@@ -726,7 +726,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn graph_names() -> Result<(), Box<dyn std::error::Error>> {
+            fn graph_names() -> Result<(), Box<dyn $crate::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
                 let graph_names: HashSet<StaticTerm> = d.graph_names().map(|t| t.unwrap().into_term()).collect();
@@ -747,7 +747,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn iris() -> Result<(), Box<dyn std::error::Error>> {
+            fn iris() -> Result<(), Box<dyn $crate::Error>> {
                 let d = if $is_gen {
                     $dataset_collector(generalized_node_types_quads()).unwrap()
                 } else {
@@ -763,7 +763,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn bnodes() -> Result<(), Box<dyn std::error::Error>> {
+            fn bnodes() -> Result<(), Box<dyn $crate::Error>> {
                 let d = if $is_gen {
                     $dataset_collector(generalized_node_types_quads()).unwrap()
                 } else {
@@ -779,7 +779,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn literals() -> Result<(), Box<dyn std::error::Error>> {
+            fn literals() -> Result<(), Box<dyn $crate::Error>> {
                 let d = if $is_gen {
                     $dataset_collector(generalized_node_types_quads()).unwrap()
                 } else {
@@ -798,7 +798,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn quoted_triples() -> Result<(), Box<dyn std::error::Error>> {
+            fn quoted_triples() -> Result<(), Box<dyn $crate::Error>> {
                 if $is_gen {
                     let d: $dataset_impl = $dataset_collector(generalized_node_types_quads()).unwrap();
 
@@ -844,7 +844,7 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn variables() -> Result<(), Box<dyn std::error::Error>> {
+            fn variables() -> Result<(), Box<dyn $crate::Error>> {
                 if $is_gen {
                     let d: $dataset_impl = $dataset_collector(generalized_node_types_quads()).unwrap();
 

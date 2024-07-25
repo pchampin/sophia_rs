@@ -25,6 +25,7 @@ test_macro = ["sophia_api/test_macro"]
 file_url = ["sophia_jsonld/file_url", "sophia_resource/file_url"]
 # This feature enables the HTTP client in dependencies
 http_client = ["sophia_jsonld/http_client", "sophia_resource/http_client"]
+threadsafe_err = ["sophia_api/threadsafe_err"]
 
 [dependencies]
 sophia_iri.workspace = true

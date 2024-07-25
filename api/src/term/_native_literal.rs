@@ -17,7 +17,7 @@ lazy_static::lazy_static! {
 /// # use sophia_api::term::SimpleTerm;
 /// # use sophia_api::ns::{rdf, rdfs};
 /// # use sophia_iri::IriRef;
-/// # fn test<T: MutableGraph>(graph: &mut T) -> Result<(), Box<dyn std::error::Error>> {
+/// # fn test<T: MutableGraph>(graph: &mut T) -> Result<(), Box<dyn crate::Error>> {
 /// # let subject: IriRef<&'static str> = IriRef::new("")?;
 /// #
 /// graph.insert(&subject, &rdf::value, 3.14)?;
@@ -53,7 +53,7 @@ impl Term for f64 {
 /// # use sophia_api::term::SimpleTerm;
 /// # use sophia_api::ns::{rdf, rdfs};
 /// # use sophia_iri::IriRef;
-/// # fn test<T: MutableGraph>(graph: &mut T) -> Result<(), Box<dyn std::error::Error>> {
+/// # fn test<T: MutableGraph>(graph: &mut T) -> Result<(), Box<dyn crate::Error>> {
 /// # let subject: IriRef<&'static str> = IriRef::new("")?;
 /// #
 /// graph.insert(&subject, &rdf::value, 42)?;
@@ -89,7 +89,7 @@ impl Term for i32 {
 /// # use sophia_api::term::SimpleTerm;
 /// # use sophia_api::ns::{rdf, rdfs};
 /// # use sophia_iri::IriRef;
-/// # fn test<T: MutableGraph>(graph: &mut T) -> Result<(), Box<dyn std::error::Error>> {
+/// # fn test<T: MutableGraph>(graph: &mut T) -> Result<(), Box<dyn crate::Error>> {
 /// # let subject: IriRef<&'static str> = IriRef::new("")?;
 /// #
 /// let answer: isize = 42;
@@ -126,7 +126,7 @@ impl Term for isize {
 /// # use sophia_api::term::SimpleTerm;
 /// # use sophia_api::ns::{rdf, rdfs};
 /// # use sophia_iri::IriRef;
-/// # fn test<T: MutableGraph>(graph: &mut T) -> Result<(), Box<dyn std::error::Error>> {
+/// # fn test<T: MutableGraph>(graph: &mut T) -> Result<(), Box<dyn crate::Error>> {
 /// # let subject: IriRef<&'static str> = IriRef::new("")?;
 /// #
 /// let answer: usize = 42;
@@ -163,7 +163,7 @@ impl Term for usize {
 /// # use sophia_api::term::SimpleTerm;
 /// # use sophia_api::ns::{rdf, rdfs};
 /// # use sophia_iri::IriRef;
-/// # fn test<T: MutableGraph>(graph: &mut T) -> Result<(), Box<dyn std::error::Error>> {
+/// # fn test<T: MutableGraph>(graph: &mut T) -> Result<(), Box<dyn crate::Error>> {
 /// # let subject: IriRef<&'static str> = IriRef::new("")?;
 /// #
 /// graph.insert(&subject, &rdfs::label, "hello world")?;
@@ -199,7 +199,7 @@ impl Term for str {
 /// # use sophia_api::term::SimpleTerm;
 /// # use sophia_api::ns::{rdf, rdfs};
 /// # use sophia_iri::IriRef;
-/// # fn test<T: MutableGraph>(graph: &mut T) -> Result<(), Box<dyn std::error::Error>> {
+/// # fn test<T: MutableGraph>(graph: &mut T) -> Result<(), Box<dyn crate::Error>> {
 /// # let subject: IriRef<&'static str> = IriRef::new("")?;
 /// #
 /// graph.insert(&subject, &rdf::value, true)?;

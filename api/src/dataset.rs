@@ -69,7 +69,7 @@ pub trait Dataset {
     /// The result of this method is an iterator,
     /// so it can be used in a `for` loop:
     /// ```
-    /// # fn test() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn test() -> Result<(), Box<dyn crate::Error>> {
     /// # use sophia_api::dataset::Dataset;
     /// # use sophia_api::term::SimpleTerm;
     /// # let dataset = Vec::<[SimpleTerm;4]>::new();
@@ -88,7 +88,7 @@ pub trait Dataset {
     /// # use sophia_api::dataset::Dataset;
     /// # use sophia_api::term::SimpleTerm;
     /// # use sophia_api::source::QuadSource;
-    /// # fn test() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn test() -> Result<(), Box<dyn crate::Error>> {
     /// # let dataset = Vec::<[SimpleTerm;4]>::new();
     /// #
     /// dataset.quads().for_each_quad(|q| {
@@ -117,7 +117,7 @@ pub trait Dataset {
     /// # use sophia_api::prelude::*;
     /// # use sophia_api::ns::{Namespace, rdf};
     /// #
-    /// # fn test<G: Dataset>(dataset: &G) -> Result<(), Box<dyn std::error::Error>>
+    /// # fn test<G: Dataset>(dataset: &G) -> Result<(), Box<dyn crate::Error>>
     /// # where
     /// #     G: Dataset,
     /// # {
@@ -141,7 +141,7 @@ pub trait Dataset {
     /// # use sophia_api::quad::Quad;
     /// # use sophia_api::ns::rdfs;
     /// #
-    /// # fn test<G>(dataset: &G) -> Result<(), Box<dyn std::error::Error>>
+    /// # fn test<G>(dataset: &G) -> Result<(), Box<dyn crate::Error>>
     /// # where
     /// #     G: Dataset,
     /// # {

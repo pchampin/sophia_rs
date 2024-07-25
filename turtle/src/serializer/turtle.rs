@@ -212,7 +212,7 @@ pub(crate) mod test {
     use super::*;
     use sophia_api::graph::Graph;
     use sophia_isomorphism::isomorphic_graphs;
-    use std::error::Error;
+    use sophia_api::Error;
 
     const TESTS: &[&str] = &[
         "#empty ttl",
@@ -246,7 +246,7 @@ pub(crate) mod test {
     ];
 
     #[test]
-    fn roundtrip_not_pretty() -> Result<(), Box<dyn std::error::Error>> {
+    fn roundtrip_not_pretty() -> Result<(), Box<dyn sophia_api::Error>> {
         for ttl in TESTS {
             println!("==========\n{}\n----------", ttl);
             let g1: Vec<[SimpleTerm; 3]> =
