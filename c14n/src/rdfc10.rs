@@ -337,7 +337,7 @@ impl<'a, H: HashFunction, T: Term> C14nState<'a, H, T> {
         // Step 5
         let mut ret_issuer: Option<BnodeIssuer> = None;
         for (related_hash, mut blank_node) in hn.into_iter() {
-            data_to_hash.update(&hex(&related_hash));
+            data_to_hash.update(hex(&related_hash));
             let mut chosen_path = String::new();
             let mut chosen_issuer: Option<BnodeIssuer> = None;
             // Step 5.4

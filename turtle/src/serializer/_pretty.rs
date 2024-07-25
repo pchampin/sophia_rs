@@ -2,13 +2,13 @@
 //!
 //! Possible improvements:
 //! 1. PrettifiableDataset should encapsulate some of the "indexes" built by Prettifier
-//! (labelled, subject_types, named_graphs)
-//! and build directly in CollectibleDataset::from_quad_source().
+//!    (labelled, subject_types, named_graphs)
+//!    and build directly in CollectibleDataset::from_quad_source().
 //!
 //! 2. Instead of writing directly to the output,
-//! generate a hierarchical structure,
-//! and decide on line breaks and indentation based on the overall structure,
-//! rather than a priori.
+//!    generate a hierarchical structure,
+//!    and decide on line breaks and indentation based on the overall structure,
+//!    rather than a priori.
 
 use super::turtle::TurtleConfig;
 use regex::Regex;

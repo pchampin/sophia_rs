@@ -609,6 +609,7 @@ mod check_implementability {
     /// - a list of terms (either atoms or index of quad)
     /// - a list of triples (SPO indexes)
     /// - a list of named graphs associated the triple indexes contained in the graph
+    ///
     /// This avoids the need to store arbitrarily nested triples.
     /// NB: unasserted triples are not used in any quoted graph.
     use super::*;

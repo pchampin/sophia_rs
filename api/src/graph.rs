@@ -530,6 +530,7 @@ mod check_implementability {
     /// where the graph maintains
     /// - a list of terms (either atoms or index of triple)
     /// - a list of triples (SPO indexes, plus an 'asserted' flag)
+    ///
     /// This avoids the need to store arbitrarily nested triples.
     use super::*;
     use crate::term::SimpleTerm;
