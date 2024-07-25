@@ -597,6 +597,8 @@ fn no_reload() -> TestResult {
     Ok(())
 }
 
-fn make_rsc(iri: Iri<&str>) -> Result<Resource<MyGraph, LocalLoader>, Box<dyn std::error::Error>> {
+fn make_rsc(
+    iri: Iri<&str>,
+) -> Result<Resource<MyGraph, LocalLoader>, Box<dyn std::error::Error + Send + Sync + 'static>> {
     Ok(make_loader().arced().get_resource(iri)?)
 }
