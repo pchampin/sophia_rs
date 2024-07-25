@@ -597,6 +597,6 @@ fn no_reload() -> TestResult {
     Ok(())
 }
 
-fn make_rsc(iri: Iri<&str>) -> Result<Resource<MyGraph, LocalLoader>, Box<dyn sophia_api::Error>> {
+fn make_rsc(iri: Iri<&str>) -> Result<Resource<MyGraph, LocalLoader>, Box<dyn std::error::Error>> {
     Ok(make_loader().arced().get_resource(iri)?)
 }

@@ -115,7 +115,7 @@ pub(crate) mod test {
     use sophia_iri::Iri;
 
     #[test]
-    fn graph() -> Result<(), Box<dyn sophia_api::Error>> {
+    fn graph() -> Result<(), Box<dyn std::error::Error>> {
         let me = BnodeId::new_unchecked("me");
         let mut d: Vec<Spog<SimpleTerm<'static>>> = vec![];
         MutableDataset::insert(

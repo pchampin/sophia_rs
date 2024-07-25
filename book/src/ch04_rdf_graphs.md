@@ -11,7 +11,7 @@ This is achieved with the [`Graph::triples`] method:
 ```rust,noplayground
 # use sophia::api::prelude::*;
 # use sophia::inmem::graph::LightGraph;
-# fn main() -> Result<(), Box<dyn sophia_api::Error>> {
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
 # let g = LightGraph::new();
 for result in g.triples() {
 	let triple = result?;
@@ -69,7 +69,7 @@ Inserting (resp. removing) a triple that is already (resp. not) present in the g
 ```rust,noplayground
 # use sophia::{api::{ns::rdf, prelude::*}, iri::*};
 /// Example: increment the rdf:value of a given subject
-# fn f<G: MutableGraph>(mut g: G) -> Result<(), Box<dyn sophia_api::Error>> {
+# fn f<G: MutableGraph>(mut g: G) -> Result<(), Box<dyn std::error::Error>> {
 # let s = Iri::new_unchecked("https://example.org/foo");
 let old_value: i32 = g.triples_matching([s], [rdf::value], Any)
 	.next()
@@ -109,7 +109,7 @@ and are described in more detail in the [next chapter](./ch05_term_matchers.md).
 
 ```rust,noplayground
 # use sophia::{api::{ns::{Namespace, rdf}, prelude::*}, inmem::graph::FastGraph};
-# fn main() -> Result<(), Box<dyn sophia_api::Error>> {
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
 let mut g = FastGraph::new();
 let ex = Namespace::new_unchecked("https://example.org/ns#");
 let alice = ex.get_unchecked("alice");
@@ -131,7 +131,7 @@ g.insert(
 
 ```rust,noplayground
 # use sophia::{api::prelude::*, inmem::graph::FastGraph, iri::Iri};
-# fn main() -> Result<(), Box<dyn sophia_api::Error>> {
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
 # let big_graph = FastGraph::new();
 // Extract all triples about 'alice' from big_graph in a new graph
 let alice = Iri::new_unchecked("https://example.org/ns#alice");
@@ -152,7 +152,7 @@ However, most types implementing [`Graph`] should implement [`CollectibleGraph`]
 # use std::{io::BufReader, fs::File};
 use sophia::turtle::parser::turtle;
 
-# fn main() -> Result<(), Box<dyn sophia_api::Error>> {
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
 dbg!(std::env::current_dir());
 let f = BufReader::new(File::open("../sophia_doap.ttl")?);
 let graph: FastGraph = turtle::parse_bufread(f)

@@ -14,7 +14,7 @@ use sophia::{
     turtle::serializer::trig::{TrigConfig, TrigSerializer},
 };
 
-fn main() -> Result<(), Box<dyn sophia_api::Error>> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args();
     let json_ld_path = args.nth(1).expect("Missing jsonld file.");
     let context_path = args.next();
@@ -42,7 +42,7 @@ fn main() -> Result<(), Box<dyn sophia_api::Error>> {
     Ok(())
 }
 
-fn to_trig(quads: impl QuadSource) -> Result<String, Box<dyn sophia_api::Error>> {
+fn to_trig(quads: impl QuadSource) -> Result<String, Box<dyn std::error::Error>> {
     let mut stringifier =
         TrigSerializer::new_stringifier_with_config(TrigConfig::new().with_pretty(true));
     stringifier.serialize_quads(quads)?;

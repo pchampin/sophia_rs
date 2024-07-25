@@ -211,7 +211,6 @@ impl Stringifier for TurtleSerializer<Vec<u8>> {
 pub(crate) mod test {
     use super::*;
     use sophia_api::graph::Graph;
-    use sophia_api::Error;
     use sophia_isomorphism::isomorphic_graphs;
 
     const TESTS: &[&str] = &[
@@ -246,7 +245,7 @@ pub(crate) mod test {
     ];
 
     #[test]
-    fn roundtrip_not_pretty() -> Result<(), Box<dyn sophia_api::Error>> {
+    fn roundtrip_not_pretty() -> Result<(), Box<dyn std::error::Error>> {
         for ttl in TESTS {
             println!("==========\n{}\n----------", ttl);
             let g1: Vec<[SimpleTerm; 3]> =
@@ -266,7 +265,7 @@ pub(crate) mod test {
     }
 
     #[test]
-    fn roundtrip_pretty() -> Result<(), Box<dyn Error>> {
+    fn roundtrip_pretty() -> Result<(), Box<dyn std::error::Error>> {
         for ttl in TESTS {
             println!("==========\n{}\n----------", ttl);
             let g1: Vec<[SimpleTerm; 3]> =

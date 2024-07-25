@@ -46,7 +46,7 @@ mod test {
     type MyDataset = Vec<Spog<SimpleTerm<'static>>>;
 
     #[test]
-    fn test_simple_trig_string() -> std::result::Result<(), Box<dyn sophia_api::Error>> {
+    fn test_simple_trig_string() -> std::result::Result<(), Box<dyn std::error::Error>> {
         let trig = r#"
             @prefix : <http://example.org/ns/> .
 

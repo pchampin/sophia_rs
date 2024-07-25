@@ -177,7 +177,7 @@ pub(crate) mod test {
     ];
 
     #[test]
-    fn roundtrip_not_pretty() -> Result<(), Box<dyn sophia_api::Error>> {
+    fn roundtrip_not_pretty() -> Result<(), Box<dyn std::error::Error>> {
         for ttl in TESTS {
             println!("==========\n{}\n----------", ttl);
             let g1: Vec<Spog<SimpleTerm>> = crate::parser::trig::parse_str(ttl).collect_quads()?;
@@ -195,7 +195,7 @@ pub(crate) mod test {
     }
 
     #[test]
-    fn roundtrip_pretty() -> Result<(), Box<dyn Error>> {
+    fn roundtrip_pretty() -> Result<(), Box<dyn std::error::Error>> {
         for ttl in TESTS {
             println!("==========\n{}\n----------", ttl);
             let g1: Vec<Spog<SimpleTerm>> = crate::parser::trig::parse_str(ttl).collect_quads()?;

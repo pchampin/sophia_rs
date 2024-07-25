@@ -1,7 +1,6 @@
 use super::*;
 use sophia_api::ns::xsd;
 use sophia_api::term::{assert_consistent_term_impl, BnodeId, IriRef, Term, TermKind};
-use sophia_api::Error;
 use sophia_api::MownStr;
 
 const FOAF_KNOWS: MyTerm = MyTerm::Iri("http://xmlns.com/foaf/0.1/knows");
@@ -12,7 +11,7 @@ const LIT_ALICE: MyTerm = MyTerm::String("alice");
 const LIT_BOB: MyTerm = MyTerm::String("bob");
 
 #[test]
-fn no_bnode() -> Result<(), Box<dyn Error>> {
+fn no_bnode() -> Result<(), Box<dyn std::error::Error>> {
     let make_dataset = |i1: &'static str, i2: &'static str| -> Vec<([MyTerm; 3], Option<MyTerm>)> {
         let i1 = MyTerm::Iri(i1);
         let i2 = MyTerm::Iri(i2);
@@ -47,7 +46,7 @@ fn no_bnode() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn simple() -> Result<(), Box<dyn Error>> {
+fn simple() -> Result<(), Box<dyn std::error::Error>> {
     let make_dataset = |b1: &'static str, b2: &'static str| -> Vec<([MyTerm; 3], Option<MyTerm>)> {
         let b1 = MyTerm::Bnode(b1);
         let b2 = MyTerm::Bnode(b2);
@@ -83,7 +82,7 @@ fn simple() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn no_bnode_quoted_triple() -> Result<(), Box<dyn Error>> {
+fn no_bnode_quoted_triple() -> Result<(), Box<dyn std::error::Error>> {
     const A: MyTerm = MyTerm::Iri("#a");
     const B: MyTerm = MyTerm::Iri("#b");
     const C: MyTerm = MyTerm::Iri("#c");
@@ -115,7 +114,7 @@ fn no_bnode_quoted_triple() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn quoted_triple() -> Result<(), Box<dyn Error>> {
+fn quoted_triple() -> Result<(), Box<dyn std::error::Error>> {
     const A: MyTerm = MyTerm::Bnode("a");
     const B: MyTerm = MyTerm::Bnode("b");
     const C: MyTerm = MyTerm::Bnode("c");
@@ -159,7 +158,7 @@ fn make_chain(ids: &'static str) -> Vec<[MyTerm; 4]> {
 }
 
 #[test]
-fn chain() -> Result<(), Box<dyn Error>> {
+fn chain() -> Result<(), Box<dyn std::error::Error>> {
     let d1 = make_chain("abcdefghij");
     assert!(isomorphic_datasets(&d1, &d1)?);
     let d2 = make_chain("EDCBAJIHGF");
@@ -172,7 +171,7 @@ fn chain() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn cycle2() -> Result<(), Box<dyn Error>> {
+fn cycle2() -> Result<(), Box<dyn std::error::Error>> {
     let d1 = make_chain("aba");
     assert!(isomorphic_datasets(&d1, &d1)?);
     let d2 = make_chain("BAB");
@@ -182,7 +181,7 @@ fn cycle2() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn cycle_long() -> Result<(), Box<dyn Error>> {
+fn cycle_long() -> Result<(), Box<dyn std::error::Error>> {
     let d1 = make_chain("abcdefghia");
     assert!(isomorphic_datasets(&d1, &d1)?);
     let d2 = make_chain("EBCDAIGHFE");
@@ -196,7 +195,7 @@ fn cycle_long() -> Result<(), Box<dyn Error>> {
 
 #[test]
 #[ignore]
-fn cycle_pathological() -> Result<(), Box<dyn Error>> {
+fn cycle_pathological() -> Result<(), Box<dyn std::error::Error>> {
     // This case is tricky (and does not work with the current implementation).
     // Both graphs contain the same number of (blank nodes) and the same number of arcs.
     // All blank nodes are locally undistinguishable from each other:
@@ -212,7 +211,7 @@ fn cycle_pathological() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn cycle_almost_pathological() -> Result<(), Box<dyn Error>> {
+fn cycle_almost_pathological() -> Result<(), Box<dyn std::error::Error>> {
     // This is uses the same graphs as above (cycle_pathological),
     // but *one* of the blank nodes is distinguished by an additional property,
     // which breaks symmetry and allow the algorithm to give the correct answer.
@@ -248,7 +247,7 @@ fn make_clique(ids: &'static str) -> Vec<[MyTerm; 4]> {
 }
 
 #[test]
-fn clique() -> Result<(), Box<dyn Error>> {
+fn clique() -> Result<(), Box<dyn std::error::Error>> {
     let d1 = make_clique("abcde");
     assert!(isomorphic_datasets(&d1, &d1)?);
 
@@ -279,7 +278,7 @@ fn make_tree(ids: &'static str) -> Vec<[MyTerm; 4]> {
 }
 
 #[test]
-fn tree() -> Result<(), Box<dyn Error>> {
+fn tree() -> Result<(), Box<dyn std::error::Error>> {
     let d1 = make_tree("abcdefghij");
     assert!(isomorphic_datasets(&d1, &d1)?);
 
@@ -293,7 +292,7 @@ fn tree() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn predicate_and_gname() -> Result<(), Box<dyn Error>> {
+fn predicate_and_gname() -> Result<(), Box<dyn std::error::Error>> {
     let rel = MyTerm::Iri("tag:rel");
     let b1 = MyTerm::Bnode("b1");
     let b2 = MyTerm::Bnode("b2");

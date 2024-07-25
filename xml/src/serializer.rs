@@ -138,7 +138,7 @@ pub(crate) mod test {
         "#];
 
     #[test]
-    fn roundtrip() -> Result<(), Box<dyn sophia_api::Error>> {
+    fn roundtrip() -> Result<(), Box<dyn std::error::Error>> {
         for rdfxml in TESTS {
             println!("==========\n{}\n----------", rdfxml);
             let g1: Vec<[SimpleTerm; 3]> = crate::parser::parse_str(rdfxml).collect_triples()?;
@@ -156,7 +156,7 @@ pub(crate) mod test {
     }
 
     #[test]
-    fn roundtrip_with_ident() -> Result<(), Box<dyn sophia_api::Error>> {
+    fn roundtrip_with_ident() -> Result<(), Box<dyn std::error::Error>> {
         let config = RdfXmlConfig::new().with_indentation(4);
         for rdfxml in TESTS {
             println!("==========\n{}\n----------", rdfxml);

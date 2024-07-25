@@ -113,4 +113,4 @@ fn native_value() -> TestResult {
     Ok(())
 }
 
-pub type TestResult = Result<(), Box<dyn sophia_api::Error>>;
+pub type TestResult = Result<(), Box<dyn std::error::Error>>;

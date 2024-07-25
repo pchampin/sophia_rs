@@ -66,7 +66,7 @@ pub trait Graph {
     /// The result of this method is an iterator,
     /// so it can be used in a `for` loop:
     /// ```
-    /// # fn test() -> Result<(), Box<dyn crate::Error>> {
+    /// # fn test() -> Result<(), Box<dyn std::error::Error>> {
     /// # use sophia_api::graph::Graph;
     /// # use sophia_api::term::SimpleTerm;
     /// # let graph = Vec::<[SimpleTerm;3]>::new();
@@ -85,7 +85,7 @@ pub trait Graph {
     /// # use sophia_api::graph::Graph;
     /// # use sophia_api::term::SimpleTerm;
     /// # use sophia_api::source::TripleSource;
-    /// # fn test() -> Result<(), Box<dyn crate::Error>> {
+    /// # fn test() -> Result<(), Box<dyn std::error::Error>> {
     /// # let graph = Vec::<[SimpleTerm;3]>::new();
     /// #
     /// graph.triples().for_each_triple(|t| {
@@ -114,7 +114,7 @@ pub trait Graph {
     /// # use sophia_api::prelude::*;
     /// # use sophia_api::ns::{Namespace, rdf};
     /// #
-    /// # fn test<G: Graph>(graph: &G) -> Result<(), Box<dyn crate::Error>>
+    /// # fn test<G: Graph>(graph: &G) -> Result<(), Box<dyn std::error::Error>>
     /// # where
     /// #     G: Graph,
     /// # {
@@ -137,7 +137,7 @@ pub trait Graph {
     /// # use sophia_api::ns::rdfs;
     /// # use sophia_api::term::SimpleTerm;
     /// #
-    /// # fn test<G>(graph: &G) -> Result<(), Box<dyn crate::Error>>
+    /// # fn test<G>(graph: &G) -> Result<(), Box<dyn std::error::Error>>
     /// # where
     /// #     G: Graph,
     /// # {
