@@ -78,7 +78,7 @@ More precisely, the type returned by [`t.borrow_term()`] is the associated type 
 ### Constructing IRIs
 
 ```rust,noplayground
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
+# fn main() -> Result<(), Box<dyn sophia_api::Error>> {
 #
 # use sophia::{iri::IriRef, api::ns::Namespace};
 # let some_text = "http://example.org";
@@ -103,7 +103,7 @@ let iri6 = xsd::string ;
 
 ### Constructing literals
 ```rust,noplayground
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
+# fn main() -> Result<(), Box<dyn sophia_api::Error>> {
 #
 # use sophia::api::{ns::xsd, term::{LanguageTag, SimpleTerm, Term}};
 // use native types for xsd::string, xsd::integer, xsd::double
@@ -123,7 +123,7 @@ let lit_date = "2023-11-15" * xsd::date;
 
 ### Constructing blank nodes
 ```rust,noplayground
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
+# fn main() -> Result<(), Box<dyn sophia_api::Error>> {
 #
 # use sophia::api::term::BnodeId;
 let b = BnodeId::new_unchecked("x");
@@ -134,7 +134,7 @@ let b = BnodeId::new_unchecked("x");
 ### Converting terms into a different type
 ```rust,noplayground
 # use sophia::api::{ns::xsd, term::{SimpleTerm, Term}};
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
+# fn main() -> Result<(), Box<dyn sophia_api::Error>> {
 # let some_term = "42" * xsd::integer;
 let t1: SimpleTerm = "hello".into_term();
 let t2: i32 = some_term.try_into_term()?;

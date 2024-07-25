@@ -46,7 +46,7 @@ mod test {
     type MyGraph = Vec<[SimpleTerm<'static>; 3]>;
 
     #[test]
-    fn test_simple_xml_string() -> std::result::Result<(), Box<dyn std::error::Error>> {
+    fn test_simple_xml_string() -> std::result::Result<(), Box<dyn sophia_api::Error>> {
         let xml = r#"<?xml version="1.0" encoding="utf-8"?>
         <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
                  xmlns="http://example.org/ns/">

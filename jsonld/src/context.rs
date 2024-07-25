@@ -43,7 +43,7 @@ pub trait TryIntoContextRef {
 }
 
 impl TryIntoContextRef for &str {
-    type Error = Box<dyn std::error::Error>;
+    type Error = Box<dyn sophia_api::Error>;
 
     fn try_into_context_ref(self) -> Result<ContextRef, Self::Error> {
         let iri = ArcIri::new_unchecked("x-string://".into());

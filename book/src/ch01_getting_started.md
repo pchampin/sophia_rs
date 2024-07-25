@@ -41,7 +41,7 @@ graph.insert(
 let mut nt_stringifier = NtSerializer::new_stringifier();
 let example2 = nt_stringifier.serialize_graph(&graph)?.as_str();
 println!("The resulting graph:\n{}", example2);
-# Ok::<(), Box<dyn std::error::Error>>(())
+# Ok::<(), Box<dyn sophia_api::Error>>(())
 ```
 
 You should get the following output:

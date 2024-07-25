@@ -20,7 +20,7 @@ use sophia::turtle::parser::nq;
 use sophia_c14n::hash::Sha256;
 use sophia_c14n::rdfc10::{DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT};
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn sophia_api::Error>> {
     let input = BufReader::new(stdin());
     let dataset: MyDataset = nq::parse_bufread(input).collect_quads()?;
     let output = BufWriter::new(stdout());

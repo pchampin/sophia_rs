@@ -102,7 +102,7 @@ impl<E: Error> From<crate::loader::LoaderError> for ResourceError<E> {
     }
 }
 
-impl<E: Error> Error for ResourceError<E> {}
+impl<E: Error> std::error::Error for ResourceError<E> {}
 
 /// A result whose error is a [`ResourceError`]
 pub type ResourceResult<T, G> = Result<T, ResourceError<<G as Graph>::Error>>;

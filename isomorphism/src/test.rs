@@ -2,7 +2,7 @@ use super::*;
 use sophia_api::ns::xsd;
 use sophia_api::term::{assert_consistent_term_impl, BnodeId, IriRef, Term, TermKind};
 use sophia_api::MownStr;
-use std::error::Error;
+use sophia_api::Error;
 
 const FOAF_KNOWS: MyTerm = MyTerm::Iri("http://xmlns.com/foaf/0.1/knows");
 const FOAF_MBOX: MyTerm = MyTerm::Iri("http://xmlns.com/foaf/0.1/mbox");
