@@ -211,8 +211,8 @@ impl Stringifier for TurtleSerializer<Vec<u8>> {
 pub(crate) mod test {
     use super::*;
     use sophia_api::graph::Graph;
-    use sophia_isomorphism::isomorphic_graphs;
     use sophia_api::Error;
+    use sophia_isomorphism::isomorphic_graphs;
 
     const TESTS: &[&str] = &[
         "#empty ttl",

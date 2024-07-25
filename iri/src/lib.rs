@@ -46,6 +46,6 @@ pub use std::error::Error;
 #[cfg(feature = "threadsafe_err")]
 pub use ThreadSafeError as Error;
 
-///! An error trait meant to enable sending errors safely across threads.
+/// An error trait meant to enable sending errors safely across threads.
 pub trait ThreadSafeError: std::error::Error + Send + Sync + 'static {}
 impl<E> ThreadSafeError for E where E: std::error::Error + Send + Sync + 'static {}

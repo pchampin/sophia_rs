@@ -109,9 +109,9 @@ impl Stringifier for TrigSerializer<Vec<u8>> {
 pub(crate) mod test {
     use super::*;
     use sophia_api::term::SimpleTerm;
+    use sophia_api::Error;
     use sophia_api::{dataset::Dataset, quad::Spog};
     use sophia_isomorphism::isomorphic_datasets;
-    use sophia_api::Error;
 
     const TESTS: &[&str] = &[
         "#empty trig",

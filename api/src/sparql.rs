@@ -29,8 +29,8 @@
 
 use crate::source::TripleSource;
 use crate::term::Term;
-use std::borrow::Borrow;
 use crate::Error;
+use std::borrow::Borrow;
 
 /// A dataset that can be queried with SPARQL.
 pub trait SparqlDataset {
