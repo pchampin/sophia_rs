@@ -136,9 +136,6 @@ impl GraphNameMatcher for Any {
     }
 }
 
-/// Matches on the inverse of the inner [`GraphNameMatcher`]
-pub struct Not<M>(pub M);
-
 impl<M: GraphNameMatcher> GraphNameMatcher for Not<M> {
     type Term = SimpleTerm<'static>; // not actually used
 
@@ -148,7 +145,7 @@ impl<M: GraphNameMatcher> GraphNameMatcher for Not<M> {
 }
 
 impl GraphNameMatcher for Option<SimpleTerm<'static>> {
-    type Term = SimpleTerm<'static>; // not actually used
+    type Term = SimpleTerm<'static>;
 
     fn matches<T2: Term + ?Sized>(&self, graph_name: GraphName<&T2>) -> bool {
         graph_name_eq(self.as_ref(), graph_name.map(Term::as_simple))
