@@ -53,7 +53,7 @@ pub trait Graph {
     where
         Self: 'x;
     /// The error type that this graph may raise.
-    type Error: Error + 'static;
+    type Error: std::error::Error + Send + Sync + 'static;
 
     /// An iterator visiting all triples of this graph in arbitrary order.
     ///
@@ -305,7 +305,7 @@ pub type MgResult<G, T> = std::result::Result<T, <G as MutableGraph>::MutationEr
 /// see also [`SetGraph`].
 pub trait MutableGraph: Graph {
     /// The error type that this graph may raise during mutations.
-    type MutationError: Error + 'static;
+    type MutationError: std::error::Error + Send + Sync + 'static;
 
     /// Insert in this graph a triple made of the the given terms.
     ///

@@ -6,9 +6,10 @@
 //! published versions of Rio will always depend on the previously published version of Sophia,
 //! which makes it impossible for Sophia itself to rely on that feature.
 
+use std::error::Error;
+
 use crate::model::Trusted;
 use sophia_api::source::{StreamError, StreamError::*, StreamResult};
-
 
 /// Wrap a Rio [`TriplesParser`](rio_api::parser::TriplesParser)
 /// into a Sophia [`TripleSource`](sophia_api::source::TripleSource).
@@ -17,7 +18,7 @@ pub struct StrictRioTripleSource<T>(pub T);
 impl<T> sophia_api::source::Source for StrictRioTripleSource<T>
 where
     T: rio_api::parser::TriplesParser,
-    T::Error: Error + 'static,
+    T::Error: Error + Send + Sync + 'static,
 {
     type Item<'x> = Trusted<rio_api::model::Triple<'x>>;
 
@@ -25,7 +26,7 @@ where
 
     fn try_for_some_item<EF, F>(&mut self, mut f: F) -> StreamResult<bool, T::Error, EF>
     where
-        EF: Error,
+        EF: Error + Send + Sync + 'static,
         F: FnMut(Self::Item<'_>) -> Result<(), EF>,
     {
         let parser = &mut self.0;
@@ -50,7 +51,7 @@ pub struct StrictRioQuadSource<T>(pub T);
 impl<T> sophia_api::source::Source for StrictRioQuadSource<T>
 where
     T: rio_api::parser::QuadsParser,
-    T::Error: Error + 'static,
+    T::Error: Error + Send + Sync + 'static,
 {
     type Item<'x> = Trusted<rio_api::model::Quad<'x>>;
 
@@ -58,7 +59,7 @@ where
 
     fn try_for_some_item<EF, F>(&mut self, mut f: F) -> StreamResult<bool, T::Error, EF>
     where
-        EF: Error,
+        EF: Error + Send + Sync + 'static,
         F: FnMut(Self::Item<'_>) -> Result<(), EF>,
     {
         let parser = &mut self.0;
@@ -83,7 +84,7 @@ pub struct GeneralizedRioSource<T>(pub T);
 impl<T> sophia_api::source::Source for GeneralizedRioSource<T>
 where
     T: rio_api::parser::GeneralizedQuadsParser,
-    T::Error: Error + 'static,
+    T::Error: Error + Send + Sync + 'static,
 {
     type Item<'x> = Trusted<rio_api::model::GeneralizedQuad<'x>>;
 
@@ -91,7 +92,7 @@ where
 
     fn try_for_some_item<EF, F>(&mut self, mut f: F) -> StreamResult<bool, T::Error, EF>
     where
-        EF: Error,
+        EF: Error + Send + Sync + 'static,
         F: FnMut(Self::Item<'_>) -> Result<(), EF>,
     {
         let parser = &mut self.0;
@@ -125,8 +126,8 @@ enum RioStreamError<E1, E2> {
 }
 impl<E1, E2> From<E1> for RioStreamError<E1, E2>
 where
-    E1: Error,
-    E2: Error,
+    E1: Error + Send + Sync + 'static,
+    E2: Error + Send + Sync + 'static,
 {
     fn from(other: E1) -> Self {
         RioStreamError::Source(other)
@@ -134,8 +135,8 @@ where
 }
 impl<E1, E2> From<RioStreamError<E1, E2>> for StreamError<E1, E2>
 where
-    E1: Error,
-    E2: Error,
+    E1: Error + Send + Sync + 'static,
+    E2: Error + Send + Sync + 'static,
 {
     fn from(other: RioStreamError<E1, E2>) -> Self {
         match other {

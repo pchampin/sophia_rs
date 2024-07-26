@@ -1,10 +1,11 @@
 use sophia_api::term::TermKind;
-use sophia_api::{prelude::*, term::SimpleTerm, Error};
+use sophia_api::{prelude::*, term::SimpleTerm};
+use std::error::Error;
 use std::fmt;
 
 /// An error raised when creating a [`Resource`](crate::Resource)
 #[derive(Debug)]
-pub enum ResourceError<E: Error> {
+pub enum ResourceError<E: Error + Send + Sync + 'static> {
     /// The IRI is not absolute (an can therefore not be dereferenced)
     IriNotAbsolute(IriRef<Box<str>>),
     /// The resource could not be loaded
@@ -69,7 +70,10 @@ pub enum ResourceError<E: Error> {
     },
 }
 
-impl<E: Error> ResourceError<E> {
+impl<E> ResourceError<E>
+where
+    E: Error + Send + Sync + 'static,
+{
     /// The identifier of the resource raising the error.
     ///
     /// NB: for errors raised during creation ([`ResourceError::IriNotAbsolute`], [`ResourceError::LoaderError`]),
@@ -90,19 +94,25 @@ impl<E: Error> ResourceError<E> {
     }
 }
 
-impl<E: Error> fmt::Display for ResourceError<E> {
+impl<E> fmt::Display for ResourceError<E>
+where
+    E: Error + Send + Sync + 'static,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
-impl<E: Error> From<crate::loader::LoaderError> for ResourceError<E> {
+impl<E: Error> From<crate::loader::LoaderError> for ResourceError<E>
+where
+    E: Error + Send + Sync + 'static,
+{
     fn from(value: crate::loader::LoaderError) -> Self {
         Self::LoaderError(value)
     }
 }
 
-impl<E> std::error::Error for ResourceError<E> where E: std::error::Error + Send + Sync + 'static {}
+impl<E> Error for ResourceError<E> where E: Error + Send + Sync + 'static {}
 
 /// A result whose error is a [`ResourceError`]
 pub type ResourceResult<T, G> = Result<T, ResourceError<<G as Graph>::Error>>;

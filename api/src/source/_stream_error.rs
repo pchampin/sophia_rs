@@ -1,5 +1,3 @@
-
-
 /// A error that is raised by functions that move fallible `Source`s into
 /// fallible `Sinks`.
 ///
@@ -24,6 +22,8 @@ where
     #[error("Sink failed: {0}")]
     SinkError(#[source] SinkErr),
 }
+use std::error::Error;
+
 pub use StreamError::*;
 
 impl<SourceErr, SinkErr> StreamError<SourceErr, SinkErr>

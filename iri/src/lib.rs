@@ -40,12 +40,3 @@ pub mod wrap_macro_examples;
 
 #[cfg(any(test, feature = "test_data"))]
 pub mod test;
-
-#[cfg(not(feature = "threadsafe_err"))]
-pub use std::error::Error;
-#[cfg(feature = "threadsafe_err")]
-pub use ThreadSafeError as Error;
-
-/// An error trait meant to enable sending errors safely across threads.
-pub trait ThreadSafeError: std::error::Error + Send + Sync + 'static {}
-impl<E> ThreadSafeError for E where E: std::error::Error + Send + Sync + 'static {}

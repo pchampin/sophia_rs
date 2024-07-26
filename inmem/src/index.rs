@@ -64,7 +64,7 @@ pub trait TermIndex {
     /// The type of [indices](Index) used by this [`TermIndex`]
     type Index: Index;
     /// The type of error that this [`TermIndex`] may raise
-    type Error: Error + 'static;
+    type Error: std::error::Error + Send + Sync + 'static;
 
     /// Get the index corresponding to term `t`, if it exists.
     ///

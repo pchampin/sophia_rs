@@ -56,8 +56,6 @@
 //! [`for_each_quad`]: QuadSource::for_each_quad
 //! [higher-rank trait bounds]: https://doc.rust-lang.org/nomicon/hrtb.html
 
-
-
 pub mod convert;
 pub mod filter;
 pub mod filter_map;
@@ -87,7 +85,7 @@ pub trait Source {
     /// The type of items this source yields.
     type Item<'x>;
     /// The type of errors produced by this source.
-    type Error: Error + 'static;
+    type Error: std::error::Error + Send + Sync + 'static;
 
     /// Call f for some item(s) (possibly zero) from this source, if any.
     ///
@@ -96,7 +94,7 @@ pub trait Source {
     /// Return an error if either the source or `f` errs.
     fn try_for_some_item<E, F>(&mut self, f: F) -> StreamResult<bool, Self::Error, E>
     where
-        E: Error,
+        E: std::error::Error + Send + Sync + 'static,
         F: FnMut(Self::Item<'_>) -> Result<(), E>;
 
     /// Call f for all items from this source.
@@ -106,7 +104,7 @@ pub trait Source {
     fn try_for_each_item<F, E>(&mut self, mut f: F) -> StreamResult<(), Self::Error, E>
     where
         F: FnMut(Self::Item<'_>) -> Result<(), E>,
-        E: Error,
+        E: std::error::Error + Send + Sync + 'static,
     {
         while self.try_for_some_item(&mut f)? {}
         Ok(())
@@ -200,14 +198,14 @@ pub trait Source {
 impl<'a, I, T, E> Source for I
 where
     I: Iterator<Item = Result<T, E>> + 'a,
-    E: Error + 'static,
+    E: std::error::Error + Send + Sync + 'static,
 {
     type Item<'x> = T;
     type Error = E;
 
     fn try_for_some_item<E2, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E2>
     where
-        E2: Error,
+        E2: std::error::Error + Send + Sync + 'static,
         F: FnMut(Self::Item<'_>) -> Result<(), E2>,
     {
         match self.next() {

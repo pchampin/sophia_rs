@@ -23,7 +23,6 @@ all_tests = []
 test_macro = []
 # This feature (enabled by default) makes prefixes seralizable/deserializable
 serde = ["dep:serde"]
-threadsafe_err = ["sophia_iri/threadsafe_err"]
 
 
 [dependencies]

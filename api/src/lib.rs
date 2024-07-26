@@ -66,5 +66,3 @@ pub mod triple;
 /// Re-export MownStr to avoid dependency version mismatch.
 ///
 pub use mownstr::MownStr;
-
-pub use sophia_iri::Error;

@@ -56,7 +56,7 @@ pub trait Dataset {
     where
         Self: 'x;
     /// The error type that this dataset may raise.
-    type Error: Error + 'static;
+    type Error: std::error::Error + Send + Sync + 'static;
 
     /// An iterator visiting all quads of this dataset in arbitrary order.
     ///
@@ -346,7 +346,7 @@ pub type MdResult<D, T> = std::result::Result<T, <D as MutableDataset>::Mutation
 /// see also [`SetDataset`].
 pub trait MutableDataset: Dataset {
     /// The error type that this dataset may raise during mutations.
-    type MutationError: Error + 'static;
+    type MutationError: std::error::Error + Send + Sync + 'static;
 
     /// Insert the given quad in this dataset.
     ///
