@@ -5,6 +5,8 @@
 //! for different kinds of graph,
 //! as well as a few implementations for them.
 
+use std::error::Error;
+
 use crate::dataset::adapter::GraphAsDataset;
 use crate::source::{IntoSource, StreamResult, TripleSource};
 use crate::term::{matcher::TermMatcher, SimpleTerm, Term};
@@ -53,7 +55,7 @@ pub trait Graph {
     where
         Self: 'x;
     /// The error type that this graph may raise.
-    type Error: std::error::Error + Send + Sync + 'static;
+    type Error: Error + Send + Sync + 'static;
 
     /// An iterator visiting all triples of this graph in arbitrary order.
     ///
@@ -305,7 +307,7 @@ pub type MgResult<G, T> = std::result::Result<T, <G as MutableGraph>::MutationEr
 /// see also [`SetGraph`].
 pub trait MutableGraph: Graph {
     /// The error type that this graph may raise during mutations.
-    type MutationError: std::error::Error + Send + Sync + 'static;
+    type MutationError: Error + Send + Sync + 'static;
 
     /// Insert in this graph a triple made of the the given terms.
     ///

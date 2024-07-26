@@ -3,6 +3,7 @@ use sophia_api::term::{FromTerm, GraphName, SimpleTerm, Term};
 
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::error::Error;
 
 /// Abstraction of the short numeric indices representing [terms](Term) in a [`TermIndex`].
 pub trait Index: Copy + std::fmt::Debug + Ord {
@@ -64,7 +65,7 @@ pub trait TermIndex {
     /// The type of [indices](Index) used by this [`TermIndex`]
     type Index: Index;
     /// The type of error that this [`TermIndex`] may raise
-    type Error: std::error::Error + Send + Sync + 'static;
+    type Error: Error + Send + Sync + 'static;
 
     /// Get the index corresponding to term `t`, if it exists.
     ///

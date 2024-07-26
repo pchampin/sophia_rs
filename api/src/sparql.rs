@@ -31,6 +31,7 @@ use crate::source::TripleSource;
 use crate::term::Term;
 
 use std::borrow::Borrow;
+use std::error::Error;
 
 /// A dataset that can be queried with SPARQL.
 pub trait SparqlDataset {
@@ -41,7 +42,7 @@ pub trait SparqlDataset {
     /// The type of triples that GRAPH and DESCRIBE queries will return.
     type TriplesResult: TripleSource;
     /// The type of errors that processing SPARQL queries may raise.
-    type SparqlError: std::error::Error + Send + Sync + 'static;
+    type SparqlError: Error + Send + Sync + 'static;
     /// The type representing pre-processed queries.
     ///
     /// See [`prepare_query`](#tymethod.prepare_query) for more detail.
@@ -81,7 +82,7 @@ pub trait SparqlDataset {
 /// [`prepare_query`](SparqlDataset::prepare_query) method.
 pub trait Query: Sized {
     /// The error type that might be raised when parsing a query.
-    type Error: std::error::Error + Send + Sync + 'static;
+    type Error: Error + Send + Sync + 'static;
     /// Parse the given text into a [`Query`].
     fn parse(query_source: &str) -> Result<Self, Self::Error>;
 }

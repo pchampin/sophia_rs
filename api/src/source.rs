@@ -68,7 +68,7 @@ pub use _stream_error::*;
 mod _triple;
 pub use _triple::*;
 
-use std::convert::Infallible;
+use std::{convert::Infallible, error::Error};
 
 /// A source produces [items](Source::Item), and may also fail in the process.
 ///
@@ -85,7 +85,7 @@ pub trait Source {
     /// The type of items this source yields.
     type Item<'x>;
     /// The type of errors produced by this source.
-    type Error: std::error::Error + Send + Sync + 'static;
+    type Error: Error + Send + Sync + 'static;
 
     /// Call f for some item(s) (possibly zero) from this source, if any.
     ///
@@ -94,7 +94,7 @@ pub trait Source {
     /// Return an error if either the source or `f` errs.
     fn try_for_some_item<E, F>(&mut self, f: F) -> StreamResult<bool, Self::Error, E>
     where
-        E: std::error::Error + Send + Sync + 'static,
+        E: Error + Send + Sync + 'static,
         F: FnMut(Self::Item<'_>) -> Result<(), E>;
 
     /// Call f for all items from this source.
@@ -104,7 +104,7 @@ pub trait Source {
     fn try_for_each_item<F, E>(&mut self, mut f: F) -> StreamResult<(), Self::Error, E>
     where
         F: FnMut(Self::Item<'_>) -> Result<(), E>,
-        E: std::error::Error + Send + Sync + 'static,
+        E: Error + Send + Sync + 'static,
     {
         while self.try_for_some_item(&mut f)? {}
         Ok(())
@@ -198,14 +198,14 @@ pub trait Source {
 impl<'a, I, T, E> Source for I
 where
     I: Iterator<Item = Result<T, E>> + 'a,
-    E: std::error::Error + Send + Sync + 'static,
+    E: Error + Send + Sync + 'static,
 {
     type Item<'x> = T;
     type Error = E;
 
     fn try_for_some_item<E2, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E2>
     where
-        E2: std::error::Error + Send + Sync + 'static,
+        E2: Error + Send + Sync + 'static,
         F: FnMut(Self::Item<'_>) -> Result<(), E2>,
     {
         match self.next() {

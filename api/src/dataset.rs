@@ -7,6 +7,8 @@
 //! for different kinds of datasets,
 //! as well as a few implementations for them.
 
+use std::error::Error;
+
 use crate::graph::adapter::{DatasetGraph, PartialUnionGraph, UnionGraph};
 use crate::quad::{iter_spog, Quad};
 use crate::source::{IntoSource, QuadSource, StreamResult};
@@ -56,7 +58,7 @@ pub trait Dataset {
     where
         Self: 'x;
     /// The error type that this dataset may raise.
-    type Error: std::error::Error + Send + Sync + 'static;
+    type Error: Error + Send + Sync + 'static;
 
     /// An iterator visiting all quads of this dataset in arbitrary order.
     ///
@@ -346,7 +348,7 @@ pub type MdResult<D, T> = std::result::Result<T, <D as MutableDataset>::Mutation
 /// see also [`SetDataset`].
 pub trait MutableDataset: Dataset {
     /// The error type that this dataset may raise during mutations.
-    type MutationError: std::error::Error + Send + Sync + 'static;
+    type MutationError: Error + Send + Sync + 'static;
 
     /// Insert the given quad in this dataset.
     ///

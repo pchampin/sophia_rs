@@ -107,6 +107,8 @@ impl Stringifier for TrigSerializer<Vec<u8>> {
 
 #[cfg(test)]
 pub(crate) mod test {
+    use std::error::Error;
+
     use super::*;
     use sophia_api::term::SimpleTerm;
 
@@ -177,7 +179,7 @@ pub(crate) mod test {
     ];
 
     #[test]
-    fn roundtrip_not_pretty() -> Result<(), Box<dyn std::error::Error>> {
+    fn roundtrip_not_pretty() -> Result<(), Box<dyn Error>> {
         for ttl in TESTS {
             println!("==========\n{}\n----------", ttl);
             let g1: Vec<Spog<SimpleTerm>> = crate::parser::trig::parse_str(ttl).collect_quads()?;
@@ -195,7 +197,7 @@ pub(crate) mod test {
     }
 
     #[test]
-    fn roundtrip_pretty() -> Result<(), Box<dyn std::error::Error>> {
+    fn roundtrip_pretty() -> Result<(), Box<dyn Error>> {
         for ttl in TESTS {
             println!("==========\n{}\n----------", ttl);
             let g1: Vec<Spog<SimpleTerm>> = crate::parser::trig::parse_str(ttl).collect_quads()?;
