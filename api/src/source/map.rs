@@ -18,7 +18,7 @@ where
 
     fn try_for_some_item<E, F2>(&mut self, mut f: F2) -> StreamResult<bool, Self::Error, E>
     where
-        E: std::error::Error + Send + Sync + 'static,
+        E: Error + Send + Sync + 'static,
         F2: FnMut(Self::Item<'_>) -> Result<(), E>,
     {
         let map = &mut self.map;

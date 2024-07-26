@@ -22,7 +22,7 @@ pub trait QuadSource: Source + IsQuadSource {
     #[inline]
     fn try_for_some_quad<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
     where
-        E: std::error::Error + Send + Sync + 'static,
+        E: Error + Send + Sync + 'static,
         F: FnMut(Self::Quad<'_>) -> Result<(), E>,
     {
         self.try_for_some_item(|i| f(Self::i2q(i)))
@@ -35,7 +35,7 @@ pub trait QuadSource: Source + IsQuadSource {
     fn try_for_each_quad<F, E>(&mut self, mut f: F) -> StreamResult<(), Self::Error, E>
     where
         F: FnMut(Self::Quad<'_>) -> Result<(), E>,
-        E: std::error::Error + Send + Sync + 'static,
+        E: Error + Send + Sync + 'static,
     {
         self.try_for_each_item(|i| f(Self::i2q(i)))
     }
