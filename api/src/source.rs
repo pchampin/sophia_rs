@@ -56,7 +56,7 @@
 //! [`for_each_quad`]: QuadSource::for_each_quad
 //! [higher-rank trait bounds]: https://doc.rust-lang.org/nomicon/hrtb.html
 
-use crate::Error;
+
 
 pub mod convert;
 pub mod filter;

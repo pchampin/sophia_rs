@@ -29,7 +29,7 @@
 
 use crate::source::TripleSource;
 use crate::term::Term;
-use crate::Error;
+
 use std::borrow::Borrow;
 
 /// A dataset that can be queried with SPARQL.

@@ -575,7 +575,7 @@ pub trait FromTerm: Sized {
 /// See also [`FromTerm`]
 pub trait TryFromTerm: Sized {
     /// The error type produced when failing to copy a given term
-    type Error: 'static + crate::Error;
+    type Error: std::error::Error + Send + Sync + 'static;
     /// Try to copy `term` into an instance of this type.
     fn try_from_term<T: Term>(term: T) -> Result<Self, Self::Error>;
 }

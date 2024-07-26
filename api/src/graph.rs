@@ -9,7 +9,7 @@ use crate::dataset::adapter::GraphAsDataset;
 use crate::source::{IntoSource, StreamResult, TripleSource};
 use crate::term::{matcher::TermMatcher, SimpleTerm, Term};
 use crate::triple::Triple;
-use crate::Error;
+
 use resiter::{filter::*, flat_map::*, map::*};
 
 mod _foreign_impl;

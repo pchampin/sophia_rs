@@ -16,7 +16,7 @@ impl<TS: TripleSource> Source for ToQuads<TS> {
 
     fn try_for_some_item<E, F>(&mut self, mut f: F) -> super::StreamResult<bool, Self::Error, E>
     where
-        E: crate::Error,
+        E: std::error::Error + Send + Sync + 'static,
         F: FnMut(Self::Item<'_>) -> Result<(), E>,
     {
         self.0.try_for_some_triple(|t| {
@@ -40,7 +40,7 @@ impl<QS: QuadSource> Source for ToTriples<QS> {
 
     fn try_for_some_item<E, F>(&mut self, mut f: F) -> super::StreamResult<bool, Self::Error, E>
     where
-        E: crate::Error,
+        E: std::error::Error + Send + Sync + 'static,
         F: FnMut(Self::Item<'_>) -> Result<(), E>,
     {
         self.0.try_for_some_quad(|q| {

@@ -302,7 +302,7 @@ impl<'a, H: HashFunction, T: Term> C14nState<'a, H, T> {
     }
 
     /// Implements https://www.w3.org/TR/rdf-canon/#hash-nd-quads
-    fn hash_n_degree_quads<E: sophia_api::Error>(
+    fn hash_n_degree_quads<E: std::error::Error + Send + Sync + 'static>(
         &self,
         identifier: &str,
         issuer: &BnodeIssuer,

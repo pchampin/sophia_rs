@@ -33,7 +33,7 @@ impl Source for JsonLdQuadSource {
 
     fn try_for_some_item<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
     where
-        E: sophia_api::Error,
+        E: std::error::Error + Send + Sync + 'static,
         F: FnMut(Self::Item<'_>) -> Result<(), E>,
     {
         match self {

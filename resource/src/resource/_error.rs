@@ -102,7 +102,7 @@ impl<E: Error> From<crate::loader::LoaderError> for ResourceError<E> {
     }
 }
 
-impl<E> std::error::Error for ResourceError<E> where E: sophia_api::Error {}
+impl<E> std::error::Error for ResourceError<E> where E: std::error::Error + Send + Sync + 'static {}
 
 /// A result whose error is a [`ResourceError`]
 pub type ResourceResult<T, G> = Result<T, ResourceError<<G as Graph>::Error>>;

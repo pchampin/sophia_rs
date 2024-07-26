@@ -22,7 +22,7 @@ where
 
     fn try_for_some_item<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
     where
-        E: Error,
+        E: std::error::Error + Send + Sync + 'static,
         F: FnMut(Self::Item<'_>) -> Result<(), E>,
     {
         let p = &mut self.predicate;
@@ -55,7 +55,7 @@ mod _triple {
 
         fn try_for_some_item<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
         where
-            E: Error,
+            E: std::error::Error + Send + Sync + 'static,
             F: FnMut(Self::Item<'_>) -> Result<(), E>,
         {
             self.0.try_for_some_item(|i| f(S::i2t(i)))
@@ -84,7 +84,7 @@ mod _quad {
 
         fn try_for_some_item<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
         where
-            E: Error,
+            E: std::error::Error + Send + Sync + 'static,
             F: FnMut(Self::Item<'_>) -> Result<(), E>,
         {
             self.0.try_for_some_item(|i| f(S::i2q(i)))

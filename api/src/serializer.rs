@@ -18,7 +18,7 @@ use crate::source::*;
 /// A triple serializer writes triples according to a given format.
 pub trait TripleSerializer {
     /// The error type that may be raised during serialization.
-    type Error: 'static + crate::Error;
+    type Error: std::error::Error + Send + Sync + 'static;
 
     /// Serialize all triples from the given [`TripleSource`].
     fn serialize_triples<TS>(
@@ -47,7 +47,7 @@ pub trait TripleSerializer {
 /// A quad serializer writes quads according to a given format.
 pub trait QuadSerializer {
     /// The error type that may be raised during serialization.
-    type Error: 'static + crate::Error;
+    type Error: std::error::Error + Send + Sync + 'static;
 
     /// Serialize all quads from the given [`QuadSource`].
     fn serialize_quads<QS>(
