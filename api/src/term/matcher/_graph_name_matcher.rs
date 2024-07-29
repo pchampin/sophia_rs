@@ -143,11 +143,3 @@ impl<M: GraphNameMatcher> GraphNameMatcher for Not<M> {
         !self.0.matches(graph_name)
     }
 }
-
-impl GraphNameMatcher for Option<SimpleTerm<'static>> {
-    type Term = SimpleTerm<'static>;
-
-    fn matches<T2: Term + ?Sized>(&self, graph_name: GraphName<&T2>) -> bool {
-        graph_name_eq(self.as_ref(), graph_name.map(Term::as_simple))
-    }
-}
