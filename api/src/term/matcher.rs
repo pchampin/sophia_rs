@@ -66,10 +66,12 @@ mod test {
         is_graph_name_matcher([Some(T1), Some(T2), None]);
         is_graph_name_matcher(&[Some(T1), Some(T2), None][..]);
         is_graph_name_matcher(|t: Option<SimpleTerm>| t.is_some());
+        is_graph_name_matcher(Not(|t: Option<SimpleTerm>| t.is_some()));
         is_graph_name_matcher([T1, T2].gn());
         is_graph_name_matcher(Some(TermKind::Iri));
         is_graph_name_matcher(Some(([T1], [T2], [T3])));
         is_graph_name_matcher([Some(T1)].matcher_ref());
+        is_graph_name_matcher(Not([Some(T1)].matcher_ref()));
     }
 
     #[test]
@@ -175,6 +177,12 @@ mod test {
         assert!(TermMatcher::matches(&Any, &T2));
         assert!(TermMatcher::matches(&Any, &T3));
         assert!(TermMatcher::constant(&Any).is_none());
+    }
+
+    #[test]
+    fn not() {
+        assert!(Not(TermKind::BlankNode).matches(&T1));
+        assert!(Not([T1, T2]).matches(&T3));
     }
 
     #[test]
@@ -330,6 +338,13 @@ mod test {
         assert!(GraphNameMatcher::matches(&Any, Some(&T2)));
         assert!(GraphNameMatcher::matches(&Any, Some(&T3)));
         assert!(GraphNameMatcher::constant(&Any).is_none());
+    }
+
+    #[test]
+    fn graph_name_not() {
+        assert!(GraphNameMatcher::matches(&Not([DEFAULT]), Some(&T1)));
+        assert!(!GraphNameMatcher::matches(&Not([T1, T2].gn()), Some(&T2)));
+        assert!(GraphNameMatcher::matches(&Not([T1, T2].gn()), Some(&T3)));
     }
 
     #[test]
