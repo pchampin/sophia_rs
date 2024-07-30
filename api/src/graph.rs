@@ -5,12 +5,14 @@
 //! for different kinds of graph,
 //! as well as a few implementations for them.
 
+use std::error::Error;
+
 use crate::dataset::adapter::GraphAsDataset;
 use crate::source::{IntoSource, StreamResult, TripleSource};
 use crate::term::{matcher::TermMatcher, SimpleTerm, Term};
 use crate::triple::Triple;
+
 use resiter::{filter::*, flat_map::*, map::*};
-use std::error::Error;
 
 mod _foreign_impl;
 pub mod adapter;
@@ -53,7 +55,7 @@ pub trait Graph {
     where
         Self: 'x;
     /// The error type that this graph may raise.
-    type Error: Error + 'static;
+    type Error: Error + Send + Sync + 'static;
 
     /// An iterator visiting all triples of this graph in arbitrary order.
     ///
@@ -305,7 +307,7 @@ pub type MgResult<G, T> = std::result::Result<T, <G as MutableGraph>::MutationEr
 /// see also [`SetGraph`].
 pub trait MutableGraph: Graph {
     /// The error type that this graph may raise during mutations.
-    type MutationError: Error + 'static;
+    type MutationError: Error + Send + Sync + 'static;
 
     /// Insert in this graph a triple made of the the given terms.
     ///
@@ -530,6 +532,7 @@ mod check_implementability {
     /// where the graph maintains
     /// - a list of terms (either atoms or index of triple)
     /// - a list of triples (SPO indexes, plus an 'asserted' flag)
+    ///
     /// This avoids the need to store arbitrarily nested triples.
     use super::*;
     use crate::term::SimpleTerm;

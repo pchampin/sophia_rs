@@ -102,7 +102,7 @@ fn ensure_owned(m: MownStr) -> MownStr<'static> {
         let m = m.clone();
         // Safety: the transmute bellow is safe, because if m.is_owned() is true,
         // then it's data is not restricted to lifetime 'a.
-        unsafe { std::mem::transmute(m) }
+        unsafe { std::mem::transmute::<mownstr::MownStr<'_>, mownstr::MownStr<'_>>(m) }
     } else {
         m.to_string().into()
     }

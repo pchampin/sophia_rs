@@ -1,6 +1,6 @@
 //! I define [`FilterMapSource`] the result type of [`Source::filter_map_items`].
 use super::*;
-use std::collections::VecDeque;
+use std::{collections::VecDeque, error::Error};
 
 /// The result of [`Source::filter_map_items`].
 pub struct FilterMapSource<S, F> {
@@ -18,7 +18,7 @@ where
 
     fn try_for_some_item<E, F2>(&mut self, mut f: F2) -> StreamResult<bool, Self::Error, E>
     where
-        E: Error,
+        E: Error + Send + Sync + 'static,
         F2: FnMut(Self::Item<'_>) -> Result<(), E>,
     {
         let filter_map = &mut self.filter_map;

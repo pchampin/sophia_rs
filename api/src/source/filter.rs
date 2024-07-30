@@ -22,7 +22,7 @@ where
 
     fn try_for_some_item<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
     where
-        E: Error,
+        E: std::error::Error + Send + Sync + 'static,
         F: FnMut(Self::Item<'_>) -> Result<(), E>,
     {
         let p = &mut self.predicate;
@@ -55,7 +55,7 @@ mod _triple {
 
         fn try_for_some_item<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
         where
-            E: Error,
+            E: std::error::Error + Send + Sync + 'static,
             F: FnMut(Self::Item<'_>) -> Result<(), E>,
         {
             self.0.try_for_some_item(|i| f(S::i2t(i)))
@@ -84,7 +84,7 @@ mod _quad {
 
         fn try_for_some_item<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
         where
-            E: Error,
+            E: std::error::Error + Send + Sync + 'static,
             F: FnMut(Self::Item<'_>) -> Result<(), E>,
         {
             self.0.try_for_some_item(|i| f(S::i2q(i)))
@@ -130,7 +130,7 @@ mod test {
         ];
         let mut h: Vec<[SimpleTerm; 3]> = vec![];
         g.triples()
-            .filter_triples(|t| !Term::eq(t.p(), &ez_term(":e")))
+            .filter_triples(|t| !Term::eq(t.p(), ez_term(":e")))
             .for_each_triple(|t| {
                 h.insert_triple(t).unwrap();
             })
@@ -153,7 +153,7 @@ mod test {
         ];
         let mut h: Vec<Spog<SimpleTerm>> = vec![];
         d.quads()
-            .filter_quads(|q| !Term::eq(q.p(), &ez_term(":e")))
+            .filter_quads(|q| !Term::eq(q.p(), ez_term(":e")))
             .for_each_quad(|q| {
                 h.insert_quad(q).unwrap();
             })

@@ -1,4 +1,6 @@
 //! I define adapters for the [`dataset`](super) related traits.
+use std::error::Error;
+
 use super::*;
 use crate::graph::{GTerm, Graph, MutableGraph};
 use crate::quad::Spog;

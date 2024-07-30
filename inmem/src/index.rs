@@ -1,5 +1,6 @@
 //! A [`TermIndex`] is a bidirectional assocuation of [terms](Term) with short numeric [indices](Index).
 use sophia_api::term::{FromTerm, GraphName, SimpleTerm, Term};
+
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::error::Error;
@@ -64,7 +65,7 @@ pub trait TermIndex {
     /// The type of [indices](Index) used by this [`TermIndex`]
     type Index: Index;
     /// The type of error that this [`TermIndex`] may raise
-    type Error: Error + 'static;
+    type Error: Error + Send + Sync + 'static;
 
     /// Get the index corresponding to term `t`, if it exists.
     ///

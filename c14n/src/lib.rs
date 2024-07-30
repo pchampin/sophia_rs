@@ -26,7 +26,7 @@ use thiserror::Error;
 
 /// Canonicalization error.
 #[derive(Debug, Error)]
-pub enum C14nError<E: std::error::Error> {
+pub enum C14nError<E: std::error::Error + Send + Sync + 'static> {
     /// The dataset raised an error during canonicalization
     #[error("Error from dataset: {0}")]
     Dataset(#[from] E),

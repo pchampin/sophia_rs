@@ -7,13 +7,15 @@
 //! for different kinds of datasets,
 //! as well as a few implementations for them.
 
+use std::error::Error;
+
 use crate::graph::adapter::{DatasetGraph, PartialUnionGraph, UnionGraph};
 use crate::quad::{iter_spog, Quad};
 use crate::source::{IntoSource, QuadSource, StreamResult};
 use crate::term::matcher::{GraphNameMatcher, TermMatcher};
 use crate::term::{GraphName, SimpleTerm, Term};
+
 use resiter::{filter::*, filter_map::*, flat_map::*, map::*};
-use std::error::Error;
 
 mod _foreign_impl;
 pub mod adapter;
@@ -56,7 +58,7 @@ pub trait Dataset {
     where
         Self: 'x;
     /// The error type that this dataset may raise.
-    type Error: Error + 'static;
+    type Error: Error + Send + Sync + 'static;
 
     /// An iterator visiting all quads of this dataset in arbitrary order.
     ///
@@ -346,7 +348,7 @@ pub type MdResult<D, T> = std::result::Result<T, <D as MutableDataset>::Mutation
 /// see also [`SetDataset`].
 pub trait MutableDataset: Dataset {
     /// The error type that this dataset may raise during mutations.
-    type MutationError: Error + 'static;
+    type MutationError: Error + Send + Sync + 'static;
 
     /// Insert the given quad in this dataset.
     ///
@@ -609,6 +611,7 @@ mod check_implementability {
     /// - a list of terms (either atoms or index of quad)
     /// - a list of triples (SPO indexes)
     /// - a list of named graphs associated the triple indexes contained in the graph
+    ///
     /// This avoids the need to store arbitrarily nested triples.
     /// NB: unasserted triples are not used in any quoted graph.
     use super::*;

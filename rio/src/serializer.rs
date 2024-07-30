@@ -21,6 +21,7 @@ pub fn rio_format_triples<TF, TS>(
 ) -> StreamResult<(), TS::Error, TF::Error>
 where
     TF: TriplesFormatter,
+    TF::Error: std::error::Error + Send + Sync + 'static,
     TS: TripleSource,
 {
     triples.try_for_each_triple(|t| {
@@ -41,6 +42,7 @@ pub fn rio_format_quads<QF, QS>(
 ) -> StreamResult<(), QS::Error, QF::Error>
 where
     QF: QuadsFormatter,
+    QF::Error: std::error::Error + Send + Sync + 'static,
     QS: QuadSource,
 {
     quads.try_for_each_quad(|q| {

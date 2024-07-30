@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use super::*;
 use crate::graph::{CollectibleGraph, Graph, MutableGraph};
 use crate::triple::Triple;
@@ -20,7 +22,7 @@ pub trait TripleSource: Source + IsTripleSource {
     #[inline]
     fn try_for_some_triple<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
     where
-        E: Error,
+        E: Error + Send + Sync + 'static,
         F: FnMut(TSTriple<Self>) -> Result<(), E>,
     {
         self.try_for_some_item(|i| f(Self::i2t(i)))
@@ -33,7 +35,7 @@ pub trait TripleSource: Source + IsTripleSource {
     fn try_for_each_triple<F, E>(&mut self, mut f: F) -> StreamResult<(), Self::Error, E>
     where
         F: FnMut(TSTriple<Self>) -> Result<(), E>,
-        E: Error,
+        E: Error + Send + Sync + 'static,
     {
         self.try_for_each_item(|i| f(Self::i2t(i)))
     }
