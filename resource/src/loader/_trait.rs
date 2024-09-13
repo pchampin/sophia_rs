@@ -32,7 +32,7 @@ pub trait Loader: Sync + Sized {
         T: Borrow<str>,
         G: CollectibleGraph,
     {
-        debug_assert!(iri.as_str().find(|c| c == '#').is_none());
+        debug_assert!(iri.as_str().find('#').is_none());
         let iri_str = iri.as_str();
         let (data, ctype) = self.get(iri.as_ref())?;
         let bufread = io::BufReader::new(&data[..]);
