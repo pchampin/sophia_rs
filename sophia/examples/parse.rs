@@ -16,6 +16,7 @@
 //! - `gtrig` (Generalized [TriG](https://www.w3.org/TR/trig/), default)
 //! - [`jsonld`](https://www.w3.org/TR/json-ld11) (if compiled with the `jsonld` feature)
 //! - [`rdfxml`](https://www.w3.org/TR/rdf-syntax-grammar) (if compiled with the `xml` feature, alias `rdf`)
+//! - [`guess`] try to guess syntax from filename
 //!
 //! [N-Triples]: https://www.w3.org/TR/n-triples/
 //! [N-Quads]: https://www.w3.org/TR/n-quads/
@@ -36,10 +37,30 @@ use sophia::turtle::serializer::{nq::NqSerializer, nt::NtSerializer};
 use sophia::xml::parser::RdfXmlParser;
 
 fn main() {
-    let format = std::env::args()
+    let mut format = std::env::args()
         .nth(1)
-        .unwrap_or_else(|| "gtrig".to_string());
+        .unwrap_or_else(|| "guess".to_string());
     let path = std::env::args().nth(2);
+    if format == "guess" {
+        let Some(filename) = &path else {
+            eprintln!("Cannot guess format of stdin");
+            std::process::exit(-2);
+        };
+        format = match filename.rsplit(".").next() {
+            Some("nt") => "ntriples",
+            Some("nq") => "nquads",
+            Some("ttl") => "turtle",
+            Some("trig") => "trig",
+            Some("jsonld") | Some("json") => "jsonld",
+            Some("rdf") | Some("xml") => "rdfxml",
+            _ => {
+                eprintln!("Cannot guess format of {filename}");
+                std::process::exit(-3);
+            }
+        }
+        .to_string();
+    }
+
     let base = Some(if let Some(iri) = std::env::var_os("SOPHIA_BASE") {
         let iri = iri
             .into_string()
