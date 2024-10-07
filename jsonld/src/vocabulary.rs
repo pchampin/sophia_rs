@@ -140,6 +140,6 @@ impl Term for ArcBnode {
     }
 
     fn bnode_id(&self) -> Option<BnodeId<sophia_api::MownStr>> {
-        Some(BnodeId::new_unchecked(MownStr::from_str(&self[2..])))
+        Some(BnodeId::new_unchecked(MownStr::from_ref(&self[2..])))
     }
 }

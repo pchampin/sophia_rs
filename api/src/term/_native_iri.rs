@@ -13,7 +13,7 @@ where
         TermKind::Iri
     }
     fn iri(&self) -> Option<IriRef<MownStr<'_>>> {
-        Some(IriRef::new_unchecked(MownStr::from_str(self.as_str())))
+        Some(IriRef::new_unchecked(MownStr::from_ref(self.as_str())))
     }
     fn borrow_term(&self) -> Self::BorrowTerm<'_> {
         self
@@ -30,7 +30,7 @@ where
         TermKind::Iri
     }
     fn iri(&self) -> Option<IriRef<MownStr<'_>>> {
-        Some(IriRef::new_unchecked(MownStr::from_str(self.as_str())))
+        Some(IriRef::new_unchecked(MownStr::from_ref(self.as_str())))
     }
     fn borrow_term(&self) -> Self::BorrowTerm<'_> {
         self
