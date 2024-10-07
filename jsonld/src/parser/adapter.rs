@@ -43,7 +43,7 @@ impl SophiaTerm for RdfTerm {
 
     fn lexical_form(&self) -> Option<MownStr> {
         match &self.0 {
-            Term::Literal(lit) => Some(MownStr::from_str(lit.value())),
+            Term::Literal(lit) => Some(MownStr::from_ref(lit.value())),
             _ => None,
         }
     }
@@ -61,7 +61,7 @@ impl SophiaTerm for RdfTerm {
     fn language_tag(&self) -> Option<sophia_api::term::LanguageTag<MownStr>> {
         match &self.0 {
             Term::Literal(lit) => match lit.type_() {
-                Type::LangString(tag) => Some(tag.as_ref().map_unchecked(MownStr::from_str)),
+                Type::LangString(tag) => Some(tag.as_ref().map_unchecked(MownStr::from_ref)),
                 Type::Any(_) => None,
             },
             _ => None,

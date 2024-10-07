@@ -34,7 +34,7 @@ impl Term for f64 {
         Some(MownStr::from(format!("{}", self)))
     }
     fn datatype(&self) -> Option<IriRef<MownStr>> {
-        Some(IriRef::new_unchecked(MownStr::from_str(&XSD_DOUBLE)))
+        Some(IriRef::new_unchecked(MownStr::from_ref(&XSD_DOUBLE)))
     }
     fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
         None
@@ -70,7 +70,7 @@ impl Term for i32 {
         Some(MownStr::from(format!("{}", self)))
     }
     fn datatype(&self) -> Option<IriRef<MownStr>> {
-        Some(IriRef::new_unchecked(MownStr::from_str(&XSD_INTEGER)))
+        Some(IriRef::new_unchecked(MownStr::from_ref(&XSD_INTEGER)))
     }
     fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
         None
@@ -107,7 +107,7 @@ impl Term for isize {
         Some(MownStr::from(format!("{}", self)))
     }
     fn datatype(&self) -> Option<IriRef<MownStr>> {
-        Some(IriRef::new_unchecked(MownStr::from_str(&XSD_INTEGER)))
+        Some(IriRef::new_unchecked(MownStr::from_ref(&XSD_INTEGER)))
     }
     fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
         None
@@ -144,7 +144,7 @@ impl Term for usize {
         Some(MownStr::from(format!("{}", self)))
     }
     fn datatype(&self) -> Option<IriRef<MownStr>> {
-        Some(IriRef::new_unchecked(MownStr::from_str(&XSD_INTEGER)))
+        Some(IriRef::new_unchecked(MownStr::from_ref(&XSD_INTEGER)))
     }
     fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
         None
@@ -180,7 +180,7 @@ impl Term for str {
         Some(MownStr::from(self))
     }
     fn datatype(&self) -> Option<IriRef<MownStr>> {
-        Some(IriRef::new_unchecked(MownStr::from_str(&XSD_STRING)))
+        Some(IriRef::new_unchecked(MownStr::from_ref(&XSD_STRING)))
     }
     fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
         None
@@ -216,7 +216,7 @@ impl Term for bool {
         Some(MownStr::from(if *self { "true" } else { "false" }))
     }
     fn datatype(&self) -> Option<IriRef<MownStr>> {
-        Some(IriRef::new_unchecked(MownStr::from_str(&XSD_BOOLEAN)))
+        Some(IriRef::new_unchecked(MownStr::from_ref(&XSD_BOOLEAN)))
     }
     fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
         None
