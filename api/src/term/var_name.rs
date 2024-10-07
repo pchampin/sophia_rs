@@ -56,7 +56,7 @@ where
         TermKind::Variable
     }
     fn variable(&self) -> Option<VarName<MownStr>> {
-        Some(self.as_ref().map_unchecked(MownStr::from_str))
+        Some(self.as_ref().map_unchecked(MownStr::from_ref))
     }
     fn borrow_term(&self) -> Self::BorrowTerm<'_> {
         self

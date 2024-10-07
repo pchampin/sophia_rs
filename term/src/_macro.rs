@@ -72,7 +72,7 @@ macro_rules! gen_term {
 
                 fn iri(&self) -> Option<IriRef<MownStr>> {
                     if let $type_name::Iri(iri) = self {
-                        Some(iri.as_ref().map_unchecked(MownStr::from_str))
+                        Some(iri.as_ref().map_unchecked(MownStr::from_ref))
                     } else {
                         None
                     }
@@ -80,7 +80,7 @@ macro_rules! gen_term {
 
                 fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
                     if let $type_name::BlankNode(id) = self {
-                        Some(id.as_ref().map_unchecked(MownStr::from_str))
+                        Some(id.as_ref().map_unchecked(MownStr::from_ref))
                     } else {
                         None
                     }
@@ -112,7 +112,7 @@ macro_rules! gen_term {
 
                 fn variable(&self) -> Option<VarName<MownStr>> {
                     if let $type_name::Variable(name) = self {
-                        Some(name.as_ref().map_unchecked(MownStr::from_str))
+                        Some(name.as_ref().map_unchecked(MownStr::from_ref))
                     } else {
                         None
                     }
