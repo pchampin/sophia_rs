@@ -9,7 +9,11 @@
 use std::error::Error;
 
 use crate::model::Trusted;
-use sophia_api::source::{StreamError, StreamError::{SinkError, SourceError}, StreamResult};
+use sophia_api::source::{
+    StreamError,
+    StreamError::{SinkError, SourceError},
+    StreamResult,
+};
 
 /// Wrap a Rio [`TriplesParser`](rio_api::parser::TriplesParser)
 /// into a Sophia [`TripleSource`](sophia_api::source::TripleSource).

@@ -1,6 +1,10 @@
 use super::rdf_object::RdfObject;
 use crate::error::JsonLdError;
-use crate::options::{ProcessingMode::{JsonLd1_0, JsonLd1_1}, JsonLdOptions, RdfDirection};
+use crate::options::{
+    JsonLdOptions,
+    ProcessingMode::{JsonLd1_0, JsonLd1_1},
+    RdfDirection,
+};
 use crate::util_traits::{HashMapUtil, QuadJsonLdUtil, TermJsonLdUtil, VecUtil};
 use json_syntax::object::Object;
 use json_syntax::{Parse, Value as JsonValue};
@@ -122,7 +126,9 @@ impl<'a, L> Engine<'a, L> {
     where
         T: Term,
     {
-        if o.kind() == TermKind::Literal { RdfObject::try_from_term(o).unwrap() } else {
+        if o.kind() == TermKind::Literal {
+            RdfObject::try_from_term(o).unwrap()
+        } else {
             let o_id = o.as_id();
             RdfObject::Node(self.index(g_id.to_string(), o_id.clone()), o_id)
         }

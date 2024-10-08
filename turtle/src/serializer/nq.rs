@@ -85,12 +85,14 @@ where
 impl NqSerializer<Vec<u8>> {
     /// Create a new serializer which targets a `String`.
     #[inline]
-    #[must_use] pub fn new_stringifier() -> Self {
+    #[must_use]
+    pub fn new_stringifier() -> Self {
         Self::new(Vec::new())
     }
     /// Create a new serializer which targets a `String` with a custom config.
     #[inline]
-    #[must_use] pub const fn new_stringifier_with_config(config: NqConfig) -> Self {
+    #[must_use]
+    pub const fn new_stringifier_with_config(config: NqConfig) -> Self {
         Self::new_with_config(Vec::new(), config)
     }
 }

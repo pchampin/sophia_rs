@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use super::{Resource, ResourceError::NoValueFor, ResourceError, ResourceResult, TypedResource};
+use super::{Resource, ResourceError, ResourceError::NoValueFor, ResourceResult, TypedResource};
 use crate::Loader;
 use sophia_api::{graph::CollectibleGraph, prelude::*, term::SimpleTerm};
 

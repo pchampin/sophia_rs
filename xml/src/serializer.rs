@@ -25,17 +25,20 @@ pub struct RdfXmlConfig {
 impl RdfXmlConfig {
     /// Size of the indentation to use in the serialization.
     /// (defaults to 0, meaning no indentation nor linebreaks)
-    #[must_use] pub const fn indentation(&self) -> usize {
+    #[must_use]
+    pub const fn indentation(&self) -> usize {
         self.indentation
     }
 
     /// Build a new default [`RdfXmlConfig`]
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Default::default()
     }
 
     /// Transform an [`RdfXmlConfig`] by setting the [`indentation`](RdfXmlConfig::indentation).
-    #[must_use] pub const fn with_indentation(mut self, i: usize) -> Self {
+    #[must_use]
+    pub const fn with_indentation(mut self, i: usize) -> Self {
         self.indentation = i;
         self
     }
@@ -97,12 +100,14 @@ where
 impl RdfXmlSerializer<Vec<u8>> {
     /// Create a new serializer which targets a `String`.
     #[inline]
-    #[must_use] pub fn new_stringifier() -> Self {
+    #[must_use]
+    pub fn new_stringifier() -> Self {
         Self::new(Vec::new())
     }
     /// Create a new serializer which targets a `String` with a custom config.
     #[inline]
-    #[must_use] pub const fn new_stringifier_with_config(config: RdfXmlConfig) -> Self {
+    #[must_use]
+    pub const fn new_stringifier_with_config(config: RdfXmlConfig) -> Self {
         Self::new_with_config(Vec::new(), config)
     }
 }

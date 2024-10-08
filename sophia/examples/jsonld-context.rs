@@ -19,9 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let json_ld_path = args.nth(1).expect("Missing jsonld file.");
     let context_path = args.next();
     if let Some(context_path) = &context_path {
-        eprintln!(
-            "Loading {json_ld_path} with @context from {context_path}"
-        );
+        eprintln!("Loading {json_ld_path} with @context from {context_path}");
     } else {
         eprintln!("Loading {json_ld_path}");
     }

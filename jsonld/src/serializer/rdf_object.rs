@@ -10,10 +10,7 @@ pub enum RdfObject {
 
 impl RdfObject {
     pub const fn is_literal(&self) -> bool {
-        matches!(
-            self,
-            Self::LangString(..) | Self::TypedLiteral(..)
-        )
+        matches!(self, Self::LangString(..) | Self::TypedLiteral(..))
     }
     pub const fn is_node(&self) -> bool {
         matches!(self, Self::Node(..))

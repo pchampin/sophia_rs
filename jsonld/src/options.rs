@@ -43,7 +43,8 @@ pub struct JsonLdOptions<LF> {
 
 impl JsonLdOptions<DefaultLoaderFactory<NoLoader>> {
     /// Build a new JSON-LD options.
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self::default()
     }
 }

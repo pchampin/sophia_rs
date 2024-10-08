@@ -68,7 +68,8 @@ impl Loader<Iri<Arc<str>>, Location<Iri<Arc<str>>>> for FileUrlLoader {
 
 impl FileUrlLoader {
     /// Creates a new file system loader with the given content `parser`.
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self::default()
     }
 }

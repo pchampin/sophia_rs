@@ -1,5 +1,5 @@
 use super::hash::hash_quad_with;
-use super::iso_term::{IsoTerm, cmp_quads};
+use super::iso_term::{cmp_quads, IsoTerm};
 use sophia_api::quad::{iter_spog, Quad};
 use sophia_api::{
     dataset::{DTerm, Dataset},

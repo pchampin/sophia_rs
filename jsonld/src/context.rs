@@ -48,8 +48,8 @@ impl TryIntoContextRef for &str {
     fn try_into_context_ref(self) -> Result<ContextRef, Self::Error> {
         let iri = ArcIri::new_unchecked("x-string://".into());
         let doc = Value::parse_str(self, |span| locspan::Location::new(iri.clone(), span))?;
-        let context = Value::extract_context(doc)
-            .map_err(|e| format!("Could not extract @context: {e}"))?;
+        let context =
+            Value::extract_context(doc).map_err(|e| format!("Could not extract @context: {e}"))?;
         let rdoc = RemoteDocument::new(None, None, context);
         Ok(RemoteDocumentReference::Loaded(rdoc))
     }

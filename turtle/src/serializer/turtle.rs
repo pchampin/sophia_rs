@@ -39,7 +39,8 @@ impl TurtleConfig {
     /// If true, extra effort will be made to group related triples together,
     /// and to use the collection syntax whenever possible.
     /// This requires storing the whole graph in memory.
-    #[must_use] pub const fn pretty(&self) -> bool {
+    #[must_use]
+    pub const fn pretty(&self) -> bool {
         self.pretty
     }
 
@@ -47,7 +48,8 @@ impl TurtleConfig {
     /// (defaults to a map containing rdf:, rdfs: and xsd:)
     ///
     /// NB: currently, only used if [`pretty`][`TurtleConfig::pretty`] is `true`.
-    #[must_use] pub fn prefix_map(&self) -> &[PrefixMapPair] {
+    #[must_use]
+    pub fn prefix_map(&self) -> &[PrefixMapPair] {
         &self.prefix_map
     }
 
@@ -55,12 +57,14 @@ impl TurtleConfig {
     /// (defaults to `"  "`, can only contain ASCII whitespaces)
     ///
     /// NB: currently, only used if [`pretty`][`TurtleConfig::pretty`] is `true`.
-    #[must_use] pub fn indentation(&self) -> &str {
+    #[must_use]
+    pub fn indentation(&self) -> &str {
         &self.indentation
     }
 
     /// Build a new default [`TurtleConfig`].
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         let pretty = false;
         let prefix_map = Self::default_prefix_map();
         let indentation = "  ".to_string();
@@ -72,7 +76,8 @@ impl TurtleConfig {
     }
 
     /// Transform a [`TurtleConfig`] by setting the [`pretty`][`TurtleConfig::pretty`] flag.
-    #[must_use] pub const fn with_pretty(mut self, b: bool) -> Self {
+    #[must_use]
+    pub const fn with_pretty(mut self, b: bool) -> Self {
         self.pretty = b;
         self
     }
@@ -84,7 +89,8 @@ impl TurtleConfig {
     }
 
     /// Transform a [`TurtleConfig`] by setting the [`prefix_map`][`TurtleConfig::prefix_map`] flag.
-    #[must_use] pub fn with_own_prefix_map(mut self, pm: Vec<PrefixMapPair>) -> Self {
+    #[must_use]
+    pub fn with_own_prefix_map(mut self, pm: Vec<PrefixMapPair>) -> Self {
         self.prefix_map = pm;
         self
     }
@@ -101,7 +107,8 @@ impl TurtleConfig {
     }
 
     /// Return the prefix map that is used when none is provided
-    #[must_use] pub fn default_prefix_map() -> Vec<PrefixMapPair> {
+    #[must_use]
+    pub fn default_prefix_map() -> Vec<PrefixMapPair> {
         vec![
             (
                 Prefix::new_unchecked("rdf".into()),
@@ -187,12 +194,14 @@ where
 impl TurtleSerializer<Vec<u8>> {
     /// Create a new serializer which targets a `String`.
     #[inline]
-    #[must_use] pub fn new_stringifier() -> Self {
+    #[must_use]
+    pub fn new_stringifier() -> Self {
         Self::new(Vec::new())
     }
     /// Create a new serializer which targets a `String` with a custom config.
     #[inline]
-    #[must_use] pub const fn new_stringifier_with_config(config: TurtleConfig) -> Self {
+    #[must_use]
+    pub const fn new_stringifier_with_config(config: TurtleConfig) -> Self {
         Self::new_with_config(Vec::new(), config)
     }
 }

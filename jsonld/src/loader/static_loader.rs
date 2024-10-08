@@ -33,7 +33,8 @@ impl<I, S> Default for StaticLoader<I, S> {
 
 impl<I: IsIri, S> StaticLoader<I, S> {
     /// Creates a new [`StaticLoader`]
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self::default()
     }
 

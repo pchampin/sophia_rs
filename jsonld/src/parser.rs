@@ -51,7 +51,8 @@ impl Default for JsonLdParser<DefaultLoaderFactory<NoLoader>> {
 
 impl JsonLdParser<DefaultLoaderFactory<NoLoader>> {
     /// Make a new [`JsonLdParser`] with the default options
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self {
             options: JsonLdOptions::default(),
         }

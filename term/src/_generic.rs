@@ -88,10 +88,7 @@ impl<T: Borrow<str> + for<'x> From<&'x str>> TryFromTerm for GenericLiteral<T> {
             } else {
                 // the following is safe because we checked term.kind()
                 let dt = unsafe { term.datatype().unwrap_unchecked() };
-                Ok(Self::Typed(
-                    lex,
-                    dt.map_unchecked(|txt| T::from(&txt)),
-                ))
+                Ok(Self::Typed(lex, dt.map_unchecked(|txt| T::from(&txt))))
             }
         } else {
             Err(GenericLiteralError(term.kind()))

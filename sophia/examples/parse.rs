@@ -83,8 +83,8 @@ fn main() {
         "gtrig" => dump_quads(input, GTriGParser { base }),
         #[cfg(feature = "jsonld")]
         "json-ld" | "jsonld" => {
-            let options = JsonLdOptions::new()
-                .with_base(base.unwrap().map_unchecked(std::sync::Arc::from));
+            let options =
+                JsonLdOptions::new().with_base(base.unwrap().map_unchecked(std::sync::Arc::from));
             let loader_factory = sophia::jsonld::loader::FileUrlLoader::default;
             #[cfg(feature = "http_client")]
             let loader_factory = || {

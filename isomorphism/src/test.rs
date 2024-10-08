@@ -149,9 +149,7 @@ fn quoted_triple() -> Result<(), Box<dyn Error>> {
 
 fn make_chain(ids: &'static str) -> Vec<[MyTerm; 4]> {
     let rel = MyTerm::Iri("tag:rel");
-    let nodes: Vec<_> = (0..ids.len())
-        .map(|i| MyTerm::Bnode(&ids[i..=i]))
-        .collect();
+    let nodes: Vec<_> = (0..ids.len()).map(|i| MyTerm::Bnode(&ids[i..=i])).collect();
     let mut dataset = Vec::with_capacity(ids.len() - 1);
     for i in 1..nodes.len() {
         dataset.push([nodes[i - 1], rel, nodes[i], nodes[i - 1]]);
@@ -236,9 +234,7 @@ fn cycle_almost_pathological() -> Result<(), Box<dyn Error>> {
 
 fn make_clique(ids: &'static str) -> Vec<[MyTerm; 4]> {
     let rel = MyTerm::Iri("tag:rel");
-    let nodes: Vec<_> = (0..ids.len())
-        .map(|i| MyTerm::Bnode(&ids[i..=i]))
-        .collect();
+    let nodes: Vec<_> = (0..ids.len()).map(|i| MyTerm::Bnode(&ids[i..=i])).collect();
     let mut dataset = Vec::with_capacity(ids.len() * ids.len());
     for n1 in &nodes {
         for n2 in &nodes {
@@ -264,9 +260,7 @@ fn clique() -> Result<(), Box<dyn Error>> {
 
 fn make_tree(ids: &'static str) -> Vec<[MyTerm; 4]> {
     let rel = MyTerm::Iri("tag:rel");
-    let nodes: Vec<_> = (0..ids.len())
-        .map(|i| MyTerm::Bnode(&ids[i..=i]))
-        .collect();
+    let nodes: Vec<_> = (0..ids.len()).map(|i| MyTerm::Bnode(&ids[i..=i])).collect();
     let mut dataset = Vec::with_capacity(ids.len() * ids.len());
     let mut i = 0;
     while 2 * i < nodes.len() {
