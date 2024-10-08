@@ -67,7 +67,7 @@ impl<T: Term> Term for IsoTerm<T> {
         self.0.eq(other)
     }
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.0.hash(state)
+        self.0.hash(state);
     }
     fn into_term<U: FromTerm>(self) -> U {
         self.0.into_term()

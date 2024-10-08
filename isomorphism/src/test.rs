@@ -150,7 +150,7 @@ fn quoted_triple() -> Result<(), Box<dyn Error>> {
 fn make_chain(ids: &'static str) -> Vec<[MyTerm; 4]> {
     let rel = MyTerm::Iri("tag:rel");
     let nodes: Vec<_> = (0..ids.len())
-        .map(|i| MyTerm::Bnode(&ids[i..i + 1]))
+        .map(|i| MyTerm::Bnode(&ids[i..=i]))
         .collect();
     let mut dataset = Vec::with_capacity(ids.len() - 1);
     for i in 1..nodes.len() {
@@ -237,11 +237,11 @@ fn cycle_almost_pathological() -> Result<(), Box<dyn Error>> {
 fn make_clique(ids: &'static str) -> Vec<[MyTerm; 4]> {
     let rel = MyTerm::Iri("tag:rel");
     let nodes: Vec<_> = (0..ids.len())
-        .map(|i| MyTerm::Bnode(&ids[i..i + 1]))
+        .map(|i| MyTerm::Bnode(&ids[i..=i]))
         .collect();
     let mut dataset = Vec::with_capacity(ids.len() * ids.len());
-    for n1 in nodes.iter() {
-        for n2 in nodes.iter() {
+    for n1 in &nodes {
+        for n2 in &nodes {
             dataset.push([*n1, rel, *n2, *n1]);
         }
     }
@@ -265,7 +265,7 @@ fn clique() -> Result<(), Box<dyn Error>> {
 fn make_tree(ids: &'static str) -> Vec<[MyTerm; 4]> {
     let rel = MyTerm::Iri("tag:rel");
     let nodes: Vec<_> = (0..ids.len())
-        .map(|i| MyTerm::Bnode(&ids[i..i + 1]))
+        .map(|i| MyTerm::Bnode(&ids[i..=i]))
         .collect();
     let mut dataset = Vec::with_capacity(ids.len() * ids.len());
     let mut i = 0;
@@ -335,11 +335,11 @@ impl Term for MyTerm {
 
     fn kind(&self) -> TermKind {
         match self {
-            MyTerm::Iri(_) => TermKind::Iri,
-            MyTerm::Bnode(_) => TermKind::BlankNode,
-            MyTerm::String(_) => TermKind::Literal,
-            MyTerm::Number(_) => TermKind::Literal,
-            MyTerm::Triple(_) => TermKind::Triple,
+            Self::Iri(_) => TermKind::Iri,
+            Self::Bnode(_) => TermKind::BlankNode,
+            Self::String(_) => TermKind::Literal,
+            Self::Number(_) => TermKind::Literal,
+            Self::Triple(_) => TermKind::Triple,
         }
     }
 
@@ -348,7 +348,7 @@ impl Term for MyTerm {
     }
 
     fn iri(&self) -> Option<IriRef<MownStr<'_>>> {
-        if let MyTerm::Iri(iri) = *self {
+        if let Self::Iri(iri) = *self {
             Some(IriRef::new_unchecked(iri.into()))
         } else {
             None
@@ -356,7 +356,7 @@ impl Term for MyTerm {
     }
 
     fn bnode_id(&self) -> Option<BnodeId<MownStr<'_>>> {
-        if let MyTerm::Bnode(id) = *self {
+        if let Self::Bnode(id) = *self {
             Some(BnodeId::new_unchecked(id.into()))
         } else {
             None
@@ -364,19 +364,19 @@ impl Term for MyTerm {
     }
 
     fn lexical_form(&self) -> Option<MownStr<'_>> {
-        if let MyTerm::String(val) = *self {
+        if let Self::String(val) = *self {
             Some(val.into())
-        } else if let MyTerm::Number(n) = *self {
-            Some(format!("{}", n).into())
+        } else if let Self::Number(n) = *self {
+            Some(format!("{n}").into())
         } else {
             None
         }
     }
 
     fn datatype(&self) -> Option<IriRef<MownStr<'_>>> {
-        if let MyTerm::String(_) = *self {
+        if let Self::String(_) = *self {
             xsd::string.iri()
-        } else if let MyTerm::Number(_) = *self {
+        } else if let Self::Number(_) = *self {
             xsd::integer.iri()
         } else {
             None
@@ -387,15 +387,15 @@ impl Term for MyTerm {
         None
     }
 
-    fn triple(&self) -> Option<[MyTerm; 3]> {
-        if let MyTerm::Triple(spo) = *self {
+    fn triple(&self) -> Option<[Self; 3]> {
+        if let Self::Triple(spo) = *self {
             let spo: Vec<_> = spo
                 .split(' ')
                 .map(|t| {
                     if t.starts_with('#') {
-                        MyTerm::Iri(t)
+                        Self::Iri(t)
                     } else {
-                        MyTerm::Bnode(t)
+                        Self::Bnode(t)
                     }
                 })
                 .collect();
@@ -405,7 +405,7 @@ impl Term for MyTerm {
         }
     }
 
-    fn to_triple(self) -> Option<[MyTerm; 3]> {
+    fn to_triple(self) -> Option<[Self; 3]> {
         self.triple()
     }
 }

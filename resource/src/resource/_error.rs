@@ -81,15 +81,15 @@ where
     /// (*not* the resource from which it was discovered).
     pub fn resource_id(&self) -> SimpleTerm {
         match self {
-            ResourceError::IriNotAbsolute(iriref) => iriref.as_simple(),
-            ResourceError::LoaderError(err) => err.iri().into_term(),
-            ResourceError::GraphError { id, .. } => id.as_simple(),
-            ResourceError::NoValueFor { id, .. } => id.as_simple(),
-            ResourceError::UnexpectedMultipleValueFor { id, .. } => id.as_simple(),
-            ResourceError::MissingType { id, .. } => id.as_simple(),
-            ResourceError::UnexpectedKind { id, .. } => id.as_simple(),
-            ResourceError::UnexpectedDatatype { id, .. } => id.as_simple(),
-            ResourceError::UnexpectedValue { id, .. } => id.as_simple(),
+            Self::IriNotAbsolute(iriref) => iriref.as_simple(),
+            Self::LoaderError(err) => err.iri().into_term(),
+            Self::GraphError { id, .. } => id.as_simple(),
+            Self::NoValueFor { id, .. } => id.as_simple(),
+            Self::UnexpectedMultipleValueFor { id, .. } => id.as_simple(),
+            Self::MissingType { id, .. } => id.as_simple(),
+            Self::UnexpectedKind { id, .. } => id.as_simple(),
+            Self::UnexpectedDatatype { id, .. } => id.as_simple(),
+            Self::UnexpectedValue { id, .. } => id.as_simple(),
         }
     }
 }
@@ -99,7 +99,7 @@ where
     E: Error + Send + Sync + 'static,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 

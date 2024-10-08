@@ -1,12 +1,12 @@
-//! Adapter for the TriG parser from [RIO](https://github.com/Tpt/rio/blob/master/turtle/src/turtle.rs)
+//! Adapter for the `TriG` parser from [RIO](https://github.com/Tpt/rio/blob/master/turtle/src/turtle.rs)
 
 use rio_turtle::TriGParser as RioTriGParser;
 use sophia_api::parser::QuadParser;
 use sophia_iri::Iri;
-use sophia_rio::parser::*;
+use sophia_rio::parser::StrictRioQuadSource;
 use std::io::BufRead;
 
-/// TriG parser based on RIO.
+/// `TriG` parser based on RIO.
 #[derive(Clone, Debug, Default)]
 pub struct TriGParser {
     /// The base IRI used by this parser to resolve relative IRI-references.

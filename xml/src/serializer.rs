@@ -25,17 +25,17 @@ pub struct RdfXmlConfig {
 impl RdfXmlConfig {
     /// Size of the indentation to use in the serialization.
     /// (defaults to 0, meaning no indentation nor linebreaks)
-    pub fn indentation(&self) -> usize {
+    #[must_use] pub const fn indentation(&self) -> usize {
         self.indentation
     }
 
     /// Build a new default [`RdfXmlConfig`]
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Default::default()
     }
 
     /// Transform an [`RdfXmlConfig`] by setting the [`indentation`](RdfXmlConfig::indentation).
-    pub fn with_indentation(mut self, i: usize) -> Self {
+    #[must_use] pub const fn with_indentation(mut self, i: usize) -> Self {
         self.indentation = i;
         self
     }
@@ -53,17 +53,17 @@ where
 {
     /// Build a new N-Triples serializer writing to `write`, with the default config.
     #[inline]
-    pub fn new(write: W) -> RdfXmlSerializer<W> {
+    pub fn new(write: W) -> Self {
         Self::new_with_config(write, RdfXmlConfig::default())
     }
 
     /// Build a new N-Triples serializer writing to `write`, with the given config.
-    pub fn new_with_config(write: W, config: RdfXmlConfig) -> RdfXmlSerializer<W> {
-        RdfXmlSerializer { config, write }
+    pub const fn new_with_config(write: W, config: RdfXmlConfig) -> Self {
+        Self { config, write }
     }
 
     /// Borrow this serializer's configuration.
-    pub fn config(&self) -> &RdfXmlConfig {
+    pub const fn config(&self) -> &RdfXmlConfig {
         &self.config
     }
 }
@@ -97,13 +97,13 @@ where
 impl RdfXmlSerializer<Vec<u8>> {
     /// Create a new serializer which targets a `String`.
     #[inline]
-    pub fn new_stringifier() -> Self {
-        RdfXmlSerializer::new(Vec::new())
+    #[must_use] pub fn new_stringifier() -> Self {
+        Self::new(Vec::new())
     }
     /// Create a new serializer which targets a `String` with a custom config.
     #[inline]
-    pub fn new_stringifier_with_config(config: RdfXmlConfig) -> Self {
-        RdfXmlSerializer::new_with_config(Vec::new(), config)
+    #[must_use] pub const fn new_stringifier_with_config(config: RdfXmlConfig) -> Self {
+        Self::new_with_config(Vec::new(), config)
     }
 }
 
@@ -140,7 +140,7 @@ pub(crate) mod test {
     #[test]
     fn roundtrip() -> Result<(), Box<dyn std::error::Error>> {
         for rdfxml in TESTS {
-            println!("==========\n{}\n----------", rdfxml);
+            println!("==========\n{rdfxml}\n----------");
             let g1: Vec<[SimpleTerm; 3]> = crate::parser::parse_str(rdfxml).collect_triples()?;
 
             let out = RdfXmlSerializer::new_stringifier()
@@ -159,7 +159,7 @@ pub(crate) mod test {
     fn roundtrip_with_ident() -> Result<(), Box<dyn std::error::Error>> {
         let config = RdfXmlConfig::new().with_indentation(4);
         for rdfxml in TESTS {
-            println!("==========\n{}\n----------", rdfxml);
+            println!("==========\n{rdfxml}\n----------");
             let g1: Vec<[SimpleTerm; 3]> = crate::parser::parse_str(rdfxml).collect_triples()?;
 
             let out = RdfXmlSerializer::new_stringifier_with_config(config.clone())

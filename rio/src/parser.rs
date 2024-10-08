@@ -9,7 +9,7 @@
 use std::error::Error;
 
 use crate::model::Trusted;
-use sophia_api::source::{StreamError, StreamError::*, StreamResult};
+use sophia_api::source::{StreamError, StreamError::{SinkError, SourceError}, StreamResult};
 
 /// Wrap a Rio [`TriplesParser`](rio_api::parser::TriplesParser)
 /// into a Sophia [`TripleSource`](sophia_api::source::TripleSource).
@@ -111,12 +111,12 @@ where
 }
 
 /// This intermediate type is required,
-/// because Rio requires that the error type of triple_handler/quad_handler
+/// because Rio requires that the error type of `triple_handler/quad_handler`
 /// implement From<TurtleError> (or whatever Rio-specific error returned by the parser).
 ///
 /// This is costless, though,
-/// because RioStreamError's internal representation is identical to StreamError,
-/// so the final type conversion performed by into_stream_error is actually
+/// because `RioStreamError`'s internal representation is identical to `StreamError`,
+/// so the final type conversion performed by `into_stream_error` is actually
 /// just for pleasing the compiler.
 enum RioStreamError<E1, E2> {
     /// Equivalent to [`StreamError::SourceError`]
@@ -130,7 +130,7 @@ where
     E2: Error + Send + Sync + 'static,
 {
     fn from(other: E1) -> Self {
-        RioStreamError::Source(other)
+        Self::Source(other)
     }
 }
 impl<E1, E2> From<RioStreamError<E1, E2>> for StreamError<E1, E2>

@@ -22,7 +22,7 @@ pub enum JsonLdQuadSource {
 
 impl JsonLdQuadSource {
     pub(crate) fn from_err<E: Into<JsonLdError>>(err: E) -> Self {
-        JsonLdQuadSource::Err(Some(err.into()))
+        Self::Err(Some(err.into()))
     }
 }
 
@@ -37,14 +37,14 @@ impl Source for JsonLdQuadSource {
         F: FnMut(Self::Item<'_>) -> Result<(), E>,
     {
         match self {
-            JsonLdQuadSource::Quads(quads) => {
+            Self::Quads(quads) => {
                 if let Some(quad) = quads.next() {
-                    f(quad).map(|_| true).map_err(SinkError)
+                    f(quad).map(|()| true).map_err(SinkError)
                 } else {
                     Ok(false)
                 }
             }
-            JsonLdQuadSource::Err(opt) => {
+            Self::Err(opt) => {
                 if let Some(err) = opt.take() {
                     Err(SourceError(err))
                 } else {

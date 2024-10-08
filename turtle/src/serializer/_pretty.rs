@@ -1,9 +1,9 @@
-//! Utility code for pretty-printing Turtle and TriG.
+//! Utility code for pretty-printing Turtle and `TriG`.
 //!
 //! Possible improvements:
-//! 1. PrettifiableDataset should encapsulate some of the "indexes" built by Prettifier
-//!    (labelled, subject_types, named_graphs)
-//!    and build directly in CollectibleDataset::from_quad_source().
+//! 1. `PrettifiableDataset` should encapsulate some of the "indexes" built by Prettifier
+//!    (labelled, `subject_types`, `named_graphs`)
+//!    and build directly in `CollectibleDataset::from_quad_source()`.
 //!
 //! 2. Instead of writing directly to the output,
 //!    generate a hierarchical structure,
@@ -29,10 +29,10 @@ use std::ops::Range;
 
 pub type PrettifiableDataset<'a> = BTreeSet<Gspo<SimpleTerm<'a>>>;
 
-/// Serialize `dataset` in pretty TriG on `write`, using the given `config`.
+/// Serialize `dataset` in pretty `TriG` on `write`, using the given `config`.
 ///
 /// NB: if dataset only contains a default graph,
-/// the resulting TriG will be valid Turtle.
+/// the resulting `TriG` will be valid Turtle.
 pub fn prettify<W>(
     dataset: PrettifiableDataset<'_>,
     mut write: W,
@@ -51,7 +51,7 @@ where
     Ok(())
 }
 
-/// write the prefix declarations of the given prefix_map, using SPARQL style.
+/// write the prefix declarations of the given `prefix_map`, using SPARQL style.
 fn write_prefixes<W, P>(mut write: W, prefix_map: &P) -> io::Result<()>
 where
     W: io::Write,
@@ -271,7 +271,7 @@ impl<'a, W: Write> Prettifier<'a, W> {
     }
 
     fn write_term(&mut self, term: &'a SimpleTerm<'a>) -> io::Result<()> {
-        use TermKind::*;
+        use TermKind::{BlankNode, Iri, Literal, Triple, Variable};
         match term.kind() {
             Iri => self.write_iri(&term.iri().unwrap()),
             BlankNode => self.write_bnode(term),
@@ -414,7 +414,7 @@ impl<'a, W: Write> Prettifier<'a, W> {
 /// blank nodes MUST be labelled (as opposed to described with square brackets) if
 /// - they are used in several named graphs, or
 /// - they are used several times as object, or
-/// - they are used as predicate or graph_name, or
+/// - they are used as predicate or `graph_name`, or
 /// - they are used in a quoted triple, or
 /// - they are involved in a blank node cycle.
 ///
@@ -474,7 +474,7 @@ fn build_labelled<'a>(d: &'a PrettifiableDataset) -> BTreeSet<&'a SimpleTerm<'a>
         }
     }
     // detect blank node cycles
-    let keys: Vec<_> = profiles.keys().cloned().collect();
+    let keys: Vec<_> = profiles.keys().copied().collect();
     for key in keys {
         let profile = profiles.get_mut(&key).unwrap();
         if profile.bad || profile.visited {
@@ -544,7 +544,7 @@ fn build_subject_types<'a>(
         .map(|q| (q.g(), q.s()))
         .dedup()
         .map(|(g, s)| {
-            use TermKind::*;
+            use TermKind::{BlankNode, Triple};
             let st = match s.kind() {
                 BlankNode => {
                     if !labelled.contains(&s)
@@ -746,7 +746,7 @@ where
 // ---------------------------------------------------------------------------------
 
 #[cfg(test)]
-pub(crate) mod test {
+pub mod test {
     use super::*;
 
     #[test]

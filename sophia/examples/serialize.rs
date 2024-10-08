@@ -70,12 +70,12 @@ fn main() {
             serialize_triples(quad_source, ser)
         }
         _ => {
-            eprintln!("Unrecognized format: {}", format);
+            eprintln!("Unrecognized format: {format}");
             std::process::exit(-1);
         }
     };
     if let Err(msg) = res {
-        eprintln!("{}", msg);
+        eprintln!("{msg}");
         std::process::exit(1);
     }
 }
@@ -87,8 +87,8 @@ fn serialize_triples<Q: QuadSource, S: TripleSerializer>(
     let triple_source = quad_source.filter_quads(|q| q.g().is_none()).to_triples();
     match ser.serialize_triples(triple_source) {
         Ok(_) => Ok(()),
-        Err(SourceError(e)) => Err(format!("Error while parsing input: {}", e)),
-        Err(SinkError(e)) => Err(format!("Error while serializing triples: {}", e)),
+        Err(SourceError(e)) => Err(format!("Error while parsing input: {e}")),
+        Err(SinkError(e)) => Err(format!("Error while serializing triples: {e}")),
     }
 }
 
@@ -98,7 +98,7 @@ fn serialize_quads<Q: QuadSource, S: QuadSerializer>(
 ) -> Result<(), String> {
     match ser.serialize_quads(quad_source) {
         Ok(_) => Ok(()),
-        Err(SourceError(e)) => Err(format!("Error while parsing input: {}", e)),
-        Err(SinkError(e)) => Err(format!("Error while serializing quads: {}", e)),
+        Err(SourceError(e)) => Err(format!("Error while parsing input: {e}")),
+        Err(SinkError(e)) => Err(format!("Error while serializing quads: {e}")),
     }
 }

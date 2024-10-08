@@ -1,12 +1,12 @@
 //! This benchmark is used to compare the time it takes to create
-//! * borrowing MownStr's vs. standard &str references
-//! * owning MownStr's vs. Strings
+//! * borrowing `MownStr`'s vs. standard &str references
+//! * owning `MownStr`'s vs. Strings
 //!
 //! The results of `borrowed_mownstr` should therefore be compared to `refs`,
 //! and that of `owned_mownstr` should be compared to `strings`.
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use sophia_iri::resolve::*;
+use sophia_iri::resolve::{BaseIri, BaseIriRef};
 
 fn parse(c: &mut Criterion) {
     c.bench_with_input(
@@ -25,7 +25,7 @@ fn parse(c: &mut Criterion) {
                         black_box(BaseIriRef::new(*iri).is_ok());
                     }
                 }
-            })
+            });
         },
     );
 }
@@ -42,7 +42,7 @@ fn resolve_from_scratch(c: &mut Criterion) {
                         black_box(&base.resolve(*rel).unwrap());
                     }
                 }
-            })
+            });
         },
     );
 }
@@ -58,7 +58,7 @@ fn resolve_mutualized(c: &mut Criterion) {
                         black_box(i.0.resolve(*rel).unwrap());
                     }
                 }
-            })
+            });
         },
     );
 }

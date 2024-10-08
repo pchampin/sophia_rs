@@ -11,7 +11,7 @@
 
 use super::nt::{write_term, write_triple};
 use sophia_api::quad::Quad;
-use sophia_api::serializer::*;
+use sophia_api::serializer::{QuadSerializer, Stringifier};
 use sophia_api::source::{QuadSource, StreamResult};
 use std::io;
 
@@ -30,17 +30,17 @@ where
 {
     /// Build a new N-Quads serializer writing to `write`, with the default config.
     #[inline]
-    pub fn new(write: W) -> NqSerializer<W> {
+    pub fn new(write: W) -> Self {
         Self::new_with_config(write, NqConfig::default())
     }
 
     /// Build a new N-Quads serializer writing to `write`, with the given config.
-    pub fn new_with_config(write: W, config: NqConfig) -> NqSerializer<W> {
-        NqSerializer { config, write }
+    pub const fn new_with_config(write: W, config: NqConfig) -> Self {
+        Self { config, write }
     }
 
     /// Borrow this serializer's configuration.
-    pub fn config(&self) -> &NqConfig {
+    pub const fn config(&self) -> &NqConfig {
         &self.config
     }
 }
@@ -78,20 +78,20 @@ where
                 }
                 .map_err(|e| io::Error::new(io::ErrorKind::Other, e))
             })
-            .map(|_| self)
+            .map(|()| self)
     }
 }
 
 impl NqSerializer<Vec<u8>> {
     /// Create a new serializer which targets a `String`.
     #[inline]
-    pub fn new_stringifier() -> Self {
-        NqSerializer::new(Vec::new())
+    #[must_use] pub fn new_stringifier() -> Self {
+        Self::new(Vec::new())
     }
     /// Create a new serializer which targets a `String` with a custom config.
     #[inline]
-    pub fn new_stringifier_with_config(config: NqConfig) -> Self {
-        NqSerializer::new_with_config(Vec::new(), config)
+    #[must_use] pub const fn new_stringifier_with_config(config: NqConfig) -> Self {
+        Self::new_with_config(Vec::new(), config)
     }
 }
 

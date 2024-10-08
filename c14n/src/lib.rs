@@ -7,7 +7,7 @@
 //!
 //! TODO list:
 //! - [x] check that UTF-8 byte-by-byte ordering is indeed equivalent to code point ordering.
-//! - [ ] use c14n in sophia_isomorphism, replacing the current incomplete algorithm
+//! - [ ] use c14n in `sophia_isomorphism`, replacing the current incomplete algorithm
 //!
 //! [Sophia]: https://docs.rs/sophia/latest/sophia/
 //! [RDF]: https://www.w3.org/TR/rdf-primer/

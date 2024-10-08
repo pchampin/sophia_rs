@@ -1,4 +1,4 @@
-use super::{util::*, *};
+use super::{util::iri_buf, LoaderError};
 use crate::{Resource, ResourceError, TypedResource};
 #[cfg(feature = "jsonld")]
 use futures_util::FutureExt;
@@ -38,7 +38,7 @@ pub trait Loader: Sync + Sized {
         let bufread = io::BufReader::new(&data[..]);
         match &ctype[..] {
             "text/turtle" => turtle::TurtleParser {
-                base: Some(iri.as_ref().map_unchecked(|t| t.to_string())),
+                base: Some(iri.as_ref().map_unchecked(std::string::ToString::to_string)),
             }
             .parse(bufread)
             .collect_triples()
@@ -54,7 +54,7 @@ pub trait Loader: Sync + Sized {
                 use sophia_api::prelude::{Quad, QuadParser, QuadSource};
                 use sophia_jsonld::{loader::ClosureLoader, JsonLdOptions, JsonLdParser};
                 let options = JsonLdOptions::new()
-                    .with_base(iri.as_ref().map_unchecked(|t| t.into()))
+                    .with_base(iri.as_ref().map_unchecked(std::convert::Into::into))
                     .with_document_loader_factory(ClosureLoaderFactory::new(|| {
                         ClosureLoader::new(|url| {
                             async move {
@@ -79,7 +79,7 @@ pub trait Loader: Sync + Sized {
 
             #[cfg(feature = "xml")]
             "application/rdf+xml" => sophia_xml::parser::RdfXmlParser {
-                base: Some(iri.as_ref().map_unchecked(|t| t.to_string())),
+                base: Some(iri.as_ref().map_unchecked(std::string::ToString::to_string)),
             }
             .parse(bufread)
             .collect_triples()

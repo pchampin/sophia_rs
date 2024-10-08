@@ -8,7 +8,7 @@ use regex::Regex;
 /// is not `None`.
 /// Future implementations may be smarter about this.
 #[inline]
-pub fn is_valid_suffixed_iri_ref(ns: &str, suffix: Option<&str>) -> bool {
+#[must_use] pub fn is_valid_suffixed_iri_ref(ns: &str, suffix: Option<&str>) -> bool {
     match suffix {
         None => is_valid_iri_ref(ns),
         Some(suffix) => {
@@ -22,19 +22,19 @@ pub fn is_valid_suffixed_iri_ref(ns: &str, suffix: Option<&str>) -> bool {
 
 /// Check whether `txt` is a valid (absolute or relative) IRI reference.
 #[inline]
-pub fn is_valid_iri_ref(txt: &str) -> bool {
+#[must_use] pub fn is_valid_iri_ref(txt: &str) -> bool {
     IRI_REGEX.is_match(txt) || IRELATIVE_REF_REGEX.is_match(txt)
 }
 
 /// Check whether `txt` is an absolute IRI reference.
 #[inline]
-pub fn is_absolute_iri_ref(txt: &str) -> bool {
+#[must_use] pub fn is_absolute_iri_ref(txt: &str) -> bool {
     IRI_REGEX.is_match(txt)
 }
 
 /// Check whether `txt` is a relative IRI reference.
 #[inline]
-pub fn is_relative_iri_ref(txt: &str) -> bool {
+#[must_use] pub fn is_relative_iri_ref(txt: &str) -> bool {
     IRELATIVE_REF_REGEX.is_match(txt)
 }
 

@@ -42,7 +42,7 @@ impl<T: Deref<Target = str>> BaseIri<T> {
         iri: R,
         buf: &'a mut String,
     ) -> R::OutputAbs {
-        R::output_abs(self.0.resolve_into(iri.borrow(), buf).map(|_| &buf[..]))
+        R::output_abs(self.0.resolve_into(iri.borrow(), buf).map(|()| &buf[..]))
     }
 }
 
@@ -88,7 +88,7 @@ impl<T: Deref<Target = str>> BaseIriRef<T> {
         iri: R,
         buf: &'a mut String,
     ) -> R::OutputRel {
-        R::output_rel(self.0.resolve_into(iri.borrow(), buf).map(|_| &buf[..]))
+        R::output_rel(self.0.resolve_into(iri.borrow(), buf).map(|()| &buf[..]))
     }
 
     /// Convert this to a [`BaseIri`].
@@ -176,7 +176,7 @@ mod test {
 
             let rbi = BaseIri::new(*txt);
             if parsed.0 {
-                assert!(rbi.is_ok(), "<{}> → {:?}", txt, rbi);
+                assert!(rbi.is_ok(), "<{txt}> → {rbi:?}");
                 let bi = rbi.unwrap();
                 assert_eq!(bi.scheme(), parsed.1.unwrap());
                 assert_eq!(bi.authority(), parsed.2);
@@ -189,7 +189,7 @@ mod test {
                 assert_eq!(bi, Iri::new(*txt).unwrap().to_base());
                 assert_eq!(bi, Iri::new(*txt).unwrap().as_base());
             } else {
-                assert!(rbi.is_err(), "<{}> → {:?}", txt, rbi);
+                assert!(rbi.is_err(), "<{txt}> → {rbi:?}");
             }
         }
     }
@@ -198,9 +198,9 @@ mod test {
     fn negative() {
         for txt in NEGATIVE_IRIS {
             let rpir = BaseIriRef::new(*txt);
-            assert!(rpir.is_err(), "<{}> → {:?}", txt, rpir);
+            assert!(rpir.is_err(), "<{txt}> → {rpir:?}");
             let rpi = BaseIri::new(*txt);
-            assert!(rpi.is_err(), "<{}> → {:?}", txt, rpi);
+            assert!(rpi.is_err(), "<{txt}> → {rpi:?}");
         }
     }
 
@@ -208,13 +208,13 @@ mod test {
     fn relative() {
         for (rel, abs) in RELATIVE_IRIS {
             let rbir = BaseIriRef::new(*rel);
-            assert!(rbir.is_ok(), "<{}> → {:?}", rel, rbir);
+            assert!(rbir.is_ok(), "<{rel}> → {rbir:?}");
 
             let rbi = BaseIri::new(*rel);
             if rel != abs {
-                assert!(rbi.is_err(), "<{}> → {:?}", rel, rbi);
+                assert!(rbi.is_err(), "<{rel}> → {rbi:?}");
             } else {
-                assert!(rbi.is_ok(), "<{}> → {:?}", rel, rbi);
+                assert!(rbi.is_ok(), "<{rel}> → {rbi:?}");
                 assert_eq!(rbir.unwrap().as_iri_ref(), rbi.unwrap().as_iri_ref());
             }
         }

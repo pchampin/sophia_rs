@@ -5,7 +5,7 @@
 //! Alternatively, the input file name can be provided as a second argument,
 //! which will also set the base IRI to the corresponding file: URL.
 //!
-//! The base IRI can be overridden via the environment variable SOPHIA_BASE.
+//! The base IRI can be overridden via the environment variable `SOPHIA_BASE`.
 //!
 //! Recognized formats are:
 //! - [`ntriples`](https://www.w3.org/TR/n-triples/) (alias `nt`)
@@ -46,13 +46,13 @@ fn main() {
             eprintln!("Cannot guess format of stdin");
             std::process::exit(-2);
         };
-        format = match filename.rsplit(".").next() {
+        format = match filename.rsplit('.').next() {
             Some("nt") => "ntriples",
             Some("nq") => "nquads",
             Some("ttl") => "turtle",
             Some("trig") => "trig",
-            Some("jsonld") | Some("json") => "jsonld",
-            Some("rdf") | Some("xml") => "rdfxml",
+            Some("jsonld" | "json") => "jsonld",
+            Some("rdf" | "xml") => "rdfxml",
             _ => {
                 eprintln!("Cannot guess format of {filename}");
                 std::process::exit(-3);
@@ -84,7 +84,7 @@ fn main() {
         #[cfg(feature = "jsonld")]
         "json-ld" | "jsonld" => {
             let options = JsonLdOptions::new()
-                .with_base(base.clone().unwrap().map_unchecked(std::sync::Arc::from));
+                .with_base(base.unwrap().map_unchecked(std::sync::Arc::from));
             let loader_factory = sophia::jsonld::loader::FileUrlLoader::default;
             #[cfg(feature = "http_client")]
             let loader_factory = || {
@@ -99,12 +99,12 @@ fn main() {
         #[cfg(feature = "xml")]
         "rdfxml" | "rdf" => dump_triples(input, RdfXmlParser { base }),
         _ => {
-            eprintln!("Unrecognized format: {}", format);
+            eprintln!("Unrecognized format: {format}");
             std::process::exit(-1);
         }
     };
     if let Err(msg) = res {
-        eprintln!("{}", msg);
+        eprintln!("{msg}");
         std::process::exit(1);
     }
 }
@@ -116,8 +116,8 @@ fn dump_triples<P: TripleParser<Input>>(input: Input, p: P) -> Result<(), String
     let mut ser = NtSerializer::new(output);
     match ser.serialize_triples(triple_source) {
         Ok(_) => Ok(()),
-        Err(SourceError(e)) => Err(format!("Error while parsing input: {}", e)),
-        Err(SinkError(e)) => Err(format!("Error while writing quads: {}", e)),
+        Err(SourceError(e)) => Err(format!("Error while parsing input: {e}")),
+        Err(SinkError(e)) => Err(format!("Error while writing quads: {e}")),
     }
 }
 
@@ -128,8 +128,8 @@ fn dump_quads<P: QuadParser<Input>>(input: Input, p: P) -> Result<(), String> {
     let mut ser = NqSerializer::new(output);
     match ser.serialize_quads(quad_source) {
         Ok(_) => Ok(()),
-        Err(SourceError(e)) => Err(format!("Error while parsing input: {}", e)),
-        Err(SinkError(e)) => Err(format!("Error while writing quads: {}", e)),
+        Err(SourceError(e)) => Err(format!("Error while parsing input: {e}")),
+        Err(SinkError(e)) => Err(format!("Error while writing quads: {e}")),
     }
 }
 
@@ -150,8 +150,8 @@ impl Input {
 impl Read for Input {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         match self {
-            Input::Stdin(b) => b.read(buf),
-            Input::File(b) => b.read(buf),
+            Self::Stdin(b) => b.read(buf),
+            Self::File(b) => b.read(buf),
         }
     }
 }
@@ -159,15 +159,15 @@ impl Read for Input {
 impl BufRead for Input {
     fn fill_buf(&mut self) -> std::io::Result<&[u8]> {
         match self {
-            Input::Stdin(b) => b.fill_buf(),
-            Input::File(b) => b.fill_buf(),
+            Self::Stdin(b) => b.fill_buf(),
+            Self::File(b) => b.fill_buf(),
         }
     }
 
     fn consume(&mut self, amt: usize) {
         match self {
-            Input::Stdin(b) => b.consume(amt),
-            Input::File(b) => b.consume(amt),
+            Self::Stdin(b) => b.consume(amt),
+            Self::File(b) => b.consume(amt),
         }
     }
 }

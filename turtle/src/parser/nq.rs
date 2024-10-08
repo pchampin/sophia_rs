@@ -3,7 +3,7 @@
 //! [N-Quads]: https://www.w3.org/TR/n-quads/
 use rio_turtle::NQuadsParser as RioNQParser;
 use sophia_api::parser::QuadParser;
-use sophia_rio::parser::*;
+use sophia_rio::parser::StrictRioQuadSource;
 use std::io::BufRead;
 
 /// N-Quads parser based on RIO.

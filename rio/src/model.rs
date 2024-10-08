@@ -8,7 +8,7 @@
 //! which ensures the validity of the underlying data.
 //!
 //! The [`Trusted`] wrapper is used to materialize the fact that we trust the underlying data of Rio types.
-use rio_api::model::{Quad as RioQuad, Term as RioTerm, Triple as RioTriple, *};
+use rio_api::model::{Quad as RioQuad, Term as RioTerm, Triple as RioTriple, BlankNode, GeneralizedQuad, GeneralizedTerm, GraphName, Literal, NamedNode, Variable};
 use sophia_api::ns::{rdf, xsd};
 use sophia_api::quad::{QBorrowTerm, Quad, Spog};
 use sophia_api::term::{BnodeId, LanguageTag, Term, TermKind, VarName};
@@ -104,7 +104,7 @@ impl<'a> Term for Trusted<Literal<'a>> {
 }
 
 fn lexical_form(l: Literal) -> MownStr {
-    use Literal::*;
+    use Literal::{LanguageTaggedString, Simple, Typed};
     let value = match l {
         Simple { value } => value,
         LanguageTaggedString { value, .. } => value,
@@ -114,7 +114,7 @@ fn lexical_form(l: Literal) -> MownStr {
 }
 
 fn datatype(l: Literal) -> IriRef<MownStr> {
-    use Literal::*;
+    use Literal::{LanguageTaggedString, Simple, Typed};
     let dt = match l {
         Simple { .. } => xsd::string.iriref(),
         LanguageTaggedString { .. } => rdf::langString.iriref(),
@@ -206,7 +206,7 @@ impl<'a> Term for Trusted<GraphName<'a>> {
     type BorrowTerm<'x> = Self where Self: 'x;
 
     fn kind(&self) -> TermKind {
-        use GraphName::*;
+        use GraphName::{BlankNode, NamedNode};
         match self.0 {
             NamedNode(_) => TermKind::Iri,
             BlankNode(_) => TermKind::BlankNode,
@@ -238,7 +238,7 @@ impl<'a> Term for Trusted<RioTerm<'a>> {
     type BorrowTerm<'x> = Self where Self: 'x;
 
     fn kind(&self) -> TermKind {
-        use RioTerm::*;
+        use RioTerm::{BlankNode, Literal, NamedNode, Triple};
         match self.0 {
             NamedNode(_) => TermKind::Iri,
             BlankNode(_) => TermKind::BlankNode,
@@ -314,7 +314,7 @@ impl<'a> Term for Trusted<GeneralizedTerm<'a>> {
     type BorrowTerm<'x> = Self where Self: 'x;
 
     fn kind(&self) -> TermKind {
-        use GeneralizedTerm::*;
+        use GeneralizedTerm::{BlankNode, Literal, NamedNode, Triple, Variable};
         match self.0 {
             NamedNode(_) => TermKind::Iri,
             BlankNode(_) => TermKind::BlankNode,
@@ -526,7 +526,7 @@ mod test {
 
     #[test]
     fn blank_node() {
-        assert_consistent_term_impl(&Trusted(BlankNode { id: "foo" }))
+        assert_consistent_term_impl(&Trusted(BlankNode { id: "foo" }));
     }
 
     #[test]
@@ -595,7 +595,7 @@ mod test {
     #[test]
     fn graph_name_blank_node() {
         let t: GraphName = BlankNode { id: "foo" }.into();
-        assert_consistent_term_impl(&Trusted(t))
+        assert_consistent_term_impl(&Trusted(t));
     }
 
     #[test]
@@ -607,7 +607,7 @@ mod test {
     #[test]
     fn term_blank_node() {
         let t: RioTerm = BlankNode { id: "foo" }.into();
-        assert_consistent_term_impl(&Trusted(t))
+        assert_consistent_term_impl(&Trusted(t));
     }
 
     #[test]
@@ -661,7 +661,7 @@ mod test {
     #[test]
     fn gterm_blank_node() {
         let t: RioTerm = BlankNode { id: "foo" }.into();
-        assert_consistent_term_impl(&Trusted(t))
+        assert_consistent_term_impl(&Trusted(t));
     }
 
     #[test]
@@ -715,6 +715,6 @@ mod test {
     #[test]
     fn gterm_variable() {
         let t: GeneralizedTerm = Variable { name: "foo" }.into();
-        assert_consistent_term_impl(&Trusted(t))
+        assert_consistent_term_impl(&Trusted(t));
     }
 }

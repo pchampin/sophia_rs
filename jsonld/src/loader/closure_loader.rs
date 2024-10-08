@@ -1,4 +1,4 @@
-use super::*;
+use super::{Arc, Iri, Value};
 use json_ld::future::{BoxFuture, FutureExt};
 use json_ld::{Loader, RemoteDocument};
 use json_syntax::Parse;
@@ -59,7 +59,7 @@ where
     F: Send + FnMut(Iri<String>) -> BoxFuture<'f, Result<String, String>>,
 {
     /// Creates a new closure loader with the given closure.
-    pub fn new(f: F) -> Self {
+    pub const fn new(f: F) -> Self {
         Self { closure: f }
     }
 }

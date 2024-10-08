@@ -1,7 +1,7 @@
 //! I provide generic wrappers around `Borrow<str>` types,
 //! guaranteeing that their underlying string is a valid IRI or IRI reference.
 use super::resolve::{BaseIri, BaseIriRef};
-use super::{InvalidIri, IsIri, IsIriRef, *};
+use super::{InvalidIri, IsIri, IsIriRef, Result, is_absolute_iri_ref, is_valid_iri_ref, wrap};
 use std::borrow::Borrow;
 use std::fmt::Display;
 
@@ -108,46 +108,46 @@ mod test {
     #[test]
     fn iri() {
         for (txt, (abs, ..)) in POSITIVE_IRIS {
-            assert!(Iri::new(*txt).is_ok() == *abs)
+            assert!(Iri::new(*txt).is_ok() == *abs);
         }
         for txt in NEGATIVE_IRIS {
-            assert!(Iri::new(*txt).is_err())
+            assert!(Iri::new(*txt).is_err());
         }
     }
 
     #[test]
     fn iri_box() {
         for (txt, (abs, ..)) in POSITIVE_IRIS {
-            assert!(Iri::new(Box::from(txt as &str)).is_ok() == *abs)
+            assert!(Iri::new(Box::from(txt as &str)).is_ok() == *abs);
         }
         for txt in NEGATIVE_IRIS {
-            assert!(Iri::new(Box::from(txt as &str)).is_err())
+            assert!(Iri::new(Box::from(txt as &str)).is_err());
         }
     }
 
     #[test]
     fn iri_ref() {
         for (txt, _) in POSITIVE_IRIS {
-            assert!(IriRef::new(*txt).is_ok())
+            assert!(IriRef::new(*txt).is_ok());
         }
         for txt in NEGATIVE_IRIS {
-            assert!(IriRef::new(*txt).is_err())
+            assert!(IriRef::new(*txt).is_err());
         }
         for (txt, _) in RELATIVE_IRIS {
-            assert!(IriRef::new(*txt).is_ok())
+            assert!(IriRef::new(*txt).is_ok());
         }
     }
 
     #[test]
     fn iri_ref_box() {
         for (txt, _) in POSITIVE_IRIS {
-            assert!(IriRef::new(Box::from(txt as &str)).is_ok())
+            assert!(IriRef::new(Box::from(txt as &str)).is_ok());
         }
         for txt in NEGATIVE_IRIS {
-            assert!(IriRef::new(Box::from(txt as &str)).is_err())
+            assert!(IriRef::new(Box::from(txt as &str)).is_err());
         }
         for (txt, _) in RELATIVE_IRIS {
-            assert!(IriRef::new(Box::from(txt as &str)).is_ok())
+            assert!(IriRef::new(Box::from(txt as &str)).is_ok());
         }
     }
 

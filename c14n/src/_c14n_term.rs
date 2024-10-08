@@ -8,7 +8,7 @@ pub enum C14nTerm<T: Term> {
     Blank(BnodeId<Rc<str>>),
     Other(T),
 }
-use C14nTerm::*;
+use C14nTerm::{Blank, Other};
 
 impl<T: Term> Term for C14nTerm<T> {
     type BorrowTerm<'x> = &'x Self where Self: 'x;

@@ -6,7 +6,7 @@
 use rio_xml::RdfXmlParser as RioRdfXmlParser;
 use sophia_api::parser::TripleParser;
 use sophia_iri::Iri;
-use sophia_rio::parser::*;
+use sophia_rio::parser::StrictRioTripleSource;
 use std::io::BufRead;
 
 /// N-Triples parser based on RIO.

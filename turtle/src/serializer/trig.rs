@@ -13,7 +13,6 @@ use rio_turtle::TriGFormatter;
 use sophia_api::quad::Quad;
 use sophia_api::serializer::{QuadSerializer, Stringifier};
 use sophia_api::source::{QuadSource, SinkError, SourceError, StreamResult};
-use sophia_api::term::Term;
 use sophia_rio::serializer::rio_format_quads;
 use std::io;
 
@@ -34,17 +33,17 @@ where
 {
     /// Build a new Trig serializer writing to `write`, with the default config.
     #[inline]
-    pub fn new(write: W) -> TrigSerializer<W> {
+    pub fn new(write: W) -> Self {
         Self::new_with_config(write, TrigConfig::default())
     }
 
     /// Build a new Trig serializer writing to `write`, with the given config.
-    pub fn new_with_config(write: W, config: TrigConfig) -> TrigSerializer<W> {
-        TrigSerializer { config, write }
+    pub const fn new_with_config(write: W, config: TrigConfig) -> Self {
+        Self { config, write }
     }
 
     /// Borrow this serializer's configuration.
-    pub fn config(&self) -> &TrigConfig {
+    pub const fn config(&self) -> &TrigConfig {
         &self.config
     }
 }
@@ -67,8 +66,8 @@ where
             source
                 .for_each_quad(|t| {
                     let (spo, g) = t.spog();
-                    let spo = spo.map(|t| t.into_term());
-                    let g = g.map(|t| t.into_term());
+                    let spo = spo.map(sophia_api::prelude::Term::into_term);
+                    let g = g.map(sophia_api::prelude::Term::into_term);
                     dataset.insert((g, spo));
                 })
                 .map_err(SourceError)?;
@@ -85,13 +84,13 @@ where
 impl TrigSerializer<Vec<u8>> {
     /// Create a new serializer which targets a `String`.
     #[inline]
-    pub fn new_stringifier() -> Self {
-        TrigSerializer::new(Vec::new())
+    #[must_use] pub fn new_stringifier() -> Self {
+        Self::new(Vec::new())
     }
     /// Create a new serializer which targets a `String` with a custom config.
     #[inline]
-    pub fn new_stringifier_with_config(config: TrigConfig) -> Self {
-        TrigSerializer::new_with_config(Vec::new(), config)
+    #[must_use] pub const fn new_stringifier_with_config(config: TrigConfig) -> Self {
+        Self::new_with_config(Vec::new(), config)
     }
 }
 
@@ -128,16 +127,16 @@ pub(crate) mod test {
         r#"# lists
             GRAPH <tag:g> { <tag:alice> <tag:likes> ( 1 2 ( 3 4 ) 5 6 ), ("a" "b"). }
         "#,
-        r#"# subject lists
+        r"# subject lists
             GRAPH <tag:g> { (1 2 3) a <tag:List>. }
-        "#,
-        r#"# malformed list
+        ",
+        r"# malformed list
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
             GRAPH <tag:g> {
                 _:a rdf:first 42, 43; rdf:rest (44 45).
                 _:b rdf:first 42; rdf:rest (43), (44).
             }
-        "#,
+        ",
         r#"# bnode cycles
             PREFIX : <http://example.org/ns/>
             GRAPH <tag:g> {
@@ -146,42 +145,42 @@ pub(crate) mod test {
                 _:c :b "c"; :t _:c.
             }
         "#,
-        r#"# quoted triples
+        r"# quoted triples
             PREFIX : <http://example.org/ns/>
             GRAPH <tag:g> {
                 << :s :p :o1 >> :a :b.
                 :s :p :o2 {| :c :d |}.
             }
-        "#,
-        r#"# blank node graph name
+        ",
+        r"# blank node graph name
             PREFIX : <http://example.org/ns/>
             :lois :believes _:b.
             GRAPH _:b1 { :clark a :Human }
-        "#,
+        ",
         r#"# blank node sharred across graphs
             PREFIX : <http://example.org/ns/>
             _:a :name "alice".
             GRAPH <tag:g> { _:a a :Person }
         "#,
-        r#"# list split over different graphs
+        r"# list split over different graphs
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
             _:a rdf:first 42; rdf:rest _:b.
 
             GRAPH [] {
                 _:b rdf:first 43; rdf:rest ().
             }
-        "#,
-        r#"# issue 149
+        ",
+        r"# issue 149
             PREFIX : <https://example.org/>
             :s :p :o .
             GRAPH :g { _:b :p2 :o2 }
-        "#,
+        ",
     ];
 
     #[test]
     fn roundtrip_not_pretty() -> Result<(), Box<dyn Error>> {
         for ttl in TESTS {
-            println!("==========\n{}\n----------", ttl);
+            println!("==========\n{ttl}\n----------");
             let g1: Vec<Spog<SimpleTerm>> = crate::parser::trig::parse_str(ttl).collect_quads()?;
 
             let out = TrigSerializer::new_stringifier()
@@ -199,7 +198,7 @@ pub(crate) mod test {
     #[test]
     fn roundtrip_pretty() -> Result<(), Box<dyn Error>> {
         for ttl in TESTS {
-            println!("==========\n{}\n----------", ttl);
+            println!("==========\n{ttl}\n----------");
             let g1: Vec<Spog<SimpleTerm>> = crate::parser::trig::parse_str(ttl).collect_quads()?;
 
             let config = TrigConfig::new().with_pretty(true);

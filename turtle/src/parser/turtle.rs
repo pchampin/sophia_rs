@@ -2,7 +2,7 @@
 use rio_turtle::TurtleParser as RioTurtleParser;
 use sophia_api::parser::TripleParser;
 use sophia_iri::Iri;
-use sophia_rio::parser::*;
+use sophia_rio::parser::StrictRioTripleSource;
 use std::io::BufRead;
 
 /// Turtle parser based on RIO.

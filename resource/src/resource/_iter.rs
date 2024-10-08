@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use super::{Resource, ResourceError::NoValueFor, *};
+use super::{Resource, ResourceError::NoValueFor, ResourceError, ResourceResult, TypedResource};
 use crate::Loader;
 use sophia_api::{graph::CollectibleGraph, prelude::*, term::SimpleTerm};
 
@@ -19,7 +19,7 @@ impl<G: Graph, L> LadderTermIterator<G, L> {
     /// `start` is expected to be `Some(Ok(first_blank_node));
     /// if it is `Some(Err(_))`, the iterator will yield this error;
     /// if it is `None`, the iterator will be empty.
-    pub fn new(
+    pub const fn new(
         start: Option<ResourceResult<Resource<G, L>, G>>,
         value: SimpleTerm<'static>,
         next: SimpleTerm<'static>,
