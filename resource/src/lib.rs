@@ -83,7 +83,7 @@ mod test {
         .unwrap()
     }
 
-    /// Test impl of TypedResource
+    /// Test impl of `TypedResource`
     pub struct WithId(Resource<MyGraph, LocalLoader>);
 
     impl TryFrom<Resource<MyGraph, LocalLoader>> for WithId {

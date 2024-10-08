@@ -112,7 +112,7 @@ impl LanguageTagVocabularyMut for ArcVoc {
 
 /// Self-explanatory bnode index for JSON-LD processing.
 ///
-/// We are not using Sophia's BnodeId because it does not allocate the '_:'.
+/// We are not using Sophia's `BnodeId` because it does not allocate the '_:'.
 /// Since instances of this type are always created via [`ArcVoc`] from a valid bnode identifier,
 /// we don't need to implement any validity check.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]

@@ -3,7 +3,7 @@
 //! [N-Triples]: https://www.w3.org/TR/n-triples/
 use rio_turtle::NTriplesParser as RioNTParser;
 use sophia_api::parser::TripleParser;
-use sophia_rio::parser::*;
+use sophia_rio::parser::StrictRioTripleSource;
 use std::io::BufRead;
 
 /// N-Triples parser based on RIO.

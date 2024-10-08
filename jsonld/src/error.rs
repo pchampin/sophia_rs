@@ -40,13 +40,13 @@ pub enum JsonLdError {
 
     /// Poisonned lock
     ///
-    /// NB: PoisonError is generic, so we keep the message only
+    /// NB: `PoisonError` is generic, so we keep the message only
     #[error("poisonned lock for document loader: {0}")]
     PoisonnedLock(String),
 
     /// An expansion error was encountered while parsing
     ///
-    /// NB: ExpandError is generic, so we keep the message only
+    /// NB: `ExpandError` is generic, so we keep the message only
     #[error("error while expanding: {0}")]
     ExpandError(String),
 
@@ -58,20 +58,20 @@ pub enum JsonLdError {
 impl From<Meta<Error<Location<ArcIri, Span>>, Location<ArcIri, Span>>> for JsonLdError {
     fn from(other: Meta<Error<Location<ArcIri, Span>>, Location<ArcIri, Span>>) -> Self {
         let Meta(error, location) = other;
-        JsonLdError::InvalidJson { error, location }
+        Self::InvalidJson { error, location }
     }
 }
 
 impl From<Meta<Error<Span>, Span>> for JsonLdError {
     fn from(other: Meta<Error<Span>, Span>) -> Self {
         let Meta(error, location) = other;
-        JsonLdError::InvalidJsonLiteral { error, location }
+        Self::InvalidJsonLiteral { error, location }
     }
 }
 
 impl<T> From<PoisonError<T>> for JsonLdError {
     fn from(value: PoisonError<T>) -> Self {
-        JsonLdError::PoisonnedLock(format!("{value}"))
+        Self::PoisonnedLock(format!("{value}"))
     }
 }
 
@@ -80,6 +80,6 @@ where
     ExpandError<M, E, C>: Display,
 {
     fn from(value: ExpandError<M, E, C>) -> Self {
-        JsonLdError::ExpandError(format!("{value}"))
+        Self::ExpandError(format!("{value}"))
     }
 }

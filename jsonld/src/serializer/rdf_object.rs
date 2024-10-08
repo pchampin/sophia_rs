@@ -1,7 +1,7 @@
-//! A private enum type used internally by JsonLdSerializer
+//! A private enum type used internally by `JsonLdSerializer`
 use sophia_api::term::{IriRef, LanguageTag, TermKind, TryFromTerm};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum RdfObject {
     LangString(Box<str>, LanguageTag<Box<str>>),
     TypedLiteral(Box<str>, IriRef<Box<str>>),
@@ -9,33 +9,33 @@ pub enum RdfObject {
 }
 
 impl RdfObject {
-    pub fn is_literal(&self) -> bool {
+    pub const fn is_literal(&self) -> bool {
         matches!(
             self,
-            RdfObject::LangString(..) | RdfObject::TypedLiteral(..)
+            Self::LangString(..) | Self::TypedLiteral(..)
         )
     }
-    pub fn is_node(&self) -> bool {
-        matches!(self, RdfObject::Node(..))
+    pub const fn is_node(&self) -> bool {
+        matches!(self, Self::Node(..))
     }
     pub fn is_iri(&self) -> bool {
-        matches!(self, RdfObject::Node(_, id) if !id.starts_with("_:"))
+        matches!(self, Self::Node(_, id) if !id.starts_with("_:"))
     }
     pub fn eq_node(&self, other_id: &str) -> bool {
-        matches!(self, RdfObject::Node(_, id) if id.as_ref()==other_id)
+        matches!(self, Self::Node(_, id) if id.as_ref()==other_id)
     }
     pub fn as_str(&self) -> &str {
         match self {
-            RdfObject::LangString(lit, _) => lit.as_ref(),
-            RdfObject::TypedLiteral(lit, _) => lit.as_ref(),
-            RdfObject::Node(_, id) => id,
+            Self::LangString(lit, _) => lit.as_ref(),
+            Self::TypedLiteral(lit, _) => lit.as_ref(),
+            Self::Node(_, id) => id,
         }
     }
 }
 
 impl From<(usize, String)> for RdfObject {
     fn from(other: (usize, String)) -> Self {
-        RdfObject::Node(other.0, other.1.into())
+        Self::Node(other.0, other.1.into())
     }
 }
 
@@ -48,10 +48,10 @@ impl TryFromTerm for RdfObject {
                 let lex: Box<str> = term.lexical_form().unwrap().into();
                 if let Some(tag) = term.language_tag() {
                     let tag = tag.map_unchecked(Into::into);
-                    Ok(RdfObject::LangString(lex, tag))
+                    Ok(Self::LangString(lex, tag))
                 } else {
                     let dt = term.datatype().unwrap().map_unchecked(Into::into);
-                    Ok(RdfObject::TypedLiteral(lex, dt))
+                    Ok(Self::TypedLiteral(lex, dt))
                 }
             }
             _ => Err(RdfObjectError {}),

@@ -1,7 +1,7 @@
-use super::rdf_object::*;
-use crate::error::*;
-use crate::options::{ProcessingMode::*, *};
-use crate::util_traits::*;
+use super::rdf_object::RdfObject;
+use crate::error::JsonLdError;
+use crate::options::{ProcessingMode::{JsonLd1_0, JsonLd1_1}, JsonLdOptions, RdfDirection};
+use crate::util_traits::{HashMapUtil, QuadJsonLdUtil, TermJsonLdUtil, VecUtil};
 use json_syntax::object::Object;
 use json_syntax::{Parse, Value as JsonValue};
 use locspan::Meta;
@@ -63,7 +63,7 @@ impl<'a, L> Engine<'a, L> {
             if !q.is_jsonld() {
                 return Ok(());
             }
-            let g_id = q.g().map(|g| g.as_id()).unwrap_or_else(|| Box::from(" "));
+            let g_id = q.g().map_or_else(|| Box::from(" "), |g| g.as_id());
             let s_id = q.s().as_id();
             let is = self.index(g_id.clone(), s_id.clone());
             if q.g().is_some() {
@@ -122,21 +122,18 @@ impl<'a, L> Engine<'a, L> {
     where
         T: Term,
     {
-        match o.kind() {
-            TermKind::Literal => RdfObject::try_from_term(o).unwrap(),
-            _ => {
-                let o_id = o.as_id();
-                RdfObject::Node(self.index(g_id.to_string(), o_id.clone()), o_id)
-            }
+        if o.kind() == TermKind::Literal { RdfObject::try_from_term(o).unwrap() } else {
+            let o_id = o.as_id();
+            RdfObject::Node(self.index(g_id.to_string(), o_id.clone()), o_id)
         }
     }
 
-    /// Get the result as a JsonValue.
+    /// Get the result as a `JsonValue`.
     pub fn into_json(mut self) -> Result<JsonValue<()>, JsonLdError> {
         // check all list_seeds to mark them, if appropriate, as list nodes,
         // and also recursively mark other list nodes (traversing back rdf:rest links)
         let list_seeds = std::mem::take(&mut self.list_seeds);
-        for inode in list_seeds.into_iter() {
+        for inode in list_seeds {
             self.mark_list_node(inode);
         }
         // check that candidate compound literals are indeed compound literels
@@ -244,7 +241,7 @@ impl<'a, L> Engine<'a, L> {
     ) -> Result<Object<()>, JsonLdError> {
         let mut obj = Object::new();
         push_entry(&mut obj, "@id", id.into());
-        for (key, vals) in node.iter() {
+        for (key, vals) in node {
             if key.as_ref() == "@graph" {
                 continue;
             }
@@ -395,16 +392,14 @@ impl<'a, L> Engine<'a, L> {
 fn is_list_node(node: &HashMap<Box<str>, Vec<RdfObject>>) -> bool {
     2 <= node.len()
         && node.len() <= 3
-        && node.get(RDF_FIRST).map(|v| v.len() == 1).unwrap_or(false)
+        && node.get(RDF_FIRST).is_some_and(|v| v.len() == 1)
         && node
             .get(RDF_REST)
-            .map(|v| v.len() == 1 && v[0].is_node())
-            .unwrap_or(false)
+            .is_some_and(|v| v.len() == 1 && v[0].is_node())
         && (node.len() == 2
             || node
                 .get("@type")
-                .map(|v| v.len() == 1 && v[0].eq_node(RDF_LIST))
-                .unwrap_or(false))
+                .is_some_and(|v| v.len() == 1 && v[0].eq_node(RDF_LIST)))
 }
 
 // check if node is a compound literal
@@ -413,17 +408,14 @@ fn is_compound_literal(node: &HashMap<Box<str>, Vec<RdfObject>>) -> bool {
         && node.len() <= 3
         && node
             .get(RDF_DIRECTION)
-            .map(|v| v.len() == 1 && v[0].is_literal())
-            .unwrap_or(false)
+            .is_some_and(|v| v.len() == 1 && v[0].is_literal())
         && node
             .get(RDF_VALUE)
-            .map(|v| v.len() == 1 && v[0].is_literal())
-            .unwrap_or(false)
+            .is_some_and(|v| v.len() == 1 && v[0].is_literal())
         && (node.len() == 2
             || node
                 .get(RDF_LANGUAGE)
-                .map(|v| v.len() == 1 && v[0].is_literal())
-                .unwrap_or(false))
+                .is_some_and(|v| v.len() == 1 && v[0].is_literal()))
 }
 
 const NS_18N: &str = "https://www.w3.org/ns/i18n#";

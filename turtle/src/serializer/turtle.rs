@@ -39,7 +39,7 @@ impl TurtleConfig {
     /// If true, extra effort will be made to group related triples together,
     /// and to use the collection syntax whenever possible.
     /// This requires storing the whole graph in memory.
-    pub fn pretty(&self) -> bool {
+    #[must_use] pub const fn pretty(&self) -> bool {
         self.pretty
     }
 
@@ -47,7 +47,7 @@ impl TurtleConfig {
     /// (defaults to a map containing rdf:, rdfs: and xsd:)
     ///
     /// NB: currently, only used if [`pretty`][`TurtleConfig::pretty`] is `true`.
-    pub fn prefix_map(&self) -> &[PrefixMapPair] {
+    #[must_use] pub fn prefix_map(&self) -> &[PrefixMapPair] {
         &self.prefix_map
     }
 
@@ -55,16 +55,16 @@ impl TurtleConfig {
     /// (defaults to `"  "`, can only contain ASCII whitespaces)
     ///
     /// NB: currently, only used if [`pretty`][`TurtleConfig::pretty`] is `true`.
-    pub fn indentation(&self) -> &str {
+    #[must_use] pub fn indentation(&self) -> &str {
         &self.indentation
     }
 
     /// Build a new default [`TurtleConfig`].
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         let pretty = false;
         let prefix_map = Self::default_prefix_map();
         let indentation = "  ".to_string();
-        TurtleConfig {
+        Self {
             pretty,
             prefix_map,
             indentation,
@@ -72,7 +72,7 @@ impl TurtleConfig {
     }
 
     /// Transform a [`TurtleConfig`] by setting the [`pretty`][`TurtleConfig::pretty`] flag.
-    pub fn with_pretty(mut self, b: bool) -> Self {
+    #[must_use] pub const fn with_pretty(mut self, b: bool) -> Self {
         self.pretty = b;
         self
     }
@@ -84,7 +84,7 @@ impl TurtleConfig {
     }
 
     /// Transform a [`TurtleConfig`] by setting the [`prefix_map`][`TurtleConfig::prefix_map`] flag.
-    pub fn with_own_prefix_map(mut self, pm: Vec<PrefixMapPair>) -> Self {
+    #[must_use] pub fn with_own_prefix_map(mut self, pm: Vec<PrefixMapPair>) -> Self {
         self.prefix_map = pm;
         self
     }
@@ -101,7 +101,7 @@ impl TurtleConfig {
     }
 
     /// Return the prefix map that is used when none is provided
-    pub fn default_prefix_map() -> Vec<PrefixMapPair> {
+    #[must_use] pub fn default_prefix_map() -> Vec<PrefixMapPair> {
         vec![
             (
                 Prefix::new_unchecked("rdf".into()),
@@ -121,7 +121,7 @@ impl TurtleConfig {
 
 impl Default for TurtleConfig {
     fn default() -> Self {
-        TurtleConfig::new()
+        Self::new()
     }
 }
 
@@ -137,17 +137,17 @@ where
 {
     /// Build a new Turtle serializer writing to `write`, with the default config.
     #[inline]
-    pub fn new(write: W) -> TurtleSerializer<W> {
+    pub fn new(write: W) -> Self {
         Self::new_with_config(write, TurtleConfig::default())
     }
 
     /// Build a new Turtle serializer writing to `write`, with the given config.
-    pub fn new_with_config(write: W, config: TurtleConfig) -> TurtleSerializer<W> {
-        TurtleSerializer { config, write }
+    pub const fn new_with_config(write: W, config: TurtleConfig) -> Self {
+        Self { config, write }
     }
 
     /// Borrow this serializer's configuration.
-    pub fn config(&self) -> &TurtleConfig {
+    pub const fn config(&self) -> &TurtleConfig {
         &self.config
     }
 }
@@ -187,13 +187,13 @@ where
 impl TurtleSerializer<Vec<u8>> {
     /// Create a new serializer which targets a `String`.
     #[inline]
-    pub fn new_stringifier() -> Self {
-        TurtleSerializer::new(Vec::new())
+    #[must_use] pub fn new_stringifier() -> Self {
+        Self::new(Vec::new())
     }
     /// Create a new serializer which targets a `String` with a custom config.
     #[inline]
-    pub fn new_stringifier_with_config(config: TurtleConfig) -> Self {
-        TurtleSerializer::new_with_config(Vec::new(), config)
+    #[must_use] pub const fn new_stringifier_with_config(config: TurtleConfig) -> Self {
+        Self::new_with_config(Vec::new(), config)
     }
 }
 
@@ -225,31 +225,31 @@ pub(crate) mod test {
         r#"# lists
             <tag:alice> <tag:likes> ( 1 2 ( 3 4 ) 5 6 ), ("a" "b").
         "#,
-        r#"# subject lists
+        r"# subject lists
             (1 2 3) a <tag:List>.
-        "#,
-        r#"# malformed list
+        ",
+        r"# malformed list
             PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
             _:a rdf:first 42, 43; rdf:rest (44 45).
             _:b rdf:first 42; rdf:rest (43), (44).
-        "#,
+        ",
         r#"# bnode cycles
             PREFIX : <http://example.org/ns/>
             _:a :n "a"; :p [ :q [ :r _:a ]].
             _:b :n "b"; :s [ :s _:b ].
             _:c :b "c"; :t _:c.
         "#,
-        r#"# quoted triples
+        r"# quoted triples
             PREFIX : <http://example.org/ns/>
             << :s :p :o1 >> :a :b.
             :s :p :o2 {| :c :d |}.
-        "#,
+        ",
     ];
 
     #[test]
     fn roundtrip_not_pretty() -> Result<(), Box<dyn Error>> {
         for ttl in TESTS {
-            println!("==========\n{}\n----------", ttl);
+            println!("==========\n{ttl}\n----------");
             let g1: Vec<[SimpleTerm; 3]> =
                 crate::parser::turtle::parse_str(ttl).collect_triples()?;
 
@@ -269,7 +269,7 @@ pub(crate) mod test {
     #[test]
     fn roundtrip_pretty() -> Result<(), Box<dyn Error>> {
         for ttl in TESTS {
-            println!("==========\n{}\n----------", ttl);
+            println!("==========\n{ttl}\n----------");
             let g1: Vec<[SimpleTerm; 3]> =
                 crate::parser::turtle::parse_str(ttl).collect_triples()?;
             let ugly = TurtleSerializer::new_stringifier()

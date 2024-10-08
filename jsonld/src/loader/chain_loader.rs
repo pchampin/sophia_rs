@@ -11,8 +11,8 @@ pub struct ChainLoader<L1, L2>(L1, L2);
 
 impl<L1, L2> ChainLoader<L1, L2> {
     /// Build a new chain loader
-    pub fn new(l1: L1, l2: L2) -> Self {
-        ChainLoader(l1, l2)
+    pub const fn new(l1: L1, l2: L2) -> Self {
+        Self(l1, l2)
     }
 }
 

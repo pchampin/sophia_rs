@@ -23,7 +23,7 @@ impl HashFunction for Sha256 {
     type Output = [u8; 32];
 
     fn initialize() -> Self {
-        Sha256(sha2::Sha256::new())
+        Self(sha2::Sha256::new())
     }
 
     fn update(&mut self, data: impl AsRef<[u8]>) {
@@ -42,7 +42,7 @@ impl HashFunction for Sha384 {
     type Output = [u8; 48];
 
     fn initialize() -> Self {
-        Sha384(sha2::Sha384::new())
+        Self(sha2::Sha384::new())
     }
 
     fn update(&mut self, data: impl AsRef<[u8]>) {

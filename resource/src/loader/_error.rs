@@ -25,13 +25,13 @@ pub enum LoaderError {
 
 impl LoaderError {
     /// Return the IRI that caused this error
-    pub fn iri(&self) -> IriBuf {
+    #[must_use] pub fn iri(&self) -> IriBuf {
         let iri = match self {
-            LoaderError::UnsupportedIri(iri, _) => iri,
-            LoaderError::NotFound(iri) => iri,
-            LoaderError::IoError(iri, _) => iri,
-            LoaderError::CantGuessSyntax(iri) => iri,
-            LoaderError::ParseError(iri, _) => iri,
+            Self::UnsupportedIri(iri, _) => iri,
+            Self::NotFound(iri) => iri,
+            Self::IoError(iri, _) => iri,
+            Self::CantGuessSyntax(iri) => iri,
+            Self::ParseError(iri, _) => iri,
         };
         iri.clone()
     }

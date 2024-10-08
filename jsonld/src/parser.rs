@@ -51,8 +51,8 @@ impl Default for JsonLdParser<DefaultLoaderFactory<NoLoader>> {
 
 impl JsonLdParser<DefaultLoaderFactory<NoLoader>> {
     /// Make a new [`JsonLdParser`] with the default options
-    pub fn new() -> Self {
-        JsonLdParser {
+    #[must_use] pub fn new() -> Self {
+        Self {
             options: JsonLdOptions::default(),
         }
     }
@@ -60,12 +60,12 @@ impl JsonLdParser<DefaultLoaderFactory<NoLoader>> {
 
 impl<LF> JsonLdParser<LF> {
     /// Make a new [`JsonLdParser`] with the given options
-    pub fn new_with_options(options: JsonLdOptions<LF>) -> Self {
-        JsonLdParser { options }
+    pub const fn new_with_options(options: JsonLdOptions<LF>) -> Self {
+        Self { options }
     }
 
     /// Borrow the options of this parser
-    pub fn options(&self) -> &JsonLdOptions<LF> {
+    pub const fn options(&self) -> &JsonLdOptions<LF> {
         &self.options
     }
 

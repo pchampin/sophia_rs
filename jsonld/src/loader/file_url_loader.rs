@@ -1,4 +1,4 @@
-use super::*;
+use super::{Arc, Iri, Value};
 use json_ld::future::{BoxFuture, FutureExt};
 use json_ld::{Loader, RemoteDocument};
 use json_syntax::Parse;
@@ -45,7 +45,7 @@ impl Loader<Iri<Arc<str>>, Location<Iri<Arc<str>>>> for FileUrlLoader {
             let url_parsed = Url::parse(url_str).map_err(Self::Error::InvalidUrl)?;
             let path = url_parsed
                 .to_file_path()
-                .map_err(|_| Self::Error::BadFileUrl(url_str.into()))?;
+                .map_err(|()| Self::Error::BadFileUrl(url_str.into()))?;
             let file = File::open(path).map_err(Self::Error::IO)?;
             let mut buf_reader = BufReader::new(file);
             let mut contents = String::new();
@@ -68,7 +68,7 @@ impl Loader<Iri<Arc<str>>, Location<Iri<Arc<str>>>> for FileUrlLoader {
 
 impl FileUrlLoader {
     /// Creates a new file system loader with the given content `parser`.
-    pub fn new() -> Self {
+    #[must_use] pub fn new() -> Self {
         Self::default()
     }
 }

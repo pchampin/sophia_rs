@@ -1,4 +1,4 @@
-use super::*;
+use super::{Loader, LoaderError};
 use sophia_iri::Iri;
 use std::borrow::Borrow;
 use std::fmt::Debug;

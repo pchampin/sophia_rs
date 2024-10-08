@@ -10,7 +10,7 @@
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
 use sophia_api::ns::xsd;
-use sophia_api::serializer::*;
+use sophia_api::serializer::{Stringifier, TripleSerializer};
 use sophia_api::source::{StreamResult, TripleSource};
 use sophia_api::term::{Term, TermKind};
 use sophia_api::triple::Triple;
@@ -42,17 +42,17 @@ where
 {
     /// Build a new N-Triples serializer writing to `write`, with the default config.
     #[inline]
-    pub fn new(write: W) -> NtSerializer<W> {
+    pub fn new(write: W) -> Self {
         Self::new_with_config(write, NtConfig::default())
     }
 
     /// Build a new N-Triples serializer writing to `write`, with the given config.
-    pub fn new_with_config(write: W, config: NtConfig) -> NtSerializer<W> {
-        NtSerializer { config, write }
+    pub const fn new_with_config(write: W, config: NtConfig) -> Self {
+        Self { config, write }
     }
 
     /// Borrow this serializer's configuration.
-    pub fn config(&self) -> &NtConfig {
+    pub const fn config(&self) -> &NtConfig {
         &self.config
     }
 }
@@ -82,20 +82,20 @@ where
                 }
                 .map_err(|e| io::Error::new(io::ErrorKind::Other, e))
             })
-            .map(|_| self)
+            .map(|()| self)
     }
 }
 
 impl NtSerializer<Vec<u8>> {
     /// Create a new serializer which targets a `String`.
     #[inline]
-    pub fn new_stringifier() -> Self {
-        NtSerializer::new(Vec::new())
+    #[must_use] pub fn new_stringifier() -> Self {
+        Self::new(Vec::new())
     }
     /// Create a new serializer which targets a `String` with a custom config.
     #[inline]
-    pub fn new_stringifier_with_config(config: NtConfig) -> Self {
-        NtSerializer::new_with_config(Vec::new(), config)
+    #[must_use] pub const fn new_stringifier_with_config(config: NtConfig) -> Self {
+        Self::new_with_config(Vec::new(), config)
     }
 }
 
@@ -125,7 +125,7 @@ where
     W: io::Write,
     T: Term,
 {
-    use TermKind::*;
+    use TermKind::{BlankNode, Iri, Literal, Triple, Variable};
     match t.kind() {
         Iri => {
             w.write_all(b"<")?;
@@ -139,20 +139,17 @@ where
         Literal => {
             w.write_all(b"\"")?;
             quoted_string(w, t.lexical_form().unwrap().as_bytes())?;
-            match t.language_tag() {
-                Some(tag) => {
-                    w.write_all(b"\"@")?;
-                    w.write_all(tag.as_bytes())?;
-                }
-                None => {
-                    let dt = t.datatype().unwrap();
-                    if xsd::string != dt {
-                        w.write_all(b"\"^^<")?;
-                        w.write_all(dt.as_bytes())?;
-                        w.write_all(b">")?;
-                    } else {
-                        w.write_all(b"\"")?;
-                    }
+            if let Some(tag) = t.language_tag() {
+                w.write_all(b"\"@")?;
+                w.write_all(tag.as_bytes())?;
+            } else {
+                let dt = t.datatype().unwrap();
+                if xsd::string != dt {
+                    w.write_all(b"\"^^<")?;
+                    w.write_all(dt.as_bytes())?;
+                    w.write_all(b">")?;
+                } else {
+                    w.write_all(b"\"")?;
                 }
             }
         }

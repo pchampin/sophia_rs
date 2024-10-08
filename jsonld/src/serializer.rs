@@ -3,13 +3,13 @@
 //!
 //! [`Serialize RDF as JSON-LD Algorithm`]: https://www.w3.org/TR/json-ld11-api/#serialize-rdf-as-json-ld-algorithm
 
-use crate::error::*;
+use crate::error::JsonLdError;
 use crate::loader::NoLoader;
-use crate::options::*;
+use crate::options::JsonLdOptions;
 use json_syntax::print::Indent;
 use json_syntax::print::{Options, Print};
 use json_syntax::Value as JsonValue;
-use sophia_api::serializer::*;
+use sophia_api::serializer::{QuadSerializer, Stringifier};
 use sophia_api::source::{QuadSource, SinkError, StreamResult};
 
 mod engine;
@@ -38,12 +38,12 @@ impl<W> JsonLdSerializer<W> {
 
 impl<W, L> JsonLdSerializer<W, L> {
     /// Build a new JSON-LD serializer writing to `write`, with the given options.
-    pub fn new_with_options(target: W, options: JsonLdOptions<L>) -> Self {
-        JsonLdSerializer { target, options }
+    pub const fn new_with_options(target: W, options: JsonLdOptions<L>) -> Self {
+        Self { options, target }
     }
 
     /// Borrow this serializer's options.
-    pub fn options(&self) -> &JsonLdOptions<L> {
+    pub const fn options(&self) -> &JsonLdOptions<L> {
         &self.options
     }
 
@@ -115,25 +115,25 @@ pub struct JsonTarget(JsonValue<()>);
 impl Jsonifier {
     /// Create a new serializer which targets a [`JsonValue`].
     #[inline]
-    pub fn new_jsonifier() -> Self {
-        JsonLdSerializer::new(JsonTarget(JsonValue::Null))
+    #[must_use] pub fn new_jsonifier() -> Self {
+        Self::new(JsonTarget(JsonValue::Null))
     }
 }
 
 impl<L> Jsonifier<L> {
     /// Create a new serializer which targets a [`JsonValue`] with a custom options.
     #[inline]
-    pub fn new_jsonifier_with_options(options: JsonLdOptions<L>) -> Self {
-        JsonLdSerializer::new_with_options(JsonTarget(JsonValue::Null), options)
+    pub const fn new_jsonifier_with_options(options: JsonLdOptions<L>) -> Self {
+        Self::new_with_options(JsonTarget(JsonValue::Null), options)
     }
 
-    /// Get a reference to the converted JsonValue
+    /// Get a reference to the converted `JsonValue`
     #[inline]
-    pub fn as_json(&self) -> &JsonValue<()> {
+    pub const fn as_json(&self) -> &JsonValue<()> {
         &self.target.0
     }
 
-    /// Extract the converted JsonValue
+    /// Extract the converted `JsonValue`
     #[inline]
     pub fn to_json(&mut self) -> JsonValue<()> {
         let mut ret = JsonValue::Null;
@@ -165,16 +165,16 @@ pub type JsonLdStringifier<L = NoLoader> = JsonLdSerializer<Vec<u8>, L>;
 impl JsonLdStringifier<NoLoader> {
     /// Create a new serializer which targets a string.
     #[inline]
-    pub fn new_stringifier() -> Self {
-        JsonLdSerializer::new(Vec::new())
+    #[must_use] pub fn new_stringifier() -> Self {
+        Self::new(Vec::new())
     }
 }
 
 impl<L> JsonLdStringifier<L> {
     /// Create a new serializer which targets a string with a custom options.
     #[inline]
-    pub fn new_stringifier_with_options(options: JsonLdOptions<L>) -> Self {
-        JsonLdSerializer::new_with_options(Vec::new(), options)
+    pub const fn new_stringifier_with_options(options: JsonLdOptions<L>) -> Self {
+        Self::new_with_options(Vec::new(), options)
     }
 }
 

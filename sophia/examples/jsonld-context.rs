@@ -1,4 +1,4 @@
-//! Convert a JSON-LD file to TriG, using an optional external context.
+//! Convert a JSON-LD file to `TriG`, using an optional external context.
 //!
 //! usage: cargo run --example jsonld-context <JSON-LD file> [context file]
 //!
@@ -20,14 +20,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let context_path = args.next();
     if let Some(context_path) = &context_path {
         eprintln!(
-            "Loading {} with @context from {}",
-            json_ld_path, context_path
+            "Loading {json_ld_path} with @context from {context_path}"
         );
     } else {
-        eprintln!("Loading {}", json_ld_path);
+        eprintln!("Loading {json_ld_path}");
     }
     let json_str = std::fs::read_to_string(&json_ld_path)
-        .unwrap_or_else(|e| panic!("Could not read file {}: {}", json_ld_path, e));
+        .unwrap_or_else(|e| panic!("Could not read file {json_ld_path}: {e}"));
 
     let mut options = JsonLdOptions::new().with_expansion_policy(Policy::Standard);
     if let Some(context_path) = context_path {

@@ -76,7 +76,7 @@ where
     })
 }
 
-/// Convert this triple of SimpleTerms to a RioTriple if possible
+/// Convert this triple of `SimpleTerms` to a `RioTriple` if possible
 /// (i.e. if it is a strict RDF triple)
 fn convert_triple<'a>(
     t: &'a [SimpleTerm<'a>; 3],
@@ -147,10 +147,10 @@ enum Stack<T> {
     Empty,
     Node(Box<(T, Stack<T>)>),
 }
-use Stack::*;
+use Stack::{Empty, Node};
 impl<T> Stack<T> {
     /// Get the triple at the head of the stack.
-    fn head(&self) -> Option<&T> {
+    const fn head(&self) -> Option<&T> {
         match self {
             Empty => None,
             Node(b) => Some(&b.0),

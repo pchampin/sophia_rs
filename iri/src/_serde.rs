@@ -1,4 +1,4 @@
-use super::*;
+use super::{Iri, IriRef, Result};
 use serde::{
     de::{Error, Unexpected},
     Deserialize, Serialize,
@@ -11,7 +11,7 @@ impl<'a, T: Borrow<str> + Deserialize<'a>> Deserialize<'a> for Iri<T> {
         D: serde::Deserializer<'a>,
     {
         let inner: T = T::deserialize(deserializer)?;
-        Iri::new(inner)
+        Self::new(inner)
             .map_err(|err| D::Error::invalid_value(Unexpected::Str(&err.0), &"valid IRI"))
     }
 }
@@ -31,7 +31,7 @@ impl<'a, T: Borrow<str> + Deserialize<'a>> Deserialize<'a> for IriRef<T> {
         D: serde::Deserializer<'a>,
     {
         let inner: T = T::deserialize(deserializer)?;
-        IriRef::new(inner)
+        Self::new(inner)
             .map_err(|err| D::Error::invalid_value(Unexpected::Str(&err.0), &"valid IRI reference"))
     }
 }

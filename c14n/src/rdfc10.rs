@@ -176,7 +176,7 @@ pub fn relabel_with<'a, H: HashFunction, D: SetDataset>(
         }
     }
     // Step 3
-    for (bnid, quads) in state.b2q.iter() {
+    for (bnid, quads) in &state.b2q {
         let hash = hash_first_degree_quads::<H, _>(bnid, &quads[..]);
         let bnid2 = Rc::clone(bnid);
         state.h2b.entry(hash).or_default().push(bnid2);
@@ -187,7 +187,7 @@ pub fn relabel_with<'a, H: HashFunction, D: SetDataset>(
     let mut next_h2b = BTreeMap::new();
     // TODO once BTreeMap::drain_filter is stabilize,
     // use it in the loop below instead of reinserting elements into a new map
-    for (hash, bnids) in state.h2b.into_iter() {
+    for (hash, bnids) in state.h2b {
         debug_assert!(!bnids.is_empty());
         if bnids.len() > 1 {
             next_h2b.insert(hash, bnids);
@@ -254,7 +254,7 @@ struct C14nState<'a, H: HashFunction, T: Term> {
     canonical: BnodeIssuer,
     /// Not specified in the spec: memozing the results of hash 1st degree
     b2h: BTreeMap<Rc<str>, H::Output>,
-    /// Not specified in the spec: maximum recursion factor in hash_n_degree_quads
+    /// Not specified in the spec: maximum recursion factor in `hash_n_degree_quads`
     depth_factor: f32,
     /// Not specified in the spec: maximum number of nodes on which permutations will be computed
     permutation_limit: usize,
@@ -272,7 +272,7 @@ impl<'a, H: HashFunction, T: Term> C14nState<'a, H, T> {
         }
     }
 
-    /// Implements https://www.w3.org/TR/rdf-canon/#hash-related-blank-node
+    /// Implements <https://www.w3.org/TR/rdf-canon/#hash-related-blank-node>
     fn hash_related_bnode(
         &self,
         related: &str,
@@ -301,7 +301,7 @@ impl<'a, H: HashFunction, T: Term> C14nState<'a, H, T> {
         input.finalize()
     }
 
-    /// Implements https://www.w3.org/TR/rdf-canon/#hash-nd-quads
+    /// Implements <https://www.w3.org/TR/rdf-canon/#hash-nd-quads>
     fn hash_n_degree_quads<E: std::error::Error + Send + Sync + 'static>(
         &self,
         identifier: &str,
@@ -336,7 +336,7 @@ impl<'a, H: HashFunction, T: Term> C14nState<'a, H, T> {
         let mut data_to_hash = H::initialize();
         // Step 5
         let mut ret_issuer: Option<BnodeIssuer> = None;
-        for (related_hash, mut blank_node) in hn.into_iter() {
+        for (related_hash, mut blank_node) in hn {
             data_to_hash.update(hex(&related_hash));
             let mut chosen_path = String::new();
             let mut chosen_issuer: Option<BnodeIssuer> = None;
@@ -420,15 +420,15 @@ struct BnodeIssuer {
 }
 
 impl BnodeIssuer {
-    fn new(prefix: BnodeId<&'static str>) -> Self {
-        BnodeIssuer {
+    const fn new(prefix: BnodeId<&'static str>) -> Self {
+        Self {
             prefix,
             issued: BTreeMap::new(),
             issued_order: vec![],
         }
     }
 
-    /// Implements https://www.w3.org/TR/rdf-canon/#issue-identifier
+    /// Implements <https://www.w3.org/TR/rdf-canon/#issue-identifier>
     /// modified to also return a boolean indicating whether the issued identifier
     /// was newly created (true) or if it existed before (false)
     fn issue(&mut self, bnid: &str) -> (&str, bool) {
@@ -445,7 +445,7 @@ impl BnodeIssuer {
     }
 }
 
-/// Implements https://www.w3.org/TR/rdf-canon/#hash-1d-quads
+/// Implements <https://www.w3.org/TR/rdf-canon/#hash-1d-quads>
 /// with the difference that the C14n state is not passed;
 /// instead, the quad list corresponding to bnid is passed directly
 fn hash_first_degree_quads<H: HashFunction, Q: Quad>(bnid: &str, quads: &[&Q]) -> H::Output {
@@ -465,7 +465,7 @@ fn hash_first_degree_quads<H: HashFunction, Q: Quad>(bnid: &str, quads: &[&Q]) -
         .collect();
     nquads.sort_unstable();
     let mut hasher = H::initialize();
-    for line in nquads.into_iter() {
+    for line in nquads {
         hasher.update(&line);
     }
     let ret = hasher.finalize();
@@ -491,13 +491,13 @@ fn nq_for_hash<T: Term>(term: T, buffer: &mut String, ref_bnid: &str) {
 fn hex(hash: &impl AsRef<[u8]>) -> String {
     let mut digest = String::with_capacity(64);
     for b in hash.as_ref() {
-        write!(&mut digest, "{:02x}", b).unwrap();
+        write!(&mut digest, "{b:02x}").unwrap();
     }
     digest
 }
 
 fn smaller_path(path1: &str, path2: &str) -> bool {
-    use std::cmp::Ordering::*;
+    use std::cmp::Ordering::{Equal, Greater, Less};
     match Ord::cmp(&path1.len(), &path2.len()) {
         Less => true,
         Equal => path1 < path2,
@@ -528,13 +528,13 @@ mod test {
             "_:e0 <http://example.com/#s> <http://example.com/#u> .",
             "_:e1 <http://example.com/#t> <http://example.com/#u> .",
         ]);
-        let exp = r#"<http://example.com/#p> <http://example.com/#q> _:c14n0 .
+        let exp = r"<http://example.com/#p> <http://example.com/#q> _:c14n0 .
 <http://example.com/#p> <http://example.com/#r> _:c14n1 .
 _:c14n0 <http://example.com/#s> <http://example.com/#u> .
 _:c14n1 <http://example.com/#t> <http://example.com/#u> .
-"#;
+";
         let got = c14n_nquads(&dataset).unwrap();
-        println!(">>>> GOT\n{}>>>> EXPECTED\n{}<<<<", got, exp);
+        println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
         assert!(got == exp);
     }
 
@@ -549,14 +549,14 @@ _:c14n1 <http://example.com/#t> <http://example.com/#u> .
             "_:e1 <http://example.com/#p> _:e3 .",
             "_:e2 <http://example.com/#r> _:e3 .",
         ]);
-        let exp = r#"<http://example.com/#p> <http://example.com/#q> _:c14n2 .
+        let exp = r"<http://example.com/#p> <http://example.com/#q> _:c14n2 .
 <http://example.com/#p> <http://example.com/#q> _:c14n3 .
 _:c14n0 <http://example.com/#r> _:c14n1 .
 _:c14n2 <http://example.com/#p> _:c14n1 .
 _:c14n3 <http://example.com/#p> _:c14n0 .
-"#;
+";
         let got = c14n_nquads(&dataset).unwrap();
-        println!(">>>> GOT\n{}>>>> EXPECTED\n{}<<<<", got, exp);
+        println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
         assert!(got == exp);
     }
 
@@ -571,14 +571,14 @@ _:c14n3 <http://example.com/#p> _:c14n0 .
             "_:e3 <http://example.com/#p> _:e4 .",
             "_:e4 <http://example.com/#p> _:e0 .",
         ]);
-        let exp = r#"_:c14n0 <http://example.com/#p> _:c14n4 .
+        let exp = r"_:c14n0 <http://example.com/#p> _:c14n4 .
 _:c14n1 <http://example.com/#p> _:c14n0 .
 _:c14n2 <http://example.com/#p> _:c14n1 .
 _:c14n3 <http://example.com/#p> _:c14n2 .
 _:c14n4 <http://example.com/#p> _:c14n3 .
-"#;
+";
         let got = c14n_nquads(&dataset).unwrap();
-        println!(">>>> GOT\n{}>>>> EXPECTED\n{}<<<<", got, exp);
+        println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
         assert!(got == exp);
     }
 
@@ -630,7 +630,7 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
             "_:e4 <http://example.com/#p> _:e2 .",
             "_:e4 <http://example.com/#p> _:e3 .",
         ]);
-        let exp = r#"_:c14n0 <http://example.com/#p> _:c14n1 .
+        let exp = r"_:c14n0 <http://example.com/#p> _:c14n1 .
 _:c14n0 <http://example.com/#p> _:c14n2 .
 _:c14n0 <http://example.com/#p> _:c14n3 .
 _:c14n0 <http://example.com/#p> _:c14n4 .
@@ -650,9 +650,9 @@ _:c14n4 <http://example.com/#p> _:c14n0 .
 _:c14n4 <http://example.com/#p> _:c14n1 .
 _:c14n4 <http://example.com/#p> _:c14n2 .
 _:c14n4 <http://example.com/#p> _:c14n3 .
-"#;
+";
         let got = c14n_nquads(&dataset).unwrap();
-        println!(">>>> GOT\n{}>>>> EXPECTED\n{}<<<<", got, exp);
+        println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
         assert!(got == exp);
     }
 
@@ -700,14 +700,14 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
             "_:e3 <http://example.com/#p> _:e4 .",
             "_:e4 <http://example.com/#p> _:e2 .",
         ]);
-        let exp = r#"_:c14n0 <http://example.com/#p> _:c14n1 .
+        let exp = r"_:c14n0 <http://example.com/#p> _:c14n1 .
 _:c14n1 <http://example.com/#p> _:c14n0 .
 _:c14n2 <http://example.com/#p> _:c14n4 .
 _:c14n3 <http://example.com/#p> _:c14n2 .
 _:c14n4 <http://example.com/#p> _:c14n3 .
-"#;
+";
         let got = c14n_nquads(&dataset).unwrap();
-        println!(">>>> GOT\n{}>>>> EXPECTED\n{}<<<<", got, exp);
+        println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
         assert!(got == exp);
     }
 
@@ -729,7 +729,7 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
 <tag:a> <tag:p> _:c14n0 .
 "#;
         let got = c14n_nquads(&dataset).unwrap();
-        println!(">>>> GOT\n{}>>>> EXPECTED\n{}<<<<", got, exp);
+        println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
         assert!(got == exp);
     }
 
@@ -740,7 +740,7 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
     }
 
     /// Simplistic Quad parser, useful for writing test cases.
-    /// It is based on eq_quad below.
+    /// It is based on `eq_quad` below.
     fn ez_quads<'a>(lines: &[&'a str]) -> std::collections::HashSet<Spog<SimpleTerm<'a>>> {
         lines.iter().map(|line| ez_quad(line)).collect()
     }
@@ -804,15 +804,15 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
             "_:e0 <http://example.com/#s> <http://example.com/#u> .",
             "_:e1 <http://example.com/#t> <http://example.com/#u> .",
         ]);
-        let exp = r#"<http://example.com/#p> <http://example.com/#q> _:c14n1 .
+        let exp = r"<http://example.com/#p> <http://example.com/#q> _:c14n1 .
 <http://example.com/#p> <http://example.com/#r> _:c14n0 .
 _:c14n0 <http://example.com/#t> <http://example.com/#u> .
 _:c14n1 <http://example.com/#s> <http://example.com/#u> .
-"#;
+";
         let mut got = Vec::<u8>::new();
         normalize_sha384(&dataset, &mut got).unwrap();
         let got = unsafe { String::from_utf8_unchecked(got) };
-        println!(">>>> GOT\n{}>>>> EXPECTED\n{}<<<<", got, exp);
+        println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
         assert!(got == exp);
     }
 }

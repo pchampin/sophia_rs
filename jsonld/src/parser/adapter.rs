@@ -71,19 +71,19 @@ impl SophiaTerm for RdfTerm {
 
 impl From<RdfO> for RdfTerm {
     fn from(value: RdfO) -> Self {
-        RdfTerm(value)
+        Self(value)
     }
 }
 
 impl From<RdfS> for RdfTerm {
     fn from(value: RdfS) -> Self {
-        RdfTerm(Term::Id(value))
+        Self(Term::Id(value))
     }
 }
 
 impl From<ArcIri> for RdfTerm {
     fn from(value: ArcIri) -> Self {
-        RdfTerm(Term::Id(Id::Iri(value)))
+        Self(Term::Id(Id::Iri(value)))
     }
 }
 

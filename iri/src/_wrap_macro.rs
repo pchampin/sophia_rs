@@ -243,7 +243,7 @@ macro_rules! wrap {
                 "If it is not, it may result in undefined behaviour.",
             )]
             #[allow(dead_code)]
-            pub const fn new_unchecked_const(inner: &'static $bid) -> Self {
+            #[must_use] pub const fn new_unchecked_const(inner: &'static $bid) -> Self {
                 $wid(inner)
             }
         }
@@ -415,7 +415,7 @@ pub mod test_wrap_borrowing {
     // only check that this compiles
     #[allow(dead_code)]
     fn new_unchecked() {
-        let _: Foo<String> = Foo::new_unchecked("".into());
+        let _: Foo<String> = Foo::new_unchecked(String::new());
     }
 
     // only check that this compiles

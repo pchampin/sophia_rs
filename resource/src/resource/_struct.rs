@@ -8,7 +8,7 @@ use sophia_iri::is_absolute_iri_ref;
 use std::borrow::Borrow;
 use std::sync::Arc;
 
-use super::{ResourceError::*, *};
+use super::{ResourceError::{GraphError, IriNotAbsolute, LoaderError, NoValueFor, UnexpectedMultipleValueFor}, LadderResourceIterator, LadderTermIterator, LadderTypedIterator, ResourceError, ResourceResult, TypedResource};
 
 /// A [`Resource`] represents a specific node in a given graph.
 #[derive(Debug)]
@@ -27,7 +27,7 @@ where
     /// Constructor
     pub fn new<T: Term>(id: T, base: Option<Iri<String>>, graph: Arc<G>, loader: Arc<L>) -> Self {
         let id = id.into_term();
-        Resource {
+        Self {
             id,
             base,
             graph,
@@ -36,22 +36,22 @@ where
     }
 
     /// The identifying term of this resource
-    pub fn id(&self) -> &SimpleTerm<'static> {
+    #[must_use] pub const fn id(&self) -> &SimpleTerm<'static> {
         &self.id
     }
 
     /// The URL of the underlying graph of this resource
-    pub fn base(&self) -> Option<&Iri<String>> {
+    #[must_use] pub const fn base(&self) -> Option<&Iri<String>> {
         self.base.as_ref()
     }
 
     /// The underlying graph of this resource
-    pub fn graph(&self) -> &Arc<G> {
+    #[must_use] pub const fn graph(&self) -> &Arc<G> {
         &self.graph
     }
 
     /// The loader used to load neighbouring resources
-    pub fn loader(&self) -> &Arc<L> {
+    #[must_use] pub const fn loader(&self) -> &Arc<L> {
         &self.loader
     }
 
@@ -443,7 +443,7 @@ where
         let current = match self.get_term(predicate) {
             Err(NoValueFor { .. }) => None,
             Err(err) => Some(Err(err)),
-            Ok(id) => Some(Ok(Resource {
+            Ok(id) => Some(Ok(Self {
                 id,
                 base: self.base.clone(),
                 graph: self.graph.clone(),
@@ -571,7 +571,7 @@ where
                 }
             }
         }
-        Ok(Resource::new(
+        Ok(Self::new(
             t.borrow_term(),
             self.base.clone(),
             self.graph.clone(),
@@ -591,7 +591,7 @@ impl<G, L> Clone for Resource<G, L> {
     }
 }
 
-pub(crate) fn to_iri<T: Borrow<str>>(iri_ref: IriRef<T>) -> Result<Iri<T>, IriRef<Box<str>>> {
+pub fn to_iri<T: Borrow<str>>(iri_ref: IriRef<T>) -> Result<Iri<T>, IriRef<Box<str>>> {
     if is_absolute_iri_ref(iri_ref.as_str()) {
         Ok(Iri::new_unchecked(iri_ref.unwrap()))
     } else {

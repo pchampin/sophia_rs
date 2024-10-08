@@ -3,13 +3,13 @@
 //! using the [RDFC-1.0] canonicalization algorithm.
 //!
 //! Parameters of the RDFC-1.0 can be provided via the following environment variables:
-//! * SOPHIA_RDFC10_DEPTH_FACTOR
-//! * SOPHIA_RDFC10_PERMUTATION_LIMIT
+//! * `SOPHIA_RDFC10_DEPTH_FACTOR`
+//! * `SOPHIA_RDFC10_PERMUTATION_LIMIT`
 //!
 //! [N-Quads]: https://www.w3.org/TR/n-quads/
 //! [RDFC-1.0]: https://www.w3.org/TR/rdf-canon/
 
-use std::env::{var, VarError::*};
+use std::env::{var, VarError::NotPresent};
 use std::io::{stdin, stdout, BufReader, BufWriter};
 
 use sophia::api::prelude::*;

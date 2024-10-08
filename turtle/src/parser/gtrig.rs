@@ -1,12 +1,12 @@
-//! Adapter for the Generalized TriG parser from [RIO](https://github.com/Tpt/rio/blob/master/turtle/src/gtrig.rs)
+//! Adapter for the Generalized `TriG` parser from [RIO](https://github.com/Tpt/rio/blob/master/turtle/src/gtrig.rs)
 
 use rio_turtle::GTriGParser as RioGTriGParser;
 use sophia_api::parser::QuadParser;
 use sophia_iri::Iri;
-use sophia_rio::parser::*;
+use sophia_rio::parser::GeneralizedRioSource;
 use std::io::BufRead;
 
-/// TriG parser based on RIO.
+/// `TriG` parser based on RIO.
 #[derive(Clone, Debug, Default)]
 pub struct GTriGParser {
     /// The base IRI used by this parser to resolve relative IRI-references.
@@ -47,7 +47,7 @@ mod test {
 
     #[test]
     fn test_simple_gtrig_string() -> std::result::Result<(), Box<dyn std::error::Error>> {
-        let gtrig = r#"
+        let gtrig = r"
             @prefix : <http://example.org/ns/> .
 
             <#me> :knows _:alice {|
@@ -56,7 +56,7 @@ mod test {
             <tag:g1> {
                 _:alice a :Person ; :name ?name.
             }
-        "#;
+        ";
 
         let mut d = MyDataset::new();
         let p = GTriGParser {

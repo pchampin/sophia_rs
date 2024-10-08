@@ -1,4 +1,4 @@
-use super::{util::*, *};
+use super::{util::{IriBuf, iri_buf}, Loader, LoaderError};
 use sophia_iri::Iri;
 use std::borrow::Borrow;
 use std::fmt::Debug;
@@ -24,7 +24,7 @@ impl LocalLoader {
             .into_iter()
             .map(|(iri, path)| Self::check(iri, path))
             .collect::<Result<Vec<(IriBuf, PathBuf)>, LocalLoaderError>>()?;
-        Ok(LocalLoader {
+        Ok(Self {
             caches: checked_caches,
         })
     }
@@ -41,7 +41,7 @@ impl LocalLoader {
     }
 
     /// Wrap this loader into an `Arc<Loader>`.
-    pub fn arced(self) -> Arc<Self> {
+    #[must_use] pub fn arced(self) -> Arc<Self> {
         Arc::new(self)
     }
 
@@ -94,7 +94,7 @@ impl Loader for LocalLoader {
                                 #[cfg(feature = "xml")]
                                 "rdf",
                             ] {
-                                let alt = Iri::new_unchecked(format!("{}.{}", iri, ext));
+                                let alt = Iri::new_unchecked(format!("{iri}.{ext}"));
                                 if let Ok(res) = self.get(alt) {
                                     return Ok(res);
                                 }

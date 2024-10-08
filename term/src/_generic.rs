@@ -24,8 +24,8 @@ impl<T: Borrow<str>> GenericLiteral<T> {
     /// The [lexical form](https://www.w3.org/TR/rdf11-concepts/#dfn-lexical-form) of this literal
     pub fn get_lexical_form(&self) -> &str {
         match self {
-            GenericLiteral::Typed(lex, ..) => lex,
-            GenericLiteral::LanguageString(lex, ..) => lex,
+            Self::Typed(lex, ..) => lex,
+            Self::LanguageString(lex, ..) => lex,
         }
         .borrow()
     }
@@ -33,16 +33,16 @@ impl<T: Borrow<str>> GenericLiteral<T> {
     /// The [datatype](https://www.w3.org/TR/rdf11-concepts/#dfn-datatype-iri) of this literal
     pub fn get_datatype(&self) -> IriRef<&str> {
         match self {
-            GenericLiteral::Typed(_, dt) => dt.as_ref(),
-            GenericLiteral::LanguageString(..) => RDF_LANG_STRING.as_ref(),
+            Self::Typed(_, dt) => dt.as_ref(),
+            Self::LanguageString(..) => RDF_LANG_STRING.as_ref(),
         }
     }
 
     /// The [language tag](https://www.w3.org/TR/rdf11-concepts/#dfn-language-tag) of this literal, if any
     pub fn get_language_tag(&self) -> Option<LanguageTag<&str>> {
         match self {
-            GenericLiteral::Typed(..) => None,
-            GenericLiteral::LanguageString(_, tag) => Some(tag.as_ref()),
+            Self::Typed(..) => None,
+            Self::LanguageString(_, tag) => Some(tag.as_ref()),
         }
     }
 }
@@ -81,14 +81,14 @@ impl<T: Borrow<str> + for<'x> From<&'x str>> TryFromTerm for GenericLiteral<T> {
             let lex = unsafe { term.lexical_form().unwrap_unchecked() };
             let lex = T::from(&lex);
             if let Some(tag) = term.language_tag() {
-                Ok(GenericLiteral::LanguageString(
+                Ok(Self::LanguageString(
                     lex,
                     tag.map_unchecked(|txt| T::from(&txt)),
                 ))
             } else {
                 // the following is safe because we checked term.kind()
                 let dt = unsafe { term.datatype().unwrap_unchecked() };
-                Ok(GenericLiteral::Typed(
+                Ok(Self::Typed(
                     lex,
                     dt.map_unchecked(|txt| T::from(&txt)),
                 ))
@@ -109,7 +109,7 @@ impl<T: Borrow<str> + Debug> Eq for GenericLiteral<T> {}
 
 impl<T: Borrow<str> + Debug> std::hash::Hash for GenericLiteral<T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        Term::hash(self, state)
+        Term::hash(self, state);
     }
 }
 
@@ -170,6 +170,6 @@ mod test {
 
     #[test]
     fn generic_literal_from_iri_errs() {
-        assert!(GenericLiteral::<String>::try_from_term(rdf::type_).is_err())
+        assert!(GenericLiteral::<String>::try_from_term(rdf::type_).is_err());
     }
 }

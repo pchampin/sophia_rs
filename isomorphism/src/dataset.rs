@@ -1,5 +1,5 @@
-use super::hash::*;
-use super::iso_term::*;
+use super::hash::hash_quad_with;
+use super::iso_term::{IsoTerm, cmp_quads};
 use sophia_api::quad::{iter_spog, Quad};
 use sophia_api::{
     dataset::{DTerm, Dataset},
@@ -137,7 +137,7 @@ fn make_map<'a, T: Term>(
 
 fn make_equivalence_classes(map: &HashMap<&str, u64>) -> HashMap<u64, usize> {
     let mut ret = HashMap::new();
-    for (_, v) in map.iter() {
+    for (_, v) in map {
         let n = ret.entry(*v).or_insert(0);
         *n += 1;
     }

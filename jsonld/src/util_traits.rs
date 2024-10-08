@@ -1,7 +1,7 @@
-//! Utility traits used internally by JsonLdSerializer
+//! Utility traits used internally by `JsonLdSerializer`
 use sophia_api::quad::Quad;
-use sophia_api::term::{Term, TermKind::*};
-use std::collections::hash_map::Entry::*;
+use sophia_api::term::{Term, TermKind::{BlankNode, Iri, Literal}};
+use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::HashMap;
 
 pub trait TermJsonLdUtil {
@@ -44,7 +44,7 @@ impl<Q: Quad> QuadJsonLdUtil for Q {
         self.s().is_subject()
             && self.p().is_iri()
             && self.o().is_object()
-            && self.g().map(|g| g.is_subject()).unwrap_or(true)
+            && self.g().map_or(true, |g| g.is_subject())
     }
 }
 
