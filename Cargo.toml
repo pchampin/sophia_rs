@@ -58,3 +58,7 @@ url = "2.4.1"
 
 [profile.release]
 lto = true
+
+[workspace.lints.clippy]
+enum_glob_use = "allow"
+
