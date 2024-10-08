@@ -109,9 +109,7 @@ impl<'a> Term for Trusted<Literal<'a>> {
 fn lexical_form(l: Literal) -> MownStr {
     use Literal::{LanguageTaggedString, Simple, Typed};
     let value = match l {
-        Simple { value } => value,
-        LanguageTaggedString { value, .. } => value,
-        Typed { value, .. } => value,
+        LanguageTaggedString { value, .. } | Typed { value, .. } | Simple { value } => value,
     };
     value.into()
 }
