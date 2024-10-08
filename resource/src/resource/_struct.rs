@@ -601,7 +601,7 @@ impl<G, L> Clone for Resource<G, L> {
     }
 }
 
-pub fn to_iri<T: Borrow<str>>(iri_ref: IriRef<T>) -> Result<Iri<T>, IriRef<Box<str>>> {
+pub(crate) fn to_iri<T: Borrow<str>>(iri_ref: IriRef<T>) -> Result<Iri<T>, IriRef<Box<str>>> {
     if is_absolute_iri_ref(iri_ref.as_str()) {
         Ok(Iri::new_unchecked(iri_ref.unwrap()))
     } else {
