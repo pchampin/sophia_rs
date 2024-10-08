@@ -24,8 +24,7 @@ impl<T: Borrow<str>> GenericLiteral<T> {
     /// The [lexical form](https://www.w3.org/TR/rdf11-concepts/#dfn-lexical-form) of this literal
     pub fn get_lexical_form(&self) -> &str {
         match self {
-            Self::Typed(lex, ..) => lex,
-            Self::LanguageString(lex, ..) => lex,
+            Self::LanguageString(lex, ..) | Self::Typed(lex, ..) => lex,
         }
         .borrow()
     }

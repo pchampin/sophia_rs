@@ -33,7 +33,7 @@ impl RdfXmlConfig {
     /// Build a new default [`RdfXmlConfig`]
     #[must_use]
     pub fn new() -> Self {
-        Default::default()
+        Self::default()
     }
 
     /// Transform an [`RdfXmlConfig`] by setting the [`indentation`](RdfXmlConfig::indentation).
