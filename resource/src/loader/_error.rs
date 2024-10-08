@@ -25,7 +25,8 @@ pub enum LoaderError {
 
 impl LoaderError {
     /// Return the IRI that caused this error
-    #[must_use] pub fn iri(&self) -> IriBuf {
+    #[must_use]
+    pub fn iri(&self) -> IriBuf {
         let iri = match self {
             Self::UnsupportedIri(iri, _) => iri,
             Self::NotFound(iri) => iri,

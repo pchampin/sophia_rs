@@ -45,7 +45,8 @@ where
 {
     /// Create a new [`DefaultLoaderFactory`].
     #[inline]
-    #[must_use] pub fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self::default()
     }
 }

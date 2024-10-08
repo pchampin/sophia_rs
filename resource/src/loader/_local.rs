@@ -1,4 +1,7 @@
-use super::{util::{IriBuf, iri_buf}, Loader, LoaderError};
+use super::{
+    util::{iri_buf, IriBuf},
+    Loader, LoaderError,
+};
 use sophia_iri::Iri;
 use std::borrow::Borrow;
 use std::fmt::Debug;
@@ -41,7 +44,8 @@ impl LocalLoader {
     }
 
     /// Wrap this loader into an `Arc<Loader>`.
-    #[must_use] pub fn arced(self) -> Arc<Self> {
+    #[must_use]
+    pub fn arced(self) -> Arc<Self> {
         Arc::new(self)
     }
 

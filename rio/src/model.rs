@@ -8,7 +8,10 @@
 //! which ensures the validity of the underlying data.
 //!
 //! The [`Trusted`] wrapper is used to materialize the fact that we trust the underlying data of Rio types.
-use rio_api::model::{Quad as RioQuad, Term as RioTerm, Triple as RioTriple, BlankNode, GeneralizedQuad, GeneralizedTerm, GraphName, Literal, NamedNode, Variable};
+use rio_api::model::{
+    BlankNode, GeneralizedQuad, GeneralizedTerm, GraphName, Literal, NamedNode, Quad as RioQuad,
+    Term as RioTerm, Triple as RioTriple, Variable,
+};
 use sophia_api::ns::{rdf, xsd};
 use sophia_api::quad::{QBorrowTerm, Quad, Spog};
 use sophia_api::term::{BnodeId, LanguageTag, Term, TermKind, VarName};

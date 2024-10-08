@@ -330,12 +330,14 @@ macro_rules! gen_stash {
 
             impl $type_name {
                 /// Create a new empty stash
-                #[must_use] pub fn new() -> Self {
+                #[must_use]
+                pub fn new() -> Self {
                     Default::default()
                 }
 
                 /// Retrieve a value from the stash, if present
-                #[must_use] pub fn get(&self, probe: &str) -> Option<&W<str>> {
+                #[must_use]
+                pub fn get(&self, probe: &str) -> Option<&W<str>> {
                     self.store.get(probe)
                 }
 
@@ -352,12 +354,14 @@ macro_rules! gen_stash {
                 }
 
                 /// How many values are stored in this stash
-                #[must_use] pub fn len(&self) -> usize {
+                #[must_use]
+                pub fn len(&self) -> usize {
                     self.store.len()
                 }
 
                 /// Is this stash empty?
-                #[must_use] pub fn is_empty(&self) -> bool {
+                #[must_use]
+                pub fn is_empty(&self) -> bool {
                     self.store.is_empty()
                 }
             }

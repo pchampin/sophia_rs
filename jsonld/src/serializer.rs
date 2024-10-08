@@ -115,7 +115,8 @@ pub struct JsonTarget(JsonValue<()>);
 impl Jsonifier {
     /// Create a new serializer which targets a [`JsonValue`].
     #[inline]
-    #[must_use] pub fn new_jsonifier() -> Self {
+    #[must_use]
+    pub fn new_jsonifier() -> Self {
         Self::new(JsonTarget(JsonValue::Null))
     }
 }
@@ -165,7 +166,8 @@ pub type JsonLdStringifier<L = NoLoader> = JsonLdSerializer<Vec<u8>, L>;
 impl JsonLdStringifier<NoLoader> {
     /// Create a new serializer which targets a string.
     #[inline]
-    #[must_use] pub fn new_stringifier() -> Self {
+    #[must_use]
+    pub fn new_stringifier() -> Self {
         Self::new(Vec::new())
     }
 }

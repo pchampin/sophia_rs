@@ -8,7 +8,13 @@ use sophia_iri::is_absolute_iri_ref;
 use std::borrow::Borrow;
 use std::sync::Arc;
 
-use super::{ResourceError::{GraphError, IriNotAbsolute, LoaderError, NoValueFor, UnexpectedMultipleValueFor}, LadderResourceIterator, LadderTermIterator, LadderTypedIterator, ResourceError, ResourceResult, TypedResource};
+use super::{
+    LadderResourceIterator, LadderTermIterator, LadderTypedIterator, ResourceError,
+    ResourceError::{
+        GraphError, IriNotAbsolute, LoaderError, NoValueFor, UnexpectedMultipleValueFor,
+    },
+    ResourceResult, TypedResource,
+};
 
 /// A [`Resource`] represents a specific node in a given graph.
 #[derive(Debug)]
@@ -36,22 +42,26 @@ where
     }
 
     /// The identifying term of this resource
-    #[must_use] pub const fn id(&self) -> &SimpleTerm<'static> {
+    #[must_use]
+    pub const fn id(&self) -> &SimpleTerm<'static> {
         &self.id
     }
 
     /// The URL of the underlying graph of this resource
-    #[must_use] pub const fn base(&self) -> Option<&Iri<String>> {
+    #[must_use]
+    pub const fn base(&self) -> Option<&Iri<String>> {
         self.base.as_ref()
     }
 
     /// The underlying graph of this resource
-    #[must_use] pub const fn graph(&self) -> &Arc<G> {
+    #[must_use]
+    pub const fn graph(&self) -> &Arc<G> {
         &self.graph
     }
 
     /// The loader used to load neighbouring resources
-    #[must_use] pub const fn loader(&self) -> &Arc<L> {
+    #[must_use]
+    pub const fn loader(&self) -> &Arc<L> {
         &self.loader
     }
 

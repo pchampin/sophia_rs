@@ -1,6 +1,9 @@
 //! Utility traits used internally by `JsonLdSerializer`
 use sophia_api::quad::Quad;
-use sophia_api::term::{Term, TermKind::{BlankNode, Iri, Literal}};
+use sophia_api::term::{
+    Term,
+    TermKind::{BlankNode, Iri, Literal},
+};
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::HashMap;
 
