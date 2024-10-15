@@ -10,6 +10,7 @@
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
 use rio_turtle::TriGFormatter;
+use sophia_api::prelude::Term;
 use sophia_api::quad::Quad;
 use sophia_api::serializer::{QuadSerializer, Stringifier};
 use sophia_api::source::{QuadSource, SinkError, SourceError, StreamResult};
@@ -66,8 +67,8 @@ where
             source
                 .for_each_quad(|t| {
                     let (spo, g) = t.spog();
-                    let spo = spo.map(sophia_api::prelude::Term::into_term);
-                    let g = g.map(sophia_api::prelude::Term::into_term);
+                    let spo = spo.map(Term::into_term);
+                    let g = g.map(Term::into_term);
                     dataset.insert((g, spo));
                 })
                 .map_err(SourceError)?;

@@ -61,7 +61,7 @@ fn main() {
         .to_string();
     }
 
-    let base = Some(if let Some(iri) = std::env::var_os("SOPHIA_BASE") {
+    let base = if let Some(iri) = std::env::var_os("SOPHIA_BASE") {
         let iri = iri
             .into_string()
             .expect("Invalid UTF-8 data in SOPHIA_BASE");
@@ -72,19 +72,18 @@ fn main() {
         Iri::new(url.into()).expect("Invalid file: IRI")
     } else {
         Iri::new_unchecked("x-stdin://localhost/".into())
-    });
+    };
     let input = Input::new(path);
     let res = match &format[..] {
         "ntriples" | "nt" => dump_triples(input, NTriplesParser {}),
-        "turtle" | "ttl" => dump_triples(input, TurtleParser { base }),
+        "turtle" | "ttl" => dump_triples(input, TurtleParser { base: Some(base) }),
         "nquads" | "nq" => dump_quads(input, NQuadsParser {}),
-        "trig" => dump_quads(input, TriGParser { base }),
+        "trig" => dump_quads(input, TriGParser { base: Some(base) }),
         "gnq" => dump_quads(input, GNQuadsParser {}),
-        "gtrig" => dump_quads(input, GTriGParser { base }),
+        "gtrig" => dump_quads(input, GTriGParser { base: Some(base) }),
         #[cfg(feature = "jsonld")]
         "json-ld" | "jsonld" => {
-            let options =
-                JsonLdOptions::new().with_base(base.unwrap().map_unchecked(std::sync::Arc::from));
+            let options = JsonLdOptions::new().with_base(base.map_unchecked(std::sync::Arc::from));
             let loader_factory = sophia::jsonld::loader::FileUrlLoader::default;
             #[cfg(feature = "http_client")]
             let loader_factory = || {
@@ -97,7 +96,7 @@ fn main() {
             dump_quads(input, JsonLdParser::new_with_options(options))
         }
         #[cfg(feature = "xml")]
-        "rdfxml" | "rdf" => dump_triples(input, RdfXmlParser { base }),
+        "rdfxml" | "rdf" => dump_triples(input, RdfXmlParser { base: Some(base) }),
         _ => {
             eprintln!("Unrecognized format: {format}");
             std::process::exit(-1);

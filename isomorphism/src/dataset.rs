@@ -137,7 +137,7 @@ fn make_map<'a, T: Term>(
 
 fn make_equivalence_classes(map: &HashMap<&str, u64>) -> HashMap<u64, usize> {
     let mut ret = HashMap::new();
-    for (_, v) in map {
+    for v in map.values() {
         let n = ret.entry(*v).or_insert(0);
         *n += 1;
     }

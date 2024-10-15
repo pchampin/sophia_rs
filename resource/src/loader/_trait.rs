@@ -11,7 +11,9 @@ use sophia_iri::Iri;
 use sophia_jsonld::loader_factory::ClosureLoaderFactory;
 use sophia_turtle::parser::{nt, turtle};
 use std::borrow::Borrow;
+use std::convert::Into;
 use std::io;
+use std::string::ToString;
 use std::sync::Arc;
 
 /// A loader resolves URLs into [`Resource`]s.
@@ -38,7 +40,7 @@ pub trait Loader: Sync + Sized {
         let bufread = io::BufReader::new(&data[..]);
         match &ctype[..] {
             "text/turtle" => turtle::TurtleParser {
-                base: Some(iri.as_ref().map_unchecked(std::string::ToString::to_string)),
+                base: Some(iri.as_ref().map_unchecked(ToString::to_string)),
             }
             .parse(bufread)
             .collect_triples()
@@ -54,7 +56,7 @@ pub trait Loader: Sync + Sized {
                 use sophia_api::prelude::{Quad, QuadParser, QuadSource};
                 use sophia_jsonld::{loader::ClosureLoader, JsonLdOptions, JsonLdParser};
                 let options = JsonLdOptions::new()
-                    .with_base(iri.as_ref().map_unchecked(std::convert::Into::into))
+                    .with_base(iri.as_ref().map_unchecked(Into::into))
                     .with_document_loader_factory(ClosureLoaderFactory::new(|| {
                         ClosureLoader::new(|url| {
                             async move {
@@ -79,7 +81,7 @@ pub trait Loader: Sync + Sized {
 
             #[cfg(feature = "xml")]
             "application/rdf+xml" => sophia_xml::parser::RdfXmlParser {
-                base: Some(iri.as_ref().map_unchecked(std::string::ToString::to_string)),
+                base: Some(iri.as_ref().map_unchecked(ToString::to_string)),
             }
             .parse(bufread)
             .collect_triples()
