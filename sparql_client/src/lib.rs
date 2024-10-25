@@ -84,7 +84,7 @@ impl SparqlClient {
 
     /// Replace the [Accept HTTP header](https://tools.ietf.org/html/rfc7231.html#section-5.3.2) used by this client.
     ///
-    /// This might be useful if the endpoint implements content-negotation incorrectly.
+    /// This might be useful if the endpoint implements content-negotiation incorrectly.
     ///
     /// See also [`DEFAULT_ACCEPT`](Self::DEFAULT_ACCEPT)
     #[must_use]
