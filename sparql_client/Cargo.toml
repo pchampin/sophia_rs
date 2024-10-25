@@ -1,0 +1,32 @@
+[package]
+name = "sophia_sparql_client"
+description = "A Rust toolkit for RDF and Linked Data - Core API"
+documentation = "https://docs.rs/sophia_api"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+repository.workspace = true
+readme.workspace = true
+license.workspace = true
+keywords.workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sophia_api.workspace = true
+sophia_iri.workspace = true
+sophia_turtle.workspace = true
+sophia_xml.workspace = true
+quick-xml = "0.36"
+reqwest = { version = "0.12", features = ["blocking", "json"] }
+rio_turtle.workspace = true
+rio_xml.workspace = true
+serde.workspace = true
+serde_json = "1.0"
+thiserror.workspace = true
+
+[dev-dependencies]
+sophia_isomorphism.workspace = true

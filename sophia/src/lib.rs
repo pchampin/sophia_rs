@@ -11,6 +11,7 @@
 //! * [`isomorphism`]
 //! * [`jsonld`] (with the `jsonld` feature enabled)
 //! * [`resource`]
+//! * [`sparql_client`] (with the `http_client` feature enabled)
 //! * [`turtle`]
 //! * [`term`]
 //! * [`xml`] (with the `xml` feature enabled)
@@ -39,6 +40,9 @@ pub use sophia_isomorphism as isomorphism;
 pub use sophia_jsonld as jsonld;
 #[doc(inline)]
 pub use sophia_resource as resource;
+#[cfg(feature = "http_client")]
+#[doc(inline)]
+pub use sophia_sparql_client as sparql_client;
 #[doc(inline)]
 pub use sophia_term as term;
 #[doc(inline)]

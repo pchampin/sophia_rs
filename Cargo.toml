@@ -35,6 +35,7 @@ sophia_iri = { version = "0.8.0", path = "./iri" }
 sophia_isomorphism = { version = "0.8.0", path = "./isomorphism" }
 sophia_jsonld = { version = "0.8.0", path = "./jsonld" }
 sophia_resource = { version = "0.8.0", path = "./resource" }
+sophia_sparql_client = { version = "0.8.0", path = "./sparql_client" }
 sophia_rio = { version = "0.8.0", path = "./rio" }
 sophia_term = { version = "0.8.0", path = "./term" }
 sophia_turtle = { version = "0.8.0", path = "./turtle" }
