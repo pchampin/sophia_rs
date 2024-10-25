@@ -185,6 +185,8 @@
 <a href="https://docs.rs/sophia/"><img src="https://docs.rs/sophia/badge.svg" alt="Documentation" /></a></p>
 <p>It comprises the following crates:</p>
 <ul>
+<li>Core crates:
+<ul>
 <li><a href="https://crates.io/crates/sophia_api"><code>sophia_api</code></a> defines a generic API for RDF and linked data,
 as a set of core traits and types;
 more precisely, it provides traits for describing
@@ -195,20 +197,37 @@ more precisely, it provides traits for describing
 </ul>
 </li>
 <li><a href="https://crates.io/crates/sophia_iri"><code>sophia_iri</code></a> provides functions, types and traits for validating and resolving IRIs.</li>
+<li><a href="https://crates.io/crates/sophia_inmem"><code>sophia_term</code></a> defines various implementations of the <code>Term</code> trait from <code>sophia_api</code>.</li>
 <li><a href="https://crates.io/crates/sophia_inmem"><code>sophia_inmem</code></a> defines in-memory implementations of the <code>Graph</code> and <code>Dataset</code> traits from <code>sophia_api</code>.</li>
-<li><a href="https://crates.io/crates/sophia_term"><code>sophia_term</code></a> defines various implementations of the <code>Term</code> trait from <code>sophia_api</code>.</li>
+</ul>
+</li>
+<li>Parsers and serializers
+<ul>
 <li><a href="https://crates.io/crates/sophia_turtle"><code>sophia_turtle</code></a> provides parsers and serializers for the Turtle-family of concrete syntaxes.</li>
+<li><a href="https://crates.io/crates/sophia_jsonld"><code>sophia_jsonld</code></a> provides parsers and serializers for JSON-LD.</li>
 <li><a href="https://crates.io/crates/sophia_xml"><code>sophia_xml</code></a> provides parsers and serializers for RDF/XML.</li>
-<li><a href="https://crates.io/crates/sophia_jsonld"><code>sophia_jsonld</code></a> provides preliminary support for JSON-LD.</li>
-<li><a href="https://crates.io/crates/sophia_c14n"><code>sophia_c14n</code></a> implements <a href="https://www.w3.org/TR/rdf-canon/">RDF canonicalization</a>.</li>
-<li><a href="https://crates.io/crates/sophia_resource"><code>sophia_resource</code></a> provides a resource-centric API.</li>
 <li><a href="https://crates.io/crates/sophia_rio"><code>sophia_rio</code></a> is a lower-level crate, used by the ones above.</li>
 </ul>
-<p>and finally:</p>
+</li>
+<li>Other
 <ul>
-<li><a href="https://crates.io/crates/sophia"><code>sophia</code></a> is the “all-inclusive” crate,
-re-exporting symbols from all the crates above.
-(actually, <code>sophia_xml</code> is only available if the <code>xml</code> feature is enabled)</li>
+<li><a href="https://crates.io/crates/sophia_c14n"><code>sophia_c14n</code></a> implements <a href="https://www.w3.org/TR/rdf-canon/">RDF canonicalization</a>.</li>
+<li><a href="https://crates.io/crates/sophia_isomorphism"><code>sophia_isomorphism</code></a> provides functions to determine if two graphs or datasets are <a href="https://www.w3.org/TR/rdf11-concepts/#h3_graph-isomorphism">isomorphic</a>.</li>
+<li><a href="https://crates.io/crates/sophia_sparql_client"><code>sophia_sparql_client</code></a> provides a client for the <a href="https://www.w3.org/TR/sparql11-protocol">SPARQL 1.1 Protocol</a>.</li>
+<li><a href="https://crates.io/crates/sophia_resource"><code>sophia_resource</code></a> provides a resource-centric API.</li>
+</ul>
+</li>
+<li>All-inclusive
+<ul>
+<li><a href="https://crates.io/crates/sophia"><code>sophia</code></a> re-exports symbols from all the crates above, with the following provisio:
+<ul>
+<li><code>sophia_jsonld</code> is only available with the <code>jsonld</code> feature</li>
+<li><code>sophia_sparql_client</code> is only available with the <code>http_client</code> feature</li>
+<li><code>sophia_xml</code> is only available with the <code>xml</code> feature</li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 <p>In addition to the <a href="https://docs.rs/sophia/">API documentation</a>,
 a high-level <a href="https://pchampin.github.io/sophia_rs/">user documentation</a> is available (although not quite complete yet).</p>
