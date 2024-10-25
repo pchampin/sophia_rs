@@ -194,7 +194,7 @@ fn cycle_long() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[ignore]
+#[ignore = "currently not supported"]
 fn cycle_pathological() -> Result<(), Box<dyn Error>> {
     // This case is tricky (and does not work with the current implementation).
     // Both graphs contain the same number of (blank nodes) and the same number of arcs.

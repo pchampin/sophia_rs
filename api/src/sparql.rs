@@ -20,7 +20,7 @@
 //! would be to define subtraits of `Query` with additional methods
 //! (*e.g.*`set_base`, `bind_variables`...).
 //! Implementation could then express requirements as trait bound, e.g.:
-//! ```ignore
+//! ```text
 //!     D: SparqlDataset,
 //!     D::Query: Clone + BindVariable,
 //! ```
