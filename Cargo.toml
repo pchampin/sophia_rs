@@ -10,6 +10,7 @@ members = [
     "resource",
     "rio",
     "sophia",
+    "sparql_client",
     "term",
     "turtle",
     "xml",
@@ -51,6 +52,7 @@ resiter = "0.5.0"
 rio_api = { version = "0.8", features = ["generalized"] }
 rio_turtle = { version = "0.8", features = ["generalized"] }
 rio_xml = { version = "0.8" }
+serde = { version = "1.0", features = ["derive"] }
 test-case = "3.1.0"
 thiserror = "1.0.32"
 tokio = { version="1.33.0", features = ["rt", "sync"] }
