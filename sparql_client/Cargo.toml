@@ -20,7 +20,7 @@ sophia_api.workspace = true
 sophia_iri.workspace = true
 sophia_turtle.workspace = true
 sophia_xml.workspace = true
-quick-xml = "0.36"
+quick-xml = "0.37"
 reqwest = { version = "0.12", features = ["blocking", "json"] }
 rio_turtle.workspace = true
 rio_xml.workspace = true

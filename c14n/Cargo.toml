@@ -14,7 +14,7 @@ keywords.workspace = true
 
 [dependencies]
 log.workspace = true
-sha2 = "0.10.7"
+sha2 = "0.10"
 sophia_api.workspace = true
 sophia_iri.workspace = true
 thiserror.workspace = true

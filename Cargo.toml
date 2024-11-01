@@ -42,22 +42,23 @@ sophia_turtle = { version = "0.8.0", path = "./turtle" }
 sophia_xml = { version = "0.8.0", path = "./xml" }
 
 criterion = "0.5"
-env_logger = "0.11.3"
-futures-util = "0.3.28"
-lazy_static = "1.4.0"
-log = "0.4.21"
-mownstr = "0.3.0"
-oxiri = "0.2.2"
-regex = "1.6.0"
-resiter = "0.5.0"
+env_logger = "0.11"
+futures-util = "0.3"
+lazy_static = "1.5"
+log = "0.4"
+mownstr = "0.3"
+oxiri = "0.2"
+regex = "1.11"
+resiter = "0.5"
 rio_api = { version = "0.8", features = ["generalized"] }
 rio_turtle = { version = "0.8", features = ["generalized"] }
 rio_xml = { version = "0.8" }
 serde = { version = "1.0", features = ["derive"] }
-test-case = "3.1.0"
-thiserror = "1.0.32"
-tokio = { version="1.33.0", features = ["rt", "sync"] }
-url = "2.4.1"
+test-case = "3.3"
+thiserror = "1.0"
+tokio = { version="1.41", features = ["rt", "sync"] }
+toml = "0.8"
+url = "2.5"
 
 [profile.release]
 lto = true

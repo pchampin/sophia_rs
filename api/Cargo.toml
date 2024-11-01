@@ -37,4 +37,4 @@ serde = { workspace = true, optional = true }
 [dev-dependencies]
 sophia_iri = { workspace = true, features = ["test_data"] }
 test-case.workspace = true
-toml = "0.8.0"
+toml.workspace = true
