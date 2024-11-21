@@ -286,7 +286,17 @@ impl SparqlQuery for Query {
     type Error = Error;
 
     fn parse(query_source: &str) -> Result<Self, Self::Error> {
-        Ok(Query(Box::from(query_source)))
+        Ok(Query(
+            <String as SparqlQuery>::parse(query_source).unwrap().into(),
+        ))
+    }
+
+    fn parse_with(query_source: &str, base: Iri<&str>) -> Result<Self, Self::Error> {
+        Ok(Query(
+            <String as SparqlQuery>::parse_with(query_source, base)
+                .unwrap()
+                .into(),
+        ))
     }
 }
 

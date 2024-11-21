@@ -25,6 +25,8 @@ test_macro = ["sophia_api/test_macro"]
 file_url = ["sophia_jsonld/file_url", "sophia_resource/file_url"]
 # This feature enables the HTTP client in dependencies
 http_client = ["dep:sophia_sparql_client", "sophia_jsonld/http_client", "sophia_resource/http_client"]
+# This feature enables the SPARQL engine implementation
+sparql = ["dep:sophia_sparql"]
 
 [dependencies]
 sophia_iri.workspace = true
@@ -34,6 +36,7 @@ sophia_c14n.workspace = true
 sophia_isomorphism.workspace = true
 sophia_jsonld = { workspace = true, optional = true }
 sophia_resource.workspace = true
+sophia_sparql = { workspace = true, optional = true }
 sophia_sparql_client = { workspace = true, optional = true }
 sophia_rio.workspace = true
 sophia_turtle.workspace = true

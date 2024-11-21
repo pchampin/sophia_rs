@@ -26,11 +26,13 @@ It comprises the following crates:
 * Other
   + [`sophia_c14n`] implements [RDF canonicalization].
   + [`sophia_isomorphism`] provides functions to determine if two graphs or datasets are [isomorphic].
+  + [`sophia_sparql`] provides a (currently partial) implementation of the [SPARQL 1.1 Query Language].
   + [`sophia_sparql_client`] provides a client for the [SPARQL 1.1 Protocol].
   + [`sophia_resource`] provides a resource-centric API.
 * All-inclusive
   + [`sophia`] re-exports symbols from all the crates above, with the following provisio:
     - `sophia_jsonld` is only available with the `jsonld` feature
+    - `sophia_sparql` is only available with the `sparql` feature
     - `sophia_sparql_client` is only available with the `http_client` feature
     - `sophia_xml` is only available with the `xml` feature
 
@@ -93,5 +95,6 @@ An outdated comparison of Sophia with other RDF libraries is still available
 [RDF test-suite]: https://github.com/w3c/rdf-tests/
 [JSON-LD test-suite]: https://github.com/w3c/json-ld-api/
 [RDF canonicalization]: https://www.w3.org/TR/rdf-canon/
+[SPARQL 1.1 query language]: https://www.w3.org/TR/sparql11-query
 [SPARQL 1.1 protocol]: https://www.w3.org/TR/sparql11-protocol
 [isomorphic]: https://www.w3.org/TR/rdf11-concepts/#h3_graph-isomorphism

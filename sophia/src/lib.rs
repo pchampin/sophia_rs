@@ -40,6 +40,9 @@ pub use sophia_isomorphism as isomorphism;
 pub use sophia_jsonld as jsonld;
 #[doc(inline)]
 pub use sophia_resource as resource;
+#[cfg(feature = "sparql")]
+#[doc(inline)]
+pub use sophia_sparql as sparql;
 #[cfg(feature = "http_client")]
 #[doc(inline)]
 pub use sophia_sparql_client as sparql_client;

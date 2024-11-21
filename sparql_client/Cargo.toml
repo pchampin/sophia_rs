@@ -1,7 +1,7 @@
 [package]
 name = "sophia_sparql_client"
-description = "A Rust toolkit for RDF and Linked Data - Core API"
-documentation = "https://docs.rs/sophia_api"
+description = "A Rust toolkit for RDF and Linked Data - SPARQL protocol client"
+documentation = "https://docs.rs/sophia_sparql_client"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true

@@ -27,6 +27,8 @@
 //!
 //! Sophia may define such traits in the future.
 
+use sophia_iri::Iri;
+
 use crate::source::TripleSource;
 use crate::term::Term;
 
@@ -70,8 +72,22 @@ pub trait SparqlDataset {
     ///
     /// If it is impossible or inconvenient to provide a type for pre-parsed queries,
     /// you can still use `String`, which implements the [`Query`] trait.
+    ///
+    /// See also [`SparqlDataset::prepare_query_with`]
     fn prepare_query(&self, query_string: &str) -> Result<Self::Query, Self::SparqlError> {
         Self::Query::parse(query_string)
+    }
+
+    /// Prepare a query for multiple future executions,
+    /// using the given IRI to resolve relative IRIs.
+    ///
+    /// See also [`SparqlDataset::prepare_query`].
+    fn prepare_query_with(
+        &self,
+        query_string: &str,
+        base: Iri<&str>,
+    ) -> Result<Self::Query, Self::SparqlError> {
+        Self::Query::parse_with(query_string, base)
     }
 }
 
@@ -85,12 +101,17 @@ pub trait Query: Sized {
     type Error: Error + Send + Sync + 'static;
     /// Parse the given text into a [`Query`].
     fn parse(query_source: &str) -> Result<Self, Self::Error>;
+    /// Parse the given text into a [`Query`], using the given base IRI
+    fn parse_with(query_source: &str, base: Iri<&str>) -> Result<Self, Self::Error>;
 }
 
 impl Query for String {
     type Error = std::convert::Infallible;
     fn parse(query_source: &str) -> Result<Self, Self::Error> {
         Ok(query_source.into())
+    }
+    fn parse_with(query_source: &str, base: Iri<&str>) -> Result<Self, Self::Error> {
+        Ok(format!("BASE <{base}>\n{query_source}"))
     }
 }
 
