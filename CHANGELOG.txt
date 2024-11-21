@@ -1,3 +1,24 @@
+0.9.0
+    License
+    - now dual-licensed as Apache 2.0 / CeCILL-B (#164)
+    - new matcher Not<M>
+    New features
+    - sophia_sparql implements (partially) a generic SPARQL query engine (#19)
+    - sophia_sparql_client implements a SPARQL protocol client (#97)
+    - bool now implements Term and FromTerm (#159)
+    Misc improvements
+    - upgrade MownStr to 0.3 (0.2 had some UB)
+    - all Error associated types now require Send + Sync (#172)
+    - f64 as FromTerm now supports xsd:decimal
+    - can now configure indentation in RDF/XML serializer (#156)
+    - less code redundancy between TripleSource and QuadSource (#52)
+    - traits now use 'impl Iterator' instead of 'Box<dyn Iterator>' (#163)
+    Bug fixes
+    - RcTerm and ArcTerm are now really cheap to clone (#160)
+    - other minor bug fixes
+    Documentation
+    - doc of sophia now inlines the doc of republished crates
+
 0.8.0
     New features
     - long awaited "big refactoring":
