@@ -192,6 +192,7 @@ more precisely, it provides traits for describing
 <ul>
 <li><a href="https://crates.io/crates/sophia_c14n"><code>sophia_c14n</code></a> implements <a href="https://www.w3.org/TR/rdf-canon/">RDF canonicalization</a>.</li>
 <li><a href="https://crates.io/crates/sophia_isomorphism"><code>sophia_isomorphism</code></a> provides functions to determine if two graphs or datasets are <a href="https://www.w3.org/TR/rdf11-concepts/#h3_graph-isomorphism">isomorphic</a>.</li>
+<li>[<code>sophia_sparql</code>] provides a (currently partial) implementation of the <a href="https://www.w3.org/TR/sparql11-query">SPARQL 1.1 Query Language</a>.</li>
 <li><a href="https://crates.io/crates/sophia_sparql_client"><code>sophia_sparql_client</code></a> provides a client for the <a href="https://www.w3.org/TR/sparql11-protocol">SPARQL 1.1 Protocol</a>.</li>
 <li><a href="https://crates.io/crates/sophia_resource"><code>sophia_resource</code></a> provides a resource-centric API.</li>
 </ul>
@@ -201,6 +202,7 @@ more precisely, it provides traits for describing
 <li><a href="https://crates.io/crates/sophia"><code>sophia</code></a> re-exports symbols from all the crates above, with the following provisio:
 <ul>
 <li><code>sophia_jsonld</code> is only available with the <code>jsonld</code> feature</li>
+<li><code>sophia_sparql</code> is only available with the <code>sparql</code> feature</li>
 <li><code>sophia_sparql_client</code> is only available with the <code>http_client</code> feature</li>
 <li><code>sophia_xml</code> is only available with the <code>xml</code> feature</li>
 </ul>
