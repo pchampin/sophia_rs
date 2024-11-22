@@ -19,24 +19,24 @@ use crate::term::ResultTerm;
 use crate::SparqlWrapper;
 use crate::SparqlWrapperError;
 
-pub struct Bindings<'a, D: Dataset> {
+pub struct Bindings<'a, D: Dataset + ?Sized> {
     pub(crate) variables: Vec<VarName<Arc<str>>>,
     pub(crate) iter: Box<dyn Iterator<Item = Result<Binding, SparqlWrapperError<D::Error>>> + 'a>,
 }
 
-impl<'a, D: Dataset> Bindings<'a, D> {
+impl<'a, D: Dataset + ?Sized> Bindings<'a, D> {
     pub fn variables(&self) -> Vec<&str> {
         self.variables.iter().map(VarName::as_str).collect()
     }
 }
 
-impl<'a, D: Dataset> SparqlBindings<SparqlWrapper<'a, D>> for Bindings<'a, D> {
+impl<'a, D: Dataset + ?Sized> SparqlBindings<SparqlWrapper<'a, D>> for Bindings<'a, D> {
     fn variables(&self) -> Vec<&str> {
         Bindings::variables(self)
     }
 }
 
-impl<'a, D: Dataset> IntoIterator for Bindings<'a, D> {
+impl<'a, D: Dataset + ?Sized> IntoIterator for Bindings<'a, D> {
     type Item = Result<Vec<Option<ResultTerm>>, SparqlWrapperError<D::Error>>;
 
     type IntoIter = Box<dyn Iterator<Item = Self::Item> + 'a>;

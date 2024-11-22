@@ -20,19 +20,19 @@ use crate::stash::ArcStrStashExt;
 use crate::SparqlWrapperError;
 
 #[derive(Clone, Debug)]
-pub struct ExecState<'a, D> {
+pub struct ExecState<'a, D: ?Sized> {
     stash: ArcStrStash,
     config: Arc<ExecConfig<'a, D>>,
 }
 
 #[derive(Clone, Debug)]
-pub struct ExecConfig<'a, D> {
+pub struct ExecConfig<'a, D: ?Sized> {
     pub dataset: &'a D,
     pub default_matcher: Vec<Option<ArcTerm>>,
     pub named_graphs: Vec<[Option<ArcTerm>; 1]>,
 }
 
-impl<'a, D: Dataset> ExecState<'a, D> {
+impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     pub fn new(
         dataset: &'a D,
         query_dataset: &Option<QueryDataset>,
@@ -255,7 +255,7 @@ impl<'a, D: Dataset> ExecState<'a, D> {
     }
 }
 
-impl<'a, D: Dataset> From<Arc<ExecConfig<'a, D>>> for ExecState<'a, D> {
+impl<'a, D: Dataset + ?Sized> From<Arc<ExecConfig<'a, D>>> for ExecState<'a, D> {
     fn from(config: Arc<ExecConfig<'a, D>>) -> Self {
         let stash = ArcStrStash::new();
         ExecState { stash, config }

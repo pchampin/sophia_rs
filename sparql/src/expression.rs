@@ -179,7 +179,7 @@ impl ArcExpression {
         graph_matcher: &[Option<ArcTerm>],
     ) -> Option<EvalResult>
     where
-        D: Dataset,
+        D: Dataset + ?Sized,
     {
         use ArcExpression::*;
         match self {

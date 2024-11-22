@@ -7,7 +7,7 @@ use crate::exec::ExecState;
 use crate::matcher::SparqlMatcher;
 use crate::SparqlWrapperError;
 
-pub fn make_iterator<D: Dataset>(
+pub fn make_iterator<D: Dataset + ?Sized>(
     state: &mut ExecState<D>,
     patterns: &[TriplePattern],
     graph_matcher: &[Option<ArcTerm>],
@@ -36,7 +36,7 @@ pub fn make_iterator<D: Dataset>(
     bindings.into_iter()
 }
 
-fn bgp_rec<D: Dataset>(
+fn bgp_rec<D: Dataset + ?Sized>(
     state: &mut ExecState<D>,
     patterns: &[TriplePattern],
     bs: &mut Vec<Result<Binding, SparqlWrapperError<D::Error>>>,
