@@ -135,6 +135,16 @@ impl<'a, D: Dataset> ExecState<'a, D> {
         }
     }
 
+    pub fn ask(
+        &mut self,
+        pattern: &GraphPattern,
+        graph_matcher: &[Option<ArcTerm>],
+        binding: Option<&Binding>,
+    ) -> Result<bool, SparqlWrapperError<D::Error>> {
+        self.select(pattern, graph_matcher, binding)
+            .map(|binding| binding.into_iter().next().is_some())
+    }
+
     fn bgp(
         &mut self,
         patterns: &[TriplePattern],

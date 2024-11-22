@@ -58,7 +58,12 @@ impl<'a, D: Dataset> SparqlDataset for SparqlWrapper<'a, D> {
                 dataset,
                 pattern,
                 base_iri,
-            } => Err(SparqlWrapperError::NotImplemented("ASK query")),
+            } => {
+                let mut exec = ExecState::new(self.0, dataset)?;
+                let cfg = exec.config_cloned();
+                exec.ask(pattern, &cfg.default_matcher, None)
+                    .map(SparqlResult::Boolean)
+            }
         }
     }
 }

@@ -14,15 +14,24 @@ use test_case::test_case;
     vec!["<http://schema.org/name>", "<http://schema.org/name>", "<http://schema.org/performerIn>", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", "<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>", ];
     "predicates"
 )]
-fn test_select_1(query: &str, exp: Vec<&str>) -> TestResult {
+#[test_case(
+    "SELECT ?x { ?x ?y \"not in the repo\" }",
+    vec![];
+    "no result"
+)]
+fn test_select_1_and_ask(query: &str, exp: Vec<&str>) -> TestResult {
     let dataset = dataset_101()?;
     let dataset = SparqlWrapper(&dataset);
-    let query = SparqlQuery::parse(query)?;
-    let bindings = dataset.query(&query)?.into_bindings();
+    let parsed_query = SparqlQuery::parse(query)?;
+    let bindings = dataset.query(&parsed_query)?.into_bindings();
     assert_eq!(bindings.variables(), &["x"]);
     let mut got = bindings_to_vec(bindings);
     got.sort();
     assert_eq!(exp, got);
+
+    let parsed_query = SparqlQuery::parse(&query.replace("SELECT ?x", "ASK"))?;
+    let response = dataset.query(&parsed_query)?.into_boolean();
+    assert_eq!(response, !exp.is_empty());
     Ok(())
 }
 
