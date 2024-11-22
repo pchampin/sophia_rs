@@ -19,6 +19,11 @@ use test_case::test_case;
     vec![];
     "no result"
 )]
+#[test_case(
+    "PREFIX s: <http://schema.org/>  SELECT ?x { { ?x a s:Event } UNION { ?x a s:Person } }",
+    vec!["<https://example.org/test#a>", "_:b"];
+    "union"
+)]
 fn test_select_1_and_ask(query: &str, exp: Vec<&str>) -> TestResult {
     let dataset = dataset_101()?;
     let dataset = SparqlWrapper(&dataset);
@@ -32,6 +37,39 @@ fn test_select_1_and_ask(query: &str, exp: Vec<&str>) -> TestResult {
     let parsed_query = SparqlQuery::parse(&query.replace("SELECT ?x", "ASK"))?;
     let response = dataset.query(&parsed_query)?.into_boolean();
     assert_eq!(response, !exp.is_empty());
+    Ok(())
+}
+
+#[test]
+fn test_union() -> TestResult {
+    let dataset = dataset_101()?;
+    let dataset = SparqlWrapper(&dataset);
+    let parsed_query = SparqlQuery::parse(
+        r"
+        PREFIX s: <http://schema.org/>
+        SELECT ?p ?e {
+            { ?p a s:Person }
+            UNION
+            { ?e a s:Event }
+        }
+    ",
+    )?;
+    let bindings = dataset.query(&parsed_query)?.into_bindings();
+    assert_eq!(bindings.variables(), &["p", "e"]);
+    let mut got = bindings.into_iter().collect::<Result<Vec<_>, _>>()?;
+    got.sort();
+    assert_eq!(got.len(), 2);
+    assert_eq!(got[0].len(), 2);
+    assert!(got[0][0].is_none());
+    assert!(got[0][1].is_some());
+    assert!(got[0][1].as_ref().unwrap().is_blank_node());
+    assert!(got[1][0].is_some());
+    assert!(got[1][0].as_ref().unwrap().is_iri());
+    assert_eq!(
+        got[1][0].as_ref().unwrap().to_string(),
+        "<https://example.org/test#a>"
+    );
+    assert!(got[1][1].is_none());
     Ok(())
 }
 

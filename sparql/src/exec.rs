@@ -101,7 +101,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 expression,
             } => Err(SparqlWrapperError::NotImplemented("LeftJoin")),
             Filter { expr, inner } => self.filter(expr, inner, graph_matcher, binding),
-            Union { left, right } => Err(SparqlWrapperError::NotImplemented("Union")),
+            Union { left, right } => self.union(left, right, graph_matcher, binding),
             Graph { name, inner } => Err(SparqlWrapperError::NotImplemented("Graph")),
             Extend {
                 inner,
@@ -181,6 +181,31 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                     .unwrap_or(false),
             }
         }));
+        Ok(Bindings { variables, iter })
+    }
+
+    fn union(
+        &mut self,
+        left: &GraphPattern,
+        right: &GraphPattern,
+        graph_matcher: &[Option<ArcTerm>],
+        binding: Option<&Binding>,
+    ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
+        let Bindings {
+            variables: lv,
+            iter: li,
+        } = self.select(left, graph_matcher, binding)?;
+        let Bindings {
+            variables: rv,
+            iter: ri,
+        } = self.select(right, graph_matcher, binding)?;
+        let mut variables = lv.clone();
+        for v in rv {
+            if lv.iter().all(|i| *i != v) {
+                variables.push(v)
+            }
+        }
+        let iter = Box::new(li.chain(ri));
         Ok(Bindings { variables, iter })
     }
 
