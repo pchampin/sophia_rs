@@ -107,6 +107,11 @@ impl ResultTerm {
             .get_or_init(|| SparqlValue::try_from_term(&self.inner))
             .as_ref()
     }
+
+    /// Unwrap the inner `ArcTerm`
+    pub fn unwrap(self) -> ArcTerm {
+        self.inner
+    }
 }
 
 impl From<ArcTerm> for ResultTerm {
