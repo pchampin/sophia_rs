@@ -1,5 +1,6 @@
 #![allow(clippy::module_name_repetitions)]
 
+use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use sophia_api::prelude::*;
@@ -8,6 +9,7 @@ use sophia_term::ArcTerm;
 use spargebra::algebra::Expression;
 use spargebra::algebra::GraphPattern;
 use spargebra::algebra::QueryDataset;
+use spargebra::term::NamedNodePattern;
 use spargebra::term::TriplePattern;
 use spargebra::term::Variable;
 
@@ -102,7 +104,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             } => Err(SparqlWrapperError::NotImplemented("LeftJoin")),
             Filter { expr, inner } => self.filter(expr, inner, graph_matcher, binding),
             Union { left, right } => self.union(left, right, graph_matcher, binding),
-            Graph { name, inner } => Err(SparqlWrapperError::NotImplemented("Graph")),
+            Graph { name, inner } => self.graph(name, inner, binding),
             Extend {
                 inner,
                 variable,
@@ -207,6 +209,65 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         }
         let iter = Box::new(li.chain(ri));
         Ok(Bindings { variables, iter })
+    }
+
+    fn graph(
+        &mut self,
+        name: &NamedNodePattern,
+        inner: &GraphPattern,
+        binding: Option<&Binding>,
+    ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
+        match name {
+            NamedNodePattern::NamedNode(nn) => {
+                let graph_matcher = vec![Some(ArcTerm::Iri(IriRef::new_unchecked(
+                    self.stash.copy_str(nn.as_str()),
+                )))];
+                self.select(inner, &graph_matcher, binding)
+            }
+            NamedNodePattern::Variable(var) => {
+                if let Some(name) = binding.and_then(|b| b.v.get(var.as_str())) {
+                    let graph_matcher = vec![Some(name.inner().clone())];
+                    self.select(inner, &graph_matcher, binding)
+                } else {
+                    let Bindings { variables, .. } = self.select(inner, &[], binding)?;
+                    let graph_names = self
+                        .config()
+                        .dataset
+                        .graph_names()
+                        .map(|res| res.map(|t| self.stash.copy_term(t)))
+                        .collect::<Result<BTreeSet<_>, _>>()
+                        .map_err(SparqlWrapperError::Dataset)?;
+                    if graph_names.is_empty() {
+                        self.select(inner, &[], binding)
+                    } else {
+                        self.graph_rec(var.as_str(), graph_names.into_iter(), inner, binding)
+                    }
+                }
+            }
+        }
+    }
+
+    fn graph_rec(
+        &mut self,
+        var: &str,
+        mut graph_names: std::collections::btree_set::IntoIter<ArcTerm>,
+        inner: &GraphPattern,
+        binding: Option<&Binding>,
+    ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
+        if let Some(name) = graph_names.next() {
+            let mut b = binding.cloned().unwrap_or_else(Binding::default);
+            b.v.insert(self.stash.copy_str(var), name.clone().into());
+            let graph_matcher = vec![Some(name)];
+            let Bindings { variables, iter } = self.select(inner, &graph_matcher, Some(&b))?;
+            let iter = Box::new(iter.chain(Box::new(
+                self.graph_rec(var, graph_names, inner, binding)?.iter,
+            )));
+            Ok(Bindings { variables, iter })
+        } else {
+            let variables = vec![];
+            let iter = Box::new(std::iter::empty());
+            Ok(Bindings { variables, iter })
+        }
     }
 
     fn extend(
