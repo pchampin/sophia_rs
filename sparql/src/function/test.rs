@@ -135,23 +135,23 @@ fn rand_all_diff() -> TestResult {
 #[test_case(vec!["a", "b", "c"], "abc")]
 #[test_case(vec!["a", "b", "c", "d"], "abcd")]
 fn concat(input: Vec<&str>, exp: &str) {
-    fn txt2pair(txt: &str) -> (Arc<str>, Option<LanguageTag<Arc<str>>>) {
-        let (lex, tag) = txt.split_once('@').unwrap_or((txt, ""));
-        (
-            Arc::from(lex),
-            if tag.is_empty() {
-                None
-            } else {
-                Some(LanguageTag::new_unchecked(Arc::from(tag)))
-            },
-        )
-    }
-
     let input: Vec<_> = input.into_iter().map(txt2pair).collect();
     let args: Vec<_> = input.iter().map(|(lex, tag)| (lex, tag.as_ref())).collect();
 
     let exp = Some(EvalResult::from(txt2pair(exp)));
     assert!(eval_eq(Some(super::concat(&args)), exp));
+}
+
+fn txt2pair(txt: &str) -> (Arc<str>, Option<LanguageTag<Arc<str>>>) {
+    let (lex, tag) = txt.split_once('@').unwrap_or((txt, ""));
+    (
+        Arc::from(lex),
+        if tag.is_empty() {
+            None
+        } else {
+            Some(LanguageTag::new_unchecked(Arc::from(tag)))
+        },
+    )
 }
 
 #[test_case("en", "*", true)]
@@ -167,6 +167,24 @@ fn lang_matches(tag: &str, range: &str, exp: bool) -> TestResult {
     let range = Arc::<str>::from(range);
     let exp = Some(EvalResult::from(exp));
     assert!(eval_eq(super::lang_matches(&tag, &range), exp.clone()));
+    Ok(())
+}
+
+#[test_case("foobar", 4.0, None, Some("bar"))]
+#[test_case("foobar@en", 4.0, None, Some("bar@en"))]
+#[test_case("foobar", 4.0, Some(1.0), Some("b"))]
+#[test_case("foobar@en", 4.0, Some(1.0), Some("b@en"))]
+#[test_case("foobar", -2.0, Some(6.0), Some("foo"))]
+#[test_case("foobar", -2.0, None, Some("foobar"))]
+#[test_case("foobar", 4.0, Some(0.0), Some(""))]
+#[test_case("foobar", 4.0, Some(-1.0), Some(""))]
+#[test_case("foobar", 0.9, Some(1.1), Some("f"))]
+#[test_case("foobar", 1.1, Some(0.9), Some("f"))]
+fn sub_str(source: &str, start: f64, length: Option<f64>, exp: Option<&str>) -> TestResult {
+    let pair = txt2pair(source);
+    let source = (&pair.0, pair.1.as_ref());
+    let exp = exp.map(|txt| EvalResult::from(txt2pair(txt)));
+    assert!(eval_eq(super::sub_str(source, start, length), exp));
     Ok(())
 }
 
@@ -216,7 +234,7 @@ fn eval_expr(expr: &str) -> TestResult<EvalResult> {
 }
 
 fn eval_eq(e1: Option<EvalResult>, e2: Option<EvalResult>) -> bool {
-    match (e1, e2) {
+    match (dbg!(e1), dbg!(e2)) {
         (Some(e1), Some(e2)) => Term::eq(&e1.into_term(), e2.into_term()),
         (None, None) => true,
         _ => false,

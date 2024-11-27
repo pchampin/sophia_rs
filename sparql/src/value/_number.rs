@@ -203,7 +203,7 @@ impl SparqlNumber {
     ///
     /// Note that the conversion may lose precision, or even result in NaN for some big integers and decimals.
     #[allow(clippy::cast_precision_loss)]
-    fn coerce_to_double(&self) -> f64 {
+    pub fn coerce_to_double(&self) -> f64 {
         match self {
             SparqlNumber::NativeInt(inner) => *inner as f64,
             SparqlNumber::BigInt(inner) => inner.to_f64().unwrap_or(f64::NAN),

@@ -97,7 +97,19 @@ pub fn call_function(function: &Function, mut arguments: Vec<EvalResult>) -> Opt
             };
             lang_matches(tag.as_xsd_string()?, range.as_xsd_string()?)
         }
-        SubStr => todo("SubStr"),
+        SubStr => match &arguments[..] {
+            [source, starting_loc] => sub_str(
+                source.as_string_lit()?,
+                starting_loc.as_number()?.coerce_to_double(),
+                None,
+            ),
+            [source, starting_loc, length] => sub_str(
+                source.as_string_lit()?,
+                starting_loc.as_number()?.coerce_to_double(),
+                Some(length.as_number()?.coerce_to_double()),
+            ),
+            _ => unreachable!(),
+        },
         StrLen => todo("StrLen"),
         Replace => todo("Replace"),
         UCase => todo("UCase"),
@@ -274,6 +286,33 @@ pub fn lang_matches(tag: &Arc<str>, range: &Arc<str>) -> Option<EvalResult> {
             && (tag.len() == range.len() || tag[range.len()..].starts_with('-')))
         .into(),
     );
+}
+
+pub fn sub_str(
+    source: (&Arc<str>, Option<&LanguageTag<Arc<str>>>),
+    starting_loc: f64,
+    length: Option<f64>,
+) -> Option<EvalResult> {
+    if starting_loc.is_nan() {
+        return None;
+    }
+    let (lex, tag) = source;
+    let (s, e) = match length {
+        Some(l) if l.is_nan() => return None,
+        None | Some(f64::INFINITY) => (
+            ((starting_loc.round() - 1.0) as usize).min(lex.len()),
+            lex.len(),
+        ),
+        Some(l) => {
+            let s_signed = starting_loc.round() as isize - 1;
+            let s = (s_signed.max(0) as usize).min(lex.len());
+            let e = ((s_signed + l.round() as isize).max(0) as usize)
+                .max(s)
+                .min(lex.len());
+            (s, e)
+        }
+    };
+    Some(EvalResult::from((Arc::from(&lex[s..e]), tag.cloned())))
 }
 
 pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResult> {
