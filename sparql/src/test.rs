@@ -15,19 +15,47 @@ use test_case::test_case;
     "predicates"
 )]
 #[test_case(
+    "SELECT ?x { [] ?p ?x }",
+    vec!["\"Alice\"^^<http://www.w3.org/2001/XMLSchema#string>", "\"Bob's birthday party\"^^<http://www.w3.org/2001/XMLSchema#string>", "<http://schema.org/Event>", "<http://schema.org/Person>", "_:b"];
+    "objects"
+)]
+#[test_case(
     "SELECT ?x { ?x ?y \"not in the repo\" }",
     vec![];
     "no result"
 )]
 #[test_case(
-    "PREFIX s: <http://schema.org/>  SELECT ?x { { ?x a s:Event } UNION { ?x a s:Person } }",
+    "SELECT ?x { { ?x a s:Event } UNION { ?x a s:Person } }",
     vec!["<https://example.org/test#a>", "_:b"];
-    "union"
+    "union2"
+)]
+#[test_case(
+    "SELECT ?x { { ?x a s:Organization } UNION { ?x a s:Person } }",
+    vec!["<https://example.org/test#a>"];
+    "union1"
+)]
+#[test_case(
+    "SELECT ?x { { ?x a s:Organization } UNION { ?x a s:Book } }",
+    vec![];
+    "union0"
+)]
+#[allow(clippy::needless_pass_by_value)]
+#[test_case(
+    "SELECT ?x { GRAPH ?x { ?s ?p ?o } }",
+    vec!["<https://example.org/test#g>", "<https://example.org/test#g>", "_:b"];
+    "graphs"
+)]
+#[allow(clippy::needless_pass_by_value)]
+#[test_case(
+    "SELECT ?x { GRAPH ?g { <#a> s:name ?x } }",
+    vec!["\"Albert\"^^<http://www.w3.org/2001/XMLSchema#string>"];
+    "name_in_g"
 )]
 fn test_select_1_and_ask(query: &str, exp: Vec<&str>) -> TestResult {
     let dataset = dataset_101()?;
     let dataset = SparqlWrapper(&dataset);
-    let parsed_query = SparqlQuery::parse(query)?;
+    let query = format!("BASE <https://example.org/test> PREFIX s: <http://schema.org/> {query}");
+    let parsed_query = SparqlQuery::parse(&query)?;
     let bindings = dataset.query(&parsed_query)?.into_bindings();
     assert_eq!(bindings.variables(), &["x"]);
     let mut got = bindings_to_vec(bindings);
@@ -666,6 +694,15 @@ fn dataset_101() -> TestResult<LightDataset> {
                     a s:Event ;
                     s:name "Bob's birthday party" ;
                   ].
+
+                GRAPH <#g> {
+                  <#b> a s:Person ;
+                    s:name "Alice".
+                }
+
+                GRAPH _:g {
+                  <#a> s:name "Albert".
+                }
 
             "#,
     )
