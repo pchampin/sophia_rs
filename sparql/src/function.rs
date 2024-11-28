@@ -110,7 +110,12 @@ pub fn call_function(function: &Function, mut arguments: Vec<EvalResult>) -> Opt
             ),
             _ => unreachable!(),
         },
-        StrLen => todo("StrLen"),
+        StrLen => {
+            let [string] = &arguments[..] else {
+                unreachable!();
+            };
+            Some(str_len(string.as_string_lit()?.0))
+        }
         Replace => todo("Replace"),
         UCase => todo("UCase"),
         LCase => todo("LCase"),
@@ -313,6 +318,15 @@ pub fn sub_str(
         }
     };
     Some(EvalResult::from((Arc::from(&lex[s..e]), tag.cloned())))
+}
+
+pub fn str_len(string: &Arc<str>) -> EvalResult {
+    let l = string.len();
+    if l <= isize::MAX as usize {
+        SparqlNumber::from(l as isize).into()
+    } else {
+        todo!()
+    }
 }
 
 pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResult> {

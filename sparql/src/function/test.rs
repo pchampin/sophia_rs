@@ -188,6 +188,17 @@ fn sub_str(source: &str, start: f64, length: Option<f64>, exp: Option<&str>) -> 
     Ok(())
 }
 
+#[test_case("foobar", 6)]
+#[test_case("foobar@en", 6)]
+fn str_len(string: &str, exp: isize) -> TestResult {
+    let pair = txt2pair(string);
+    let string = &pair.0;
+    let source = (&pair.0, pair.1.as_ref());
+    let exp = EvalResult::from(SparqlNumber::from(exp));
+    assert!(eval_eq(Some(super::str_len(string)), Some(exp)));
+    Ok(())
+}
+
 #[test_case("<tag:s>", "<tag:p>", "<tag:o>", true)]
 #[test_case("<tag:s>", "<tag:p>", "bnode()", true)]
 #[test_case("<tag:s>", "<tag:p>", " \"o\" ", true)]

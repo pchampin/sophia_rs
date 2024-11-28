@@ -488,6 +488,13 @@ fn test_expr_variable() -> TestResult {
 #[test_case("subStr(\"foobar\", 2, \"42\")", ""; "subStr/3 for string as end")]
 #[test_case("subStr(\"foobar\", 2, \"42\"@en)", ""; "subStr/3 for language string as end")]
 #[test_case("subStr(\"foobar\", 2, << <tag:s> <tag:p> <tag:o> >>)", ""; "subStr/3 for triple as end")]
+// test strLen
+#[test_case("strLen(<tag:x>)", ""; "strLen for IRI")]
+#[test_case("strLen(bnode())", ""; "strLen for bnode")]
+#[test_case("strLen(\"foobar\")", "6"; "strLen for string")]
+#[test_case("strLen(\"foobar\"@en)", "6"; "strLen for language string")]
+#[test_case("strLen(42)", ""; "strLen for number")]
+#[test_case("strLen(<< <tag:s> <tag:p> <tag:o> >>)", ""; "strLen for triple")]
 // TODO test other function calls
 // test isIri
 #[test_case("isIri(<tag:x>)", "true"; "isIri for IRI")]
