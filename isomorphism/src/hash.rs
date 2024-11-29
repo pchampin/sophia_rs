@@ -4,7 +4,7 @@ use sophia_api::triple::Triple;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 
-/// I define parametrized hashing function,
+/// I define parameterized hashing function,
 /// where blank nodes are hashed according to a given map.
 
 /// Hash this term, using a blank-node map for hashing blank nodes
