@@ -50,7 +50,10 @@ impl<T> Term for VarName<T>
 where
     T: Borrow<str>,
 {
-    type BorrowTerm<'x> = &'x Self where T: 'x;
+    type BorrowTerm<'x>
+        = &'x Self
+    where
+        T: 'x;
 
     fn kind(&self) -> TermKind {
         TermKind::Variable

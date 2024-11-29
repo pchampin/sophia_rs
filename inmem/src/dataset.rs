@@ -31,7 +31,10 @@ impl<TI: GraphNameIndex + Default> GenericLightDataset<TI> {
 }
 
 impl<TI: GraphNameIndex> Dataset for GenericLightDataset<TI> {
-    type Quad<'x> = Gspo<<TI::Term as Term>::BorrowTerm<'x>> where Self: 'x;
+    type Quad<'x>
+        = Gspo<<TI::Term as Term>::BorrowTerm<'x>>
+    where
+        Self: 'x;
     type Error = TI::Error;
 
     fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {
@@ -221,7 +224,10 @@ impl<TI: GraphNameIndex + Default> GenericFastDataset<TI> {
 }
 
 impl<TI: GraphNameIndex> Dataset for GenericFastDataset<TI> {
-    type Quad<'x> = Gspo<<TI::Term as Term>::BorrowTerm<'x>> where Self: 'x;
+    type Quad<'x>
+        = Gspo<<TI::Term as Term>::BorrowTerm<'x>>
+    where
+        Self: 'x;
     type Error = TI::Error;
 
     fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {

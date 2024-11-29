@@ -27,7 +27,10 @@ impl<T: Dataset> UnionGraph<T> {
 }
 
 impl<T: Dataset> Graph for UnionGraph<T> {
-    type Triple<'x> = [DTerm<'x, T>; 3] where Self: 'x;
+    type Triple<'x>
+        = [DTerm<'x, T>; 3]
+    where
+        Self: 'x;
     type Error = T::Error;
 
     fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
@@ -115,7 +118,10 @@ impl<D: Dataset, M: GraphNameMatcher + Copy> PartialUnionGraph<D, M> {
 }
 
 impl<D: Dataset, M: GraphNameMatcher + Copy> Graph for PartialUnionGraph<D, M> {
-    type Triple<'x> = [DTerm<'x, D>; 3] where Self: 'x;
+    type Triple<'x>
+        = [DTerm<'x, D>; 3]
+    where
+        Self: 'x;
     type Error = D::Error;
 
     fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
@@ -180,7 +186,10 @@ impl<D: Dataset, G: Term> DatasetGraph<D, G> {
 }
 
 impl<D: Dataset, G: Term> Graph for DatasetGraph<D, G> {
-    type Triple<'x> = [DTerm<'x, D>; 3] where Self: 'x;
+    type Triple<'x>
+        = [DTerm<'x, D>; 3]
+    where
+        Self: 'x;
     type Error = D::Error;
 
     fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {

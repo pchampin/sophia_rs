@@ -30,7 +30,10 @@ impl<T> Dataset for GraphAsDataset<T>
 where
     T: Graph,
 {
-    type Quad<'x> = Spog<GTerm<'x, T>> where Self: 'x;
+    type Quad<'x>
+        = Spog<GTerm<'x, T>>
+    where
+        Self: 'x;
     type Error = T::Error;
 
     fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {

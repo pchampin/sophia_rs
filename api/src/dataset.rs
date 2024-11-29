@@ -645,7 +645,10 @@ mod check_implementability {
     }
 
     impl Dataset for MyDataset {
-        type Quad<'x> = [SimpleTerm<'x>; 4] where Self: 'x;
+        type Quad<'x>
+            = [SimpleTerm<'x>; 4]
+        where
+            Self: 'x;
         type Error = std::convert::Infallible;
 
         fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {
@@ -691,7 +694,10 @@ mod check_implementability_lazy_term {
     }
 
     impl<'a> Term for MyTerm<'a> {
-        type BorrowTerm<'x> = MyTerm<'x> where Self: 'x;
+        type BorrowTerm<'x>
+            = MyTerm<'x>
+        where
+            Self: 'x;
 
         fn kind(&self) -> crate::term::TermKind {
             if let Atom(t) = &self.dataset.terms[self.index] {
@@ -770,7 +776,10 @@ mod check_implementability_lazy_term {
     }
 
     impl Dataset for MyDataset {
-        type Quad<'x> = [MyTerm<'x>; 4] where Self: 'x;
+        type Quad<'x>
+            = [MyTerm<'x>; 4]
+        where
+            Self: 'x;
         type Error = std::convert::Infallible;
 
         fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {

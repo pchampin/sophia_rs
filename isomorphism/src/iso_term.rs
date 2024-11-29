@@ -13,7 +13,10 @@ use std::cmp::{Ordering, PartialOrd};
 pub struct IsoTerm<T>(pub(crate) T);
 
 impl<T: Term> Term for IsoTerm<T> {
-    type BorrowTerm<'x> = IsoTerm<T::BorrowTerm<'x>> where T: 'x;
+    type BorrowTerm<'x>
+        = IsoTerm<T::BorrowTerm<'x>>
+    where
+        T: 'x;
 
     fn kind(&self) -> TermKind {
         self.0.kind()

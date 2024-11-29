@@ -20,7 +20,10 @@ use sophia_api::MownStr;
 use sophia_iri::{Iri, IriRef};
 
 impl<'a> Term for Trusted<BlankNode<'a>> {
-    type BorrowTerm<'x> = Self where Self: 'x;
+    type BorrowTerm<'x>
+        = Self
+    where
+        Self: 'x;
 
     fn kind(&self) -> TermKind {
         TermKind::BlankNode
@@ -41,7 +44,10 @@ fn bnode_id(b: BlankNode) -> BnodeId<MownStr> {
 }
 
 impl<'a> Term for Trusted<NamedNode<'a>> {
-    type BorrowTerm<'x> = Self where Self: 'x;
+    type BorrowTerm<'x>
+        = Self
+    where
+        Self: 'x;
 
     fn kind(&self) -> TermKind {
         TermKind::Iri
@@ -62,7 +68,10 @@ fn iri(n: NamedNode) -> IriRef<MownStr> {
 }
 
 impl<'a> Term for Trusted<Variable<'a>> {
-    type BorrowTerm<'x> = Self where Self: 'x;
+    type BorrowTerm<'x>
+        = Self
+    where
+        Self: 'x;
 
     fn kind(&self) -> TermKind {
         TermKind::Variable
@@ -83,7 +92,10 @@ fn variable(v: Variable) -> VarName<MownStr> {
 }
 
 impl<'a> Term for Trusted<Literal<'a>> {
-    type BorrowTerm<'x> = Self where Self: 'x;
+    type BorrowTerm<'x>
+        = Self
+    where
+        Self: 'x;
 
     fn kind(&self) -> TermKind {
         TermKind::Literal
@@ -204,7 +216,10 @@ impl<'a> Term for Trusted<Subject<'a>> {
 */
 
 impl<'a> Term for Trusted<GraphName<'a>> {
-    type BorrowTerm<'x> = Self where Self: 'x;
+    type BorrowTerm<'x>
+        = Self
+    where
+        Self: 'x;
 
     fn kind(&self) -> TermKind {
         use GraphName::{BlankNode, NamedNode};
@@ -236,7 +251,10 @@ impl<'a> Term for Trusted<GraphName<'a>> {
 }
 
 impl<'a> Term for Trusted<RioTerm<'a>> {
-    type BorrowTerm<'x> = Self where Self: 'x;
+    type BorrowTerm<'x>
+        = Self
+    where
+        Self: 'x;
 
     fn kind(&self) -> TermKind {
         use RioTerm::{BlankNode, Literal, NamedNode, Triple};
@@ -312,7 +330,10 @@ impl<'a> Term for Trusted<RioTerm<'a>> {
 }
 
 impl<'a> Term for Trusted<GeneralizedTerm<'a>> {
-    type BorrowTerm<'x> = Self where Self: 'x;
+    type BorrowTerm<'x>
+        = Self
+    where
+        Self: 'x;
 
     fn kind(&self) -> TermKind {
         use GeneralizedTerm::{BlankNode, Literal, NamedNode, Triple, Variable};

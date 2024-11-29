@@ -61,7 +61,10 @@ impl<T> Term for BnodeId<T>
 where
     T: Borrow<str>,
 {
-    type BorrowTerm<'x> = &'x Self where T: 'x;
+    type BorrowTerm<'x>
+        = &'x Self
+    where
+        T: 'x;
 
     fn kind(&self) -> TermKind {
         TermKind::BlankNode

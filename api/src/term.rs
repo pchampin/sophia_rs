@@ -505,7 +505,10 @@ impl<'a, T> Term for &'a T
 where
     T: Term<BorrowTerm<'a> = &'a T> + ?Sized,
 {
-    type BorrowTerm<'x> = Self where 'a: 'x;
+    type BorrowTerm<'x>
+        = Self
+    where
+        'a: 'x;
 
     fn kind(&self) -> TermKind {
         (*self).kind()

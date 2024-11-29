@@ -13,7 +13,10 @@ use std::hash::{BuildHasher, Hash};
 // reference to Dataset
 
 impl<'a, T: Dataset + ?Sized> Dataset for &'a T {
-    type Quad<'x> = T::Quad<'x> where Self: 'x;
+    type Quad<'x>
+        = T::Quad<'x>
+    where
+        Self: 'x;
 
     type Error = T::Error;
 
@@ -89,7 +92,10 @@ impl<'a, T: Dataset + ?Sized> Dataset for &'a T {
 
 // NB: this one is required so that &'a mut T can also implement MutableDataset
 impl<'a, T: Dataset + ?Sized> Dataset for &'a mut T {
-    type Quad<'x> = T::Quad<'x> where Self: 'x;
+    type Quad<'x>
+        = T::Quad<'x>
+    where
+        Self: 'x;
 
     type Error = T::Error;
 
@@ -255,7 +261,10 @@ impl<T: MutableDataset + ?Sized> MutableDataset for &mut T {
 
 impl<Q: Quad> Dataset for [Q] {
     type Error = Infallible;
-    type Quad<'x> = Spog<QBorrowTerm<'x, Q>> where Self: 'x;
+    type Quad<'x>
+        = Spog<QBorrowTerm<'x, Q>>
+    where
+        Self: 'x;
 
     fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {
         self.iter().map(Quad::spog).map(Ok)
@@ -266,7 +275,10 @@ impl<Q: Quad> Dataset for [Q] {
 
 impl<Q: Quad> Dataset for Vec<Q> {
     type Error = Infallible;
-    type Quad<'x> = Spog<QBorrowTerm<'x, Q>> where Self: 'x;
+    type Quad<'x>
+        = Spog<QBorrowTerm<'x, Q>>
+    where
+        Self: 'x;
 
     fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {
         self[..].quads()
@@ -427,7 +439,10 @@ where
 
 impl<Q: Quad, S> Dataset for HashSet<Q, S> {
     type Error = Infallible;
-    type Quad<'x> = Spog<QBorrowTerm<'x, Q>> where Self: 'x;
+    type Quad<'x>
+        = Spog<QBorrowTerm<'x, Q>>
+    where
+        Self: 'x;
 
     fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {
         self.iter().map(Quad::spog).map(Ok)
@@ -579,7 +594,10 @@ impl<T: Quad, S> SetDataset for HashSet<T, S> {}
 /// nor other methods.
 impl<Q: Quad> Dataset for BTreeSet<Q> {
     type Error = Infallible;
-    type Quad<'x> = Spog<QBorrowTerm<'x, Q>> where Self: 'x;
+    type Quad<'x>
+        = Spog<QBorrowTerm<'x, Q>>
+    where
+        Self: 'x;
 
     fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {
         self.iter().map(Quad::spog).map(Ok)

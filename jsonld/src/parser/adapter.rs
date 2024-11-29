@@ -13,7 +13,10 @@ use crate::vocabulary::{ArcBnode, ArcIri, ArcTag};
 pub struct RdfTerm(RdfO);
 
 impl SophiaTerm for RdfTerm {
-    type BorrowTerm<'x> = &'x Self where Self: 'x;
+    type BorrowTerm<'x>
+        = &'x Self
+    where
+        Self: 'x;
 
     fn kind(&self) -> TermKind {
         match self.0 {

@@ -47,7 +47,10 @@ impl<'a> NsTerm<'a> {
 }
 
 impl<'a> Term for NsTerm<'a> {
-    type BorrowTerm<'x> = &'x Self where 'a: 'x;
+    type BorrowTerm<'x>
+        = &'x Self
+    where
+        'a: 'x;
 
     fn kind(&self) -> TermKind {
         TermKind::Iri

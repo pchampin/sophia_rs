@@ -11,7 +11,10 @@ pub enum C14nTerm<T: Term> {
 use C14nTerm::{Blank, Other};
 
 impl<T: Term> Term for C14nTerm<T> {
-    type BorrowTerm<'x> = &'x Self where Self: 'x;
+    type BorrowTerm<'x>
+        = &'x Self
+    where
+        Self: 'x;
 
     fn kind(&self) -> sophia_api::term::TermKind {
         match self {

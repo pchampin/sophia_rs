@@ -30,7 +30,10 @@ macro_rules! gen_term {
             }
 
             impl Term for $type_name {
-                type BorrowTerm<'x> = &'x Self where Self: 'x;
+                type BorrowTerm<'x>
+                    = &'x Self
+                where
+                    Self: 'x;
 
                 fn kind(&self) -> sophia_api::term::TermKind {
                     match self {

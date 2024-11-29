@@ -325,7 +325,10 @@ enum MyTerm {
 }
 
 impl Term for MyTerm {
-    type BorrowTerm<'x> = Self where Self: 'x;
+    type BorrowTerm<'x>
+        = Self
+    where
+        Self: 'x;
 
     fn kind(&self) -> TermKind {
         match self {

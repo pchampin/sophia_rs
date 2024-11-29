@@ -19,7 +19,10 @@ impl<'a> From<&'a NamedNodePattern> for AnyPattern<'a> {
 }
 
 impl<'a> Term for AnyPattern<'a> {
-    type BorrowTerm<'x> = Self where Self: 'x;
+    type BorrowTerm<'x>
+        = Self
+    where
+        Self: 'x;
 
     fn kind(&self) -> TermKind {
         match self {

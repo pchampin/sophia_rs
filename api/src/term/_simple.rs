@@ -25,7 +25,10 @@ pub enum SimpleTerm<'a> {
 use SimpleTerm::*;
 
 impl<'a> Term for SimpleTerm<'a> {
-    type BorrowTerm<'x> = &'x Self where 'a: 'x;
+    type BorrowTerm<'x>
+        = &'x Self
+    where
+        'a: 'x;
 
     fn kind(&self) -> TermKind {
         match self {

@@ -18,7 +18,10 @@ impl<T> Ox2So<T> {
 }
 
 impl Term for Ox2So<TermPattern> {
-    type BorrowTerm<'x> = AnyPattern<'x> where Self: 'x;
+    type BorrowTerm<'x>
+        = AnyPattern<'x>
+    where
+        Self: 'x;
 
     fn kind(&self) -> TermKind {
         match self.0 {
@@ -125,7 +128,10 @@ impl Term for Ox2So<TermPattern> {
 }
 
 impl Term for Ox2So<NamedNodePattern> {
-    type BorrowTerm<'x> = AnyPattern<'x> where Self: 'x;
+    type BorrowTerm<'x>
+        = AnyPattern<'x>
+    where
+        Self: 'x;
 
     fn kind(&self) -> TermKind {
         match self.0 {

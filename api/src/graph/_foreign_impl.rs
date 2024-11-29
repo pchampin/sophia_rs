@@ -13,7 +13,10 @@ use std::hash::{BuildHasher, Hash};
 // reference to Graph
 
 impl<'a, T: Graph + ?Sized> Graph for &'a T {
-    type Triple<'x> = T::Triple<'x> where Self: 'x;
+    type Triple<'x>
+        = T::Triple<'x>
+    where
+        Self: 'x;
 
     type Error = T::Error;
 
@@ -82,7 +85,10 @@ impl<'a, T: Graph + ?Sized> Graph for &'a T {
 
 // NB: this one is required so that &'a mut T can also implement MutableDataset
 impl<'a, T: Graph + ?Sized> Graph for &'a mut T {
-    type Triple<'x> = T::Triple<'x> where Self: 'x;
+    type Triple<'x>
+        = T::Triple<'x>
+    where
+        Self: 'x;
 
     type Error = T::Error;
 
@@ -214,7 +220,10 @@ impl<'a, T: MutableGraph + ?Sized> MutableGraph for &'a mut T {
 
 impl<T: Triple> Graph for [T] {
     type Error = Infallible;
-    type Triple<'x> = [TBorrowTerm<'x, T>; 3] where Self: 'x;
+    type Triple<'x>
+        = [TBorrowTerm<'x, T>; 3]
+    where
+        Self: 'x;
 
     fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
         self.iter().map(Triple::spo).map(Ok)
@@ -225,7 +234,10 @@ impl<T: Triple> Graph for [T] {
 
 impl<T: Triple> Graph for Vec<T> {
     type Error = Infallible;
-    type Triple<'x> = [TBorrowTerm<'x, T>; 3] where Self: 'x;
+    type Triple<'x>
+        = [TBorrowTerm<'x, T>; 3]
+    where
+        Self: 'x;
 
     fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
         self[..].triples()
@@ -289,7 +301,10 @@ where
 
 impl<T: Triple, S> Graph for HashSet<T, S> {
     type Error = Infallible;
-    type Triple<'x> = [TBorrowTerm<'x, T>; 3] where Self: 'x;
+    type Triple<'x>
+        = [TBorrowTerm<'x, T>; 3]
+    where
+        Self: 'x;
 
     fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
         self.iter().map(Triple::spo).map(Ok)
@@ -350,7 +365,10 @@ impl<T: Triple, S> SetGraph for HashSet<T, S> {}
 /// nor other methods.
 impl<T: Triple> Graph for BTreeSet<T> {
     type Error = Infallible;
-    type Triple<'x> = [TBorrowTerm<'x, T>; 3] where Self: 'x;
+    type Triple<'x>
+        = [TBorrowTerm<'x, T>; 3]
+    where
+        Self: 'x;
 
     fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
         self.iter().map(Triple::spo).map(Ok)

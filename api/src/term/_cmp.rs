@@ -6,7 +6,10 @@ use super::*;
 pub struct CmpTerm<T>(pub T);
 
 impl<T: Term> Term for CmpTerm<T> {
-    type BorrowTerm<'x> = CmpTerm<T::BorrowTerm<'x>> where T: 'x;
+    type BorrowTerm<'x>
+        = CmpTerm<T::BorrowTerm<'x>>
+    where
+        T: 'x;
 
     fn kind(&self) -> TermKind {
         self.0.kind()

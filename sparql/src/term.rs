@@ -20,7 +20,10 @@ pub struct ResultTerm {
 }
 
 impl Term for ResultTerm {
-    type BorrowTerm<'x> = &'x ArcTerm where Self: 'x;
+    type BorrowTerm<'x>
+        = &'x ArcTerm
+    where
+        Self: 'x;
 
     fn kind(&self) -> sophia_api::term::TermKind {
         self.inner.kind()

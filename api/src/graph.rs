@@ -573,7 +573,10 @@ mod check_implementability {
     }
 
     impl Graph for MyGraph {
-        type Triple<'x> = [SimpleTerm<'x>; 3] where Self: 'x;
+        type Triple<'x>
+            = [SimpleTerm<'x>; 3]
+        where
+            Self: 'x;
         type Error = std::convert::Infallible;
 
         fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
@@ -620,7 +623,10 @@ mod check_implementability_lazy_term {
     }
 
     impl<'a> Term for MyTerm<'a> {
-        type BorrowTerm<'x> = MyTerm<'x> where Self: 'x;
+        type BorrowTerm<'x>
+            = MyTerm<'x>
+        where
+            Self: 'x;
 
         fn kind(&self) -> crate::term::TermKind {
             if let Atom(t) = &self.graph.terms[self.index] {
@@ -699,7 +705,10 @@ mod check_implementability_lazy_term {
     }
 
     impl Graph for MyGraph {
-        type Triple<'x> = [MyTerm<'x>; 3] where Self: 'x;
+        type Triple<'x>
+            = [MyTerm<'x>; 3]
+        where
+            Self: 'x;
 
         type Error = std::convert::Infallible;
 

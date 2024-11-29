@@ -129,7 +129,10 @@ impl std::ops::Deref for ArcBnode {
 }
 
 impl Term for ArcBnode {
-    type BorrowTerm<'x> = BnodeId<&'x str> where Self: 'x;
+    type BorrowTerm<'x>
+        = BnodeId<&'x str>
+    where
+        Self: 'x;
 
     fn kind(&self) -> TermKind {
         TermKind::BlankNode

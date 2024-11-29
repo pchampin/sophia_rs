@@ -47,7 +47,10 @@ impl<T: Borrow<str>> GenericLiteral<T> {
 }
 
 impl<T: Borrow<str> + Debug> Term for GenericLiteral<T> {
-    type BorrowTerm<'x> = &'x Self where Self: 'x;
+    type BorrowTerm<'x>
+        = &'x Self
+    where
+        Self: 'x;
 
     fn kind(&self) -> TermKind {
         TermKind::Literal

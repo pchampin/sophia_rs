@@ -59,7 +59,8 @@ where
         + Sync,
     L::Error: Display + Send,
 {
-    type Loader<'l> = L
+    type Loader<'l>
+        = L
     where
         Self: 'l;
 
@@ -121,7 +122,8 @@ where
     L::Error: Display + Send,
     F: Fn() -> L,
 {
-    type Loader<'l> = L
+    type Loader<'l>
+        = L
     where
         Self: 'l;
 

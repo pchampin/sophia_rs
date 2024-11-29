@@ -171,7 +171,10 @@ impl Term for usize {
 /// # Ok(()) }
 /// ```
 impl Term for str {
-    type BorrowTerm<'x> = &'x Self where Self: 'x;
+    type BorrowTerm<'x>
+        = &'x Self
+    where
+        Self: 'x;
 
     fn kind(&self) -> TermKind {
         TermKind::Literal
