@@ -24,7 +24,7 @@ authors = ["Pierre-Antoine Champin <pierre-antoine@champin.net>"]
 edition = "2021"
 repository = "https://github.com/pchampin/sophia_rs"
 readme = "./README.md"
-license = "CECILL-B"
+license = "Apache 2.0 / CECILL-B"
 keywords = ["rdf", "linked-data", "semantic-web", "w3c"] # no more than 5
 
 

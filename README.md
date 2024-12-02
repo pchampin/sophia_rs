@@ -41,7 +41,15 @@ a high-level [user documentation](https://pchampin.github.io/sophia_rs/) is avai
 
 ## Licence
 
-[CECILL-B] (compatible with BSD)
+This project is licensed under either or
+
+* Apache License, Version 2.0
+  ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+* CECILL-B License
+  ([LICENSE-CECILL-B](LICENSE-CECILL-B) or https://cecill.info/licences/Licence_CeCILL-B_V1-en.html,
+   compatible with BSD)
+
+at your option.
 
 ## Citation
 
@@ -91,7 +99,6 @@ An outdated comparison of Sophia with other RDF libraries is still available
 [`sophia_turtle`]: https://crates.io/crates/sophia_turtle
 [`sophia_xml`]: https://crates.io/crates/sophia_xml
 [`sophia`]: https://crates.io/crates/sophia
-[CECILL-B]: https://cecill.info/licences/Licence_CeCILL-B_V1-en.html
 [RDF test-suite]: https://github.com/w3c/rdf-tests/
 [JSON-LD test-suite]: https://github.com/w3c/json-ld-api/
 [RDF canonicalization]: https://www.w3.org/TR/rdf-canon/
