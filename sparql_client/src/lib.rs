@@ -35,7 +35,7 @@
 //! [Sophia]: https://docs.rs/sophia/
 #![deny(missing_docs)]
 
-use reqwest::{blocking::Client, Error as ReqwestError};
+use reqwest::{Client, Error as ReqwestError};
 use sophia_api::prelude::*;
 use sophia_api::sparql::{
     IntoQuery, Query as SparqlQuery, SparqlBindings, SparqlDataset, SparqlResult,
@@ -114,6 +114,58 @@ impl SparqlClient {
         );
         Ok(SparqlResult::Triples(it))
     }
+
+    async fn async_query<Q>(&self, query: Q) -> Result<SparqlResult<Self>, Error>
+    where
+        Q: IntoQuery<Query>,
+    {
+        let query = query.into_query()?;
+        let resp = self
+            .client
+            .post(&self.endpoint[..])
+            .header("Accept", self.accept())
+            .header("Content-type", "application/sparql-query")
+            .header("User-Agent", "Sophia SPARQL Client")
+            .body(query.borrow().0.to_string())
+            .send()
+            .await?;
+        let ctype = resp
+            .headers()
+            .get("content-type")
+            .map_or("application/octet-stream", |h| h.to_str().unwrap())
+            .split(';')
+            .next()
+            .unwrap();
+        match ctype {
+            "application/sparql-results+json" => match resp.json::<ResultsDocument>().await? {
+                ResultsDocument::Boolean { boolean, .. } => Ok(SparqlResult::Boolean(boolean)),
+                ResultsDocument::Bindings { doc } => Ok(SparqlResult::Bindings(doc)),
+            },
+            "application/sparql-results+xml" => {
+                let body: Cursor<Vec<u8>> = Cursor::new(resp.bytes().await?.into());
+                match ResultsDocument::from_xml(body)? {
+                    ResultsDocument::Boolean { boolean, .. } => Ok(SparqlResult::Boolean(boolean)),
+                    ResultsDocument::Bindings { doc } => Ok(SparqlResult::Bindings(doc)),
+                }
+            }
+            "text/turtle" => {
+                let body: Cursor<Vec<u8>> = Cursor::new(resp.bytes().await?.into());
+                Self::wrap_triple_source(turtle::parse_bufread(body))
+            }
+            "application/n-triples" => {
+                let body: Cursor<Vec<u8>> = Cursor::new(resp.bytes().await?.into());
+                Self::wrap_triple_source(nt::parse_bufread(body))
+            }
+            "application/rdf+xml" => {
+                let body: Cursor<Vec<u8>> = Cursor::new(resp.bytes().await?.into());
+                Self::wrap_triple_source(rdfxml::parse_bufread(body))
+            }
+            _ => Err(Error::Unsupported(format!(
+                "unsupported content-type: {0}",
+                &ctype,
+            ))),
+        }
+    }
 }
 
 impl SparqlDataset for SparqlClient {
@@ -127,51 +179,11 @@ impl SparqlDataset for SparqlClient {
     where
         Q: IntoQuery<Query>,
     {
-        let query = query.into_query()?;
-        let resp = self
-            .client
-            .post(&self.endpoint[..])
-            .header("Accept", self.accept())
-            .header("Content-type", "application/sparql-query")
-            .header("User-Agent", "Sophia SPARQL Client")
-            .body(query.borrow().0.to_string())
-            .send()?;
-        let ctype = resp
-            .headers()
-            .get("content-type")
-            .map_or("application/octet-stream", |h| h.to_str().unwrap())
-            .split(';')
-            .next()
-            .unwrap();
-        match ctype {
-            "application/sparql-results+json" => match resp.json::<ResultsDocument>()? {
-                ResultsDocument::Boolean { boolean, .. } => Ok(SparqlResult::Boolean(boolean)),
-                ResultsDocument::Bindings { doc } => Ok(SparqlResult::Bindings(doc)),
-            },
-            "application/sparql-results+xml" => {
-                let body: Cursor<Vec<u8>> = Cursor::new(resp.bytes()?.into());
-                match ResultsDocument::from_xml(body)? {
-                    ResultsDocument::Boolean { boolean, .. } => Ok(SparqlResult::Boolean(boolean)),
-                    ResultsDocument::Bindings { doc } => Ok(SparqlResult::Bindings(doc)),
-                }
-            }
-            "text/turtle" => {
-                let body: Cursor<Vec<u8>> = Cursor::new(resp.bytes()?.into());
-                Self::wrap_triple_source(turtle::parse_bufread(body))
-            }
-            "application/n-triples" => {
-                let body: Cursor<Vec<u8>> = Cursor::new(resp.bytes()?.into());
-                Self::wrap_triple_source(nt::parse_bufread(body))
-            }
-            "application/rdf+xml" => {
-                let body: Cursor<Vec<u8>> = Cursor::new(resp.bytes()?.into());
-                Self::wrap_triple_source(rdfxml::parse_bufread(body))
-            }
-            _ => Err(Error::Unsupported(format!(
-                "unsupported content-type: {0}",
-                &ctype,
-            ))),
-        }
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .expect("Could not build tokio runtime");
+        rt.block_on(self.async_query(query))
     }
 }
 
