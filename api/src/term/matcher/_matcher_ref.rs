@@ -4,14 +4,14 @@ use super::*;
 #[derive(Debug)]
 pub struct MatcherRef<'a, T: ?Sized>(pub(super) &'a T);
 
-impl<'a, T> Clone for MatcherRef<'a, T> {
+impl<T> Clone for MatcherRef<'_, T> {
     fn clone(&self) -> Self {
         *self
     }
 }
-impl<'a, T> Copy for MatcherRef<'a, T> {}
+impl<T> Copy for MatcherRef<'_, T> {}
 
-impl<'a, T: TermMatcher + ?Sized> TermMatcher for MatcherRef<'a, T> {
+impl<T: TermMatcher + ?Sized> TermMatcher for MatcherRef<'_, T> {
     type Term = T::Term;
 
     fn matches<T2: Term + ?Sized>(&self, term: &T2) -> bool {

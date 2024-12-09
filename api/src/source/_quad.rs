@@ -240,7 +240,7 @@ mod check_quad_source {
         buffers: [String; 3],
     }
 
-    impl<'a> Source for DummyParser<'a> {
+    impl Source for DummyParser<'_> {
         type Item<'x> = Spog<SimpleTerm<'x>>;
         type Error = Infallible;
 

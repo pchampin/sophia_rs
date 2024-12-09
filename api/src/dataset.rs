@@ -167,7 +167,7 @@ pub trait Dataset {
         pm: P,
         om: O,
         gm: G,
-    ) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_
+    ) -> impl Iterator<Item = DResult<Self, Self::Quad<'s>>> + 's
     where
         S: TermMatcher + 's,
         P: TermMatcher + 's,
@@ -271,7 +271,7 @@ pub trait Dataset {
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
-    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_>
+    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = DResult<Self, DTerm<'s, Self>>> + 's>
     where
         DTerm<'s, Self>: Clone,
     {
@@ -693,7 +693,7 @@ mod check_implementability_lazy_term {
         index: usize,
     }
 
-    impl<'a> Term for MyTerm<'a> {
+    impl Term for MyTerm<'_> {
         type BorrowTerm<'x>
             = MyTerm<'x>
         where

@@ -260,7 +260,7 @@ struct C14nState<'a, H: HashFunction, T: Term> {
     permutation_limit: usize,
 }
 
-impl<'a, H: HashFunction, T: Term> C14nState<'a, H, T> {
+impl<H: HashFunction, T: Term> C14nState<'_, H, T> {
     fn new(depth_factor: f32, permutation_limit: usize) -> Self {
         C14nState {
             b2q: BTreeMap::new(),

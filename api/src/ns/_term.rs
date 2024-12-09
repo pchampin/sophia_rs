@@ -72,13 +72,13 @@ impl<'a> Term for NsTerm<'a> {
     }
 }
 
-impl<'a, T: Term> PartialEq<T> for NsTerm<'a> {
+impl<T: Term> PartialEq<T> for NsTerm<'_> {
     fn eq(&self, other: &T) -> bool {
         Term::eq(self, other.borrow_term())
     }
 }
 
-impl<'a> Eq for NsTerm<'a> {}
+impl Eq for NsTerm<'_> {}
 
 impl<'a> std::ops::Mul<NsTerm<'a>> for &'a str {
     type Output = crate::term::SimpleTerm<'a>;

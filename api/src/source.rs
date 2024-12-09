@@ -195,9 +195,9 @@ pub trait Source {
     }
 }
 
-impl<'a, I, T, E> Source for I
+impl<I, T, E> Source for I
 where
-    I: Iterator<Item = Result<T, E>> + 'a,
+    I: Iterator<Item = Result<T, E>>,
     E: Error + Send + Sync + 'static,
 {
     type Item<'x> = T;

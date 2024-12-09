@@ -238,7 +238,7 @@ mod check_triple_source {
         buffers: [String; 3],
     }
 
-    impl<'a> Source for DummyParser<'a> {
+    impl Source for DummyParser<'_> {
         type Item<'x> = [SimpleTerm<'x>; 3];
         type Error = Infallible;
 

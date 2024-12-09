@@ -21,7 +21,7 @@ where
     }
 }
 
-impl<'a, T: GraphNameMatcher + ?Sized> GraphNameMatcher for MatcherRef<'a, T> {
+impl<T: GraphNameMatcher + ?Sized> GraphNameMatcher for MatcherRef<'_, T> {
     type Term = T::Term;
 
     fn matches<T2: Term + ?Sized>(&self, graph_name: GraphName<&T2>) -> bool {

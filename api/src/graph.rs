@@ -247,7 +247,7 @@ pub trait Graph {
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
-    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_>
+    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = GResult<Self, GTerm<'s, Self>>> + 's>
     where
         GTerm<'s, Self>: Clone,
     {
@@ -622,7 +622,7 @@ mod check_implementability_lazy_term {
         index: usize,
     }
 
-    impl<'a> Term for MyTerm<'a> {
+    impl Term for MyTerm<'_> {
         type BorrowTerm<'x>
             = MyTerm<'x>
         where

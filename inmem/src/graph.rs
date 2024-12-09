@@ -48,7 +48,7 @@ impl<TI: TermIndex> Graph for GenericLightGraph<TI> {
         sm: S,
         pm: P,
         om: O,
-    ) -> Box<dyn Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_>
+    ) -> Box<dyn Iterator<Item = GResult<Self, Self::Triple<'s>>> + 's>
     where
         S: sophia_api::term::matcher::TermMatcher + 's,
         P: sophia_api::term::matcher::TermMatcher + 's,
@@ -185,7 +185,7 @@ impl<TI: TermIndex> Graph for GenericFastGraph<TI> {
         sm: S,
         pm: P,
         om: O,
-    ) -> Box<dyn Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_>
+    ) -> Box<dyn Iterator<Item = GResult<Self, Self::Triple<'s>>> + 's>
     where
         S: sophia_api::term::matcher::TermMatcher + 's,
         P: sophia_api::term::matcher::TermMatcher + 's,

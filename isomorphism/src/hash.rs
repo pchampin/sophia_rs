@@ -1,11 +1,11 @@
+//! I define parameterized hashing function,
+//! where blank nodes are hashed according to a given map.
+
 use sophia_api::quad::Quad;
 use sophia_api::term::{Term, TermKind};
 use sophia_api::triple::Triple;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-
-/// I define parameterized hashing function,
-/// where blank nodes are hashed according to a given map.
 
 /// Hash this term, using a blank-node map for hashing blank nodes
 pub fn hash_term_with<T, H>(t: T, map: &HashMap<&str, u64>, context: (&str, char), state: &mut H)

@@ -134,7 +134,7 @@ where
     }
 }
 
-impl<'a, Q> IntoQuery<Q> for &'a str
+impl<Q> IntoQuery<Q> for &str
 where
     Q: Query,
 {

@@ -19,7 +19,7 @@ use sophia_api::triple::{TBorrowTerm, Triple};
 use sophia_api::MownStr;
 use sophia_iri::{Iri, IriRef};
 
-impl<'a> Term for Trusted<BlankNode<'a>> {
+impl Term for Trusted<BlankNode<'_>> {
     type BorrowTerm<'x>
         = Self
     where
@@ -43,7 +43,7 @@ fn bnode_id(b: BlankNode) -> BnodeId<MownStr> {
     BnodeId::new_unchecked(b.id.into())
 }
 
-impl<'a> Term for Trusted<NamedNode<'a>> {
+impl Term for Trusted<NamedNode<'_>> {
     type BorrowTerm<'x>
         = Self
     where
@@ -67,7 +67,7 @@ fn iri(n: NamedNode) -> IriRef<MownStr> {
     IriRef::new_unchecked(n.iri.into())
 }
 
-impl<'a> Term for Trusted<Variable<'a>> {
+impl Term for Trusted<Variable<'_>> {
     type BorrowTerm<'x>
         = Self
     where
@@ -91,7 +91,7 @@ fn variable(v: Variable) -> VarName<MownStr> {
     VarName::new_unchecked(v.name.into())
 }
 
-impl<'a> Term for Trusted<Literal<'a>> {
+impl Term for Trusted<Literal<'_>> {
     type BorrowTerm<'x>
         = Self
     where
@@ -215,7 +215,7 @@ impl<'a> Term for Trusted<Subject<'a>> {
 }
 */
 
-impl<'a> Term for Trusted<GraphName<'a>> {
+impl Term for Trusted<GraphName<'_>> {
     type BorrowTerm<'x>
         = Self
     where
@@ -250,7 +250,7 @@ impl<'a> Term for Trusted<GraphName<'a>> {
     }
 }
 
-impl<'a> Term for Trusted<RioTerm<'a>> {
+impl Term for Trusted<RioTerm<'_>> {
     type BorrowTerm<'x>
         = Self
     where
@@ -329,7 +329,7 @@ impl<'a> Term for Trusted<RioTerm<'a>> {
     }
 }
 
-impl<'a> Term for Trusted<GeneralizedTerm<'a>> {
+impl Term for Trusted<GeneralizedTerm<'_>> {
     type BorrowTerm<'x>
         = Self
     where

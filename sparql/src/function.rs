@@ -285,12 +285,12 @@ pub fn lang_matches(tag: &Arc<str>, range: &Arc<str>) -> Option<EvalResult> {
         return Some(true.into());
     }
     let range = LanguageTag::new(range.clone()).ok()?;
-    return Some(
+    Some(
         (range.len() <= tag.len()
             && tag[..range.len()].eq_ignore_ascii_case(range.as_str())
             && (tag.len() == range.len() || tag[range.len()..].starts_with('-')))
         .into(),
-    );
+    )
 }
 
 pub fn sub_str(

@@ -71,7 +71,7 @@ impl<'a, T: Graph + ?Sized> Graph for &'a T {
         T::literals(*self)
     }
 
-    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_>
+    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = GResult<Self, GTerm<'s, Self>>> + 's>
     where
         GTerm<'s, Self>: Clone,
     {
@@ -143,7 +143,7 @@ impl<'a, T: Graph + ?Sized> Graph for &'a mut T {
         T::literals(*self)
     }
 
-    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_>
+    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = GResult<Self, GTerm<'s, Self>>> + 's>
     where
         GTerm<'s, Self>: Clone,
     {
@@ -155,7 +155,7 @@ impl<'a, T: Graph + ?Sized> Graph for &'a mut T {
     }
 }
 
-impl<'a, T: MutableGraph + ?Sized> MutableGraph for &'a mut T {
+impl<T: MutableGraph + ?Sized> MutableGraph for &mut T {
     type MutationError = T::MutationError;
 
     fn insert<TS, TP, TO>(&mut self, s: TS, p: TP, o: TO) -> MgResult<Self, bool>

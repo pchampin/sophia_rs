@@ -18,7 +18,7 @@ impl<'a> From<&'a NamedNodePattern> for AnyPattern<'a> {
     }
 }
 
-impl<'a> Term for AnyPattern<'a> {
+impl Term for AnyPattern<'_> {
     type BorrowTerm<'x>
         = Self
     where
