@@ -495,6 +495,21 @@ fn test_expr_variable() -> TestResult {
 #[test_case("strLen(\"foobar\"@en)", "6"; "strLen for language string")]
 #[test_case("strLen(42)", ""; "strLen for number")]
 #[test_case("strLen(<< <tag:s> <tag:p> <tag:o> >>)", ""; "strLen for triple")]
+// TODO test replace
+// test uCase
+#[test_case("uCase(<tag:x>)", ""; "uCase for IRI")]
+#[test_case("uCase(bnode())", ""; "uCase for bnode")]
+#[test_case("uCase(\"fooBAR\")", "\"FOOBAR\""; "uCase for string")]
+#[test_case("uCase(\"fooBAR\"@en)", "\"FOOBAR\"@en"; "uCase for language string")]
+#[test_case("uCase(42)", ""; "uCase for number")]
+#[test_case("uCase(<< <tag:s> <tag:p> <tag:o> >>)", ""; "uCase for triple")]
+// test lCase
+#[test_case("lCase(<tag:x>)", ""; "lCase for IRI")]
+#[test_case("lCase(bnode())", ""; "lCase for bnode")]
+#[test_case("lCase(\"fooBAR\")", "\"foobar\""; "lCase for string")]
+#[test_case("lCase(\"fooBAR\"@en)", "\"foobar\"@en"; "lCase for language string")]
+#[test_case("lCase(42)", ""; "lCase for number")]
+#[test_case("lCase(<< <tag:s> <tag:p> <tag:o> >>)", ""; "lCase for triple")]
 // TODO test other function calls
 // test isIri
 #[test_case("isIri(<tag:x>)", "true"; "isIri for IRI")]

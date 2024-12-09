@@ -117,8 +117,18 @@ pub fn call_function(function: &Function, mut arguments: Vec<EvalResult>) -> Opt
             Some(str_len(string.as_string_lit()?.0))
         }
         Replace => todo("Replace"),
-        UCase => todo("UCase"),
-        LCase => todo("LCase"),
+        UCase => {
+            let [string] = &arguments[..] else {
+                unreachable!();
+            };
+            Some(u_case(string.as_string_lit()?))
+        }
+        LCase => {
+            let [string] = &arguments[..] else {
+                unreachable!();
+            };
+            Some(l_case(string.as_string_lit()?))
+        }
         EncodeForUri => todo("EncodeForUri"),
         Contains => todo("Contains"),
         StrStarts => todo("StrStarts"),
@@ -327,6 +337,16 @@ pub fn str_len(string: &Arc<str>) -> EvalResult {
     } else {
         todo!()
     }
+}
+
+pub fn u_case(source: (&Arc<str>, Option<&LanguageTag<Arc<str>>>)) -> EvalResult {
+    let lex: String = source.0.chars().flat_map(char::to_uppercase).collect();
+    EvalResult::from((Arc::from(lex), source.1.cloned()))
+}
+
+pub fn l_case(source: (&Arc<str>, Option<&LanguageTag<Arc<str>>>)) -> EvalResult {
+    let lex: String = source.0.chars().flat_map(char::to_lowercase).collect();
+    EvalResult::from((Arc::from(lex), source.1.cloned()))
 }
 
 pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResult> {

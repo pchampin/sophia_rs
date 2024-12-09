@@ -193,9 +193,42 @@ fn sub_str(source: &str, start: f64, length: Option<f64>, exp: Option<&str>) -> 
 fn str_len(string: &str, exp: isize) -> TestResult {
     let pair = txt2pair(string);
     let string = &pair.0;
-    let source = (&pair.0, pair.1.as_ref());
     let exp = EvalResult::from(SparqlNumber::from(exp));
     assert!(eval_eq(Some(super::str_len(string)), Some(exp)));
+    Ok(())
+}
+
+#[test_case("foo", "FOO")]
+#[test_case("foo@en", "FOO@en")]
+#[test_case("FOO", "FOO"; "noop")]
+#[test_case("FOO@en", "FOO@en"; "noop en")]
+#[test_case("fooBAR 1!xY", "FOOBAR 1!XY")]
+#[test_case("fooBAR 1!xY@en", "FOOBAR 1!XY@en")]
+#[test_case("àéîôù", "ÀÉÎÔÙ"; "accents")]
+#[test_case("àéîôù@fr", "ÀÉÎÔÙ@fr"; "accents fr")]
+#[test_case("ﬀ ŉ", "FF ʼN"; "multichar")]
+#[test_case("ﬀ ŉ@en", "FF ʼN@en"; "multichar en")]
+fn u_case(string: &str, exp: &str) -> TestResult {
+    let pair = txt2pair(string);
+    let source = (&pair.0, pair.1.as_ref());
+    let exp = EvalResult::from(txt2pair(exp));
+    assert!(eval_eq(Some(super::u_case(source)), Some(exp)));
+    Ok(())
+}
+
+#[test_case("FOO", "foo")]
+#[test_case("FOO@en", "foo@en")]
+#[test_case("foo", "foo"; "noop")]
+#[test_case("foo@en", "foo@en"; "noop en")]
+#[test_case("fooBAR 1!xY", "foobar 1!xy")]
+#[test_case("fooBAR 1!xY@en", "foobar 1!xy@en")]
+#[test_case("ÀÉÎÔÙ", "àéîôù"; "accents")]
+#[test_case("ÀÉÎÔÙ@fr", "àéîôù@fr"; "accents fr")]
+fn l_case(string: &str, exp: &str) -> TestResult {
+    let pair = txt2pair(string);
+    let source = (&pair.0, pair.1.as_ref());
+    let exp = EvalResult::from(txt2pair(exp));
+    assert!(eval_eq(Some(super::l_case(source)), Some(exp)));
     Ok(())
 }
 
