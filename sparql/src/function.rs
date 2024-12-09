@@ -331,7 +331,7 @@ pub fn sub_str(
 }
 
 pub fn str_len(string: &Arc<str>) -> EvalResult {
-    let l = string.len();
+    let l = string.chars().count();
     if l <= isize::MAX as usize {
         SparqlNumber::from(l as isize).into()
     } else {

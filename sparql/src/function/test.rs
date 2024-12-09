@@ -190,6 +190,10 @@ fn sub_str(source: &str, start: f64, length: Option<f64>, exp: Option<&str>) -> 
 
 #[test_case("foobar", 6)]
 #[test_case("foobar@en", 6)]
+#[test_case("é", 1)]
+#[test_case("é@fr", 1)]
+#[test_case("⛄", 1; "snowman")]
+#[test_case("⛄@en", 1; "snowman en")]
 fn str_len(string: &str, exp: isize) -> TestResult {
     let pair = txt2pair(string);
     let string = &pair.0;
@@ -202,8 +206,8 @@ fn str_len(string: &str, exp: isize) -> TestResult {
 #[test_case("foo@en", "FOO@en")]
 #[test_case("FOO", "FOO"; "noop")]
 #[test_case("FOO@en", "FOO@en"; "noop en")]
-#[test_case("fooBAR 1!xY", "FOOBAR 1!XY")]
-#[test_case("fooBAR 1!xY@en", "FOOBAR 1!XY@en")]
+#[test_case("fooBAR 1!⛄xY", "FOOBAR 1!⛄XY")]
+#[test_case("fooBAR 1!⛄xY@en", "FOOBAR 1!⛄XY@en")]
 #[test_case("àéîôù", "ÀÉÎÔÙ"; "accents")]
 #[test_case("àéîôù@fr", "ÀÉÎÔÙ@fr"; "accents fr")]
 #[test_case("ﬀ ŉ", "FF ʼN"; "multichar")]
@@ -220,8 +224,8 @@ fn u_case(string: &str, exp: &str) -> TestResult {
 #[test_case("FOO@en", "foo@en")]
 #[test_case("foo", "foo"; "noop")]
 #[test_case("foo@en", "foo@en"; "noop en")]
-#[test_case("fooBAR 1!xY", "foobar 1!xy")]
-#[test_case("fooBAR 1!xY@en", "foobar 1!xy@en")]
+#[test_case("fooBAR 1!⛄xY", "foobar 1!⛄xy")]
+#[test_case("fooBAR 1!⛄xY@en", "foobar 1!⛄xy@en")]
 #[test_case("ÀÉÎÔÙ", "àéîôù"; "accents")]
 #[test_case("ÀÉÎÔÙ@fr", "àéîôù@fr"; "accents fr")]
 fn l_case(string: &str, exp: &str) -> TestResult {
