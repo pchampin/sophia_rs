@@ -12,7 +12,7 @@ use std::hash::{BuildHasher, Hash};
 
 // reference to Graph
 
-impl<'a, T: Graph + ?Sized> Graph for &'a T {
+impl<T: Graph + ?Sized> Graph for &T {
     type Triple<'x>
         = T::Triple<'x>
     where
@@ -84,7 +84,7 @@ impl<'a, T: Graph + ?Sized> Graph for &'a T {
 }
 
 // NB: this one is required so that &'a mut T can also implement MutableDataset
-impl<'a, T: Graph + ?Sized> Graph for &'a mut T {
+impl<T: Graph + ?Sized> Graph for &mut T {
     type Triple<'x>
         = T::Triple<'x>
     where

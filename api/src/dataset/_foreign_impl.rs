@@ -12,7 +12,7 @@ use std::hash::{BuildHasher, Hash};
 
 // reference to Dataset
 
-impl<'a, T: Dataset + ?Sized> Dataset for &'a T {
+impl<T: Dataset + ?Sized> Dataset for &T {
     type Quad<'x>
         = T::Quad<'x>
     where
@@ -91,7 +91,7 @@ impl<'a, T: Dataset + ?Sized> Dataset for &'a T {
 }
 
 // NB: this one is required so that &'a mut T can also implement MutableDataset
-impl<'a, T: Dataset + ?Sized> Dataset for &'a mut T {
+impl<T: Dataset + ?Sized> Dataset for &mut T {
     type Quad<'x>
         = T::Quad<'x>
     where

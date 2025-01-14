@@ -99,7 +99,7 @@ impl<LF> JsonLdParser<LF> {
     }
 
     /// Parse (as RDF) a JSON-LD string, asynchronously
-    pub async fn async_parse_str<'t>(&self, txt: &'t str) -> JsonLdQuadSource
+    pub async fn async_parse_str(&self, txt: &str) -> JsonLdQuadSource
     where
         LF: LoaderFactory,
     {
