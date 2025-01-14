@@ -129,7 +129,12 @@ pub fn call_function(function: &Function, mut arguments: Vec<EvalResult>) -> Opt
             };
             Some(l_case(string.as_string_lit()?))
         }
-        EncodeForUri => todo("EncodeForUri"),
+        EncodeForUri => {
+            let [string] = &arguments[..] else {
+                unreachable!();
+            };
+            Some(encode_for_uri(string.as_string_lit()?.0))
+        }
         Contains => todo("Contains"),
         StrStarts => todo("StrStarts"),
         StrEnds => todo("StrEnds"),
@@ -349,6 +354,21 @@ pub fn l_case(source: (&Arc<str>, Option<&LanguageTag<Arc<str>>>)) -> EvalResult
     EvalResult::from((Arc::from(lex), source.1.cloned()))
 }
 
+pub fn encode_for_uri(source: &Arc<str>) -> EvalResult {
+    use encode_for_uri_utils::*;
+    let ascii = source
+        .as_bytes()
+        .iter()
+        .copied()
+        .flat_map(EncodeIter::new)
+        .collect::<Vec<_>>();
+    let ret: String = unsafe {
+        // the following is safe, because 'ascii' only contains ASCII codes
+        String::from_utf8_unchecked(ascii)
+    };
+    EvalResult::from((Arc::from(ret), None))
+}
+
 pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResult> {
     let EvalResult::Term(s) = s else { return None };
     let EvalResult::Term(p) = p else { return None };
@@ -373,6 +393,48 @@ pub fn is_triple(er: &EvalResult) -> EvalResult {
 fn todo<T: std::fmt::Display>(function_name: T) -> Option<EvalResult> {
     eprintln!("Function not implemented: {function_name}");
     None
+}
+
+mod encode_for_uri_utils {
+    pub struct EncodeIter {
+        value: u8,
+        state: u8,
+    }
+
+    impl EncodeIter {
+        pub fn new(value: u8) -> Self {
+            match value {
+                b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                    Self { value, state: 0 }
+                }
+                _ => Self { value, state: 2 },
+            }
+        }
+    }
+
+    impl Iterator for EncodeIter {
+        type Item = u8;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            self.state += 1;
+            match self.state {
+                1 => Some(self.value),
+                3 => Some(b'%'),
+                4 => Some(hex_digit(self.value / 16)),
+                5 => Some(hex_digit(self.value % 16)),
+                _ => None,
+            }
+        }
+    }
+
+    fn hex_digit(val: u8) -> u8 {
+        debug_assert!(val < 16);
+        if val < 10 {
+            b'0' + val
+        } else {
+            b'A' + val - 10
+        }
+    }
 }
 
 #[cfg(test)]

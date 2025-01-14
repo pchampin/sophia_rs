@@ -510,6 +510,13 @@ fn test_expr_variable() -> TestResult {
 #[test_case("lCase(\"fooBAR\"@en)", "\"foobar\"@en"; "lCase for language string")]
 #[test_case("lCase(42)", ""; "lCase for number")]
 #[test_case("lCase(<< <tag:s> <tag:p> <tag:o> >>)", ""; "lCase for triple")]
+// test encode_for_uri
+#[test_case("encode_for_uri(<tag:x>)", ""; "encode_for_uri for IRI")]
+#[test_case("encode_for_uri(bnode())", ""; "encode_for_uri for bnode")]
+#[test_case("encode_for_uri(\"hello world\")", "\"hello%20world\""; "encode_for_uri for string")]
+#[test_case("encode_for_uri(\"hello world\"@en)", "\"hello%20world\""; "encode_for_uri for language string")]
+#[test_case("encode_for_uri(42)", ""; "encode_for_uri for number")]
+#[test_case("encode_for_uri(<< <tag:s> <tag:p> <tag:o> >>)", ""; "encode_for_uri for triple")]
 // TODO test other function calls
 // test isIri
 #[test_case("isIri(<tag:x>)", "true"; "isIri for IRI")]

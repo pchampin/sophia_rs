@@ -236,6 +236,23 @@ fn l_case(string: &str, exp: &str) -> TestResult {
     Ok(())
 }
 
+#[test_case("Los Angeles", "Los%20Angeles")]
+#[test_case("Los Angeles@en", "Los%20Angeles")]
+#[test_case(
+    "http://www.example.com/00/Weather/CA/Los%20Angeles#ocean",
+    "http%3A%2F%2Fwww.example.com%2F00%2FWeather%2FCA%2FLos%2520Angeles%23ocean"
+)]
+#[test_case("~bébé", "~b%C3%A9b%C3%A9")]
+#[test_case("100% organic", "100%25%20organic")]
+#[test_case("⛄", "%E2%9B%84")]
+fn encode_for_uri(string: &str, exp: &str) -> TestResult {
+    let pair = txt2pair(string);
+    let source = &pair.0;
+    let exp = EvalResult::from(txt2pair(exp));
+    assert!(eval_eq(Some(super::encode_for_uri(source)), Some(exp)));
+    Ok(())
+}
+
 #[test_case("<tag:s>", "<tag:p>", "<tag:o>", true)]
 #[test_case("<tag:s>", "<tag:p>", "bnode()", true)]
 #[test_case("<tag:s>", "<tag:p>", " \"o\" ", true)]
