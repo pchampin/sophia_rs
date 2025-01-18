@@ -15,7 +15,7 @@ use crate::{
     exec::{ExecConfig, ExecState},
     function::call_function,
     stash::{value_ref_to_arcterm, value_to_term, ArcStrStashExt},
-    value::{SparqlNumber, SparqlValue},
+    value::{SparqlNumber, SparqlValue, XsdDateTime},
     ResultTerm,
 };
 
@@ -398,6 +398,14 @@ impl EvalResult {
             },
             EvalResult::Value(SparqlValue::String(lex, None)) => Some(lex),
             EvalResult::Value(_) => None,
+        }
+    }
+
+    /// Coerce to an xsd:dateTime literal
+    pub fn as_xsd_date_time(&self) -> Option<&XsdDateTime> {
+        match self.as_value() {
+            Some(SparqlValue::DateTime(dt)) => dt.as_ref(),
+            _ => None,
         }
     }
 

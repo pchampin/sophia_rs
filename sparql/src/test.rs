@@ -602,6 +602,15 @@ fn test_expr_variable() -> TestResult {
 #[test_case("strAfter(\"hello world\", \"hello\"@en)", ""; "strAfter language string")]
 #[test_case("strAfter(\"42\", 42)", ""; "strAfter number")]
 #[test_case("strAfter(\"<< <tag:s> <tag:p> <tag:o> >>\", << <tag:s> <tag:p> <tag:o> >>)", ""; "strAfter triple")]
+// test year
+#[test_case("year(<tag:x>)", ""; "year for IRI")]
+#[test_case("year(bnode())", ""; "year for bnode")]
+#[test_case("year(\"foobar\")", ""; "year for string")]
+#[test_case("year(\"foobar\"@en)", ""; "year for language string")]
+#[test_case("year(42)", ""; "year for number")]
+#[test_case("year(\"2025-01-18T12:34:56\"^^xsd:dateTime)", "2025"; "year for valid date")]
+#[test_case("year(\"2023-02-29T12:34:56\"^^xsd:dateTime)", ""; "year for invalid date")]
+#[test_case("year(<< <tag:s> <tag:p> <tag:o> >>)", ""; "year for triple")]
 // TODO test other function calls
 // test isIri
 #[test_case("isIri(<tag:x>)", "true"; "isIri for IRI")]

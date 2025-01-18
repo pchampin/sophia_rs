@@ -3,7 +3,7 @@ use std::{collections::HashSet, sync::Arc};
 
 use crate::{
     expression::EvalResult,
-    value::{SparqlNumber, SparqlValue},
+    value::{SparqlNumber, SparqlValue, XsdDateTime},
     SparqlQuery, SparqlWrapper,
 };
 
@@ -442,6 +442,23 @@ fn strafter(heystack: &str, needle: &str, exp: Option<&str>) -> TestResult {
     let needle = pair2ref(&pair2);
     let exp = exp.map(txt2pair).map(EvalResult::from);
     assert!(eval_eq(super::strafter(heystack, needle), exp));
+    Ok(())
+}
+
+#[test_case("2025-01-18T12:34:56", 2025)]
+#[test_case("2025-01-18T12:34:56Z", 2025)]
+#[test_case("2025-01-18T12:34:56+01:00", 2025)]
+#[test_case("-0002-01-18T12:34:56", -2)]
+#[test_case("-0002-01-18T12:34:56Z", -2)]
+#[test_case("-0002-01-18T12:34:56+01:00", -2)]
+// 24:00:00 is not supported by chrono; this is deemed acceptable
+// #[test_case("2024-12-31T24:00:00", 2025)]
+// #[test_case("2024-12-31T24:00:00Z", 2025)]
+// #[test_case("2024-12-31T24:00:00+01:00", 2025)]
+fn year(date_time: &str, exp: isize) -> TestResult {
+    let date_time: XsdDateTime = date_time.parse()?;
+    let exp = EvalResult::from(SparqlNumber::from(exp));
+    assert!(eval_eq(Some(super::year(&date_time)), Some(exp)));
     Ok(())
 }
 

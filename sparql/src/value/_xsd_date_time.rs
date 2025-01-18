@@ -14,7 +14,7 @@
 //! This implementation uses no implicit timezone.
 use std::{cmp::Ordering, fmt::Display, str::FromStr};
 
-use chrono::{format::ParseErrorKind, DateTime, FixedOffset, NaiveDateTime};
+use chrono::{format::ParseErrorKind, DateTime, Datelike, FixedOffset, NaiveDateTime};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum XsdDateTime {
@@ -26,7 +26,7 @@ impl FromStr for XsdDateTime {
     type Err = chrono::ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        DateTime::parse_from_rfc3339(s)
+        DateTime::parse_from_str(s, "%+")
             .map(Self::Timezoned)
             .or_else(|e| {
                 if e.kind() == ParseErrorKind::TooShort {
@@ -66,6 +66,148 @@ impl PartialOrd for XsdDateTime {
             }
             (XsdDateTime::Timezoned(d1), XsdDateTime::Naive(d2)) => heterogeneous_cmp(d1, d2),
             (XsdDateTime::Timezoned(d1), XsdDateTime::Timezoned(d2)) => d1.partial_cmp(d2),
+        }
+    }
+}
+
+impl Datelike for XsdDateTime {
+    fn year(&self) -> i32 {
+        match self {
+            XsdDateTime::Naive(naive_date_time) => naive_date_time.year(),
+            XsdDateTime::Timezoned(date_time) => date_time.year(),
+        }
+    }
+
+    fn month(&self) -> u32 {
+        match self {
+            XsdDateTime::Naive(naive_date_time) => naive_date_time.month(),
+            XsdDateTime::Timezoned(date_time) => date_time.month(),
+        }
+    }
+
+    fn month0(&self) -> u32 {
+        match self {
+            XsdDateTime::Naive(naive_date_time) => naive_date_time.month0(),
+            XsdDateTime::Timezoned(date_time) => date_time.month0(),
+        }
+    }
+
+    fn day(&self) -> u32 {
+        match self {
+            XsdDateTime::Naive(naive_date_time) => naive_date_time.day(),
+            XsdDateTime::Timezoned(date_time) => date_time.day(),
+        }
+    }
+
+    fn day0(&self) -> u32 {
+        match self {
+            XsdDateTime::Naive(naive_date_time) => naive_date_time.day0(),
+            XsdDateTime::Timezoned(date_time) => date_time.day0(),
+        }
+    }
+
+    fn ordinal(&self) -> u32 {
+        match self {
+            XsdDateTime::Naive(naive_date_time) => naive_date_time.ordinal(),
+            XsdDateTime::Timezoned(date_time) => date_time.ordinal(),
+        }
+    }
+
+    fn ordinal0(&self) -> u32 {
+        match self {
+            XsdDateTime::Naive(naive_date_time) => naive_date_time.ordinal0(),
+            XsdDateTime::Timezoned(date_time) => date_time.ordinal0(),
+        }
+    }
+
+    fn weekday(&self) -> chrono::Weekday {
+        match self {
+            XsdDateTime::Naive(naive_date_time) => naive_date_time.weekday(),
+            XsdDateTime::Timezoned(date_time) => date_time.weekday(),
+        }
+    }
+
+    fn iso_week(&self) -> chrono::IsoWeek {
+        match self {
+            XsdDateTime::Naive(naive_date_time) => naive_date_time.iso_week(),
+            XsdDateTime::Timezoned(date_time) => date_time.iso_week(),
+        }
+    }
+
+    fn with_year(&self, year: i32) -> Option<Self> {
+        match self {
+            XsdDateTime::Naive(naive_date_time) => {
+                Some(XsdDateTime::Naive(naive_date_time.with_year(year)?))
+            }
+            XsdDateTime::Timezoned(date_time) => {
+                Some(XsdDateTime::Timezoned(date_time.with_year(year)?))
+            }
+        }
+    }
+
+    fn with_month(&self, month: u32) -> Option<Self> {
+        match self {
+            XsdDateTime::Naive(naive_date_time) => {
+                Some(XsdDateTime::Naive(naive_date_time.with_month(month)?))
+            }
+            XsdDateTime::Timezoned(date_time) => {
+                Some(XsdDateTime::Timezoned(date_time.with_month(month)?))
+            }
+        }
+    }
+
+    fn with_month0(&self, month0: u32) -> Option<Self> {
+        match self {
+            XsdDateTime::Naive(naive_date_time) => {
+                Some(XsdDateTime::Naive(naive_date_time.with_month0(month0)?))
+            }
+            XsdDateTime::Timezoned(date_time) => {
+                Some(XsdDateTime::Timezoned(date_time.with_month0(month0)?))
+            }
+        }
+    }
+
+    fn with_day(&self, day: u32) -> Option<Self> {
+        match self {
+            XsdDateTime::Naive(naive_date_time) => {
+                Some(XsdDateTime::Naive(naive_date_time.with_day(day)?))
+            }
+            XsdDateTime::Timezoned(date_time) => {
+                Some(XsdDateTime::Timezoned(date_time.with_day(day)?))
+            }
+        }
+    }
+
+    fn with_day0(&self, day0: u32) -> Option<Self> {
+        match self {
+            XsdDateTime::Naive(naive_date_time) => {
+                Some(XsdDateTime::Naive(naive_date_time.with_day0(day0)?))
+            }
+            XsdDateTime::Timezoned(date_time) => {
+                Some(XsdDateTime::Timezoned(date_time.with_day0(day0)?))
+            }
+        }
+    }
+
+    fn with_ordinal(&self, ordinal: u32) -> Option<Self> {
+        match self {
+            XsdDateTime::Naive(naive_date_time) => {
+                Some(XsdDateTime::Naive(naive_date_time.with_ordinal(ordinal)?))
+            }
+            XsdDateTime::Timezoned(date_time) => {
+                Some(XsdDateTime::Timezoned(date_time.with_ordinal(ordinal)?))
+            }
+        }
+    }
+
+    fn with_ordinal0(&self, ordinal0: u32) -> Option<Self> {
+        match self {
+            XsdDateTime::Naive(naive_date_time) => {
+                Some(XsdDateTime::Naive(naive_date_time.with_ordinal0(ordinal0)?))
+            }
+            XsdDateTime::Timezoned(date_time) => {
+                Some(XsdDateTime::Timezoned(date_time.with_ordinal0(ordinal0)?))
+            }
         }
     }
 }

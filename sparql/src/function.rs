@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use chrono::Datelike;
 use rand::random;
 use sophia_api::term::{BnodeId, IriRef, LanguageTag, Term};
 use sophia_term::GenericLiteral;
@@ -8,7 +9,7 @@ use spargebra::algebra::Function::{self, *};
 use crate::{
     expression::EvalResult,
     ns::RDF_LANG_STRING,
-    value::{SparqlNumber, SparqlValue},
+    value::{SparqlNumber, SparqlValue, XsdDateTime},
     ResultTerm,
 };
 
@@ -165,7 +166,12 @@ pub fn call_function(function: &Function, mut arguments: Vec<EvalResult>) -> Opt
             };
             strafter(heystack.as_string_lit()?, needle.as_string_lit()?)
         }
-        Year => todo("Year"),
+        Year => {
+            let [argument] = &arguments[..] else {
+                unreachable!();
+            };
+            Some(year(argument.as_xsd_date_time()?))
+        }
         Month => todo("Month"),
         Day => todo("Day"),
         Hours => todo("Hours"),
@@ -430,6 +436,10 @@ pub fn strafter(heystack: StringLiteral, needle: StringLiteral) -> Option<EvalRe
         Arc::from(substr),
         found.and_then(|_| heystack.1.cloned()),
     )))
+}
+
+pub fn year(dt: &XsdDateTime) -> EvalResult {
+    SparqlNumber::from(dt.year() as isize).into()
 }
 
 pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResult> {
