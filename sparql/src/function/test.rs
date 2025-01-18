@@ -283,6 +283,9 @@ fn encode_for_uri(string: &str, exp: &str) -> TestResult {
 #[test_case("foobar@en", "baz@en", Some(false))]
 #[test_case("foobar@en", "BAR", Some(false))]
 #[test_case("foobar@en", "baz", Some(false))]
+#[test_case("", "@fr", None)]
+#[test_case("foobar", "bar@fr", None)]
+#[test_case("foobar", "baz@fr", None)]
 #[test_case("@en", "@fr", None)]
 #[test_case("foobar@en", "bar@fr", None)]
 #[test_case("foobar@en", "baz@fr", None)]
@@ -320,6 +323,9 @@ fn contains(heystack: &str, needle: &str, exp: Option<bool>) -> TestResult {
 #[test_case("foobar@en", "baz@en", Some(false))]
 #[test_case("foobar@en", "FOO", Some(false))]
 #[test_case("foobar@en", "baz", Some(false))]
+#[test_case("", "@fr", None)]
+#[test_case("foobar", "bar@fr", None)]
+#[test_case("foobar", "baz@fr", None)]
 #[test_case("@en", "@fr", None)]
 #[test_case("foobar@en", "foo@fr", None)]
 #[test_case("foobar@en", "baz@fr", None)]
@@ -357,6 +363,9 @@ fn strstarts(heystack: &str, needle: &str, exp: Option<bool>) -> TestResult {
 #[test_case("foobar@en", "baz@en", Some(false))]
 #[test_case("foobar@en", "BAR", Some(false))]
 #[test_case("foobar@en", "baz", Some(false))]
+#[test_case("", "@fr", None)]
+#[test_case("foobar", "bar@fr", None)]
+#[test_case("foobar", "baz@fr", None)]
 #[test_case("@en", "@fr", None)]
 #[test_case("foobar@en", "bar@fr", None)]
 #[test_case("foobar@en", "baz@fr", None)]
@@ -367,6 +376,39 @@ fn strends(heystack: &str, needle: &str, exp: Option<bool>) -> TestResult {
     let needle = pair2ref(&pair2);
     let exp = exp.map(EvalResult::from);
     assert!(eval_eq(super::strends(heystack, needle), exp));
+    Ok(())
+}
+
+#[test_case("", "", Some(""))]
+#[test_case("", "a", Some(""))]
+#[test_case("@en", "@en", Some("@en"))]
+#[test_case("@en", "a@en", Some(""))]
+#[test_case("@en", "", Some("@en"))]
+#[test_case("@en", "a", Some(""))]
+#[test_case("abcbde", "", Some(""))]
+#[test_case("abcbde", "B", Some(""))]
+#[test_case("abcbde", "b", Some("a"))]
+#[test_case("abcbde", "bd", Some("abc"))]
+#[test_case("abcbde", "xyz", Some(""))]
+#[test_case("abcbde@en", "@en", Some("@en"))]
+#[test_case("abcbde@en", "B@en", Some(""))]
+#[test_case("abcbde@en", "b@en", Some("a@en"))]
+#[test_case("abcbde@en", "bd@en", Some("abc@en"))]
+#[test_case("abcbde@en", "xyz@en", Some(""))]
+#[test_case("abcbde@en", "", Some("@en"))]
+#[test_case("abcbde@en", "B", Some(""))]
+#[test_case("abcbde@en", "b", Some("a@en"))]
+#[test_case("abcbde@en", "bd", Some("abc@en"))]
+#[test_case("abcbde@en", "xyz", Some(""))]
+#[test_case("abcbde", "b@fr", None)]
+#[test_case("abcbde@en", "b@fr", None)]
+fn strbefore(heystack: &str, needle: &str, exp: Option<&str>) -> TestResult {
+    let pair1 = txt2pair(heystack);
+    let heystack = pair2ref(&pair1);
+    let pair2 = txt2pair(needle);
+    let needle = pair2ref(&pair2);
+    let exp = exp.map(txt2pair).map(EvalResult::from);
+    assert!(eval_eq(super::strbefore(heystack, needle), exp));
     Ok(())
 }
 

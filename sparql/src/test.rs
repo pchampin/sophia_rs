@@ -568,6 +568,23 @@ fn test_expr_variable() -> TestResult {
 #[test_case("strEnds(\"hello world\", \"world\"@en)", ""; "strEnds language string")]
 #[test_case("strEnds(\"42\", 42)", ""; "strEnds number")]
 #[test_case("strEnds(\"<< <tag:s> <tag:p> <tag:o> >>\", << <tag:s> <tag:p> <tag:o> >>)", ""; "strEnds triple")]
+// test strBefore
+#[test_case("strBefore(<tag:xy>, <ag:xy>)", ""; "strBefore for IRIs")]
+#[test_case("strBefore(bnode(), bnode())", ""; "strBefore for bnodes")]
+#[test_case("strBefore(\"hello world\", \"world\")", "\"hello \""; "strBefore for strings")]
+#[test_case("strBefore(\"hello world\"@en, \"world\"@en)", "\"hello \"@en"; "strBefore for language strings")]
+#[test_case("strBefore(42, 2)", ""; "strBefore for numbers")]
+#[test_case("strBefore(<< <tag:s> <tag:p> <tag:o> >>, << <tag:s> <tag:p> <tag:o> >>)", ""; "strBefore for triples")]
+#[test_case("strBefore(<tag:x>, \"x\")", ""; "strBefore in IRI")]
+#[test_case("strBefore(bnode(), \"\")", ""; "strBefore in bnode")]
+#[test_case("strBefore(\"hello world\"@en, \"kittie\")", "\"\""; "strBefore in language string")]
+#[test_case("strBefore(42, \"2\")", ""; "strBefore in number")]
+#[test_case("strBefore(<< <tag:s> <tag:p> <tag:o> >>, \"tag:s\")", ""; "strBefore in triple")]
+#[test_case("strBefore(\"tag:x\", <tag:x>)", ""; "strBefore IRI")]
+#[test_case("strBefore(\"_:x\", bnode())", ""; "strBefore bnode")]
+#[test_case("strBefore(\"hello world\", \"world\"@en)", ""; "strBefore language string")]
+#[test_case("strBefore(\"42\", 42)", ""; "strBefore number")]
+#[test_case("strBefore(\"<< <tag:s> <tag:p> <tag:o> >>\", << <tag:s> <tag:p> <tag:o> >>)", ""; "strBefore triple")]
 // TODO test other function calls
 // test isIri
 #[test_case("isIri(<tag:x>)", "true"; "isIri for IRI")]

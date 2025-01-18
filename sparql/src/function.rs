@@ -153,7 +153,12 @@ pub fn call_function(function: &Function, mut arguments: Vec<EvalResult>) -> Opt
             };
             strends(heystack.as_string_lit()?, needle.as_string_lit()?)
         }
-        StrBefore => todo("StrBefore"),
+        StrBefore => {
+            let [heystack, needle] = &arguments[..] else {
+                unreachable!();
+            };
+            strbefore(heystack.as_string_lit()?, needle.as_string_lit()?)
+        }
         StrAfter => todo("StrAfter"),
         Year => todo("Year"),
         Month => todo("Month"),
@@ -396,6 +401,15 @@ pub fn strstarts(heystack: StringLiteral, needle: StringLiteral) -> Option<EvalR
 pub fn strends(heystack: StringLiteral, needle: StringLiteral) -> Option<EvalResult> {
     check_compatible(heystack, needle)?;
     Some(heystack.0.ends_with(needle.0.as_ref()).into())
+}
+
+pub fn strbefore(heystack: StringLiteral, needle: StringLiteral) -> Option<EvalResult> {
+    check_compatible(heystack, needle)?;
+    let found = heystack.0.find(needle.0.as_ref());
+    Some(EvalResult::from((
+        Arc::from(&heystack.0[..found.unwrap_or(0)]),
+        found.and_then(|_| heystack.1.cloned()),
+    )))
 }
 
 pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResult> {
