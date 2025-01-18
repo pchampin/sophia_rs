@@ -278,8 +278,7 @@ pub fn rand() -> EvalResult {
     SparqlNumber::from(random::<f64>()).into()
 }
 
-#[expect(clippy::type_complexity)]
-pub fn concat(args: &[(&Arc<str>, Option<&LanguageTag<Arc<str>>>)]) -> EvalResult {
+pub fn concat(args: &[StringLiteral]) -> EvalResult {
     let lex = args
         .iter()
         .map(|x| x.0.as_ref())
@@ -309,7 +308,7 @@ pub fn lang_matches(tag: &Arc<str>, range: &Arc<str>) -> Option<EvalResult> {
 }
 
 pub fn sub_str(
-    source: (&Arc<str>, Option<&LanguageTag<Arc<str>>>),
+    source: StringLiteral,
     starting_loc: f64,
     length: Option<f64>,
 ) -> Option<EvalResult> {
@@ -344,12 +343,12 @@ pub fn str_len(string: &Arc<str>) -> EvalResult {
     }
 }
 
-pub fn u_case(source: (&Arc<str>, Option<&LanguageTag<Arc<str>>>)) -> EvalResult {
+pub fn u_case(source: StringLiteral) -> EvalResult {
     let lex: String = source.0.chars().flat_map(char::to_uppercase).collect();
     EvalResult::from((Arc::from(lex), source.1.cloned()))
 }
 
-pub fn l_case(source: (&Arc<str>, Option<&LanguageTag<Arc<str>>>)) -> EvalResult {
+pub fn l_case(source: StringLiteral) -> EvalResult {
     let lex: String = source.0.chars().flat_map(char::to_lowercase).collect();
     EvalResult::from((Arc::from(lex), source.1.cloned()))
 }

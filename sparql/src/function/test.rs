@@ -136,7 +136,7 @@ fn rand_all_diff() -> TestResult {
 #[test_case(vec!["a", "b", "c", "d"], "abcd")]
 fn concat(input: Vec<&str>, exp: &str) {
     let input: Vec<_> = input.into_iter().map(txt2pair).collect();
-    let args: Vec<_> = input.iter().map(|(lex, tag)| (lex, tag.as_ref())).collect();
+    let args: Vec<_> = input.iter().map(pair2ref).collect();
 
     let exp = Some(EvalResult::from(txt2pair(exp)));
     assert!(eval_eq(Some(super::concat(&args)), exp));
@@ -152,6 +152,12 @@ fn txt2pair(txt: &str) -> (Arc<str>, Option<LanguageTag<Arc<str>>>) {
             Some(LanguageTag::new_unchecked(Arc::from(tag)))
         },
     )
+}
+
+fn pair2ref(
+    pair: &(Arc<str>, Option<LanguageTag<Arc<str>>>),
+) -> (&Arc<str>, Option<&LanguageTag<Arc<str>>>) {
+    (&pair.0, pair.1.as_ref())
 }
 
 #[test_case("en", "*", true)]
@@ -182,7 +188,7 @@ fn lang_matches(tag: &str, range: &str, exp: bool) -> TestResult {
 #[test_case("foobar", 1.1, Some(0.9), Some("f"))]
 fn sub_str(source: &str, start: f64, length: Option<f64>, exp: Option<&str>) -> TestResult {
     let pair = txt2pair(source);
-    let source = (&pair.0, pair.1.as_ref());
+    let source = pair2ref(&pair);
     let exp = exp.map(|txt| EvalResult::from(txt2pair(txt)));
     assert!(eval_eq(super::sub_str(source, start, length), exp));
     Ok(())
@@ -214,7 +220,7 @@ fn str_len(string: &str, exp: isize) -> TestResult {
 #[test_case("ﬀ ŉ@en", "FF ʼN@en"; "multichar en")]
 fn u_case(string: &str, exp: &str) -> TestResult {
     let pair = txt2pair(string);
-    let source = (&pair.0, pair.1.as_ref());
+    let source = pair2ref(&pair);
     let exp = EvalResult::from(txt2pair(exp));
     assert!(eval_eq(Some(super::u_case(source)), Some(exp)));
     Ok(())
@@ -230,7 +236,7 @@ fn u_case(string: &str, exp: &str) -> TestResult {
 #[test_case("ÀÉÎÔÙ@fr", "àéîôù@fr"; "accents fr")]
 fn l_case(string: &str, exp: &str) -> TestResult {
     let pair = txt2pair(string);
-    let source = (&pair.0, pair.1.as_ref());
+    let source = pair2ref(&pair);
     let exp = EvalResult::from(txt2pair(exp));
     assert!(eval_eq(Some(super::l_case(source)), Some(exp)));
     Ok(())
