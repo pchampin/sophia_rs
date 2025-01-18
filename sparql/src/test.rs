@@ -551,6 +551,23 @@ fn test_expr_variable() -> TestResult {
 #[test_case("strStarts(\"hello world\", \"hello\"@en)", ""; "strStarts language string")]
 #[test_case("strStarts(\"42\", 42)", ""; "strStarts number")]
 #[test_case("strStarts(\"<< <tag:s> <tag:p> <tag:o> >>\", << <tag:s> <tag:p> <tag:o> >>)", ""; "strStarts triple")]
+// test strEnds
+#[test_case("strEnds(<tag:xy>, <ag:xy>)", ""; "strEnds for IRIs")]
+#[test_case("strEnds(bnode(), bnode())", ""; "strEnds for bnodes")]
+#[test_case("strEnds(\"hello world\", \"world\")", "true"; "strEnds for strings")]
+#[test_case("strEnds(\"hello world\"@en, \"world\"@en)", "true"; "strEnds for language strings")]
+#[test_case("strEnds(42, 2)", ""; "strEnds for numbers")]
+#[test_case("strEnds(<< <tag:s> <tag:p> <tag:o> >>, << <tag:s> <tag:p> <tag:o> >>)", ""; "strEnds for triples")]
+#[test_case("strEnds(<tag:x>, \"t\")", ""; "strEnds in IRI")]
+#[test_case("strEnds(bnode(), \"\")", ""; "strEnds in bnode")]
+#[test_case("strEnds(\"hello world\"@en, \"kittie\")", "false"; "strEnds in language string")]
+#[test_case("strEnds(42, \"2\")", ""; "strEnds in number")]
+#[test_case("strEnds(<< <tag:s> <tag:p> <tag:o> >>, \"tag:s\")", ""; "strEnds in triple")]
+#[test_case("strEnds(\"tag:x\", <tag:x>)", ""; "strEnds IRI")]
+#[test_case("strEnds(\"_:x\", bnode())", ""; "strEnds bnode")]
+#[test_case("strEnds(\"hello world\", \"world\"@en)", ""; "strEnds language string")]
+#[test_case("strEnds(\"42\", 42)", ""; "strEnds number")]
+#[test_case("strEnds(\"<< <tag:s> <tag:p> <tag:o> >>\", << <tag:s> <tag:p> <tag:o> >>)", ""; "strEnds triple")]
 // TODO test other function calls
 // test isIri
 #[test_case("isIri(<tag:x>)", "true"; "isIri for IRI")]

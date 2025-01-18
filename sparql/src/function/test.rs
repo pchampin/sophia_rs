@@ -333,6 +333,43 @@ fn strstarts(heystack: &str, needle: &str, exp: Option<bool>) -> TestResult {
     Ok(())
 }
 
+#[test_case("", "", Some(true))]
+#[test_case("@en", "@en", Some(true))]
+#[test_case("@en", "", Some(true))]
+#[test_case("foobar", "", Some(true))]
+#[test_case("foobar", "foo", Some(false))]
+#[test_case("foobar", "oba", Some(false))]
+#[test_case("foobar", "bar", Some(true))]
+#[test_case("foobar@en", "@en", Some(true))]
+#[test_case("foobar@en", "foo@en", Some(false))]
+#[test_case("foobar@en", "oba@en", Some(false))]
+#[test_case("foobar@en", "bar@en", Some(true))]
+#[test_case("foobar@en", "", Some(true))]
+#[test_case("foobar@en", "foo", Some(false))]
+#[test_case("foobar@en", "oba", Some(false))]
+#[test_case("foobar@en", "bar", Some(true))]
+#[test_case("", "foo", Some(false))]
+#[test_case("@en", "foo@en", Some(false))]
+#[test_case("@en", "foo", Some(false))]
+#[test_case("foobar", "BAR", Some(false))]
+#[test_case("foobar", "baz", Some(false))]
+#[test_case("foobar@en", "BAR@en", Some(false))]
+#[test_case("foobar@en", "baz@en", Some(false))]
+#[test_case("foobar@en", "BAR", Some(false))]
+#[test_case("foobar@en", "baz", Some(false))]
+#[test_case("@en", "@fr", None)]
+#[test_case("foobar@en", "bar@fr", None)]
+#[test_case("foobar@en", "baz@fr", None)]
+fn strends(heystack: &str, needle: &str, exp: Option<bool>) -> TestResult {
+    let pair1 = txt2pair(heystack);
+    let heystack = pair2ref(&pair1);
+    let pair2 = txt2pair(needle);
+    let needle = pair2ref(&pair2);
+    let exp = exp.map(EvalResult::from);
+    assert!(eval_eq(super::strends(heystack, needle), exp));
+    Ok(())
+}
+
 #[test_case("<tag:s>", "<tag:p>", "<tag:o>", true)]
 #[test_case("<tag:s>", "<tag:p>", "bnode()", true)]
 #[test_case("<tag:s>", "<tag:p>", " \"o\" ", true)]
