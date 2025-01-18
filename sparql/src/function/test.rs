@@ -412,6 +412,39 @@ fn strbefore(heystack: &str, needle: &str, exp: Option<&str>) -> TestResult {
     Ok(())
 }
 
+#[test_case("", "", Some(""))]
+#[test_case("", "a", Some(""))]
+#[test_case("@en", "@en", Some("@en"))]
+#[test_case("@en", "a@en", Some(""))]
+#[test_case("@en", "", Some("@en"))]
+#[test_case("@en", "a", Some(""))]
+#[test_case("abcbde", "", Some("abcbde"))]
+#[test_case("abcbde", "B", Some(""))]
+#[test_case("abcbde", "b", Some("cbde"))]
+#[test_case("abcbde", "bd", Some("e"))]
+#[test_case("abcbde", "xyz", Some(""))]
+#[test_case("abcbde@en", "@en", Some("abcbde@en"))]
+#[test_case("abcbde@en", "B@en", Some(""))]
+#[test_case("abcbde@en", "b@en", Some("cbde@en"))]
+#[test_case("abcbde@en", "bd@en", Some("e@en"))]
+#[test_case("abcbde@en", "xyz@en", Some(""))]
+#[test_case("abcbde@en", "", Some("abcbde@en"))]
+#[test_case("abcbde@en", "B", Some(""))]
+#[test_case("abcbde@en", "b", Some("cbde@en"))]
+#[test_case("abcbde@en", "bd", Some("e@en"))]
+#[test_case("abcbde@en", "xyz", Some(""))]
+#[test_case("abcbde", "b@fr", None)]
+#[test_case("abcbde@en", "b@fr", None)]
+fn strafter(heystack: &str, needle: &str, exp: Option<&str>) -> TestResult {
+    let pair1 = txt2pair(heystack);
+    let heystack = pair2ref(&pair1);
+    let pair2 = txt2pair(needle);
+    let needle = pair2ref(&pair2);
+    let exp = exp.map(txt2pair).map(EvalResult::from);
+    assert!(eval_eq(super::strafter(heystack, needle), exp));
+    Ok(())
+}
+
 #[test_case("<tag:s>", "<tag:p>", "<tag:o>", true)]
 #[test_case("<tag:s>", "<tag:p>", "bnode()", true)]
 #[test_case("<tag:s>", "<tag:p>", " \"o\" ", true)]

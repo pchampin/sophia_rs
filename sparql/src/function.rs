@@ -159,7 +159,12 @@ pub fn call_function(function: &Function, mut arguments: Vec<EvalResult>) -> Opt
             };
             strbefore(heystack.as_string_lit()?, needle.as_string_lit()?)
         }
-        StrAfter => todo("StrAfter"),
+        StrAfter => {
+            let [heystack, needle] = &arguments[..] else {
+                unreachable!();
+            };
+            strafter(heystack.as_string_lit()?, needle.as_string_lit()?)
+        }
         Year => todo("Year"),
         Month => todo("Month"),
         Day => todo("Day"),
@@ -408,6 +413,21 @@ pub fn strbefore(heystack: StringLiteral, needle: StringLiteral) -> Option<EvalR
     let found = heystack.0.find(needle.0.as_ref());
     Some(EvalResult::from((
         Arc::from(&heystack.0[..found.unwrap_or(0)]),
+        found.and_then(|_| heystack.1.cloned()),
+    )))
+}
+
+pub fn strafter(heystack: StringLiteral, needle: StringLiteral) -> Option<EvalResult> {
+    check_compatible(heystack, needle)?;
+    let txt = heystack.0.as_ref();
+    let delim = needle.0.as_ref();
+    let found = txt.find(delim);
+    let substr = match found {
+        Some(pos) => &txt[pos + delim.len()..],
+        None => "",
+    };
+    Some(EvalResult::from((
+        Arc::from(substr),
         found.and_then(|_| heystack.1.cloned()),
     )))
 }
