@@ -518,7 +518,7 @@ fn test_expr_variable() -> TestResult {
 #[test_case("encode_for_uri(42)", ""; "encode_for_uri for number")]
 #[test_case("encode_for_uri(<< <tag:s> <tag:p> <tag:o> >>)", ""; "encode_for_uri for triple")]
 // test contains
-#[test_case("contains(<tag:xy>, <tag:y>)", ""; "contains for IRIs")]
+#[test_case("contains(<tag:xy>, <tag:x>)", ""; "contains for IRIs")]
 #[test_case("contains(bnode(), bnode())", ""; "contains for bnodes")]
 #[test_case("contains(\"hello world\", \"world\")", "true"; "contains for strings")]
 #[test_case("contains(\"hello world\"@en, \"world\"@en)", "true"; "contains for language strings")]
@@ -534,6 +534,23 @@ fn test_expr_variable() -> TestResult {
 #[test_case("contains(\"hello world\", \"world\"@en)", ""; "contains language string")]
 #[test_case("contains(\"42\", 42)", ""; "contains number")]
 #[test_case("contains(\"<< <tag:s> <tag:p> <tag:o> >>\", << <tag:s> <tag:p> <tag:o> >>)", ""; "contains triple")]
+// test strStarts
+#[test_case("strStarts(<tag:xy>, <tag:x>)", ""; "strStarts for IRIs")]
+#[test_case("strStarts(bnode(), bnode())", ""; "strStarts for bnodes")]
+#[test_case("strStarts(\"hello world\", \"hello\")", "true"; "strStarts for strings")]
+#[test_case("strStarts(\"hello world\"@en, \"hello\"@en)", "true"; "strStarts for language strings")]
+#[test_case("strStarts(42, 4)", ""; "strStarts for numbers")]
+#[test_case("strStarts(<< <tag:s> <tag:p> <tag:o> >>, << <tag:s> <tag:p> <tag:o> >>)", ""; "strStarts for triples")]
+#[test_case("strStarts(<tag:x>, \"x\")", ""; "strStarts in IRI")]
+#[test_case("strStarts(bnode(), \"\")", ""; "strStarts in bnode")]
+#[test_case("strStarts(\"hello world\"@en, \"kittie\")", "false"; "strStarts in language string")]
+#[test_case("strStarts(42, \"4\")", ""; "strStarts in number")]
+#[test_case("strStarts(<< <tag:s> <tag:p> <tag:o> >>, \"tag:s\")", ""; "strStarts in triple")]
+#[test_case("strStarts(\"tag:x\", <tag:x>)", ""; "strStarts IRI")]
+#[test_case("strStarts(\"_:x\", bnode())", ""; "strStarts bnode")]
+#[test_case("strStarts(\"hello world\", \"hello\"@en)", ""; "strStarts language string")]
+#[test_case("strStarts(\"42\", 42)", ""; "strStarts number")]
+#[test_case("strStarts(\"<< <tag:s> <tag:p> <tag:o> >>\", << <tag:s> <tag:p> <tag:o> >>)", ""; "strStarts triple")]
 // TODO test other function calls
 // test isIri
 #[test_case("isIri(<tag:x>)", "true"; "isIri for IRI")]
