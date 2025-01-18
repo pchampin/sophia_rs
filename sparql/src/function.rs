@@ -135,7 +135,12 @@ pub fn call_function(function: &Function, mut arguments: Vec<EvalResult>) -> Opt
             };
             Some(encode_for_uri(string.as_string_lit()?.0))
         }
-        Contains => todo("Contains"),
+        Contains => {
+            let [heystack, needle] = &arguments[..] else {
+                unreachable!();
+            };
+            contains(heystack.as_string_lit()?, needle.as_string_lit()?)
+        }
         StrStarts => todo("StrStarts"),
         StrEnds => todo("StrEnds"),
         StrBefore => todo("StrBefore"),
@@ -368,6 +373,11 @@ pub fn encode_for_uri(source: &Arc<str>) -> EvalResult {
     EvalResult::from((Arc::from(ret), None))
 }
 
+pub fn contains(heystack: StringLiteral, needle: StringLiteral) -> Option<EvalResult> {
+    check_compatible(heystack, needle)?;
+    Some(heystack.0.contains(needle.0.as_ref()).into())
+}
+
 pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResult> {
     let EvalResult::Term(s) = s else { return None };
     let EvalResult::Term(p) = p else { return None };
@@ -392,6 +402,17 @@ pub fn is_triple(er: &EvalResult) -> EvalResult {
 fn todo<T: std::fmt::Display>(function_name: T) -> Option<EvalResult> {
     eprintln!("Function not implemented: {function_name}");
     None
+}
+
+type StringLiteral<'a> = (&'a Arc<str>, Option<&'a LanguageTag<Arc<str>>>);
+
+fn check_compatible(arg1: StringLiteral, arg2: StringLiteral) -> Option<()> {
+    match (arg1.1, arg2.1) {
+        (_, None) => true,
+        (Some(tag1), Some(tag2)) if tag1 == tag2 => true,
+        _ => false,
+    }
+    .then_some(())
 }
 
 mod encode_for_uri_utils {

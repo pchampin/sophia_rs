@@ -517,6 +517,23 @@ fn test_expr_variable() -> TestResult {
 #[test_case("encode_for_uri(\"hello world\"@en)", "\"hello%20world\""; "encode_for_uri for language string")]
 #[test_case("encode_for_uri(42)", ""; "encode_for_uri for number")]
 #[test_case("encode_for_uri(<< <tag:s> <tag:p> <tag:o> >>)", ""; "encode_for_uri for triple")]
+// test contains
+#[test_case("contains(<tag:xy>, <tag:y>)", ""; "contains for IRIs")]
+#[test_case("contains(bnode(), bnode())", ""; "contains for bnodes")]
+#[test_case("contains(\"hello world\", \"world\")", "true"; "contains for strings")]
+#[test_case("contains(\"hello world\"@en, \"world\"@en)", "true"; "contains for language strings")]
+#[test_case("contains(42, 2)", ""; "contains for numbers")]
+#[test_case("contains(<< <tag:s> <tag:p> <tag:o> >>, << <tag:s> <tag:p> <tag:o> >>)", ""; "contains for triples")]
+#[test_case("contains(<tag:x>, \"x\")", ""; "contains in IRI")]
+#[test_case("contains(bnode(), \"\")", ""; "contains in bnode")]
+#[test_case("contains(\"hello world\"@en, \"kittie\")", "false"; "contains in language string")]
+#[test_case("contains(42, \"2\")", ""; "contains in number")]
+#[test_case("contains(<< <tag:s> <tag:p> <tag:o> >>, \"tag:s\")", ""; "contains in triple")]
+#[test_case("contains(\"tag:x\", <tag:x>)", ""; "contains IRI")]
+#[test_case("contains(\"_:x\", bnode())", ""; "contains bnode")]
+#[test_case("contains(\"hello world\", \"world\"@en)", ""; "contains language string")]
+#[test_case("contains(\"42\", 42)", ""; "contains number")]
+#[test_case("contains(\"<< <tag:s> <tag:p> <tag:o> >>\", << <tag:s> <tag:p> <tag:o> >>)", ""; "contains triple")]
 // TODO test other function calls
 // test isIri
 #[test_case("isIri(<tag:x>)", "true"; "isIri for IRI")]
