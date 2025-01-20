@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use chrono::Datelike;
+use chrono::{Datelike, Timelike};
 use rand::random;
 use sophia_api::term::{BnodeId, IriRef, LanguageTag, Term};
 use sophia_term::GenericLiteral;
@@ -184,7 +184,12 @@ pub fn call_function(function: &Function, mut arguments: Vec<EvalResult>) -> Opt
             };
             Some(day(argument.as_xsd_date_time()?))
         }
-        Hours => todo("Hours"),
+        Hours => {
+            let [argument] = &arguments[..] else {
+                unreachable!();
+            };
+            Some(hours(argument.as_xsd_date_time()?))
+        }
         Minutes => todo("Minutes"),
         Seconds => todo("Seconds"),
         Timezone => todo("Timezone"),
@@ -458,6 +463,10 @@ pub fn month(dt: &XsdDateTime) -> EvalResult {
 
 pub fn day(dt: &XsdDateTime) -> EvalResult {
     SparqlNumber::from(dt.day() as isize).into()
+}
+
+pub fn hours(dt: &XsdDateTime) -> EvalResult {
+    SparqlNumber::from(dt.hour() as isize).into()
 }
 
 pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResult> {

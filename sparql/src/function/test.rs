@@ -493,6 +493,22 @@ fn day(date_time: &str, exp: isize) -> TestResult {
     Ok(())
 }
 
+#[test_case("2025-01-18T12:34:56", 12)]
+#[test_case("2025-01-18T13:34:56Z", 13)]
+#[test_case("2025-01-18T14:34:56+01:00", 14)]
+#[test_case("-0002-01-18T15:34:56", 15)]
+#[test_case("-0002-01-18T16:34:56Z", 16)]
+#[test_case("-0002-01-18T17:34:56+01:00", 17)]
+#[test_case("2024-12-31T24:00:00", 0)]
+#[test_case("2024-12-31T24:00:00Z", 0)]
+#[test_case("2024-12-31T24:00:00+01:00", 0)]
+fn hours(date_time: &str, exp: isize) -> TestResult {
+    let date_time: XsdDateTime = date_time.parse()?;
+    let exp = EvalResult::from(SparqlNumber::from(exp));
+    assert!(eval_eq(Some(super::hours(&date_time)), Some(exp)));
+    Ok(())
+}
+
 #[test_case("<tag:s>", "<tag:p>", "<tag:o>", true)]
 #[test_case("<tag:s>", "<tag:p>", "bnode()", true)]
 #[test_case("<tag:s>", "<tag:p>", " \"o\" ", true)]
