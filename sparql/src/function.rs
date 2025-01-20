@@ -178,7 +178,12 @@ pub fn call_function(function: &Function, mut arguments: Vec<EvalResult>) -> Opt
             };
             Some(month(argument.as_xsd_date_time()?))
         }
-        Day => todo("Day"),
+        Day => {
+            let [argument] = &arguments[..] else {
+                unreachable!();
+            };
+            Some(day(argument.as_xsd_date_time()?))
+        }
         Hours => todo("Hours"),
         Minutes => todo("Minutes"),
         Seconds => todo("Seconds"),
@@ -449,6 +454,10 @@ pub fn year(dt: &XsdDateTime) -> EvalResult {
 
 pub fn month(dt: &XsdDateTime) -> EvalResult {
     SparqlNumber::from(dt.month() as isize).into()
+}
+
+pub fn day(dt: &XsdDateTime) -> EvalResult {
+    SparqlNumber::from(dt.day() as isize).into()
 }
 
 pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResult> {
