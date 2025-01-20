@@ -611,6 +611,15 @@ fn test_expr_variable() -> TestResult {
 #[test_case("year(\"2025-01-18T12:34:56\"^^xsd:dateTime)", "2025"; "year for valid date")]
 #[test_case("year(\"2023-02-29T12:34:56\"^^xsd:dateTime)", ""; "year for invalid date")]
 #[test_case("year(<< <tag:s> <tag:p> <tag:o> >>)", ""; "year for triple")]
+// test month
+#[test_case("month(<tag:x>)", ""; "month for IRI")]
+#[test_case("month(bnode())", ""; "month for bnode")]
+#[test_case("month(\"foobar\")", ""; "month for string")]
+#[test_case("month(\"foobar\"@en)", ""; "month for language string")]
+#[test_case("month(42)", ""; "month for number")]
+#[test_case("month(\"2025-01-18T12:34:56\"^^xsd:dateTime)", "1"; "month for valid date")]
+#[test_case("month(\"2023-02-29T12:34:56\"^^xsd:dateTime)", ""; "month for invalid date")]
+#[test_case("month(<< <tag:s> <tag:p> <tag:o> >>)", ""; "month for triple")]
 // TODO test other function calls
 // test isIri
 #[test_case("isIri(<tag:x>)", "true"; "isIri for IRI")]
