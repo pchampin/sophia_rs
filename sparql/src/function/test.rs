@@ -1,5 +1,5 @@
 #![allow(clippy::unnecessary_wraps)]
-use std::{collections::HashSet, sync::Arc};
+use std::{collections::HashSet, str::FromStr, sync::Arc};
 
 use crate::{
     expression::EvalResult,
@@ -522,6 +522,24 @@ fn minutes(date_time: &str, exp: isize) -> TestResult {
     let date_time: XsdDateTime = date_time.parse()?;
     let exp = EvalResult::from(SparqlNumber::from(exp));
     assert!(eval_eq(Some(super::minutes(&date_time)), Some(exp)));
+    Ok(())
+}
+
+#[test_case("2025-01-18T12:34:56", "56")]
+#[test_case("2025-01-18T12:34:57Z", "57.0")]
+#[test_case("2025-01-18T12:34:58.9+01:00", "58.9")]
+#[test_case("-0002-01-18T12:34:01.23", "1.23")]
+#[test_case("-0002-01-18T12:34:02Z", "2")]
+#[test_case("-0002-01-18T12:34:03+01:00", "3")]
+#[test_case("2024-12-31T24:00:00", "0")]
+#[test_case("2024-12-31T24:00:00Z", "0")]
+#[test_case("2024-12-31T24:00:00+01:00", "0")]
+fn seconds(date_time: &str, exp: &str) -> TestResult {
+    let date_time: XsdDateTime = date_time.parse()?;
+    let exp = EvalResult::from(SparqlNumber::from(
+        bigdecimal::BigDecimal::from_str(exp).unwrap(),
+    ));
+    assert!(eval_eq(Some(super::seconds(&date_time)), Some(exp)));
     Ok(())
 }
 
