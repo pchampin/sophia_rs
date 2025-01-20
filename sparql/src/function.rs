@@ -190,7 +190,12 @@ pub fn call_function(function: &Function, mut arguments: Vec<EvalResult>) -> Opt
             };
             Some(hours(argument.as_xsd_date_time()?))
         }
-        Minutes => todo("Minutes"),
+        Minutes => {
+            let [argument] = &arguments[..] else {
+                unreachable!();
+            };
+            Some(minutes(argument.as_xsd_date_time()?))
+        }
         Seconds => todo("Seconds"),
         Timezone => todo("Timezone"),
         Tz => todo("Tz"),
@@ -467,6 +472,10 @@ pub fn day(dt: &XsdDateTime) -> EvalResult {
 
 pub fn hours(dt: &XsdDateTime) -> EvalResult {
     SparqlNumber::from(dt.hour() as isize).into()
+}
+
+pub fn minutes(dt: &XsdDateTime) -> EvalResult {
+    SparqlNumber::from(dt.minute() as isize).into()
 }
 
 pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResult> {

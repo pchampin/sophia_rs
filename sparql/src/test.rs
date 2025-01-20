@@ -638,6 +638,15 @@ fn test_expr_variable() -> TestResult {
 #[test_case("hours(\"2025-01-18T12:34:56\"^^xsd:dateTime)", "12"; "hours for valid date")]
 #[test_case("hours(\"2023-02-29T12:34:56\"^^xsd:dateTime)", ""; "hours for invalid date")]
 #[test_case("hours(<< <tag:s> <tag:p> <tag:o> >>)", ""; "hours for triple")]
+// test minutes
+#[test_case("minutes(<tag:x>)", ""; "minutes for IRI")]
+#[test_case("minutes(bnode())", ""; "minutes for bnode")]
+#[test_case("minutes(\"foobar\")", ""; "minutes for string")]
+#[test_case("minutes(\"foobar\"@en)", ""; "minutes for language string")]
+#[test_case("minutes(42)", ""; "minutes for number")]
+#[test_case("minutes(\"2025-01-18T12:34:56\"^^xsd:dateTime)", "34"; "minutes for valid date")]
+#[test_case("minutes(\"2023-02-29T12:34:56\"^^xsd:dateTime)", ""; "minutes for invalid date")]
+#[test_case("minutes(<< <tag:s> <tag:p> <tag:o> >>)", ""; "minutes for triple")]
 // TODO test other function calls
 // test isIri
 #[test_case("isIri(<tag:x>)", "true"; "isIri for IRI")]
