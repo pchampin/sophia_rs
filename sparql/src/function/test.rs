@@ -451,10 +451,9 @@ fn strafter(heystack: &str, needle: &str, exp: Option<&str>) -> TestResult {
 #[test_case("-0002-01-18T12:34:56", -2)]
 #[test_case("-0002-01-18T12:34:56Z", -2)]
 #[test_case("-0002-01-18T12:34:56+01:00", -2)]
-// 24:00:00 is not supported by chrono; this is deemed acceptable
-// #[test_case("2024-12-31T24:00:00", 2025)]
-// #[test_case("2024-12-31T24:00:00Z", 2025)]
-// #[test_case("2024-12-31T24:00:00+01:00", 2025)]
+#[test_case("2024-12-31T24:00:00", 2025)]
+#[test_case("2024-12-31T24:00:00Z", 2025)]
+#[test_case("2024-12-31T24:00:00+01:00", 2025)]
 fn year(date_time: &str, exp: isize) -> TestResult {
     let date_time: XsdDateTime = date_time.parse()?;
     let exp = EvalResult::from(SparqlNumber::from(exp));
