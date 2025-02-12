@@ -10,7 +10,7 @@ class MDBookSidebarScrollbox extends HTMLElement {
     connectedCallback() {
         this.innerHTML = '<ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">Executive summary</a></li><li class="chapter-item expanded "><a href="ch00_introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="ch01_getting_started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li class="chapter-item expanded "><a href="ch02_rdf_terms.html"><strong aria-hidden="true">3.</strong> RDF Terms</a></li><li class="chapter-item expanded "><a href="ch03_rdf_statements.html"><strong aria-hidden="true">4.</strong> RDF Statements</a></li><li class="chapter-item expanded "><a href="ch04_rdf_graphs.html"><strong aria-hidden="true">5.</strong> RDF Graphs</a></li><li class="chapter-item expanded "><a href="ch05_term_matchers.html"><strong aria-hidden="true">6.</strong> Term Matchers</a></li><li class="chapter-item expanded "><a href="ch06_rdf_datasets.html"><strong aria-hidden="true">7.</strong> RDF Datasets</a></li><li class="chapter-item expanded "><a href="ch07_parsing_and_serializing.html"><strong aria-hidden="true">8.</strong> Parsing and Serializing</a></li><li class="chapter-item expanded "><a href="ch90_changes_since_07.html"><strong aria-hidden="true">9.</strong> Changes since version 0.7</a></li></ol>';
         // Set the current, active page, and reveal it if it's hidden
-        let current_page = document.location.href.toString();
+        let current_page = document.location.href.toString().split("#")[0];
         if (current_page.endsWith("/")) {
             current_page += "index.html";
         }
