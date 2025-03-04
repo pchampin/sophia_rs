@@ -3,6 +3,8 @@ extend-ignore-identifiers-re = [
   # appear in several grammars
   "PN_[A-Z_]+",
   "pn_local",
+  # I prefer this to 'type_'
+  "typ",
 ]
 extend-ignore-re = [
   "raison d'être",
