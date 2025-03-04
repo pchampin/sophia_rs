@@ -10,7 +10,7 @@ use super::{QuadSource, Source, TripleSource};
 pub struct ToQuads<TS>(pub(super) TS);
 
 impl<TS: TripleSource> Source for ToQuads<TS> {
-    type Item<'x> = Spog<<TS::Triple<'x> as Triple>::Term>;
+    type Item<'x> = Spog<<TS::Item<'x> as Triple>::Term>;
 
     type Error = TS::Error;
 
@@ -34,7 +34,7 @@ impl<TS: TripleSource> Source for ToQuads<TS> {
 pub struct ToTriples<QS>(pub(super) QS);
 
 impl<QS: QuadSource> Source for ToTriples<QS> {
-    type Item<'x> = [<QS::Quad<'x> as Quad>::Term; 3];
+    type Item<'x> = [<QS::Item<'x> as Quad>::Term; 3];
 
     type Error = QS::Error;
 

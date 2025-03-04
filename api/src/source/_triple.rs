@@ -11,9 +11,7 @@ use crate::triple::Triple;
 /// It does not need to be explicitly implemented:
 /// any [`Source`] implementation producing [triples](Triple)
 /// will automatically implement [`TripleSource`].
-///
-/// See also [`TSTriple`].
-pub trait TripleSource: Source + IsTripleSource {
+pub trait TripleSource: Sized + for<'x> Source<Item<'x>: Triple> {
     /// Call f for some triple(s) (possibly zero) from this source, if any.
     ///
     /// Return `Ok(false)` if there are no more triples in this source.
@@ -23,9 +21,9 @@ pub trait TripleSource: Source + IsTripleSource {
     fn try_for_some_triple<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
     where
         E: Error + Send + Sync + 'static,
-        F: FnMut(TSTriple<Self>) -> Result<(), E>,
+        F: FnMut(Self::Item<'_>) -> Result<(), E>,
     {
-        self.try_for_some_item(|i| f(Self::i2t(i)))
+        self.try_for_some_item(|i| f(i))
     }
 
     /// Call f for all triples from this source.
@@ -34,10 +32,10 @@ pub trait TripleSource: Source + IsTripleSource {
     #[inline]
     fn try_for_each_triple<F, E>(&mut self, mut f: F) -> StreamResult<(), Self::Error, E>
     where
-        F: FnMut(TSTriple<Self>) -> Result<(), E>,
+        F: FnMut(Self::Item<'_>) -> Result<(), E>,
         E: Error + Send + Sync + 'static,
     {
-        self.try_for_each_item(|i| f(Self::i2t(i)))
+        self.try_for_each_item(|i| f(i))
     }
 
     /// Call f for some triple(s) (possibly zero) from this source, if any.
@@ -48,9 +46,9 @@ pub trait TripleSource: Source + IsTripleSource {
     #[inline]
     fn for_some_triple<F>(&mut self, mut f: F) -> Result<bool, Self::Error>
     where
-        F: FnMut(TSTriple<Self>),
+        F: FnMut(Self::Item<'_>),
     {
-        self.for_some_item(|i| f(Self::i2t(i)))
+        self.for_some_item(|i| f(i))
     }
 
     /// Call f for all triples from this source.
@@ -59,9 +57,9 @@ pub trait TripleSource: Source + IsTripleSource {
     #[inline]
     fn for_each_triple<F>(&mut self, mut f: F) -> Result<(), Self::Error>
     where
-        F: FnMut(TSTriple<Self>),
+        F: FnMut(Self::Item<'_>),
     {
-        self.for_each_item(|i| f(Self::i2t(i)))
+        self.for_each_item(|i| f(i))
     }
 
     /// Returns a source which uses `predicate` to determine if an triple should be yielded.
@@ -72,9 +70,9 @@ pub trait TripleSource: Source + IsTripleSource {
     ) -> filter::FilterTripleSource<Self, impl FnMut(&Self::Item<'_>) -> bool + 'f>
     where
         Self: Sized,
-        F: FnMut(&TSTriple<Self>) -> bool + 'f,
+        F: FnMut(&Self::Item<'_>) -> bool + 'f,
     {
-        filter::FilterTripleSource(self.filter_items(move |i| predicate(Self::ri2t(i))))
+        filter::FilterTripleSource(self.filter_items(move |i| predicate(i)))
     }
 
     /// Returns a source that both filters and maps.
@@ -87,9 +85,9 @@ pub trait TripleSource: Source + IsTripleSource {
     ) -> filter_map::FilterMapSource<Self, impl FnMut(Self::Item<'_>) -> Option<T> + 'f>
     where
         Self: Sized,
-        F: FnMut(TSTriple<Self>) -> Option<T> + 'f,
+        F: FnMut(Self::Item<'_>) -> Option<T> + 'f,
     {
-        self.filter_map_items(move |i| filter_map(Self::i2t(i)))
+        self.filter_map_items(move |i| filter_map(i))
     }
 
     /// Returns a source which yield the result of `map` for each triple.
@@ -113,9 +111,9 @@ pub trait TripleSource: Source + IsTripleSource {
     ) -> map::MapSource<Self, impl FnMut(Self::Item<'_>) -> T + 'm>
     where
         Self: Sized,
-        F: FnMut(TSTriple<Self>) -> T + 'm,
+        F: FnMut(Self::Item<'_>) -> T + 'm,
     {
-        self.map_items(move |i| map(Self::i2t(i)))
+        self.map_items(move |i| map(i))
     }
 
     /// Returns the bounds on the remaining length of the source.
@@ -159,43 +157,7 @@ pub trait TripleSource: Source + IsTripleSource {
     }
 }
 
-/// Ensures that TripleSource acts as an type alias for any Source satisfying the conditions.
-impl<T> TripleSource for T where T: Source + IsTripleSource {}
-
-/// Type alias to denote the type of triples yielded by a [`TripleSource`].
-///
-/// **Why not using `TS::Item<'a>` instead?**
-/// [`Source::Item`] being a generic associated type (GAT),
-/// the compiler will not always "know" that `TS::Item<'a>` implements the [`Triple`] trait.
-/// This type alias, on the other hand, will always be recognized as a [`Triple`] implementation.
-pub type TSTriple<'a, TS> = <TS as IsTripleSource>::Triple<'a>;
-
-mod sealed {
-    use super::*;
-
-    pub trait IsTripleSource: Source {
-        type Triple<'x>: Triple;
-        fn i2t(i: Self::Item<'_>) -> Self::Triple<'_>;
-        fn ri2t<'a, 'b>(i: &'a Self::Item<'b>) -> &'a Self::Triple<'b>;
-    }
-
-    impl<TS> IsTripleSource for TS
-    where
-        TS: Source,
-        for<'x> TS::Item<'x>: Triple,
-    {
-        type Triple<'x> = Self::Item<'x>;
-
-        fn i2t(i: Self::Item<'_>) -> Self::Triple<'_> {
-            i
-        }
-
-        fn ri2t<'a, 'b>(i: &'a Self::Item<'b>) -> &'a Self::Triple<'b> {
-            i
-        }
-    }
-}
-use sealed::IsTripleSource;
+impl<T: Sized + for<'x> Source<Item<'x>: Triple>> TripleSource for T {}
 
 #[cfg(test)]
 mod check_triple_source {
@@ -208,7 +170,7 @@ mod check_triple_source {
     #[allow(dead_code)] // only checks that this compiles
     pub fn check_for_each<TS>(ts: TS)
     where
-        TS: Source + TripleSource,
+        TS: TripleSource,
     {
         ts.filter_triples(|t| t.s().is_iri())
             .for_each_triple(|t| println!("{:?}", t.s()))

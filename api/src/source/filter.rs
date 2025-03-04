@@ -50,7 +50,7 @@ mod _triple {
         S: TripleSource,
         P: FnMut(&S::Item<'_>) -> bool,
     {
-        type Item<'x> = TSTriple<'x, S>;
+        type Item<'x> = S::Item<'x>;
         type Error = S::Error;
 
         fn try_for_some_item<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
@@ -58,7 +58,7 @@ mod _triple {
             E: std::error::Error + Send + Sync + 'static,
             F: FnMut(Self::Item<'_>) -> Result<(), E>,
         {
-            self.0.try_for_some_item(|i| f(S::i2t(i)))
+            self.0.try_for_some_item(|i| f(i))
         }
 
         fn size_hint_items(&self) -> (usize, Option<usize>) {
@@ -79,7 +79,7 @@ mod _quad {
         S: QuadSource,
         P: FnMut(&S::Item<'_>) -> bool,
     {
-        type Item<'x> = QSQuad<'x, S>;
+        type Item<'x> = S::Item<'x>;
         type Error = S::Error;
 
         fn try_for_some_item<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
@@ -87,7 +87,7 @@ mod _quad {
             E: std::error::Error + Send + Sync + 'static,
             F: FnMut(Self::Item<'_>) -> Result<(), E>,
         {
-            self.0.try_for_some_item(|i| f(S::i2q(i)))
+            self.0.try_for_some_item(|i| f(i))
         }
 
         fn size_hint_items(&self) -> (usize, Option<usize>) {

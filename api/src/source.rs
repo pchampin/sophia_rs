@@ -38,18 +38,6 @@
 //! but we do not want to impose that cost on all implementations
 //! — especially when many consumers will be happy with short-lived references.
 //!
-//! # About the design of [`TripleSource`] and [`QuadSource`]
-//!
-//! The design of [`TripleSource`] (resp. [`QuadSource`]) may seem overcomplicated,
-//! but it aims to have the following properties.
-//!
-//! * When a concrete type implements [`Source`] and its items implement
-//!   [`Triple`](crate::triple::Triple), then it is automatically recognized as a
-//!   [`TripleSource`].
-//! * When a [`TripleSource`] is required, it can be used as a simple trait bound,
-//!   without requiring the user to add a higher ranked trait bound (HRTB) like
-//!   `for <'x> S:Item<'x>: Triple`.
-//!
 //! [`for_each_item`]: Source::for_each_item
 //! [`try_for_each_item`]: Source::try_for_each_item
 //! [`for_each_triple`]: TripleSource::for_each_triple

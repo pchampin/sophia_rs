@@ -11,9 +11,7 @@ use crate::quad::Quad;
 /// It does not need to be explicitly implemented:
 /// any [`Source`] implementation producing [quads](Quad)
 /// will automatically implement [`QuadSource`].
-///
-/// See also [`QSQuad`].
-pub trait QuadSource: Source + IsQuadSource {
+pub trait QuadSource: Sized + for<'x> Source<Item<'x>: Quad> {
     /// Call f for some quad(s) (possibly zero) from this source, if any.
     ///
     /// Return `Ok(false)` if there are no more quads in this source.
@@ -23,9 +21,9 @@ pub trait QuadSource: Source + IsQuadSource {
     fn try_for_some_quad<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
     where
         E: Error + Send + Sync + 'static,
-        F: FnMut(Self::Quad<'_>) -> Result<(), E>,
+        F: FnMut(Self::Item<'_>) -> Result<(), E>,
     {
-        self.try_for_some_item(|i| f(Self::i2q(i)))
+        self.try_for_some_item(|i| f(i))
     }
 
     /// Call f for all quads from this source.
@@ -34,10 +32,10 @@ pub trait QuadSource: Source + IsQuadSource {
     #[inline]
     fn try_for_each_quad<F, E>(&mut self, mut f: F) -> StreamResult<(), Self::Error, E>
     where
-        F: FnMut(Self::Quad<'_>) -> Result<(), E>,
+        F: FnMut(Self::Item<'_>) -> Result<(), E>,
         E: Error + Send + Sync + 'static,
     {
-        self.try_for_each_item(|i| f(Self::i2q(i)))
+        self.try_for_each_item(|i| f(i))
     }
 
     /// Call f for some quad(s) (possibly zero) from this source, if any.
@@ -48,9 +46,9 @@ pub trait QuadSource: Source + IsQuadSource {
     #[inline]
     fn for_some_quad<F>(&mut self, mut f: F) -> Result<bool, Self::Error>
     where
-        F: FnMut(Self::Quad<'_>),
+        F: FnMut(Self::Item<'_>),
     {
-        self.for_some_item(|i| f(Self::i2q(i)))
+        self.for_some_item(|i| f(i))
     }
 
     /// Call f for all quads from this source.
@@ -59,9 +57,9 @@ pub trait QuadSource: Source + IsQuadSource {
     #[inline]
     fn for_each_quad<F>(&mut self, mut f: F) -> Result<(), Self::Error>
     where
-        F: FnMut(Self::Quad<'_>),
+        F: FnMut(Self::Item<'_>),
     {
-        self.for_each_item(|i| f(Self::i2q(i)))
+        self.for_each_item(|i| f(i))
     }
 
     /// Returns a source which uses `predicate` to determine if an quad should be yielded.
@@ -72,9 +70,9 @@ pub trait QuadSource: Source + IsQuadSource {
     ) -> filter::FilterQuadSource<Self, impl FnMut(&Self::Item<'_>) -> bool + 'f>
     where
         Self: Sized,
-        F: FnMut(&QSQuad<Self>) -> bool + 'f,
+        F: FnMut(&Self::Item<'_>) -> bool + 'f,
     {
-        filter::FilterQuadSource(self.filter_items(move |i| predicate(Self::ri2q(i))))
+        filter::FilterQuadSource(self.filter_items(move |i| predicate(i)))
     }
 
     /// Returns a source that both filters and maps.
@@ -87,9 +85,9 @@ pub trait QuadSource: Source + IsQuadSource {
     ) -> filter_map::FilterMapSource<Self, impl FnMut(Self::Item<'_>) -> Option<T> + 'f>
     where
         Self: Sized,
-        F: FnMut(Self::Quad<'_>) -> Option<T> + 'f,
+        F: FnMut(Self::Item<'_>) -> Option<T> + 'f,
     {
-        self.filter_map_items(move |i| filter_map(Self::i2q(i)))
+        self.filter_map_items(move |i| filter_map(i))
     }
 
     /// Returns a source which yield the result of `map` for each quad.
@@ -113,9 +111,9 @@ pub trait QuadSource: Source + IsQuadSource {
     ) -> map::MapSource<Self, impl FnMut(Self::Item<'_>) -> T + 'f>
     where
         Self: Sized,
-        F: FnMut(Self::Quad<'_>) -> T + 'f,
+        F: FnMut(Self::Item<'_>) -> T + 'f,
     {
-        self.map_items(move |i| map(Self::i2q(i)))
+        self.map_items(move |i| map(i))
     }
 
     /// Convert of quads in this source to triples (stripping the graph name).
@@ -138,7 +136,7 @@ pub trait QuadSource: Source + IsQuadSource {
     fn collect_quads<D>(self) -> StreamResult<D, Self::Error, <D as Dataset>::Error>
     where
         Self: Sized,
-        for<'x> Self::Quad<'x>: Quad,
+        for<'x> Self::Item<'x>: Quad,
         D: CollectibleDataset,
     {
         D::from_quad_source(self)
@@ -154,49 +152,14 @@ pub trait QuadSource: Source + IsQuadSource {
     ) -> StreamResult<usize, Self::Error, <D as MutableDataset>::MutationError>
     where
         Self: Sized,
-        for<'x> Self::Quad<'x>: Quad,
+        for<'x> Self::Item<'x>: Quad,
     {
         dataset.insert_all(self)
     }
 }
 
 /// Ensures that QuadSource acts as an type alias for any Source satisfying the conditions.
-impl<T> QuadSource for T where T: Source + IsQuadSource {}
-
-/// Type alias to denote the type of quads yielded by a [`QuadSource`].
-///
-/// **Why not using `TS::Item<'a>` instead?**
-/// [`Source::Item`] being a generic associated type (GAT),
-/// the compiler will not always "know" that `TS::Item<'a>` implements the [`Quad`] trait.
-/// This type alias, on the other hand, will always be recognized as a [`Quad`] implementation.
-pub type QSQuad<'a, TS> = <TS as IsQuadSource>::Quad<'a>;
-
-mod sealed {
-    use super::*;
-
-    pub trait IsQuadSource: Source {
-        type Quad<'x>: Quad;
-        fn i2q(i: Self::Item<'_>) -> Self::Quad<'_>;
-        fn ri2q<'a, 'b>(i: &'a Self::Item<'b>) -> &'a Self::Quad<'b>;
-    }
-
-    impl<TS> IsQuadSource for TS
-    where
-        TS: Source,
-        for<'x> TS::Item<'x>: Quad,
-    {
-        type Quad<'x> = Self::Item<'x>;
-
-        fn i2q(i: Self::Item<'_>) -> Self::Quad<'_> {
-            i
-        }
-
-        fn ri2q<'a, 'b>(i: &'a Self::Item<'b>) -> &'a Self::Quad<'b> {
-            i
-        }
-    }
-}
-use sealed::IsQuadSource;
+impl<T: Sized + for<'x> Source<Item<'x>: Quad>> QuadSource for T {}
 
 #[cfg(test)]
 mod check_quad_source {
