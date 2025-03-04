@@ -7,27 +7,27 @@ jobs:
     name: fmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
       - run: rustup update
       - run: rustup component add rustfmt
+      - uses: actions/checkout@v4
       - run: cargo fmt -- --check
 
   clippy:
     name: clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
       - run: rustup update
       - run: rustup component add clippy
+      - uses: actions/checkout@v4
       - run: cargo clippy --all --all-targets --all-features
 
   test:
     runs-on: ubuntu-latest
     steps:
+      - run: rustup update
       - uses: actions/checkout@v4
         with:
           submodules: true
-      - run: rustup update
       - run: cargo build --all-features
       - run: cargo test --verbose --all --all-features
         env:
@@ -36,5 +36,5 @@ jobs:
   typos:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
       - uses: crate-ci/typos@master
+      - uses: actions/checkout@v4
