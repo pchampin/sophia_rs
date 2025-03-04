@@ -47,7 +47,7 @@ impl<Q: Quad> QuadJsonLdUtil for Q {
         self.s().is_subject()
             && self.p().is_iri()
             && self.o().is_object()
-            && self.g().map_or(true, |g| g.is_subject())
+            && self.g().is_none_or(|g| g.is_subject())
     }
 }
 
