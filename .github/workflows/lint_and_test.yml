@@ -7,8 +7,9 @@ jobs:
     name: fmt
     runs-on: ubuntu-latest
     steps:
-      - run: rustup update
-      - run: rustup component add rustfmt
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
       - uses: actions/checkout@v4
       - run: cargo fmt -- --check
 
@@ -16,15 +17,16 @@ jobs:
     name: clippy
     runs-on: ubuntu-latest
     steps:
-      - run: rustup update
-      - run: rustup component add clippy
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
       - uses: actions/checkout@v4
       - run: cargo clippy --all --all-targets --all-features
 
   test:
     runs-on: ubuntu-latest
     steps:
-      - run: rustup update
+      - uses: dtolnay/rust-toolchain@stable
       - uses: actions/checkout@v4
         with:
           submodules: true
