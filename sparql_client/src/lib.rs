@@ -315,9 +315,9 @@ impl SparqlQuery for Query {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use SparqlResult::*;
     use sophia_api::term::{LanguageTag, TermKind};
     use sophia_isomorphism::isomorphic_graphs;
-    use SparqlResult::*;
 
     type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 

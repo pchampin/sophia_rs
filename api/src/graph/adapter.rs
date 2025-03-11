@@ -3,8 +3,8 @@ use super::*;
 use crate::dataset::{DTerm, Dataset, MutableDataset, SetDataset};
 use crate::quad::Quad;
 use crate::term::{
-    matcher::{Any, GraphNameMatcher},
     GraphName,
+    matcher::{Any, GraphNameMatcher},
 };
 
 /// I wrap a [`Dataset`] as a [`Graph`]
@@ -247,7 +247,7 @@ impl<D: MutableDataset, G: Term> MutableGraph for DatasetGraph<D, G> {
 mod test {
     use super::*;
     use crate::quad::Spog;
-    use crate::term::{graph_name_eq, FromTerm};
+    use crate::term::{FromTerm, graph_name_eq};
     use sophia_iri::Iri;
     use std::collections::BTreeSet;
 

@@ -1,7 +1,7 @@
 use super::{Iri, IriRef, Result};
 use serde::{
-    de::{Error, Unexpected},
     Deserialize, Serialize,
+    de::{Error, Unexpected},
 };
 use std::borrow::Borrow;
 

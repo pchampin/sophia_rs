@@ -2,9 +2,9 @@
 use std::{collections::HashSet, str::FromStr, sync::Arc};
 
 use crate::{
+    SparqlQuery, SparqlWrapper,
     expression::EvalResult,
     value::{SparqlNumber, SparqlValue, XsdDateTime},
-    SparqlQuery, SparqlWrapper,
 };
 
 use sophia_api::{
@@ -578,9 +578,9 @@ fn eval_expr(expr: &str) -> TestResult<EvalResult> {
     eprintln!("eval_expr: {expr}");
     let dataset = LightDataset::default();
     let dataset = SparqlWrapper(&dataset);
-    let query = SparqlQuery::parse(
-        &format!("PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT ({expr} as ?x) {{}}")
-    )?;
+    let query = SparqlQuery::parse(&format!(
+        "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT ({expr} as ?x) {{}}"
+    ))?;
     let bindings = dataset.query(&query)?.into_bindings();
     assert_eq!(bindings.variables().len(), 1);
     let mut first_binding = bindings.into_iter().next().unwrap()?;

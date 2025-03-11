@@ -12,11 +12,11 @@ use rio_api::model::{
     BlankNode, GeneralizedQuad, GeneralizedTerm, GraphName, Literal, NamedNode, Quad as RioQuad,
     Term as RioTerm, Triple as RioTriple, Variable,
 };
+use sophia_api::MownStr;
 use sophia_api::ns::{rdf, xsd};
 use sophia_api::quad::{QBorrowTerm, Quad, Spog};
 use sophia_api::term::{BnodeId, LanguageTag, Term, TermKind, VarName};
 use sophia_api::triple::{TBorrowTerm, Triple};
-use sophia_api::MownStr;
 use sophia_iri::{Iri, IriRef};
 
 impl Term for Trusted<BlankNode<'_>> {

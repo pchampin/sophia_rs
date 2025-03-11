@@ -850,9 +850,9 @@ fn eval_expr(expr: &str) -> TestResult<String> {
     eprintln!("eval_expr: {expr}");
     let dataset = LightDataset::default();
     let dataset = SparqlWrapper(&dataset);
-    let query = SparqlQuery::parse(
-        &format!("PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT ({expr} as ?x) {{}}")
-    )?;
+    let query = SparqlQuery::parse(&format!(
+        "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT ({expr} as ?x) {{}}"
+    ))?;
     let bindings = dataset.query(&query)?.into_bindings();
     let mut got = bindings_to_vec(bindings);
     assert_eq!(got.len(), 1);

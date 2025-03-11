@@ -66,30 +66,33 @@ mod test {
         };
         let c = p.parse_str(xml).add_to_graph(&mut g)?;
         assert_eq!(c, 3);
-        assert!(g
-            .triples_matching(
+        assert!(
+            g.triples_matching(
                 [Iri::new_unchecked("http://localhost/ex#me")],
                 [Iri::new_unchecked("http://example.org/ns/knows")],
                 TermKind::BlankNode,
             )
             .next()
-            .is_some());
-        assert!(g
-            .triples_matching(
+            .is_some()
+        );
+        assert!(
+            g.triples_matching(
                 TermKind::BlankNode,
                 [rdf::type_],
                 [Iri::new_unchecked("http://example.org/ns/Person")],
             )
             .next()
-            .is_some());
-        assert!(g
-            .triples_matching(
+            .is_some()
+        );
+        assert!(
+            g.triples_matching(
                 TermKind::BlankNode,
                 [Iri::new_unchecked("http://example.org/ns/name")],
                 ["Alice"],
             )
             .next()
-            .is_some());
+            .is_some()
+        );
         Ok(())
     }
 }

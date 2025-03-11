@@ -3,12 +3,12 @@
 use std::fmt::Display;
 use std::sync::Arc;
 
-pub use json_ld::expansion::Policy;
-pub use json_ld::rdf::RdfDirection;
-use json_ld::syntax::context::Value as ContextValue;
 use json_ld::Loader;
 pub use json_ld::Options;
 pub use json_ld::ProcessingMode;
+pub use json_ld::expansion::Policy;
+pub use json_ld::rdf::RdfDirection;
+use json_ld::syntax::context::Value as ContextValue;
 use json_syntax::Value;
 use locspan::Location;
 use locspan::Span;

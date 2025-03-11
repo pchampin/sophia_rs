@@ -12,14 +12,14 @@
 
 use super::turtle::TurtleConfig;
 use regex::Regex;
+use sophia_api::MownStr;
 use sophia_api::dataset::Dataset;
 use sophia_api::ns::{rdf, xsd};
 use sophia_api::prefix::PrefixMap;
-use sophia_api::quad::{iter_spog, Gspo, Quad, Spog};
+use sophia_api::quad::{Gspo, Quad, Spog, iter_spog};
 use sophia_api::term::matcher::Any;
 use sophia_api::term::{GraphName, SimpleTerm, Term, TermKind};
 use sophia_api::triple::Triple;
-use sophia_api::MownStr;
 use sophia_iri::{Iri, IriRef};
 use std::cmp::Ordering;
 use std::collections::btree_map::Entry::{Occupied, Vacant};
@@ -453,8 +453,8 @@ fn build_labelled<'a>(d: &'a PrettifiableDataset) -> BTreeSet<&'a SimpleTerm<'a>
                     let [s, p, o] = t.triple().unwrap().spo();
                     if s.is_blank_node() && Dataset::contains(d, s, p, o, q.g()).unwrap() {
                         atoms.next(); // skip the subject blank nodes in atoms
-                                      // and leave it to the "asserted" blank node to determine
-                                      // if it must be labelled or not
+                        //               and leave it to the "asserted" blank node to determine
+                        //               if it must be labelled or not
                     }
                     for a in t.atoms().filter(Term::is_blank_node) {
                         profiles

@@ -9,15 +9,15 @@ use sophia_api::{prelude::QuadParser, quad::Spog};
 use sophia_iri::Iri;
 
 use crate::{
+    JsonLdOptions,
     loader::NoLoader,
     loader_factory::{DefaultLoaderFactory, LoaderFactory},
     vocabulary::{ArcIri, ArcVoc},
-    JsonLdOptions,
 };
 
 mod adapter;
-use adapter::convert_quad;
 pub use adapter::RdfTerm;
+use adapter::convert_quad;
 
 mod source;
 pub use source::JsonLdQuadSource;

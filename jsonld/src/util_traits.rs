@@ -4,8 +4,8 @@ use sophia_api::term::{
     Term,
     TermKind::{BlankNode, Iri, Literal},
 };
-use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::HashMap;
+use std::collections::hash_map::Entry::{Occupied, Vacant};
 
 pub trait TermJsonLdUtil {
     fn is_subject(&self) -> bool;

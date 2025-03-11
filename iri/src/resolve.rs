@@ -156,8 +156,8 @@ impl<T: Borrow<str>, U: IsIriRef> Resolvable<T> for U {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::test::*;
     use crate::AsIriRef;
+    use crate::test::*;
 
     #[test]
     fn positive() {

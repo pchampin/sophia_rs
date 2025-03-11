@@ -6,8 +6,8 @@ use std::{
 };
 
 use sophia_api::{
-    term::{SimpleTerm, Term},
     MownStr,
+    term::{SimpleTerm, Term},
 };
 use sophia_term::ArcTerm;
 

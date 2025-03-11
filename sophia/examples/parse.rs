@@ -22,7 +22,7 @@
 //! [N-Quads]: https://www.w3.org/TR/n-quads/
 
 use std::fs::File;
-use std::io::{stdin, stdout, BufRead, BufReader, BufWriter, Read, Stdin};
+use std::io::{BufRead, BufReader, BufWriter, Read, Stdin, stdin, stdout};
 
 use sophia::api::prelude::*;
 use sophia::api::source::StreamError::{SinkError, SourceError};

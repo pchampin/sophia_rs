@@ -1,8 +1,8 @@
 use crate::Loader;
+use sophia_api::MownStr;
 use sophia_api::graph::CollectibleGraph;
 use sophia_api::ns::rdf;
 use sophia_api::term::matcher::Any;
-use sophia_api::MownStr;
 use sophia_api::{prelude::*, term::SimpleTerm};
 use sophia_iri::is_absolute_iri_ref;
 use std::borrow::Borrow;

@@ -1,7 +1,7 @@
 //! I provide generic wrappers around `Borrow<str>` types,
 //! guaranteeing that their underlying string is a valid IRI or IRI reference.
 use super::resolve::{BaseIri, BaseIriRef};
-use super::{is_absolute_iri_ref, is_valid_iri_ref, wrap, InvalidIri, IsIri, IsIriRef, Result};
+use super::{InvalidIri, IsIri, IsIriRef, Result, is_absolute_iri_ref, is_valid_iri_ref, wrap};
 use std::borrow::Borrow;
 use std::fmt::Display;
 

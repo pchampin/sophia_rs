@@ -13,13 +13,13 @@ use spargebra::term::NamedNodePattern;
 use spargebra::term::TriplePattern;
 use spargebra::term::Variable;
 
+use crate::SparqlWrapperError;
 use crate::bgp;
-use crate::binding::populate_variables;
 use crate::binding::Binding;
 use crate::binding::Bindings;
+use crate::binding::populate_variables;
 use crate::expression::ArcExpression;
 use crate::stash::ArcStrStashExt;
-use crate::SparqlWrapperError;
 
 #[derive(Clone, Debug)]
 pub struct ExecState<'a, D: ?Sized> {

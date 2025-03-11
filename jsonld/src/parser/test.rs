@@ -3,8 +3,8 @@ use sophia_term::ArcTerm;
 use sophia_turtle::parser::nq;
 
 use crate::{
-    loader::{FsLoader, NoLoader, StaticLoader},
     JsonLdOptions, JsonLdParser,
+    loader::{FsLoader, NoLoader, StaticLoader},
 };
 
 // Check whether JsonLdParser<NoLoader> correctly implements QuadParser

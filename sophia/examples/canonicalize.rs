@@ -9,8 +9,8 @@
 //! [N-Quads]: https://www.w3.org/TR/n-quads/
 //! [RDFC-1.0]: https://www.w3.org/TR/rdf-canon/
 
-use std::env::{var, VarError::NotPresent};
-use std::io::{stdin, stdout, BufReader, BufWriter};
+use std::env::{VarError::NotPresent, var};
+use std::io::{BufReader, BufWriter, stdin, stdout};
 
 use sophia::api::prelude::*;
 use sophia::api::quad::Spog;

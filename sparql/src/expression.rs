@@ -11,12 +11,12 @@ use spargebra::algebra::{Expression, Function, GraphPattern};
 use std::{cmp::Ordering, sync::Arc};
 
 use crate::{
+    ResultTerm,
     binding::Binding,
     exec::{ExecConfig, ExecState},
     function::call_function,
-    stash::{value_ref_to_arcterm, value_to_term, ArcStrStashExt},
+    stash::{ArcStrStashExt, value_ref_to_arcterm, value_to_term},
     value::{SparqlNumber, SparqlValue, XsdDateTime},
-    ResultTerm,
 };
 
 /// An [expression](https://www.w3.org/TR/sparql11-query/#expressions).

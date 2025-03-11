@@ -6,8 +6,8 @@ use rdf_types::{
     LanguageTagVocabulary, LanguageTagVocabularyMut, LiteralVocabulary, LiteralVocabularyMut,
 };
 use sophia_api::{
-    term::{BnodeId, Term, TermKind},
     MownStr,
+    term::{BnodeId, Term, TermKind},
 };
 
 /// Self-explanatory IRI index for JSON-LD processing.

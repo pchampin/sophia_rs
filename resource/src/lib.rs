@@ -18,9 +18,9 @@ pub use resource::{Resource, ResourceError, TypedResource};
 mod test {
     use super::*;
     use sophia_api::{
+        MownStr,
         prelude::{Graph, Term},
         term::SimpleTerm,
-        MownStr,
     };
     use sophia_iri::Iri;
 

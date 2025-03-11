@@ -16,12 +16,12 @@
 //! [N-Triples]: https://www.w3.org/TR/n-triples/
 //! [N-Quads]: https://www.w3.org/TR/n-quads/
 
-use std::io::{stdin, stdout, BufReader, BufWriter};
+use std::io::{BufReader, BufWriter, stdin, stdout};
 
 use sophia::api::prelude::*;
 use sophia::api::source::StreamError::{SinkError, SourceError};
 #[cfg(feature = "jsonld")]
-use sophia::jsonld::{serializer::JsonLdSerializer, JsonLdOptions};
+use sophia::jsonld::{JsonLdOptions, serializer::JsonLdSerializer};
 use sophia::turtle::parser::gnq;
 use sophia::turtle::serializer::{
     nq::NqSerializer,

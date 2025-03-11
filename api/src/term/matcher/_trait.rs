@@ -63,11 +63,7 @@ where
         self.iter().any(|mine| mine.eq(term.borrow_term()))
     }
     fn constant(&self) -> Option<&Self::Term> {
-        if N == 1 {
-            Some(&self[0])
-        } else {
-            None
-        }
+        if N == 1 { Some(&self[0]) } else { None }
     }
 }
 

@@ -13,11 +13,11 @@ use spargebra::term::NamedNodePattern;
 use spargebra::term::TermPattern;
 use spargebra::term::TriplePattern;
 
+use crate::SparqlWrapper;
+use crate::SparqlWrapperError;
 use crate::matcher::AnyPattern;
 use crate::stash::ArcStrStashExt;
 use crate::term::ResultTerm;
-use crate::SparqlWrapper;
-use crate::SparqlWrapperError;
 
 pub struct Bindings<'a, D: Dataset + ?Sized> {
     pub(crate) variables: Vec<VarName<Arc<str>>>,

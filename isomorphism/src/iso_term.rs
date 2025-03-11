@@ -3,9 +3,9 @@
 //! in a way that is convenient to compute graph/dataset isomorphism.
 //!
 //! More specifically, all blank nodes are considered equal.
+use sophia_api::MownStr;
 use sophia_api::quad::Spog;
 use sophia_api::term::{BnodeId, FromTerm, LanguageTag, Term, TermKind, TryFromTerm, VarName};
-use sophia_api::MownStr;
 use sophia_iri::IriRef;
 use std::cmp::{Ordering, PartialOrd};
 

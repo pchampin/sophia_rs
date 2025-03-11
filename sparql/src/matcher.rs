@@ -3,10 +3,10 @@
 use std::sync::Arc;
 
 use sophia_api::{
-    term::{
-        matcher::TermMatcher, BnodeId, IriRef, LanguageTag, SimpleTerm, Term, TermKind, VarName,
-    },
     MownStr,
+    term::{
+        BnodeId, IriRef, LanguageTag, SimpleTerm, Term, TermKind, VarName, matcher::TermMatcher,
+    },
 };
 use sophia_term::ArcStrStash;
 use spargebra::term::{NamedNodePattern, TermPattern, TriplePattern};

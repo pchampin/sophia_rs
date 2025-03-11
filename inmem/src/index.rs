@@ -1,8 +1,8 @@
 //! A [`TermIndex`] is a bidirectional assocuation of [terms](Term) with short numeric [indices](Index).
 use sophia_api::term::{FromTerm, GraphName, SimpleTerm, Term};
 
-use std::collections::hash_map::Entry;
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use std::error::Error;
 
 /// Abstraction of the short numeric indices representing [terms](Term) in a [`TermIndex`].

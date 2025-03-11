@@ -5,10 +5,10 @@ macro_rules! gen_term {
     ($type_name: ident, $wrapper: path, $mod_name: ident) => {
         mod $mod_name {
             use super::*;
+            use sophia_api::MownStr;
             use sophia_api::term::{
                 BnodeId, FromTerm, IriRef, LanguageTag, Term, TermKind, TryFromTerm, VarName,
             };
-            use sophia_api::MownStr;
             use $wrapper as W;
 
             #[doc = "An implementation of [`Term`] using "]
@@ -245,7 +245,7 @@ macro_rules! gen_term {
                 use super::*;
                 use sophia_api::{
                     ns::{rdf, xsd},
-                    term::{assert_consistent_term_impl, SimpleTerm},
+                    term::{SimpleTerm, assert_consistent_term_impl},
                 };
 
                 #[test]
@@ -320,7 +320,7 @@ macro_rules! gen_stash {
 
             use sophia_api::term::{BnodeId, IriRef, LanguageTag, SimpleTerm, Term, VarName};
 
-            use crate::{$term_type, GenericLiteral};
+            use crate::{GenericLiteral, $term_type};
 
             #[doc = "A stash is a collection of strings that can be reused for generating [`"]
             #[doc = stringify!($term_type)]

@@ -1,8 +1,8 @@
-use rdf_types::{literal::Type, Id, Literal, Quad, Term};
+use rdf_types::{Id, Literal, Quad, Term, literal::Type};
 use sophia_api::{
+    MownStr,
     quad::Spog,
     term::{Term as SophiaTerm, TermKind},
-    MownStr,
 };
 
 use crate::vocabulary::{ArcBnode, ArcIri, ArcTag};

@@ -58,11 +58,7 @@ where
         })
     }
     fn constant(&self) -> Option<GraphName<&Self::Term>> {
-        if N == 1 {
-            Some(self[0].as_ref())
-        } else {
-            None
-        }
+        if N == 1 { Some(self[0].as_ref()) } else { None }
     }
 }
 

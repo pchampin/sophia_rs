@@ -6,9 +6,9 @@
 use crate::error::JsonLdError;
 use crate::loader::NoLoader;
 use crate::options::JsonLdOptions;
+use json_syntax::Value as JsonValue;
 use json_syntax::print::Indent;
 use json_syntax::print::{Options, Print};
-use json_syntax::Value as JsonValue;
 use sophia_api::serializer::{QuadSerializer, Stringifier};
 use sophia_api::source::{QuadSource, SinkError, StreamResult};
 

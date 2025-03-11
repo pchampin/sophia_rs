@@ -5,7 +5,7 @@
 //! The results of `borrowed_mownstr` should therefore be compared to `refs`,
 //! and that of `owned_mownstr` should be compared to `strings`.
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion, black_box, criterion_group, criterion_main};
 use sophia_iri::resolve::{BaseIri, BaseIriRef};
 
 fn parse(c: &mut Criterion) {

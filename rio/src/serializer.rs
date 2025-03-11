@@ -171,6 +171,6 @@ impl<T> Stack<T> {
         Self: 'a,
         T: 'a,
     {
-        self.head().map(|h| std::mem::transmute(h))
+        self.head().map(|h| unsafe { std::mem::transmute(h) })
     }
 }

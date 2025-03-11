@@ -59,8 +59,8 @@ mod test {
     use super::*;
     use crate::dataset::{Dataset, MutableDataset};
     use crate::graph::{Graph, MutableGraph};
-    use crate::term::ez_term;
     use crate::term::SimpleTerm;
+    use crate::term::ez_term;
 
     #[test]
     fn ts_to_quads() {

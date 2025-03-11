@@ -7,10 +7,10 @@ use sophia_term::GenericLiteral;
 use spargebra::algebra::Function::{self, *};
 
 use crate::{
+    ResultTerm,
     expression::EvalResult,
     ns::RDF_LANG_STRING,
     value::{SparqlNumber, SparqlValue, XsdDateTime},
-    ResultTerm,
 };
 
 #[allow(clippy::module_name_repetitions, clippy::too_many_lines)]

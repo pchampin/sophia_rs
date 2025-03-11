@@ -3,7 +3,7 @@ use std::iter::empty;
 
 use sophia_api::quad::Gspo;
 use sophia_api::term::matcher::{GraphNameMatcher, TermMatcher};
-use sophia_api::term::{graph_name_eq, GraphName, Term};
+use sophia_api::term::{GraphName, Term, graph_name_eq};
 
 use crate::index::{GraphNameIndex, TermIndex};
 

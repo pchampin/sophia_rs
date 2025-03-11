@@ -21,7 +21,7 @@ resolver = "2"
 [workspace.package]
 version = "0.9.0"
 authors = ["Pierre-Antoine Champin <pierre-antoine@champin.net>"]
-edition = "2021"
+edition = "2024"
 repository = "https://github.com/pchampin/sophia_rs"
 readme = "./README.md"
 license = "Apache 2.0 / CECILL-B"

@@ -85,11 +85,7 @@ impl SparqlNumber {
     }
 
     pub fn check<F: FnOnce(&Self) -> bool>(self, predicate: F) -> Option<Self> {
-        if predicate(&self) {
-            Some(self)
-        } else {
-            None
-        }
+        if predicate(&self) { Some(self) } else { None }
     }
 
     pub fn is_zero(&self) -> bool {

@@ -2,17 +2,17 @@ use sophia_api::prelude::*;
 use sophia_term::ArcTerm;
 use spargebra::term::TriplePattern;
 
-use crate::binding::{populate_bindings, Binding};
+use crate::SparqlWrapperError;
+use crate::binding::{Binding, populate_bindings};
 use crate::exec::ExecState;
 use crate::matcher::SparqlMatcher;
-use crate::SparqlWrapperError;
 
-pub fn make_iterator<D: Dataset + ?Sized>(
-    state: &mut ExecState<D>,
+pub fn make_iterator<'a, D: Dataset + ?Sized>(
+    state: &mut ExecState<'a, D>,
     patterns: &[TriplePattern],
     graph_matcher: &[Option<ArcTerm>],
     binding: Option<&Binding>,
-) -> impl Iterator<Item = Result<Binding, SparqlWrapperError<D::Error>>> {
+) -> impl Iterator<Item = Result<Binding, SparqlWrapperError<D::Error>>> + use<'a, D> {
     // TODO one day:
     // test the following "greedy" optimization :
     // 1. first search all ground triple patterns (no var/bnode)

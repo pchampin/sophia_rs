@@ -1,6 +1,6 @@
 use super::{
-    util::{iri_buf, IriBuf},
     Loader, LoaderError,
+    util::{IriBuf, iri_buf},
 };
 use sophia_iri::Iri;
 use std::borrow::Borrow;

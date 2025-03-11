@@ -1,6 +1,6 @@
 //! Tests the [`Loader`] trait, using its [`LocalLoader`] implementation.
 use super::*;
-use crate::{test::*, Resource};
+use crate::{Resource, test::*};
 use sophia_api::MownStr;
 use sophia_iri::Iri;
 use std::fs::read;

@@ -1,6 +1,6 @@
 use super::hash::hash_quad_with;
-use super::iso_term::{cmp_quads, IsoTerm};
-use sophia_api::quad::{iter_spog, Quad};
+use super::iso_term::{IsoTerm, cmp_quads};
+use sophia_api::quad::{Quad, iter_spog};
 use sophia_api::{
     dataset::{DTerm, Dataset},
     quad::Spog,

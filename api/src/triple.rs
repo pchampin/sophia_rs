@@ -17,7 +17,7 @@
 //! * John's family name is "Doe".
 //!
 use crate::quad::Spog;
-use crate::term::{matcher::TermMatcher, GraphName, Term};
+use crate::term::{GraphName, Term, matcher::TermMatcher};
 
 /// Type alias for terms borrowed from a triple.
 pub type TBorrowTerm<'a, T> = <<T as Triple>::Term as Term>::BorrowTerm<'a>;

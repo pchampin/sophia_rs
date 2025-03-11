@@ -5,12 +5,12 @@
 use std::{borrow::Cow, io::BufRead};
 
 use quick_xml::{
+    NsReader,
     events::{
         BytesStart, BytesText,
         Event::{CData, Empty, End, Eof, Start, Text},
     },
     name::{Namespace, QName, ResolveResult},
-    NsReader,
 };
 
 use super::{
@@ -195,7 +195,7 @@ impl<R: BufRead> SparqlXmlParser<R> {
             match self.events.read_event_into(&mut self.buf)? {
                 End(e) if e.name() == name => return Ok(()),
                 Start(_) | Empty(_) | CData(_) => {
-                    return Err(SparqlXml(format!("Spurious content in {name:?}")))
+                    return Err(SparqlXml(format!("Spurious content in {name:?}")));
                 }
                 Text(e) => {
                     if txt(e)?.is_some() {

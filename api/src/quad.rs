@@ -4,7 +4,7 @@
 //!
 //! They are the individual statements of an RDF [datasets](crate::dataset).
 use crate::term::matcher::{GraphNameMatcher, TermMatcher};
-use crate::term::{graph_name_eq, GraphName, Term};
+use crate::term::{GraphName, Term, graph_name_eq};
 
 /// Type alias for terms borrowed from a quad.
 pub type QBorrowTerm<'a, T> = <<T as Quad>::Term as Term>::BorrowTerm<'a>;

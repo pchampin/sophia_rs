@@ -1,9 +1,9 @@
 use std::borrow::Borrow;
 use std::fmt::Debug;
 
+use sophia_api::MownStr;
 use sophia_api::ns::rdf;
 use sophia_api::term::{IriRef, LanguageTag, Term, TermKind, TryFromTerm};
-use sophia_api::MownStr;
 
 lazy_static::lazy_static! {
     static ref RDF_LANG_STRING: IriRef<Box<str>> = rdf::langString.iri().unwrap().map_unchecked(Box::from);

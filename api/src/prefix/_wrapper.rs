@@ -19,8 +19,8 @@ impl<T: Borrow<str>> IsPrefix for Prefix<T> {}
 mod _serde {
     use super::*;
     use serde::{
-        de::{Error, Unexpected},
         Deserialize, Serialize,
+        de::{Error, Unexpected},
     };
     use std::borrow::Borrow;
 

@@ -8,13 +8,13 @@ use std::io;
 use std::rc::Rc;
 
 use sophia_api::dataset::{DTerm, SetDataset};
-use sophia_api::quad::{iter_spog, Quad, Spog};
+use sophia_api::quad::{Quad, Spog, iter_spog};
 use sophia_api::term::{BnodeId, Term};
 
-use crate::C14nError;
-use crate::_c14n_term::{cmp_c14n_terms, C14nTerm};
+use crate::_c14n_term::{C14nTerm, cmp_c14n_terms};
 use crate::_cnq::nq;
 use crate::_permutations::for_each_permutation_of;
+use crate::C14nError;
 use crate::hash::{HashFunction, Sha256, Sha384};
 
 /// Write into `w` a canonical N-quads representation of `d`, where

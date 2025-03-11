@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
-use json_ld::future::{BoxFuture, FutureExt};
 use json_ld::Loader;
+use json_ld::future::{BoxFuture, FutureExt};
 use json_syntax::Value;
 use locspan::Location;
 

@@ -1,4 +1,4 @@
-use super::{util::iri_buf, LoaderError};
+use super::{LoaderError, util::iri_buf};
 use crate::{Resource, ResourceError, TypedResource};
 #[cfg(feature = "jsonld")]
 use futures_util::FutureExt;
@@ -54,7 +54,7 @@ pub trait Loader: Sync + Sized {
             #[cfg(feature = "jsonld")]
             "application/ld+json" => {
                 use sophia_api::prelude::{Quad, QuadParser, QuadSource};
-                use sophia_jsonld::{loader::ClosureLoader, JsonLdOptions, JsonLdParser};
+                use sophia_jsonld::{JsonLdOptions, JsonLdParser, loader::ClosureLoader};
                 let options = JsonLdOptions::new()
                     .with_base(iri.as_ref().map_unchecked(Into::into))
                     .with_document_loader_factory(ClosureLoaderFactory::new(|| {

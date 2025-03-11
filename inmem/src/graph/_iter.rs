@@ -1,8 +1,8 @@
 use std::collections::btree_set::{Iter as BTreeSetIter, Range};
 use std::iter::empty;
 
-use sophia_api::term::matcher::TermMatcher;
 use sophia_api::term::Term;
+use sophia_api::term::matcher::TermMatcher;
 
 use crate::index::TermIndex;
 

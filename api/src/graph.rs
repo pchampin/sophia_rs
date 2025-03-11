@@ -9,7 +9,7 @@ use std::error::Error;
 
 use crate::dataset::adapter::GraphAsDataset;
 use crate::source::{IntoSource, StreamResult, TripleSource};
-use crate::term::{matcher::TermMatcher, SimpleTerm, Term};
+use crate::term::{SimpleTerm, Term, matcher::TermMatcher};
 use crate::triple::Triple;
 
 use resiter::{filter::*, flat_map::*, map::*};

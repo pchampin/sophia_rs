@@ -218,28 +218,30 @@ mod test_json {
         }"#;
         let got: Results = serde_json::from_str(src).unwrap();
         let exp = Results {
-            bindings: vec![vec![
-                (
-                    "a".into(),
-                    Term::Uri {
-                        value: "tag:a0".into(),
-                    },
-                ),
-                (
-                    "b".into(),
-                    Term::Literal(Literal::Simple {
-                        value: "simple".into(),
-                    }),
-                ),
-                (
-                    "c".into(),
-                    Term::Bnode {
-                        value: "bn0".into(),
-                    },
-                ),
-            ]
-            .into_iter()
-            .collect()],
+            bindings: vec![
+                vec![
+                    (
+                        "a".into(),
+                        Term::Uri {
+                            value: "tag:a0".into(),
+                        },
+                    ),
+                    (
+                        "b".into(),
+                        Term::Literal(Literal::Simple {
+                            value: "simple".into(),
+                        }),
+                    ),
+                    (
+                        "c".into(),
+                        Term::Bnode {
+                            value: "bn0".into(),
+                        },
+                    ),
+                ]
+                .into_iter()
+                .collect(),
+            ],
         };
         assert_eq!(got, exp);
     }

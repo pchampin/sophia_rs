@@ -1,7 +1,7 @@
 use std::sync::{Arc, LazyLock};
 
 use sophia_api::{
-    ns::{rdf, xsd, NsTerm},
+    ns::{NsTerm, rdf, xsd},
     term::IriRef,
 };
 

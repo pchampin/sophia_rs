@@ -1,5 +1,5 @@
 use super::*;
-use crate::{test::*, Loader, LocalLoader, NoLoader};
+use crate::{Loader, LocalLoader, NoLoader, test::*};
 use sophia_api::prelude::*;
 use sophia_api::term::SimpleTerm;
 use std::sync::Arc;

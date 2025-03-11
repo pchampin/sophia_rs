@@ -3,8 +3,8 @@
 use std::{borrow::Borrow, sync::Arc};
 
 use json_ld::{
-    syntax::{context::Value as ContextValue, Value},
     ExtractContext, RemoteDocument, RemoteDocumentReference,
+    syntax::{Value, context::Value as ContextValue},
 };
 use json_syntax::Parse;
 use locspan::{Location, Span};
