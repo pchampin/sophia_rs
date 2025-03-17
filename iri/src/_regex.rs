@@ -1,5 +1,6 @@
-use lazy_static::lazy_static;
-use regex::Regex;
+use std::sync::LazyLock;
+
+use regex::{Regex, RegexSet};
 
 /// Check whether `ns` and `suffix` concatenate into a valid (absolute or relative) IRI reference.
 ///
@@ -25,7 +26,7 @@ pub fn is_valid_suffixed_iri_ref(ns: &str, suffix: Option<&str>) -> bool {
 #[inline]
 #[must_use]
 pub fn is_valid_iri_ref(txt: &str) -> bool {
-    IRI_REGEX.is_match(txt) || IRELATIVE_REF_REGEX.is_match(txt)
+    IRI_REF_REGEX.is_match(txt)
 }
 
 /// Check whether `txt` is an absolute IRI reference.
@@ -42,9 +43,16 @@ pub fn is_relative_iri_ref(txt: &str) -> bool {
     IRELATIVE_REF_REGEX.is_match(txt)
 }
 
-lazy_static! {
-    /// Match an absolute IRI reference.
-    pub(crate) static ref IRI_REGEX: Regex = Regex::new(r"(?x)^
+pub(crate) static IRI_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(IRI_REGEX_SRC).unwrap());
+
+pub(crate) static IRELATIVE_REF_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(IRELATIVE_REF_REGEX_SRC).unwrap());
+
+pub(crate) static IRI_REF_REGEX: LazyLock<RegexSet> =
+    LazyLock::new(|| RegexSet::new([IRI_REGEX_SRC, IRELATIVE_REF_REGEX_SRC]).unwrap());
+
+/// Match an absolute IRI reference.
+pub static IRI_REGEX_SRC: &str = r"(?x)^
         #scheme
        ( # CAPTURE scheme
         [A-Za-z] [-A-Za-z0-9+.]*
@@ -175,10 +183,10 @@ lazy_static! {
           )*
          )
         )?
-    $").unwrap();
+$";
 
-    /// Match a relative IRI reference.
-    pub(crate) static ref IRELATIVE_REF_REGEX: Regex = Regex::new(r"(?x)^
+/// Match a relative IRI reference.
+pub static IRELATIVE_REF_REGEX_SRC: &str = r"(?x)^
         #irelative_part
         (?: #iauthority + ipath_abempty
           //
@@ -302,8 +310,7 @@ lazy_static! {
           )*
          )
         )?
-    $").unwrap();
-}
+$";
 
 #[cfg(test)]
 mod test {
