@@ -140,6 +140,7 @@ impl<T: Borrow<str>> Resolvable<T> for &str {
     }
 }
 
+#[diagnostic::do_not_recommend]
 impl<T: Borrow<str>, U: IsIriRef> Resolvable<T> for U {
     type OutputAbs = Iri<T>;
     type OutputRel = IriRef<T>;

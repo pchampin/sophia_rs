@@ -113,6 +113,7 @@ impl TermMatcher for TermKind {
     }
 }
 
+#[diagnostic::do_not_recommend]
 /// Matches any term satisfying the function.
 impl<F> TermMatcher for F
 where

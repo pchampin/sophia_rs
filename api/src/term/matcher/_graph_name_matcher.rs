@@ -113,6 +113,7 @@ where
     }
 }
 
+#[diagnostic::do_not_recommend]
 impl<F> GraphNameMatcher for F
 where
     F: Fn(GraphName<SimpleTerm>) -> bool + ?Sized,

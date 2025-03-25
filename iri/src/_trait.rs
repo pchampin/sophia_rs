@@ -16,6 +16,7 @@ pub trait AsIriRef {
     fn as_iri_ref(&self) -> IriRef<&str>;
 }
 
+#[diagnostic::do_not_recommend]
 impl<T: IsIriRef> AsIriRef for T {
     fn as_iri_ref(&self) -> IriRef<&str> {
         IriRef::new_unchecked(self.borrow())
@@ -28,6 +29,7 @@ pub trait AsIri {
     fn as_iri(&self) -> Iri<&str>;
 }
 
+#[diagnostic::do_not_recommend]
 impl<T: IsIri> AsIri for T {
     fn as_iri(&self) -> Iri<&str> {
         Iri::new_unchecked(self.borrow())

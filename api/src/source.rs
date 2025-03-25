@@ -183,6 +183,7 @@ pub trait Source {
     }
 }
 
+#[diagnostic::do_not_recommend]
 impl<I, T, E> Source for I
 where
     I: Iterator<Item = Result<T, E>>,
