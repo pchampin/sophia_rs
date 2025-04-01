@@ -7,7 +7,7 @@ use std::fmt::Display;
 
 wrap! { Iri borrowing str :
     /// This wrapper guarantees that the underlying `str`
-    /// satisfies the `IRI` rule in  RFC-3687
+    /// satisfies the `IRI` rule in  RFC-3987
     /// (i.e. an absolute IRI with an optional fragment).
     pub fn new(iri: T) -> Result<Self, InvalidIri> {
         if is_absolute_iri_ref(iri.borrow()) {
@@ -55,7 +55,7 @@ impl<T: Borrow<str>> Display for Iri<T> {
 
 wrap! { IriRef borrowing str :
     /// This wrapper guarantees that the underlying `str`
-    /// satisfies the `irelative-ref` rule in  RFC-3687
+    /// satisfies the `irelative-ref` rule in  RFC-3987
     /// (i.e. an absolute or relative IRI reference).
     pub fn new(iri: T) -> Result<Self, InvalidIri> {
         if is_valid_iri_ref(iri.borrow()) {
