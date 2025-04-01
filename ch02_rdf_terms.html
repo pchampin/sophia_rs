@@ -31,10 +31,11 @@
         <!-- Custom theme stylesheets -->
 
 
-        <!-- Provide site root to javascript -->
+        <!-- Provide site root and default themes to javascript -->
         <script>
-            var path_to_root = "";
-            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+            const path_to_root = "";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc.js"></script>
@@ -44,8 +45,8 @@
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
         <script>
             try {
-                var theme = localStorage.getItem('mdbook-theme');
-                var sidebar = localStorage.getItem('mdbook-sidebar');
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
 
                 if (theme.startsWith('"') && theme.endsWith('"')) {
                     localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
@@ -59,7 +60,8 @@
 
         <!-- Set the theme before any content is loaded, prevents flash -->
         <script>
-            var theme;
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
             const html = document.documentElement;
@@ -72,8 +74,8 @@
 
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
-            var sidebar = null;
-            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
@@ -109,6 +111,7 @@
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
@@ -174,7 +177,7 @@ and available from the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term
 <p>If you are interested in the "value" of the term, the trait provides the following methods. All of them return an <code>Option</code>, which will be <code>None</code> if the term does not have the corresponding kind.</p>
 <ul>
 <li>
-<p>If the term is an IRI, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.iri"><code>Term::iri</code></a> returns that IRI<sup class="footnote-reference"><a href="#relative_iris">1</a></sup>.</p>
+<p>If the term is an IRI, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.iri"><code>Term::iri</code></a> returns that IRI<sup class="footnote-reference" id="fr-relative_iris-1"><a href="#footnote-relative_iris">1</a></sup>.</p>
 </li>
 <li>
 <p>If the term is a blank node, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.bnode_id"><code>Term::bnode_id</code></a> returns its <a href="https://www.w3.org/TR/rdf-concepts/#dfn-blank-node-identifier">blank node identifier</a>.</p>
@@ -183,7 +186,7 @@ and available from the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term
 <p>If the term is a literal:</p>
 <ul>
 <li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.lexical_form"><code>Term::lexical_form</code></a> returns its <a href="https://www.w3.org/TR/rdf-concepts/#dfn-lexical-form">lexical form</a> (the "textual value" of the literal),</li>
-<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.datatype"><code>Term::datatype</code></a> returns its datatype IRI<sup class="footnote-reference"><a href="#relative_iris">1</a></sup>,</li>
+<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.datatype"><code>Term::datatype</code></a> returns its datatype IRI<sup class="footnote-reference" id="fr-relative_iris-2"><a href="#footnote-relative_iris">1</a></sup>,</li>
 <li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.language_tag"><code>Term::language_tag</code></a> returns its <a href="https://www.w3.org/TR/rdf-concepts/#dfn-language-tag">language tag</a>, if any.</li>
 </ul>
 </li>
@@ -197,7 +200,7 @@ and available from the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term
 </ul>
 </li>
 <li>
-<p>If the term is a variable<sup class="footnote-reference"><a href="#variables">2</a></sup>, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.variable"><code>Term::variable</code></a> returns its name.</p>
+<p>If the term is a variable<sup class="footnote-reference" id="fr-variables-1"><a href="#footnote-variables">2</a></sup>, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.variable"><code>Term::variable</code></a> returns its name.</p>
 </li>
 </ul>
 <p>Finally, the method <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.eq"><code>Term::eq</code></a> can be used to check whether two values implementing <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html"><code>Term</code></a> represent the same RDF term. Note that the <code>==</code> operator may give a different result than <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.eq"><code>Term::eq</code></a> on some types implementing the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html"><code>Term</code></a> trait.</p>
@@ -275,14 +278,15 @@ let lit_date = "2023-11-15" * xsd::date;
 let t2: i32 = some_term.try_into_term()?;
 <span class="boring">Ok(()) }</span></code></pre>
 <hr />
-<div class="footnote-definition" id="relative_iris"><sup class="footnote-definition-label">1</sup>
+<hr>
+<ol class="footnote-definition"><li id="footnote-relative_iris">
 <p>Note that in Sophia's <a href="ch00_introduction.html#generalized">generalized RDF</a> model,
-IRIs can be <em>relative</em> IRI reference.</p>
-</div>
-<div class="footnote-definition" id="variables"><sup class="footnote-definition-label">2</sup>
-<p>Note that this kind only exist in Sophia's <a href="ch00_introduction.html#generalized">generalized RDF</a> model.</p>
-</div>
-
+IRIs can be <em>relative</em> IRI reference. <a href="#fr-relative_iris-1">↩</a> <a href="#fr-relative_iris-2">↩2</a></p>
+</li>
+<li id="footnote-variables">
+<p>Note that this kind only exist in Sophia's <a href="ch00_introduction.html#generalized">generalized RDF</a> model. <a href="#fr-variables-1">↩</a></p>
+</li>
+</ol>
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">

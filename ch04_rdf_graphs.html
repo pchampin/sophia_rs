@@ -31,10 +31,11 @@
         <!-- Custom theme stylesheets -->
 
 
-        <!-- Provide site root to javascript -->
+        <!-- Provide site root and default themes to javascript -->
         <script>
-            var path_to_root = "";
-            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+            const path_to_root = "";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc.js"></script>
@@ -44,8 +45,8 @@
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
         <script>
             try {
-                var theme = localStorage.getItem('mdbook-theme');
-                var sidebar = localStorage.getItem('mdbook-sidebar');
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
 
                 if (theme.startsWith('"') && theme.endsWith('"')) {
                     localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
@@ -59,7 +60,8 @@
 
         <!-- Set the theme before any content is loaded, prevents flash -->
         <script>
-            var theme;
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
             const html = document.documentElement;
@@ -72,8 +74,8 @@
 
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
-            var sidebar = null;
-            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
@@ -109,6 +111,7 @@
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
@@ -221,9 +224,9 @@ g.insert(s, rdf::value, old_value + 1)?;
 <p>Batch modifications can also be performed on mutable graphs:</p>
 <ul>
 <li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html#method.insert_all"><code>MutableGraph::insert_all</code></a>
-inserts all the triples from a triple source<sup class="footnote-reference"><a href="#triple_source">1</a></sup>;</li>
+inserts all the triples from a triple source<sup class="footnote-reference" id="fr-triple_source-1"><a href="#footnote-triple_source">1</a></sup>;</li>
 <li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html#method.remove_all"><code>MutableGraph::remove_all</code></a>
-removes all the triples from a triple source<sup class="footnote-reference"><a href="#triple_source">1</a></sup>;</li>
+removes all the triples from a triple source<sup class="footnote-reference" id="fr-triple_source-2"><a href="#footnote-triple_source">1</a></sup>;</li>
 <li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html#method.remove_matching"><code>MutableGraph::remove_matching</code></a>
 removes all the triples matching the parameters;</li>
 <li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraphremove.html#method.retain_matching"><code>MutableGraph::retain_matching</code></a>
@@ -257,7 +260,7 @@ g.insert(
   "Alice"
 )?;
 <span class="boring">Ok(()) }</span></code></pre>
-<h3 id="constructing-a-graph-from-a-triple-source1"><a class="header" href="#constructing-a-graph-from-a-triple-source1">Constructing a graph from a triple source<sup class="footnote-reference"><a href="#triple_source">1</a></sup></a></h3>
+<h3 id="constructing-a-graph-from-a-triple-source1"><a class="header" href="#constructing-a-graph-from-a-triple-source1">Constructing a graph from a triple source<sup class="footnote-reference" id="fr-triple_source-3"><a href="#footnote-triple_source">1</a></sup></a></h3>
 <pre><code class="language-rust noplayground"><span class="boring">use sophia::{api::prelude::*, inmem::graph::FastGraph, iri::Iri};
 </span><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 </span><span class="boring">let big_graph = FastGraph::new();
@@ -283,13 +286,14 @@ let graph: FastGraph = turtle::parse_bufread(f)
 <span class="boring">Ok(()) }</span></code></pre>
 <p>For more about parsing (and serializing), see <a href="./ch07_parsing_and_serializing.html">the corresponding chapter</a>.</p>
 <hr />
-<div class="footnote-definition" id="triple_source"><sup class="footnote-definition-label">1</sup>
+<hr>
+<ol class="footnote-definition"><li id="footnote-triple_source">
 <p>a <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/source/trait.TripleSource.html"><code>TripleSource</code></a> is a fallible stream of triples,
 such as those returned by <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#tymethod.triples"><code>Graph::triples</code></a> or <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.triples_matching"><code>Graph::triples_matching</code></a>,
 or those returned by <a href="./ch07_parsing_and_serializing.html">parsers</a>.
-In particular, any iterator of <code>Result&lt;T, E&gt;</code> where <code>T: </code><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> is a <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/source/trait.TripleSource.html"><code>TripleSource</code></a>.</p>
-</div>
-
+In particular, any iterator of <code>Result&lt;T, E&gt;</code> where <code>T: </code><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> is a <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/source/trait.TripleSource.html"><code>TripleSource</code></a>. <a href="#fr-triple_source-1">↩</a> <a href="#fr-triple_source-2">↩2</a> <a href="#fr-triple_source-3">↩3</a></p>
+</li>
+</ol>
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
