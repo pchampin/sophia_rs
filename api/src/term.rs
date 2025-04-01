@@ -41,16 +41,18 @@ lazy_static::lazy_static! {
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialOrd, PartialEq)]
 pub enum TermKind {
     /// An [RDF IRI](https://www.w3.org/TR/rdf11-concepts/#section-IRIs)
-    Iri,
+    Iri = 1,
     /// An RDF [literal](https://www.w3.org/TR/rdf11-concepts/#section-Graph-Literal)
-    Literal,
+    Literal = 2,
     /// An RDF [blank node](https://www.w3.org/TR/rdf11-concepts/#section-blank-nodes)
-    BlankNode,
+    BlankNode = 0,
     /// An RDF-star [quoted triple](https://www.w3.org/2021/12/rdf-star.html#dfn-quoted)
-    Triple,
+    Triple = 3,
     /// A SPARQL or Notation3 variable
-    Variable,
+    Variable = 4,
 }
+// NB: the associated integer values are used to define the order,
+// in a way that is compatible with SPARQL.
 
 /// A [generalized] RDF term.
 ///
@@ -388,7 +390,7 @@ pub trait Term: std::fmt::Debug {
     }
 
     /// Compare two terms:
-    /// * IRIs < literals < blank nodes < quoted triples < variables
+    /// * blank nodes < IRIs < literals < quoted triples < variables
     /// * IRIs, blank nodes and variables are ordered by their value
     /// * Literals are ordered by their datatype, then their language (if any),
     ///   then their lexical form
@@ -800,15 +802,15 @@ mod test_term_impl {
     #[test_case("2", "'10'")]
     #[test_case("'b'@en", "'a'")]
     // order across term kinds
+    #[test_case("_:b", "<tag:a>")]
+    #[test_case("_:b", "'s'")]
+    #[test_case("_:b", "<<_:q <tag:q> 'q'>>")]
+    #[test_case("_:b", "?p")]
     #[test_case("<tag:a>", "'s'")]
-    #[test_case("<tag:a>", "_:r")]
     #[test_case("<tag:a>", "<<_:q <tag:q> 'q'>>")]
     #[test_case("<tag:a>", "?p")]
-    #[test_case("'s'", "_:r")]
     #[test_case("'s'", "<<_:q <tag:q> 'q'>>")]
     #[test_case("'s'", "?p")]
-    #[test_case("_:r", "<<_:q <tag:q> 'q'>>")]
-    #[test_case("_:r", "?p")]
     #[test_case("<<_:q <tag:q> 'q'>>", "?p")]
     fn cmp_terms(t1: &str, t2: &str) {
         let t1 = ez_term(t1);

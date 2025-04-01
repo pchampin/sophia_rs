@@ -70,9 +70,9 @@ fn get_all_terms() -> TestResult {
         .collect::<Result<Vec<_>, _>>()?;
     terms.sort_unstable();
     assert_eq!(terms.len(), 3);
-    assert_eq!(terms[0], F1R2);
-    assert_eq!(terms[1], F1R3);
-    assert!(terms[2].is_blank_node());
+    assert!(terms[0].is_blank_node());
+    assert_eq!(terms[1], F1R2);
+    assert_eq!(terms[2], F1R3);
     Ok(())
 }
 
@@ -262,12 +262,12 @@ fn get_all_resources() -> TestResult {
         .collect::<Result<Vec<_>, _>>()?;
     terms.sort_unstable_by_key(|r| r.id().try_into_term::<SimpleTerm>());
     assert_eq!(terms.len(), 3);
-    assert_eq!(terms[0].id(), &F1R2);
-    assert_eq!(terms[0].get_term(EX_ID)?, "res2");
-    assert_eq!(terms[1].id(), &F1R3);
-    assert_eq!(terms[1].get_term(EX_ID)?, "res3");
-    assert!(terms[2].id().is_blank_node());
-    assert_eq!(terms[2].get_term(EX_ID)?, "res4");
+    assert!(terms[0].id().is_blank_node());
+    assert_eq!(terms[0].get_term(EX_ID)?, "res4");
+    assert_eq!(terms[1].id(), &F1R2);
+    assert_eq!(terms[1].get_term(EX_ID)?, "res2");
+    assert_eq!(terms[2].id(), &F1R3);
+    assert_eq!(terms[2].get_term(EX_ID)?, "res3");
     Ok(())
 }
 
@@ -458,12 +458,12 @@ fn get_all_typed() -> TestResult {
         .collect::<Result<Vec<WithId>, _>>()?;
     terms.sort_unstable_by_key(|r| r.id().try_into_term::<SimpleTerm>());
     assert_eq!(terms.len(), 3);
-    assert_eq!(terms[0].id(), &F1R2);
-    assert_eq!(terms[0].get_term(EX_ID)?, "res2");
-    assert_eq!(terms[1].id(), &F1R3);
-    assert_eq!(terms[1].get_term(EX_ID)?, "res3");
-    assert!(terms[2].id().is_blank_node());
-    assert_eq!(terms[2].get_term(EX_ID)?, "res4");
+    assert!(terms[0].id().is_blank_node());
+    assert_eq!(terms[0].get_term(EX_ID)?, "res4");
+    assert_eq!(terms[1].id(), &F1R2);
+    assert_eq!(terms[1].get_term(EX_ID)?, "res2");
+    assert_eq!(terms[2].id(), &F1R3);
+    assert_eq!(terms[2].get_term(EX_ID)?, "res3");
     Ok(())
 }
 
