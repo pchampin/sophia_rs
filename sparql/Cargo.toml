@@ -22,6 +22,7 @@ sophia_iri.workspace = true
 sophia_term.workspace = true
 bigdecimal = "0.4"
 chrono = { version = "0.4", features = ["alloc"] }
+log.workspace = true
 num-bigint = "0.4"
 oxiri.workspace = true
 rand = "0.8"

@@ -1,6 +1,7 @@
 #![allow(clippy::module_name_repetitions)]
 
 use std::collections::BTreeSet;
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use sophia_api::prelude::*;
@@ -117,7 +118,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             } => Err(SparqlWrapperError::NotImplemented("Values")),
             OrderBy { inner, expression } => Err(SparqlWrapperError::NotImplemented("OrderBy")),
             Project { inner, variables } => self.project(inner, variables, graph_matcher, binding),
-            Distinct { inner } => Err(SparqlWrapperError::NotImplemented("Distinct")),
+            Distinct { inner } => self.distinct(inner, graph_matcher, binding),
             Reduced { inner } => Err(SparqlWrapperError::NotImplemented("Reduced")),
             Slice {
                 inner,
@@ -156,6 +157,35 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         let variables = populate_variables(patterns, &mut self.stash, binding);
         let iter = Box::new(bgp::make_iterator(self, patterns, graph_matcher, binding));
         Bindings { variables, iter }
+    }
+
+    fn distinct(
+        &mut self,
+        inner: &GraphPattern,
+        graph_matcher: &[Option<ArcTerm>],
+        binding: Option<&Binding>,
+    ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
+        let Bindings { variables, iter } = self.select(inner, graph_matcher, binding)?;
+        let mut seen = HashSet::new();
+        // config and graph_matcher will be moved in the closure;
+        let config = Arc::clone(&self.config);
+        let graph_matcher = graph_matcher.iter().map(Clone::clone).collect::<Vec<_>>();
+        // note that config must be an Arc clone,
+        // so that we don't "leak" the lifetime of `self` in the return value;
+        // for the same reason, we clone the ArcTerms in graph_matcher
+        // before passing them to the closure.
+        let variables2 = variables.clone();
+        let iter = Box::new(iter.filter(move |resb| match resb {
+            Err(_) => true,
+            Ok(b) => {
+                let hashable: Vec<_> = variables2
+                    .iter()
+                    .map(|v| b.v.get(v.as_str()).map(|t| t.inner().clone()))
+                    .collect();
+                seen.insert(hashable)
+            }
+        }));
+        Ok(Bindings { variables, iter })
     }
 
     fn filter(
