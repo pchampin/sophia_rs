@@ -1,5 +1,6 @@
 #![allow(clippy::module_name_repetitions)]
 
+use std::cmp::Ordering;
 use std::collections::BTreeSet;
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -9,6 +10,7 @@ use sophia_term::ArcStrStash;
 use sophia_term::ArcTerm;
 use spargebra::algebra::Expression;
 use spargebra::algebra::GraphPattern;
+use spargebra::algebra::OrderExpression;
 use spargebra::algebra::QueryDataset;
 use spargebra::term::NamedNodePattern;
 use spargebra::term::TriplePattern;
@@ -116,7 +118,9 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 variables,
                 bindings,
             } => Err(SparqlWrapperError::NotImplemented("Values")),
-            OrderBy { inner, expression } => Err(SparqlWrapperError::NotImplemented("OrderBy")),
+            OrderBy { inner, expression } => {
+                self.order_by(inner, expression, graph_matcher, binding)
+            }
             Project { inner, variables } => self.project(inner, variables, graph_matcher, binding),
             Distinct { inner } => self.distinct(inner, graph_matcher, binding),
             Reduced { inner } => Err(SparqlWrapperError::NotImplemented("Reduced")),
@@ -334,6 +338,61 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 b
             })
         }));
+        Ok(Bindings { variables, iter })
+    }
+
+    fn order_by(
+        &mut self,
+        inner: &GraphPattern,
+        expression: &[OrderExpression],
+        graph_matcher: &[Option<ArcTerm>],
+        binding: Option<&Binding>,
+    ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
+        let criteria: Vec<_> = expression
+            .iter()
+            .map(|oe| match oe {
+                OrderExpression::Asc(e) => (ArcExpression::from_expr(e, &mut self.stash), false),
+                OrderExpression::Desc(e) => (ArcExpression::from_expr(e, &mut self.stash), true),
+            })
+            .collect();
+
+        // config and graph_matcher will be moved in the closure;
+        let config = Arc::clone(&self.config);
+        let graph_matcher2 = graph_matcher.iter().map(Clone::clone).collect::<Vec<_>>();
+        // note that config must be an Arc clone,
+        // so that we don't "leak" the lifetime of `self` in the return value;
+        // for the same reason, we clone the ArcTerms in graph_matcher
+        // before passing them to the closure.
+
+        fn cmp_bindings_with<D: Dataset + ?Sized>(
+            b1: &Binding,
+            b2: &Binding,
+            criteria: &[(ArcExpression, bool)],
+            config: &Arc<ExecConfig<D>>,
+            graph_matcher: &[Option<ArcTerm>],
+        ) -> Ordering {
+            match criteria {
+                [] => Ordering::Equal,
+                [(expr, desc), rest @ ..] => {
+                    let v1 = expr.eval(b1, config, graph_matcher);
+                    let v2 = expr.eval(b2, config, graph_matcher);
+                    let o = match (v1, v2) {
+                        (None, None) => Ordering::Equal,
+                        (None, Some(_)) => Ordering::Less,
+                        (Some(v1), v2) => v1.sparql_order_by(&v2),
+                    };
+                    let o = if *desc { o.reverse() } else { o };
+                    o.then_with(|| cmp_bindings_with(b1, b2, rest, config, graph_matcher))
+                }
+            }
+        }
+
+        let Bindings { variables, iter } = self.select(inner, graph_matcher, binding)?;
+        let mut bindings = iter.collect::<Result<Vec<_>, _>>()?;
+        bindings.sort_unstable_by(|b1, b2| {
+            cmp_bindings_with(b1, b2, &criteria, &config, &graph_matcher2)
+        });
+        let iter = Box::new(bindings.into_iter().map(Ok));
         Ok(Bindings { variables, iter })
     }
 

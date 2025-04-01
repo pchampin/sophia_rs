@@ -449,6 +449,20 @@ impl EvalResult {
             }
         }
     }
+
+    /// Determine the order between self and other for SPARQL ORDER BY.
+    ///
+    /// Note that this function is actually more constrained than the SPARQL spec.
+    /// In SPARQL, the order is partial,
+    /// while this function falls back to the total order defined by [`Term::cmp`].
+    pub fn sparql_order_by(&self, other: &Option<Self>) -> Ordering {
+        if let Some(val) = other {
+            self.sparql_cmp(val)
+                .unwrap_or_else(|| Term::cmp(&self.as_term(), val.as_term()))
+        } else {
+            Ordering::Greater
+        }
+    }
 }
 
 impl From<ResultTerm> for EvalResult {
