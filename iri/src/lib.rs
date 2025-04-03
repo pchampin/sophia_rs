@@ -33,6 +33,7 @@ pub use _wrapper::*;
 #[cfg(feature = "serde")]
 mod _serde;
 
+pub mod relativize;
 pub mod resolve;
 
 #[cfg(feature = "examples")]

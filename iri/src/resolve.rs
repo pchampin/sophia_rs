@@ -44,6 +44,16 @@ impl<T: Deref<Target = str>> BaseIri<T> {
     ) -> R::OutputAbs {
         R::output_abs(self.0.resolve_into(iri.borrow(), buf).map(|()| &buf[..]))
     }
+
+    /// Borrow this [`BaseIri`] as a [`BaseIri`]`<&str>`
+    pub fn as_ref(&self) -> BaseIri<&str> {
+        BaseIri(self.0.as_ref())
+    }
+
+    /// Destruct this [`BaseIri`] into its inner string.
+    pub fn into_inner(self) -> T {
+        self.0.into_inner()
+    }
 }
 
 impl<T: Deref<Target = str>> Borrow<str> for BaseIri<T> {
