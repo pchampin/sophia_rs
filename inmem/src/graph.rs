@@ -43,16 +43,17 @@ impl<TI: TermIndex> Graph for GenericLightGraph<TI> {
     }
 
     #[allow(refining_impl_trait)]
-    fn triples_matching<'s, S, P, O>(
+    fn triples_matching<'s, 't, S, P, O>(
         &'s self,
         sm: S,
         pm: P,
         om: O,
-    ) -> Box<dyn Iterator<Item = GResult<Self, Self::Triple<'s>>> + 's>
+    ) -> Box<dyn Iterator<Item = GResult<Self, Self::Triple<'s>>> + 't>
     where
-        S: sophia_api::term::matcher::TermMatcher + 's,
-        P: sophia_api::term::matcher::TermMatcher + 's,
-        O: sophia_api::term::matcher::TermMatcher + 's,
+        's: 't,
+        S: sophia_api::term::matcher::TermMatcher + 't,
+        P: sophia_api::term::matcher::TermMatcher + 't,
+        O: sophia_api::term::matcher::TermMatcher + 't,
     {
         if let Some(sc) = sm.constant() {
             let Some(si) = self.terms.get_index(sc.borrow_term()) else {
@@ -180,16 +181,17 @@ impl<TI: TermIndex> Graph for GenericFastGraph<TI> {
     }
 
     #[allow(refining_impl_trait)]
-    fn triples_matching<'s, S, P, O>(
+    fn triples_matching<'s, 't, S, P, O>(
         &'s self,
         sm: S,
         pm: P,
         om: O,
-    ) -> Box<dyn Iterator<Item = GResult<Self, Self::Triple<'s>>> + 's>
+    ) -> Box<dyn Iterator<Item = GResult<Self, Self::Triple<'s>>> + 't>
     where
-        S: sophia_api::term::matcher::TermMatcher + 's,
-        P: sophia_api::term::matcher::TermMatcher + 's,
-        O: sophia_api::term::matcher::TermMatcher + 's,
+        's: 't,
+        S: sophia_api::term::matcher::TermMatcher + 't,
+        P: sophia_api::term::matcher::TermMatcher + 't,
+        O: sophia_api::term::matcher::TermMatcher + 't,
     {
         let si = match sm.constant().map(|t| self.terms.get_index(t.borrow_term())) {
             None => None,

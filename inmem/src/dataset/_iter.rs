@@ -10,10 +10,10 @@ use crate::index::{GraphNameIndex, TermIndex};
 pub struct GspoMatchingIterator<'a, TI, GM, SM, PM, OM>
 where
     TI: TermIndex + 'a,
-    GM: GraphNameMatcher + 'a,
-    SM: TermMatcher + 'a,
-    PM: TermMatcher + 'a,
-    OM: TermMatcher + 'a,
+    GM: GraphNameMatcher,
+    SM: TermMatcher,
+    PM: TermMatcher,
+    OM: TermMatcher,
 {
     terms: &'a TI,
     gspo: BTreeSetIter<'a, [TI::Index; 4]>,
@@ -23,13 +23,14 @@ where
     o: TermData<'a, TI, OM>,
 }
 
-impl<'a, TI, GM, SM, PM, OM> GspoMatchingIterator<'a, TI, GM, SM, PM, OM>
+impl<'a, 'b, TI, GM, SM, PM, OM> GspoMatchingIterator<'a, TI, GM, SM, PM, OM>
 where
+    'a: 'b,
     TI: GraphNameIndex + 'a,
-    GM: GraphNameMatcher + 'a,
-    SM: TermMatcher + 'a,
-    PM: TermMatcher + 'a,
-    OM: TermMatcher + 'a,
+    GM: GraphNameMatcher + 'b,
+    SM: TermMatcher + 'b,
+    PM: TermMatcher + 'b,
+    OM: TermMatcher + 'b,
 {
     pub fn boxed(
         terms: &'a TI,
@@ -38,7 +39,7 @@ where
         sm: SM,
         pm: PM,
         om: OM,
-    ) -> Box<dyn Iterator<Item = Result<Qud<'a, TI>, TI::Error>> + 'a> {
+    ) -> Box<dyn Iterator<Item = Result<Qud<'a, TI>, TI::Error>> + 'b> {
         match gspo.clone().next() {
             None => Box::new(empty()),
             Some(first) => Box::new(Self::new(terms, gspo, gm, sm, pm, om, first).map(Ok)),
@@ -75,10 +76,10 @@ pub type Qud<'a, TI> = Gspo<<<TI as TermIndex>::Term as Term>::BorrowTerm<'a>>;
 impl<'a, TI, GM, SM, PM, OM> Iterator for GspoMatchingIterator<'a, TI, GM, SM, PM, OM>
 where
     TI: GraphNameIndex + 'a,
-    GM: GraphNameMatcher + 'a,
-    SM: TermMatcher + 'a,
-    PM: TermMatcher + 'a,
-    OM: TermMatcher + 'a,
+    GM: GraphNameMatcher,
+    SM: TermMatcher,
+    PM: TermMatcher,
+    OM: TermMatcher,
 {
     type Item = Qud<'a, TI>;
 
@@ -122,9 +123,9 @@ where
 pub struct BcdMatchingIterator<'a, TI, BM, CM, DM>
 where
     TI: GraphNameIndex + 'a,
-    BM: GraphNameMatcher + 'a,
-    CM: GraphNameMatcher + 'a,
-    DM: GraphNameMatcher + 'a,
+    BM: GraphNameMatcher,
+    CM: GraphNameMatcher,
+    DM: GraphNameMatcher,
 {
     terms: &'a TI,
     abcd: Range<'a, [TI::Index; 4]>,
@@ -134,12 +135,13 @@ where
     d: GraphNameData<'a, TI, DM>,
 }
 
-impl<'a, TI, BM, CM, DM> BcdMatchingIterator<'a, TI, BM, CM, DM>
+impl<'a, 'b, TI, BM, CM, DM> BcdMatchingIterator<'a, TI, BM, CM, DM>
 where
+    'a: 'b,
     TI: GraphNameIndex + 'a,
-    BM: GraphNameMatcher + 'a,
-    CM: GraphNameMatcher + 'a,
-    DM: GraphNameMatcher + 'a,
+    BM: GraphNameMatcher + 'b,
+    CM: GraphNameMatcher + 'b,
+    DM: GraphNameMatcher + 'b,
 {
     pub fn boxed<F>(
         terms: &'a TI,
@@ -148,7 +150,7 @@ where
         cm: CM,
         dm: DM,
         mut to_gspo: F,
-    ) -> Box<dyn Iterator<Item = Result<Qud<'a, TI>, TI::Error>> + 'a>
+    ) -> Box<dyn Iterator<Item = Result<Qud<'a, TI>, TI::Error>> + 'b>
     where
         F: FnMut(GnQuad<'a, TI>) -> GnQuad<'a, TI> + 'a,
     {
@@ -199,9 +201,9 @@ type GnQuad<'a, TI> = [GraphName<<<TI as TermIndex>::Term as Term>::BorrowTerm<'
 impl<'a, TI, BM, CM, DM> Iterator for BcdMatchingIterator<'a, TI, BM, CM, DM>
 where
     TI: GraphNameIndex + 'a,
-    BM: GraphNameMatcher + 'a,
-    CM: GraphNameMatcher + 'a,
-    DM: GraphNameMatcher + 'a,
+    BM: GraphNameMatcher,
+    CM: GraphNameMatcher,
+    DM: GraphNameMatcher,
 {
     type Item = GnQuad<'a, TI>;
 
@@ -239,8 +241,8 @@ where
 pub struct CdMatchingIterator<'a, TI, CM, DM>
 where
     TI: GraphNameIndex + 'a,
-    CM: GraphNameMatcher + 'a,
-    DM: GraphNameMatcher + 'a,
+    CM: GraphNameMatcher,
+    DM: GraphNameMatcher,
 {
     terms: &'a TI,
     abcd: Range<'a, [TI::Index; 4]>,
@@ -250,11 +252,12 @@ where
     d: GraphNameData<'a, TI, DM>,
 }
 
-impl<'a, TI, CM, DM> CdMatchingIterator<'a, TI, CM, DM>
+impl<'a, 'b, TI, CM, DM> CdMatchingIterator<'a, TI, CM, DM>
 where
+    'a: 'b,
     TI: GraphNameIndex + 'a,
-    CM: GraphNameMatcher + 'a,
-    DM: GraphNameMatcher + 'a,
+    CM: GraphNameMatcher + 'b,
+    DM: GraphNameMatcher + 'b,
 {
     pub fn boxed<F>(
         terms: &'a TI,
@@ -262,7 +265,7 @@ where
         cm: CM,
         dm: DM,
         mut to_gspo: F,
-    ) -> Box<dyn Iterator<Item = Result<Qud<'a, TI>, TI::Error>> + 'a>
+    ) -> Box<dyn Iterator<Item = Result<Qud<'a, TI>, TI::Error>> + 'b>
     where
         F: FnMut(GnQuad<'a, TI>) -> GnQuad<'a, TI> + 'a,
     {
@@ -308,8 +311,8 @@ where
 impl<'a, TI, CM, DM> Iterator for CdMatchingIterator<'a, TI, CM, DM>
 where
     TI: GraphNameIndex + 'a,
-    CM: GraphNameMatcher + 'a,
-    DM: GraphNameMatcher + 'a,
+    CM: GraphNameMatcher,
+    DM: GraphNameMatcher,
 {
     type Item = GnQuad<'a, TI>;
 
@@ -342,7 +345,7 @@ struct GraphNameData<'a, TI, M>
 where
     TI: TermIndex,
     TI::Term: 'a,
-    M: GraphNameMatcher + 'a,
+    M: GraphNameMatcher,
 {
     m: M,
     i: TI::Index,
@@ -354,7 +357,7 @@ impl<'a, TI, M> GraphNameData<'a, TI, M>
 where
     TI: GraphNameIndex,
     TI::Term: 'a,
-    M: GraphNameMatcher + 'a,
+    M: GraphNameMatcher,
 {
     fn uninit(m: M, i: TI::Index, terms: &'a TI) -> Self {
         let t = terms.get_graph_name(i);

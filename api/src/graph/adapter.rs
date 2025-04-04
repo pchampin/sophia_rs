@@ -40,16 +40,17 @@ impl<T: Dataset> Graph for UnionGraph<T> {
             .map(|r| r.map(Quad::into_triple))
     }
 
-    fn triples_matching<'s, S, P, O>(
+    fn triples_matching<'s, 't, S, P, O>(
         &'s self,
         sm: S,
         pm: P,
         om: O,
-    ) -> impl Iterator<Item = GResult<Self, Self::Triple<'s>>> + 's
+    ) -> impl Iterator<Item = GResult<Self, Self::Triple<'s>>> + 't
     where
-        S: TermMatcher + 's,
-        P: TermMatcher + 's,
-        O: TermMatcher + 's,
+        's: 't,
+        S: TermMatcher + 't,
+        P: TermMatcher + 't,
+        O: TermMatcher + 't,
     {
         self.0
             .quads_matching(sm, pm, om, Any)
@@ -131,16 +132,17 @@ impl<D: Dataset, M: GraphNameMatcher + Copy> Graph for PartialUnionGraph<D, M> {
             .map(|r| r.map(Quad::into_triple))
     }
 
-    fn triples_matching<'s, S, P, O>(
+    fn triples_matching<'s, 't, S, P, O>(
         &'s self,
         sm: S,
         pm: P,
         om: O,
-    ) -> impl Iterator<Item = GResult<Self, Self::Triple<'s>>> + 's
+    ) -> impl Iterator<Item = GResult<Self, Self::Triple<'s>>> + 't
     where
-        S: TermMatcher + 's,
-        P: TermMatcher + 's,
-        O: TermMatcher + 's,
+        's: 't,
+        S: TermMatcher + 't,
+        P: TermMatcher + 't,
+        O: TermMatcher + 't,
     {
         self.d
             .quads_matching(sm, pm, om, self.m)
@@ -199,16 +201,17 @@ impl<D: Dataset, G: Term> Graph for DatasetGraph<D, G> {
             .map(|r| r.map(Quad::into_triple))
     }
 
-    fn triples_matching<'s, S, P, O>(
+    fn triples_matching<'s, 't, S, P, O>(
         &'s self,
         sm: S,
         pm: P,
         om: O,
-    ) -> impl Iterator<Item = GResult<Self, Self::Triple<'s>>> + 's
+    ) -> impl Iterator<Item = GResult<Self, Self::Triple<'s>>> + 't
     where
-        S: TermMatcher + 's,
-        P: TermMatcher + 's,
-        O: TermMatcher + 's,
+        's: 't,
+        S: TermMatcher + 't,
+        P: TermMatcher + 't,
+        O: TermMatcher + 't,
     {
         self.d
             .quads_matching(sm, pm, om, [self.g()])

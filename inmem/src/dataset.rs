@@ -47,18 +47,19 @@ impl<TI: GraphNameIndex> Dataset for GenericLightDataset<TI> {
     }
 
     #[allow(refining_impl_trait)]
-    fn quads_matching<'s, S, P, O, G>(
+    fn quads_matching<'s, 't, S, P, O, G>(
         &'s self,
         sm: S,
         pm: P,
         om: O,
         gm: G,
-    ) -> Box<dyn Iterator<Item = DResult<Self, Self::Quad<'s>>> + 's>
+    ) -> Box<dyn Iterator<Item = DResult<Self, Self::Quad<'s>>> + 't>
     where
-        S: sophia_api::term::matcher::TermMatcher + 's,
-        P: sophia_api::term::matcher::TermMatcher + 's,
-        O: sophia_api::term::matcher::TermMatcher + 's,
-        G: sophia_api::term::matcher::GraphNameMatcher + 's,
+        's: 't,
+        S: sophia_api::term::matcher::TermMatcher + 't,
+        P: sophia_api::term::matcher::TermMatcher + 't,
+        O: sophia_api::term::matcher::TermMatcher + 't,
+        G: sophia_api::term::matcher::GraphNameMatcher + 't,
     {
         if let Some(gc) = gm.constant() {
             let gc = gc.map(|t| t.borrow_term());
@@ -240,18 +241,19 @@ impl<TI: GraphNameIndex> Dataset for GenericFastDataset<TI> {
     }
 
     #[allow(refining_impl_trait)]
-    fn quads_matching<'s, S, P, O, G>(
+    fn quads_matching<'s, 't, S, P, O, G>(
         &'s self,
         sm: S,
         pm: P,
         om: O,
         gm: G,
-    ) -> Box<dyn Iterator<Item = DResult<Self, Self::Quad<'s>>> + 's>
+    ) -> Box<dyn Iterator<Item = DResult<Self, Self::Quad<'s>>> + 't>
     where
-        S: sophia_api::term::matcher::TermMatcher + 's,
-        P: sophia_api::term::matcher::TermMatcher + 's,
-        O: sophia_api::term::matcher::TermMatcher + 's,
-        G: sophia_api::term::matcher::GraphNameMatcher + 's,
+        's: 't,
+        S: sophia_api::term::matcher::TermMatcher + 't,
+        P: sophia_api::term::matcher::TermMatcher + 't,
+        O: sophia_api::term::matcher::TermMatcher + 't,
+        G: sophia_api::term::matcher::GraphNameMatcher + 't,
     {
         let si = match sm.constant().map(|t| self.terms.get_index(t.borrow_term())) {
             None => None,
