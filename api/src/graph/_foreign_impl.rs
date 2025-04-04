@@ -24,16 +24,17 @@ impl<T: Graph + ?Sized> Graph for &T {
         T::triples(*self)
     }
 
-    fn triples_matching<'s, S, P, O>(
+    fn triples_matching<'s, 't, S, P, O>(
         &'s self,
         sm: S,
         pm: P,
         om: O,
-    ) -> impl Iterator<Item = GResult<Self, Self::Triple<'s>>> + 's
+    ) -> impl Iterator<Item = GResult<Self, Self::Triple<'s>>> + 't
     where
-        S: TermMatcher + 's,
-        P: TermMatcher + 's,
-        O: TermMatcher + 's,
+        's: 't,
+        S: TermMatcher + 't,
+        P: TermMatcher + 't,
+        O: TermMatcher + 't,
     {
         T::triples_matching(*self, sm, pm, om)
     }
@@ -96,16 +97,17 @@ impl<T: Graph + ?Sized> Graph for &mut T {
         T::triples(*self)
     }
 
-    fn triples_matching<'s, S, P, O>(
+    fn triples_matching<'s, 't, S, P, O>(
         &'s self,
         sm: S,
         pm: P,
         om: O,
-    ) -> impl Iterator<Item = GResult<Self, Self::Triple<'s>>> + 's
+    ) -> impl Iterator<Item = GResult<Self, Self::Triple<'s>>> + 't
     where
-        S: TermMatcher + 's,
-        P: TermMatcher + 's,
-        O: TermMatcher + 's,
+        's: 't,
+        S: TermMatcher + 't,
+        P: TermMatcher + 't,
+        O: TermMatcher + 't,
     {
         T::triples_matching(*self, sm, pm, om)
     }

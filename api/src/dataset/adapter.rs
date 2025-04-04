@@ -44,18 +44,19 @@ where
     }
 
     #[allow(refining_impl_trait)]
-    fn quads_matching<'s, S, P, O, G>(
+    fn quads_matching<'s, 't, S, P, O, G>(
         &'s self,
         sm: S,
         pm: P,
         om: O,
         gm: G,
-    ) -> Box<dyn Iterator<Item = DResult<Self, Self::Quad<'s>>> + 's>
+    ) -> Box<dyn Iterator<Item = DResult<Self, Self::Quad<'s>>> + 't>
     where
-        S: TermMatcher + 's,
-        P: TermMatcher + 's,
-        O: TermMatcher + 's,
-        G: GraphNameMatcher + 's,
+        's: 't,
+        S: TermMatcher + 't,
+        P: TermMatcher + 't,
+        O: TermMatcher + 't,
+        G: GraphNameMatcher + 't,
     {
         if gm.matches(None as GraphName<&GTerm<T>>) {
             Box::new(

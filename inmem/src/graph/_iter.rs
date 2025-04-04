@@ -9,9 +9,9 @@ use crate::index::TermIndex;
 pub struct SpoMatchingIterator<'a, TI, SM, PM, OM>
 where
     TI: TermIndex + 'a,
-    SM: TermMatcher + 'a,
-    PM: TermMatcher + 'a,
-    OM: TermMatcher + 'a,
+    SM: TermMatcher,
+    PM: TermMatcher,
+    OM: TermMatcher,
 {
     terms: &'a TI,
     spo: BTreeSetIter<'a, [TI::Index; 3]>,
@@ -20,12 +20,13 @@ where
     o: TermData<'a, TI, OM>,
 }
 
-impl<'a, TI, SM, PM, OM> SpoMatchingIterator<'a, TI, SM, PM, OM>
+impl<'a, 'b, TI, SM, PM, OM> SpoMatchingIterator<'a, TI, SM, PM, OM>
 where
+    'a: 'b,
     TI: TermIndex + 'a,
-    SM: TermMatcher + 'a,
-    PM: TermMatcher + 'a,
-    OM: TermMatcher + 'a,
+    SM: TermMatcher + 'b,
+    PM: TermMatcher + 'b,
+    OM: TermMatcher + 'b,
 {
     pub fn boxed(
         terms: &'a TI,
@@ -33,7 +34,7 @@ where
         sm: SM,
         pm: PM,
         om: OM,
-    ) -> Box<dyn Iterator<Item = Result<Trpl<'a, TI>, TI::Error>> + 'a> {
+    ) -> Box<dyn Iterator<Item = Result<Trpl<'a, TI>, TI::Error>> + 'b> {
         match spo.clone().next() {
             None => Box::new(empty()),
             Some(first) => Box::new(Self::new(terms, spo, sm, pm, om, first).map(Ok)),
@@ -67,9 +68,9 @@ type Trpl<'a, TI> = [<<TI as TermIndex>::Term as Term>::BorrowTerm<'a>; 3];
 impl<'a, TI, SM, PM, OM> Iterator for SpoMatchingIterator<'a, TI, SM, PM, OM>
 where
     TI: TermIndex + 'a,
-    SM: TermMatcher + 'a,
-    PM: TermMatcher + 'a,
-    OM: TermMatcher + 'a,
+    SM: TermMatcher,
+    PM: TermMatcher,
+    OM: TermMatcher,
 {
     type Item = Trpl<'a, TI>;
 
@@ -106,8 +107,8 @@ where
 pub struct BcMatchingIterator<'a, TI, BM, CM>
 where
     TI: TermIndex + 'a,
-    BM: TermMatcher + 'a,
-    CM: TermMatcher + 'a,
+    BM: TermMatcher,
+    CM: TermMatcher,
 {
     terms: &'a TI,
     abc: Range<'a, [TI::Index; 3]>,
@@ -116,11 +117,12 @@ where
     c: TermData<'a, TI, CM>,
 }
 
-impl<'a, TI, BM, CM> BcMatchingIterator<'a, TI, BM, CM>
+impl<'a, 'b, TI, BM, CM> BcMatchingIterator<'a, TI, BM, CM>
 where
+    'a: 'b,
     TI: TermIndex + 'a,
-    BM: TermMatcher + 'a,
-    CM: TermMatcher + 'a,
+    BM: TermMatcher + 'b,
+    CM: TermMatcher + 'b,
 {
     pub fn boxed<F>(
         terms: &'a TI,
@@ -128,9 +130,9 @@ where
         bm: BM,
         cm: CM,
         mut to_spo: F,
-    ) -> Box<dyn Iterator<Item = Result<Trpl<'a, TI>, TI::Error>> + 'a>
+    ) -> Box<dyn Iterator<Item = Result<Trpl<'a, TI>, TI::Error>> + 'b>
     where
-        F: FnMut(Trpl<'a, TI>) -> Trpl<'a, TI> + 'a,
+        F: FnMut(Trpl<'a, TI>) -> Trpl<'a, TI> + 'b,
     {
         match abc.clone().next() {
             None => Box::new(empty()),
@@ -164,8 +166,8 @@ where
 impl<'a, TI, BM, CM> Iterator for BcMatchingIterator<'a, TI, BM, CM>
 where
     TI: TermIndex + 'a,
-    BM: TermMatcher + 'a,
-    CM: TermMatcher + 'a,
+    BM: TermMatcher,
+    CM: TermMatcher,
 {
     type Item = Trpl<'a, TI>;
 
@@ -195,7 +197,7 @@ pub struct TermData<'a, TI, M>
 where
     TI: TermIndex,
     TI::Term: 'a,
-    M: TermMatcher + 'a,
+    M: TermMatcher,
 {
     pub m: M,
     pub i: TI::Index,
@@ -207,7 +209,7 @@ impl<'a, TI, M> TermData<'a, TI, M>
 where
     TI: TermIndex,
     TI::Term: 'a,
-    M: TermMatcher + 'a,
+    M: TermMatcher,
 {
     pub fn uninit(m: M, i: TI::Index, terms: &'a TI) -> Self {
         let t = terms.get_term(i);

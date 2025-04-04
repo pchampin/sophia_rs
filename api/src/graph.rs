@@ -154,16 +154,17 @@ pub trait Graph {
     /// #
     /// # Ok(()) }
     /// ```
-    fn triples_matching<'s, S, P, O>(
+    fn triples_matching<'s, 't, S, P, O>(
         &'s self,
         sm: S,
         pm: P,
         om: O,
-    ) -> impl Iterator<Item = GResult<Self, Self::Triple<'s>>> + 's
+    ) -> impl Iterator<Item = GResult<Self, Self::Triple<'s>>> + 't
     where
-        S: TermMatcher + 's,
-        P: TermMatcher + 's,
-        O: TermMatcher + 's,
+        's: 't,
+        S: TermMatcher + 't,
+        P: TermMatcher + 't,
+        O: TermMatcher + 't,
     {
         self.triples()
             .filter_ok(move |t| t.matched_by(sm.matcher_ref(), pm.matcher_ref(), om.matcher_ref()))

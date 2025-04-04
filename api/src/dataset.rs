@@ -161,18 +161,19 @@ pub trait Dataset {
     /// #
     /// # Ok(()) }
     /// ```
-    fn quads_matching<'s, S, P, O, G>(
+    fn quads_matching<'s, 't, S, P, O, G>(
         &'s self,
         sm: S,
         pm: P,
         om: O,
         gm: G,
-    ) -> impl Iterator<Item = DResult<Self, Self::Quad<'s>>> + 's
+    ) -> impl Iterator<Item = DResult<Self, Self::Quad<'s>>> + 't
     where
-        S: TermMatcher + 's,
-        P: TermMatcher + 's,
-        O: TermMatcher + 's,
-        G: GraphNameMatcher + 's,
+        's: 't,
+        S: TermMatcher + 't,
+        P: TermMatcher + 't,
+        O: TermMatcher + 't,
+        G: GraphNameMatcher + 't,
     {
         self.quads().filter_ok(move |q| {
             q.matched_by(
