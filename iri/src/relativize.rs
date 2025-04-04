@@ -89,7 +89,6 @@ impl<T: Deref<Target = str>> Relativizer<T> {
         } else if lcp >= self.pseudoroot {
             // iri and base have similar paths
             for (nb, slash) in self.slashes.iter().copied().enumerate() {
-                dbg!((nb, slash, lcp));
                 if lcp > slash {
                     return if nb == 0 {
                         if iri.len() == slash + 1 || iri[slash + 1..].starts_with(['?', '#']) {
@@ -252,7 +251,6 @@ mod test {
 
         let rel = Relativizer::new(base.as_ref(), parents);
         let abs = base.resolve(exp.as_ref());
-        dbg!((3, &rel, &abs));
         let got = rel.relativize(abs.as_ref());
         if exp_depth <= parents {
             assert_eq!(got, Some(exp));
