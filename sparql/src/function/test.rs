@@ -2,18 +2,18 @@
 use std::{collections::HashSet, str::FromStr, sync::Arc};
 
 use crate::{
-    SparqlQuery, SparqlWrapper,
+    ResultTerm, SparqlQuery, SparqlWrapper,
     expression::EvalResult,
     value::{SparqlNumber, SparqlValue, XsdDateTime},
 };
 
 use sophia_api::{
-    ns::rdf,
+    ns::{rdf, xsd},
     sparql::{Query, SparqlDataset},
-    term::{IriRef, LanguageTag, Term},
+    term::{FromTerm, IriRef, LanguageTag, Term},
 };
 use sophia_inmem::dataset::LightDataset;
-use sophia_term::GenericLiteral;
+use sophia_term::{ArcTerm, GenericLiteral};
 use test_case::test_case;
 
 #[test_case("tag:x")]
@@ -540,6 +540,35 @@ fn seconds(date_time: &str, exp: &str) -> TestResult {
         bigdecimal::BigDecimal::from_str(exp).unwrap(),
     ));
     assert!(eval_eq(Some(super::seconds(&date_time)), Some(exp)));
+    Ok(())
+}
+
+#[test_case("2025-01-18T12:34:56", None)]
+#[test_case("2025-01-18T12:34:57Z", Some("PT0S"))]
+#[test_case("2025-01-18T12:34:58.9+01:00", Some("PT1H"))]
+#[test_case("2025-01-18T12:34:58.9-00:02", Some("-PT2M"))]
+#[test_case("2025-01-18T12:34:58.9+06:30", Some("PT6H30M"))]
+#[test_case("2025-01-18T12:34:58.9-14:00", Some("-PT14H"))]
+#[test_case("-0002-01-18T12:34:01.23", None)]
+#[test_case("-0002-01-18T12:34:02Z", Some("PT0S"))]
+#[test_case("-0002-01-18T12:34:03+01:00", Some("PT1H"))]
+#[test_case("-0002-01-18T12:34:03-00:02", Some("-PT2M"))]
+#[test_case("-0002-01-18T12:34:03+06:30", Some("PT6H30M"))]
+#[test_case("-0002-01-18T12:34:03-14:00", Some("-PT14H"))]
+#[test_case("2024-12-31T24:00:00", None)]
+#[test_case("2024-12-31T24:00:00Z", Some("PT0S"))]
+#[test_case("2024-12-31T24:00:00+01:00", Some("PT1H"))]
+#[test_case("2024-12-31T24:00:00-00:02", Some("-PT2M"))]
+#[test_case("2024-12-31T24:00:00+06:30", Some("PT6H30M"))]
+#[test_case("2024-12-31T24:00:00-14:00", Some("-PT14H"))]
+fn timezone(date_time: &str, exp: Option<&str>) -> TestResult {
+    let date_time: XsdDateTime = date_time.parse()?;
+    let exp = exp.map(|txt| {
+        EvalResult::from(ResultTerm::from(ArcTerm::from_term(
+            txt * xsd::dayTimeDuration,
+        )))
+    });
+    assert!(eval_eq(super::timezone(&date_time), exp));
     Ok(())
 }
 

@@ -656,6 +656,15 @@ fn test_expr_variable() -> TestResult {
 #[test_case("seconds(\"2025-01-18T12:34:56\"^^xsd:dateTime)", "56.0"; "seconds for valid date")]
 #[test_case("seconds(\"2023-02-29T12:34:56\"^^xsd:dateTime)", ""; "seconds for invalid date")]
 #[test_case("seconds(<< <tag:s> <tag:p> <tag:o> >>)", ""; "seconds for triple")]
+// test timezone
+#[test_case("timezone(<tag:x>)", ""; "timezone for IRI")]
+#[test_case("timezone(bnode())", ""; "timezone for bnode")]
+#[test_case("timezone(\"foobar\")", ""; "timezone for string")]
+#[test_case("timezone(\"foobar\"@en)", ""; "timezone for language string")]
+#[test_case("timezone(42)", ""; "timezone for number")]
+#[test_case("timezone(\"2025-01-18T12:34:56Z\"^^xsd:dateTime)", "\"PT0S\"^^xsd:dayTimeDuration"; "timezone for valid date")]
+#[test_case("timezone(\"2023-02-29T12:34:56Z\"^^xsd:dateTime)", ""; "timezone for invalid date")]
+#[test_case("timezone(<< <tag:s> <tag:p> <tag:o> >>)", ""; "timezone for triple")]
 // TODO test other function calls
 // test isIri
 #[test_case("isIri(<tag:x>)", "true"; "isIri for IRI")]

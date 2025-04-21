@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 
 use chrono::{Datelike, Timelike};
 use rand::random;
@@ -202,7 +202,12 @@ pub fn call_function(function: &Function, mut arguments: Vec<EvalResult>) -> Opt
             };
             Some(seconds(argument.as_xsd_date_time()?))
         }
-        Timezone => todo("Timezone"),
+        Timezone => {
+            let [argument] = &arguments[..] else {
+                unreachable!();
+            };
+            timezone(argument.as_xsd_date_time()?)
+        }
         Tz => todo("Tz"),
         Now => todo("Now"),
         Uuid => todo("Uuid"),
@@ -490,6 +495,38 @@ pub fn seconds(dt: &XsdDateTime) -> EvalResult {
     let nano: u64 = dt.second() as u64 * 1_000_000_000 + dt.nanosecond() as u64;
     let seconds = bigdecimal::BigDecimal::from((nano, 9));
     SparqlNumber::from(seconds).into()
+}
+
+pub fn timezone(dt: &XsdDateTime) -> Option<EvalResult> {
+    static DATATYPE: LazyLock<IriRef<Arc<str>>> = LazyLock::new(|| {
+        IriRef::new_unchecked("http://www.w3.org/2001/XMLSchema#dayTimeDuration".into())
+    });
+    match dt {
+        XsdDateTime::Naive(_) => None,
+        XsdDateTime::Timezoned(dt) => {
+            let offset = dt.offset().local_minus_utc();
+            let s = if offset.signum() < 0 { "-" } else { "" };
+            let offset = offset.abs();
+            let h = offset / 3600;
+            let m = offset / 60 % 60;
+            let lex = if h > 0 && m > 0 {
+                format!("{s}PT{h}H{m}M")
+            } else if h > 0 {
+                format!("{s}PT{h}H")
+            } else if m > 0 {
+                format!("{s}PT{m}M")
+            } else {
+                "PT0S".into()
+            };
+            Some(
+                ResultTerm::from(sophia_term::ArcTerm::Literal(GenericLiteral::Typed(
+                    lex.into(),
+                    DATATYPE.clone(),
+                )))
+                .into(),
+            )
+        }
+    }
 }
 
 pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResult> {
