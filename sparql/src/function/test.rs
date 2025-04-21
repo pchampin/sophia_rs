@@ -572,6 +572,31 @@ fn timezone(date_time: &str, exp: Option<&str>) -> TestResult {
     Ok(())
 }
 
+#[test_case("2025-01-18T12:34:56", "")]
+#[test_case("2025-01-18T12:34:57Z", "Z")]
+#[test_case("2025-01-18T12:34:58.9+01:00", "+01:00")]
+#[test_case("2025-01-18T12:34:58.9-00:02", "-00:02")]
+#[test_case("2025-01-18T12:34:58.9+06:30", "+06:30")]
+#[test_case("2025-01-18T12:34:58.9-14:00", "-14:00")]
+#[test_case("-0002-01-18T12:34:01.23", "")]
+#[test_case("-0002-01-18T12:34:02Z", "Z")]
+#[test_case("-0002-01-18T12:34:03+01:00", "+01:00")]
+#[test_case("-0002-01-18T12:34:03-00:02", "-00:02")]
+#[test_case("-0002-01-18T12:34:03+06:30", "+06:30")]
+#[test_case("-0002-01-18T12:34:03-14:00", "-14:00")]
+#[test_case("2024-12-31T24:00:00", "")]
+#[test_case("2024-12-31T24:00:00Z", "Z")]
+#[test_case("2024-12-31T24:00:00+01:00", "+01:00")]
+#[test_case("2024-12-31T24:00:00-00:02", "-00:02")]
+#[test_case("2024-12-31T24:00:00+06:30", "+06:30")]
+#[test_case("2024-12-31T24:00:00-14:00", "-14:00")]
+fn tz(date_time: &str, exp: &str) -> TestResult {
+    let date_time = Arc::from(date_time);
+    let exp = EvalResult::from(Arc::from(exp));
+    assert!(eval_eq(Some(super::tz(&date_time)), Some(exp)));
+    Ok(())
+}
+
 #[test_case("<tag:s>", "<tag:p>", "<tag:o>", true)]
 #[test_case("<tag:s>", "<tag:p>", "bnode()", true)]
 #[test_case("<tag:s>", "<tag:p>", " \"o\" ", true)]

@@ -2,6 +2,7 @@ use std::sync::{Arc, LazyLock};
 
 use chrono::{Datelike, Timelike};
 use rand::random;
+use regex::Regex;
 use sophia_api::term::{BnodeId, IriRef, LanguageTag, Term};
 use sophia_term::GenericLiteral;
 use spargebra::algebra::Function::{self, *};
@@ -208,7 +209,13 @@ pub fn call_function(function: &Function, mut arguments: Vec<EvalResult>) -> Opt
             };
             timezone(argument.as_xsd_date_time()?)
         }
-        Tz => todo("Tz"),
+        Tz => {
+            let [argument] = &arguments[..] else {
+                unreachable!();
+            };
+            argument.as_xsd_date_time()?; // ensure it is an xsd:dateTime
+            Some(tz(argument.as_literal()?.get_lexical_form()))
+        }
         Now => todo("Now"),
         Uuid => todo("Uuid"),
         StrUuid => todo("StrUuid"),
@@ -527,6 +534,16 @@ pub fn timezone(dt: &XsdDateTime) -> Option<EvalResult> {
             )
         }
     }
+}
+
+pub fn tz(valid_xsd_date_time: &str) -> EvalResult {
+    static TZ: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(r"^.?+:..:..(?:\.[0-9]*)?(.*)").unwrap());
+    let substr = match TZ.captures(valid_xsd_date_time) {
+        None => unreachable!("argument should be a valid xsd:dateTime"),
+        Some(cap) => cap.get(1).unwrap().as_str(),
+    };
+    EvalResult::from(Arc::from(substr))
 }
 
 pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResult> {
