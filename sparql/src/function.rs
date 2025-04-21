@@ -395,7 +395,10 @@ pub fn str_len(string: &Arc<str>) -> EvalResult {
     if l <= isize::MAX as usize {
         SparqlNumber::from(l as isize).into()
     } else {
-        todo!()
+        unreachable!()
+        // slices in Rust can not be longer than isize::MAX
+        // See https://doc.rust-lang.org/std/primitive.pointer.html#method.offset
+        // "Allocated objects can never be larger than isize::MAX bytes"
     }
 }
 
