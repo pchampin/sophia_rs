@@ -9,13 +9,18 @@ use spargebra::algebra::Function::{self, *};
 
 use crate::{
     ResultTerm,
+    exec::ExecConfig,
     expression::EvalResult,
     ns::RDF_LANG_STRING,
     value::{SparqlNumber, SparqlValue, XsdDateTime},
 };
 
 #[allow(clippy::module_name_repetitions, clippy::too_many_lines)]
-pub fn call_function(function: &Function, mut arguments: Vec<EvalResult>) -> Option<EvalResult> {
+pub fn call_function<D: ?Sized>(
+    function: &Function,
+    mut arguments: Vec<EvalResult>,
+    config: &ExecConfig<D>,
+) -> Option<EvalResult> {
     match function {
         Str => {
             let [arg] = &arguments[..] else {
@@ -216,7 +221,12 @@ pub fn call_function(function: &Function, mut arguments: Vec<EvalResult>) -> Opt
             argument.as_xsd_date_time()?; // ensure it is an xsd:dateTime
             Some(tz(argument.as_literal()?.get_lexical_form()))
         }
-        Now => todo("Now"),
+        Now => {
+            debug_assert!(arguments.is_empty());
+            Some(EvalResult::from(SparqlValue::DateTime(Some(
+                XsdDateTime::Timezoned(config.now),
+            ))))
+        }
         Uuid => todo("Uuid"),
         StrUuid => todo("StrUuid"),
         Md5 => todo("Md5"),

@@ -674,6 +674,9 @@ fn test_expr_variable() -> TestResult {
 #[test_case("tz(\"2025-01-18T12:34:56Z\"^^xsd:dateTime)", "\"Z\""; "tz for valid date")]
 #[test_case("tz(\"2023-02-29T12:34:56Z\"^^xsd:dateTime)", ""; "tz for invalid date")]
 #[test_case("tz(<< <tag:s> <tag:p> <tag:o> >>)", ""; "tz for triple")]
+// test now
+#[test_case("datatype(now()) = xsd:dateTime", "true"; "now returns an xsd:dateTime")]
+#[test_case("now() = now()", "true"; "now always returns the same value in one query execution")]
 // TODO test other function calls
 // test isIri
 #[test_case("isIri(<tag:x>)", "true"; "isIri for IRI")]

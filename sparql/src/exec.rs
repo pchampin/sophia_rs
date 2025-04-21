@@ -35,6 +35,7 @@ pub struct ExecConfig<'a, D: ?Sized> {
     pub dataset: &'a D,
     pub default_matcher: Vec<Option<ArcTerm>>,
     pub named_graphs: Vec<[Option<ArcTerm>; 1]>,
+    pub now: chrono::DateTime<chrono::FixedOffset>,
 }
 
 impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
@@ -65,10 +66,12 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 return Err(SparqlWrapperError::NotImplemented("FROM NAMED"));
             }
         };
+        let now = chrono::Local::now().fixed_offset();
         let config = Arc::new(ExecConfig {
             dataset,
             default_matcher,
             named_graphs,
+            now,
         });
         Ok(ExecState { stash, config })
     }

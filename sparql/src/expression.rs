@@ -317,7 +317,7 @@ impl ArcExpression {
                     .map_while(|e| e.eval(binding, config, graph_matcher))
                     .collect();
                 if evaluated.len() == arguments.len() {
-                    call_function(function, evaluated)
+                    call_function(function, evaluated, config.as_ref())
                 } else {
                     None
                 }
