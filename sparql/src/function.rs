@@ -366,7 +366,7 @@ fn make_regex(pattern: &str, flags: Option<&Arc<str>>) -> Option<Regex> {
                     reb.ignore_whitespace(true);
                 }
                 b'q' => {
-                    log::warn!("regex flag 'q' not implemented");
+                    log::error!("regex flag 'q' not implemented");
                     return None;
                 }
                 _ => {
@@ -460,7 +460,7 @@ pub fn sub_str(
     Some(EvalResult::from((Arc::from(&lex[s..e]), tag.cloned())))
 }
 
-pub fn str_len(string: &Arc<str>) -> EvalResult {
+pub fn str_len(string: &str) -> EvalResult {
     let l = string.chars().count();
     if l <= isize::MAX as usize {
         SparqlNumber::from(l as isize).into()
@@ -482,7 +482,7 @@ pub fn l_case(source: StringLiteral) -> EvalResult {
     EvalResult::from((Arc::from(lex), source.1.cloned()))
 }
 
-pub fn encode_for_uri(source: &Arc<str>) -> EvalResult {
+pub fn encode_for_uri(source: &str) -> EvalResult {
     use encode_for_uri_utils::*;
     let ascii = source
         .as_bytes()
@@ -626,7 +626,7 @@ pub fn is_triple(er: &EvalResult) -> EvalResult {
 }
 
 fn todo<T: std::fmt::Display>(function_name: T) -> Option<EvalResult> {
-    eprintln!("Function not implemented: {function_name}");
+    log::error!("Function not implemented: {function_name}");
     None
 }
 
