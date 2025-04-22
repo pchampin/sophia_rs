@@ -259,30 +259,35 @@ impl ArcExpression {
             Add(lhs, rhs) => {
                 let lhs = lhs.eval(binding, config, graph_matcher)?;
                 let rhs = rhs.eval(binding, config, graph_matcher)?;
-                (lhs.as_number()? + rhs.as_number()?).map(|n| SparqlValue::from(n).into())
+                (lhs.as_number("Add#1")? + rhs.as_number("Add#2")?)
+                    .map(|n| SparqlValue::from(n).into())
             }
             Subtract(lhs, rhs) => {
                 let lhs = lhs.eval(binding, config, graph_matcher)?;
                 let rhs = rhs.eval(binding, config, graph_matcher)?;
-                (lhs.as_number()? - rhs.as_number()?).map(|n| SparqlValue::from(n).into())
+                (lhs.as_number("Subtract#1")? - rhs.as_number("Subtract#2")?)
+                    .map(|n| SparqlValue::from(n).into())
             }
             Multiply(lhs, rhs) => {
                 let lhs = lhs.eval(binding, config, graph_matcher)?;
                 let rhs = rhs.eval(binding, config, graph_matcher)?;
-                (lhs.as_number()? * rhs.as_number()?).map(|n| SparqlValue::from(n).into())
+                (lhs.as_number("Multiply#1")? * rhs.as_number("Multiply#2")?)
+                    .map(|n| SparqlValue::from(n).into())
             }
             Divide(lhs, rhs) => {
                 let lhs = lhs.eval(binding, config, graph_matcher)?;
                 let rhs = rhs.eval(binding, config, graph_matcher)?;
-                (lhs.as_number()? / rhs.as_number()?).map(|n| SparqlValue::from(n).into())
+                (lhs.as_number("Divide#1")? / rhs.as_number("Divide#2")?)
+                    .map(|n| SparqlValue::from(n).into())
             }
             UnaryPlus(e) => {
                 let e = e.eval(binding, config, graph_matcher)?;
-                e.as_number().map(|n| SparqlValue::from(n.clone()).into())
+                e.as_number("UnaryPlus")
+                    .map(|n| SparqlValue::from(n.clone()).into())
             }
             UnaryMinus(e) => {
                 let e = e.eval(binding, config, graph_matcher)?;
-                (-e.as_number()?).map(|n| SparqlValue::from(n).into())
+                (-e.as_number("UnaryMinus")?).map(|n| SparqlValue::from(n).into())
             }
             Not(e) => {
                 let e = e.eval(binding, config, graph_matcher)?.is_truthy()?;
@@ -349,63 +354,96 @@ impl EvalResult {
         }
     }
 
-    pub fn as_iri(&self) -> Option<&IriRef<Arc<str>>> {
+    pub fn as_iri(&self, diag: &str) -> Option<&IriRef<Arc<str>>> {
+        let fail = || {
+            if !diag.is_empty() {
+                log::error!("{diag} expects an IRI");
+            }
+            None
+        };
         match self {
             EvalResult::Term(rt) => match rt.inner() {
                 ArcTerm::Iri(iri) => Some(iri),
-                _ => None,
+                _ => fail(),
             },
-            EvalResult::Value(_) => None,
+            EvalResult::Value(_) => fail(),
         }
     }
 
-    pub fn as_literal(&self) -> Option<GenericLiteral<Arc<str>>> {
+    pub fn as_literal(&self, diag: &str) -> Option<GenericLiteral<Arc<str>>> {
         match self.as_term() {
             ArcTerm::Literal(lit) => Some(lit.clone()),
-            _ => None,
+            _ => {
+                if !diag.is_empty() {
+                    log::error!("{diag} expects a literal");
+                }
+                None
+            }
         }
     }
 
-    pub fn as_number(&self) -> Option<&SparqlNumber> {
+    pub fn as_number(&self, diag: &str) -> Option<&SparqlNumber> {
         match self.as_value() {
             Some(SparqlValue::Number(n)) => Some(n),
-            _ => None,
+            _ => {
+                if !diag.is_empty() {
+                    log::error!("{diag} expects a number");
+                }
+                None
+            }
         }
     }
 
     /// Coerce to [string literal](https://www.w3.org/TR/sparql11-query/#func-string)
     #[expect(clippy::type_complexity)]
-    pub fn as_string_lit(&self) -> Option<(&Arc<str>, Option<&LanguageTag<Arc<str>>>)> {
+    pub fn as_string_lit(&self, diag: &str) -> Option<(&Arc<str>, Option<&LanguageTag<Arc<str>>>)> {
+        let fail = || {
+            if !diag.is_empty() {
+                log::error!("{diag} expects a string literal");
+            }
+            None
+        };
         use GenericLiteral::*;
         match self {
             EvalResult::Term(t) => match t.inner() {
                 ArcTerm::Literal(LanguageString(lex, tag)) => Some((lex, Some(tag))),
                 ArcTerm::Literal(Typed(lex, dt)) if xsd::string == dt => Some((lex, None)),
-                _ => None,
+                _ => fail(),
             },
             EvalResult::Value(SparqlValue::String(lex, tag)) => Some((lex, tag.as_ref())),
-            EvalResult::Value(_) => None,
+            EvalResult::Value(_) => fail(),
         }
     }
 
     /// Coerce to an xsd:string literal
-    pub fn as_xsd_string(&self) -> Option<&Arc<str>> {
+    pub fn as_xsd_string(&self, diag: &str) -> Option<&Arc<str>> {
+        let fail = || {
+            if !diag.is_empty() {
+                log::error!("{diag} expects an xsd:string");
+            }
+            None
+        };
         use GenericLiteral::*;
         match self {
             EvalResult::Term(t) => match t.inner() {
                 ArcTerm::Literal(Typed(lex, dt)) if xsd::string == dt => Some(lex),
-                _ => None,
+                _ => fail(),
             },
             EvalResult::Value(SparqlValue::String(lex, None)) => Some(lex),
-            EvalResult::Value(_) => None,
+            EvalResult::Value(_) => fail(),
         }
     }
 
     /// Coerce to an xsd:dateTime literal
-    pub fn as_xsd_date_time(&self) -> Option<&XsdDateTime> {
+    pub fn as_xsd_date_time(&self, diag: &str) -> Option<&XsdDateTime> {
         match self.as_value() {
             Some(SparqlValue::DateTime(dt)) => dt.as_ref(),
-            _ => None,
+            _ => {
+                if !diag.is_empty() {
+                    log::error!("{diag} expects an xsd:dateTime");
+                }
+                None
+            }
         }
     }
 

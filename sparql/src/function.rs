@@ -27,9 +27,9 @@ pub fn call_function<D: ?Sized>(
                 unreachable!()
             };
             #[expect(clippy::manual_map)]
-            if let Some(iri) = arg.as_iri() {
+            if let Some(iri) = arg.as_iri("") {
                 Some(str_iri(iri))
-            } else if let Some(lit) = arg.as_literal() {
+            } else if let Some(lit) = arg.as_literal("") {
                 Some(str_literal(lit))
             } else {
                 None
@@ -39,22 +39,30 @@ pub fn call_function<D: ?Sized>(
             let [arg] = &arguments[..] else {
                 unreachable!()
             };
-            Some(lang(arg.as_literal()?))
+            Some(lang(arg.as_literal("Lang")?))
         }
         Datatype => {
             let [arg] = &arguments[..] else {
                 unreachable!()
             };
-            Some(datatype(arg.as_literal()?))
+            Some(datatype(arg.as_literal("Datatype")?))
         }
         Iri => {
             let [arg] = &arguments[..] else {
                 unreachable!()
             };
-            if let Some(iri) = arg.as_iri() {
+            if let Some(iri) = arg.as_iri("") {
                 Some(iri.clone().into())
-            } else if let Some(st) = arg.as_xsd_string() {
-                Some(IriRef::new(st.clone()).ok()?.into())
+            } else if let Some(st) = arg.as_xsd_string("Iri") {
+                Some(
+                    IriRef::new(st.clone())
+                        .inspect_err(|err| {
+                            log::error!("Iri#1 is an invalid IRI");
+                            log::debug!(" {err}")
+                        })
+                        .ok()?
+                        .into(),
+                )
             } else {
                 None
             }
@@ -63,7 +71,7 @@ pub fn call_function<D: ?Sized>(
             let o: Option<Option<i32>> = Some(None);
             match arguments.pop() {
                 None => Some(bnode0()),
-                Some(arg) => Some(bnode1(arg.as_xsd_string()?)),
+                Some(arg) => Some(bnode1(arg.as_xsd_string("Bnode")?)),
             }
         }
         Rand => Some(rand()),
@@ -71,30 +79,30 @@ pub fn call_function<D: ?Sized>(
             let [arg] = &arguments[..] else {
                 unreachable!()
             };
-            Some(arg.as_number()?.abs().into())
+            Some(arg.as_number("Abs")?.abs().into())
         }
         Ceil => {
             let [arg] = &arguments[..] else {
                 unreachable!()
             };
-            Some(arg.as_number()?.ceil().into())
+            Some(arg.as_number("Ceil")?.ceil().into())
         }
         Floor => {
             let [arg] = &arguments[..] else {
                 unreachable!()
             };
-            Some(arg.as_number()?.floor().into())
+            Some(arg.as_number("Floor")?.floor().into())
         }
         Round => {
             let [arg] = &arguments[..] else {
                 unreachable!()
             };
-            Some(arg.as_number()?.round().into())
+            Some(arg.as_number("Round")?.round().into())
         }
         Concat => {
             let args = arguments
                 .iter()
-                .map(EvalResult::as_string_lit)
+                .map(|e| e.as_string_lit("Concat arguments"))
                 .collect::<Option<Vec<_>>>()?;
             Some(concat(&args))
         }
@@ -102,18 +110,21 @@ pub fn call_function<D: ?Sized>(
             let [tag, range] = &arguments[..] else {
                 unreachable!()
             };
-            lang_matches(tag.as_xsd_string()?, range.as_xsd_string()?)
+            lang_matches(
+                tag.as_xsd_string("LangMatch")?,
+                range.as_xsd_string("LangMatch")?,
+            )
         }
         SubStr => match &arguments[..] {
             [source, starting_loc] => sub_str(
-                source.as_string_lit()?,
-                starting_loc.as_number()?.coerce_to_double(),
+                source.as_string_lit("SubStr#1")?,
+                starting_loc.as_number("SubStr#2")?.coerce_to_double(),
                 None,
             ),
             [source, starting_loc, length] => sub_str(
-                source.as_string_lit()?,
-                starting_loc.as_number()?.coerce_to_double(),
-                Some(length.as_number()?.coerce_to_double()),
+                source.as_string_lit("SubStr#1")?,
+                starting_loc.as_number("SubStr#2")?.coerce_to_double(),
+                Some(length.as_number("SubStr#3")?.coerce_to_double()),
             ),
             _ => unreachable!(),
         },
@@ -121,105 +132,120 @@ pub fn call_function<D: ?Sized>(
             let [string] = &arguments[..] else {
                 unreachable!();
             };
-            Some(str_len(string.as_string_lit()?.0))
+            Some(str_len(string.as_string_lit("StrLen")?.0))
         }
         Replace => todo("Replace"),
         UCase => {
             let [string] = &arguments[..] else {
                 unreachable!();
             };
-            Some(u_case(string.as_string_lit()?))
+            Some(u_case(string.as_string_lit("UCase")?))
         }
         LCase => {
             let [string] = &arguments[..] else {
                 unreachable!();
             };
-            Some(l_case(string.as_string_lit()?))
+            Some(l_case(string.as_string_lit("LCase")?))
         }
         EncodeForUri => {
             let [string] = &arguments[..] else {
                 unreachable!();
             };
-            Some(encode_for_uri(string.as_string_lit()?.0))
+            Some(encode_for_uri(string.as_string_lit("EncodeForUri")?.0))
         }
         Contains => {
             let [heystack, needle] = &arguments[..] else {
                 unreachable!();
             };
-            contains(heystack.as_string_lit()?, needle.as_string_lit()?)
+            contains(
+                heystack.as_string_lit("Contains#1")?,
+                needle.as_string_lit("Contains#2")?,
+            )
         }
         StrStarts => {
             let [heystack, needle] = &arguments[..] else {
                 unreachable!();
             };
-            strstarts(heystack.as_string_lit()?, needle.as_string_lit()?)
+            strstarts(
+                heystack.as_string_lit("StrStarts#1")?,
+                needle.as_string_lit("StrStarts#2")?,
+            )
         }
         StrEnds => {
             let [heystack, needle] = &arguments[..] else {
                 unreachable!();
             };
-            strends(heystack.as_string_lit()?, needle.as_string_lit()?)
+            strends(
+                heystack.as_string_lit("StrEnds#1")?,
+                needle.as_string_lit("StrEnds#2")?,
+            )
         }
         StrBefore => {
             let [heystack, needle] = &arguments[..] else {
                 unreachable!();
             };
-            strbefore(heystack.as_string_lit()?, needle.as_string_lit()?)
+            strbefore(
+                heystack.as_string_lit("StrBefore#1")?,
+                needle.as_string_lit("StrBefore#2")?,
+            )
         }
         StrAfter => {
             let [heystack, needle] = &arguments[..] else {
                 unreachable!();
             };
-            strafter(heystack.as_string_lit()?, needle.as_string_lit()?)
+            strafter(
+                heystack.as_string_lit("StrAfter#1")?,
+                needle.as_string_lit("StrAfter#2")?,
+            )
         }
         Year => {
             let [argument] = &arguments[..] else {
                 unreachable!();
             };
-            Some(year(argument.as_xsd_date_time()?))
+            Some(year(argument.as_xsd_date_time("Year")?))
         }
         Month => {
             let [argument] = &arguments[..] else {
                 unreachable!();
             };
-            Some(month(argument.as_xsd_date_time()?))
+            Some(month(argument.as_xsd_date_time("Month")?))
         }
         Day => {
             let [argument] = &arguments[..] else {
                 unreachable!();
             };
-            Some(day(argument.as_xsd_date_time()?))
+            Some(day(argument.as_xsd_date_time("Day")?))
         }
         Hours => {
             let [argument] = &arguments[..] else {
                 unreachable!();
             };
-            Some(hours(argument.as_xsd_date_time()?))
+            Some(hours(argument.as_xsd_date_time("Hours")?))
         }
         Minutes => {
             let [argument] = &arguments[..] else {
                 unreachable!();
             };
-            Some(minutes(argument.as_xsd_date_time()?))
+            Some(minutes(argument.as_xsd_date_time("Minutes")?))
         }
         Seconds => {
             let [argument] = &arguments[..] else {
                 unreachable!();
             };
-            Some(seconds(argument.as_xsd_date_time()?))
+            Some(seconds(argument.as_xsd_date_time("Seconds")?))
         }
         Timezone => {
             let [argument] = &arguments[..] else {
                 unreachable!();
             };
-            timezone(argument.as_xsd_date_time()?)
+            timezone(argument.as_xsd_date_time("Timezone")?)
         }
         Tz => {
             let [argument] = &arguments[..] else {
                 unreachable!();
             };
-            argument.as_xsd_date_time()?; // ensure it is an xsd:dateTime
-            Some(tz(argument.as_literal()?.get_lexical_form()))
+            argument.as_xsd_date_time("Tz")?; // ensure it is an xsd:dateTime
+            Some(tz(argument.as_literal("")?.get_lexical_form()))
         }
         Now => {
             debug_assert!(arguments.is_empty());
@@ -263,11 +289,11 @@ pub fn call_function<D: ?Sized>(
         Regex => {
             let (text, pattern, flags) = match &arguments[..] {
                 [text, pattern] => (text, pattern, None),
-                [text, pattern, flags] => (text, pattern, Some(flags.as_xsd_string()?)),
+                [text, pattern, flags] => (text, pattern, Some(flags.as_xsd_string("Regex#3")?)),
                 _ => unreachable!(),
             };
-            let text = text.as_string_lit()?;
-            let pattern = pattern.as_xsd_string()?;
+            let text = text.as_string_lit("Regex#1")?;
+            let pattern = pattern.as_xsd_string("Regex#2")?;
             sparql_regex(text.0, pattern, flags)
         }
         Triple => {
@@ -420,11 +446,21 @@ pub fn concat(args: &[StringLiteral]) -> EvalResult {
 }
 
 pub fn lang_matches(tag: &Arc<str>, range: &Arc<str>) -> Option<EvalResult> {
-    let tag = LanguageTag::new(tag.clone()).ok()?;
+    let tag = LanguageTag::new(tag.clone())
+        .inspect_err(|err| {
+            log::error!("langMatch#1 is an invalid language tag");
+            log::debug!(" {err}")
+        })
+        .ok()?;
     if range.as_ref() == "*" {
         return Some(true.into());
     }
-    let range = LanguageTag::new(range.clone()).ok()?;
+    let range = LanguageTag::new(range.clone())
+        .inspect_err(|err| {
+            log::error!("invalid language tag range: {err}");
+            log::debug!(" {err}")
+        })
+        .ok()?;
     Some(
         (range.len() <= tag.len()
             && tag[..range.len()].eq_ignore_ascii_case(range.as_str())
@@ -439,11 +475,15 @@ pub fn sub_str(
     length: Option<f64>,
 ) -> Option<EvalResult> {
     if starting_loc.is_nan() {
+        log::error!("subStr#2 is NaN");
         return None;
     }
     let (lex, tag) = source;
     let (s, e) = match length {
-        Some(l) if l.is_nan() => return None,
+        Some(l) if l.is_nan() => {
+            log::error!("subStr#3 is NaN");
+            return None;
+        }
         None | Some(f64::INFINITY) => (
             ((starting_loc.round() - 1.0) as usize).min(lex.len()),
             lex.len(),
@@ -498,22 +538,22 @@ pub fn encode_for_uri(source: &str) -> EvalResult {
 }
 
 pub fn contains(heystack: StringLiteral, needle: StringLiteral) -> Option<EvalResult> {
-    check_compatible(heystack, needle)?;
+    check_compatible(heystack, needle, "arguments of Contains")?;
     Some(heystack.0.contains(needle.0.as_ref()).into())
 }
 
 pub fn strstarts(heystack: StringLiteral, needle: StringLiteral) -> Option<EvalResult> {
-    check_compatible(heystack, needle)?;
+    check_compatible(heystack, needle, "arguments of StrStarts")?;
     Some(heystack.0.starts_with(needle.0.as_ref()).into())
 }
 
 pub fn strends(heystack: StringLiteral, needle: StringLiteral) -> Option<EvalResult> {
-    check_compatible(heystack, needle)?;
+    check_compatible(heystack, needle, "arguments of StrEnds")?;
     Some(heystack.0.ends_with(needle.0.as_ref()).into())
 }
 
 pub fn strbefore(heystack: StringLiteral, needle: StringLiteral) -> Option<EvalResult> {
-    check_compatible(heystack, needle)?;
+    check_compatible(heystack, needle, "arguments of StrBefore")?;
     let found = heystack.0.find(needle.0.as_ref());
     Some(EvalResult::from((
         Arc::from(&heystack.0[..found.unwrap_or(0)]),
@@ -522,7 +562,7 @@ pub fn strbefore(heystack: StringLiteral, needle: StringLiteral) -> Option<EvalR
 }
 
 pub fn strafter(heystack: StringLiteral, needle: StringLiteral) -> Option<EvalResult> {
-    check_compatible(heystack, needle)?;
+    check_compatible(heystack, needle, "arguments of StrAfter")?;
     let txt = heystack.0.as_ref();
     let delim = needle.0.as_ref();
     let found = txt.find(delim);
@@ -605,12 +645,24 @@ pub fn tz(valid_xsd_date_time: &str) -> EvalResult {
 }
 
 pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResult> {
-    let EvalResult::Term(s) = s else { return None };
-    let EvalResult::Term(p) = p else { return None };
+    let EvalResult::Term(s) = s else {
+        log::error!("not a valid subject");
+        log::debug!("  {s:?}");
+        return None;
+    };
+    let EvalResult::Term(p) = p else {
+        log::error!("not a valid predicate");
+        log::debug!("  {p:?}");
+        return None;
+    };
     if !s.is_iri() && !s.is_blank_node() {
+        log::error!("not a valid subject");
+        log::debug!("  {s:?}");
         return None;
     }
     if !p.is_iri() {
+        log::error!("not a valid predicate");
+        log::debug!("  {p:?}");
         return None;
     };
     let o = ResultTerm::from(o.as_term());
@@ -632,11 +684,15 @@ fn todo<T: std::fmt::Display>(function_name: T) -> Option<EvalResult> {
 
 type StringLiteral<'a> = (&'a Arc<str>, Option<&'a LanguageTag<Arc<str>>>);
 
-fn check_compatible(arg1: StringLiteral, arg2: StringLiteral) -> Option<()> {
+fn check_compatible(arg1: StringLiteral, arg2: StringLiteral, diag: &str) -> Option<()> {
     match (arg1.1, arg2.1) {
         (_, None) => true,
         (Some(tag1), Some(tag2)) if tag1 == tag2 => true,
-        _ => false,
+        _ => {
+            log::error!("{diag} are not compatible");
+            log::debug!("  {arg1:?} {arg2:?}");
+            false
+        }
     }
     .then_some(())
 }
