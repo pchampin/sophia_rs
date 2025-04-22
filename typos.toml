@@ -8,5 +8,6 @@ extend-ignore-identifiers-re = [
 ]
 extend-ignore-re = [
   "raison d'être",
+  "Tak, tak, tak! - da kommen sie",
 ]
 

@@ -2,7 +2,7 @@ use std::sync::{Arc, LazyLock};
 
 use chrono::{Datelike, Timelike};
 use rand::random;
-use regex::Regex;
+use regex::{Regex, RegexBuilder};
 use sophia_api::term::{BnodeId, IriRef, LanguageTag, Term};
 use sophia_term::GenericLiteral;
 use spargebra::algebra::Function::{self, *};
@@ -260,7 +260,16 @@ pub fn call_function<D: ?Sized>(
             };
             Some(is_numeric(arg))
         }
-        Regex => todo("Regex"),
+        Regex => {
+            let (text, pattern, flags) = match &arguments[..] {
+                [text, pattern] => (text, pattern, None),
+                [text, pattern, flags] => (text, pattern, Some(flags.as_xsd_string()?)),
+                _ => unreachable!(),
+            };
+            let text = text.as_string_lit()?;
+            let pattern = pattern.as_xsd_string()?;
+            sparql_regex(text.0, pattern, flags)
+        }
         Triple => {
             let [s, p, o] = &arguments[..] else {
                 unreachable!()
@@ -333,6 +342,45 @@ pub fn is_literal(er: &EvalResult) -> EvalResult {
 
 pub fn is_numeric(er: &EvalResult) -> EvalResult {
     matches!(er.as_value(), Some(SparqlValue::Number(_))).into()
+}
+
+pub fn sparql_regex(text: &str, pattern: &str, flags: Option<&Arc<str>>) -> Option<EvalResult> {
+    make_regex(pattern, flags).map(|re| re.is_match(text).into())
+}
+
+fn make_regex(pattern: &str, flags: Option<&Arc<str>>) -> Option<Regex> {
+    if let Some(flags) = flags {
+        let mut reb = RegexBuilder::new(pattern);
+        for c in flags.bytes() {
+            match c {
+                b's' => {
+                    reb.dot_matches_new_line(true);
+                }
+                b'm' => {
+                    reb.multi_line(true);
+                }
+                b'i' => {
+                    reb.case_insensitive(true);
+                }
+                b'x' => {
+                    reb.ignore_whitespace(true);
+                }
+                b'q' => {
+                    log::warn!("regex flag 'q' not implemented");
+                    return None;
+                }
+                _ => {
+                    log::error!("unrecognized regex flag in '{flags}' (should be one of smixq)");
+                    return None;
+                }
+            }
+        }
+        reb.build()
+    } else {
+        Regex::new(pattern)
+    }
+    .inspect_err(|err| log::error!("invalid regex pattern: {err}"))
+    .ok()
 }
 
 pub fn iri(st: &Arc<str>) -> Option<EvalResult> {

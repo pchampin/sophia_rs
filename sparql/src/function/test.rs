@@ -597,6 +597,46 @@ fn tz(date_time: &str, exp: &str) -> TestResult {
     Ok(())
 }
 
+#[test_case("abracadabra", "bra", None, Some(true))]
+#[test_case("abracadabra", "^a.*a$", None, Some(true))]
+#[test_case("abracadabra", "^bra", None, Some(false))]
+#[test_case("$poem", "Kaum.*krähen", None, Some(false))]
+#[test_case("$poem", "Kaum.*krähen", Some("s"), Some(true))]
+#[test_case("$poem", "^Kaum.*gesehen,$", Some("m"), Some(true))]
+#[test_case("$poem", "^Kaum.*gesehen,$", None, Some(false))]
+#[test_case("$poem", "kiki", Some("i"), Some(true))]
+#[test_case("helloworld", "hello world", Some("x"), Some(true))]
+// the two tests below are provided in https://www.w3.org/TR/xpath-functions-31/#flags
+// but they are actually not honnored by many SPARQL implementations
+// so skipping them
+// #[test_case("helloworld", "hello[ ]world", Some("x"), Some(false))]
+// #[test_case("hello world", "hello\\ sworld", Some("x"), Some(true))]
+#[test_case("hello world", "hello world", Some("x"), Some(false))]
+#[test_case("Alice", "^ali", Some("i"), Some(true))]
+#[test_case("Bob", "^ali", Some("i"), Some(false))]
+#[test_case("invalid pattern", "[", None, None)]
+#[test_case("invalid flag", ".", Some("iz"), None)]
+fn regex(mut text: &str, pattern: &str, flags: Option<&str>, exp: Option<bool>) -> TestResult {
+    if text == "$poem" {
+        // # spelchecker: off
+        text = r#"
+<poem author="Wilhelm Busch">
+Kaum hat dies der Hahn gesehen,
+Fängt er auch schon an zu krähen:
+Kikeriki! Kikikerikih!!
+Tak, tak, tak! - da kommen sie.
+</poem>
+"#;
+    }
+    let flags = flags.map(Arc::<str>::from);
+    let exp = exp.map(EvalResult::from);
+    assert!(eval_eq(
+        super::sparql_regex(text, pattern, flags.as_ref()),
+        exp
+    ));
+    Ok(())
+}
+
 #[test_case("<tag:s>", "<tag:p>", "<tag:o>", true)]
 #[test_case("<tag:s>", "<tag:p>", "bnode()", true)]
 #[test_case("<tag:s>", "<tag:p>", " \"o\" ", true)]
