@@ -357,7 +357,7 @@ impl EvalResult {
     pub fn as_iri(&self, diag: &str) -> Option<&IriRef<Arc<str>>> {
         let fail = || {
             if !diag.is_empty() {
-                log::error!("{diag} expects an IRI");
+                log::warn!("{diag} expects an IRI");
             }
             None
         };
@@ -375,7 +375,7 @@ impl EvalResult {
             ArcTerm::Literal(lit) => Some(lit.clone()),
             _ => {
                 if !diag.is_empty() {
-                    log::error!("{diag} expects a literal");
+                    log::warn!("{diag} expects a literal");
                 }
                 None
             }
@@ -387,7 +387,7 @@ impl EvalResult {
             Some(SparqlValue::Number(n)) => Some(n),
             _ => {
                 if !diag.is_empty() {
-                    log::error!("{diag} expects a number");
+                    log::warn!("{diag} expects a number");
                 }
                 None
             }
@@ -399,7 +399,7 @@ impl EvalResult {
     pub fn as_string_lit(&self, diag: &str) -> Option<(&Arc<str>, Option<&LanguageTag<Arc<str>>>)> {
         let fail = || {
             if !diag.is_empty() {
-                log::error!("{diag} expects a string literal");
+                log::warn!("{diag} expects a string literal");
             }
             None
         };
@@ -419,7 +419,7 @@ impl EvalResult {
     pub fn as_xsd_string(&self, diag: &str) -> Option<&Arc<str>> {
         let fail = || {
             if !diag.is_empty() {
-                log::error!("{diag} expects an xsd:string");
+                log::warn!("{diag} expects an xsd:string");
             }
             None
         };
@@ -440,7 +440,7 @@ impl EvalResult {
             Some(SparqlValue::DateTime(dt)) => dt.as_ref(),
             _ => {
                 if !diag.is_empty() {
-                    log::error!("{diag} expects an xsd:dateTime");
+                    log::warn!("{diag} expects an xsd:dateTime");
                 }
                 None
             }

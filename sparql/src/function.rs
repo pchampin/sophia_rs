@@ -26,12 +26,12 @@ pub fn call_function<D: ?Sized>(
             let [arg] = &arguments[..] else {
                 unreachable!()
             };
-            #[expect(clippy::manual_map)]
             if let Some(iri) = arg.as_iri("") {
                 Some(str_iri(iri))
             } else if let Some(lit) = arg.as_literal("") {
                 Some(str_literal(lit))
             } else {
+                log::warn!("STR expects IRI or literal");
                 None
             }
         }
@@ -57,7 +57,7 @@ pub fn call_function<D: ?Sized>(
                 Some(
                     IriRef::new(st.clone())
                         .inspect_err(|err| {
-                            log::error!("Iri#1 is an invalid IRI");
+                            log::warn!("Iri#1 is an invalid IRI");
                             log::debug!(" {err}")
                         })
                         .ok()?
@@ -392,11 +392,11 @@ fn make_regex(pattern: &str, flags: Option<&Arc<str>>) -> Option<Regex> {
                     reb.ignore_whitespace(true);
                 }
                 b'q' => {
-                    log::error!("regex flag 'q' not implemented");
+                    log::warn!("regex flag 'q' not implemented");
                     return None;
                 }
                 _ => {
-                    log::error!("unrecognized regex flag in '{flags}' (should be one of smixq)");
+                    log::warn!("unrecognized regex flag in '{flags}' (should be one of smixq)");
                     return None;
                 }
             }
@@ -405,7 +405,7 @@ fn make_regex(pattern: &str, flags: Option<&Arc<str>>) -> Option<Regex> {
     } else {
         Regex::new(pattern)
     }
-    .inspect_err(|err| log::error!("invalid regex pattern: {err}"))
+    .inspect_err(|err| log::warn!("invalid regex pattern: {err}"))
     .ok()
 }
 
@@ -448,7 +448,7 @@ pub fn concat(args: &[StringLiteral]) -> EvalResult {
 pub fn lang_matches(tag: &Arc<str>, range: &Arc<str>) -> Option<EvalResult> {
     let tag = LanguageTag::new(tag.clone())
         .inspect_err(|err| {
-            log::error!("langMatch#1 is an invalid language tag");
+            log::warn!("langMatch#1 is an invalid language tag");
             log::debug!(" {err}")
         })
         .ok()?;
@@ -457,7 +457,7 @@ pub fn lang_matches(tag: &Arc<str>, range: &Arc<str>) -> Option<EvalResult> {
     }
     let range = LanguageTag::new(range.clone())
         .inspect_err(|err| {
-            log::error!("invalid language tag range: {err}");
+            log::warn!("invalid language tag range: {err}");
             log::debug!(" {err}")
         })
         .ok()?;
@@ -475,13 +475,13 @@ pub fn sub_str(
     length: Option<f64>,
 ) -> Option<EvalResult> {
     if starting_loc.is_nan() {
-        log::error!("subStr#2 is NaN");
+        log::warn!("subStr#2 is NaN");
         return None;
     }
     let (lex, tag) = source;
     let (s, e) = match length {
         Some(l) if l.is_nan() => {
-            log::error!("subStr#3 is NaN");
+            log::warn!("subStr#3 is NaN");
             return None;
         }
         None | Some(f64::INFINITY) => (
@@ -646,22 +646,22 @@ pub fn tz(valid_xsd_date_time: &str) -> EvalResult {
 
 pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResult> {
     let EvalResult::Term(s) = s else {
-        log::error!("not a valid subject");
+        log::warn!("not a valid subject");
         log::debug!("  {s:?}");
         return None;
     };
     let EvalResult::Term(p) = p else {
-        log::error!("not a valid predicate");
+        log::warn!("not a valid predicate");
         log::debug!("  {p:?}");
         return None;
     };
     if !s.is_iri() && !s.is_blank_node() {
-        log::error!("not a valid subject");
+        log::warn!("not a valid subject");
         log::debug!("  {s:?}");
         return None;
     }
     if !p.is_iri() {
-        log::error!("not a valid predicate");
+        log::warn!("not a valid predicate");
         log::debug!("  {p:?}");
         return None;
     };
@@ -678,7 +678,7 @@ pub fn is_triple(er: &EvalResult) -> EvalResult {
 }
 
 fn todo<T: std::fmt::Display>(function_name: T) -> Option<EvalResult> {
-    log::error!("Function not implemented: {function_name}");
+    log::warn!("Function not implemented: {function_name}");
     None
 }
 
@@ -689,7 +689,7 @@ fn check_compatible(arg1: StringLiteral, arg2: StringLiteral, diag: &str) -> Opt
         (_, None) => true,
         (Some(tag1), Some(tag2)) if tag1 == tag2 => true,
         _ => {
-            log::error!("{diag} are not compatible");
+            log::warn!("{diag} are not compatible");
             log::debug!("  {arg1:?} {arg2:?}");
             false
         }
