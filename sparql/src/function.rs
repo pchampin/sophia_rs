@@ -31,7 +31,7 @@ pub fn call_function<D: ?Sized>(
             } else if let Some(lit) = arg.as_literal("") {
                 Some(str_literal(lit))
             } else {
-                log::warn!("STR expects IRI or literal");
+                log::warn!("Str expects IRI or literal");
                 None
             }
         }
