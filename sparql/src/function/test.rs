@@ -208,6 +208,37 @@ fn str_len(string: &str, exp: isize) -> TestResult {
     Ok(())
 }
 
+#[test_case("abcd", "X", "Z", None, Some("abcd"))]
+#[test_case("abcd@en", "X", "Z", None, Some("abcd@en"))]
+#[test_case("abcd", "b", "Z", None, Some("aZcd"))]
+#[test_case("abcd@en", "b", "Z", None, Some("aZcd@en"))]
+#[test_case("abcb", "B", "Z", Some("i"), Some("aZcZ"))]
+#[test_case("abcb", "B.", "Z", Some("i"), Some("aZb"))]
+#[test_case("abracadabra", "bra", "*", None, Some("a*cada*"))]
+#[test_case("abracadabra", "a.*a", "*", None, Some("*"))]
+#[test_case("abracadabra", "a", "", None, Some("brcdbr"))]
+#[test_case("abracadabra", ".*?", "$1", None, None)]
+#[test_case("AAAA", "A+", "b", None, Some("b"))]
+#[test_case("AAAA", "A+?", "b", None, Some("bbbb"))]
+#[test_case("darted", "^(.*?)d(.*)$", "$1c$2", None, Some("carted"))]
+fn replace(
+    arg: &str,
+    pattern: &str,
+    replacement: &str,
+    flags: Option<&str>,
+    exp: Option<&str>,
+) -> TestResult {
+    let pair = txt2pair(arg);
+    let arg = pair2ref(&pair);
+    let flags = flags.map(Arc::<str>::from);
+    let exp = exp.map(|txt| EvalResult::from(txt2pair(txt)));
+    assert!(eval_eq(
+        super::replace(arg, pattern, replacement, flags.as_ref()),
+        exp
+    ));
+    Ok(())
+}
+
 #[test_case("foo", "FOO")]
 #[test_case("foo@en", "FOO@en")]
 #[test_case("FOO", "FOO"; "noop")]
@@ -630,10 +661,7 @@ Tak, tak, tak! - da kommen sie.
     }
     let flags = flags.map(Arc::<str>::from);
     let exp = exp.map(EvalResult::from);
-    assert!(eval_eq(
-        super::sparql_regex(text, pattern, flags.as_ref()),
-        exp
-    ));
+    assert!(eval_eq(super::regex(text, pattern, flags.as_ref()), exp));
     Ok(())
 }
 

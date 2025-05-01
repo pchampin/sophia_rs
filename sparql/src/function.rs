@@ -1,8 +1,11 @@
-use std::sync::{Arc, LazyLock};
+use std::{
+    borrow::Cow,
+    sync::{Arc, LazyLock},
+};
 
 use chrono::{Datelike, Timelike};
 use rand::random;
-use regex::{Regex, RegexBuilder};
+use regex::{Captures, Regex, RegexBuilder};
 use sophia_api::term::{BnodeId, IriRef, LanguageTag, Term};
 use sophia_term::GenericLiteral;
 use spargebra::algebra::Function::{self, *};
@@ -134,7 +137,17 @@ pub fn call_function<D: ?Sized>(
             };
             Some(str_len(string.as_string_lit("StrLen")?.0))
         }
-        Replace => todo("Replace"),
+        Replace => {
+            let (arg, pattern, replacement, flags) = match &arguments[..] {
+                [a, p, r] => (a, p, r, None),
+                [a, p, r, f] => (a, p, r, Some(f.as_xsd_string("Replace#4")?)),
+                _ => unreachable!(),
+            };
+            let arg = arg.as_string_lit("Replace#1")?;
+            let pattern = pattern.as_xsd_string("Replace#2")?;
+            let replacement = replacement.as_xsd_string("Replace#3")?;
+            replace(arg, pattern, replacement, flags)
+        }
         UCase => {
             let [string] = &arguments[..] else {
                 unreachable!();
@@ -294,7 +307,7 @@ pub fn call_function<D: ?Sized>(
             };
             let text = text.as_string_lit("Regex#1")?;
             let pattern = pattern.as_xsd_string("Regex#2")?;
-            sparql_regex(text.0, pattern, flags)
+            regex(text.0, pattern, flags)
         }
         Triple => {
             let [s, p, o] = &arguments[..] else {
@@ -370,7 +383,7 @@ pub fn is_numeric(er: &EvalResult) -> EvalResult {
     matches!(er.as_value(), Some(SparqlValue::Number(_))).into()
 }
 
-pub fn sparql_regex(text: &str, pattern: &str, flags: Option<&Arc<str>>) -> Option<EvalResult> {
+pub fn regex(text: &str, pattern: &str, flags: Option<&Arc<str>>) -> Option<EvalResult> {
     make_regex(pattern, flags).map(|re| re.is_match(text).into())
 }
 
@@ -515,6 +528,27 @@ pub fn str_len(string: &str) -> EvalResult {
 pub fn u_case(source: StringLiteral) -> EvalResult {
     let lex: String = source.0.chars().flat_map(char::to_uppercase).collect();
     EvalResult::from((Arc::from(lex), source.1.cloned()))
+}
+
+pub fn replace(
+    arg: StringLiteral,
+    pattern: &str,
+    replacement: &str,
+    flags: Option<&Arc<str>>,
+) -> Option<EvalResult> {
+    let re = make_regex(pattern, flags)?;
+    if re.is_match("") {
+        return None;
+    }
+    let repl = prepare_replacement(replacement);
+    Some((re.replace_all(arg.0, dbg!(repl)).into(), arg.1.cloned()).into())
+}
+
+fn prepare_replacement(replacement: &str) -> Cow<str> {
+    static REPL_ARG: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\$[0-9]+").unwrap());
+    REPL_ARG.replace_all(replacement, |cap: &Captures| {
+        format!("${{{}}}", &cap.get(0).unwrap().as_str()[1..])
+    })
 }
 
 pub fn l_case(source: StringLiteral) -> EvalResult {
