@@ -713,6 +713,10 @@ fn test_expr_variable() -> TestResult {
 #[test_case("isIri(uuid())", "true"; "uuid returns an IRI")]
 #[test_case("regex(str(uuid()), \"^urn:uuid:[0-9a-f-]+$\", \"i\")", "true"; "uuid returns a UUID URN")]
 #[test_case("uuid() != uuid()", "true"; "uuid always returns a different value")]
+// test strUuid
+#[test_case("datatype(strUuid()) = xsd:string", "true"; "strUuid returns a string")]
+#[test_case("regex(strUuid(), \"^[0-9a-f-]+$\", \"i\")", "true"; "strUuid returns a UUID")]
+#[test_case("strUuid() != strUuid()", "true"; "strUuid always returns a different value")]
 // TODO test other function calls
 // test isIri
 #[test_case("isIri(<tag:x>)", "true"; "isIri for IRI")]

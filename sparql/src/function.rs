@@ -9,7 +9,10 @@ use regex::{Captures, Regex, RegexBuilder};
 use sophia_api::term::{BnodeId, IriRef, LanguageTag, Term};
 use sophia_term::GenericLiteral;
 use spargebra::algebra::Function::{self, *};
-use uuid::{Uuid, fmt::Urn};
+use uuid::{
+    Uuid,
+    fmt::{Hyphenated, Urn},
+};
 
 use crate::{
     ResultTerm,
@@ -271,7 +274,10 @@ pub fn call_function<D: ?Sized>(
             debug_assert!(arguments.is_empty());
             Some(uuid())
         }
-        StrUuid => todo("StrUuid"),
+        StrUuid => {
+            debug_assert!(arguments.is_empty());
+            Some(str_uuid())
+        }
         Md5 => todo("Md5"),
         Sha1 => todo("Sha1"),
         Sha256 => todo("Sha256"),
@@ -690,6 +696,16 @@ pub fn uuid() -> EvalResult {
         String::from_utf8_unchecked(buf)
     };
     IriRef::new_unchecked(Arc::<str>::from(str)).into()
+}
+
+pub fn str_uuid() -> EvalResult {
+    let mut buf = vec![b' '; Hyphenated::LENGTH];
+    let urn = Uuid::new_v4().hyphenated().encode_lower(&mut buf[..]);
+    let str = unsafe {
+        // SAFETY: we now that buf contain only ASCII characters
+        String::from_utf8_unchecked(buf)
+    };
+    Arc::<str>::from(str).into()
 }
 
 pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResult> {
