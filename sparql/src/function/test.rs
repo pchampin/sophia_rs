@@ -635,6 +635,13 @@ fn md5(arg: &str, exp: &str) -> TestResult {
     Ok(())
 }
 
+#[test_case("abc", "a9993e364706816aba3e25717850c26c9cd0d89d")]
+fn sha1(arg: &str, exp: &str) -> TestResult {
+    let exp = EvalResult::from(Arc::from(exp));
+    assert!(eval_eq(Some(super::sha1(arg)), Some(exp)));
+    Ok(())
+}
+
 #[test_case("abracadabra", "bra", None, Some(true))]
 #[test_case("abracadabra", "^a.*a$", None, Some(true))]
 #[test_case("abracadabra", "^bra", None, Some(false))]

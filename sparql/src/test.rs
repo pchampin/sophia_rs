@@ -724,6 +724,13 @@ fn test_expr_variable() -> TestResult {
 #[test_case("md5(042)", ""; "md5 for number")]
 #[test_case("md5(<< <tag:s> <tag:p> <tag:o> >>)", ""; "md5 for triple")]
 #[test_case("md5(42/0)", ""; "md5 error")]
+// test sha1
+#[test_case("sha1(<tag:x>)", ""; "sha1 for IRI")]
+#[test_case("sha1(\"a b\")", "\"7dbde93504122a707f849f2c12bdd9de71b41929\""; "sha1 for string")]
+#[test_case("sha1(\"chat\"@en)", ""; "sha1 for language string")]
+#[test_case("sha1(042)", ""; "sha1 for number")]
+#[test_case("sha1(<< <tag:s> <tag:p> <tag:o> >>)", ""; "sha1 for triple")]
+#[test_case("sha1(42/0)", ""; "sha1 error")]
 // TODO test other function calls
 // test isIri
 #[test_case("isIri(<tag:x>)", "true"; "isIri for IRI")]

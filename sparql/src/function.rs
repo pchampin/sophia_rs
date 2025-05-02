@@ -6,6 +6,7 @@ use std::{
 use chrono::{Datelike, Timelike};
 use rand::random;
 use regex::{Captures, Regex, RegexBuilder};
+use sha1::{Digest, Sha1};
 use sophia_api::term::{BnodeId, IriRef, LanguageTag, Term};
 use sophia_term::GenericLiteral;
 use spargebra::algebra::Function::{self, *};
@@ -284,7 +285,12 @@ pub fn call_function<D: ?Sized>(
             };
             Some(md5_(arg.as_xsd_string("Md5")?))
         }
-        Sha1 => todo("Sha1"),
+        Sha1 => {
+            let [arg] = &arguments[..] else {
+                unreachable!()
+            };
+            Some(sha1(arg.as_xsd_string("Sha1")?))
+        }
         Sha256 => todo("Sha256"),
         Sha384 => todo("Sha384"),
         Sha512 => todo("Sha512"),
@@ -715,6 +721,12 @@ pub fn str_uuid() -> EvalResult {
 
 pub fn md5_(arg: &str) -> EvalResult {
     Arc::<str>::from(format!("{:x}", md5::compute(arg.as_bytes()))).into()
+}
+
+pub fn sha1(arg: &str) -> EvalResult {
+    let mut hasher = Sha1::new();
+    hasher.update(arg.as_bytes());
+    Arc::<str>::from(format!("{:x}", hasher.finalize())).into()
 }
 
 pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResult> {
