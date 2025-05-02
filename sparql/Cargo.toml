@@ -30,6 +30,7 @@ regex.workspace = true
 spargebra = { version = "0.3", features = ["rdf-star"] }
 thiserror.workspace = true
 uuid = { version = "1.11", features = ["v4", "v7"] }
+md5 = "0.7.0"
 
 [dev-dependencies]
 sophia_turtle.workspace = true

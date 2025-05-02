@@ -717,6 +717,13 @@ fn test_expr_variable() -> TestResult {
 #[test_case("datatype(strUuid()) = xsd:string", "true"; "strUuid returns a string")]
 #[test_case("regex(strUuid(), \"^[0-9a-f-]+$\", \"i\")", "true"; "strUuid returns a UUID")]
 #[test_case("strUuid() != strUuid()", "true"; "strUuid always returns a different value")]
+// test md5
+#[test_case("md5(<tag:x>)", ""; "md5 for IRI")]
+#[test_case("md5(\"a b\")", "\"0cc9cd4dd26c5137b675a0d819cb9ab0\""; "md5 for string")]
+#[test_case("md5(\"chat\"@en)", ""; "md5 for language string")]
+#[test_case("md5(042)", ""; "md5 for number")]
+#[test_case("md5(<< <tag:s> <tag:p> <tag:o> >>)", ""; "md5 for triple")]
+#[test_case("md5(42/0)", ""; "md5 error")]
 // TODO test other function calls
 // test isIri
 #[test_case("isIri(<tag:x>)", "true"; "isIri for IRI")]

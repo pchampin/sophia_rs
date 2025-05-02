@@ -628,6 +628,13 @@ fn tz(date_time: &str, exp: &str) -> TestResult {
     Ok(())
 }
 
+#[test_case("abc", "900150983cd24fb0d6963f7d28e17f72")]
+fn md5(arg: &str, exp: &str) -> TestResult {
+    let exp = EvalResult::from(Arc::from(exp));
+    assert!(eval_eq(Some(super::md5_(arg)), Some(exp)));
+    Ok(())
+}
+
 #[test_case("abracadabra", "bra", None, Some(true))]
 #[test_case("abracadabra", "^a.*a$", None, Some(true))]
 #[test_case("abracadabra", "^bra", None, Some(false))]

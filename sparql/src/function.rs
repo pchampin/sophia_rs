@@ -278,7 +278,12 @@ pub fn call_function<D: ?Sized>(
             debug_assert!(arguments.is_empty());
             Some(str_uuid())
         }
-        Md5 => todo("Md5"),
+        Md5 => {
+            let [arg] = &arguments[..] else {
+                unreachable!()
+            };
+            Some(md5_(arg.as_xsd_string("Md5")?))
+        }
         Sha1 => todo("Sha1"),
         Sha256 => todo("Sha256"),
         Sha384 => todo("Sha384"),
@@ -706,6 +711,10 @@ pub fn str_uuid() -> EvalResult {
         String::from_utf8_unchecked(buf)
     };
     Arc::<str>::from(str).into()
+}
+
+pub fn md5_(arg: &str) -> EvalResult {
+    Arc::<str>::from(format!("{:x}", md5::compute(arg.as_bytes()))).into()
 }
 
 pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResult> {
