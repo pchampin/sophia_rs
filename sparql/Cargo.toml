@@ -29,7 +29,7 @@ rand = "0.8"
 regex.workspace = true
 spargebra = { version = "0.3", features = ["rdf-star"] }
 thiserror.workspace = true
-uuid = { version = "1.11", features = ["v5", "v7"] }
+uuid = { version = "1.11", features = ["v4", "v7"] }
 
 [dev-dependencies]
 sophia_turtle.workspace = true

@@ -709,6 +709,10 @@ fn test_expr_variable() -> TestResult {
 // test now
 #[test_case("datatype(now()) = xsd:dateTime", "true"; "now returns an xsd:dateTime")]
 #[test_case("now() = now()", "true"; "now always returns the same value in one query execution")]
+// test uuid
+#[test_case("isIri(uuid())", "true"; "uuid returns an IRI")]
+#[test_case("regex(str(uuid()), \"^urn:uuid:[0-9a-f-]+$\", \"i\")", "true"; "uuid returns a UUID URN")]
+#[test_case("uuid() != uuid()", "true"; "uuid always returns a different value")]
 // TODO test other function calls
 // test isIri
 #[test_case("isIri(<tag:x>)", "true"; "isIri for IRI")]

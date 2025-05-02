@@ -9,6 +9,7 @@ use regex::{Captures, Regex, RegexBuilder};
 use sophia_api::term::{BnodeId, IriRef, LanguageTag, Term};
 use sophia_term::GenericLiteral;
 use spargebra::algebra::Function::{self, *};
+use uuid::{Uuid, fmt::Urn};
 
 use crate::{
     ResultTerm,
@@ -266,7 +267,10 @@ pub fn call_function<D: ?Sized>(
                 XsdDateTime::Timezoned(config.now),
             ))))
         }
-        Uuid => todo("Uuid"),
+        Uuid => {
+            debug_assert!(arguments.is_empty());
+            Some(uuid())
+        }
         StrUuid => todo("StrUuid"),
         Md5 => todo("Md5"),
         Sha1 => todo("Sha1"),
@@ -427,7 +431,7 @@ pub fn iri(st: &Arc<str>) -> Option<EvalResult> {
 }
 
 pub fn bnode0() -> EvalResult {
-    let bnid = uuid::Uuid::now_v7().to_string();
+    let bnid = Uuid::now_v7().to_string();
     let bnid = BnodeId::<Arc<str>>::new_unchecked(bnid.into());
     bnid.into()
 }
@@ -676,6 +680,16 @@ pub fn tz(valid_xsd_date_time: &str) -> EvalResult {
         Some(cap) => cap.get(1).unwrap().as_str(),
     };
     EvalResult::from(Arc::from(substr))
+}
+
+pub fn uuid() -> EvalResult {
+    let mut buf = vec![b' '; Urn::LENGTH];
+    let urn = Uuid::new_v4().urn().encode_lower(&mut buf[..]);
+    let str = unsafe {
+        // SAFETY: we now that buf contain only ASCII characters
+        String::from_utf8_unchecked(buf)
+    };
+    IriRef::new_unchecked(Arc::<str>::from(str)).into()
 }
 
 pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResult> {
