@@ -731,6 +731,13 @@ fn test_expr_variable() -> TestResult {
 #[test_case("sha1(042)", ""; "sha1 for number")]
 #[test_case("sha1(<< <tag:s> <tag:p> <tag:o> >>)", ""; "sha1 for triple")]
 #[test_case("sha1(42/0)", ""; "sha1 error")]
+// test sha256
+#[test_case("sha256(<tag:x>)", ""; "sha256 for IRI")]
+#[test_case("sha256(\"a b\")", "\"c8687a08aa5d6ed2044328fa6a697ab8e96dc34291e8c2034ae8c38e6fcc6d65\""; "sha256 for string")]
+#[test_case("sha256(\"chat\"@en)", ""; "sha256 for language string")]
+#[test_case("sha256(042)", ""; "sha256 for number")]
+#[test_case("sha256(<< <tag:s> <tag:p> <tag:o> >>)", ""; "sha256 for triple")]
+#[test_case("sha256(42/0)", ""; "sha256 error")]
 // TODO test other function calls
 // test isIri
 #[test_case("isIri(<tag:x>)", "true"; "isIri for IRI")]

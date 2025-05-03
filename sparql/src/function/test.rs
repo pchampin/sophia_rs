@@ -642,6 +642,16 @@ fn sha1(arg: &str, exp: &str) -> TestResult {
     Ok(())
 }
 
+#[test_case(
+    "abc",
+    "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+)]
+fn sha256(arg: &str, exp: &str) -> TestResult {
+    let exp = EvalResult::from(Arc::from(exp));
+    assert!(eval_eq(Some(super::sha256(arg)), Some(exp)));
+    Ok(())
+}
+
 #[test_case("abracadabra", "bra", None, Some(true))]
 #[test_case("abracadabra", "^a.*a$", None, Some(true))]
 #[test_case("abracadabra", "^bra", None, Some(false))]

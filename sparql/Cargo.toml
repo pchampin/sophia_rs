@@ -32,6 +32,7 @@ thiserror.workspace = true
 uuid = { version = "1.11", features = ["v4", "v7"] }
 md5 = "0.7.0"
 sha1 = "0.10.6"
+sha2.workspace = true
 
 [dev-dependencies]
 sophia_turtle.workspace = true
