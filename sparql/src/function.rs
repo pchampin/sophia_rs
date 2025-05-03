@@ -7,7 +7,7 @@ use chrono::{Datelike, Timelike};
 use rand::random;
 use regex::{Captures, Regex, RegexBuilder};
 use sha1::{Digest, Sha1};
-use sha2::Sha256;
+use sha2::{Sha256, Sha384};
 use sophia_api::term::{BnodeId, IriRef, LanguageTag, Term};
 use sophia_term::GenericLiteral;
 use spargebra::algebra::Function::{self, *};
@@ -298,7 +298,12 @@ pub fn call_function<D: ?Sized>(
             };
             Some(sha256(arg.as_xsd_string("Sha256")?))
         }
-        Sha384 => todo("Sha384"),
+        Sha384 => {
+            let [arg] = &arguments[..] else {
+                unreachable!()
+            };
+            Some(sha384(arg.as_xsd_string("Sha384")?))
+        }
         Sha512 => todo("Sha512"),
         StrLang => todo("StrLang"),
         StrDt => todo("StrDt"),
@@ -737,6 +742,10 @@ pub fn sha1(arg: &str) -> EvalResult {
 
 pub fn sha256(arg: &str) -> EvalResult {
     Arc::<str>::from(format!("{:x}", Sha256::digest(arg))).into()
+}
+
+pub fn sha384(arg: &str) -> EvalResult {
+    Arc::<str>::from(format!("{:x}", Sha384::digest(arg))).into()
 }
 
 pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResult> {
