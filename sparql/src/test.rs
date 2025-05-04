@@ -841,7 +841,30 @@ fn test_expr_variable() -> TestResult {
 #[test_case("triple(\"s\", <tag:p>, <tag:o>)", ""; "triple literal subject errs")]
 #[test_case("triple(<tag:s>, \"p\", <tag:o>)", ""; "triple literal predicate errs")]
 #[test_case("triple(<tag:s>, bnode(), <tag:o>)", ""; "triple bnode predicate errs")]
-// TODO test other function: subject, predictae, object
+// test subject
+#[test_case("subject(<tag:x>)", ""; "subject for IRI")]
+#[test_case("subject(bnode())", ""; "subject for bnode")]
+#[test_case("subject(\"a b\")", ""; "subject for string")]
+#[test_case("subject(\"chat\"@en)", ""; "subject for language string")]
+#[test_case("subject(042)", ""; "subject for number")]
+#[test_case("subject(<< <tag:s> <tag:p> <tag:o> >>)", "<tag:s>"; "subject for triple")]
+#[test_case("subject(42/0)", ""; "subject error")]
+// test predicate
+#[test_case("predicate(<tag:x>)", ""; "predicate for IRI")]
+#[test_case("predicate(bnode())", ""; "predicate for bnode")]
+#[test_case("predicate(\"a b\")", ""; "predicate for string")]
+#[test_case("predicate(\"chat\"@en)", ""; "predicate for language string")]
+#[test_case("predicate(042)", ""; "predicate for number")]
+#[test_case("predicate(<< <tag:s> <tag:p> <tag:o> >>)", "<tag:p>"; "predicate for triple")]
+#[test_case("predicate(42/0)", ""; "predicate error")]
+// test object
+#[test_case("object(<tag:x>)", ""; "object for IRI")]
+#[test_case("object(bnode())", ""; "object for bnode")]
+#[test_case("object(\"a b\")", ""; "object for string")]
+#[test_case("object(\"chat\"@en)", ""; "object for language string")]
+#[test_case("object(042)", ""; "object for number")]
+#[test_case("object(<< <tag:s> <tag:p> <tag:o> >>)", "<tag:o>"; "object for triple")]
+#[test_case("object(42/0)", ""; "object error")]
 // test isTriple
 #[test_case("isTriple(<tag:x>)", "false"; "isTriple for IRI")]
 #[test_case("isTriple(bnode())", "false"; "isTriple for bnode")]

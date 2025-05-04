@@ -365,9 +365,21 @@ pub fn call_function<D: ?Sized>(
             };
             triple(s, p, o)
         }
-        Subject => todo("Subject"),
-        Predicate => todo("Predicate"),
-        Object => todo("Object"),
+        Subject => {
+            let [t] = &arguments[..] else { unreachable!() };
+            t.as_triple("Subject")
+                .map(|spo| ResultTerm::from(spo[0].clone()).into())
+        }
+        Predicate => {
+            let [t] = &arguments[..] else { unreachable!() };
+            t.as_triple("Predicate")
+                .map(|spo| ResultTerm::from(spo[1].clone()).into())
+        }
+        Object => {
+            let [t] = &arguments[..] else { unreachable!() };
+            t.as_triple("Object")
+                .map(|spo| ResultTerm::from(spo[2].clone()).into())
+        }
         IsTriple => {
             let [arg] = &arguments[..] else {
                 unreachable!()

@@ -382,6 +382,18 @@ impl EvalResult {
         }
     }
 
+    pub fn as_triple(&self, diag: &str) -> Option<Arc<[ArcTerm; 3]>> {
+        match self.as_term() {
+            ArcTerm::Triple(triple) => Some(triple),
+            _ => {
+                if !diag.is_empty() {
+                    log::warn!("{diag} expects a triple term");
+                }
+                None
+            }
+        }
+    }
+
     pub fn as_number(&self, diag: &str) -> Option<&SparqlNumber> {
         match self.as_value() {
             Some(SparqlValue::Number(n)) => Some(n),
