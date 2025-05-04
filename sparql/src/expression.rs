@@ -509,6 +509,12 @@ impl From<ResultTerm> for EvalResult {
     }
 }
 
+impl From<GenericLiteral<Arc<str>>> for EvalResult {
+    fn from(value: GenericLiteral<Arc<str>>) -> Self {
+        EvalResult::Term(ArcTerm::Literal(value).into())
+    }
+}
+
 impl From<SparqlValue> for EvalResult {
     fn from(value: SparqlValue) -> Self {
         EvalResult::Value(value)

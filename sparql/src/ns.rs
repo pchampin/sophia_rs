@@ -5,6 +5,8 @@ use sophia_api::{
     term::IriRef,
 };
 
+pub static RDF_DIR_LANG_STRING: LazyLock<IriRef<Arc<str>>> =
+    LazyLock::new(|| memoize(&rdf::dirLangString));
 pub static RDF_LANG_STRING: LazyLock<IriRef<Arc<str>>> =
     LazyLock::new(|| memoize(&rdf::langString));
 pub static XSD_BOOLEAN: LazyLock<IriRef<Arc<str>>> = LazyLock::new(|| memoize(&xsd::boolean));

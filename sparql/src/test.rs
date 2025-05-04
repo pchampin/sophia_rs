@@ -764,7 +764,18 @@ fn test_expr_variable() -> TestResult {
 #[test_case("strLang(\"hello world\", \"en\"@fr)", ""; "strLang for lang language string")]
 #[test_case("strLang(\"hello world\", 42)", ""; "strLang for lang number")]
 #[test_case("strLang(\"hello world\", << <tag:s> <tag:p> <tag:o> >>)", ""; "strLang for lang triple")]
-// TODO test other function calls
+// test strDt
+#[test_case("strDt(<tag:xy>, <tag:dt>)", ""; "strDt for lex IRIs")]
+#[test_case("strDt(bnode(), <tag:dt>)", ""; "strDt for lex bnodes")]
+#[test_case("strDt(\"hello world\", <tag:dt>)", "\"hello world\"^^<tag:dt>"; "strDt for lex strings")]
+#[test_case("strDt(\"hello world\"@en, <tag:dt>)", ""; "strDt for lex language strings")]
+#[test_case("strDt(42, <tag:dt>)", ""; "strDt for lex numbers")]
+#[test_case("strDt(<< <tag:s> <tag:p> <tag:o> >>, <tag:dt>)", ""; "strDt for lex triples")]
+#[test_case("strDt(\"hello world\", bnode())", ""; "strDt for lang bnode")]
+#[test_case("strDt(\"hello world\", \"en\")", ""; "strDt for lang string")]
+#[test_case("strDt(\"hello world\", \"en\"@fr)", ""; "strDt for lang language string")]
+#[test_case("strDt(\"hello world\", 42)", ""; "strDt for lang number")]
+#[test_case("strDt(\"hello world\", << <tag:s> <tag:p> <tag:o> >>)", ""; "strDt for lang triple")]
 // test isIri
 #[test_case("isIri(<tag:x>)", "true"; "isIri for IRI")]
 #[test_case("isIri(\"a b\")", "false"; "isIri for string")]

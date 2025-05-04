@@ -680,6 +680,25 @@ fn str_lang(lex: &str, lang: &str, exp: Option<&str>) -> TestResult {
     Ok(())
 }
 
+#[test_case("123", "http://www.w3.org/2001/XMLSchema#integer", true)]
+#[test_case("iii", "http://example/romanNumeral", true)]
+#[test_case(
+    "hello",
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString",
+    false
+)]
+#[test_case(
+    "hello",
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#dirLangString",
+    false
+)]
+fn str_dt(lex: &str, dt: &str, exp: bool) -> TestResult {
+    let dt = IriRef::<Arc<str>>::new_unchecked(dt.into());
+    let exp = exp.then_some(GenericLiteral::Typed(lex.into(), dt.clone()).into());
+    assert!(eval_eq(super::str_dt(lex, &dt), exp));
+    Ok(())
+}
+
 #[test_case("abracadabra", "bra", None, Some(true))]
 #[test_case("abracadabra", "^a.*a$", None, Some(true))]
 #[test_case("abracadabra", "^bra", None, Some(false))]

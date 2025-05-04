@@ -20,7 +20,7 @@ use crate::{
     ResultTerm,
     exec::ExecConfig,
     expression::EvalResult,
-    ns::RDF_LANG_STRING,
+    ns::{RDF_DIR_LANG_STRING, RDF_LANG_STRING},
     value::{SparqlNumber, SparqlValue, XsdDateTime},
 };
 
@@ -319,7 +319,12 @@ pub fn call_function<D: ?Sized>(
                 lang.as_xsd_string("StrLang#2")?,
             )
         }
-        StrDt => todo("StrDt"),
+        StrDt => {
+            let [lex, lang] = &arguments[..] else {
+                unreachable!();
+            };
+            str_dt(lex.as_xsd_string("StrDr#1")?, lang.as_iri("StrDt#2")?)
+        }
         IsIri => {
             let [arg] = &arguments[..] else {
                 unreachable!()
@@ -702,13 +707,7 @@ pub fn timezone(dt: &XsdDateTime) -> Option<EvalResult> {
             } else {
                 "PT0S".into()
             };
-            Some(
-                ResultTerm::from(sophia_term::ArcTerm::Literal(GenericLiteral::Typed(
-                    lex.into(),
-                    DATATYPE.clone(),
-                )))
-                .into(),
-            )
+            Some(GenericLiteral::Typed(lex.into(), DATATYPE.clone()).into())
         }
     }
 }
@@ -773,6 +772,14 @@ pub fn str_lang(lex: &str, lang: &str) -> Option<EvalResult> {
         })
         .ok()?;
     Some((lex.into(), Some(lang)).into())
+}
+
+pub fn str_dt(lex: &str, dt: &IriRef<Arc<str>>) -> Option<EvalResult> {
+    if &*RDF_LANG_STRING == dt || &*RDF_DIR_LANG_STRING == dt {
+        None
+    } else {
+        Some(GenericLiteral::Typed(lex.into(), dt.clone()).into())
+    }
 }
 
 pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResult> {

@@ -67,6 +67,7 @@ pub mod rdf {
         HTML,
         JSON,
         langString,
+        dirLangString,
         XMLLiteral,
         // properties
         direction,
