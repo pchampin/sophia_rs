@@ -386,7 +386,10 @@ pub fn call_function<D: ?Sized>(
             };
             Some(is_triple(arg))
         }
-        Custom(iri) => todo(iri.to_string()),
+        Custom(iri) => {
+            log::warn!("Custom function not supported: {iri}");
+            None
+        }
     }
 }
 
@@ -825,11 +828,6 @@ pub fn is_triple(er: &EvalResult) -> EvalResult {
         EvalResult::Value(_) => false,
     }
     .into()
-}
-
-fn todo<T: std::fmt::Display>(function_name: T) -> Option<EvalResult> {
-    log::warn!("Function not implemented: {function_name}");
-    None
 }
 
 type StringLiteral<'a> = (&'a Arc<str>, Option<&'a LanguageTag<Arc<str>>>);
