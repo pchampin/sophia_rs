@@ -310,7 +310,15 @@ pub fn call_function<D: ?Sized>(
             };
             Some(sha512(arg.as_xsd_string("Sha512")?))
         }
-        StrLang => todo("StrLang"),
+        StrLang => {
+            let [lex, lang] = &arguments[..] else {
+                unreachable!();
+            };
+            str_lang(
+                lex.as_xsd_string("StrLang#1")?,
+                lang.as_xsd_string("StrLang#2")?,
+            )
+        }
         StrDt => todo("StrDt"),
         IsIri => {
             let [arg] = &arguments[..] else {
@@ -755,6 +763,16 @@ pub fn sha384(arg: &str) -> EvalResult {
 
 pub fn sha512(arg: &str) -> EvalResult {
     Arc::<str>::from(format!("{:x}", Sha512::digest(arg))).into()
+}
+
+pub fn str_lang(lex: &str, lang: &str) -> Option<EvalResult> {
+    let lang = LanguageTag::new(lang.into())
+        .inspect_err(|err| {
+            log::warn!("StrLang#1 is an invalid language tag");
+            log::debug!(" {err}")
+        })
+        .ok()?;
+    Some((lex.into(), Some(lang)).into())
 }
 
 pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResult> {

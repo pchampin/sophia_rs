@@ -672,6 +672,14 @@ fn sha512(arg: &str, exp: &str) -> TestResult {
     Ok(())
 }
 
+#[test_case("chat", "fr", Some("chat@fr"))]
+#[test_case("abc", "", None)]
+fn str_lang(lex: &str, lang: &str, exp: Option<&str>) -> TestResult {
+    let exp = exp.map(|exp| EvalResult::from(txt2pair(exp)));
+    assert!(eval_eq(super::str_lang(lex, lang), exp));
+    Ok(())
+}
+
 #[test_case("abracadabra", "bra", None, Some(true))]
 #[test_case("abracadabra", "^a.*a$", None, Some(true))]
 #[test_case("abracadabra", "^bra", None, Some(false))]

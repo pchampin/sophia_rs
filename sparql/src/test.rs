@@ -752,6 +752,18 @@ fn test_expr_variable() -> TestResult {
 #[test_case("sha512(042)", ""; "sha512 for number")]
 #[test_case("sha512(<< <tag:s> <tag:p> <tag:o> >>)", ""; "sha512 for triple")]
 #[test_case("sha512(42/0)", ""; "sha512 error")]
+// test strLang
+#[test_case("strLang(<tag:xy>, \"en\")", ""; "strLang for lex IRIs")]
+#[test_case("strLang(bnode(), \"en\")", ""; "strLang for lex bnodes")]
+#[test_case("strLang(\"hello world\", \"en\")", "\"hello world\"@en"; "strLang for lex strings")]
+#[test_case("strLang(\"hello world\"@en, \"en\")", ""; "strLang for lex language strings")]
+#[test_case("strLang(42, \"en\")", ""; "strLang for lex numbers")]
+#[test_case("strLang(<< <tag:s> <tag:p> <tag:o> >>, \"en\")", ""; "strLang for lex triples")]
+#[test_case("strLang(\"hello world\", <tag:x>)", ""; "strLang for lang IRI")]
+#[test_case("strLang(\"hello world\", bnode())", ""; "strLang for lang bnode")]
+#[test_case("strLang(\"hello world\", \"en\"@fr)", ""; "strLang for lang language string")]
+#[test_case("strLang(\"hello world\", 42)", ""; "strLang for lang number")]
+#[test_case("strLang(\"hello world\", << <tag:s> <tag:p> <tag:o> >>)", ""; "strLang for lang triple")]
 // TODO test other function calls
 // test isIri
 #[test_case("isIri(<tag:x>)", "true"; "isIri for IRI")]
