@@ -557,24 +557,28 @@ pub fn sub_str(
         return None;
     }
     let (lex, tag) = source;
+    let lex_len = lex.chars().count();
     let (s, e) = match length {
         Some(l) if l.is_nan() => {
             log::warn!("subStr#3 is NaN");
             return None;
         }
         None | Some(f64::INFINITY) => (
-            ((starting_loc.round() - 1.0) as usize).min(lex.len()),
-            lex.len(),
+            ((starting_loc.round() - 1.0) as usize).min(lex_len),
+            lex_len,
         ),
         Some(l) => {
             let s_signed = starting_loc.round() as isize - 1;
-            let s = (s_signed.max(0) as usize).min(lex.len());
+            let s = (s_signed.max(0) as usize).min(lex_len);
             let e = ((s_signed + l.round() as isize).max(0) as usize)
                 .max(s)
-                .min(lex.len());
+                .min(lex_len);
             (s, e)
         }
     };
+    // s and e are "codepoint indexes", convert them to byte index
+    let s = lex.char_indices().nth(s).map(|p| p.0).unwrap_or(lex.len());
+    let e = lex.char_indices().nth(e).map(|p| p.0).unwrap_or(lex.len());
     Some(EvalResult::from((Arc::from(&lex[s..e]), tag.cloned())))
 }
 
@@ -606,7 +610,7 @@ pub fn replace(
         return None;
     }
     let repl = prepare_replacement(replacement);
-    Some((re.replace_all(arg.0, dbg!(repl)).into(), arg.1.cloned()).into())
+    Some((re.replace_all(arg.0, repl).into(), arg.1.cloned()).into())
 }
 
 fn prepare_replacement(replacement: &str) -> Cow<str> {

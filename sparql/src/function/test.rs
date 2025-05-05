@@ -186,6 +186,8 @@ fn lang_matches(tag: &str, range: &str, exp: bool) -> TestResult {
 #[test_case("foobar", 4.0, Some(-1.0), Some(""))]
 #[test_case("foobar", 0.9, Some(1.1), Some("f"))]
 #[test_case("foobar", 1.1, Some(0.9), Some("f"))]
+#[test_case("食べ物", 1.0, Some(1.0), Some("食"))]
+#[test_case("食べ物", 2.0, None, Some("べ物"))]
 fn sub_str(source: &str, start: f64, length: Option<f64>, exp: Option<&str>) -> TestResult {
     let pair = txt2pair(source);
     let source = pair2ref(&pair);
