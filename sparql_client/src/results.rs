@@ -11,12 +11,18 @@ mod xml_parser;
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 #[serde(untagged)]
 #[allow(clippy::module_name_repetitions)]
+/// A SPARQL result document (as encoded in XML or JSON)
 pub enum ResultsDocument {
+    /// A SPARQL result document for a boolean result (for ASK queries)
     Boolean {
+        /// Header of the document
         head: BooleanHead,
+        /// Boolean result
         boolean: bool,
     },
+    /// A SPARQL result document for a bindings result (for SELECT queries)
     Bindings {
+        /// See [`BindingsDocument`]
         #[serde(flatten)]
         doc: BindingsDocument,
     },
@@ -108,8 +114,14 @@ impl BindingsDocument {
 }
 
 impl ResultsDocument {
+    /// Parse application/sparql-results+xml data into a [`ResultsDocument`]
     pub fn from_xml<T: std::io::BufRead>(data: T) -> Result<ResultsDocument, crate::Error> {
         xml_parser::parse_results_document(data)
+    }
+
+    /// Parse application/sparql-results+json data into a [`ResultsDocument`]
+    pub fn from_json<T: std::io::BufRead>(data: T) -> Result<ResultsDocument, crate::Error> {
+        serde_json::from_reader(data).map_err(crate::Error::from)
     }
 }
 

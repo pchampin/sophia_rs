@@ -48,7 +48,7 @@ use std::io::Cursor;
 
 mod results;
 pub use results::BindingsDocument as Bindings;
-use results::ResultsDocument;
+pub use results::ResultsDocument;
 
 type StaticTerm = SimpleTerm<'static>;
 
@@ -266,6 +266,14 @@ pub enum Error {
         #[source]
         #[from]
         rio_xml::RdfXmlError,
+    ),
+
+    #[error("JSON results parsing error: {0}")]
+    /// Invalid XML syntax was returned by the SPARQL endpoint.
+    Json(
+        #[source]
+        #[from]
+        serde_json::Error,
     ),
 
     #[error("XML results parsing error: {0}")]
