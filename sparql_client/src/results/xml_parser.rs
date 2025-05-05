@@ -37,20 +37,22 @@ impl<R: BufRead> SparqlXmlParser<R> {
 
     pub fn parse_results_document(&mut self) -> Result<ResultsDocument, Error> {
         self.next_start_expecting("sparql")?;
-        self.next_start_expecting("head")?;
+        let (_, empty_head) = self.next_start_or_empty_expecting("head")?;
         let mut variables: Vec<Box<str>> = vec![];
         let mut links: Vec<Box<str>> = vec![];
-        while let Some(elt) = self.next_empty()? {
-            let (ns, local_name) = self.events.resolve_element(elt.name());
-            if ns != ResolveResult::Bound(NS) {
-                return Err(SparqlXml(format!(
-                    "Unrecognized element in <head>: {local_name:?}"
-                )));
-            }
-            match local_name.into_inner() {
-                b"variable" => variables.push(self.get_attr(&elt, "name")?),
-                b"link" => links.push(self.get_attr(&elt, "href")?),
-                _ => return Err(SparqlXml(format!("Unknown element <{local_name:?}>"))),
+        if !empty_head {
+            while let Some(elt) = self.next_empty()? {
+                let (ns, local_name) = self.events.resolve_element(elt.name());
+                if ns != ResolveResult::Bound(NS) {
+                    return Err(SparqlXml(format!(
+                        "Unrecognized element in <head>: {local_name:?}"
+                    )));
+                }
+                match local_name.into_inner() {
+                    b"variable" => variables.push(self.get_attr(&elt, "name")?),
+                    b"link" => links.push(self.get_attr(&elt, "href")?),
+                    _ => return Err(SparqlXml(format!("Unknown element <{local_name:?}>"))),
+                }
             }
         }
         if variables.is_empty() {
@@ -172,6 +174,48 @@ impl<R: BufRead> SparqlXmlParser<R> {
                     self.expect_closing(s.name())?;
                     return Ok(Some(s));
                 }
+                End(_) | Eof => return Ok(None),
+                _ => continue,
+            }
+        }
+    }
+
+    fn next_start_or_empty_expecting(
+        &mut self,
+        local_name: &str,
+    ) -> Result<(BytesStart<'static>, bool), Error> {
+        match self.next_start_or_empty_expecting_maybe(local_name)? {
+            None => Err(SparqlXml(format!(
+                "Expected <{local_name}>, found no element"
+            ))),
+            Some(pair) => Ok(pair),
+        }
+    }
+
+    fn next_start_or_empty_expecting_maybe(
+        &mut self,
+        local_name: &str,
+    ) -> Result<Option<(BytesStart<'static>, bool)>, Error> {
+        if let Some(pair) = self.next_start_or_empty()? {
+            if self.check_element(&pair.0, local_name) {
+                Ok(Some(pair))
+            } else {
+                Err(SparqlXml(format!(
+                    "Expected <{}>, found {:?}",
+                    local_name,
+                    pair.0.name()
+                )))
+            }
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn next_start_or_empty(&mut self) -> Result<Option<(BytesStart<'static>, bool)>, Error> {
+        loop {
+            match self.events.read_event_into(&mut self.buf)? {
+                Empty(s) => return Ok(Some((s.into_owned(), true))),
+                Start(s) => return Ok(Some((s.into_owned(), false))),
                 End(_) | Eof => return Ok(None),
                 _ => continue,
             }
@@ -348,6 +392,24 @@ mod test {
             r#"<?xml version="1.0"?>
             <sparql xmlns="http://www.w3.org/2005/sparql-results#">
               <head></head>
+              <boolean>true</boolean>
+            </sparql>
+        "#,
+        );
+        let got = ResultsDocument::from_xml(src).unwrap();
+        let exp = ResultsDocument::Boolean {
+            head: BooleanHead { link: vec![] },
+            boolean: true,
+        };
+        assert_eq!(got, exp);
+    }
+
+    #[test]
+    fn boolean_doc_empty_head() {
+        let src = std::io::Cursor::new(
+            r#"<?xml version="1.0"?>
+            <sparql xmlns="http://www.w3.org/2005/sparql-results#">
+              <head/>
               <boolean>true</boolean>
             </sparql>
         "#,
