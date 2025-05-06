@@ -124,7 +124,7 @@ impl SparqlNumber {
             SparqlNumber::BigInt(i) => !i.is_zero(),
             SparqlNumber::Decimal(d) => !d.is_zero(),
             SparqlNumber::Double(d) => !d.is_zero() && !d.is_nan(),
-            SparqlNumber::Float(d) => !d.is_zero(),
+            SparqlNumber::Float(f) => !f.is_zero() && !f.is_nan(),
         }
     }
 
