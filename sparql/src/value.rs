@@ -52,7 +52,11 @@ impl SparqlValue {
                     "float" => Some(Self::Number(SparqlNumber::try_parse::<f32>(lex)?)),
                     "double" => Some(Self::Number(SparqlNumber::try_parse::<f64>(lex)?)),
                     "string" => Some(Self::String(lex.clone(), None)),
-                    "boolean" => Some(Self::Boolean(lex.parse().ok())),
+                    "boolean" => Some(Self::Boolean(match lex.as_ref() {
+                        "true" | "1" => Some(true),
+                        "false" | "0" => Some(false),
+                        _ => None,
+                    })),
                     "dateTime" => Some(Self::DateTime(lex.parse().ok())),
                     "nonPositiveInteger" => Some(Self::Number(
                         SparqlNumber::try_parse_integer(lex)?.check(|n| !n.is_positive())?,

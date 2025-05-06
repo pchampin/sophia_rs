@@ -225,6 +225,7 @@ fn test_expr_variable() -> TestResult {
 #[test_case("!(!0)                 ", "false"; "bool number zero")]
 #[test_case("!(!\"foo\"@en)        ", "true "; "bool lang-string non-empty")]
 #[test_case("!(!\"\"@en)           ", "false"; "bool lang-string empty")]
+#[test_case("!(!\"1\"^^xsd:boolean)", "true"; "bool numeric-formed")]
 #[test_case("!(!\"x\"^^xsd:boolean)", "false"; "bool ill-formed")]
 #[test_case("!(!<tag:x>)           ", ""; "bool iri")]
 // test add
