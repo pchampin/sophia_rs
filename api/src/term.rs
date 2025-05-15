@@ -20,6 +20,7 @@ mod _native_literal;
 mod _simple;
 pub use _simple::*;
 
+pub mod base_direction;
 pub mod bnode_id;
 pub mod language_tag;
 pub mod matcher;
