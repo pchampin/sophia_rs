@@ -6,6 +6,7 @@
 //!
 //! I provide the main trait [`Term`],
 //! and a number of auxiliary types and traits, such as [`TermKind`], [`FromTerm`]...
+use crate::ns::rdf;
 use crate::triple::Triple;
 use mownstr::MownStr;
 use std::cmp::{Ord, Ordering};
@@ -613,8 +614,13 @@ where
         assert!(t.is_literal());
         assert!(t.lexical_form().is_some());
         assert!(t.datatype().is_some());
-        if t.datatype() == crate::ns::rdf::langString.iri() {
+        let datatype = t.datatype().unwrap();
+        if rdf::langString == datatype {
             assert!(t.language_tag().is_some());
+            // todo eventually: test that there is no base direction
+        } else if rdf::dirLangString == datatype {
+            assert!(t.language_tag().is_some());
+            // todo eventually: test that there is some base direction
         } else {
             assert!(t.language_tag().is_none());
         }
