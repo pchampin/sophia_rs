@@ -8,7 +8,10 @@ use rand::random;
 use regex::{Captures, Regex, RegexBuilder};
 use sha1::{Digest, Sha1};
 use sha2::{Sha256, Sha384, Sha512};
-use sophia_api::term::{BnodeId, IriRef, LanguageTag, Term};
+use sophia_api::{
+    ns::xsd,
+    term::{BnodeId, IriRef, LanguageTag, Term},
+};
 use sophia_term::GenericLiteral;
 use spargebra::algebra::Function::{self, *};
 use uuid::{
@@ -387,8 +390,30 @@ pub fn call_function<D: ?Sized>(
             Some(is_triple(arg))
         }
         Custom(iri) => {
-            log::warn!("Custom function not supported: {iri}");
-            None
+            if iri.as_str().starts_with(*xsd::PREFIX) {
+                let typ = &iri.as_str()[xsd::PREFIX.len()..];
+                if arguments.len() != 1 {
+                    log::warn!("Function xsd:{typ} expects 1 argument");
+                    None
+                } else {
+                    match typ {
+                        "boolean" => xsd_boolean(&arguments[0]),
+                        "double" => xsd_double(&arguments[0]),
+                        "float" => xsd_float(&arguments[0]),
+                        "decimal" => xsd_decimal(&arguments[0]),
+                        "integer" => xsd_integer(&arguments[0]),
+                        "dateTime" => xsd_date_time(&arguments[0]),
+                        "string" => xsd_string(&arguments[0]),
+                        _ => {
+                            log::warn!("Cast to xsd:{typ} not supported");
+                            None
+                        }
+                    }
+                }
+            } else {
+                log::warn!("Custom function not supported: {iri}");
+                None
+            }
         }
     }
 }
@@ -832,6 +857,69 @@ pub fn is_triple(er: &EvalResult) -> EvalResult {
         EvalResult::Value(_) => false,
     }
     .into()
+}
+
+pub fn xsd_boolean(arg: &EvalResult) -> Option<EvalResult> {
+    // See https://www.w3.org/TR/sparql12-query/#FunctionMapping
+    // and https://www.w3.org/TR/xpath-functions-31/#casting-boolean
+    match arg.as_value() {
+        Some(SparqlValue::Boolean(opt)) => opt.map(|_| arg.clone()),
+        Some(SparqlValue::Number(n)) => Some(SparqlValue::from(n.is_truthy()).into()),
+        Some(SparqlValue::String(lex, None)) => match lex.trim() {
+            "1" | "true" => Some(SparqlValue::from(true).into()),
+            "0" | "false" => Some(SparqlValue::from(false).into()),
+            _ => None,
+        },
+        Some(SparqlValue::String(_, Some(_))) => None,
+        Some(SparqlValue::DateTime(_)) => None,
+        None => None,
+    }
+}
+
+pub fn xsd_double(arg: &EvalResult) -> Option<EvalResult> {
+    // See https://www.w3.org/TR/sparql12-query/#FunctionMapping
+    // and https://www.w3.org/TR/xpath-functions-31/#casting-to-double
+    //
+    // Do no forget to trim whitespaces when converting from string
+    todo!()
+}
+
+pub fn xsd_float(arg: &EvalResult) -> Option<EvalResult> {
+    // See https://www.w3.org/TR/sparql12-query/#FunctionMapping
+    // and https://www.w3.org/TR/xpath-functions-31/#casting-to-float
+    //
+    // Do no forget to trim whitespaces when converting from string
+    todo!()
+}
+
+pub fn xsd_decimal(arg: &EvalResult) -> Option<EvalResult> {
+    // See https://www.w3.org/TR/sparql12-query/#FunctionMapping
+    // and https://www.w3.org/TR/xpath-functions-31/#casting-to-decimal
+    //
+    // Do no forget to trim whitespaces when converting from string
+    todo!()
+}
+
+pub fn xsd_integer(arg: &EvalResult) -> Option<EvalResult> {
+    // See https://www.w3.org/TR/sparql12-query/#FunctionMapping
+    // and https://www.w3.org/TR/xpath-functions-31/#casting-to-integer
+    //
+    // Do no forget to trim whitespaces when converting from string
+    todo!()
+}
+
+pub fn xsd_date_time(arg: &EvalResult) -> Option<EvalResult> {
+    // See https://www.w3.org/TR/sparql12-query/#FunctionMapping
+    // and https://www.w3.org/TR/xpath-functions-31/#casting-to-datetimes
+    //
+    // Do no forget to trim whitespaces when converting from string
+    todo!()
+}
+
+pub fn xsd_string(arg: &EvalResult) -> Option<EvalResult> {
+    // The following is not right
+    // See https://www.w3.org/TR/xpath-functions-31/#casting-to-string
+    todo!()
 }
 
 type StringLiteral<'a> = (&'a Arc<str>, Option<&'a LanguageTag<Arc<str>>>);

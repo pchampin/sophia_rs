@@ -874,6 +874,34 @@ fn test_expr_variable() -> TestResult {
 #[test_case("isTriple(042)", "false"; "isTriple for number")]
 #[test_case("isTriple(<< <tag:s> <tag:p> <tag:o> >>)", "true"; "isTriple for triple")]
 #[test_case("isTriple(42/0)", ""; "isTriple error")]
+// test xsd:boolean cast
+#[test_case("xsd:boolean()", ""; "xsd:boolean with 0 args")]
+#[test_case("xsd:boolean(1)", "true"; "xsd:boolean with 1 arg")]
+#[test_case("xsd:boolean(1, 2)", ""; "xsd:boolean with 2 args")]
+// test xsd:double cast
+#[test_case("xsd:double()", ""; "xsd:double with 0 args")]
+#[test_case("xsd:double(1)", "1e0"; "xsd:double with 1 arg")]
+#[test_case("xsd:double(1, 2)", ""; "xsd:double with 2 args")]
+// test xsd:float cast
+#[test_case("xsd:float()", ""; "xsd:float with 0 args")]
+#[test_case("xsd:float(1)", "\"1e0\"^^xsd:float"; "xsd:float with 1 arg")]
+#[test_case("xsd:float(1, 2)", ""; "xsd:float with 2 args")]
+// test xsd:decimal cast
+#[test_case("xsd:decimal()", ""; "xsd:decimal with 0 args")]
+#[test_case("xsd:decimal(1)", "1.0"; "xsd:decimal with 1 arg")]
+#[test_case("xsd:decimal(1, 2)", ""; "xsd:decimal with 2 args")]
+// test xsd:integer cast
+#[test_case("xsd:integer()", ""; "xsd:integer with 0 args")]
+#[test_case("xsd:integer(1)", "1"; "xsd:integer with 1 arg")]
+#[test_case("xsd:integer(1, 2)", ""; "xsd:integer with 2 args")]
+// test xsd:dateTime cast
+#[test_case("xsd:dateTime()", ""; "xsd:dateTime with 0 args")]
+#[test_case("xsd:dateTime(\"2025-05-20T01:02:03Z\")", "\"2025-05-20T01:02:03Z\"^^xsd:dateTime"; "xsd:dateTime with 1 arg")]
+#[test_case("xsd:dateTime(1, 2)", ""; "xsd:dateTime with 2 args")]
+// test xsd:string cast
+#[test_case("xsd:string()", ""; "xsd:string with 0 args")]
+#[test_case("xsd:string(1)", "\"1\""; "xsd:string with 1 arg")]
+#[test_case("xsd:string(1, 2)", ""; "xsd:string with 2 args")]
 fn test_expr(expr: &str, result: &str) -> TestResult {
     let exp = if result.is_empty() {
         String::new()

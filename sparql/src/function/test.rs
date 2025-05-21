@@ -766,9 +766,48 @@ fn triple(s: &str, p: &str, o: &str, ok: bool) -> TestResult {
     Ok(())
 }
 
-/// Evaluate the given SPARQL expression,
-/// returning one or two versions:
-/// one `EvalResult::Term` and one `EvalResult::Value` if appropriate.
+#[test_case("<tag:s>", "")]
+#[test_case("bnode()", "")]
+#[test_case("<< <tag:s> <tag:p> <tag:o> >>", "")]
+#[test_case("\"true\"@en", ""; "language string")] // the spec is not clear about this one
+#[test_case("\"true\"^^<tag:dummy>", ""; "unrecognized datatype")]
+#[test_case("true", "true"; "true boolean")]
+#[test_case("false", "false"; "false boolean")]
+#[test_case("\"bad\"^^xsd:boolean", ""; "bad boolean")]
+#[test_case("\"1\"", "true"; "1 string")]
+#[test_case("\"0 \"", "false"; "0 string")]
+#[test_case("\"bad\"^^xsd:integer", ""; "bad integer")]
+#[test_case("\" true\"", "true"; "true string")]
+#[test_case("\" false \"", "false"; "false string")]
+#[test_case("\"True\"", ""; "invalid string")]
+#[test_case("1", "true"; "1 integer")]
+#[test_case("0", "false"; "0 integer")]
+#[test_case("1.0", "true"; "1 decimal")]
+#[test_case("0.0", "false"; "0 decimal")]
+#[test_case("1e0", "true"; "1 double")]
+#[test_case("0.0e0", "false"; "0 double")]
+#[test_case("-0.0e0", "false"; "negative 0 double")]
+#[test_case("\"-INF\"^^xsd:double", "true"; "negative inf double")]
+#[test_case("\"NaN\"^^xsd:double", "false"; "nan double")]
+#[test_case("\"1e0\"^^xsd:float", "true"; "1 float")]
+#[test_case("\"0.0e0\"^^xsd:float", "false"; "0 float")]
+#[test_case("\"-0.0e0\"^^xsd:float", "false"; "negative 0 float")]
+#[test_case("\"-INF\"^^xsd:float", "true"; "negative inf float")]
+#[test_case("\"NaN\"^^xsd:float", "false"; "nan float")]
+#[test_case("\"2025-05-20:01:02:03Z\"^^xsd:dateTime", ""; "dateTime")]
+fn xsd_boolean(input: &str, exp: &str) -> TestResult {
+    let input = eval_expr(input)?;
+    let got = super::xsd_boolean(&input);
+    let exp = if exp.is_empty() {
+        None
+    } else {
+        Some(eval_expr(exp)?)
+    };
+    assert!(eval_eq(got, exp));
+    Ok(())
+}
+
+/// Evaluate the given SPARQL expression
 fn eval_expr(expr: &str) -> TestResult<EvalResult> {
     eprintln!("eval_expr: {expr}");
     let dataset = LightDataset::default();
