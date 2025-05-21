@@ -2,7 +2,7 @@
 
 use std::{cmp::Ordering, sync::Arc};
 
-use bigdecimal::BigDecimal;
+use bigdecimal::{BigDecimal, Signed};
 use sophia_api::{
     ns::xsd,
     term::{IriRef, LanguageTag},
@@ -117,7 +117,11 @@ impl SparqlValue {
             Number(NativeInt(i)) => factory(&i.to_string()),
             Number(BigInt(i)) => factory(&i.to_string()),
             Number(Decimal(d)) => factory(&dec2string(d)),
+            Number(Float(f)) if f.is_infinite() && f.is_positive() => factory("INF"),
+            Number(Float(f)) if f.is_infinite() && f.is_negative() => factory("-INF"),
             Number(Float(f)) => factory(&format!("{f:e}")),
+            Number(Double(d)) if d.is_infinite() && d.is_positive() => factory("INF"),
+            Number(Double(d)) if d.is_infinite() && d.is_negative() => factory("-INF"),
             Number(Double(d)) => factory(&format!("{d:e}")),
             Boolean(Some(b)) => factory(if *b { "true" } else { "false" }),
             DateTime(Some(d)) => factory(&d.to_string()),

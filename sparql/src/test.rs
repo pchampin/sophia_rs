@@ -368,8 +368,8 @@ fn test_expr_variable() -> TestResult {
 #[test_case("abs(-3.14)", "3.14"; "abs for netative decimal")]
 #[test_case("abs(-3.14e0)", "3.14e0"; "abs for netative double")]
 #[test_case("abs(\"-1\"^^xsd:float)", "\"1e0\"^^xsd:float"; "abs for netative float")]
-#[test_case("abs(1e0/0)", "\"inf\"^^xsd:double"; "abs for positive INF")]
-#[test_case("abs(-1e0/0)", "\"inf\"^^xsd:double"; "abs for negative INF")]
+#[test_case("abs(1e0/0)", "\"INF\"^^xsd:double"; "abs for positive INF")]
+#[test_case("abs(-1e0/0)", "\"INF\"^^xsd:double"; "abs for negative INF")]
 #[test_case("abs(0e0/0)", "\"NaN\"^^xsd:double"; "abs for NaN")]
 // test abs error
 #[test_case("abs(<tag:x>)", ""; "abs for IRI")]

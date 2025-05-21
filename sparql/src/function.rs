@@ -879,9 +879,21 @@ pub fn xsd_boolean(arg: &EvalResult) -> Option<EvalResult> {
 pub fn xsd_double(arg: &EvalResult) -> Option<EvalResult> {
     // See https://www.w3.org/TR/sparql12-query/#FunctionMapping
     // and https://www.w3.org/TR/xpath-functions-31/#casting-to-double
-    //
-    // Do no forget to trim whitespaces when converting from string
-    todo!()
+    match arg.as_value() {
+        Some(SparqlValue::Number(SparqlNumber::Double(_))) => Some(arg.clone()),
+        Some(SparqlValue::Number(n)) => Some(SparqlNumber::from(n.coerce_to_double()).into()),
+        Some(SparqlValue::Boolean(opt)) => {
+            opt.map(|b| SparqlNumber::from(if b { 1.0 } else { 0.0 }).into())
+        }
+        Some(SparqlValue::String(lex, None)) => lex
+            .trim()
+            .parse::<f64>()
+            .ok()
+            .map(|f| SparqlNumber::from(f).into()),
+        Some(SparqlValue::String(_, Some(_))) => None,
+        Some(SparqlValue::DateTime(_)) => None,
+        None => None,
+    }
 }
 
 pub fn xsd_float(arg: &EvalResult) -> Option<EvalResult> {

@@ -807,6 +807,39 @@ fn xsd_boolean(input: &str, exp: &str) -> TestResult {
     Ok(())
 }
 
+#[test_case("<tag:s>", "")]
+#[test_case("bnode()", "")]
+#[test_case("<< <tag:s> <tag:p> <tag:o> >>", "")]
+#[test_case("\"1.000\"@fr", ""; "language string")] // the spec is not clear about this one
+#[test_case("\"1.0\"^^<tag:dummy>", ""; "unrecognized datatype")]
+#[test_case("01.2e34", "01.2e34"; "double with leading 0")]
+#[test_case("-0.0e0", "-0.0e0"; "negative 0 double")]
+#[test_case("\"-INF\"^^xsd:double", "\"-INF\"^^xsd:double"; "negative inf double")]
+#[test_case("\"NaN\"^^xsd:double", "\"NaN\"^^xsd:double"; "nan double")]
+#[test_case("\"bad\"^^xsd:double", ""; "bad double")]
+#[test_case("\"01.2e1\"^^xsd:float", "1.2e1"; "float with leading 0")]
+#[test_case("\"-0.0e0\"^^xsd:float", "-0.0e0"; "negative 0 float")]
+#[test_case("\"-INF\"^^xsd:float", "\"-INF\"^^xsd:double"; "negative inf float")]
+#[test_case("\"NaN\"^^xsd:float", "\"NaN\"^^xsd:double"; "nan float")]
+#[test_case("\" 01.2e34 \"", "1.2e34"; "string")]
+#[test_case("\"bad\"", ""; "bad string")]
+#[test_case("42", "4.2e1"; "integer")]
+#[test_case("4.2", "4.2e0"; "decimal")]
+#[test_case("true", "1e0"; "true boolean")]
+#[test_case("false", "0e0"; "false boolean")]
+#[test_case("\"2025-05-20:01:02:03Z\"^^xsd:dateTime", ""; "dateTime")]
+fn xsd_double(input: &str, exp: &str) -> TestResult {
+    let input = eval_expr(input)?;
+    let got = super::xsd_double(&input);
+    let exp = if exp.is_empty() {
+        None
+    } else {
+        Some(eval_expr(exp)?)
+    };
+    assert!(eval_eq(got, exp));
+    Ok(())
+}
+
 /// Evaluate the given SPARQL expression
 fn eval_expr(expr: &str) -> TestResult<EvalResult> {
     eprintln!("eval_expr: {expr}");
@@ -824,7 +857,7 @@ fn eval_expr(expr: &str) -> TestResult<EvalResult> {
 
 fn eval_eq(e1: Option<EvalResult>, e2: Option<EvalResult>) -> bool {
     match (dbg!(e1), dbg!(e2)) {
-        (Some(e1), Some(e2)) => Term::eq(&e1.into_term(), e2.into_term()),
+        (Some(e1), Some(e2)) => Term::eq(&dbg!(e1.into_term()), dbg!(e2.into_term())),
         (None, None) => true,
         _ => false,
     }
