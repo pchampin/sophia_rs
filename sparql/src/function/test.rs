@@ -840,6 +840,39 @@ fn xsd_double(input: &str, exp: &str) -> TestResult {
     Ok(())
 }
 
+#[test_case("<tag:s>", "")]
+#[test_case("bnode()", "")]
+#[test_case("<< <tag:s> <tag:p> <tag:o> >>", "")]
+#[test_case("\"1.000\"@fr", ""; "language string")] // the spec is not clear about this one
+#[test_case("\"1.0\"^^<tag:dummy>", ""; "unrecognized datatype")]
+#[test_case("01.2e34", "\"1.2e34\"^^xsd:float"; "double with leading 0")]
+#[test_case("-0.0e0", "\"-0e0\"^^xsd:float"; "negative 0 double")]
+#[test_case("\"-INF\"^^xsd:double", "\"-INF\"^^xsd:float"; "negative inf double")]
+#[test_case("\"NaN\"^^xsd:double", "\"NaN\"^^xsd:float"; "nan double")]
+#[test_case("\"bad\"^^xsd:double", ""; "bad double")]
+#[test_case("\"01.2e1\"^^xsd:float", "\"01.2e1\"^^xsd:float"; "float with leading 0")]
+#[test_case("\"-0.0e0\"^^xsd:float", "\"-0.0e0\"^^xsd:float"; "negative 0 float")]
+#[test_case("\"-INF\"^^xsd:float", "\"-INF\"^^xsd:float"; "negative inf float")]
+#[test_case("\"NaN\"^^xsd:float", "\"NaN\"^^xsd:float"; "nan float")]
+#[test_case("\" 01.2e34 \"", "\"1.2e34\"^^xsd:float"; "string")]
+#[test_case("\"bad\"", ""; "bad string")]
+#[test_case("42", "\"4.2e1\"^^xsd:float"; "integer")]
+#[test_case("4.2", "\"4.2e0\"^^xsd:float"; "decimal")]
+#[test_case("true", "\"1e0\"^^xsd:float"; "true boolean")]
+#[test_case("false", "\"0e0\"^^xsd:float"; "false boolean")]
+#[test_case("\"2025-05-20:01:02:03Z\"^^xsd:dateTime", ""; "dateTime")]
+fn xsd_float(input: &str, exp: &str) -> TestResult {
+    let input = eval_expr(input)?;
+    let got = super::xsd_float(&input);
+    let exp = if exp.is_empty() {
+        None
+    } else {
+        Some(eval_expr(exp)?)
+    };
+    assert!(eval_eq(got, exp));
+    Ok(())
+}
+
 /// Evaluate the given SPARQL expression
 fn eval_expr(expr: &str) -> TestResult<EvalResult> {
     eprintln!("eval_expr: {expr}");

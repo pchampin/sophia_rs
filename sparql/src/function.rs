@@ -899,9 +899,21 @@ pub fn xsd_double(arg: &EvalResult) -> Option<EvalResult> {
 pub fn xsd_float(arg: &EvalResult) -> Option<EvalResult> {
     // See https://www.w3.org/TR/sparql12-query/#FunctionMapping
     // and https://www.w3.org/TR/xpath-functions-31/#casting-to-float
-    //
-    // Do no forget to trim whitespaces when converting from string
-    todo!()
+    match arg.as_value() {
+        Some(SparqlValue::Number(SparqlNumber::Float(_))) => Some(arg.clone()),
+        Some(SparqlValue::Number(n)) => Some(SparqlNumber::from(n.coerce_to_float()).into()),
+        Some(SparqlValue::Boolean(opt)) => {
+            opt.map(|b| SparqlNumber::from(if b { 1.0_f32 } else { 0.0_f32 }).into())
+        }
+        Some(SparqlValue::String(lex, None)) => lex
+            .trim()
+            .parse::<f32>()
+            .ok()
+            .map(|f| SparqlNumber::from(f).into()),
+        Some(SparqlValue::String(_, Some(_))) => None,
+        Some(SparqlValue::DateTime(_)) => None,
+        None => None,
+    }
 }
 
 pub fn xsd_decimal(arg: &EvalResult) -> Option<EvalResult> {

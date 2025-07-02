@@ -185,7 +185,7 @@ impl SparqlNumber {
     ///
     /// Note that the conversion may lose precision, or even result in NaN for some big integers and decimals.
     #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
-    fn coerce_to_float(&self) -> f32 {
+    pub fn coerce_to_float(&self) -> f32 {
         match self {
             SparqlNumber::NativeInt(inner) => *inner as f32,
             SparqlNumber::BigInt(inner) => inner.to_f32().unwrap_or(f32::NAN),
