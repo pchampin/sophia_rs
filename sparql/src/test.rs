@@ -896,7 +896,7 @@ fn test_expr_variable() -> TestResult {
 #[test_case("xsd:integer(1, 2)", ""; "xsd:integer with 2 args")]
 // test xsd:dateTime cast
 #[test_case("xsd:dateTime()", ""; "xsd:dateTime with 0 args")]
-#[test_case("xsd:dateTime(\"2025-05-20T01:02:03Z\")", "\"2025-05-20T01:02:03Z\"^^xsd:dateTime"; "xsd:dateTime with 1 arg")]
+#[test_case("xsd:dateTime(\"2025-05-20T01:02:03\")", "\"2025-05-20T01:02:03\"^^xsd:dateTime"; "xsd:dateTime with 1 arg")]
 #[test_case("xsd:dateTime(1, 2)", ""; "xsd:dateTime with 2 args")]
 // test xsd:string cast
 #[test_case("xsd:string()", ""; "xsd:string with 0 args")]

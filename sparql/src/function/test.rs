@@ -849,11 +849,11 @@ fn xsd_double(input: &str, exp: &str) -> TestResult {
 #[test_case("-0.0e0", "\"-0e0\"^^xsd:float"; "negative 0 double")]
 #[test_case("\"-INF\"^^xsd:double", "\"-INF\"^^xsd:float"; "negative inf double")]
 #[test_case("\"NaN\"^^xsd:double", "\"NaN\"^^xsd:float"; "nan double")]
-#[test_case("\"bad\"^^xsd:double", ""; "bad double")]
 #[test_case("\"01.2e1\"^^xsd:float", "\"01.2e1\"^^xsd:float"; "float with leading 0")]
 #[test_case("\"-0.0e0\"^^xsd:float", "\"-0.0e0\"^^xsd:float"; "negative 0 float")]
 #[test_case("\"-INF\"^^xsd:float", "\"-INF\"^^xsd:float"; "negative inf float")]
 #[test_case("\"NaN\"^^xsd:float", "\"NaN\"^^xsd:float"; "nan float")]
+#[test_case("\"bad\"^^xsd:float", ""; "bad float")]
 #[test_case("\" 01.2e34 \"", "\"1.2e34\"^^xsd:float"; "string")]
 #[test_case("\"bad\"", ""; "bad string")]
 #[test_case("42", "\"4.2e1\"^^xsd:float"; "integer")]
@@ -882,7 +882,6 @@ fn xsd_float(input: &str, exp: &str) -> TestResult {
 #[test_case("-0.0e0", "0.0"; "negative 0 double")]
 #[test_case("\"-INF\"^^xsd:double", ""; "negative inf double")]
 #[test_case("\"NaN\"^^xsd:double", ""; "nan double")]
-#[test_case("\"bad\"^^xsd:double", ""; "bad double")]
 #[test_case("\"01.2e1\"^^xsd:float", "12.0"; "float with leading 0")]
 #[test_case("\"-0.0e0\"^^xsd:float", "0.0"; "negative 0 float")]
 #[test_case("\"-INF\"^^xsd:float", ""; "negative inf float")]
@@ -891,6 +890,7 @@ fn xsd_float(input: &str, exp: &str) -> TestResult {
 #[test_case("\"bad\"", ""; "bad string")]
 #[test_case("42", "42.0"; "integer")]
 #[test_case("4.2", "4.2"; "decimal")]
+#[test_case("\"bad\"^^xsd:decimal", ""; "bad decimal")]
 #[test_case("true", "1.0"; "true boolean")]
 #[test_case("false", "0.0"; "false boolean")]
 #[test_case("\"2025-05-20:01:02:03Z\"^^xsd:dateTime", ""; "dateTime")]
@@ -915,7 +915,6 @@ fn xsd_decimal(input: &str, exp: &str) -> TestResult {
 #[test_case("-0.0e0", "0"; "negative 0 double")]
 #[test_case("\"-INF\"^^xsd:double", ""; "negative inf double")]
 #[test_case("\"NaN\"^^xsd:double", ""; "nan double")]
-#[test_case("\"bad\"^^xsd:double", ""; "bad double")]
 #[test_case("\"01.2e1\"^^xsd:float", "12"; "float with leading 0")]
 #[test_case("\"-1.2e1\"^^xsd:float", "-12"; "negative float")]
 #[test_case("\"-0.0e0\"^^xsd:float", "0"; "negative 0 float")]
@@ -925,6 +924,7 @@ fn xsd_decimal(input: &str, exp: &str) -> TestResult {
 #[test_case("\"bad\"", ""; "bad string")]
 #[test_case("42", "42"; "integer")]
 #[test_case("123456789123456789123456789", "123456789123456789123456789"; "big integer")]
+#[test_case("\"bad\"^^xsd:integer", ""; "bad integer")]
 #[test_case("4.2", "4"; "decimal")]
 #[test_case("true", "1"; "true boolean")]
 #[test_case("false", "0"; "false boolean")]
@@ -932,6 +932,31 @@ fn xsd_decimal(input: &str, exp: &str) -> TestResult {
 fn xsd_integer(input: &str, exp: &str) -> TestResult {
     let input = eval_expr(input)?;
     let got = super::xsd_integer(&input);
+    let exp = if exp.is_empty() {
+        None
+    } else {
+        Some(eval_expr(exp)?)
+    };
+    assert!(eval_eq(got, exp));
+    Ok(())
+}
+
+#[test_case("<tag:s>", "")]
+#[test_case("bnode()", "")]
+#[test_case("<< <tag:s> <tag:p> <tag:o> >>", "")]
+#[test_case("\"2025-01-02T03:04:05Z\"@fr", ""; "language string")] // the spec is not clear about this one
+#[test_case("\"2025-01-02T03:04:05Z\"^^<tag:dummy>", ""; "unrecognized datatype")]
+#[test_case("\" 2025-01-02T03:04:05Z \"", "\"2025-01-02T03:04:05+00:00\"^^xsd:dateTime"; "string")]
+#[test_case("\"bad\"", ""; "bad string")]
+#[test_case("42", ""; "integer")]
+#[test_case("4.2", ""; "decimal")]
+#[test_case("true", ""; "true boolean")]
+#[test_case("false", ""; "false boolean")]
+#[test_case("\"2025-05-20:01:02:03Z\"^^xsd:dateTime", "\"2025-05-20:01:02:03Z\"^^xsd:dateTime"; "dateTime")]
+#[test_case("\"bad\"^^xsd:dateTime", "\"bad\"^^xsd:dateTime"; "bad dateTime")]
+fn xsd_date_time(input: &str, exp: &str) -> TestResult {
+    let input = eval_expr(input)?;
+    let got = super::xsd_date_time(&input);
     let exp = if exp.is_empty() {
         None
     } else {
