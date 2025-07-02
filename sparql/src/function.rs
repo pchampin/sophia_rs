@@ -5,6 +5,7 @@ use std::{
 
 use bigdecimal::{BigDecimal, FromPrimitive, One, Zero};
 use chrono::{Datelike, Timelike};
+use num_bigint::BigInt;
 use rand::random;
 use regex::{Captures, Regex, RegexBuilder};
 use sha1::{Digest, Sha1};
@@ -951,9 +952,29 @@ pub fn xsd_decimal(arg: &EvalResult) -> Option<EvalResult> {
 pub fn xsd_integer(arg: &EvalResult) -> Option<EvalResult> {
     // See https://www.w3.org/TR/sparql12-query/#FunctionMapping
     // and https://www.w3.org/TR/xpath-functions-31/#casting-to-integer
-    //
-    // Do no forget to trim whitespaces when converting from string
-    todo!()
+    match arg.as_value() {
+        Some(SparqlValue::Number(SparqlNumber::Decimal(n))) => {
+            Some(SparqlValue::Number(n.round(0).into_bigint_and_exponent().0.into()).into())
+        }
+        Some(SparqlValue::Number(SparqlNumber::Float(n))) => {
+            Some(SparqlValue::Number(BigInt::from_f32(n.round())?.into()).into())
+        }
+        Some(SparqlValue::Number(SparqlNumber::Double(n))) => {
+            Some(SparqlValue::Number(BigInt::from_f64(n.round())?.into()).into())
+        }
+        Some(SparqlValue::Number(_)) => Some(arg.clone()),
+        Some(SparqlValue::Boolean(opt)) => {
+            opt.map(|b| SparqlNumber::from(if b { 1 } else { 0 }).into())
+        }
+        Some(SparqlValue::String(lex, None)) => lex
+            .trim()
+            .parse::<BigInt>()
+            .ok()
+            .map(|f| SparqlNumber::from(f).into()),
+        Some(SparqlValue::String(_, Some(_))) => None,
+        Some(SparqlValue::DateTime(_)) => None,
+        None => None,
+    }
 }
 
 pub fn xsd_date_time(arg: &EvalResult) -> Option<EvalResult> {
