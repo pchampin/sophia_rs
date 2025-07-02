@@ -173,7 +173,7 @@ impl SparqlNumber {
     /// ## Precondition
     /// Will panic if called on anything but a `NativeInt` or `BigInt`.
     /// NB: Decimal must not be coerced to decimal, as this would cause a clone.
-    fn coerce_to_decimal(&self) -> BigDecimal {
+    pub(crate) fn coerce_to_decimal(&self) -> BigDecimal {
         match self {
             SparqlNumber::NativeInt(inner) => BigDecimal::from_isize(*inner).unwrap(),
             SparqlNumber::BigInt(inner) => inner.clone().into(),
