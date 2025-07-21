@@ -14,7 +14,9 @@
 //! This implementation uses no implicit timezone.
 use std::{cmp::Ordering, fmt::Display, str::FromStr, sync::LazyLock};
 
-use chrono::{DateTime, Datelike, Days, FixedOffset, NaiveDate, NaiveDateTime, Timelike};
+use chrono::{
+    DateTime, Datelike, Days, FixedOffset, NaiveDate, NaiveDateTime, SecondsFormat, Timelike,
+};
 use regex::Regex;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -101,7 +103,7 @@ impl Display for XsdDateTime {
                     out
                 }
                 XsdDateTime::Timezoned(d) => {
-                    d.to_rfc3339()
+                    d.to_rfc3339_opts(SecondsFormat::AutoSi, true)
                 }
             }
         )
@@ -425,7 +427,7 @@ mod test {
     }
 
     #[test_case("2024-09-17T12:34:56"; "no timezone")]
-    #[test_case("2024-09-17T12:34:56+00:00"; "plus 0")]
+    #[test_case("2024-09-17T12:34:56Z"; "z")]
     #[test_case("2024-09-17T12:34:56+01:00"; "plus 1")]
     #[test_case("2024-09-17T12:34:56+01:59"; "plus 1:59")]
     #[test_case("2024-09-17T12:34:56-01:59"; "minus 1:59")]

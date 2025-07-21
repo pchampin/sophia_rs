@@ -44,6 +44,13 @@ impl<T: Borrow<str>> GenericLiteral<T> {
             Self::LanguageString(_, tag) => Some(tag.as_ref()),
         }
     }
+
+    /// The [lexical form](https://www.w3.org/TR/rdf11-concepts/#dfn-lexical-form) of this literal
+    pub fn unwrap_lexical_form(self) -> T {
+        match self {
+            Self::LanguageString(lex, ..) | Self::Typed(lex, ..) => lex,
+        }
+    }
 }
 
 impl<T: Borrow<str> + Debug> Term for GenericLiteral<T> {

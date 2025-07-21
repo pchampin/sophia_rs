@@ -946,7 +946,7 @@ fn xsd_integer(input: &str, exp: &str) -> TestResult {
 #[test_case("<< <tag:s> <tag:p> <tag:o> >>", "")]
 #[test_case("\"2025-01-02T03:04:05Z\"@fr", ""; "language string")] // the spec is not clear about this one
 #[test_case("\"2025-01-02T03:04:05Z\"^^<tag:dummy>", ""; "unrecognized datatype")]
-#[test_case("\" 2025-01-02T03:04:05Z \"", "\"2025-01-02T03:04:05+00:00\"^^xsd:dateTime"; "string")]
+#[test_case("\" 2025-01-02T03:04:05+00:00 \"", "\"2025-01-02T03:04:05Z\"^^xsd:dateTime"; "string")]
 #[test_case("\"bad\"", ""; "bad string")]
 #[test_case("42", ""; "integer")]
 #[test_case("4.2", ""; "decimal")]
@@ -957,6 +957,48 @@ fn xsd_integer(input: &str, exp: &str) -> TestResult {
 fn xsd_date_time(input: &str, exp: &str) -> TestResult {
     let input = eval_expr(input)?;
     let got = super::xsd_date_time(&input);
+    let exp = if exp.is_empty() {
+        None
+    } else {
+        Some(eval_expr(exp)?)
+    };
+    assert!(eval_eq(got, exp));
+    Ok(())
+}
+
+#[test_case("<tag:s>", "\"tag:s\"")]
+#[test_case("bnode()", "")]
+#[test_case("<< <tag:s> <tag:p> <tag:o> >>", "")]
+#[test_case("\"1.000\"@fr", "\"1.000\""; "language string")] // the spec is not clear about this one
+#[test_case("\"1.0\"^^<tag:dummy>", "\"1.0\""; "unrecognized datatype")]
+#[test_case("01.2e34", "\"1.2E34\""; "big double with leading 0")]
+#[test_case("1.2e-34", "\"1.2E-34\""; "small double")]
+#[test_case("01.2e3", "\"1200\""; "medium-big double with leading 0")]
+#[test_case("1.2e-3", "\"0.0012\""; "medium-small double")]
+#[test_case("-0.0e0", "\"-0\""; "negative 0 double")]
+#[test_case("\"-INF\"^^xsd:double", "\"-INF\""; "negative inf double")]
+#[test_case("\"NaN\"^^xsd:double", "\"NaN\""; "nan double")]
+#[test_case("\"01.2e34\"^^xsd:float", "\"1.2E34\""; "big float with leading 0")]
+#[test_case("\"1.2e-34\"^^xsd:float", "\"1.2E-34\""; "small float")]
+#[test_case("\"01.2e3\"^^xsd:float", "\"1200\""; "medium-big float with leading 0")]
+#[test_case("\"1.2e-3\"^^xsd:float", "\"0.0012\""; "medium-small float")]
+#[test_case("\"-0.0e0\"^^xsd:float", "\"-0\""; "negative 0 float")]
+#[test_case("\"-INF\"^^xsd:float", "\"-INF\""; "negative inf float")]
+#[test_case("\"NaN\"^^xsd:float", "\"NaN\""; "nan float")]
+#[test_case("\" 42⛄ \"", "\" 42⛄ \""; "string")]
+#[test_case("42", "\"42\""; "integer")]
+#[test_case("123456789123456789123456789", "\"123456789123456789123456789\""; "big integer")]
+#[test_case("\"bad\"^^xsd:integer", "\"bad\""; "bad integer")]
+#[test_case("4.2", "\"4.2\""; "decimal")]
+#[test_case("4.000", "\"4\""; "decimal integer")]
+#[test_case("true", "\"true\""; "true boolean")]
+#[test_case("false", "\"false\""; "false boolean")]
+#[test_case("\"1\"^^xsd:boolean", "\"true\""; "1 boolean")]
+#[test_case("\"2025-05-20T01:02:03.45+00:00\"^^xsd:dateTime", "\"2025-05-20T01:02:03.450Z\""; "dateTime")]
+#[test_case("\"10000-05-20T01:02:03.45\"^^xsd:dateTime", "\"10000-05-20T01:02:03.450\""; "dateTime big")]
+fn xsd_string(input: &str, exp: &str) -> TestResult {
+    let input = eval_expr(input)?;
+    let got = super::xsd_string(&input);
     let exp = if exp.is_empty() {
         None
     } else {

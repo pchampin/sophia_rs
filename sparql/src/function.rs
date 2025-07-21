@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, LazyLock},
 };
 
-use bigdecimal::{BigDecimal, FromPrimitive, One, Zero};
+use bigdecimal::{BigDecimal, FromPrimitive, One, RoundingMode, Signed, Zero};
 use chrono::{Datelike, Timelike};
 use num_bigint::BigInt;
 use rand::random;
@@ -994,7 +994,64 @@ pub fn xsd_date_time(arg: &EvalResult) -> Option<EvalResult> {
 pub fn xsd_string(arg: &EvalResult) -> Option<EvalResult> {
     // The following is not right
     // See https://www.w3.org/TR/xpath-functions-31/#casting-to-string
-    todo!()
+    let arc_str = if let Some(value) = arg.as_value() {
+        match value {
+            SparqlValue::Number(sparql_number) => match sparql_number {
+                SparqlNumber::NativeInt(i) => format!("{i}").into(),
+                SparqlNumber::BigInt(big_int) => format!("{big_int}").into(),
+                SparqlNumber::Decimal(big_decimal) => {
+                    format!("{}", big_decimal.normalized()).into()
+                }
+                SparqlNumber::Float(f) => {
+                    if f.is_zero() && f.is_negative() {
+                        Arc::from("-0")
+                    } else if f.is_infinite() {
+                        let sign = if f.is_negative() { "-" } else { "" };
+                        format!("{sign}INF").into()
+                    } else if (0.000001..=1e6).contains(&f.abs()) {
+                        let conv = BigDecimal::from_f32(*f)?
+                            .with_scale_round(6, RoundingMode::HalfEven)
+                            .normalized();
+                        format!("{conv}").into()
+                    } else {
+                        format!("{f:E}").into()
+                    }
+                }
+                SparqlNumber::Double(f) => {
+                    if f.is_zero() && f.is_negative() {
+                        Arc::from("-0")
+                    } else if f.is_infinite() {
+                        let sign = if f.is_negative() { "-" } else { "" };
+                        format!("{sign}INF").into()
+                    } else if (0.000001..=1e6).contains(&f.abs()) {
+                        let conv = BigDecimal::from_f64(*f)?
+                            .with_scale_round(6, RoundingMode::HalfEven)
+                            .normalized();
+                        format!("{conv}").into()
+                    } else {
+                        format!("{f:E}").into()
+                    }
+                }
+            },
+            SparqlValue::String(lex, _) => lex.clone(),
+            SparqlValue::Boolean(opt) => format!("{}", (*opt)?).into(),
+            SparqlValue::DateTime(opt) => {
+                let txt = format!("{}", opt.as_ref()?);
+                if let Some(stripped) = txt.strip_prefix("+") {
+                    Arc::from(stripped)
+                } else {
+                    txt.into()
+                }
+            }
+        }
+    } else {
+        match arg.as_term() {
+            sophia_term::ArcTerm::Iri(iri_ref) => iri_ref.unwrap(),
+            sophia_term::ArcTerm::Literal(generic_literal) => generic_literal.unwrap_lexical_form(),
+            _ => None?,
+        }
+    };
+    Some(SparqlValue::String(arc_str, None).into())
 }
 
 type StringLiteral<'a> = (&'a Arc<str>, Option<&'a LanguageTag<Arc<str>>>);
