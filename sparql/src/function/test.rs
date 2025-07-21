@@ -111,7 +111,7 @@ fn rand_all_diff() -> TestResult {
     const N: usize = 5;
     let mut set = HashSet::new();
     for _ in 1..=N {
-        let EvalResult::Value(SparqlValue::Number(SparqlNumber::Double(val))) = super::rand()
+        let EvalResult::Value(SparqlValue::Number(Some(SparqlNumber::Double(val)))) = super::rand()
         else {
             panic!();
         };
@@ -988,7 +988,7 @@ fn xsd_date_time(input: &str, exp: &str) -> TestResult {
 #[test_case("\" 42⛄ \"", "\" 42⛄ \""; "string")]
 #[test_case("42", "\"42\""; "integer")]
 #[test_case("123456789123456789123456789", "\"123456789123456789123456789\""; "big integer")]
-#[test_case("\"bad\"^^xsd:integer", "\"bad\""; "bad integer")]
+#[test_case("\"bad\"^^xsd:integer", ""; "bad integer")]
 #[test_case("4.2", "\"4.2\""; "decimal")]
 #[test_case("4.000", "\"4\""; "decimal integer")]
 #[test_case("true", "\"true\""; "true boolean")]

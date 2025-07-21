@@ -19,12 +19,17 @@ use crate::ns::{
     XSD_STRING,
 };
 
+/// A value of one of the recognized datatypes.
 #[derive(Clone, Debug)]
 pub enum SparqlValue {
-    Number(SparqlNumber),
-    String(Arc<str>, Option<LanguageTag<Arc<str>>>),
+    /// A value of type xsd:boolean, or None if the lexical value is invalid
     Boolean(Option<bool>),
+    /// A value of type xsd:dateTime, or None if the lexical value is invalid
     DateTime(Option<XsdDateTime>),
+    /// A value of a recognized numeric datatype, or None of the lexical value is invalid
+    Number(Option<SparqlNumber>),
+    /// A value of type xsd:string or rdf:langString (if the language tag is not None)
+    String(Arc<str>, Option<LanguageTag<Arc<str>>>),
 }
 
 impl SparqlValue {
@@ -47,10 +52,10 @@ impl SparqlValue {
                     return None;
                 }
                 match &dt[xsd::PREFIX.len()..] {
-                    "integer" => Some(Self::Number(SparqlNumber::try_parse_integer(lex)?)),
-                    "decimal" => Some(Self::Number(SparqlNumber::try_parse::<BigDecimal>(lex)?)),
-                    "float" => Some(Self::Number(SparqlNumber::try_parse::<f32>(lex)?)),
-                    "double" => Some(Self::Number(SparqlNumber::try_parse::<f64>(lex)?)),
+                    "integer" => Some(Self::Number(SparqlNumber::try_parse_integer(lex))),
+                    "decimal" => Some(Self::Number(SparqlNumber::try_parse::<BigDecimal>(lex))),
+                    "float" => Some(Self::Number(SparqlNumber::try_parse::<f32>(lex))),
+                    "double" => Some(Self::Number(SparqlNumber::try_parse::<f64>(lex))),
                     "string" => Some(Self::String(lex.clone(), None)),
                     "boolean" => Some(Self::Boolean(match lex.as_ref() {
                         "true" | "1" => Some(true),
@@ -59,26 +64,26 @@ impl SparqlValue {
                     })),
                     "dateTime" => Some(Self::DateTime(lex.parse().ok())),
                     "nonPositiveInteger" => Some(Self::Number(
-                        SparqlNumber::try_parse_integer(lex)?.check(|n| !n.is_positive())?,
+                        SparqlNumber::try_parse_integer(lex).filter(|n| !n.is_positive()),
                     )),
                     "negativeInteger" => Some(Self::Number(
-                        SparqlNumber::try_parse_integer(lex)?
-                            .check(_number::SparqlNumber::is_negative)?,
+                        SparqlNumber::try_parse_integer(lex)
+                            .filter(_number::SparqlNumber::is_negative),
                     )),
-                    "long" => Some(Self::Number(SparqlNumber::try_parse::<i64>(lex)?)),
-                    "int" => Some(Self::Number(SparqlNumber::try_parse::<i32>(lex)?)),
-                    "short" => Some(Self::Number(SparqlNumber::try_parse::<i16>(lex)?)),
-                    "byte" => Some(Self::Number(SparqlNumber::try_parse::<i8>(lex)?)),
+                    "long" => Some(Self::Number(SparqlNumber::try_parse::<i64>(lex))),
+                    "int" => Some(Self::Number(SparqlNumber::try_parse::<i32>(lex))),
+                    "short" => Some(Self::Number(SparqlNumber::try_parse::<i16>(lex))),
+                    "byte" => Some(Self::Number(SparqlNumber::try_parse::<i8>(lex))),
                     "nonNegativeInteger" => Some(Self::Number(
-                        SparqlNumber::try_parse_integer(lex)?.check(|n| !n.is_negative())?,
+                        SparqlNumber::try_parse_integer(lex).filter(|n| !n.is_negative()),
                     )),
-                    "unsignedLong" => Some(Self::Number(SparqlNumber::try_parse::<u64>(lex)?)),
-                    "unsignedInt" => Some(Self::Number(SparqlNumber::try_parse::<u32>(lex)?)),
-                    "unsignedShort" => Some(Self::Number(SparqlNumber::try_parse::<u16>(lex)?)),
-                    "unsignedByte" => Some(Self::Number(SparqlNumber::try_parse::<u8>(lex)?)),
+                    "unsignedLong" => Some(Self::Number(SparqlNumber::try_parse::<u64>(lex))),
+                    "unsignedInt" => Some(Self::Number(SparqlNumber::try_parse::<u32>(lex))),
+                    "unsignedShort" => Some(Self::Number(SparqlNumber::try_parse::<u16>(lex))),
+                    "unsignedByte" => Some(Self::Number(SparqlNumber::try_parse::<u8>(lex))),
                     "positiveInteger" => Some(Self::Number(
-                        SparqlNumber::try_parse_integer(lex)?
-                            .check(_number::SparqlNumber::is_positive)?,
+                        SparqlNumber::try_parse_integer(lex)
+                            .filter(_number::SparqlNumber::is_positive),
                     )),
                     _ => None,
                 }
@@ -88,21 +93,23 @@ impl SparqlValue {
 
     pub fn is_truthy(&self) -> Option<bool> {
         match self {
-            SparqlValue::Number(n) => Some(n.is_truthy()),
-            SparqlValue::String(val, _) => Some(!val.is_empty()),
             SparqlValue::Boolean(opt) => opt.or(Some(false)),
             SparqlValue::DateTime(_) => None,
+            SparqlValue::Number(opt) => opt.as_ref().map(SparqlNumber::is_truthy),
+            SparqlValue::String(val, _) => Some(!val.is_empty()),
         }
     }
 
     pub fn sparql_eq(&self, other: &Self) -> Option<bool> {
         use SparqlValue::*;
         match (self, other) {
-            (Number(n1), Number(n2)) => Some(n1 == n2),
+            (Boolean(Some(b1)), Boolean(Some(b2))) => Some(b1 == b2),
+            (DateTime(Some(d1)), DateTime(Some(d2))) => {
+                d1.partial_cmp(d2).map(|o| o == Ordering::Equal)
+            }
+            (Number(Some(n1)), Number(Some(n2))) => Some(n1 == n2),
             (String(s1, None), String(s2, None)) => Some(s1 == s2),
             (String(s1, Some(t1)), String(s2, Some(t2))) => Some(t1 == t2 && s1 == s2),
-            (Boolean(b1), Boolean(b2)) => Some(b1 == b2),
-            (DateTime(d1), DateTime(d2)) => d1.partial_cmp(d2).map(|o| o == Ordering::Equal),
             _ => None,
         }
     }
@@ -114,19 +121,19 @@ impl SparqlValue {
         use SparqlNumber::*;
         use SparqlValue::*;
         match self {
-            Number(NativeInt(i)) => factory(&i.to_string()),
-            Number(BigInt(i)) => factory(&i.to_string()),
-            Number(Decimal(d)) => factory(&dec2string(d)),
-            Number(Float(f)) if f.is_infinite() && f.is_positive() => factory("INF"),
-            Number(Float(f)) if f.is_infinite() && f.is_negative() => factory("-INF"),
-            Number(Float(f)) => factory(&format!("{f:e}")),
-            Number(Double(d)) if d.is_infinite() && d.is_positive() => factory("INF"),
-            Number(Double(d)) if d.is_infinite() && d.is_negative() => factory("-INF"),
-            Number(Double(d)) => factory(&format!("{d:e}")),
             Boolean(Some(b)) => factory(if *b { "true" } else { "false" }),
             DateTime(Some(d)) => factory(&d.to_string()),
-            Boolean(None) | DateTime(None) => factory("ill-formed"),
+            Number(Some(NativeInt(i))) => factory(&i.to_string()),
+            Number(Some(BigInt(i))) => factory(&i.to_string()),
+            Number(Some(Decimal(d))) => factory(&dec2string(d)),
+            Number(Some(Float(f))) if f.is_infinite() && f.is_positive() => factory("INF"),
+            Number(Some(Float(f))) if f.is_infinite() && f.is_negative() => factory("-INF"),
+            Number(Some(Float(f))) => factory(&format!("{f:e}")),
+            Number(Some(Double(d))) if d.is_infinite() && d.is_positive() => factory("INF"),
+            Number(Some(Double(d))) if d.is_infinite() && d.is_negative() => factory("-INF"),
+            Number(Some(Double(d))) => factory(&format!("{d:e}")),
             String(lex, _) => lex.clone(),
+            Boolean(None) | DateTime(None) | Number(None) => factory("ill-formed"),
         }
     }
 
@@ -134,12 +141,12 @@ impl SparqlValue {
         use SparqlNumber::*;
         use SparqlValue::*;
         match self {
-            Number(NativeInt(_) | BigInt(_)) => XSD_INTEGER.clone(),
-            Number(Decimal(_)) => XSD_DECIMAL.clone(),
-            Number(Float(_)) => XSD_FLOAT.clone(),
-            Number(Double(_)) => XSD_DOUBLE.clone(),
             Boolean(_) => XSD_BOOLEAN.clone(),
             DateTime(_) => XSD_DATE_TIME.clone(),
+            Number(Some(NativeInt(_) | BigInt(_))) => XSD_INTEGER.clone(),
+            Number(Some(Decimal(_))) => XSD_DECIMAL.clone(),
+            Number(Some(Float(_))) => XSD_FLOAT.clone(),
+            Number(Some(Double(_)) | None) => XSD_DOUBLE.clone(),
             String(_, None) => XSD_STRING.clone(),
             String(_, Some(_)) => RDF_LANG_STRING.clone(),
         }
@@ -154,7 +161,7 @@ impl From<bool> for SparqlValue {
 
 impl From<SparqlNumber> for SparqlValue {
     fn from(value: SparqlNumber) -> Self {
-        SparqlValue::Number(value)
+        SparqlValue::Number(Some(value))
     }
 }
 
@@ -168,13 +175,13 @@ impl PartialOrd for SparqlValue {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         use SparqlValue::*;
         match (self, other) {
-            (Number(n1), Number(n2)) => n1.partial_cmp(&n2),
+            (Boolean(Some(b1)), Boolean(Some(b2))) => b1.partial_cmp(b2),
+            (DateTime(Some(d1)), DateTime(Some(d2))) => d1.partial_cmp(d2),
+            (Number(Some(n1)), Number(Some(n2))) => n1.partial_cmp(&n2),
             (String(s1, None), String(s2, None)) => Some(s1.cmp(s2)),
             (String(s1, Some(t1)), String(s2, Some(t2))) => {
                 Some(t1.cmp(t2).then_with(|| s1.cmp(s2)))
             }
-            (Boolean(Some(b1)), Boolean(Some(b2))) => b1.partial_cmp(b2),
-            (DateTime(Some(d1)), DateTime(Some(d2))) => d1.partial_cmp(d2),
             _ => None,
         }
     }

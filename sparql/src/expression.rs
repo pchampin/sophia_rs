@@ -395,8 +395,8 @@ impl EvalResult {
     }
 
     pub fn as_number(&self, diag: &str) -> Option<&SparqlNumber> {
-        match self.as_value() {
-            Some(SparqlValue::Number(n)) => Some(n),
+        match self.as_value()? {
+            SparqlValue::Number(opt) => opt.as_ref(),
             _ => {
                 if !diag.is_empty() {
                     log::warn!("{diag} expects a number");

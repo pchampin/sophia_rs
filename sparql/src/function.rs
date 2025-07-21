@@ -472,7 +472,7 @@ pub fn is_literal(er: &EvalResult) -> EvalResult {
 }
 
 pub fn is_numeric(er: &EvalResult) -> EvalResult {
-    matches!(er.as_value(), Some(SparqlValue::Number(_))).into()
+    matches!(er.as_value(), Some(SparqlValue::Number(Some(_)))).into()
 }
 
 pub fn regex(text: &str, pattern: &str, flags: Option<&Arc<str>>) -> Option<EvalResult> {
@@ -864,73 +864,68 @@ pub fn is_triple(er: &EvalResult) -> EvalResult {
 pub fn xsd_boolean(arg: &EvalResult) -> Option<EvalResult> {
     // See https://www.w3.org/TR/sparql12-query/#FunctionMapping
     // and https://www.w3.org/TR/xpath-functions-31/#casting-boolean
-    match arg.as_value() {
-        Some(SparqlValue::Boolean(opt)) => opt.map(|_| arg.clone()),
-        Some(SparqlValue::Number(n)) => Some(SparqlValue::from(n.is_truthy()).into()),
-        Some(SparqlValue::String(lex, None)) => match lex.trim() {
+    match arg.as_value()? {
+        SparqlValue::Boolean(opt) => opt.map(|_| arg.clone()),
+        SparqlValue::DateTime(_) => None,
+        SparqlValue::Number(opt) => opt
+            .as_ref()
+            .map(|n| SparqlValue::from(n.is_truthy()).into()),
+        SparqlValue::String(lex, None) => match lex.trim() {
             "1" | "true" => Some(SparqlValue::from(true).into()),
             "0" | "false" => Some(SparqlValue::from(false).into()),
             _ => None,
         },
-        Some(SparqlValue::String(_, Some(_))) => None,
-        Some(SparqlValue::DateTime(_)) => None,
-        None => None,
+        SparqlValue::String(_, Some(_)) => None,
     }
 }
 
 pub fn xsd_double(arg: &EvalResult) -> Option<EvalResult> {
     // See https://www.w3.org/TR/sparql12-query/#FunctionMapping
     // and https://www.w3.org/TR/xpath-functions-31/#casting-to-double
-    match arg.as_value() {
-        Some(SparqlValue::Number(SparqlNumber::Double(_))) => Some(arg.clone()),
-        Some(SparqlValue::Number(n)) => Some(SparqlNumber::from(n.coerce_to_double()).into()),
-        Some(SparqlValue::Boolean(opt)) => {
+    match arg.as_value()? {
+        SparqlValue::Boolean(opt) => {
             opt.map(|b| SparqlNumber::from(if b { 1.0 } else { 0.0 }).into())
         }
-        Some(SparqlValue::String(lex, None)) => lex
+        SparqlValue::DateTime(_) => None,
+        SparqlValue::Number(Some(SparqlNumber::Double(_))) => Some(arg.clone()),
+        SparqlValue::Number(opt) => opt
+            .as_ref()
+            .map(|n| SparqlNumber::from(n.coerce_to_double()).into()),
+        SparqlValue::String(lex, None) => lex
             .trim()
             .parse::<f64>()
             .ok()
             .map(|d| SparqlNumber::from(d).into()),
-        Some(SparqlValue::String(_, Some(_))) => None,
-        Some(SparqlValue::DateTime(_)) => None,
-        None => None,
+        SparqlValue::String(_, Some(_)) => None,
     }
 }
 
 pub fn xsd_float(arg: &EvalResult) -> Option<EvalResult> {
     // See https://www.w3.org/TR/sparql12-query/#FunctionMapping
     // and https://www.w3.org/TR/xpath-functions-31/#casting-to-float
-    match arg.as_value() {
-        Some(SparqlValue::Number(SparqlNumber::Float(_))) => Some(arg.clone()),
-        Some(SparqlValue::Number(n)) => Some(SparqlNumber::from(n.coerce_to_float()).into()),
-        Some(SparqlValue::Boolean(opt)) => {
+    match arg.as_value()? {
+        SparqlValue::Boolean(opt) => {
             opt.map(|b| SparqlNumber::from(if b { 1.0_f32 } else { 0.0_f32 }).into())
         }
-        Some(SparqlValue::String(lex, None)) => lex
+        SparqlValue::DateTime(_) => None,
+        SparqlValue::Number(Some(SparqlNumber::Float(_))) => Some(arg.clone()),
+        SparqlValue::Number(opt) => opt
+            .as_ref()
+            .map(|n| SparqlNumber::from(n.coerce_to_float()).into()),
+        SparqlValue::String(lex, None) => lex
             .trim()
             .parse::<f32>()
             .ok()
             .map(|f| SparqlNumber::from(f).into()),
-        Some(SparqlValue::String(_, Some(_))) => None,
-        Some(SparqlValue::DateTime(_)) => None,
-        None => None,
+        SparqlValue::String(_, Some(_)) => None,
     }
 }
 
 pub fn xsd_decimal(arg: &EvalResult) -> Option<EvalResult> {
     // See https://www.w3.org/TR/sparql12-query/#FunctionMapping
     // and https://www.w3.org/TR/xpath-functions-31/#casting-to-decimal
-    match arg.as_value() {
-        Some(SparqlValue::Number(SparqlNumber::Decimal(_))) => Some(arg.clone()),
-        Some(SparqlValue::Number(SparqlNumber::Float(n))) => {
-            Some(SparqlValue::Number(BigDecimal::from_f32(*n)?.into()).into())
-        }
-        Some(SparqlValue::Number(SparqlNumber::Double(n))) => {
-            Some(SparqlValue::Number(BigDecimal::from_f64(*n)?.into()).into())
-        }
-        Some(SparqlValue::Number(n)) => Some(SparqlNumber::from(n.coerce_to_decimal()).into()),
-        Some(SparqlValue::Boolean(opt)) => opt.map(|b| {
+    match arg.as_value()? {
+        SparqlValue::Boolean(opt) => opt.map(|b| {
             SparqlNumber::from(if b {
                 BigDecimal::one()
             } else {
@@ -938,42 +933,49 @@ pub fn xsd_decimal(arg: &EvalResult) -> Option<EvalResult> {
             })
             .into()
         }),
-        Some(SparqlValue::String(lex, None)) => lex
+        SparqlValue::DateTime(_) => None,
+        SparqlValue::Number(Some(SparqlNumber::Decimal(_))) => Some(arg.clone()),
+        SparqlValue::Number(Some(SparqlNumber::Float(n))) => {
+            Some(SparqlValue::Number(Some(BigDecimal::from_f32(*n)?.into())).into())
+        }
+        SparqlValue::Number(Some(SparqlNumber::Double(n))) => {
+            Some(SparqlValue::Number(Some(BigDecimal::from_f64(*n)?.into())).into())
+        }
+        SparqlValue::Number(opt) => opt
+            .as_ref()
+            .map(|n| SparqlNumber::from(n.coerce_to_decimal()).into()),
+        SparqlValue::String(lex, None) => lex
             .trim()
             .parse::<BigDecimal>()
             .ok()
             .map(|d| SparqlNumber::from(d).into()),
-        Some(SparqlValue::String(_, Some(_))) => None,
-        Some(SparqlValue::DateTime(_)) => None,
-        None => None,
+        SparqlValue::String(_, Some(_)) => None,
     }
 }
 
 pub fn xsd_integer(arg: &EvalResult) -> Option<EvalResult> {
     // See https://www.w3.org/TR/sparql12-query/#FunctionMapping
     // and https://www.w3.org/TR/xpath-functions-31/#casting-to-integer
-    match arg.as_value() {
-        Some(SparqlValue::Number(SparqlNumber::Decimal(n))) => {
-            Some(SparqlValue::Number(n.round(0).into_bigint_and_exponent().0.into()).into())
+    match arg.as_value()? {
+        SparqlValue::Boolean(opt) => opt.map(|b| SparqlNumber::from(if b { 1 } else { 0 }).into()),
+        SparqlValue::DateTime(_) => None,
+        SparqlValue::Number(Some(SparqlNumber::Decimal(n))) => {
+            Some(SparqlValue::Number(Some(n.round(0).into_bigint_and_exponent().0.into())).into())
         }
-        Some(SparqlValue::Number(SparqlNumber::Float(n))) => {
-            Some(SparqlValue::Number(BigInt::from_f32(n.round())?.into()).into())
+        SparqlValue::Number(Some(SparqlNumber::Float(n))) => {
+            Some(SparqlValue::Number(Some(BigInt::from_f32(n.round())?.into())).into())
         }
-        Some(SparqlValue::Number(SparqlNumber::Double(n))) => {
-            Some(SparqlValue::Number(BigInt::from_f64(n.round())?.into()).into())
+        SparqlValue::Number(Some(SparqlNumber::Double(n))) => {
+            Some(SparqlValue::Number(Some(BigInt::from_f64(n.round())?.into())).into())
         }
-        Some(SparqlValue::Number(_)) => Some(arg.clone()),
-        Some(SparqlValue::Boolean(opt)) => {
-            opt.map(|b| SparqlNumber::from(if b { 1 } else { 0 }).into())
-        }
-        Some(SparqlValue::String(lex, None)) => lex
+        SparqlValue::Number(Some(_)) => Some(arg.clone()), // NativeInt or BigInt
+        SparqlValue::Number(None) => None,
+        SparqlValue::String(lex, None) => lex
             .trim()
             .parse::<BigInt>()
             .ok()
             .map(|i| SparqlNumber::from(i).into()),
-        Some(SparqlValue::String(_, Some(_))) => None,
-        Some(SparqlValue::DateTime(_)) => None,
-        None => None,
+        SparqlValue::String(_, Some(_)) => None,
     }
 }
 
@@ -996,7 +998,7 @@ pub fn xsd_string(arg: &EvalResult) -> Option<EvalResult> {
     // See https://www.w3.org/TR/xpath-functions-31/#casting-to-string
     let arc_str = if let Some(value) = arg.as_value() {
         match value {
-            SparqlValue::Number(sparql_number) => match sparql_number {
+            SparqlValue::Number(opt) => match opt.as_ref()? {
                 SparqlNumber::NativeInt(i) => format!("{i}").into(),
                 SparqlNumber::BigInt(big_int) => format!("{big_int}").into(),
                 SparqlNumber::Decimal(big_decimal) => {
