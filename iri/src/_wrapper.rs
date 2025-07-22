@@ -40,6 +40,11 @@ wrap! { Iri borrowing str :
     {
         BaseIri::new(self.0).unwrap()
     }
+
+    /// Turn this IRI into an [`IriRef`]
+    pub fn to_iri_ref(self) -> IriRef<T> {
+        IriRef::new_unchecked(self.0)
+    }
 }
 
 impl<T: Borrow<str>> IsIriRef for Iri<T> {}

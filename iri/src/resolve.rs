@@ -69,6 +69,12 @@ impl<T: Deref<Target = str>> Deref for BaseIri<T> {
     }
 }
 
+impl<T: Deref<Target = str>> From<Oxiri<T>> for BaseIri<T> {
+    fn from(value: Oxiri<T>) -> Self {
+        Self(value)
+    }
+}
+
 //
 
 /// A `BaseIriRef` is an absolute or relative IRI reference,

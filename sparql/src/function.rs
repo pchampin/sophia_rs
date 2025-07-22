@@ -68,15 +68,20 @@ pub fn call_function<D: ?Sized>(
             if let Some(iri) = arg.as_iri("") {
                 Some(iri.clone().into())
             } else if let Some(st) = arg.as_xsd_string("Iri") {
-                Some(
-                    IriRef::new(st.clone())
-                        .inspect_err(|err| {
-                            log::warn!("Iri#1 is an invalid IRI");
-                            log::debug!(" {err}")
-                        })
-                        .ok()?
-                        .into(),
-                )
+                let res = if let Some(base_iri) = &config.base_iri {
+                    base_iri
+                        .resolve(st.as_ref())
+                        .map(|iri| iri.map_unchecked(Arc::from).to_iri_ref())
+                        .map_err(|err| err.to_string())
+                } else {
+                    IriRef::new(st.clone()).map_err(|err| err.to_string())
+                };
+                res.inspect_err(|err| {
+                    log::warn!("Iri#1 is an invalid IRI");
+                    log::debug!(" {err}")
+                })
+                .ok()
+                .map(Into::into)
             } else {
                 None
             }

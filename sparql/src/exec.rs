@@ -6,6 +6,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use sophia_api::prelude::*;
+use sophia_iri::resolve::BaseIri;
 use sophia_term::ArcStrStash;
 use sophia_term::ArcTerm;
 use spargebra::algebra::Expression;
@@ -35,6 +36,7 @@ pub struct ExecConfig<'a, D: ?Sized> {
     pub dataset: &'a D,
     pub default_matcher: Vec<Option<ArcTerm>>,
     pub named_graphs: Vec<[Option<ArcTerm>; 1]>,
+    pub base_iri: Option<BaseIri<String>>,
     pub now: chrono::DateTime<chrono::FixedOffset>,
 }
 
@@ -42,6 +44,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     pub fn new(
         dataset: &'a D,
         query_dataset: &Option<QueryDataset>,
+        base_iri: &Option<oxiri::Iri<String>>,
     ) -> Result<Self, SparqlWrapperError<D::Error>> {
         let mut stash = ArcStrStash::new();
         let default_matcher = match query_dataset {
@@ -66,11 +69,13 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 return Err(SparqlWrapperError::NotImplemented("FROM NAMED"));
             }
         };
+        let base_iri = base_iri.clone().map(Into::into);
         let now = chrono::Local::now().fixed_offset();
         let config = Arc::new(ExecConfig {
             dataset,
             default_matcher,
             named_graphs,
+            base_iri,
             now,
         });
         Ok(ExecState { stash, config })
