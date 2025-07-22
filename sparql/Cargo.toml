@@ -27,7 +27,7 @@ num-bigint = "0.4"
 oxiri.workspace = true
 rand = "0.8"
 regex.workspace = true
-spargebra = { version = "0.3", features = ["rdf-star"] }
+spargebra = { version = "0.4.0-beta.1", features = ["sparql-12"] }
 thiserror.workspace = true
 uuid = { version = "1.11", features = ["v4", "v7"] }
 md5 = "0.7.0"

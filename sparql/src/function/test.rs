@@ -783,7 +783,7 @@ fn triple(s: &str, p: &str, o: &str, ok: bool) -> TestResult {
 
 #[test_case("<tag:s>", "")]
 #[test_case("bnode()", "")]
-#[test_case("<< <tag:s> <tag:p> <tag:o> >>", "")]
+#[test_case("<<( <tag:s> <tag:p> <tag:o> )>>", "")]
 #[test_case("\"true\"@en", ""; "language string")] // the spec is not clear about this one
 #[test_case("\"true\"^^<tag:dummy>", ""; "unrecognized datatype")]
 #[test_case("true", "true"; "true boolean")]
@@ -824,7 +824,7 @@ fn xsd_boolean(input: &str, exp: &str) -> TestResult {
 
 #[test_case("<tag:s>", "")]
 #[test_case("bnode()", "")]
-#[test_case("<< <tag:s> <tag:p> <tag:o> >>", "")]
+#[test_case("<<( <tag:s> <tag:p> <tag:o> )>>", "")]
 #[test_case("\"1.000\"@fr", ""; "language string")] // the spec is not clear about this one
 #[test_case("\"1.0\"^^<tag:dummy>", ""; "unrecognized datatype")]
 #[test_case("01.2e34", "01.2e34"; "double with leading 0")]
@@ -857,7 +857,7 @@ fn xsd_double(input: &str, exp: &str) -> TestResult {
 
 #[test_case("<tag:s>", "")]
 #[test_case("bnode()", "")]
-#[test_case("<< <tag:s> <tag:p> <tag:o> >>", "")]
+#[test_case("<<( <tag:s> <tag:p> <tag:o> )>>", "")]
 #[test_case("\"1.000\"@fr", ""; "language string")] // the spec is not clear about this one
 #[test_case("\"1.0\"^^<tag:dummy>", ""; "unrecognized datatype")]
 #[test_case("01.2e34", "\"1.2e34\"^^xsd:float"; "double with leading 0")]
@@ -890,7 +890,7 @@ fn xsd_float(input: &str, exp: &str) -> TestResult {
 
 #[test_case("<tag:s>", "")]
 #[test_case("bnode()", "")]
-#[test_case("<< <tag:s> <tag:p> <tag:o> >>", "")]
+#[test_case("<<( <tag:s> <tag:p> <tag:o> )>>", "")]
 #[test_case("\"1.000\"@fr", ""; "language string")] // the spec is not clear about this one
 #[test_case("\"1.0\"^^<tag:dummy>", ""; "unrecognized datatype")]
 #[test_case("01.2e34", "11999999999999999346902771844513792.0"; "double with leading 0")]
@@ -923,7 +923,7 @@ fn xsd_decimal(input: &str, exp: &str) -> TestResult {
 
 #[test_case("<tag:s>", "")]
 #[test_case("bnode()", "")]
-#[test_case("<< <tag:s> <tag:p> <tag:o> >>", "")]
+#[test_case("<<( <tag:s> <tag:p> <tag:o> )>>", "")]
 #[test_case("\"1.000\"@fr", ""; "language string")] // the spec is not clear about this one
 #[test_case("\"1.0\"^^<tag:dummy>", ""; "unrecognized datatype")]
 #[test_case("01.2e34", "11999999999999999346902771844513792"; "double with leading 0")]
@@ -959,7 +959,7 @@ fn xsd_integer(input: &str, exp: &str) -> TestResult {
 
 #[test_case("<tag:s>", "")]
 #[test_case("bnode()", "")]
-#[test_case("<< <tag:s> <tag:p> <tag:o> >>", "")]
+#[test_case("<<( <tag:s> <tag:p> <tag:o> )>>", "")]
 #[test_case("\"2025-01-02T03:04:05Z\"@fr", ""; "language string")] // the spec is not clear about this one
 #[test_case("\"2025-01-02T03:04:05Z\"^^<tag:dummy>", ""; "unrecognized datatype")]
 #[test_case("\" 2025-01-02T03:04:05+00:00 \"", "\"2025-01-02T03:04:05Z\"^^xsd:dateTime"; "string")]
@@ -984,7 +984,7 @@ fn xsd_date_time(input: &str, exp: &str) -> TestResult {
 
 #[test_case("<tag:s>", "\"tag:s\"")]
 #[test_case("bnode()", "")]
-#[test_case("<< <tag:s> <tag:p> <tag:o> >>", "")]
+#[test_case("<<( <tag:s> <tag:p> <tag:o> )>>", "")]
 #[test_case("\"1.000\"@fr", "\"1.000\""; "language string")] // the spec is not clear about this one
 #[test_case("\"1.0\"^^<tag:dummy>", "\"1.0\""; "unrecognized datatype")]
 #[test_case("01.2e34", "\"1.2E34\""; "big double with leading 0")]

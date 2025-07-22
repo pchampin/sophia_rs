@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use sophia_api::prelude::*;
 use sophia_api::sparql::{IntoQuery, SparqlResult};
-use spargebra::Query as QueryAST;
+use spargebra::{Query as QueryAST, SparqlParser};
 use thiserror::Error;
 
 use crate::{binding::Bindings, exec::ExecState, term::ResultTerm};
@@ -110,13 +110,12 @@ impl<D: Dataset + ?Sized> sophia_api::sparql::Query for SparqlQuery<D> {
     type Error = SparqlWrapperError<D::Error>;
 
     fn parse(query_source: &str) -> Result<Self, Self::Error> {
-        Ok(SparqlQuery::from(QueryAST::parse(query_source, None)?))
+        let p = SparqlParser::new();
+        Ok(SparqlQuery::from(p.parse_query(query_source)?))
     }
 
     fn parse_with(query_source: &str, base: Iri<&str>) -> Result<Self, Self::Error> {
-        Ok(SparqlQuery::from(QueryAST::parse(
-            query_source,
-            Some(base.unwrap()),
-        )?))
+        let p = SparqlParser::new().with_base_iri(base.as_str()).unwrap();
+        Ok(SparqlQuery::from(p.parse_query(query_source)?))
     }
 }

@@ -55,6 +55,9 @@ pub fn call_function<D: ?Sized>(
             };
             Some(lang(arg.as_literal("Lang")?))
         }
+        LangDir => todo!(),
+        HasLang => todo!(),
+        HasLangDir => todo!(),
         Datatype => {
             let [arg] = &arguments[..] else {
                 unreachable!()
@@ -329,6 +332,7 @@ pub fn call_function<D: ?Sized>(
                 lang.as_xsd_string("StrLang#2")?,
             )
         }
+        StrLangDir => todo!(),
         StrDt => {
             let [lex, lang] = &arguments[..] else {
                 unreachable!();
