@@ -1,6 +1,4 @@
-use std::sync::LazyLock;
-
-use bigdecimal::{BigDecimal, FromPrimitive, One, Signed, ToPrimitive, Zero};
+use bigdecimal::{BigDecimal, FromPrimitive, RoundingMode, Signed, ToPrimitive, Zero};
 use num_bigint::BigInt;
 
 #[derive(Clone, Debug)]
@@ -142,7 +140,9 @@ impl SparqlNumber {
         match self {
             SparqlNumber::NativeInt(inner) => (*inner).into(),
             SparqlNumber::BigInt(inner) => inner.clone().into(),
-            SparqlNumber::Decimal(inner) => (inner.to_ref() + DEC_0_5.to_ref()).round(0).into(),
+            SparqlNumber::Decimal(inner) => {
+                (inner.with_scale_round(0, RoundingMode::Ceiling)).into()
+            }
             SparqlNumber::Float(inner) => inner.ceil().into(),
             SparqlNumber::Double(inner) => inner.ceil().into(),
         }
@@ -152,7 +152,7 @@ impl SparqlNumber {
         match self {
             SparqlNumber::NativeInt(inner) => (*inner).into(),
             SparqlNumber::BigInt(inner) => inner.clone().into(),
-            SparqlNumber::Decimal(inner) => (inner.to_ref() - DEC_0_5.to_ref()).round(0).into(),
+            SparqlNumber::Decimal(inner) => (inner.with_scale_round(0, RoundingMode::Floor)).into(),
             SparqlNumber::Float(inner) => inner.floor().into(),
             SparqlNumber::Double(inner) => inner.floor().into(),
         }
@@ -162,7 +162,9 @@ impl SparqlNumber {
         match self {
             SparqlNumber::NativeInt(inner) => (*inner).into(),
             SparqlNumber::BigInt(inner) => inner.clone().into(),
-            SparqlNumber::Decimal(inner) => inner.round(0).into(),
+            SparqlNumber::Decimal(inner) => {
+                (inner.with_scale_round(0, RoundingMode::HalfUp)).into()
+            }
             SparqlNumber::Float(inner) => inner.round().into(),
             SparqlNumber::Double(inner) => inner.round().into(),
         }
@@ -352,5 +354,3 @@ impl std::cmp::PartialOrd for &'_ SparqlNumber {
         )
     }
 }
-
-static DEC_0_5: LazyLock<BigDecimal> = LazyLock::new(|| BigDecimal::one() / 2);
