@@ -527,7 +527,7 @@ pub fn bnode0() -> EvalResult {
 pub fn bnode1(arg: &Arc<str>) -> EvalResult {
     // mimic Jena for the moment: ignore the argument
     // because we don't know whether we are in the same result or not.
-    // TODO improve compliance and generate same bnode for a given 'er' AND result number?
+    // TODO improve compliance and generate same bnode for a given 'arg' AND result number?
     bnode0()
 }
 
@@ -959,14 +959,20 @@ pub fn xsd_integer(arg: &EvalResult) -> Option<EvalResult> {
     match arg.as_value()? {
         SparqlValue::Boolean(opt) => opt.map(|b| SparqlNumber::from(if b { 1 } else { 0 }).into()),
         SparqlValue::DateTime(_) => None,
-        SparqlValue::Number(Some(SparqlNumber::Decimal(n))) => {
-            Some(SparqlValue::Number(Some(n.round(0).into_bigint_and_exponent().0.into())).into())
-        }
+        SparqlValue::Number(Some(SparqlNumber::Decimal(n))) => Some(
+            SparqlValue::Number(Some(
+                n.with_scale_round(0, RoundingMode::Down)
+                    .into_bigint_and_exponent()
+                    .0
+                    .into(),
+            ))
+            .into(),
+        ),
         SparqlValue::Number(Some(SparqlNumber::Float(n))) => {
-            Some(SparqlValue::Number(Some(BigInt::from_f32(n.round())?.into())).into())
+            Some(SparqlValue::Number(Some(BigInt::from_f32(n.trunc())?.into())).into())
         }
         SparqlValue::Number(Some(SparqlNumber::Double(n))) => {
-            Some(SparqlValue::Number(Some(BigInt::from_f64(n.round())?.into())).into())
+            Some(SparqlValue::Number(Some(BigInt::from_f64(n.trunc())?.into())).into())
         }
         SparqlValue::Number(Some(_)) => Some(arg.clone()), // NativeInt or BigInt
         SparqlValue::Number(None) => None,
@@ -1005,31 +1011,33 @@ pub fn xsd_string(arg: &EvalResult) -> Option<EvalResult> {
                     format!("{}", big_decimal.normalized()).into()
                 }
                 SparqlNumber::Float(f) => {
-                    if f.is_zero() && f.is_negative() {
-                        Arc::from("-0")
-                    } else if f.is_infinite() {
-                        let sign = if f.is_negative() { "-" } else { "" };
-                        format!("{sign}INF").into()
-                    } else if (0.000001..=1e6).contains(&f.abs()) {
+                    if (0.000001..=1e6).contains(&f.abs()) {
                         let conv = BigDecimal::from_f32(*f)?
                             .with_scale_round(6, RoundingMode::HalfEven)
                             .normalized();
                         format!("{conv}").into()
+                    } else if f.is_zero() {
+                        let sign = if f.is_negative() { "-" } else { "" };
+                        format!("{sign}0").into()
+                    } else if f.is_infinite() {
+                        let sign = if f.is_negative() { "-" } else { "" };
+                        format!("{sign}INF").into()
                     } else {
                         format!("{f:E}").into()
                     }
                 }
                 SparqlNumber::Double(f) => {
-                    if f.is_zero() && f.is_negative() {
-                        Arc::from("-0")
-                    } else if f.is_infinite() {
-                        let sign = if f.is_negative() { "-" } else { "" };
-                        format!("{sign}INF").into()
-                    } else if (0.000001..=1e6).contains(&f.abs()) {
+                    if (0.000001..=1e6).contains(&f.abs()) {
                         let conv = BigDecimal::from_f64(*f)?
                             .with_scale_round(6, RoundingMode::HalfEven)
                             .normalized();
                         format!("{conv}").into()
+                    } else if f.is_zero() {
+                        let sign = if f.is_negative() { "-" } else { "" };
+                        format!("{sign}0").into()
+                    } else if f.is_infinite() {
+                        let sign = if f.is_negative() { "-" } else { "" };
+                        format!("{sign}INF").into()
                     } else {
                         format!("{f:E}").into()
                     }
