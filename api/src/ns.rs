@@ -181,6 +181,49 @@ pub mod rdfs {
     );
 }
 
+/// The standard `skos:` namespace.
+pub mod skos {
+    namespace!(
+        "http://www.w3.org/2004/02/skos/core#",
+        // annotations
+        altLabel,
+        changeNote,
+        definition,
+        editorialNote,
+        example,
+        hiddenLabel,
+        historyNote,
+        prefLabel,
+        scopeNote,
+        note,
+        // object properties
+        exactMatch,
+        member,
+        memberList,
+        relatedMatch,
+        broadMatch,
+        closeMatch,
+        hasTopConcept,
+        inScheme,
+        narrowMatch,
+        related,
+        topConceptOf,
+        broader,
+        broaderTransitive,
+        narrower,
+        narrowerTransitive,
+        mappingRelation,
+        semanticRelation,
+        // data properties
+        notation,
+        // classes
+        OrderedCollection,
+        Collection,
+        ConceptScheme,
+        Concept
+    );
+}
+
 /// The standard `xml:` namespace
 pub mod xml {
     namespace!(
