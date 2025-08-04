@@ -5,78 +5,7 @@ use super::*;
 #[derive(Clone, Copy, Debug)]
 pub struct CmpTerm<T>(pub T);
 
-impl<T: Term> Term for CmpTerm<T> {
-    type BorrowTerm<'x>
-        = CmpTerm<T::BorrowTerm<'x>>
-    where
-        T: 'x;
-
-    fn kind(&self) -> TermKind {
-        self.0.kind()
-    }
-    fn is_iri(&self) -> bool {
-        self.0.is_iri()
-    }
-    fn is_blank_node(&self) -> bool {
-        self.0.is_blank_node()
-    }
-    fn is_literal(&self) -> bool {
-        self.0.is_literal()
-    }
-    fn is_variable(&self) -> bool {
-        self.0.is_variable()
-    }
-    fn is_atom(&self) -> bool {
-        self.0.is_atom()
-    }
-    fn is_triple(&self) -> bool {
-        self.0.is_triple()
-    }
-    fn iri(&self) -> Option<IriRef<MownStr>> {
-        self.0.iri()
-    }
-    fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
-        self.0.bnode_id()
-    }
-    fn lexical_form(&self) -> Option<MownStr> {
-        self.0.lexical_form()
-    }
-    fn datatype(&self) -> Option<IriRef<MownStr>> {
-        self.0.datatype()
-    }
-    fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
-        self.0.language_tag()
-    }
-    fn variable(&self) -> Option<VarName<MownStr>> {
-        self.0.variable()
-    }
-    fn triple(&self) -> Option<[Self::BorrowTerm<'_>; 3]> {
-        self.0.triple().map(|a| a.map(CmpTerm))
-    }
-    fn to_triple(self) -> Option<[Self; 3]> {
-        self.0.to_triple().map(|a| a.map(CmpTerm))
-    }
-    fn borrow_term(&self) -> Self::BorrowTerm<'_> {
-        CmpTerm(self.0.borrow_term())
-    }
-    fn eq<U: Term>(&self, other: U) -> bool {
-        self.0.eq(other)
-    }
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.0.hash(state)
-    }
-    fn into_term<U: FromTerm>(self) -> U {
-        self.0.into_term()
-    }
-    fn try_into_term<U: TryFromTerm>(self) -> Result<U, U::Error> {
-        self.0.try_into_term()
-    }
-    // NOT overriding the iterator methods
-    // (constituents, to_constituents, atoms, to_atoms)
-    // because this would introduce an additional Box<dyn ...> indirection,
-    // potentially hurting performances,
-    // beyond the benefit of a hypothetical custom impl of these methods in T.
-}
+crate::impl_term_for_wrapper!(CmpTerm);
 
 impl<T1: Term, T2: Term> PartialEq<T2> for CmpTerm<T1> {
     fn eq(&self, other: &T2) -> bool {
