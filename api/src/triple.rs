@@ -20,13 +20,18 @@ use crate::quad::Spog;
 use crate::term::{GraphName, Term, matcher::TermMatcher};
 
 /// Type alias for terms borrowed from a triple.
-pub type TBorrowTerm<'a, T> = <<T as Triple>::Term as Term>::BorrowTerm<'a>;
+pub type TBorrowTerm<'a, T> = <T as Triple>::BorrowTerm<'a>;
 
 /// This trait represents an abstract RDF triple,
 /// and provide convenient methods for working with triples.
 pub trait Triple {
     /// The type of [`Term`] contained by this triple
     type Term: Term;
+    /// The type of [`Term`] borrowed from this triple
+    type BorrowTerm<'x>: Term + Copy
+    where
+        Self::Term: 'x,
+        Self: 'x;
 
     /// The subject of this triple.
     fn s(&self) -> TBorrowTerm<Self>;
@@ -137,6 +142,10 @@ pub trait Triple {
 
 impl<T: Term> Triple for [T; 3] {
     type Term = T;
+    type BorrowTerm<'x>
+        = T::BorrowTerm<'x>
+    where
+        T: 'x;
 
     fn s(&self) -> TBorrowTerm<Self> {
         self[0].borrow_term()
@@ -183,6 +192,7 @@ mod check_implementability {
 
     impl Triple for MyTriple {
         type Term = MyBnode;
+        type BorrowTerm<'x> = MyBnode;
 
         fn s(&self) -> TBorrowTerm<Self> {
             MyBnode(self.0[0])

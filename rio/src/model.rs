@@ -419,6 +419,10 @@ impl Term for Trusted<GeneralizedTerm<'_>> {
 
 impl<'a> Triple for Trusted<RioTriple<'a>> {
     type Term = Trusted<RioTerm<'a>>;
+    type BorrowTerm<'x>
+        = Trusted<RioTerm<'a>>
+    where
+        'a: 'x;
 
     fn s(&self) -> TBorrowTerm<Self> {
         Trusted(self.subject.into())
@@ -451,6 +455,10 @@ impl<'a> Triple for Trusted<RioTriple<'a>> {
 
 impl<'a> Quad for Trusted<RioQuad<'a>> {
     type Term = Trusted<RioTerm<'a>>;
+    type BorrowTerm<'x>
+        = Trusted<RioTerm<'a>>
+    where
+        'a: 'x;
 
     fn s(&self) -> QBorrowTerm<Self> {
         Trusted(self.subject.into())
@@ -491,6 +499,10 @@ impl<'a> Quad for Trusted<RioQuad<'a>> {
 
 impl<'a> Quad for Trusted<GeneralizedQuad<'a>> {
     type Term = Trusted<GeneralizedTerm<'a>>;
+    type BorrowTerm<'x>
+        = Trusted<GeneralizedTerm<'a>>
+    where
+        'a: 'x;
 
     fn s(&self) -> QBorrowTerm<Self> {
         Trusted(self.subject)

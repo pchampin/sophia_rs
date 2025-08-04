@@ -7,7 +7,7 @@ use crate::term::matcher::{GraphNameMatcher, TermMatcher};
 use crate::term::{GraphName, Term, graph_name_eq};
 
 /// Type alias for terms borrowed from a quad.
-pub type QBorrowTerm<'a, T> = <<T as Quad>::Term as Term>::BorrowTerm<'a>;
+pub type QBorrowTerm<'a, T> = <T as Quad>::BorrowTerm<'a>;
 /// The typical structure representing a Quad of terms T
 pub type Spog<T> = ([T; 3], GraphName<T>);
 /// An alternative structure representing a Quad of terms T
@@ -17,8 +17,13 @@ pub type Gspo<T> = (GraphName<T>, [T; 3]);
 /// This trait represents an abstract RDF quad,
 /// and provide convenient methods for working with quads.
 pub trait Quad {
-    /// The type of [`Term`] used by this quad when borrowing it
+    /// The type of [`Term`] contained by this quad
     type Term: Term;
+    /// The type of [`Term`] borrowed from this quad
+    type BorrowTerm<'x>: Term + Copy
+    where
+        Self::Term: 'x,
+        Self: 'x;
 
     /// The subject of this quad.
     fn s(&self) -> QBorrowTerm<Self>;
@@ -140,6 +145,10 @@ pub trait Quad {
 
 impl<T: Term> Quad for [T; 4] {
     type Term = T;
+    type BorrowTerm<'x>
+        = T::BorrowTerm<'x>
+    where
+        T: 'x;
 
     fn s(&self) -> QBorrowTerm<Self> {
         self[0].borrow_term()
@@ -178,6 +187,10 @@ impl<T: Term> Quad for [T; 4] {
 // Spog<T>
 impl<T: Term> Quad for ([T; 3], GraphName<T>) {
     type Term = T;
+    type BorrowTerm<'x>
+        = T::BorrowTerm<'x>
+    where
+        T: 'x;
 
     fn s(&self) -> QBorrowTerm<Self> {
         self.0[0].borrow_term()
@@ -214,6 +227,10 @@ impl<T: Term> Quad for ([T; 3], GraphName<T>) {
 // Gspo<T>
 impl<T: Term> Quad for (GraphName<T>, [T; 3]) {
     type Term = T;
+    type BorrowTerm<'x>
+        = T::BorrowTerm<'x>
+    where
+        T: 'x;
 
     fn s(&self) -> QBorrowTerm<Self> {
         self.1[0].borrow_term()
@@ -285,6 +302,7 @@ mod check_implementability {
 
     impl Quad for MyQuad {
         type Term = MyBnode;
+        type BorrowTerm<'x> = MyBnode;
 
         fn s(&self) -> QBorrowTerm<Self> {
             MyBnode(self.0[0])
