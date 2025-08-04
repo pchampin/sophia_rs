@@ -144,6 +144,69 @@ pub trait Quad {
     }
 }
 
+impl<'a, Q: Quad> Quad for &'a Q {
+    type Term = Q::BorrowTerm<'a>;
+    type BorrowTerm<'x>
+        = Q::BorrowTerm<'a>
+    where
+        'a: 'x;
+
+    fn s(&self) -> Self::BorrowTerm<'_> {
+        Q::s(*self)
+    }
+
+    fn p(&self) -> Self::BorrowTerm<'_> {
+        Q::p(*self)
+    }
+
+    fn o(&self) -> Self::BorrowTerm<'_> {
+        Q::o(*self)
+    }
+
+    fn g(&self) -> GraphName<Self::BorrowTerm<'_>> {
+        Q::g(*self)
+    }
+
+    fn spog(&self) -> Spog<Self::BorrowTerm<'_>> {
+        Q::spog(*self)
+    }
+
+    fn to_s(self) -> Self::Term
+    where
+        Self: Sized,
+    {
+        Q::s(self)
+    }
+
+    fn to_p(self) -> Self::Term
+    where
+        Self: Sized,
+    {
+        Q::p(self)
+    }
+
+    fn to_o(self) -> Self::Term
+    where
+        Self: Sized,
+    {
+        Q::o(self)
+    }
+
+    fn to_g(self) -> GraphName<Self::Term>
+    where
+        Self: Sized,
+    {
+        Q::g(self)
+    }
+
+    fn to_spog(self) -> Spog<Self::Term>
+    where
+        Self: Sized,
+    {
+        Q::spog(self)
+    }
+}
+
 impl<T: Term> Quad for [T; 4] {
     type Term = T;
     type BorrowTerm<'x>

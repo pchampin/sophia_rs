@@ -162,6 +162,58 @@ impl<T: Term> Triple for [T; 3] {
     }
 }
 
+impl<'a, T: Triple> Triple for &'a T {
+    type Term = T::BorrowTerm<'a>;
+    type BorrowTerm<'x>
+        = T::BorrowTerm<'a>
+    where
+        'a: 'x;
+
+    fn s(&self) -> Self::BorrowTerm<'_> {
+        T::s(*self)
+    }
+
+    fn p(&self) -> Self::BorrowTerm<'_> {
+        T::p(*self)
+    }
+
+    fn o(&self) -> Self::BorrowTerm<'_> {
+        T::o(*self)
+    }
+
+    fn spo(&self) -> [Self::BorrowTerm<'_>; 3] {
+        T::spo(*self)
+    }
+
+    fn to_s(self) -> Self::Term
+    where
+        Self: Sized,
+    {
+        T::s(self)
+    }
+
+    fn to_p(self) -> Self::Term
+    where
+        Self: Sized,
+    {
+        T::p(self)
+    }
+
+    fn to_o(self) -> Self::Term
+    where
+        Self: Sized,
+    {
+        T::o(self)
+    }
+
+    fn to_spo(self) -> [Self::Term; 3]
+    where
+        Self: Sized,
+    {
+        T::spo(self)
+    }
+}
+
 #[cfg(test)]
 mod check_implementability {
     use super::*;
