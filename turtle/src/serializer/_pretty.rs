@@ -437,7 +437,7 @@ fn build_labelled<'a>(d: &'a PrettifiableDataset) -> BTreeSet<&'a SimpleTerm<'a>
                         .and_modify(|profile: &mut BnodeProfile| {
                             if !profile.bad {
                                 profile.add_named_graph(q.g());
-                                profile.update_positions(i, &q);
+                                profile.update_positions(i, &q.spog());
                             }
                         })
                         .or_insert_with(|| BnodeProfile {

@@ -222,12 +222,12 @@ impl<T: MutableGraph + ?Sized> MutableGraph for &mut T {
 impl<T: Triple> Graph for [T] {
     type Error = Infallible;
     type Triple<'x>
-        = [T::BorrowTerm<'x>; 3]
+        = &'x T
     where
         Self: 'x;
 
     fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
-        self.iter().map(Triple::spo).map(Ok)
+        self.iter().map(Ok)
     }
 }
 
@@ -236,7 +236,7 @@ impl<T: Triple> Graph for [T] {
 impl<T: Triple> Graph for Vec<T> {
     type Error = Infallible;
     type Triple<'x>
-        = [T::BorrowTerm<'x>; 3]
+        = &'x T
     where
         Self: 'x;
 
@@ -303,12 +303,12 @@ where
 impl<T: Triple, S> Graph for HashSet<T, S> {
     type Error = Infallible;
     type Triple<'x>
-        = [T::BorrowTerm<'x>; 3]
+        = &'x T
     where
         Self: 'x;
 
     fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
-        self.iter().map(Triple::spo).map(Ok)
+        self.iter().map(Ok)
     }
 }
 
@@ -367,12 +367,12 @@ impl<T: Triple, S> SetGraph for HashSet<T, S> {}
 impl<T: Triple> Graph for BTreeSet<T> {
     type Error = Infallible;
     type Triple<'x>
-        = [T::BorrowTerm<'x>; 3]
+        = &'x T
     where
         Self: 'x;
 
     fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
-        self.iter().map(Triple::spo).map(Ok)
+        self.iter().map(Ok)
     }
 }
 
