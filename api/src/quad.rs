@@ -7,6 +7,7 @@ use crate::term::matcher::{GraphNameMatcher, TermMatcher};
 use crate::term::{GraphName, Term, graph_name_eq};
 
 /// Type alias for terms borrowed from a quad.
+#[deprecated(since = "0.10.0", note = "use T::BorrowTerm<'a> instead")]
 pub type QBorrowTerm<'a, T> = <T as Quad>::BorrowTerm<'a>;
 /// The typical structure representing a Quad of terms T
 pub type Spog<T> = ([T; 3], GraphName<T>);
@@ -26,24 +27,24 @@ pub trait Quad {
         Self: 'x;
 
     /// The subject of this quad.
-    fn s(&self) -> QBorrowTerm<Self>;
+    fn s(&self) -> Self::BorrowTerm<'_>;
 
     /// The predicate of this quad.
-    fn p(&self) -> QBorrowTerm<Self>;
+    fn p(&self) -> Self::BorrowTerm<'_>;
 
     /// The object of this quad.
-    fn o(&self) -> QBorrowTerm<Self>;
+    fn o(&self) -> Self::BorrowTerm<'_>;
 
     /// The graph name of this quad.
     ///
     /// `None` means that this quad belongs to the default graph of the dataset.
-    fn g(&self) -> GraphName<QBorrowTerm<Self>>;
+    fn g(&self) -> GraphName<Self::BorrowTerm<'_>>;
 
     /// The four components of this quad, as a quad of borrowed terms.
     ///
     /// See also [`Quad::to_spog`].
     #[inline]
-    fn spog(&self) -> Spog<QBorrowTerm<Self>> {
+    fn spog(&self) -> Spog<Self::BorrowTerm<'_>> {
         ([self.s(), self.p(), self.o()], self.g())
     }
 
@@ -150,16 +151,16 @@ impl<T: Term> Quad for [T; 4] {
     where
         T: 'x;
 
-    fn s(&self) -> QBorrowTerm<Self> {
+    fn s(&self) -> Self::BorrowTerm<'_> {
         self[0].borrow_term()
     }
-    fn p(&self) -> QBorrowTerm<Self> {
+    fn p(&self) -> Self::BorrowTerm<'_> {
         self[1].borrow_term()
     }
-    fn o(&self) -> QBorrowTerm<Self> {
+    fn o(&self) -> Self::BorrowTerm<'_> {
         self[2].borrow_term()
     }
-    fn g(&self) -> GraphName<QBorrowTerm<Self>> {
+    fn g(&self) -> GraphName<Self::BorrowTerm<'_>> {
         Some(self[3].borrow_term())
     }
     fn to_s(self) -> Self::Term {
@@ -192,16 +193,16 @@ impl<T: Term> Quad for ([T; 3], GraphName<T>) {
     where
         T: 'x;
 
-    fn s(&self) -> QBorrowTerm<Self> {
+    fn s(&self) -> Self::BorrowTerm<'_> {
         self.0[0].borrow_term()
     }
-    fn p(&self) -> QBorrowTerm<Self> {
+    fn p(&self) -> Self::BorrowTerm<'_> {
         self.0[1].borrow_term()
     }
-    fn o(&self) -> QBorrowTerm<Self> {
+    fn o(&self) -> Self::BorrowTerm<'_> {
         self.0[2].borrow_term()
     }
-    fn g(&self) -> GraphName<QBorrowTerm<Self>> {
+    fn g(&self) -> GraphName<Self::BorrowTerm<'_>> {
         self.1.as_ref().map(|gn| gn.borrow_term())
     }
     fn to_s(self) -> Self::Term {
@@ -232,16 +233,16 @@ impl<T: Term> Quad for (GraphName<T>, [T; 3]) {
     where
         T: 'x;
 
-    fn s(&self) -> QBorrowTerm<Self> {
+    fn s(&self) -> Self::BorrowTerm<'_> {
         self.1[0].borrow_term()
     }
-    fn p(&self) -> QBorrowTerm<Self> {
+    fn p(&self) -> Self::BorrowTerm<'_> {
         self.1[1].borrow_term()
     }
-    fn o(&self) -> QBorrowTerm<Self> {
+    fn o(&self) -> Self::BorrowTerm<'_> {
         self.1[2].borrow_term()
     }
-    fn g(&self) -> GraphName<QBorrowTerm<'_, Self>> {
+    fn g(&self) -> GraphName<Self::BorrowTerm<'_>> {
         self.0.as_ref().map(|gn| gn.borrow_term())
     }
     fn to_s(self) -> Self::Term {
@@ -304,16 +305,16 @@ mod check_implementability {
         type Term = MyBnode;
         type BorrowTerm<'x> = MyBnode;
 
-        fn s(&self) -> QBorrowTerm<Self> {
+        fn s(&self) -> Self::BorrowTerm<'_> {
             MyBnode(self.0[0])
         }
-        fn p(&self) -> QBorrowTerm<Self> {
+        fn p(&self) -> Self::BorrowTerm<'_> {
             MyBnode(self.0[1])
         }
-        fn o(&self) -> QBorrowTerm<Self> {
+        fn o(&self) -> Self::BorrowTerm<'_> {
             MyBnode(self.0[2])
         }
-        fn g(&self) -> GraphName<QBorrowTerm<Self>> {
+        fn g(&self) -> GraphName<Self::BorrowTerm<'_>> {
             match self.0[3] {
                 0 => None,
                 n => Some(MyBnode(n)),

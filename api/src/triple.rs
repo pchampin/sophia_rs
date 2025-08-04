@@ -20,6 +20,7 @@ use crate::quad::Spog;
 use crate::term::{GraphName, Term, matcher::TermMatcher};
 
 /// Type alias for terms borrowed from a triple.
+#[deprecated(since = "0.10.0", note = "use T::BorrowTerm<'a> instead")]
 pub type TBorrowTerm<'a, T> = <T as Triple>::BorrowTerm<'a>;
 
 /// This trait represents an abstract RDF triple,
@@ -34,19 +35,19 @@ pub trait Triple {
         Self: 'x;
 
     /// The subject of this triple.
-    fn s(&self) -> TBorrowTerm<Self>;
+    fn s(&self) -> Self::BorrowTerm<'_>;
 
     /// The predicate of this triple.
-    fn p(&self) -> TBorrowTerm<Self>;
+    fn p(&self) -> Self::BorrowTerm<'_>;
 
     /// The object of this triple.
-    fn o(&self) -> TBorrowTerm<Self>;
+    fn o(&self) -> Self::BorrowTerm<'_>;
 
     /// The three components of this triple, as a triple of borrowed terms.
     ///
     /// See also [`Triple::to_spo`].
     #[inline]
-    fn spo(&self) -> [TBorrowTerm<Self>; 3] {
+    fn spo(&self) -> [Self::BorrowTerm<'_>; 3] {
         [self.s(), self.p(), self.o()]
     }
 
@@ -147,13 +148,13 @@ impl<T: Term> Triple for [T; 3] {
     where
         T: 'x;
 
-    fn s(&self) -> TBorrowTerm<Self> {
+    fn s(&self) -> Self::BorrowTerm<'_> {
         self[0].borrow_term()
     }
-    fn p(&self) -> TBorrowTerm<Self> {
+    fn p(&self) -> Self::BorrowTerm<'_> {
         self[1].borrow_term()
     }
-    fn o(&self) -> TBorrowTerm<Self> {
+    fn o(&self) -> Self::BorrowTerm<'_> {
         self[2].borrow_term()
     }
     fn to_spo(self) -> [Self::Term; 3] {
@@ -194,13 +195,13 @@ mod check_implementability {
         type Term = MyBnode;
         type BorrowTerm<'x> = MyBnode;
 
-        fn s(&self) -> TBorrowTerm<Self> {
+        fn s(&self) -> Self::BorrowTerm<'_> {
             MyBnode(self.0[0])
         }
-        fn p(&self) -> TBorrowTerm<Self> {
+        fn p(&self) -> Self::BorrowTerm<'_> {
             MyBnode(self.0[1])
         }
-        fn o(&self) -> TBorrowTerm<Self> {
+        fn o(&self) -> Self::BorrowTerm<'_> {
             MyBnode(self.0[2])
         }
         fn to_s(self) -> Self::Term {

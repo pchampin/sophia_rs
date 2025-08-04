@@ -1,7 +1,6 @@
 use super::*;
 use crate::source::SourceError;
 use crate::term::FromTerm;
-use crate::triple::TBorrowTerm;
 use std::collections::{BTreeSet, HashSet};
 use std::convert::Infallible;
 use std::hash::{BuildHasher, Hash};
@@ -223,7 +222,7 @@ impl<T: MutableGraph + ?Sized> MutableGraph for &mut T {
 impl<T: Triple> Graph for [T] {
     type Error = Infallible;
     type Triple<'x>
-        = [TBorrowTerm<'x, T>; 3]
+        = [T::BorrowTerm<'x>; 3]
     where
         Self: 'x;
 
@@ -237,7 +236,7 @@ impl<T: Triple> Graph for [T] {
 impl<T: Triple> Graph for Vec<T> {
     type Error = Infallible;
     type Triple<'x>
-        = [TBorrowTerm<'x, T>; 3]
+        = [T::BorrowTerm<'x>; 3]
     where
         Self: 'x;
 
@@ -304,7 +303,7 @@ where
 impl<T: Triple, S> Graph for HashSet<T, S> {
     type Error = Infallible;
     type Triple<'x>
-        = [TBorrowTerm<'x, T>; 3]
+        = [T::BorrowTerm<'x>; 3]
     where
         Self: 'x;
 
@@ -368,7 +367,7 @@ impl<T: Triple, S> SetGraph for HashSet<T, S> {}
 impl<T: Triple> Graph for BTreeSet<T> {
     type Error = Infallible;
     type Triple<'x>
-        = [TBorrowTerm<'x, T>; 3]
+        = [T::BorrowTerm<'x>; 3]
     where
         Self: 'x;
 

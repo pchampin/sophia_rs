@@ -14,9 +14,9 @@ use rio_api::model::{
 };
 use sophia_api::MownStr;
 use sophia_api::ns::{rdf, xsd};
-use sophia_api::quad::{QBorrowTerm, Quad, Spog};
+use sophia_api::quad::{Quad, Spog};
 use sophia_api::term::{BnodeId, LanguageTag, Term, TermKind, VarName};
-use sophia_api::triple::{TBorrowTerm, Triple};
+use sophia_api::triple::Triple;
 use sophia_iri::{Iri, IriRef};
 
 impl Term for Trusted<BlankNode<'_>> {
@@ -424,15 +424,15 @@ impl<'a> Triple for Trusted<RioTriple<'a>> {
     where
         'a: 'x;
 
-    fn s(&self) -> TBorrowTerm<Self> {
+    fn s(&self) -> Self::BorrowTerm<'_> {
         Trusted(self.subject.into())
     }
 
-    fn p(&self) -> TBorrowTerm<Self> {
+    fn p(&self) -> Self::BorrowTerm<'_> {
         Trusted(self.predicate.into())
     }
 
-    fn o(&self) -> TBorrowTerm<Self> {
+    fn o(&self) -> Self::BorrowTerm<'_> {
         Trusted(self.object)
     }
 
@@ -460,19 +460,19 @@ impl<'a> Quad for Trusted<RioQuad<'a>> {
     where
         'a: 'x;
 
-    fn s(&self) -> QBorrowTerm<Self> {
+    fn s(&self) -> Self::BorrowTerm<'_> {
         Trusted(self.subject.into())
     }
 
-    fn p(&self) -> QBorrowTerm<Self> {
+    fn p(&self) -> Self::BorrowTerm<'_> {
         Trusted(self.predicate.into())
     }
 
-    fn o(&self) -> QBorrowTerm<Self> {
+    fn o(&self) -> Self::BorrowTerm<'_> {
         Trusted(self.object)
     }
 
-    fn g(&self) -> Option<QBorrowTerm<Self>> {
+    fn g(&self) -> Option<Self::BorrowTerm<'_>> {
         self.graph_name.map(|g| Trusted(g.into()))
     }
 
@@ -504,19 +504,19 @@ impl<'a> Quad for Trusted<GeneralizedQuad<'a>> {
     where
         'a: 'x;
 
-    fn s(&self) -> QBorrowTerm<Self> {
+    fn s(&self) -> Self::BorrowTerm<'_> {
         Trusted(self.subject)
     }
 
-    fn p(&self) -> QBorrowTerm<Self> {
+    fn p(&self) -> Self::BorrowTerm<'_> {
         Trusted(self.predicate)
     }
 
-    fn o(&self) -> QBorrowTerm<Self> {
+    fn o(&self) -> Self::BorrowTerm<'_> {
         Trusted(self.object)
     }
 
-    fn g(&self) -> Option<QBorrowTerm<Self>> {
+    fn g(&self) -> Option<Self::BorrowTerm<'_>> {
         self.graph_name.map(Trusted)
     }
 

@@ -1,5 +1,5 @@
 use super::*;
-use crate::quad::{Gspo, QBorrowTerm, Spog};
+use crate::quad::{Gspo, Spog};
 use crate::source::SourceError;
 use crate::term::FromTerm;
 use std::collections::{BTreeSet, HashSet};
@@ -264,7 +264,7 @@ impl<T: MutableDataset + ?Sized> MutableDataset for &mut T {
 impl<Q: Quad> Dataset for [Q] {
     type Error = Infallible;
     type Quad<'x>
-        = Spog<QBorrowTerm<'x, Q>>
+        = Spog<Q::BorrowTerm<'x>>
     where
         Self: 'x;
 
@@ -278,7 +278,7 @@ impl<Q: Quad> Dataset for [Q] {
 impl<Q: Quad> Dataset for Vec<Q> {
     type Error = Infallible;
     type Quad<'x>
-        = Spog<QBorrowTerm<'x, Q>>
+        = Spog<Q::BorrowTerm<'x>>
     where
         Self: 'x;
 
@@ -442,7 +442,7 @@ where
 impl<Q: Quad, S> Dataset for HashSet<Q, S> {
     type Error = Infallible;
     type Quad<'x>
-        = Spog<QBorrowTerm<'x, Q>>
+        = Spog<Q::BorrowTerm<'x>>
     where
         Self: 'x;
 
@@ -597,7 +597,7 @@ impl<T: Quad, S> SetDataset for HashSet<T, S> {}
 impl<Q: Quad> Dataset for BTreeSet<Q> {
     type Error = Infallible;
     type Quad<'x>
-        = Spog<QBorrowTerm<'x, Q>>
+        = Spog<Q::BorrowTerm<'x>>
     where
         Self: 'x;
 
