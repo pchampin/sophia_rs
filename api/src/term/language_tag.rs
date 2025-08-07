@@ -2,33 +2,18 @@
 //! which guarantees that the underlying `str`
 //! is a valid [BCP47](https://tools.ietf.org/search/bcp47) language tag.
 
-use lazy_static::lazy_static;
 use regex::Regex;
 use std::borrow::Borrow;
 use std::cmp::{Ordering, PartialOrd};
 use std::fmt::Debug;
+use std::sync::LazyLock;
 use thiserror::Error;
-
-lazy_static! {
-    /// Regular expression approximating the grammar defined in BCP47.
-    /// (it is actually more permissive).
-    ///
-    /// # Captures
-    ///
-    /// This regular expression matches the whole input (`^...$`),
-    /// therefore, it can not be used to capture language tags in an arbitrary string.
-    static ref LANG_TAG: Regex = Regex::new(r#"(?x)
-      ^
-      [A-Za-z][A-Za-z0-9]*
-      (-[A-Za-z0-9]+)*
-      $
-    "#).unwrap();
-}
 
 /// This wrapper guarantees that the underlying `str`
 /// is a valid [BCP47](https://tools.ietf.org/search/bcp47) language tag.
 ///
-/// NB: it is actually more permissive than BCP47.
+/// NB: it is actually slightly more permissive than BCP47,
+/// as it does not check that the different subtags are registered (language, country...) codes.
 ///
 /// A [`LanguageTag`] can be combined to a `&str` with the `*` operator,
 /// to produce an RDF [language tagged string](https://www.w3.org/TR/rdf11-concepts/#dfn-language-tagged-string)
@@ -193,32 +178,112 @@ impl<'a> std::ops::Mul<LanguageTag<&'a str>> for &'a str {
     }
 }
 
+pub(crate) static LANG_TAG: LazyLock<Regex> = LazyLock::new(|| Regex::new(LANG_TAG_SRC).unwrap());
+
+/// Match a valid BCP47 language tag
+pub static LANG_TAG_SRC: &str = r"(?xi-u)^
+(
+  (?:
+    (?: #language
+      (?:
+        [A-Z]{2,3}
+        (?: #extlang
+          (?:
+            -[A-Z]{3}
+          ){0,3}
+        )
+      )
+    |
+      [A-Z]{4,8}
+    )
+    (?: #script
+      -[A-Z]{4}
+    )?
+    (?: #region
+      -
+      (?:
+        [A-Z]{2}
+      |
+        [0-9]{3}
+      )
+    )?
+    (?: #variant
+      -
+      (?:
+        [A-Z0-9]{5,8}
+      |
+        [0-9][A-Z0-9]{3}
+      )
+    )*
+    (?: #extension
+      -[0-9A-WY-Z]
+      (?:
+        -[A-Z0-9]{2,8}
+      )+
+    )*
+    (?: #privateUse
+      -X
+      (?:
+        -[A-Z0-9]{1,8}
+      )+
+    )?
+  )
+|
+  (?: #privateUse
+    X
+    (?:
+      -[A-Z0-9]{1,8}
+    )+
+  )
+|
+  (?: #grandfathered
+    en-GB-oed|i-ami|i-bnn|i-default|i-enochian|i-hak|i-klingon|i-lux|i-mingo|i-navajo|i-pwn|i-tao|i-tay|i-tsu|sgn-BE-FR|sgn-BE-NL|sgn-CH-DE
+    # NB regular grandfathered tags are not included,
+    # as they will be matched by the normal case
+  )
+)$";
+
 #[cfg(test)]
 mod test {
+    use std::iter::once;
+
     use crate::term::Term;
 
     use super::*;
     use test_case::test_case;
 
-    #[test_case("en")]
-    #[test_case("fr")]
-    #[test_case("fr-FR")]
-    #[test_case("fr-ca")]
-    #[test_case("fr-056")]
-    #[test_case("ja-Hani")]
-    #[test_case("ja-Hira")]
-    #[test_case("abc-de-fg-hi")]
-    #[test_case("x-abc-de-fg-hi")]
-    fn valid(tag: &str) {
-        assert!(LanguageTag::new(tag).is_ok());
+    #[test]
+    fn valid() {
+        for mut tag in valid_tags() {
+            assert!(LanguageTag::new(tag.as_str()).is_ok(), "{tag}");
+            tag.make_ascii_uppercase();
+            assert!(LanguageTag::new(tag.as_str()).is_ok(), "{tag}");
+        }
+        for mut txt in private_uses(3) {
+            let tag = &txt[1..];
+            assert!(LanguageTag::new(tag).is_ok(), "{tag}");
+            txt.make_ascii_uppercase();
+            let tag = &txt[1..];
+            assert!(LanguageTag::new(tag).is_ok(), "{tag}");
+        }
+        for tag in GRANDFATHERED_TAGS {
+            assert!(LanguageTag::new(*tag).is_ok(), "{tag}");
+            assert!(LanguageTag::new(tag.to_ascii_uppercase()).is_ok(), "{tag}");
+            assert!(LanguageTag::new(tag.to_ascii_lowercase()).is_ok(), "{tag}");
+        }
     }
 
-    #[test_case(""; "empty")]
-    #[test_case(" "; "space")]
-    #[test_case("éh")]
-    #[test_case("a.")]
-    fn invalid(tag: &str) {
-        assert!(LanguageTag::new(tag).is_err());
+    #[test]
+    fn invalid() {
+        for tag in valid_tags() {
+            for invalid_suffix in ["a@", "abcdefghi"] {
+                let txt = format!("{tag}-{invalid_suffix}");
+                assert!(LanguageTag::new(txt.as_str()).is_err(), "{txt}");
+            }
+        }
+        for txt in INVALID_TAGS {
+            assert!(LanguageTag::new(*txt).is_err(), "{txt}");
+        }
     }
 
     #[test_case("fr", "fr"; "all_lower")]
@@ -264,4 +329,182 @@ mod test {
         assert_eq!(t3.lexical_form().unwrap(), "cat");
         assert_eq!(t3.language_tag().unwrap(), en);
     }
+
+    // below are utility functions used to generate valid (and invalid) tags for testing
+
+    fn valid_tags() -> impl Iterator<Item = String> {
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            for language in languages() {
+                for script in once("").chain(scripts()) {
+                    for region in once("").chain(regions()) {
+                        for variant in once("".to_string()).chain(variants(1)) {
+                            for extension in once("".to_string()).chain(extensions(1)) {
+                                for private_use in once("".to_string()).chain(private_uses(1)) {
+                                    let tag = format!(
+                                        "{language}{script}{region}{variant}{extension}{private_use}"
+                                    );
+                                    tx.send(tag).unwrap();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            for variant in variants(2) {
+                let tag = format!("en{variant}");
+                tx.send(tag).unwrap();
+            }
+            for extension in extensions(2) {
+                let tag = format!("en{extension}");
+                tx.send(tag).unwrap();
+            }
+            for private_use in private_uses(2) {
+                let tag = format!("en{private_use}");
+                tx.send(tag).unwrap();
+            }
+        });
+        rx.into_iter()
+    }
+
+    fn languages() -> impl Iterator<Item = String> {
+        ["en", "eng"]
+            .into_iter()
+            .flat_map(|language| langexts().map(move |exts| format!("{language}{exts}")))
+            .chain(["dial", "diale", "dialec", "dialect", "dialects"].map(Into::into))
+    }
+
+    fn langexts() -> impl Iterator<Item = &'static str> {
+        ["", "-ext", "-ext-ext", "-ext-ext-ext"].into_iter()
+    }
+
+    fn scripts() -> impl Iterator<Item = &'static str> {
+        ["-latn"].into_iter()
+    }
+
+    fn regions() -> impl Iterator<Item = &'static str> {
+        ["-uk", "-826"].into_iter()
+    }
+    fn variants(max: u8) -> impl Iterator<Item = String> {
+        debug_assert!(max >= 1);
+        (1..=max).flat_map(variant_parts)
+    }
+
+    fn variant_parts(n: u8) -> Box<dyn Iterator<Item = String>> {
+        match n {
+            0 => Box::new(once("".to_string())),
+            n => Box::new(variant_parts(n - 1).flat_map(|prefix| {
+                ["varia", "variaa", "variant", "variants", "0var"]
+                    .map(move |suffix| format!("{prefix}-{suffix}"))
+            })),
+        }
+    }
+
+    fn extensions(max: u8) -> impl Iterator<Item = String> {
+        debug_assert!(max >= 1);
+        (1..=max).flat_map(move |i| extension_parts(i, max))
+    }
+
+    fn extension_parts(n: u8, max: u8) -> Box<dyn Iterator<Item = String>> {
+        match n {
+            0 => Box::new(once("".to_string())),
+            n => Box::new(extension_parts(n - 1, max).flat_map(move |prefix| {
+                (1..=max)
+                    .flat_map(extension_part_parts)
+                    .map(move |suffix| format!("{prefix}-{suffix}"))
+            })),
+        }
+    }
+
+    fn extension_part_parts(n: u8) -> Box<dyn Iterator<Item = String>> {
+        match n {
+            0 => Box::new(["a", "1"].into_iter().map(ToString::to_string)),
+            n => Box::new(extension_part_parts(n - 1).flat_map(|prefix| {
+                [
+                    "ab", "abc", "abcd", "abcde", "abcdefg", "abcdefgh", "12", "123", "1234",
+                    "12345", "1234567", "12345678", "1b", "1b3", "1b3d", "1b3d5", "1b3d5f7",
+                    "1b3d5f7h",
+                ]
+                .map(|suffix| format!("{prefix}-{suffix}"))
+            })),
+        }
+    }
+
+    fn private_uses(max: u8) -> impl Iterator<Item = String> {
+        debug_assert!(max >= 1);
+        (1..=max).flat_map(private_use_parts)
+    }
+
+    fn private_use_parts(n: u8) -> Box<dyn Iterator<Item = String>> {
+        match n {
+            0 => Box::new(once("-x".to_string())),
+            n => Box::new(private_use_parts(n - 1).flat_map(|prefix| {
+                [
+                    "a", "ab", "abc", "abcd", "abcde", "abcdefg", "abcdefgh", "1", "12", "123",
+                    "1234", "12345", "1234567", "12345678", "1b", "1b3", "1b3d", "1b3d5",
+                    "1b3d5f7", "1b3d5f7h",
+                ]
+                .map(|suffix| format!("{prefix}-{suffix}"))
+            })),
+        }
+    }
+
+    /// An array of valid TAGs
+    pub const GRANDFATHERED_TAGS: &[&str] = &[
+        // irregular grandfathered
+        "en-GB-oed",
+        "i-ami",
+        "i-bnn",
+        "i-default",
+        "i-enochian",
+        "i-hak",
+        "i-klingon",
+        "i-lux",
+        "i-mingo",
+        "i-navajo",
+        "i-pwn",
+        "i-tao",
+        "i-tay",
+        "i-tsu",
+        "sgn-BE-FR",
+        "sgn-BE-NL",
+        "sgn-CH-DE",
+        // regular grandfathered
+        "art-lojban",
+        "cel-gaulish",
+        "no-bok",
+        "no-nyn",
+        "zh-guoyu",
+        "zh-hakka",
+        "zh-min",
+        "zh-min-nan",
+        "zh-xiang",
+    ];
+
+    /// An array of valid TAGs
+    pub const INVALID_TAGS: &[&str] = &[
+        "",          // empty
+        " ",         // space
+        "12",        // invalid characters
+        "a@",        // invalid characters
+        "éh",        // invalid characters
+        "a",         // too short
+        "abcdefghi", // too long
+        // wrong ordering
+        "ab-ab-abc",
+        "ab-ab-abcd",
+        "ab-123-abc",
+        "ab-123-abcd",
+        "ab-abcd-abc",
+        "ab-1bcd-ab",
+        "ab-1bcd-abc",
+        "ab-1bcd-123",
+        "ab-1bcd-abcd",
+        "ab-abcde-ab",
+        "ab-abcde-abc",
+        "ab-abcde-123",
+        "ab-abcde-abcd",
+        "ab-a-b",
+        "abcd-abc",
+    ];
 }
