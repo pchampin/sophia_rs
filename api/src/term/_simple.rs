@@ -3,6 +3,7 @@ use crate::ns::rdf;
 
 lazy_static::lazy_static! {
     static ref RDF_LANG_STRING: Box<str> = rdf::langString.iri().unwrap().unwrap().into();
+    static ref RDF_DIR_LANG_STRING: Box<str> = rdf::dirLangString.iri().unwrap().unwrap().into();
 }
 
 /// A straightforward implementation of [`Term`] as an enum.
@@ -14,8 +15,8 @@ pub enum SimpleTerm<'a> {
     BlankNode(BnodeId<MownStr<'a>>),
     /// An RDF [literal](https://www.w3.org/TR/rdf11-concepts/#section-Graph-Literal)
     LiteralDatatype(MownStr<'a>, IriRef<MownStr<'a>>),
-    /// An RDF [language-tagged string](https://www.w3.org/TR/rdf11-concepts/#dfn-language-tagged-string)
-    LiteralLanguage(MownStr<'a>, LanguageTag<MownStr<'a>>),
+    /// An RDF [language-tagged string](https://www.w3.org/TR/rdf11-concepts/#dfn-language-tagged-string), potentially with base direction
+    LiteralLanguage(MownStr<'a>, LanguageTag<MownStr<'a>>, Option<BaseDirection>),
     /// An RDF-star [quoted triple](https://www.w3.org/2021/12/rdf-star.html#dfn-quoted)
     Triple(Box<[Self; 3]>),
     /// A SPARQL or Notation3 variable
@@ -55,20 +56,32 @@ impl<'a> Term for SimpleTerm<'a> {
     }
     fn lexical_form(&self) -> Option<MownStr> {
         match self {
-            LiteralDatatype(val, _) | LiteralLanguage(val, _) => Some(MownStr::from(&val[..])),
+            LiteralDatatype(val, _) | LiteralLanguage(val, _, _) => Some(MownStr::from(&val[..])),
             _ => None,
         }
     }
     fn datatype(&self) -> Option<IriRef<MownStr>> {
         match self {
             LiteralDatatype(_, iri) => Some(IriRef::new_unchecked(iri.borrowed())),
-            LiteralLanguage(..) => Some(IriRef::new_unchecked(MownStr::from_ref(&RDF_LANG_STRING))),
+            LiteralLanguage(_, _, None) => {
+                Some(IriRef::new_unchecked(MownStr::from_ref(&RDF_LANG_STRING)))
+            }
+            LiteralLanguage(_, _, Some(_)) => Some(IriRef::new_unchecked(MownStr::from_ref(
+                &RDF_DIR_LANG_STRING,
+            ))),
             _ => None,
         }
     }
     fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
-        if let LiteralLanguage(_, tag) = self {
+        if let LiteralLanguage(_, tag, _) = self {
             Some(LanguageTag::new_unchecked(MownStr::from_ref(tag)))
+        } else {
+            None
+        }
+    }
+    fn base_direction(&self) -> Option<BaseDirection> {
+        if let LiteralLanguage(_, _, dir) = self {
+            *dir
         } else {
             None
         }
@@ -122,7 +135,8 @@ impl FromTerm for SimpleTerm<'static> {
                 let lex = ensure_owned(term.lexical_form().unwrap());
                 if let Some(tag) = term.language_tag() {
                     let tag = tag.map_unchecked(ensure_owned);
-                    SimpleTerm::LiteralLanguage(lex, tag)
+                    let dir = term.base_direction();
+                    SimpleTerm::LiteralLanguage(lex, tag, dir)
                 } else {
                     let dt = term.datatype().unwrap().map_unchecked(ensure_owned);
                     SimpleTerm::LiteralDatatype(lex, dt)
@@ -166,7 +180,8 @@ impl<'a> SimpleTerm<'a> {
             TermKind::Literal => {
                 let lex = term.lexical_form().unwrap();
                 if let Some(tag) = term.language_tag() {
-                    SimpleTerm::LiteralLanguage(lex, tag)
+                    let dir = term.base_direction();
+                    SimpleTerm::LiteralLanguage(lex, tag, dir)
                 } else {
                     let dt = term.datatype().unwrap();
                     SimpleTerm::LiteralDatatype(lex, dt)
@@ -261,12 +276,27 @@ mod test {
     fn literal_lang_from_scratch() {
         let value = MownStr::from_ref("hello world");
         let tag = LanguageTag::new_unchecked(MownStr::from_ref("en-US"));
-        let t = SimpleTerm::LiteralLanguage(value.clone(), tag.clone());
+        let t = SimpleTerm::LiteralLanguage(value.clone(), tag.clone(), None);
         assert_consistent_term_impl(&t);
         assert_eq!(t.borrow_term(), &t);
         assert_eq!(t.kind(), TermKind::Literal);
         assert_eq!(t.lexical_form(), Some(value));
         assert_eq!(t.language_tag(), Some(tag));
+        assert_eq!(t.base_direction(), None);
+    }
+
+    #[test]
+    fn literal_dir_lang_from_scratch() {
+        let value = MownStr::from_ref("hello world");
+        let tag = LanguageTag::new_unchecked(MownStr::from_ref("en-US"));
+        let dir = BaseDirection::Ltr;
+        let t = SimpleTerm::LiteralLanguage(value.clone(), tag.clone(), Some(dir));
+        assert_consistent_term_impl(&t);
+        assert_eq!(t.borrow_term(), &t);
+        assert_eq!(t.kind(), TermKind::Literal);
+        assert_eq!(t.lexical_form(), Some(value));
+        assert_eq!(t.language_tag(), Some(tag));
+        assert_eq!(t.base_direction(), Some(dir));
     }
 
     #[test]

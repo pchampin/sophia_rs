@@ -15,7 +15,7 @@ use rio_api::model::{
 use sophia_api::MownStr;
 use sophia_api::ns::{rdf, xsd};
 use sophia_api::quad::{Quad, Spog};
-use sophia_api::term::{BnodeId, LanguageTag, Term, TermKind, VarName};
+use sophia_api::term::{BaseDirection, BnodeId, LanguageTag, Term, TermKind, VarName};
 use sophia_api::triple::Triple;
 use sophia_iri::{Iri, IriRef};
 
@@ -111,6 +111,10 @@ impl Term for Trusted<Literal<'_>> {
 
     fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
         language_tag(self.0)
+    }
+
+    fn base_direction(&self) -> Option<BaseDirection> {
+        None
     }
 
     fn borrow_term(&self) -> Self::BorrowTerm<'_> {
@@ -306,6 +310,10 @@ impl Term for Trusted<RioTerm<'_>> {
         }
     }
 
+    fn base_direction(&self) -> Option<BaseDirection> {
+        None
+    }
+
     fn triple(&self) -> Option<[Self::BorrowTerm<'_>; 3]> {
         self.to_triple()
     }
@@ -384,6 +392,10 @@ impl Term for Trusted<GeneralizedTerm<'_>> {
         } else {
             None
         }
+    }
+
+    fn base_direction(&self) -> Option<BaseDirection> {
+        None
     }
 
     fn triple(&self) -> Option<[Self::BorrowTerm<'_>; 3]> {

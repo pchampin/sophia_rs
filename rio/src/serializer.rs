@@ -116,7 +116,10 @@ fn convert_triple<'a>(
             datatype: NamedNode { iri },
         }
         .into(),
-        SimpleTerm::LiteralLanguage(value, language) => {
+        SimpleTerm::LiteralLanguage(value, language, dir) => {
+            if dir.is_some() {
+                log::warn!("Dropping base direction of {:?}", t.o());
+            }
             Literal::LanguageTaggedString { value, language }.into()
         }
         SimpleTerm::Triple(triple) => {

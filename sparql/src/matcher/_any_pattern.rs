@@ -1,3 +1,5 @@
+use sophia_api::term::BaseDirection;
+
 use super::*;
 
 #[derive(Clone, Copy, Debug)]
@@ -66,6 +68,13 @@ impl Term for AnyPattern<'_> {
     fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
         match self {
             AnyPattern::Term(tp) => Ox2So::new_ref(*tp).language_tag(),
+            AnyPattern::Named(nnp) => None,
+        }
+    }
+
+    fn base_direction(&self) -> Option<BaseDirection> {
+        match self {
+            AnyPattern::Term(tp) => Ox2So::new_ref(*tp).base_direction(),
             AnyPattern::Named(nnp) => None,
         }
     }

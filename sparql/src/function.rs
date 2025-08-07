@@ -432,7 +432,7 @@ pub fn str_iri(iri: &IriRef<Arc<str>>) -> EvalResult {
 pub fn str_literal(lit: GenericLiteral<Arc<str>>) -> EvalResult {
     use GenericLiteral::*;
     match lit {
-        Typed(lex, _) | LanguageString(lex, _) => lex.into(),
+        Typed(lex, _) | LanguageString(lex, _, _) => lex.into(),
     }
 }
 
@@ -440,7 +440,7 @@ pub fn lang(lit: GenericLiteral<Arc<str>>) -> EvalResult {
     use GenericLiteral::*;
     match lit {
         Typed(..) => Arc::<str>::from("").into(),
-        LanguageString(_, tag) => tag.unwrap().into(),
+        LanguageString(_, tag, _) => tag.unwrap().into(),
     }
 }
 
@@ -448,7 +448,8 @@ pub fn datatype(lit: GenericLiteral<Arc<str>>) -> EvalResult {
     use GenericLiteral::{LanguageString, Typed};
     match lit {
         Typed(_, dt) => dt.clone().into(),
-        LanguageString(..) => RDF_LANG_STRING.clone().into(),
+        LanguageString(_, _, None) => RDF_LANG_STRING.clone().into(),
+        LanguageString(_, _, Some(_)) => RDF_DIR_LANG_STRING.clone().into(),
     }
 }
 

@@ -32,6 +32,7 @@ pub mod var_name;
 /// as it is required to implement [`Term`].
 pub type IriRef<T> = sophia_iri::IriRef<T>;
 // The following two types are also re-exported for the same reason.
+pub use base_direction::BaseDirection;
 pub use bnode_id::BnodeId;
 pub use language_tag::LanguageTag;
 pub use var_name::VarName;
@@ -220,7 +221,7 @@ pub trait Term: std::fmt::Debug {
     }
 
     /// If [`kind`](Term::kind) returns [`TermKind::Literal`],
-    /// and if this literal is a language-tagged string,
+    /// and if this literal is a [directional-]language-tagged string,
     /// return its language tag.
     /// Otherwise return `None`.
     ///
@@ -229,6 +230,20 @@ pub trait Term: std::fmt::Debug {
     /// If that is not the case, this method must be explicit implemented.
     #[inline]
     fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+        self.is_literal()
+            .then(|| unimplemented!("Default implementation should have been overridden"))
+    }
+
+    /// If [`kind`](Term::kind) returns [`TermKind::Literal`],
+    /// and if this literal is a directional-language-tagged string,
+    /// return its base direction.
+    /// Otherwise return `None`.
+    ///
+    /// # Note to implementors
+    /// The default implementation assumes that [`Term::is_literal`] always return false.
+    /// If that is not the case, this method must be explicit implemented.
+    #[inline]
+    fn base_direction(&self) -> Option<BaseDirection> {
         self.is_literal()
             .then(|| unimplemented!("Default implementation should have been overridden"))
     }
@@ -383,7 +398,9 @@ pub trait Term: std::fmt::Debug {
                 self.lexical_form() == other.lexical_form()
                     && match (self.language_tag(), other.language_tag()) {
                         (None, None) => self.datatype() == other.datatype(),
-                        (Some(tag1), Some(tag2)) if tag1 == tag2 => true,
+                        (Some(tag1), Some(tag2)) if tag1 == tag2 => {
+                            self.base_direction() == other.base_direction()
+                        }
                         _ => false,
                     }
             }
@@ -396,7 +413,7 @@ pub trait Term: std::fmt::Debug {
     /// * blank nodes < IRIs < literals < quoted triples < variables
     /// * IRIs, blank nodes and variables are ordered by their value
     /// * Literals are ordered by their datatype, then their language (if any),
-    ///   then their lexical form
+    ///   then their base direction (if any), then their lexical form
     /// * Quoted triples are ordered in lexicographical order
     ///
     /// NB: literals are ordered by their *lexical* value,
@@ -415,11 +432,22 @@ pub trait Term: std::fmt::Debug {
                 let tag1 = self.language_tag();
                 let tag2 = other.language_tag();
                 if let (Some(tag1), Some(tag2)) = (tag1, tag2) {
-                    tag1.cmp(&tag2).then_with(|| {
-                        self.lexical_form()
-                            .unwrap()
-                            .cmp(&other.lexical_form().unwrap())
-                    })
+                    tag1.cmp(&tag2)
+                        .then_with(|| {
+                            let dir1 = self.base_direction();
+                            let dir2 = other.base_direction();
+                            match (dir1, dir2) {
+                                (None, None) => Ordering::Equal,
+                                (Some(_), None) => Ordering::Less,
+                                (None, Some(_)) => Ordering::Greater,
+                                (Some(dir1), Some(dir2)) => dir1.cmp(&dir2),
+                            }
+                        })
+                        .then_with(|| {
+                            self.lexical_form()
+                                .unwrap()
+                                .cmp(&other.lexical_form().unwrap())
+                        })
                 } else {
                     let dt1 = self.datatype().unwrap();
                     let dt2 = other.datatype().unwrap();
@@ -456,6 +484,7 @@ pub trait Term: std::fmt::Debug {
                     Some(tag) => {
                         '@'.hash(state);
                         tag.hash(state);
+                        self.base_direction().hash(state);
                     }
                 }
             }
@@ -548,6 +577,9 @@ where
     fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
         (*self).language_tag()
     }
+    fn base_direction(&self) -> std::option::Option<BaseDirection> {
+        (*self).base_direction()
+    }
     fn variable(&self) -> Option<VarName<MownStr>> {
         (*self).variable()
     }
@@ -618,10 +650,10 @@ where
         let datatype = t.datatype().unwrap();
         if rdf::langString == datatype {
             assert!(t.language_tag().is_some());
-            // todo eventually: test that there is no base direction
+            assert!(t.base_direction().is_none());
         } else if rdf::dirLangString == datatype {
             assert!(t.language_tag().is_some());
-            // todo eventually: test that there is some base direction
+            assert!(t.base_direction().is_some());
         } else {
             assert!(t.language_tag().is_none());
         }
@@ -630,6 +662,7 @@ where
         assert!(t.lexical_form().is_none());
         assert!(t.datatype().is_none());
         assert!(t.language_tag().is_none());
+        assert!(t.base_direction().is_none());
     }
     if k == TermKind::Variable {
         assert!(t.is_variable());
@@ -761,7 +794,9 @@ mod check_implementability {
 
 #[cfg(test)]
 /// Simplistic Term parser, useful for writing test cases.
-/// The syntax is a subset of Turtle-star.
+/// The syntax is a subset of Turtle 1.2
+/// (with the caveat that triple terms still use the Turtle-star syntax,
+///  i.e. << ... >> instead of <<( ... )>> )
 pub(crate) fn ez_term(txt: &str) -> SimpleTerm {
     use sophia_iri::IriRef;
     match txt.as_bytes() {
@@ -784,6 +819,12 @@ pub(crate) fn ez_term(txt: &str) -> SimpleTerm {
         [b'\'', .., b'\'', b'@', _, _] => SimpleTerm::LiteralLanguage(
             (&txt[1..txt.len() - 4]).into(),
             LanguageTag::new_unchecked(txt[txt.len() - 2..].into()),
+            None,
+        ),
+        [b'\'', .., b'\'', b'@', _, _, b'-', b'-', _, _, _] => SimpleTerm::LiteralLanguage(
+            (&txt[1..txt.len() - 5]).into(),
+            LanguageTag::new_unchecked(txt[txt.len() - 7..txt.len() - 5].into()),
+            Some(txt[txt.len() - 3..].parse().unwrap()),
         ),
         [c, ..] if c.is_ascii_digit() => txt.parse::<i32>().unwrap().into_term(),
         [b'?', ..] => VarName::new_unchecked(&txt[1..]).into_term(),
@@ -802,6 +843,7 @@ mod test_term_impl {
     #[test_case("'a'", "'b'")]
     #[test_case("10", "2")]
     #[test_case("'a'@en", "'a'@fr")]
+    #[test_case("'a'@en--ltr", "'a'@en--rtl")]
     #[test_case("?x", "?y")]
     #[test_case("<<_:s <tag:p> 'o1'>>", "<<_:s <tag:p> 'o2'>>")]
     #[test_case("<<_:s <tag:p1> 'o2'>>", "<<_:s <tag:p2> 'o1'>>")]
@@ -809,6 +851,7 @@ mod test_term_impl {
     // order across different literals
     #[test_case("2", "'10'")]
     #[test_case("'b'@en", "'a'")]
+    #[test_case("'b'@en--ltr", "'a'@en")]
     // order across term kinds
     #[test_case("_:b", "<tag:a>")]
     #[test_case("_:b", "'s'")]

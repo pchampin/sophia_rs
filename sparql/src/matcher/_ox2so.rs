@@ -1,3 +1,5 @@
+use sophia_api::term::BaseDirection;
+
 use super::*;
 
 #[repr(transparent)]
@@ -94,6 +96,10 @@ impl Term for Ox2So<TermPattern> {
                 .map(|tag| LanguageTag::new_unchecked(tag.into())),
             _ => None,
         }
+    }
+
+    fn base_direction(&self) -> Option<BaseDirection> {
+        None
     }
 
     fn variable(&self) -> Option<VarName<MownStr>> {

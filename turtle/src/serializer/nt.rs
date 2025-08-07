@@ -245,6 +245,7 @@ pub(crate) mod test {
             SimpleTerm::LiteralLanguage(
                 "hello\nworld".into(),
                 LanguageTag::new_unchecked("en".into()),
+                None,
             ),
         )?;
         let tr = g[0].clone();

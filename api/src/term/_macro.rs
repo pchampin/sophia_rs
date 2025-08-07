@@ -45,6 +45,9 @@ macro_rules! impl_term_for_wrapper {
             fn language_tag(&self) -> Option<$crate::term::LanguageTag<$crate::MownStr>> {
                 self.0.language_tag()
             }
+            fn base_direction(&self) -> Option<$crate::term::BaseDirection> {
+                self.0.base_direction()
+            }
             fn variable(&self) -> Option<$crate::term::VarName<$crate::MownStr>> {
                 self.0.variable()
             }

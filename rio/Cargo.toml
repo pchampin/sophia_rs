@@ -13,6 +13,7 @@ keywords.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+log.workspace = true
 sophia_api.workspace = true
 sophia_iri.workspace = true
 rio_api.workspace = true

@@ -148,6 +148,7 @@ pub(crate) mod test {
             SimpleTerm::LiteralLanguage(
                 "hello\nworld".into(),
                 LanguageTag::new_unchecked("en".into()),
+                None,
             ),
             Some(Iri::new_unchecked("tag:g1")),
         )?;

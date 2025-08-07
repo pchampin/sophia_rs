@@ -37,7 +37,7 @@ pub fn value_ref_to_arcterm<F: FnMut(&str) -> Arc<str>>(
     factory: F,
 ) -> ArcTerm {
     ArcTerm::Literal(if let SparqlValue::String(lex, Some(tag)) = value {
-        GenericLiteral::LanguageString(lex.clone(), tag.clone())
+        GenericLiteral::LanguageString(lex.clone(), tag.clone(), None)
     } else {
         GenericLiteral::Typed(value.lexical_form(factory), value.datatype())
     })

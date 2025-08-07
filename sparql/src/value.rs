@@ -43,7 +43,7 @@ impl SparqlValue {
 
     pub fn try_from_literal(genlit: &GenericLiteral<Arc<str>>) -> Option<Self> {
         match genlit {
-            GenericLiteral::LanguageString(lex, tag) => {
+            GenericLiteral::LanguageString(lex, tag, dir) => {
                 Some(Self::String(lex.clone(), Some(tag.clone())))
             }
             GenericLiteral::Typed(lex, dt) => {

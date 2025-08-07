@@ -10,7 +10,7 @@ use crate::{
 use sophia_api::{
     ns::{rdf, xsd},
     sparql::{Query, SparqlDataset},
-    term::{FromTerm, IriRef, LanguageTag, Term},
+    term::{BaseDirection, FromTerm, IriRef, LanguageTag, Term},
 };
 use sophia_inmem::dataset::LightDataset;
 use sophia_term::{ArcTerm, GenericLiteral};
@@ -27,11 +27,13 @@ fn str_iri(arg: &str) -> TestResult {
 
 #[test_case("chat", "", "tag:dt")]
 #[test_case("chat", "en", "")]
-fn str_literal(lex: &str, lang: &str, dt: &str) -> TestResult {
-    let lit = if lang.is_empty() {
+#[test_case("chat", "en--ltr", "")]
+fn str_literal(lex: &str, tag: &str, dt: &str) -> TestResult {
+    let lit = if tag.is_empty() {
         GenericLiteral::Typed(lex.into(), IriRef::new_unchecked(dt.into()))
     } else {
-        GenericLiteral::LanguageString(lex.into(), LanguageTag::new_unchecked(lang.into()))
+        let (lang, dir) = parse_lang(tag);
+        GenericLiteral::LanguageString(lex.into(), lang, dir)
     };
     let got = Some(super::str_literal(lit));
     let exp = Some(EvalResult::from(Arc::<str>::from(lex)));
@@ -39,16 +41,27 @@ fn str_literal(lex: &str, lang: &str, dt: &str) -> TestResult {
     Ok(())
 }
 
+fn parse_lang(tag: &str) -> (LanguageTag<Arc<str>>, Option<BaseDirection>) {
+    let (lang, dir) = tag.split_once("--").unwrap_or((tag, ""));
+    let dir = match dir {
+        "" => None,
+        txt => Some(txt.parse().unwrap()),
+    };
+    (LanguageTag::new_unchecked(lang.into()), dir)
+}
+
 #[test_case("chat", "", "tag:dt")]
 #[test_case("chat", "en", "")]
-fn lang(lex: &str, lang: &str, dt: &str) -> TestResult {
-    let lit = if lang.is_empty() {
+#[test_case("chat", "en--ltr", "")]
+fn lang(lex: &str, tag: &str, dt: &str) -> TestResult {
+    let lit = if tag.is_empty() {
         GenericLiteral::Typed(lex.into(), IriRef::new_unchecked(dt.into()))
     } else {
-        GenericLiteral::LanguageString(lex.into(), LanguageTag::new_unchecked(lang.into()))
+        let (lang, dir) = dbg!(parse_lang(tag));
+        GenericLiteral::LanguageString(lex.into(), lang, dir)
     };
     let got = Some(super::lang(lit));
-    let exp = Some(EvalResult::from(Arc::<str>::from(lang)));
+    let exp = Some(EvalResult::from(Arc::<str>::from(&tag[..2.min(tag.len())])));
     assert!(eval_eq(got, exp));
     Ok(())
 }
@@ -56,11 +69,13 @@ fn lang(lex: &str, lang: &str, dt: &str) -> TestResult {
 #[allow(clippy::needless_pass_by_value)]
 #[test_case("chat", "", "tag:dt")]
 #[test_case("chat", "en", rdf::langString)]
-fn datatype<T: ToString>(lex: &str, lang: &str, dt: T) -> TestResult {
-    let lit = if lang.is_empty() {
+#[test_case("chat", "en--ltr", rdf::dirLangString)]
+fn datatype<T: ToString>(lex: &str, tag: &str, dt: T) -> TestResult {
+    let lit = if tag.is_empty() {
         GenericLiteral::Typed(lex.into(), IriRef::new_unchecked(dt.to_string().into()))
     } else {
-        GenericLiteral::LanguageString(lex.into(), LanguageTag::new_unchecked(lang.into()))
+        let (lang, dir) = parse_lang(tag);
+        GenericLiteral::LanguageString(lex.into(), lang, dir)
     };
     let got = Some(super::datatype(lit));
     let exp = Some(EvalResult::from(IriRef::new_unchecked(Arc::<str>::from(

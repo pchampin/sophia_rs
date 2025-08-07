@@ -39,6 +39,9 @@ impl Term for f64 {
     fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
         None
     }
+    fn base_direction(&self) -> Option<BaseDirection> {
+        None
+    }
     fn borrow_term(&self) -> Self::BorrowTerm<'_> {
         *self
     }
@@ -73,6 +76,9 @@ impl Term for i32 {
         Some(IriRef::new_unchecked(MownStr::from_ref(&XSD_INTEGER)))
     }
     fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+        None
+    }
+    fn base_direction(&self) -> Option<BaseDirection> {
         None
     }
     fn borrow_term(&self) -> Self::BorrowTerm<'_> {
@@ -112,6 +118,9 @@ impl Term for isize {
     fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
         None
     }
+    fn base_direction(&self) -> Option<BaseDirection> {
+        None
+    }
     fn borrow_term(&self) -> Self::BorrowTerm<'_> {
         *self
     }
@@ -147,6 +156,9 @@ impl Term for usize {
         Some(IriRef::new_unchecked(MownStr::from_ref(&XSD_INTEGER)))
     }
     fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+        None
+    }
+    fn base_direction(&self) -> Option<BaseDirection> {
         None
     }
     fn borrow_term(&self) -> Self::BorrowTerm<'_> {
@@ -188,6 +200,9 @@ impl Term for str {
     fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
         None
     }
+    fn base_direction(&self) -> Option<BaseDirection> {
+        None
+    }
     fn borrow_term(&self) -> Self::BorrowTerm<'_> {
         self
     }
@@ -222,6 +237,9 @@ impl Term for bool {
         Some(IriRef::new_unchecked(MownStr::from_ref(&XSD_BOOLEAN)))
     }
     fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+        None
+    }
+    fn base_direction(&self) -> Option<BaseDirection> {
         None
     }
     fn borrow_term(&self) -> Self::BorrowTerm<'_> {

@@ -7,7 +7,8 @@ macro_rules! gen_term {
             use super::*;
             use sophia_api::MownStr;
             use sophia_api::term::{
-                BnodeId, FromTerm, IriRef, LanguageTag, Term, TermKind, TryFromTerm, VarName,
+                BaseDirection, BnodeId, FromTerm, IriRef, LanguageTag, Term, TermKind, TryFromTerm,
+                VarName,
             };
             use $wrapper as W;
 
@@ -108,6 +109,14 @@ macro_rules! gen_term {
                 fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
                     if let $type_name::Literal(lit) = self {
                         lit.language_tag()
+                    } else {
+                        None
+                    }
+                }
+
+                fn base_direction(&self) -> Option<BaseDirection> {
+                    if let $type_name::Literal(lit) = self {
+                        lit.base_direction()
                     } else {
                         None
                     }
@@ -224,7 +233,17 @@ macro_rules! gen_term {
 
             impl From<(W<str>, LanguageTag<W<str>>)> for $type_name {
                 fn from(value: (W<str>, LanguageTag<W<str>>)) -> Self {
-                    $type_name::Literal(GenericLiteral::LanguageString(value.0, value.1))
+                    $type_name::Literal(GenericLiteral::LanguageString(value.0, value.1, None))
+                }
+            }
+
+            impl From<(W<str>, LanguageTag<W<str>>, BaseDirection)> for $type_name {
+                fn from(value: (W<str>, LanguageTag<W<str>>, BaseDirection)) -> Self {
+                    $type_name::Literal(GenericLiteral::LanguageString(
+                        value.0,
+                        value.1,
+                        Some(value.2),
+                    ))
                 }
             }
 
@@ -421,10 +440,11 @@ macro_rules! gen_stash {
                             self.copy_str(lex),
                             self.copy_iri(dt),
                         )),
-                        LiteralLanguage(lex, tag) => {
+                        LiteralLanguage(lex, tag, dir) => {
                             $term_type::Literal(GenericLiteral::LanguageString(
                                 self.copy_str(lex),
                                 self.copy_language_tag(tag),
+                                dir,
                             ))
                         }
                         Triple(tr) => $term_type::Triple(W::new(tr.map(|t| self.copy_term(t)))),

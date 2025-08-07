@@ -81,6 +81,7 @@ impl ArcExpression {
                     GenericLiteral::LanguageString(
                         lex,
                         stash.copy_language_tag(LanguageTag::new_unchecked(tag)),
+                        None,
                     )
                 } else {
                     GenericLiteral::Typed(
@@ -418,7 +419,7 @@ impl EvalResult {
         use GenericLiteral::*;
         match self {
             EvalResult::Term(t) => match t.inner() {
-                ArcTerm::Literal(LanguageString(lex, tag)) => Some((lex, Some(tag))),
+                ArcTerm::Literal(LanguageString(lex, tag, _)) => Some((lex, Some(tag))),
                 ArcTerm::Literal(Typed(lex, dt)) if xsd::string == dt => Some((lex, None)),
                 _ => fail(),
             },

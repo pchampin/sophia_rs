@@ -77,6 +77,10 @@ impl Term for ResultTerm {
         self.inner.language_tag()
     }
 
+    fn base_direction(&self) -> Option<sophia_api::term::BaseDirection> {
+        self.inner.base_direction()
+    }
+
     fn variable(&self) -> Option<sophia_api::term::VarName<MownStr>> {
         self.inner.variable()
     }
@@ -173,7 +177,13 @@ fn write_simple_term(f: &mut fmt::Formatter<'_>, t: &SimpleTerm<'_>) -> fmt::Res
         Iri(iri) => write!(f, "<{iri}>"),
         BlankNode(bnid) => write!(f, "_:{}", bnid.as_str()),
         LiteralDatatype(lex, dt) => write!(f, "{lex:?}^^<{dt}>"),
-        LiteralLanguage(lex, tag) => write!(f, "{lex:?}@{}", tag.as_str()),
+        LiteralLanguage(lex, tag, dir) => {
+            write!(f, "{lex:?}@{}", tag.as_str())?;
+            if let Some(dir) = dir {
+                write!(f, "_{dir}")?;
+            }
+            Ok(())
+        }
         Triple(spo) => {
             write!(f, "<< ")?;
             write_simple_term(f, &spo[0])?;

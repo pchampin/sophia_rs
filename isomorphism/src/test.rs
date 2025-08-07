@@ -384,6 +384,10 @@ impl Term for MyTerm {
         None
     }
 
+    fn base_direction(&self) -> Option<sophia_api::term::BaseDirection> {
+        None
+    }
+
     fn triple(&self) -> Option<[Self; 3]> {
         if let Self::Triple(spo) = *self {
             let spo: Vec<_> = spo

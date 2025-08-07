@@ -764,7 +764,9 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
     }
 
     /// Simplistic Term parser, useful for writing test cases.
-    /// The syntax is a subset of Turtle-star.
+    /// The syntax is a subset of Turtle 1.2
+    /// (with the caveat that triple terms still use the Turtle-star syntax,
+    ///  i.e. << ... >> instead of <<( ... )>> )
     fn ez_term(txt: &str) -> SimpleTerm {
         use sophia_iri::IriRef;
         match txt.as_bytes() {
@@ -787,6 +789,12 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
             [b'\'', .., b'\'', b'@', _, _] => SimpleTerm::LiteralLanguage(
                 (&txt[1..txt.len() - 4]).into(),
                 LanguageTag::new_unchecked(txt[txt.len() - 2..].into()),
+                None,
+            ),
+            [b'\'', .., b'\'', b'@', _, _, b'-', b'-', _, _, _] => SimpleTerm::LiteralLanguage(
+                (&txt[1..txt.len() - 5]).into(),
+                LanguageTag::new_unchecked(txt[txt.len() - 7..txt.len() - 5].into()),
+                Some(txt[txt.len() - 3..].parse().unwrap()),
             ),
             [c, ..] if c.is_ascii_digit() => txt.parse::<i32>().unwrap().into_term(),
             [b'?', ..] => VarName::new_unchecked(&txt[1..]).into_term(),

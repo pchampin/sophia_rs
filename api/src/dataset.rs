@@ -748,6 +748,14 @@ mod check_implementability_lazy_term {
             }
         }
 
+        fn base_direction(&self) -> Option<crate::term::BaseDirection> {
+            if let Atom(t) = &self.dataset.terms[self.index] {
+                t.base_direction()
+            } else {
+                None
+            }
+        }
+
         fn variable(&self) -> Option<crate::term::VarName<mownstr::MownStr>> {
             if let Atom(t) = &self.dataset.terms[self.index] {
                 t.variable()

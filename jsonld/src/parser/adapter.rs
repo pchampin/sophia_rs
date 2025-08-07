@@ -70,6 +70,10 @@ impl SophiaTerm for RdfTerm {
             _ => None,
         }
     }
+
+    fn base_direction(&self) -> Option<sophia_api::term::BaseDirection> {
+        None
+    }
 }
 
 impl From<RdfO> for RdfTerm {

@@ -174,7 +174,11 @@ impl<'a> std::ops::Mul<LanguageTag<&'a str>> for &'a str {
     type Output = super::SimpleTerm<'a>;
 
     fn mul(self, rhs: LanguageTag<&'a str>) -> Self::Output {
-        super::SimpleTerm::LiteralLanguage(self.into(), rhs.map_unchecked(mownstr::MownStr::from))
+        super::SimpleTerm::LiteralLanguage(
+            self.into(),
+            rhs.map_unchecked(mownstr::MownStr::from),
+            None,
+        )
     }
 }
 

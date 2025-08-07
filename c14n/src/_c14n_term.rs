@@ -62,6 +62,13 @@ impl<T: Term> Term for C14nTerm<T> {
         }
     }
 
+    fn base_direction(&self) -> Option<sophia_api::term::BaseDirection> {
+        match self {
+            Blank(_) => None,
+            Other(t) => t.base_direction(),
+        }
+    }
+
     fn variable(&self) -> Option<sophia_api::term::VarName<sophia_api::MownStr>> {
         self.is_variable()
             .then(|| unimplemented!("Default implementation should have been overridden"))
