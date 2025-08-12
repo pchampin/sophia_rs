@@ -269,7 +269,7 @@ let iri6 = xsd::string ;
 <h3 id="constructing-literals"><a class="header" href="#constructing-literals">Constructing literals</a></h3>
 <pre><code class="language-rust noplayground"><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 </span><span class="boring">
-</span><span class="boring">use sophia::api::{ns::xsd, term::{LanguageTag, SimpleTerm, Term}};
+</span><span class="boring">use sophia::api::{ns::xsd, term::{BaseDirection, LanguageTag, SimpleTerm, Term}};
 </span>// use native types for xsd::string, xsd::integer, xsd::double
 let lit_string = "hello world";
 let lit_integer = 42;
@@ -278,6 +278,10 @@ let lit_double = 1.23;
 // construct a language-tagged string
 let fr = LanguageTag::new_unchecked("fr");
 let lit_fr = "Bonjour le monde" * fr;
+
+// construct a directional language-tagged string
+let he = LanguageTag::new_unchecked("he");
+let lit_he = "ספרים בינלאומיים" * he * BaseDirection::Rtl;
 
 // construct a literal with an arbitrary datatype
 let lit_date = "2023-11-15" * xsd::date;
