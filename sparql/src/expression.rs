@@ -2,7 +2,7 @@
 use sophia_api::{
     dataset::Dataset,
     ns::xsd,
-    term::{BnodeId, LanguageTag, Term, VarName},
+    term::{BaseDirection, BnodeId, LanguageTag, Term, VarName},
 };
 use sophia_iri::IriRef;
 use sophia_term::{ArcStrStash, ArcTerm, GenericLiteral};
@@ -81,7 +81,10 @@ impl ArcExpression {
                     GenericLiteral::LanguageString(
                         lex,
                         stash.copy_language_tag(LanguageTag::new_unchecked(tag)),
-                        None,
+                        lit.direction().map(|dir| match dir {
+                            oxrdf::BaseDirection::Ltr => BaseDirection::Ltr,
+                            oxrdf::BaseDirection::Rtl => BaseDirection::Rtl,
+                        }),
                     )
                 } else {
                     GenericLiteral::Typed(
@@ -408,8 +411,7 @@ impl EvalResult {
     }
 
     /// Coerce to [string literal](https://www.w3.org/TR/sparql11-query/#func-string)
-    #[expect(clippy::type_complexity)]
-    pub fn as_string_lit(&self, diag: &str) -> Option<(&Arc<str>, Option<&LanguageTag<Arc<str>>>)> {
+    pub fn as_string_lit(&self, diag: &str) -> Option<StringLiteralRef<'_>> {
         let fail = || {
             if !diag.is_empty() {
                 log::warn!("{diag} expects a string literal");
@@ -419,11 +421,13 @@ impl EvalResult {
         use GenericLiteral::*;
         match self {
             EvalResult::Term(t) => match t.inner() {
-                ArcTerm::Literal(LanguageString(lex, tag, _)) => Some((lex, Some(tag))),
+                ArcTerm::Literal(LanguageString(lex, lang, dir)) => Some((lex, Some((lang, *dir)))),
                 ArcTerm::Literal(Typed(lex, dt)) if xsd::string == dt => Some((lex, None)),
                 _ => fail(),
             },
-            EvalResult::Value(SparqlValue::String(lex, tag)) => Some((lex, tag.as_ref())),
+            EvalResult::Value(SparqlValue::String(lex, ctag)) => {
+                Some((lex, ctag.as_ref().map(|(lang, dir)| (lang, *dir))))
+            }
             EvalResult::Value(_) => fail(),
         }
     }
@@ -564,8 +568,16 @@ impl From<Arc<str>> for EvalResult {
     }
 }
 
-impl From<(Arc<str>, Option<LanguageTag<Arc<str>>>)> for EvalResult {
-    fn from((lex, tag): (Arc<str>, Option<LanguageTag<Arc<str>>>)) -> Self {
-        EvalResult::Value(SparqlValue::String(lex, tag))
+impl From<StringLiteral> for EvalResult {
+    fn from((lex, ctag): StringLiteral) -> Self {
+        EvalResult::Value(SparqlValue::String(lex, ctag))
     }
 }
+
+//
+
+pub(crate) type StringLiteral = (Arc<str>, Option<CompoundTag>);
+pub(crate) type StringLiteralRef<'a> = (&'a Arc<str>, Option<CompoundTagRef<'a>>);
+
+pub(crate) type CompoundTag = (LanguageTag<Arc<str>>, Option<BaseDirection>);
+pub(crate) type CompoundTagRef<'a> = (&'a LanguageTag<Arc<str>>, Option<BaseDirection>);

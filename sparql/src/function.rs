@@ -24,7 +24,7 @@ use uuid::{
 use crate::{
     ResultTerm,
     exec::ExecConfig,
-    expression::EvalResult,
+    expression::{EvalResult, StringLiteralRef},
     ns::{RDF_DIR_LANG_STRING, RDF_LANG_STRING},
     value::{SparqlNumber, SparqlValue, XsdDateTime},
 };
@@ -545,19 +545,19 @@ pub fn rand() -> EvalResult {
     SparqlNumber::from(random::<f64>()).into()
 }
 
-pub fn concat(args: &[StringLiteral]) -> EvalResult {
+pub fn concat(args: &[StringLiteralRef<'_>]) -> EvalResult {
     let lex = args
         .iter()
         .map(|x| x.0.as_ref())
         .collect::<Vec<_>>()
         .join("");
-    let tag1 = args.first().and_then(|x| x.1);
-    let tag = if args.len() < 2 || args[1..].iter().all(|x| x.1 == tag1) {
-        tag1
+    let ctag1 = args.first().and_then(|x| x.1);
+    let ctag = if args.len() < 2 || args[1..].iter().all(|x| x.1 == ctag1) {
+        ctag1
     } else {
         None
     };
-    EvalResult::from((Arc::from(lex), tag.cloned()))
+    EvalResult::from((Arc::from(lex), ctag.map(|(lang, dir)| (lang.clone(), dir))))
 }
 
 pub fn lang_matches(tag: &Arc<str>, range: &Arc<str>) -> Option<EvalResult> {
@@ -585,7 +585,7 @@ pub fn lang_matches(tag: &Arc<str>, range: &Arc<str>) -> Option<EvalResult> {
 }
 
 pub fn sub_str(
-    source: StringLiteral,
+    source: StringLiteralRef<'_>,
     starting_loc: f64,
     length: Option<f64>,
 ) -> Option<EvalResult> {
@@ -593,7 +593,7 @@ pub fn sub_str(
         log::warn!("subStr#2 is NaN");
         return None;
     }
-    let (lex, tag) = source;
+    let (lex, ctag) = source;
     let lex_len = lex.chars().count();
     let (s, e) = match length {
         Some(l) if l.is_nan() => {
@@ -616,7 +616,10 @@ pub fn sub_str(
     // s and e are "codepoint indexes", convert them to byte index
     let s = lex.char_indices().nth(s).map(|p| p.0).unwrap_or(lex.len());
     let e = lex.char_indices().nth(e).map(|p| p.0).unwrap_or(lex.len());
-    Some(EvalResult::from((Arc::from(&lex[s..e]), tag.cloned())))
+    Some(EvalResult::from((
+        Arc::from(&lex[s..e]),
+        ctag.map(|(lang, dir)| (lang.clone(), dir)),
+    )))
 }
 
 pub fn str_len(string: &str) -> EvalResult {
@@ -631,13 +634,16 @@ pub fn str_len(string: &str) -> EvalResult {
     }
 }
 
-pub fn u_case(source: StringLiteral) -> EvalResult {
+pub fn u_case(source: StringLiteralRef<'_>) -> EvalResult {
     let lex: String = source.0.chars().flat_map(char::to_uppercase).collect();
-    EvalResult::from((Arc::from(lex), source.1.cloned()))
+    EvalResult::from((
+        Arc::from(lex),
+        source.1.map(|(lang, dir)| (lang.clone(), dir)),
+    ))
 }
 
 pub fn replace(
-    arg: StringLiteral,
+    arg: StringLiteralRef<'_>,
     pattern: &str,
     replacement: &str,
     flags: Option<&Arc<str>>,
@@ -647,7 +653,13 @@ pub fn replace(
         return None;
     }
     let repl = prepare_replacement(replacement);
-    Some((re.replace_all(arg.0, repl).into(), arg.1.cloned()).into())
+    Some(
+        (
+            re.replace_all(arg.0, repl).into(),
+            arg.1.map(|(lang, dir)| (lang.clone(), dir)),
+        )
+            .into(),
+    )
 }
 
 fn prepare_replacement(replacement: &str) -> Cow<str> {
@@ -657,9 +669,12 @@ fn prepare_replacement(replacement: &str) -> Cow<str> {
     })
 }
 
-pub fn l_case(source: StringLiteral) -> EvalResult {
+pub fn l_case(source: StringLiteralRef<'_>) -> EvalResult {
     let lex: String = source.0.chars().flat_map(char::to_lowercase).collect();
-    EvalResult::from((Arc::from(lex), source.1.cloned()))
+    EvalResult::from((
+        Arc::from(lex),
+        source.1.map(|(lang, dir)| (lang.clone(), dir)),
+    ))
 }
 
 pub fn encode_for_uri(source: &str) -> EvalResult {
@@ -677,31 +692,43 @@ pub fn encode_for_uri(source: &str) -> EvalResult {
     EvalResult::from((Arc::from(ret), None))
 }
 
-pub fn contains(heystack: StringLiteral, needle: StringLiteral) -> Option<EvalResult> {
-    check_compatible(heystack, needle, "arguments of Contains")?;
+pub fn contains(
+    heystack: StringLiteralRef<'_>,
+    needle: StringLiteralRef<'_>,
+) -> Option<EvalResult> {
+    dbg!(check_compatible(heystack, needle, "arguments of Contains")?);
     Some(heystack.0.contains(needle.0.as_ref()).into())
 }
 
-pub fn strstarts(heystack: StringLiteral, needle: StringLiteral) -> Option<EvalResult> {
+pub fn strstarts(
+    heystack: StringLiteralRef<'_>,
+    needle: StringLiteralRef<'_>,
+) -> Option<EvalResult> {
     check_compatible(heystack, needle, "arguments of StrStarts")?;
     Some(heystack.0.starts_with(needle.0.as_ref()).into())
 }
 
-pub fn strends(heystack: StringLiteral, needle: StringLiteral) -> Option<EvalResult> {
+pub fn strends(heystack: StringLiteralRef<'_>, needle: StringLiteralRef<'_>) -> Option<EvalResult> {
     check_compatible(heystack, needle, "arguments of StrEnds")?;
     Some(heystack.0.ends_with(needle.0.as_ref()).into())
 }
 
-pub fn strbefore(heystack: StringLiteral, needle: StringLiteral) -> Option<EvalResult> {
+pub fn strbefore(
+    heystack: StringLiteralRef<'_>,
+    needle: StringLiteralRef<'_>,
+) -> Option<EvalResult> {
     check_compatible(heystack, needle, "arguments of StrBefore")?;
     let found = heystack.0.find(needle.0.as_ref());
     Some(EvalResult::from((
         Arc::from(&heystack.0[..found.unwrap_or(0)]),
-        found.and_then(|_| heystack.1.cloned()),
+        found.and_then(|_| heystack.1.map(|(lang, dir)| (lang.clone(), dir))),
     )))
 }
 
-pub fn strafter(heystack: StringLiteral, needle: StringLiteral) -> Option<EvalResult> {
+pub fn strafter(
+    heystack: StringLiteralRef<'_>,
+    needle: StringLiteralRef<'_>,
+) -> Option<EvalResult> {
     check_compatible(heystack, needle, "arguments of StrAfter")?;
     let txt = heystack.0.as_ref();
     let delim = needle.0.as_ref();
@@ -712,7 +739,7 @@ pub fn strafter(heystack: StringLiteral, needle: StringLiteral) -> Option<EvalRe
     };
     Some(EvalResult::from((
         Arc::from(substr),
-        found.and_then(|_| heystack.1.cloned()),
+        found.and_then(|_| heystack.1.map(|(lang, dir)| (lang.clone(), dir))),
     )))
 }
 
@@ -827,7 +854,7 @@ pub fn str_lang(lex: &str, lang: &str) -> Option<EvalResult> {
             log::debug!(" {err}")
         })
         .ok()?;
-    Some((lex.into(), Some(lang)).into())
+    Some((lex.into(), Some((lang, None))).into())
 }
 
 pub fn str_dt(lex: &str, dt: &IriRef<Arc<str>>) -> Option<EvalResult> {
@@ -1074,9 +1101,11 @@ pub fn xsd_string(arg: &EvalResult) -> Option<EvalResult> {
     Some(SparqlValue::String(arc_str, None).into())
 }
 
-type StringLiteral<'a> = (&'a Arc<str>, Option<&'a LanguageTag<Arc<str>>>);
-
-fn check_compatible(arg1: StringLiteral, arg2: StringLiteral, diag: &str) -> Option<()> {
+fn check_compatible(
+    arg1: StringLiteralRef<'_>,
+    arg2: StringLiteralRef<'_>,
+    diag: &str,
+) -> Option<()> {
     match (arg1.1, arg2.1) {
         (_, None) => true,
         (Some(tag1), Some(tag2)) if tag1 == tag2 => true,

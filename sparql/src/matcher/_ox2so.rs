@@ -99,7 +99,13 @@ impl Term for Ox2So<TermPattern> {
     }
 
     fn base_direction(&self) -> Option<BaseDirection> {
-        None
+        match &self.0 {
+            TermPattern::Literal(lit) => lit.direction().map(|dir| match dir {
+                oxrdf::BaseDirection::Ltr => BaseDirection::Ltr,
+                oxrdf::BaseDirection::Rtl => BaseDirection::Rtl,
+            }),
+            _ => None,
+        }
     }
 
     fn variable(&self) -> Option<VarName<MownStr>> {

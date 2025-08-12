@@ -3,10 +3,7 @@
 use std::{cmp::Ordering, sync::Arc};
 
 use bigdecimal::{BigDecimal, Signed};
-use sophia_api::{
-    ns::xsd,
-    term::{IriRef, LanguageTag},
-};
+use sophia_api::{ns::xsd, term::IriRef};
 use sophia_term::{ArcTerm, GenericLiteral};
 
 mod _xsd_date_time;
@@ -14,9 +11,12 @@ pub use _xsd_date_time::XsdDateTime;
 mod _number;
 pub use _number::SparqlNumber;
 
-use crate::ns::{
-    RDF_LANG_STRING, XSD_BOOLEAN, XSD_DATE_TIME, XSD_DECIMAL, XSD_DOUBLE, XSD_FLOAT, XSD_INTEGER,
-    XSD_STRING,
+use crate::{
+    expression::CompoundTag,
+    ns::{
+        RDF_LANG_STRING, XSD_BOOLEAN, XSD_DATE_TIME, XSD_DECIMAL, XSD_DOUBLE, XSD_FLOAT,
+        XSD_INTEGER, XSD_STRING,
+    },
 };
 
 /// A value of one of the recognized datatypes.
@@ -29,7 +29,7 @@ pub enum SparqlValue {
     /// A value of a recognized numeric datatype, or None of the lexical value is invalid
     Number(Option<SparqlNumber>),
     /// A value of type xsd:string or rdf:langString (if the language tag is not None)
-    String(Arc<str>, Option<LanguageTag<Arc<str>>>),
+    String(Arc<str>, Option<CompoundTag>),
 }
 
 impl SparqlValue {
@@ -44,7 +44,7 @@ impl SparqlValue {
     pub fn try_from_literal(genlit: &GenericLiteral<Arc<str>>) -> Option<Self> {
         match genlit {
             GenericLiteral::LanguageString(lex, tag, dir) => {
-                Some(Self::String(lex.clone(), Some(tag.clone())))
+                Some(Self::String(lex.clone(), Some((tag.clone(), *dir))))
             }
             GenericLiteral::Typed(lex, dt) => {
                 let dt = dt.as_str();

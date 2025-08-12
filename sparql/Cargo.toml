@@ -25,9 +25,10 @@ chrono = { version = "0.4", features = ["alloc"] }
 log.workspace = true
 num-bigint = "0.4"
 oxiri.workspace = true
+oxrdf = { version = "0.3.0-beta", features = ["rdf-12"] }
 rand = "0.8"
 regex.workspace = true
-spargebra = { version = "0.4.0-beta.1", features = ["sparql-12"] }
+spargebra = { version = "0.4.0-beta.2", features = ["sparql-12"] }
 thiserror.workspace = true
 uuid = { version = "1.11", features = ["v4", "v7"] }
 md5 = "0.7.0"

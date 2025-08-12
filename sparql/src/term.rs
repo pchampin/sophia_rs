@@ -180,7 +180,7 @@ fn write_simple_term(f: &mut fmt::Formatter<'_>, t: &SimpleTerm<'_>) -> fmt::Res
         LiteralLanguage(lex, tag, dir) => {
             write!(f, "{lex:?}@{}", tag.as_str())?;
             if let Some(dir) = dir {
-                write!(f, "_{dir}")?;
+                write!(f, "--{dir}")?;
             }
             Ok(())
         }

@@ -3,7 +3,7 @@ use std::{collections::HashSet, str::FromStr, sync::Arc};
 
 use crate::{
     ResultTerm, SparqlQuery, SparqlWrapper,
-    expression::EvalResult,
+    expression::{EvalResult, StringLiteral, StringLiteralRef},
     value::{SparqlNumber, SparqlValue, XsdDateTime},
 };
 
@@ -140,11 +140,14 @@ fn rand_all_diff() -> TestResult {
 // See https://www.w3.org/TR/sparql12-query/#func-concat
 #[test_case(vec!["foo", "bar"], "foobar")]
 #[test_case(vec!["foo@en", "bar@en"], "foobar@en")]
+#[test_case(vec!["foo@en--ltr", "bar@en--ltr"], "foobar@en--ltr")]
 #[test_case(vec!["foo@en", "bar"], "foobar")]
 #[test_case(vec!["foo", "bar@en"], "foobar")]
 #[test_case(vec!["foo@en", "bar@es"], "foobar")]
+#[test_case(vec!["foo@en", "bar@en--ltr"], "foobar")]
 #[test_case(vec!["abc"], "abc")]
 #[test_case(vec!["abc@en"], "abc@en")]
+#[test_case(vec!["abc@en--ltr"], "abc@en--ltr")]
 #[test_case(vec![], "")]
 // More arguments
 #[test_case(vec!["a", "b", "c"], "abc")]
@@ -157,22 +160,23 @@ fn concat(input: Vec<&str>, exp: &str) {
     assert!(eval_eq(Some(super::concat(&args)), exp));
 }
 
-fn txt2pair(txt: &str) -> (Arc<str>, Option<LanguageTag<Arc<str>>>) {
+fn txt2pair(txt: &str) -> StringLiteral {
     let (lex, tag) = txt.split_once('@').unwrap_or((txt, ""));
     (
         Arc::from(lex),
         if tag.is_empty() {
             None
         } else {
-            Some(LanguageTag::new_unchecked(Arc::from(tag)))
+            let (lang, dir) = tag.split_once("--").unwrap_or((tag, ""));
+            let lang = LanguageTag::new_unchecked(Arc::from(lang));
+            let dir = (!dir.is_empty()).then(|| dir.parse().unwrap());
+            Some((lang, dir))
         },
     )
 }
 
-fn pair2ref(
-    pair: &(Arc<str>, Option<LanguageTag<Arc<str>>>),
-) -> (&Arc<str>, Option<&LanguageTag<Arc<str>>>) {
-    (&pair.0, pair.1.as_ref())
+fn pair2ref(pair: &StringLiteral) -> StringLiteralRef<'_> {
+    (&pair.0, pair.1.as_ref().map(|(lang, dir)| (lang, *dir)))
 }
 
 #[test_case("en", "*", true)]
@@ -193,8 +197,10 @@ fn lang_matches(tag: &str, range: &str, exp: bool) -> TestResult {
 
 #[test_case("foobar", 4.0, None, Some("bar"))]
 #[test_case("foobar@en", 4.0, None, Some("bar@en"))]
+#[test_case("foobar@en--ltr", 4.0, None, Some("bar@en--ltr"))]
 #[test_case("foobar", 4.0, Some(1.0), Some("b"))]
 #[test_case("foobar@en", 4.0, Some(1.0), Some("b@en"))]
+#[test_case("foobar@en--ltr", 4.0, Some(1.0), Some("b@en--ltr"))]
 #[test_case("foobar", -2.0, Some(6.0), Some("foo"))]
 #[test_case("foobar", -2.0, None, Some("foobar"))]
 #[test_case("foobar", 4.0, Some(0.0), Some(""))]
@@ -203,6 +209,13 @@ fn lang_matches(tag: &str, range: &str, exp: bool) -> TestResult {
 #[test_case("foobar", 1.1, Some(0.9), Some("f"))]
 #[test_case("食べ物", 1.0, Some(1.0), Some("食"))]
 #[test_case("食べ物", 2.0, None, Some("べ物"))]
+#[test_case(
+    "פעילות הבינאום, W3C@hb--rtl",
+    5.0,
+    None,
+    Some("ות הבינאום, W3C@hb--rtl")
+)]
+#[test_case("פעילות הבינאום, W3C@hb--rtl", 1.0, Some(2.0), Some("פע@hb--rtl"))]
 fn sub_str(source: &str, start: f64, length: Option<f64>, exp: Option<&str>) -> TestResult {
     let pair = txt2pair(source);
     let source = pair2ref(&pair);
@@ -213,10 +226,13 @@ fn sub_str(source: &str, start: f64, length: Option<f64>, exp: Option<&str>) -> 
 
 #[test_case("foobar", 6)]
 #[test_case("foobar@en", 6)]
+#[test_case("foobar@en--ltr", 6)]
 #[test_case("é", 1)]
 #[test_case("é@fr", 1)]
+#[test_case("é@fr--ltr", 1)]
 #[test_case("⛄", 1; "snowman")]
 #[test_case("⛄@en", 1; "snowman en")]
+#[test_case("⛄@en--rtl", 1; "snowman en--rtl")]
 fn str_len(string: &str, exp: isize) -> TestResult {
     let pair = txt2pair(string);
     let string = &pair.0;
@@ -227,8 +243,10 @@ fn str_len(string: &str, exp: isize) -> TestResult {
 
 #[test_case("abcd", "X", "Z", None, Some("abcd"))]
 #[test_case("abcd@en", "X", "Z", None, Some("abcd@en"))]
+#[test_case("abcd@en--ltr", "X", "Z", None, Some("abcd@en--ltr"))]
 #[test_case("abcd", "b", "Z", None, Some("aZcd"))]
 #[test_case("abcd@en", "b", "Z", None, Some("aZcd@en"))]
+#[test_case("abcd@en--ltr", "b", "Z", None, Some("aZcd@en--ltr"))]
 #[test_case("abcb", "B", "Z", Some("i"), Some("aZcZ"))]
 #[test_case("abcb", "B.", "Z", Some("i"), Some("aZb"))]
 #[test_case("abracadabra", "bra", "*", None, Some("a*cada*"))]
@@ -258,14 +276,19 @@ fn replace(
 
 #[test_case("foo", "FOO")]
 #[test_case("foo@en", "FOO@en")]
+#[test_case("foo@en--ltr", "FOO@en--ltr")]
 #[test_case("FOO", "FOO"; "noop")]
 #[test_case("FOO@en", "FOO@en"; "noop en")]
+#[test_case("FOO@en--ltr", "FOO@en--ltr"; "noop en--ltr")]
 #[test_case("fooBAR 1!⛄xY", "FOOBAR 1!⛄XY")]
 #[test_case("fooBAR 1!⛄xY@en", "FOOBAR 1!⛄XY@en")]
+#[test_case("fooBAR 1!⛄xY@en--ltr", "FOOBAR 1!⛄XY@en--ltr")]
 #[test_case("àéîôù", "ÀÉÎÔÙ"; "accents")]
 #[test_case("àéîôù@fr", "ÀÉÎÔÙ@fr"; "accents fr")]
+#[test_case("àéîôù@fr--ltr", "ÀÉÎÔÙ@fr--ltr"; "accents fr--ltr")]
 #[test_case("ﬀ ŉ", "FF ʼN"; "multichar")]
 #[test_case("ﬀ ŉ@en", "FF ʼN@en"; "multichar en")]
+#[test_case("ﬀ ŉ@en--ltr", "FF ʼN@en--ltr"; "multichar en--ltr")]
 fn u_case(string: &str, exp: &str) -> TestResult {
     let pair = txt2pair(string);
     let source = pair2ref(&pair);
@@ -276,12 +299,16 @@ fn u_case(string: &str, exp: &str) -> TestResult {
 
 #[test_case("FOO", "foo")]
 #[test_case("FOO@en", "foo@en")]
+#[test_case("FOO@en--ltr", "foo@en--ltr")]
 #[test_case("foo", "foo"; "noop")]
 #[test_case("foo@en", "foo@en"; "noop en")]
+#[test_case("foo@en--ltr", "foo@en--ltr"; "noop en--ltr")]
 #[test_case("fooBAR 1!⛄xY", "foobar 1!⛄xy")]
 #[test_case("fooBAR 1!⛄xY@en", "foobar 1!⛄xy@en")]
+#[test_case("fooBAR 1!⛄xY@en--ltr", "foobar 1!⛄xy@en--ltr")]
 #[test_case("ÀÉÎÔÙ", "àéîôù"; "accents")]
 #[test_case("ÀÉÎÔÙ@fr", "àéîôù@fr"; "accents fr")]
+#[test_case("ÀÉÎÔÙ@fr--ltr", "àéîôù@fr--ltr"; "accents fr--ltr")]
 fn l_case(string: &str, exp: &str) -> TestResult {
     let pair = txt2pair(string);
     let source = pair2ref(&pair);
@@ -292,6 +319,7 @@ fn l_case(string: &str, exp: &str) -> TestResult {
 
 #[test_case("Los Angeles", "Los%20Angeles")]
 #[test_case("Los Angeles@en", "Los%20Angeles")]
+#[test_case("Los Angeles@en--ltr", "Los%20Angeles")]
 #[test_case(
     "http://www.example.com/00/Weather/CA/Los%20Angeles#ocean",
     "http%3A%2F%2Fwww.example.com%2F00%2FWeather%2FCA%2FLos%2520Angeles%23ocean"
@@ -309,7 +337,9 @@ fn encode_for_uri(string: &str, exp: &str) -> TestResult {
 
 #[test_case("", "", Some(true))]
 #[test_case("@en", "@en", Some(true))]
+#[test_case("@en--ltr", "@en--ltr", Some(true))]
 #[test_case("@en", "", Some(true))]
+#[test_case("@en--ltr", "", Some(true))]
 #[test_case("foobar", "", Some(true))]
 #[test_case("foobar", "foo", Some(true))]
 #[test_case("foobar", "oba", Some(true))]
@@ -322,21 +352,47 @@ fn encode_for_uri(string: &str, exp: &str) -> TestResult {
 #[test_case("foobar@en", "foo", Some(true))]
 #[test_case("foobar@en", "oba", Some(true))]
 #[test_case("foobar@en", "bar", Some(true))]
+#[test_case("foobar@en--ltr", "@en--ltr", Some(true))]
+#[test_case("foobar@en--ltr", "foo@en--ltr", Some(true))]
+#[test_case("foobar@en--ltr", "oba@en--ltr", Some(true))]
+#[test_case("foobar@en--ltr", "bar@en--ltr", Some(true))]
+#[test_case("foobar@en--ltr", "", Some(true))]
+#[test_case("foobar@en--ltr", "foo", Some(true))]
+#[test_case("foobar@en--ltr", "oba", Some(true))]
+#[test_case("foobar@en--ltr", "bar", Some(true))]
 #[test_case("", "foo", Some(false))]
 #[test_case("@en", "foo@en", Some(false))]
+#[test_case("@en--ltr", "foo@en--ltr", Some(false))]
 #[test_case("@en", "foo", Some(false))]
+#[test_case("@en--ltr", "foo", Some(false))]
 #[test_case("foobar", "BAR", Some(false))]
 #[test_case("foobar", "baz", Some(false))]
 #[test_case("foobar@en", "BAR@en", Some(false))]
 #[test_case("foobar@en", "baz@en", Some(false))]
 #[test_case("foobar@en", "BAR", Some(false))]
 #[test_case("foobar@en", "baz", Some(false))]
+#[test_case("foobar@en--ltr", "BAR@en--ltr", Some(false))]
+#[test_case("foobar@en--ltr", "baz@en--ltr", Some(false))]
+#[test_case("foobar@en--ltr", "BAR", Some(false))]
+#[test_case("foobar@en--ltr", "baz", Some(false))]
 #[test_case("", "@fr", None)]
+#[test_case("", "@fr--ltr", None)]
 #[test_case("foobar", "bar@fr", None)]
+#[test_case("foobar", "bar@fr--ltr", None)]
 #[test_case("foobar", "baz@fr", None)]
+#[test_case("foobar", "baz@fr--ltr", None)]
 #[test_case("@en", "@fr", None)]
+#[test_case("@en", "@en--ltr", None)]
+#[test_case("@en--ltr", "@en", None)]
+#[test_case("@en--ltr", "@en--rtl", None)]
 #[test_case("foobar@en", "bar@fr", None)]
+#[test_case("foobar@en", "bar@en--ltr", None)]
 #[test_case("foobar@en", "baz@fr", None)]
+#[test_case("foobar@en", "baz@en--ltr", None)]
+#[test_case("foobar@en--ltr", "bar@en", None)]
+#[test_case("foobar@en--ltr", "baz@en", None)]
+#[test_case("foobar@en--ltr", "bar@en--rtl", None)]
+#[test_case("foobar@en--ltr", "baz@en--rtl", None)]
 fn contains(heystack: &str, needle: &str, exp: Option<bool>) -> TestResult {
     let pair1 = txt2pair(heystack);
     let heystack = pair2ref(&pair1);
@@ -349,7 +405,9 @@ fn contains(heystack: &str, needle: &str, exp: Option<bool>) -> TestResult {
 
 #[test_case("", "", Some(true))]
 #[test_case("@en", "@en", Some(true))]
+#[test_case("@en--ltr", "@en--ltr", Some(true))]
 #[test_case("@en", "", Some(true))]
+#[test_case("@en--ltr", "", Some(true))]
 #[test_case("foobar", "", Some(true))]
 #[test_case("foobar", "foo", Some(true))]
 #[test_case("foobar", "oba", Some(false))]
@@ -362,21 +420,47 @@ fn contains(heystack: &str, needle: &str, exp: Option<bool>) -> TestResult {
 #[test_case("foobar@en", "foo", Some(true))]
 #[test_case("foobar@en", "oba", Some(false))]
 #[test_case("foobar@en", "bar", Some(false))]
+#[test_case("foobar@en--ltr", "@en--ltr", Some(true))]
+#[test_case("foobar@en--ltr", "foo@en--ltr", Some(true))]
+#[test_case("foobar@en--ltr", "oba@en--ltr", Some(false))]
+#[test_case("foobar@en--ltr", "bar@en--ltr", Some(false))]
+#[test_case("foobar@en--ltr", "", Some(true))]
+#[test_case("foobar@en--ltr", "foo", Some(true))]
+#[test_case("foobar@en--ltr", "oba", Some(false))]
+#[test_case("foobar@en--ltr", "bar", Some(false))]
 #[test_case("", "foo", Some(false))]
 #[test_case("@en", "foo@en", Some(false))]
+#[test_case("@en--ltr", "foo@en--ltr", Some(false))]
 #[test_case("@en", "foo", Some(false))]
+#[test_case("@en--ltr", "foo", Some(false))]
 #[test_case("foobar", "FOO", Some(false))]
 #[test_case("foobar", "baz", Some(false))]
 #[test_case("foobar@en", "FOO@en", Some(false))]
 #[test_case("foobar@en", "baz@en", Some(false))]
 #[test_case("foobar@en", "FOO", Some(false))]
 #[test_case("foobar@en", "baz", Some(false))]
+#[test_case("foobar@en--ltr", "FOO@en--ltr", Some(false))]
+#[test_case("foobar@en--ltr", "baz@en--ltr", Some(false))]
+#[test_case("foobar@en--ltr", "FOO", Some(false))]
+#[test_case("foobar@en--ltr", "baz", Some(false))]
 #[test_case("", "@fr", None)]
+#[test_case("", "@fr--ltr", None)]
 #[test_case("foobar", "bar@fr", None)]
+#[test_case("foobar", "bar@fr--ltr", None)]
 #[test_case("foobar", "baz@fr", None)]
+#[test_case("foobar", "baz@fr--ltr", None)]
 #[test_case("@en", "@fr", None)]
+#[test_case("@en", "@en--ltr", None)]
+#[test_case("@en--ltr", "@en", None)]
+#[test_case("@en--ltr", "@en--rtl", None)]
 #[test_case("foobar@en", "foo@fr", None)]
+#[test_case("foobar@en", "foo@en--ltr", None)]
 #[test_case("foobar@en", "baz@fr", None)]
+#[test_case("foobar@en", "baz@en--ltr", None)]
+#[test_case("foobar@en--ltr", "foo@en", None)]
+#[test_case("foobar@en--ltr", "foo@en--rtl", None)]
+#[test_case("foobar@en--ltr", "baz@en", None)]
+#[test_case("foobar@en--ltr", "baz@en--rtl", None)]
 fn strstarts(heystack: &str, needle: &str, exp: Option<bool>) -> TestResult {
     let pair1 = txt2pair(heystack);
     let heystack = pair2ref(&pair1);
@@ -389,7 +473,9 @@ fn strstarts(heystack: &str, needle: &str, exp: Option<bool>) -> TestResult {
 
 #[test_case("", "", Some(true))]
 #[test_case("@en", "@en", Some(true))]
+#[test_case("@en--ltr", "@en--ltr", Some(true))]
 #[test_case("@en", "", Some(true))]
+#[test_case("@en--ltr", "", Some(true))]
 #[test_case("foobar", "", Some(true))]
 #[test_case("foobar", "foo", Some(false))]
 #[test_case("foobar", "oba", Some(false))]
@@ -402,21 +488,47 @@ fn strstarts(heystack: &str, needle: &str, exp: Option<bool>) -> TestResult {
 #[test_case("foobar@en", "foo", Some(false))]
 #[test_case("foobar@en", "oba", Some(false))]
 #[test_case("foobar@en", "bar", Some(true))]
+#[test_case("foobar@en--ltr", "@en--ltr", Some(true))]
+#[test_case("foobar@en--ltr", "foo@en--ltr", Some(false))]
+#[test_case("foobar@en--ltr", "oba@en--ltr", Some(false))]
+#[test_case("foobar@en--ltr", "bar@en--ltr", Some(true))]
+#[test_case("foobar@en--ltr", "", Some(true))]
+#[test_case("foobar@en--ltr", "foo", Some(false))]
+#[test_case("foobar@en--ltr", "oba", Some(false))]
+#[test_case("foobar@en--ltr", "bar", Some(true))]
 #[test_case("", "foo", Some(false))]
 #[test_case("@en", "foo@en", Some(false))]
+#[test_case("@en--ltr", "foo@en--ltr", Some(false))]
 #[test_case("@en", "foo", Some(false))]
+#[test_case("@en--ltr", "foo", Some(false))]
 #[test_case("foobar", "BAR", Some(false))]
 #[test_case("foobar", "baz", Some(false))]
 #[test_case("foobar@en", "BAR@en", Some(false))]
 #[test_case("foobar@en", "baz@en", Some(false))]
 #[test_case("foobar@en", "BAR", Some(false))]
 #[test_case("foobar@en", "baz", Some(false))]
+#[test_case("foobar@en--ltr", "BAR@en--ltr", Some(false))]
+#[test_case("foobar@en--ltr", "baz@en--ltr", Some(false))]
+#[test_case("foobar@en--ltr", "BAR", Some(false))]
+#[test_case("foobar@en--ltr", "baz", Some(false))]
 #[test_case("", "@fr", None)]
+#[test_case("", "@fr--ltr", None)]
 #[test_case("foobar", "bar@fr", None)]
+#[test_case("foobar", "bar@fr--ltr", None)]
 #[test_case("foobar", "baz@fr", None)]
+#[test_case("foobar", "baz@fr--ltr", None)]
 #[test_case("@en", "@fr", None)]
+#[test_case("@en", "@en--ltr", None)]
+#[test_case("@en--ltr", "@en", None)]
+#[test_case("@en--ltr", "@en--rtl", None)]
 #[test_case("foobar@en", "bar@fr", None)]
+#[test_case("foobar@en", "bar@en--ltr", None)]
 #[test_case("foobar@en", "baz@fr", None)]
+#[test_case("foobar@en", "baz@en--ltr", None)]
+#[test_case("foobar@en--ltr", "bar@en", None)]
+#[test_case("foobar@en--ltr", "bar@en--rtl", None)]
+#[test_case("foobar@en--ltr", "baz@en", None)]
+#[test_case("foobar@en--ltr", "baz@en--rtl", None)]
 fn strends(heystack: &str, needle: &str, exp: Option<bool>) -> TestResult {
     let pair1 = txt2pair(heystack);
     let heystack = pair2ref(&pair1);
@@ -433,6 +545,10 @@ fn strends(heystack: &str, needle: &str, exp: Option<bool>) -> TestResult {
 #[test_case("@en", "a@en", Some(""))]
 #[test_case("@en", "", Some("@en"))]
 #[test_case("@en", "a", Some(""))]
+#[test_case("@en--ltr", "@en--ltr", Some("@en--ltr"))]
+#[test_case("@en--ltr", "a@en--ltr", Some(""))]
+#[test_case("@en--ltr", "", Some("@en--ltr"))]
+#[test_case("@en--ltr", "a", Some(""))]
 #[test_case("abcbde", "", Some(""))]
 #[test_case("abcbde", "B", Some(""))]
 #[test_case("abcbde", "b", Some("a"))]
@@ -448,8 +564,22 @@ fn strends(heystack: &str, needle: &str, exp: Option<bool>) -> TestResult {
 #[test_case("abcbde@en", "b", Some("a@en"))]
 #[test_case("abcbde@en", "bd", Some("abc@en"))]
 #[test_case("abcbde@en", "xyz", Some(""))]
+#[test_case("abcbde@en--ltr", "@en--ltr", Some("@en--ltr"))]
+#[test_case("abcbde@en--ltr", "B@en--ltr", Some(""))]
+#[test_case("abcbde@en--ltr", "b@en--ltr", Some("a@en--ltr"))]
+#[test_case("abcbde@en--ltr", "bd@en--ltr", Some("abc@en--ltr"))]
+#[test_case("abcbde@en--ltr", "xyz@en--ltr", Some(""))]
+#[test_case("abcbde@en--ltr", "", Some("@en--ltr"))]
+#[test_case("abcbde@en--ltr", "B", Some(""))]
+#[test_case("abcbde@en--ltr", "b", Some("a@en--ltr"))]
+#[test_case("abcbde@en--ltr", "bd", Some("abc@en--ltr"))]
+#[test_case("abcbde@en--ltr", "xyz", Some(""))]
 #[test_case("abcbde", "b@fr", None)]
+#[test_case("abcbde", "b@fr--ltr", None)]
 #[test_case("abcbde@en", "b@fr", None)]
+#[test_case("abcbde@en", "b@en--ltr", None)]
+#[test_case("abcbde@en--ltr", "b@en", None)]
+#[test_case("abcbde@en--ltr", "b@en--rtl", None)]
 fn strbefore(heystack: &str, needle: &str, exp: Option<&str>) -> TestResult {
     let pair1 = txt2pair(heystack);
     let heystack = pair2ref(&pair1);
@@ -466,6 +596,10 @@ fn strbefore(heystack: &str, needle: &str, exp: Option<&str>) -> TestResult {
 #[test_case("@en", "a@en", Some(""))]
 #[test_case("@en", "", Some("@en"))]
 #[test_case("@en", "a", Some(""))]
+#[test_case("@en--ltr", "@en--ltr", Some("@en--ltr"))]
+#[test_case("@en--ltr", "a@en--ltr", Some(""))]
+#[test_case("@en--ltr", "", Some("@en--ltr"))]
+#[test_case("@en--ltr", "a", Some(""))]
 #[test_case("abcbde", "", Some("abcbde"))]
 #[test_case("abcbde", "B", Some(""))]
 #[test_case("abcbde", "b", Some("cbde"))]
@@ -481,8 +615,22 @@ fn strbefore(heystack: &str, needle: &str, exp: Option<&str>) -> TestResult {
 #[test_case("abcbde@en", "b", Some("cbde@en"))]
 #[test_case("abcbde@en", "bd", Some("e@en"))]
 #[test_case("abcbde@en", "xyz", Some(""))]
+#[test_case("abcbde@en--ltr", "@en--ltr", Some("abcbde@en--ltr"))]
+#[test_case("abcbde@en--ltr", "B@en--ltr", Some(""))]
+#[test_case("abcbde@en--ltr", "b@en--ltr", Some("cbde@en--ltr"))]
+#[test_case("abcbde@en--ltr", "bd@en--ltr", Some("e@en--ltr"))]
+#[test_case("abcbde@en--ltr", "xyz@en--ltr", Some(""))]
+#[test_case("abcbde@en--ltr", "", Some("abcbde@en--ltr"))]
+#[test_case("abcbde@en--ltr", "B", Some(""))]
+#[test_case("abcbde@en--ltr", "b", Some("cbde@en--ltr"))]
+#[test_case("abcbde@en--ltr", "bd", Some("e@en--ltr"))]
+#[test_case("abcbde@en--ltr", "xyz", Some(""))]
 #[test_case("abcbde", "b@fr", None)]
+#[test_case("abcbde", "b@fr--ltr", None)]
 #[test_case("abcbde@en", "b@fr", None)]
+#[test_case("abcbde@en", "b@en--ltr", None)]
+#[test_case("abcbde@en--ltr", "b@en", None)]
+#[test_case("abcbde@en--ltr", "b@en--rtl", None)]
 fn strafter(heystack: &str, needle: &str, exp: Option<&str>) -> TestResult {
     let pair1 = txt2pair(heystack);
     let heystack = pair2ref(&pair1);
