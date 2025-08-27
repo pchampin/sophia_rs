@@ -115,7 +115,8 @@ impl SparqlClient {
         Ok(SparqlResult::Triples(it))
     }
 
-    async fn async_query<Q>(&self, query: Q) -> Result<SparqlResult<Self>, Error>
+    /// Async counterpart of [`SparqlDataset::query`].
+    pub async fn async_query<Q>(&self, query: Q) -> Result<SparqlResult<Self>, Error>
     where
         Q: IntoQuery<Query>,
     {
