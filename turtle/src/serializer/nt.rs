@@ -80,7 +80,7 @@ where
                     write_triple(w, t)?;
                     w.write_all(b".\n")
                 }
-                .map_err(|e| io::Error::new(io::ErrorKind::Other, e))
+                .map_err(io::Error::other)
             })
             .map(|()| self)
     }

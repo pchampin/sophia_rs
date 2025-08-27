@@ -350,7 +350,7 @@ mod check_implementability {
         fn kind(&self) -> TermKind {
             TermKind::BlankNode
         }
-        fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
+        fn bnode_id(&self) -> Option<BnodeId<MownStr<'_>>> {
             Some(BnodeId::new_unchecked(MownStr::from(format!(
                 "b{}",
                 self.0

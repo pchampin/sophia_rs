@@ -30,28 +30,28 @@ impl SophiaTerm for RdfTerm {
         self
     }
 
-    fn iri(&self) -> Option<sophia_api::term::IriRef<MownStr>> {
+    fn iri(&self) -> Option<sophia_api::term::IriRef<MownStr<'_>>> {
         match &self.0 {
             Term::Id(Id::Iri(iri)) => iri.iri(),
             _ => None,
         }
     }
 
-    fn bnode_id(&self) -> Option<sophia_api::term::BnodeId<MownStr>> {
+    fn bnode_id(&self) -> Option<sophia_api::term::BnodeId<MownStr<'_>>> {
         match &self.0 {
             Term::Id(Id::Blank(bnid)) => bnid.bnode_id(),
             _ => None,
         }
     }
 
-    fn lexical_form(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr<'_>> {
         match &self.0 {
             Term::Literal(lit) => Some(MownStr::from_ref(lit.value())),
             _ => None,
         }
     }
 
-    fn datatype(&self) -> Option<sophia_api::term::IriRef<MownStr>> {
+    fn datatype(&self) -> Option<sophia_api::term::IriRef<MownStr<'_>>> {
         match &self.0 {
             Term::Literal(lit) => match lit.type_() {
                 Type::Any(iri) => iri.iri(),
@@ -61,7 +61,7 @@ impl SophiaTerm for RdfTerm {
         }
     }
 
-    fn language_tag(&self) -> Option<sophia_api::term::LanguageTag<MownStr>> {
+    fn language_tag(&self) -> Option<sophia_api::term::LanguageTag<MownStr<'_>>> {
         match &self.0 {
             Term::Literal(lit) => match lit.type_() {
                 Type::LangString(tag) => Some(tag.as_ref().map_unchecked(MownStr::from_ref)),

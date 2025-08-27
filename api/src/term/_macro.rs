@@ -30,25 +30,25 @@ macro_rules! impl_term_for_wrapper {
             fn is_triple(&self) -> bool {
                 self.0.is_triple()
             }
-            fn iri(&self) -> Option<sophia_iri::IriRef<$crate::MownStr>> {
+            fn iri(&self) -> Option<sophia_iri::IriRef<$crate::MownStr<'_>>> {
                 self.0.iri()
             }
-            fn bnode_id(&self) -> Option<$crate::term::BnodeId<$crate::MownStr>> {
+            fn bnode_id(&self) -> Option<$crate::term::BnodeId<$crate::MownStr<'_>>> {
                 self.0.bnode_id()
             }
-            fn lexical_form(&self) -> Option<$crate::MownStr> {
+            fn lexical_form(&self) -> Option<$crate::MownStr<'_>> {
                 self.0.lexical_form()
             }
-            fn datatype(&self) -> Option<sophia_iri::IriRef<$crate::MownStr>> {
+            fn datatype(&self) -> Option<sophia_iri::IriRef<$crate::MownStr<'_>>> {
                 self.0.datatype()
             }
-            fn language_tag(&self) -> Option<$crate::term::LanguageTag<$crate::MownStr>> {
+            fn language_tag(&self) -> Option<$crate::term::LanguageTag<$crate::MownStr<'_>>> {
                 self.0.language_tag()
             }
             fn base_direction(&self) -> Option<$crate::term::BaseDirection> {
                 self.0.base_direction()
             }
-            fn variable(&self) -> Option<$crate::term::VarName<$crate::MownStr>> {
+            fn variable(&self) -> Option<$crate::term::VarName<$crate::MownStr<'_>>> {
                 self.0.variable()
             }
             fn triple(&self) -> Option<[Self::BorrowTerm<'_>; 3]> {

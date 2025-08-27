@@ -91,7 +91,7 @@ where
     Ok(eqcl1 == eqcl2)
 }
 
-fn prepare_dataset<D: Dataset>(d: &D) -> Result<PreparedDataset<D>, D::Error> {
+fn prepare_dataset<D: Dataset>(d: &D) -> Result<PreparedDataset<'_, D>, D::Error> {
     d.quads()
         .map(|res| {
             res.map(|q| {

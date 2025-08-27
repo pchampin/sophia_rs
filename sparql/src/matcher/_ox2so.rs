@@ -59,28 +59,28 @@ impl Term for Ox2So<TermPattern> {
         matches!(self.0, TermPattern::Triple(_))
     }
 
-    fn iri(&self) -> Option<IriRef<MownStr>> {
+    fn iri(&self) -> Option<IriRef<MownStr<'_>>> {
         match &self.0 {
             TermPattern::NamedNode(nn) => Some(IriRef::new_unchecked(nn.as_str().into())),
             _ => None,
         }
     }
 
-    fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
+    fn bnode_id(&self) -> Option<BnodeId<MownStr<'_>>> {
         match &self.0 {
             TermPattern::BlankNode(bn) => Some(BnodeId::new_unchecked(bn.as_str().into())),
             _ => None,
         }
     }
 
-    fn lexical_form(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr<'_>> {
         match &self.0 {
             TermPattern::Literal(lit) => Some(lit.value().into()),
             _ => None,
         }
     }
 
-    fn datatype(&self) -> Option<IriRef<MownStr>> {
+    fn datatype(&self) -> Option<IriRef<MownStr<'_>>> {
         match &self.0 {
             TermPattern::Literal(lit) => {
                 Some(IriRef::new_unchecked(lit.datatype().as_str().into()))
@@ -89,7 +89,7 @@ impl Term for Ox2So<TermPattern> {
         }
     }
 
-    fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+    fn language_tag(&self) -> Option<LanguageTag<MownStr<'_>>> {
         match &self.0 {
             TermPattern::Literal(lit) => lit
                 .language()
@@ -108,7 +108,7 @@ impl Term for Ox2So<TermPattern> {
         }
     }
 
-    fn variable(&self) -> Option<VarName<MownStr>> {
+    fn variable(&self) -> Option<VarName<MownStr<'_>>> {
         match &self.0 {
             TermPattern::Variable(v) => Some(VarName::new_unchecked(v.as_str().into())),
             _ => None,
@@ -180,14 +180,14 @@ impl Term for Ox2So<NamedNodePattern> {
         false
     }
 
-    fn iri(&self) -> Option<IriRef<MownStr>> {
+    fn iri(&self) -> Option<IriRef<MownStr<'_>>> {
         match &self.0 {
             NamedNodePattern::NamedNode(nn) => Some(IriRef::new_unchecked(nn.as_str().into())),
             NamedNodePattern::Variable(_) => None,
         }
     }
 
-    fn variable(&self) -> Option<VarName<MownStr>> {
+    fn variable(&self) -> Option<VarName<MownStr<'_>>> {
         match &self.0 {
             NamedNodePattern::Variable(v) => Some(VarName::new_unchecked(v.as_str().into())),
             NamedNodePattern::NamedNode(_) => None,

@@ -29,7 +29,7 @@ impl Term for Trusted<BlankNode<'_>> {
         TermKind::BlankNode
     }
 
-    fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
+    fn bnode_id(&self) -> Option<BnodeId<MownStr<'_>>> {
         Some(bnode_id(self.0))
     }
 
@@ -77,7 +77,7 @@ impl Term for Trusted<Variable<'_>> {
         TermKind::Variable
     }
 
-    fn variable(&self) -> Option<VarName<MownStr>> {
+    fn variable(&self) -> Option<VarName<MownStr<'_>>> {
         Some(variable(self.0))
     }
 
@@ -101,15 +101,15 @@ impl Term for Trusted<Literal<'_>> {
         TermKind::Literal
     }
 
-    fn lexical_form(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr<'_>> {
         Some(lexical_form(self.0))
     }
 
-    fn datatype(&self) -> Option<IriRef<MownStr>> {
+    fn datatype(&self) -> Option<IriRef<MownStr<'_>>> {
         Some(datatype(self.0))
     }
 
-    fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+    fn language_tag(&self) -> Option<LanguageTag<MownStr<'_>>> {
         language_tag(self.0)
     }
 
@@ -132,15 +132,15 @@ fn lexical_form(l: Literal) -> MownStr {
 
 fn datatype(l: Literal) -> IriRef<MownStr> {
     use Literal::{LanguageTaggedString, Simple, Typed};
-    let dt = match l {
+
+    match l {
         Simple { .. } => xsd::string.iriref(),
         LanguageTaggedString { .. } => rdf::langString.iriref(),
         Typed { datatype, .. } => {
             debug_assert!(Iri::new(datatype.iri).is_ok());
             IriRef::new_unchecked(datatype.iri.into())
         }
-    };
-    dt
+    }
 }
 
 fn language_tag(l: Literal) -> Option<LanguageTag<MownStr>> {
@@ -181,7 +181,7 @@ impl<'a> Term for Trusted<Subject<'a>> {
         }
     }
 
-    fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
+    fn bnode_id(&self) -> Option<BnodeId<MownStr<'_>>> {
         if let Subject::BlankNode(b) = self.0 {
             Some(bnode_id(b))
         } else {
@@ -241,7 +241,7 @@ impl Term for Trusted<GraphName<'_>> {
         }
     }
 
-    fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
+    fn bnode_id(&self) -> Option<BnodeId<MownStr<'_>>> {
         if let GraphName::BlankNode(b) = self.0 {
             Some(bnode_id(b))
         } else {
@@ -270,7 +270,7 @@ impl Term for Trusted<RioTerm<'_>> {
         }
     }
 
-    fn iri(&self) -> Option<IriRef<MownStr>> {
+    fn iri(&self) -> Option<IriRef<MownStr<'_>>> {
         if let RioTerm::NamedNode(n) = self.0 {
             Some(iri(n))
         } else {
@@ -278,7 +278,7 @@ impl Term for Trusted<RioTerm<'_>> {
         }
     }
 
-    fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
+    fn bnode_id(&self) -> Option<BnodeId<MownStr<'_>>> {
         if let RioTerm::BlankNode(b) = self.0 {
             Some(bnode_id(b))
         } else {
@@ -286,7 +286,7 @@ impl Term for Trusted<RioTerm<'_>> {
         }
     }
 
-    fn lexical_form(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr<'_>> {
         if let RioTerm::Literal(l) = self.0 {
             Some(lexical_form(l))
         } else {
@@ -294,7 +294,7 @@ impl Term for Trusted<RioTerm<'_>> {
         }
     }
 
-    fn datatype(&self) -> Option<IriRef<MownStr>> {
+    fn datatype(&self) -> Option<IriRef<MownStr<'_>>> {
         if let RioTerm::Literal(l) = self.0 {
             Some(datatype(l))
         } else {
@@ -302,7 +302,7 @@ impl Term for Trusted<RioTerm<'_>> {
         }
     }
 
-    fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+    fn language_tag(&self) -> Option<LanguageTag<MownStr<'_>>> {
         if let RioTerm::Literal(l) = self.0 {
             language_tag(l)
         } else {
@@ -354,7 +354,7 @@ impl Term for Trusted<GeneralizedTerm<'_>> {
         }
     }
 
-    fn iri(&self) -> Option<IriRef<MownStr>> {
+    fn iri(&self) -> Option<IriRef<MownStr<'_>>> {
         if let GeneralizedTerm::NamedNode(n) = self.0 {
             Some(iri(n))
         } else {
@@ -362,7 +362,7 @@ impl Term for Trusted<GeneralizedTerm<'_>> {
         }
     }
 
-    fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
+    fn bnode_id(&self) -> Option<BnodeId<MownStr<'_>>> {
         if let GeneralizedTerm::BlankNode(b) = self.0 {
             Some(bnode_id(b))
         } else {
@@ -370,7 +370,7 @@ impl Term for Trusted<GeneralizedTerm<'_>> {
         }
     }
 
-    fn lexical_form(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr<'_>> {
         if let GeneralizedTerm::Literal(l) = self.0 {
             Some(lexical_form(l))
         } else {
@@ -378,7 +378,7 @@ impl Term for Trusted<GeneralizedTerm<'_>> {
         }
     }
 
-    fn datatype(&self) -> Option<IriRef<MownStr>> {
+    fn datatype(&self) -> Option<IriRef<MownStr<'_>>> {
         if let GeneralizedTerm::Literal(l) = self.0 {
             Some(datatype(l))
         } else {
@@ -386,7 +386,7 @@ impl Term for Trusted<GeneralizedTerm<'_>> {
         }
     }
 
-    fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+    fn language_tag(&self) -> Option<LanguageTag<MownStr<'_>>> {
         if let GeneralizedTerm::Literal(l) = self.0 {
             language_tag(l)
         } else {
@@ -416,7 +416,7 @@ impl Term for Trusted<GeneralizedTerm<'_>> {
         }
     }
 
-    fn variable(&self) -> Option<VarName<MownStr>> {
+    fn variable(&self) -> Option<VarName<MownStr<'_>>> {
         if let GeneralizedTerm::Variable(v) = self.0 {
             Some(variable(v))
         } else {

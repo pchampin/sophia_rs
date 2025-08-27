@@ -662,7 +662,7 @@ pub fn replace(
     )
 }
 
-fn prepare_replacement(replacement: &str) -> Cow<str> {
+fn prepare_replacement(replacement: &str) -> Cow<'_, str> {
     static REPL_ARG: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\$[0-9]+").unwrap());
     REPL_ARG.replace_all(replacement, |cap: &Captures| {
         format!("${{{}}}", &cap.get(0).unwrap().as_str()[1..])

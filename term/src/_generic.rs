@@ -77,15 +77,15 @@ impl<T: Borrow<str> + Debug> Term for GenericLiteral<T> {
         self
     }
 
-    fn lexical_form(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr<'_>> {
         Some(MownStr::from_ref(self.get_lexical_form()))
     }
 
-    fn datatype(&self) -> Option<IriRef<MownStr>> {
+    fn datatype(&self) -> Option<IriRef<MownStr<'_>>> {
         Some(self.get_datatype().map_unchecked(MownStr::from_ref))
     }
 
-    fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+    fn language_tag(&self) -> Option<LanguageTag<MownStr<'_>>> {
         self.get_language_tag()
             .map(|tag| tag.map_unchecked(MownStr::from_ref))
     }

@@ -30,13 +30,13 @@ impl Term for f64 {
     fn kind(&self) -> TermKind {
         TermKind::Literal
     }
-    fn lexical_form(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr<'_>> {
         Some(MownStr::from(format!("{}", self)))
     }
-    fn datatype(&self) -> Option<IriRef<MownStr>> {
+    fn datatype(&self) -> Option<IriRef<MownStr<'_>>> {
         Some(IriRef::new_unchecked(MownStr::from_ref(&XSD_DOUBLE)))
     }
-    fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+    fn language_tag(&self) -> Option<LanguageTag<MownStr<'_>>> {
         None
     }
     fn base_direction(&self) -> Option<BaseDirection> {
@@ -69,13 +69,13 @@ impl Term for i32 {
     fn kind(&self) -> TermKind {
         TermKind::Literal
     }
-    fn lexical_form(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr<'_>> {
         Some(MownStr::from(format!("{}", self)))
     }
-    fn datatype(&self) -> Option<IriRef<MownStr>> {
+    fn datatype(&self) -> Option<IriRef<MownStr<'_>>> {
         Some(IriRef::new_unchecked(MownStr::from_ref(&XSD_INTEGER)))
     }
-    fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+    fn language_tag(&self) -> Option<LanguageTag<MownStr<'_>>> {
         None
     }
     fn base_direction(&self) -> Option<BaseDirection> {
@@ -109,13 +109,13 @@ impl Term for isize {
     fn kind(&self) -> TermKind {
         TermKind::Literal
     }
-    fn lexical_form(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr<'_>> {
         Some(MownStr::from(format!("{}", self)))
     }
-    fn datatype(&self) -> Option<IriRef<MownStr>> {
+    fn datatype(&self) -> Option<IriRef<MownStr<'_>>> {
         Some(IriRef::new_unchecked(MownStr::from_ref(&XSD_INTEGER)))
     }
-    fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+    fn language_tag(&self) -> Option<LanguageTag<MownStr<'_>>> {
         None
     }
     fn base_direction(&self) -> Option<BaseDirection> {
@@ -149,13 +149,13 @@ impl Term for usize {
     fn kind(&self) -> TermKind {
         TermKind::Literal
     }
-    fn lexical_form(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr<'_>> {
         Some(MownStr::from(format!("{}", self)))
     }
-    fn datatype(&self) -> Option<IriRef<MownStr>> {
+    fn datatype(&self) -> Option<IriRef<MownStr<'_>>> {
         Some(IriRef::new_unchecked(MownStr::from_ref(&XSD_INTEGER)))
     }
-    fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+    fn language_tag(&self) -> Option<LanguageTag<MownStr<'_>>> {
         None
     }
     fn base_direction(&self) -> Option<BaseDirection> {
@@ -191,13 +191,13 @@ impl Term for str {
     fn kind(&self) -> TermKind {
         TermKind::Literal
     }
-    fn lexical_form(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr<'_>> {
         Some(MownStr::from(self))
     }
-    fn datatype(&self) -> Option<IriRef<MownStr>> {
+    fn datatype(&self) -> Option<IriRef<MownStr<'_>>> {
         Some(IriRef::new_unchecked(MownStr::from_ref(&XSD_STRING)))
     }
-    fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+    fn language_tag(&self) -> Option<LanguageTag<MownStr<'_>>> {
         None
     }
     fn base_direction(&self) -> Option<BaseDirection> {
@@ -230,13 +230,13 @@ impl Term for bool {
     fn kind(&self) -> TermKind {
         TermKind::Literal
     }
-    fn lexical_form(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr<'_>> {
         Some(MownStr::from(if *self { "true" } else { "false" }))
     }
-    fn datatype(&self) -> Option<IriRef<MownStr>> {
+    fn datatype(&self) -> Option<IriRef<MownStr<'_>>> {
         Some(IriRef::new_unchecked(MownStr::from_ref(&XSD_BOOLEAN)))
     }
-    fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+    fn language_tag(&self) -> Option<LanguageTag<MownStr<'_>>> {
         None
     }
     fn base_direction(&self) -> Option<BaseDirection> {

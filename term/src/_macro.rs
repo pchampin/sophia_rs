@@ -74,7 +74,7 @@ macro_rules! gen_term {
                     matches!(self, $type_name::Triple(..))
                 }
 
-                fn iri(&self) -> Option<IriRef<MownStr>> {
+                fn iri(&self) -> Option<IriRef<MownStr<'_>>> {
                     if let $type_name::Iri(iri) = self {
                         Some(iri.as_ref().map_unchecked(MownStr::from_ref))
                     } else {
@@ -82,7 +82,7 @@ macro_rules! gen_term {
                     }
                 }
 
-                fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
+                fn bnode_id(&self) -> Option<BnodeId<MownStr<'_>>> {
                     if let $type_name::BlankNode(id) = self {
                         Some(id.as_ref().map_unchecked(MownStr::from_ref))
                     } else {
@@ -90,7 +90,7 @@ macro_rules! gen_term {
                     }
                 }
 
-                fn lexical_form(&self) -> Option<MownStr> {
+                fn lexical_form(&self) -> Option<MownStr<'_>> {
                     if let $type_name::Literal(lit) = self {
                         lit.lexical_form()
                     } else {
@@ -98,7 +98,7 @@ macro_rules! gen_term {
                     }
                 }
 
-                fn datatype(&self) -> Option<IriRef<MownStr>> {
+                fn datatype(&self) -> Option<IriRef<MownStr<'_>>> {
                     if let $type_name::Literal(lit) = self {
                         lit.datatype()
                     } else {
@@ -106,7 +106,7 @@ macro_rules! gen_term {
                     }
                 }
 
-                fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+                fn language_tag(&self) -> Option<LanguageTag<MownStr<'_>>> {
                     if let $type_name::Literal(lit) = self {
                         lit.language_tag()
                     } else {
@@ -122,7 +122,7 @@ macro_rules! gen_term {
                     }
                 }
 
-                fn variable(&self) -> Option<VarName<MownStr>> {
+                fn variable(&self) -> Option<VarName<MownStr<'_>>> {
                     if let $type_name::Variable(name) = self {
                         Some(name.as_ref().map_unchecked(MownStr::from_ref))
                     } else {

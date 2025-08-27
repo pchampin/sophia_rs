@@ -57,23 +57,23 @@ impl Term for ResultTerm {
         self.inner.is_triple()
     }
 
-    fn iri(&self) -> Option<sophia_api::term::IriRef<MownStr>> {
+    fn iri(&self) -> Option<sophia_api::term::IriRef<MownStr<'_>>> {
         self.inner.iri()
     }
 
-    fn bnode_id(&self) -> Option<sophia_api::term::BnodeId<MownStr>> {
+    fn bnode_id(&self) -> Option<sophia_api::term::BnodeId<MownStr<'_>>> {
         self.inner.bnode_id()
     }
 
-    fn lexical_form(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr<'_>> {
         self.inner.lexical_form()
     }
 
-    fn datatype(&self) -> Option<sophia_api::term::IriRef<MownStr>> {
+    fn datatype(&self) -> Option<sophia_api::term::IriRef<MownStr<'_>>> {
         self.inner.datatype()
     }
 
-    fn language_tag(&self) -> Option<sophia_api::term::LanguageTag<MownStr>> {
+    fn language_tag(&self) -> Option<sophia_api::term::LanguageTag<MownStr<'_>>> {
         self.inner.language_tag()
     }
 
@@ -81,7 +81,7 @@ impl Term for ResultTerm {
         self.inner.base_direction()
     }
 
-    fn variable(&self) -> Option<sophia_api::term::VarName<MownStr>> {
+    fn variable(&self) -> Option<sophia_api::term::VarName<MownStr<'_>>> {
         self.inner.variable()
     }
 

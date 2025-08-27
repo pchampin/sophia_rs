@@ -37,35 +37,35 @@ impl Term for AnyPattern<'_> {
         *self
     }
 
-    fn iri(&self) -> Option<IriRef<MownStr>> {
+    fn iri(&self) -> Option<IriRef<MownStr<'_>>> {
         match self {
             AnyPattern::Term(tp) => Ox2So::new_ref(*tp).iri(),
             AnyPattern::Named(nnp) => Ox2So::new_ref(*nnp).iri(),
         }
     }
 
-    fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
+    fn bnode_id(&self) -> Option<BnodeId<MownStr<'_>>> {
         match self {
             AnyPattern::Term(tp) => Ox2So::new_ref(*tp).bnode_id(),
             AnyPattern::Named(nnp) => None,
         }
     }
 
-    fn lexical_form(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr<'_>> {
         match self {
             AnyPattern::Term(tp) => Ox2So::new_ref(*tp).lexical_form(),
             AnyPattern::Named(nnp) => None,
         }
     }
 
-    fn datatype(&self) -> Option<IriRef<MownStr>> {
+    fn datatype(&self) -> Option<IriRef<MownStr<'_>>> {
         match self {
             AnyPattern::Term(tp) => Ox2So::new_ref(*tp).datatype(),
             AnyPattern::Named(nnp) => None,
         }
     }
 
-    fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+    fn language_tag(&self) -> Option<LanguageTag<MownStr<'_>>> {
         match self {
             AnyPattern::Term(tp) => Ox2So::new_ref(*tp).language_tag(),
             AnyPattern::Named(nnp) => None,
@@ -79,7 +79,7 @@ impl Term for AnyPattern<'_> {
         }
     }
 
-    fn variable(&self) -> Option<VarName<MownStr>> {
+    fn variable(&self) -> Option<VarName<MownStr<'_>>> {
         match self {
             AnyPattern::Term(tp) => Ox2So::new_ref(*tp).variable(),
             AnyPattern::Named(nnp) => Ox2So::new_ref(*nnp).variable(),

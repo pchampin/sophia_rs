@@ -27,35 +27,35 @@ impl<T: Term> Term for C14nTerm<T> {
         self
     }
 
-    fn iri(&self) -> Option<sophia_api::term::IriRef<sophia_api::MownStr>> {
+    fn iri(&self) -> Option<sophia_api::term::IriRef<sophia_api::MownStr<'_>>> {
         match self {
             Blank(_) => None,
             Other(t) => t.iri(),
         }
     }
 
-    fn bnode_id(&self) -> Option<BnodeId<sophia_api::MownStr>> {
+    fn bnode_id(&self) -> Option<BnodeId<sophia_api::MownStr<'_>>> {
         match self {
             Blank(b) => Some(BnodeId::new_unchecked(b.as_str().into())),
             Other(t) => t.bnode_id(),
         }
     }
 
-    fn lexical_form(&self) -> Option<sophia_api::MownStr> {
+    fn lexical_form(&self) -> Option<sophia_api::MownStr<'_>> {
         match self {
             Blank(_) => None,
             Other(t) => t.lexical_form(),
         }
     }
 
-    fn datatype(&self) -> Option<sophia_api::term::IriRef<sophia_api::MownStr>> {
+    fn datatype(&self) -> Option<sophia_api::term::IriRef<sophia_api::MownStr<'_>>> {
         match self {
             Blank(_) => None,
             Other(t) => t.datatype(),
         }
     }
 
-    fn language_tag(&self) -> Option<sophia_api::term::LanguageTag<sophia_api::MownStr>> {
+    fn language_tag(&self) -> Option<sophia_api::term::LanguageTag<sophia_api::MownStr<'_>>> {
         match self {
             Blank(_) => None,
             Other(t) => t.language_tag(),
@@ -69,7 +69,7 @@ impl<T: Term> Term for C14nTerm<T> {
         }
     }
 
-    fn variable(&self) -> Option<sophia_api::term::VarName<sophia_api::MownStr>> {
+    fn variable(&self) -> Option<sophia_api::term::VarName<sophia_api::MownStr<'_>>> {
         self.is_variable()
             .then(|| unimplemented!("Default implementation should have been overridden"))
     }

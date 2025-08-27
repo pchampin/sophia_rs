@@ -79,7 +79,7 @@ where
     /// NB: for errors raised during creation ([`ResourceError::IriNotAbsolute`], [`ResourceError::LoaderError`]),
     /// the identifier of the to-be-created resource is returned
     /// (*not* the resource from which it was discovered).
-    pub fn resource_id(&self) -> SimpleTerm {
+    pub fn resource_id(&self) -> SimpleTerm<'_> {
         match self {
             Self::IriNotAbsolute(iriref) => iriref.as_simple(),
             Self::LoaderError(err) => err.iri().into_term(),

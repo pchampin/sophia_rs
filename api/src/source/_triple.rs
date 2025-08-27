@@ -194,6 +194,7 @@ mod check_triple_source {
     }
 
     // checking that TripleSource can be implemented
+    #[allow(dead_code)]
     struct DummyParser<'a> {
         tokens: &'a [usize],
         pos: usize,

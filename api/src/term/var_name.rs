@@ -58,7 +58,7 @@ where
     fn kind(&self) -> TermKind {
         TermKind::Variable
     }
-    fn variable(&self) -> Option<VarName<MownStr>> {
+    fn variable(&self) -> Option<VarName<MownStr<'_>>> {
         Some(self.as_ref().map_unchecked(MownStr::from_ref))
     }
     fn borrow_term(&self) -> Self::BorrowTerm<'_> {

@@ -96,10 +96,10 @@ impl<'a, L> Engine<'a, L> {
                 self.unique_parent
                     .entry(q.o().as_id())
                     .and_modify(|opt| {
-                        if let Some(p) = opt {
-                            if p != &parent {
-                                opt.take();
-                            }
+                        if let Some(p) = opt
+                            && p != &parent
+                        {
+                            opt.take();
                         }
                     })
                     .or_insert_with(|| Some(parent));
@@ -218,23 +218,21 @@ impl<'a, L> Engine<'a, L> {
         }
         //println!("=== --- doing it");
         let mut obj = self.make_node_object(s_id, node)?;
-        if root {
-            if let Some(ng) = node.get("@graph") {
-                //println!("=== --- @graph for {}", s_id);
-                push_entry(
-                    &mut obj,
-                    "@graph",
-                    ng.iter()
-                        .filter_map(|rdf_obj| match rdf_obj {
-                            RdfObject::Node(inode2, _) => self
-                                .jsonify(*inode2, &self.node[*inode2], false)
-                                .transpose(),
-                            _ => None,
-                        })
-                        .collect::<Result<Vec<_>, _>>()?
-                        .into(),
-                );
-            }
+        if root && let Some(ng) = node.get("@graph") {
+            //println!("=== --- @graph for {}", s_id);
+            push_entry(
+                &mut obj,
+                "@graph",
+                ng.iter()
+                    .filter_map(|rdf_obj| match rdf_obj {
+                        RdfObject::Node(inode2, _) => self
+                            .jsonify(*inode2, &self.node[*inode2], false)
+                            .transpose(),
+                        _ => None,
+                    })
+                    .collect::<Result<Vec<_>, _>>()?
+                    .into(),
+            );
         }
         let obj = JsonValue::from(obj);
         Ok(Some(obj.into()))
@@ -288,15 +286,15 @@ impl<'a, L> Engine<'a, L> {
                 let mut obj = Object::new();
                 if self.options.use_native_types() {
                     if dt_str == XSD_INTEGER || dt_str == XSD_DOUBLE {
-                        if let Ok(val) = txt.parse::<f64>() {
-                            if let Ok(val) = JsonValue::try_from(val) {
-                                push_entry(&mut obj, "@value", val);
-                            }
+                        if let Ok(val) = txt.parse::<f64>()
+                            && let Ok(val) = JsonValue::try_from(val)
+                        {
+                            push_entry(&mut obj, "@value", val);
                         }
-                    } else if dt_str == XSD_BOOLEAN {
-                        if let Ok(val) = txt.parse::<bool>() {
-                            push_entry(&mut obj, "@value", val.into());
-                        }
+                    } else if dt_str == XSD_BOOLEAN
+                        && let Ok(val) = txt.parse::<bool>()
+                    {
+                        push_entry(&mut obj, "@value", val.into());
                     }
                 }
                 if self.options.rdf_direction() == Some(RdfDirection::I18nDatatype)
@@ -309,10 +307,10 @@ impl<'a, L> Engine<'a, L> {
                     if !tag.is_empty() {
                         push_entry(&mut obj, "@language", tag.into());
                     }
-                    if let Some(dir) = dir {
-                        if !dir.is_empty() {
-                            push_entry(&mut obj, "@direction", dir.into());
-                        }
+                    if let Some(dir) = dir
+                        && !dir.is_empty()
+                    {
+                        push_entry(&mut obj, "@direction", dir.into());
                     }
                 }
                 if dt_str == RDF_JSON {
@@ -383,10 +381,10 @@ impl<'a, L> Engine<'a, L> {
         //println!("=== populate_list {}", gs_id);
         let map = &self.node[inode];
         list_items.push(self.convert_rdf_object(&map[RDF_FIRST][0])?);
-        if let RdfObject::Node(inext, id) = &map[RDF_REST][0] {
-            if id.as_ref() != RDF_NIL {
-                self.populate_list(list_items, *inext)?;
-            }
+        if let RdfObject::Node(inext, id) = &map[RDF_REST][0]
+            && id.as_ref() != RDF_NIL
+        {
+            self.populate_list(list_items, *inext)?;
         }
         Ok(())
     }

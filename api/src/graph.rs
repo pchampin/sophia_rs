@@ -637,7 +637,7 @@ mod check_implementability_lazy_term {
             }
         }
 
-        fn iri(&self) -> Option<crate::term::IriRef<mownstr::MownStr>> {
+        fn iri(&self) -> Option<crate::term::IriRef<mownstr::MownStr<'_>>> {
             if let Atom(t) = &self.graph.terms[self.index] {
                 t.iri()
             } else {
@@ -645,7 +645,7 @@ mod check_implementability_lazy_term {
             }
         }
 
-        fn bnode_id(&self) -> Option<crate::term::BnodeId<mownstr::MownStr>> {
+        fn bnode_id(&self) -> Option<crate::term::BnodeId<mownstr::MownStr<'_>>> {
             if let Atom(t) = &self.graph.terms[self.index] {
                 t.bnode_id()
             } else {
@@ -653,7 +653,7 @@ mod check_implementability_lazy_term {
             }
         }
 
-        fn lexical_form(&self) -> Option<mownstr::MownStr> {
+        fn lexical_form(&self) -> Option<mownstr::MownStr<'_>> {
             if let Atom(t) = &self.graph.terms[self.index] {
                 t.lexical_form()
             } else {
@@ -661,7 +661,7 @@ mod check_implementability_lazy_term {
             }
         }
 
-        fn datatype(&self) -> Option<crate::term::IriRef<mownstr::MownStr>> {
+        fn datatype(&self) -> Option<crate::term::IriRef<mownstr::MownStr<'_>>> {
             if let Atom(t) = &self.graph.terms[self.index] {
                 t.datatype()
             } else {
@@ -669,7 +669,7 @@ mod check_implementability_lazy_term {
             }
         }
 
-        fn language_tag(&self) -> Option<crate::term::LanguageTag<mownstr::MownStr>> {
+        fn language_tag(&self) -> Option<crate::term::LanguageTag<mownstr::MownStr<'_>>> {
             if let Atom(t) = &self.graph.terms[self.index] {
                 t.language_tag()
             } else {
@@ -685,7 +685,7 @@ mod check_implementability_lazy_term {
             }
         }
 
-        fn variable(&self) -> Option<crate::term::VarName<mownstr::MownStr>> {
+        fn variable(&self) -> Option<crate::term::VarName<mownstr::MownStr<'_>>> {
             if let Atom(t) = &self.graph.terms[self.index] {
                 t.variable()
             } else {

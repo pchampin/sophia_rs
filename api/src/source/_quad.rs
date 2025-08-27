@@ -197,6 +197,7 @@ mod check_quad_source {
     }
 
     // checking that QuadSource can be implemented
+    #[allow(dead_code)]
     struct DummyParser<'a> {
         tokens: &'a [usize],
         pos: usize,

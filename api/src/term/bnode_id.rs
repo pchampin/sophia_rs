@@ -69,7 +69,7 @@ where
     fn kind(&self) -> TermKind {
         TermKind::BlankNode
     }
-    fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
+    fn bnode_id(&self) -> Option<BnodeId<MownStr<'_>>> {
         Some(self.as_ref().map_unchecked(MownStr::from_ref))
     }
     fn borrow_term(&self) -> Self::BorrowTerm<'_> {

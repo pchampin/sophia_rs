@@ -99,7 +99,7 @@ pub fn normalize_with<H: HashFunction, D: SetDataset, W: io::Write>(
 /// Implements <https://www.w3.org/TR/rdf-canon/#canon-algorithm>
 ///
 /// See also [`normalize`].
-pub fn relabel<D: SetDataset>(d: &D) -> Result<(C14nQuads<D>, C14nIdMap), C14nError<D::Error>> {
+pub fn relabel<D: SetDataset>(d: &D) -> Result<(C14nQuads<'_, D>, C14nIdMap), C14nError<D::Error>> {
     relabel_with::<Sha256, D>(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
@@ -116,7 +116,7 @@ pub fn relabel<D: SetDataset>(d: &D) -> Result<(C14nQuads<D>, C14nIdMap), C14nEr
 /// See also [`normalize`].
 pub fn relabel_sha384<D: SetDataset>(
     d: &D,
-) -> Result<(C14nQuads<D>, C14nIdMap), C14nError<D::Error>> {
+) -> Result<(C14nQuads<'_, D>, C14nIdMap), C14nError<D::Error>> {
     relabel_with::<Sha384, D>(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
@@ -748,7 +748,7 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
     /// Simplistic Quad parser, useful for writing test cases.
     /// The syntax is a subset of N-Quads-star,
     /// where spaces are not allowed in literals, and a space is required before the ending '.'.
-    fn ez_quad(txt: &str) -> Spog<SimpleTerm> {
+    fn ez_quad(txt: &str) -> Spog<SimpleTerm<'_>> {
         let mut tokens: Vec<_> = txt.split(' ').collect();
         assert!(tokens.len() == 4 || tokens.len() == 5);
         assert!(tokens.pop().unwrap() == ".");
@@ -767,7 +767,7 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
     /// The syntax is a subset of Turtle 1.2
     /// (with the caveat that triple terms still use the Turtle-star syntax,
     ///  i.e. << ... >> instead of <<( ... )>> )
-    fn ez_term(txt: &str) -> SimpleTerm {
+    fn ez_term(txt: &str) -> SimpleTerm<'_> {
         use sophia_iri::IriRef;
         match txt.as_bytes() {
             [b'<', b'<', .., b'>', b'>'] => {

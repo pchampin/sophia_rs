@@ -619,13 +619,13 @@ fn build_lists<'a>(
         .into_iter()
         .map(|((g, mut bn), mut items)| {
             loop {
-                if let Some(pred) = preds.get(&bn).copied() {
-                    if let Some(val) = list_item(pred, d) {
-                        bn = pred;
-                        items.push(val);
-                        subject_types.remove(&(g, pred));
-                        continue;
-                    }
+                if let Some(pred) = preds.get(&bn).copied()
+                    && let Some(val) = list_item(pred, d)
+                {
+                    bn = pred;
+                    items.push(val);
+                    subject_types.remove(&(g, pred));
+                    continue;
                 }
                 break;
             }

@@ -28,7 +28,7 @@ impl<'a> NsTerm<'a> {
     }
 
     /// Return an [`IriRef`] representing this term.
-    pub fn iriref(&self) -> IriRef<MownStr> {
+    pub fn iriref(&self) -> IriRef<MownStr<'_>> {
         IriRef::new_unchecked(if self.suffix.is_empty() {
             self.ns.as_str().into()
         } else {

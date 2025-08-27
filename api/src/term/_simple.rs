@@ -40,27 +40,27 @@ impl<'a> Term for SimpleTerm<'a> {
             Variable(_) => TermKind::Variable,
         }
     }
-    fn iri(&self) -> Option<IriRef<MownStr>> {
+    fn iri(&self) -> Option<IriRef<MownStr<'_>>> {
         if let Iri(iri) = self {
             Some(IriRef::new_unchecked(iri.borrowed()))
         } else {
             None
         }
     }
-    fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
+    fn bnode_id(&self) -> Option<BnodeId<MownStr<'_>>> {
         if let BlankNode(bnid) = self {
             Some(BnodeId::new_unchecked(bnid.borrowed()))
         } else {
             None
         }
     }
-    fn lexical_form(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr<'_>> {
         match self {
             LiteralDatatype(val, _) | LiteralLanguage(val, _, _) => Some(MownStr::from(&val[..])),
             _ => None,
         }
     }
-    fn datatype(&self) -> Option<IriRef<MownStr>> {
+    fn datatype(&self) -> Option<IriRef<MownStr<'_>>> {
         match self {
             LiteralDatatype(_, iri) => Some(IriRef::new_unchecked(iri.borrowed())),
             LiteralLanguage(_, _, None) => {
@@ -72,7 +72,7 @@ impl<'a> Term for SimpleTerm<'a> {
             _ => None,
         }
     }
-    fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+    fn language_tag(&self) -> Option<LanguageTag<MownStr<'_>>> {
         if let LiteralLanguage(_, tag, _) = self {
             Some(LanguageTag::new_unchecked(MownStr::from_ref(tag)))
         } else {
@@ -86,7 +86,7 @@ impl<'a> Term for SimpleTerm<'a> {
             None
         }
     }
-    fn variable(&self) -> Option<VarName<MownStr>> {
+    fn variable(&self) -> Option<VarName<MownStr<'_>>> {
         if let Variable(name) = self {
             Some(VarName::new_unchecked(MownStr::from_ref(name)))
         } else {

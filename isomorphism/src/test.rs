@@ -380,7 +380,7 @@ impl Term for MyTerm {
         }
     }
 
-    fn language_tag(&self) -> Option<sophia_api::term::LanguageTag<MownStr>> {
+    fn language_tag(&self) -> Option<sophia_api::term::LanguageTag<MownStr<'_>>> {
         None
     }
 

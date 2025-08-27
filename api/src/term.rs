@@ -173,7 +173,7 @@ pub trait Term: std::fmt::Debug {
     /// The default implementation assumes that [`Term::is_iri`] always return false.
     /// If that is not the case, this method must be explicit implemented.
     #[inline]
-    fn iri(&self) -> Option<IriRef<MownStr>> {
+    fn iri(&self) -> Option<IriRef<MownStr<'_>>> {
         self.is_iri()
             .then(|| unimplemented!("Default implementation should have been overridden"))
     }
@@ -186,7 +186,7 @@ pub trait Term: std::fmt::Debug {
     /// The default implementation assumes that [`Term::is_blank_node`] always return false.
     /// If that is not the case, this method must be explicit implemented.
     #[inline]
-    fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
+    fn bnode_id(&self) -> Option<BnodeId<MownStr<'_>>> {
         self.is_blank_node()
             .then(|| unimplemented!("Default implementation should have been overridden"))
     }
@@ -199,7 +199,7 @@ pub trait Term: std::fmt::Debug {
     /// The default implementation assumes that [`Term::is_literal`] always return false.
     /// If that is not the case, this method must be explicit implemented.
     #[inline]
-    fn lexical_form(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr<'_>> {
         self.is_literal()
             .then(|| unimplemented!("Default implementation should have been overridden"))
     }
@@ -215,7 +215,7 @@ pub trait Term: std::fmt::Debug {
     /// The default implementation assumes that [`Term::is_literal`] always return false.
     /// If that is not the case, this method must be explicit implemented.
     #[inline]
-    fn datatype(&self) -> Option<IriRef<MownStr>> {
+    fn datatype(&self) -> Option<IriRef<MownStr<'_>>> {
         self.is_literal()
             .then(|| unimplemented!("Default implementation should have been overridden"))
     }
@@ -229,7 +229,7 @@ pub trait Term: std::fmt::Debug {
     /// The default implementation assumes that [`Term::is_literal`] always return false.
     /// If that is not the case, this method must be explicit implemented.
     #[inline]
-    fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+    fn language_tag(&self) -> Option<LanguageTag<MownStr<'_>>> {
         self.is_literal()
             .then(|| unimplemented!("Default implementation should have been overridden"))
     }
@@ -256,7 +256,7 @@ pub trait Term: std::fmt::Debug {
     /// The default implementation assumes that [`Term::is_variable`] always return false.
     /// If that is not the case, this method must be explicit implemented.
     #[inline]
-    fn variable(&self) -> Option<VarName<MownStr>> {
+    fn variable(&self) -> Option<VarName<MownStr<'_>>> {
         self.is_variable()
             .then(|| unimplemented!("Default implementation should have been overridden"))
     }
@@ -562,25 +562,25 @@ where
     fn is_triple(&self) -> bool {
         (*self).is_triple()
     }
-    fn iri(&self) -> Option<IriRef<MownStr>> {
+    fn iri(&self) -> Option<IriRef<MownStr<'_>>> {
         (*self).iri()
     }
-    fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
+    fn bnode_id(&self) -> Option<BnodeId<MownStr<'_>>> {
         (*self).bnode_id()
     }
-    fn lexical_form(&self) -> Option<MownStr> {
+    fn lexical_form(&self) -> Option<MownStr<'_>> {
         (*self).lexical_form()
     }
-    fn datatype(&self) -> Option<IriRef<MownStr>> {
+    fn datatype(&self) -> Option<IriRef<MownStr<'_>>> {
         (*self).datatype()
     }
-    fn language_tag(&self) -> Option<LanguageTag<MownStr>> {
+    fn language_tag(&self) -> Option<LanguageTag<MownStr<'_>>> {
         (*self).language_tag()
     }
     fn base_direction(&self) -> std::option::Option<BaseDirection> {
         (*self).base_direction()
     }
-    fn variable(&self) -> Option<VarName<MownStr>> {
+    fn variable(&self) -> Option<VarName<MownStr<'_>>> {
         (*self).variable()
     }
     fn triple(&self) -> Option<[Self::BorrowTerm<'_>; 3]> {
@@ -722,7 +722,7 @@ mod check_implementability {
                 true => TermKind::Triple,
             }
         }
-        fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
+        fn bnode_id(&self) -> Option<BnodeId<MownStr<'_>>> {
             (!self.nested).then(|| BnodeId::new_unchecked("t1".into()))
         }
         fn triple(&self) -> Option<[Self::BorrowTerm<'_>; 3]> {
@@ -749,7 +749,7 @@ mod check_implementability {
                 true => TermKind::Triple,
             }
         }
-        fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
+        fn bnode_id(&self) -> Option<BnodeId<MownStr<'_>>> {
             (!self.nested).then(|| BnodeId::new_unchecked("t2".into()))
         }
         fn triple(&self) -> Option<[Self::BorrowTerm<'_>; 3]> {
@@ -772,7 +772,7 @@ mod check_implementability {
                 Some(_) => TermKind::Triple,
             }
         }
-        fn bnode_id(&self) -> Option<BnodeId<MownStr>> {
+        fn bnode_id(&self) -> Option<BnodeId<MownStr<'_>>> {
             match self.0 {
                 None => Some(BnodeId::new_unchecked("t3".into())),
                 Some(_) => None,
@@ -797,7 +797,7 @@ mod check_implementability {
 /// The syntax is a subset of Turtle 1.2
 /// (with the caveat that triple terms still use the Turtle-star syntax,
 ///  i.e. << ... >> instead of <<( ... )>> )
-pub(crate) fn ez_term(txt: &str) -> SimpleTerm {
+pub(crate) fn ez_term(txt: &str) -> SimpleTerm<'_> {
     use sophia_iri::IriRef;
     match txt.as_bytes() {
         [b'<', b'<', .., b'>', b'>'] => {

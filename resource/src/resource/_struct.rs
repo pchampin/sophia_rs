@@ -531,7 +531,7 @@ where
     /// * `lexical_values` is the list of expected values
     ///   (empty slice if any value is acceptable)
     /// * `predicate` is the predicate used to get value,
-    ///    (required to generate errors)
+    ///   (required to generate errors)
     pub fn check_literal<'a, T: Term, U: Term>(
         &self,
         value: &'a SimpleTerm<'static>,
