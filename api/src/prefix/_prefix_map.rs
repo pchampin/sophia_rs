@@ -1,5 +1,9 @@
 use super::{AsPrefix, IsPrefix, Prefix};
 /// Define the [`PrefixMap`] trait with default implementation.
+///
+/// IMPORTANT: the default implementation of [`PrefixMap`]
+/// by slices of (`IsPrefix`, `IsIri`) pairs will only work as expected
+/// if it does not contain duplicate prefixes.
 use mownstr::MownStr;
 use sophia_iri::{AsIri, Iri, IsIri};
 
@@ -26,8 +30,7 @@ pub trait PrefixMap {
         F: Fn(&str) -> bool;
     /// Iterate over (prefix, IRI) pairs.
     fn iter<'s>(&'s self) -> Box<dyn Iterator<Item = (Prefix<&'s str>, Iri<&'s str>)> + 's>;
-    /// Copies this prefix map as a self-sufficient vector
-    #[allow(clippy::type_complexity)]
+    /// Copy this prefix map as a self-sufficient vector
     fn to_vec(&self) -> Vec<PrefixMapPair> {
         self.iter()
             .map(|(prefix, ns)| (prefix.map_unchecked(Box::from), ns.map_unchecked(Box::from)))
