@@ -70,8 +70,10 @@ impl<T: Term> Term for C14nTerm<T> {
     }
 
     fn variable(&self) -> Option<sophia_api::term::VarName<sophia_api::MownStr<'_>>> {
-        self.is_variable()
-            .then(|| unimplemented!("Default implementation should have been overridden"))
+        match self {
+            Blank(_) => None,
+            Other(t) => t.variable(),
+        }
     }
 
     fn triple(&self) -> Option<[Self::BorrowTerm<'_>; 3]> {

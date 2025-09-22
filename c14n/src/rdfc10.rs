@@ -9,7 +9,7 @@ use std::rc::Rc;
 
 use sophia_api::dataset::{DTerm, SetDataset};
 use sophia_api::quad::{Quad, Spog, iter_spog};
-use sophia_api::term::{BnodeId, Term};
+use sophia_api::term::{BaseDirection, BnodeId, SimpleTerm, Term};
 
 use crate::_c14n_term::{C14nTerm, cmp_c14n_terms};
 use crate::_cnq::nq;
@@ -166,9 +166,13 @@ pub fn relabel_with<'a, H: HashFunction, D: SetDataset, const S: bool>(
             ));
         }
         for component in iter_spog(quad.spog()) {
-            if component.is_triple() || component.is_variable() {
+            if S && (component.is_triple() || component.is_variable()) {
                 return Err(C14nError::Unsupported(
-                    "RDFC-1.0 does not support variables nor quoted triples".to_string(),
+                    "RDFC-1.0 does not support variables nor triple terms".to_string(),
+                ));
+            } else if !S && component.is_triple() {
+                return Err(C14nError::Unsupported(
+                    "Generalized RDFC-1.0 does not support triple terms".to_string(),
                 ));
             }
             if let Some(bnid) = component.bnode_id() {
@@ -286,10 +290,16 @@ impl<H: HashFunction, T: Term, const S: bool> C14nState<'_, H, T, S> {
     ) -> H::Output {
         let mut input = H::initialize();
         input.update(position.as_bytes());
-        if position != "g" {
-            input.update(b"<");
-            input.update(quad.p().iri().unwrap().as_bytes());
-            input.update(b">");
+        if S {
+            if position != "g" {
+                input.update(b"<");
+                input.update(quad.p().iri().unwrap().as_bytes());
+                input.update(b">");
+            }
+        } else {
+            if position != "g" && position != "p" {
+                self.hash_related_bnode_step_2_generalized(quad, issuer, &mut input);
+            }
         }
         self.hash_related_bnode_steps_3_4(related, issuer, &mut input);
         input.finalize()
@@ -311,6 +321,48 @@ impl<H: HashFunction, T: Term, const S: bool> C14nState<'_, H, T, S> {
             // retrieved memoized value of hash_first_degree_quads for this blank node
             let h1d = self.b2h.get(related).unwrap();
             input.update(hex(h1d).as_bytes());
+        }
+    }
+
+    fn hash_related_bnode_step_2_generalized(
+        &self,
+        quad: &Spog<T>,
+        issuer: &BnodeIssuer,
+        input: &mut H,
+    ) {
+        match quad.p().as_simple() {
+            SimpleTerm::Iri(iri_ref) => {
+                input.update(b"<");
+                input.update(iri_ref.as_bytes());
+                input.update(b">");
+            }
+            SimpleTerm::BlankNode(bnode_id) => {
+                self.hash_related_bnode_steps_3_4(&bnode_id, issuer, input);
+            }
+            SimpleTerm::LiteralDatatype(mown_str, iri_ref) => {
+                input.update(b"\"");
+                input.update(mown_str.as_bytes());
+                input.update(b"\"^^<");
+                input.update(iri_ref.as_bytes());
+                input.update(b">");
+            }
+            SimpleTerm::LiteralLanguage(mown_str, language_tag, base_direction) => {
+                input.update(b"\"");
+                input.update(mown_str.as_bytes());
+                input.update(b"\"@");
+                input.update(language_tag.as_bytes());
+                match base_direction {
+                    Some(BaseDirection::Ltr) => input.update(b"--ltr "),
+                    Some(BaseDirection::Rtl) => input.update(b"--rtl "),
+                    None => input.update(b" "),
+                }
+            }
+            SimpleTerm::Triple(_) => unreachable!(),
+            SimpleTerm::Variable(var_name) => {
+                input.update(b"?");
+                input.update(var_name.as_bytes());
+                input.update(b" ");
+            }
         }
     }
 
