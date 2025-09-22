@@ -1,14 +1,19 @@
-use sophia_api::term::{BnodeId, Term, TermKind};
+use sophia_api::term::{BnodeId, IriRef, Term, TermKind};
 use std::{cmp::Ordering, rc::Rc};
 
 use crate::_cnq::nq;
 
 #[derive(Clone, Debug)]
 pub enum C14nTerm<T: Term> {
+    /// Blank node renamed by the C14n process
+    /// (or inserted, in the case of the generalized algorithm)
     Blank(BnodeId<Rc<str>>),
+    /// Reserved to the generalized algorithm, to insert new IRIs in the aaa: scheme
+    Aaa(IriRef<Rc<str>>),
+    /// Unmodified term from the dataset to canonicalize
     Other(T),
 }
-use C14nTerm::{Blank, Other};
+use C14nTerm::{Aaa, Blank, Other};
 
 impl<T: Term> Term for C14nTerm<T> {
     type BorrowTerm<'x>
@@ -19,6 +24,7 @@ impl<T: Term> Term for C14nTerm<T> {
     fn kind(&self) -> sophia_api::term::TermKind {
         match self {
             Blank(_) => TermKind::BlankNode,
+            Aaa(_) => TermKind::Iri,
             Other(t) => t.kind(),
         }
     }
@@ -30,6 +36,7 @@ impl<T: Term> Term for C14nTerm<T> {
     fn iri(&self) -> Option<sophia_api::term::IriRef<sophia_api::MownStr<'_>>> {
         match self {
             Blank(_) => None,
+            Aaa(iri_ref) => Some(iri_ref.clone().map_unchecked(|txt| txt.to_string().into())),
             Other(t) => t.iri(),
         }
     }
@@ -37,6 +44,7 @@ impl<T: Term> Term for C14nTerm<T> {
     fn bnode_id(&self) -> Option<BnodeId<sophia_api::MownStr<'_>>> {
         match self {
             Blank(b) => Some(BnodeId::new_unchecked(b.as_str().into())),
+            Aaa(_) => None,
             Other(t) => t.bnode_id(),
         }
     }
@@ -44,6 +52,7 @@ impl<T: Term> Term for C14nTerm<T> {
     fn lexical_form(&self) -> Option<sophia_api::MownStr<'_>> {
         match self {
             Blank(_) => None,
+            Aaa(_) => None,
             Other(t) => t.lexical_form(),
         }
     }
@@ -51,6 +60,7 @@ impl<T: Term> Term for C14nTerm<T> {
     fn datatype(&self) -> Option<sophia_api::term::IriRef<sophia_api::MownStr<'_>>> {
         match self {
             Blank(_) => None,
+            Aaa(_) => None,
             Other(t) => t.datatype(),
         }
     }
@@ -58,6 +68,7 @@ impl<T: Term> Term for C14nTerm<T> {
     fn language_tag(&self) -> Option<sophia_api::term::LanguageTag<sophia_api::MownStr<'_>>> {
         match self {
             Blank(_) => None,
+            Aaa(_) => None,
             Other(t) => t.language_tag(),
         }
     }
@@ -65,13 +76,17 @@ impl<T: Term> Term for C14nTerm<T> {
     fn base_direction(&self) -> Option<sophia_api::term::BaseDirection> {
         match self {
             Blank(_) => None,
+            Aaa(_) => None,
             Other(t) => t.base_direction(),
         }
     }
 
     fn variable(&self) -> Option<sophia_api::term::VarName<sophia_api::MownStr<'_>>> {
-        self.is_variable()
-            .then(|| unimplemented!("Default implementation should have been overridden"))
+        match self {
+            Blank(_) => None,
+            Aaa(_) => None,
+            Other(t) => t.variable(),
+        }
     }
 
     fn triple(&self) -> Option<[Self::BorrowTerm<'_>; 3]> {
@@ -91,6 +106,20 @@ impl<T: Term> Term for C14nTerm<T> {
     }
 }
 
+impl<T: Term> PartialEq for C14nTerm<T> {
+    fn eq(&self, other: &Self) -> bool {
+        Term::eq(self, other)
+    }
+}
+
+impl<T: Term> Eq for C14nTerm<T> {}
+
+impl<T: Term> std::hash::Hash for C14nTerm<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        Term::hash(self, state)
+    }
+}
+
 pub fn cmp_c14n_terms<'a, 'b, T: Term>(
     t1: Option<&'a C14nTerm<T>>,
     t2: Option<&'a C14nTerm<T>>,
@@ -98,10 +127,10 @@ pub fn cmp_c14n_terms<'a, 'b, T: Term>(
     buf2: &'b mut String,
 ) -> Ordering {
     if let Some(t1) = t1 {
-        nq(t1, buf1);
+        nq(t1, buf1).unwrap();
     }
     if let Some(t2) = t2 {
-        nq(t2, buf2);
+        nq(t2, buf2).unwrap();
     }
     buf1.cmp(&buf2)
 }

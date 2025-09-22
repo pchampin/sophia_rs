@@ -194,13 +194,15 @@ fn cycle_long() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[ignore = "currently not supported"]
 fn cycle_pathological() -> Result<(), Box<dyn Error>> {
     // This case is tricky (and does not work with the current implementation).
     // Both graphs contain the same number of (blank nodes) and the same number of arcs.
     // All blank nodes are locally undistinguishable from each other:
     // - they have exactly 1 incoming arc and 1 outgoing arc,
     // - both linking them to a blank node that are themselves undistinguisgable.
+    //
+    // NB: this case used to be a false positive with the old implementation,
+    // but is now supported by the c14n-based new implementation.
     let mut d1 = make_chain("abca");
     let mut d1b = make_chain("defgd");
     d1.append(&mut d1b);

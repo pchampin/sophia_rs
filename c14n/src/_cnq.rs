@@ -6,57 +6,61 @@ use sophia_api::{
 };
 
 /// Serialize a term in canonical n-quads
-pub fn nq<T: Term>(term: T, buffer: &mut String) {
+pub fn nq<T: Term, W: std::fmt::Write>(term: T, write: &mut W) -> std::fmt::Result {
     match term.kind() {
         TermKind::Iri => {
-            buffer.push('<');
-            buffer.push_str(&term.iri().unwrap());
-            buffer.push('>');
+            write.write_char('<')?;
+            write.write_str(&term.iri().unwrap())?;
+            write.write_char('>')?;
         }
         TermKind::Literal => {
-            buffer.push('"');
+            write.write_char('"')?;
             for c in term.lexical_form().unwrap().chars() {
                 match c {
-                    '"' => buffer.push_str("\\\""),
-                    '\\' => buffer.push_str("\\\\"),
-                    '\n' => buffer.push_str("\\n"),
-                    '\r' => buffer.push_str("\\r"),
-                    '\t' => buffer.push_str("\\t"),
-                    '\x08' => buffer.push_str("\\b"),
-                    '\x0c' => buffer.push_str("\\f"),
-                    '\x7f' => buffer.push_str("\\u007F"),
-                    c if c <= '\x1f' => buffer.push_str(&format!("\\u{:04X}", c as u8)),
-                    _ => buffer.push(c),
+                    '"' => write.write_str("\\\"")?,
+                    '\\' => write.write_str("\\\\")?,
+                    '\n' => write.write_str("\\n")?,
+                    '\r' => write.write_str("\\r")?,
+                    '\t' => write.write_str("\\t")?,
+                    '\x08' => write.write_str("\\b")?,
+                    '\x0c' => write.write_str("\\f")?,
+                    '\x7f' => write.write_str("\\u007F")?,
+                    c if c <= '\x1f' => write.write_str(&format!("\\u{:04X}", c as u8))?,
+                    _ => write.write_char(c)?,
                 }
             }
-            buffer.push('"');
+            write.write_char('"')?;
             if let Some(tag) = term.language_tag() {
-                buffer.push('@');
-                buffer.push_str(&tag);
+                write.write_char('@')?;
+                write.write_str(&tag)?;
+                if let Some(dir) = term.base_direction() {
+                    write.write_str("--")?;
+                    write!(write, "{dir}").unwrap();
+                }
             } else {
                 let datatype = term.datatype().unwrap();
                 if !Term::eq(&datatype, xsd::string) {
-                    buffer.push_str("^^");
-                    nq(term.datatype().unwrap(), buffer);
-                    buffer.pop(); // remove spurious space after datatype
+                    write.write_str("^^")?;
+                    nq(term.datatype().unwrap(), write).unwrap();
                 }
             }
         }
         TermKind::BlankNode => {
-            buffer.push_str("_:");
-            buffer.push_str(&term.bnode_id().unwrap());
+            write.write_str("_:")?;
+            write.write_str(&term.bnode_id().unwrap())?;
         }
         TermKind::Triple => {
-            buffer.push_str("<< ");
+            write.write_str("<<( ")?;
             for subterm in term.triple().unwrap() {
-                nq(subterm, buffer);
+                nq(subterm, write).unwrap();
+                write.write_char(' ')?;
             }
-            buffer.push_str(">>");
+            write.write_str(")>>")?;
         }
         TermKind::Variable => {
-            buffer.push('?');
-            buffer.push_str(&term.variable().unwrap());
+            write.write_char('?')?;
+            write.write_str(&term.variable().unwrap())?;
         }
     }
-    buffer.push(' ');
+    Ok(())
 }

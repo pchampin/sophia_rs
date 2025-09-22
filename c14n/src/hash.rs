@@ -14,6 +14,11 @@ pub trait HashFunction {
 
     /// Return the hash
     fn finalize(self) -> Self::Output;
+
+    /// Expose this hash function as a [`std::fmt::Write`]
+    fn as_write(&mut self) -> AsWrite<'_, Self> {
+        AsWrite(self)
+    }
 }
 
 /// The [SHA-256](https://en.wikipedia.org/wiki/SHA-2) [`HashFunction`]
@@ -51,5 +56,26 @@ impl HashFunction for Sha384 {
 
     fn finalize(self) -> Self::Output {
         self.0.finalize().into()
+    }
+}
+
+/// Wrapper around a hash function that expose it as a [`std::fmt::Write`]
+pub struct AsWrite<'a, H: ?Sized>(&'a mut H);
+
+impl<'a, H: HashFunction + ?Sized> std::fmt::Write for AsWrite<'a, H> {
+    fn write_str(&mut self, s: &str) -> std::fmt::Result {
+        self.0.update(s.as_bytes());
+        Ok(())
+    }
+}
+
+impl<'a, H: HashFunction + ?Sized> std::io::Write for AsWrite<'a, H> {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0.update(buf);
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
     }
 }

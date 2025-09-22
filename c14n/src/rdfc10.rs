@@ -9,7 +9,7 @@ use std::rc::Rc;
 
 use sophia_api::dataset::{DTerm, SetDataset};
 use sophia_api::quad::{Quad, Spog, iter_spog};
-use sophia_api::term::{BnodeId, Term};
+use sophia_api::term::{BaseDirection, BnodeId, SimpleTerm, Term};
 
 use crate::_c14n_term::{C14nTerm, cmp_c14n_terms};
 use crate::_cnq::nq;
@@ -22,11 +22,11 @@ use crate::hash::{HashFunction, Sha256, Sha384};
 ///   - the [SHA-256](Sha256) hash function,
 ///   - the [`DEFAULT_DEPTH_FACTOR`],
 ///   - the [`DEFAULT_PERMUTATION_LIMIT`];
-/// - quads are sorted in codepoint order.
+/// + quads are sorted in codepoint order.
 ///
 /// See also [`normalize_with`].
 pub fn normalize<D: SetDataset, W: io::Write>(d: &D, w: W) -> Result<(), C14nError<D::Error>> {
-    normalize_with::<Sha256, D, W>(d, w, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
+    normalize_with::<Sha256, D, W, true>(d, w, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
 /// Write into `w` a canonical N-quads representation of `d`, where
@@ -34,14 +34,14 @@ pub fn normalize<D: SetDataset, W: io::Write>(d: &D, w: W) -> Result<(), C14nErr
 ///   - the [SHA-384](Sha384) hash function,
 ///   - the [`DEFAULT_DEPTH_FACTOR`],
 ///   - the [`DEFAULT_PERMUTATION_LIMIT`];
-/// - quads are sorted in codepoint order.
+/// + quads are sorted in codepoint order.
 ///
 /// See also [`normalize_with`].
 pub fn normalize_sha384<D: SetDataset, W: io::Write>(
     d: &D,
     w: W,
 ) -> Result<(), C14nError<D::Error>> {
-    normalize_with::<Sha384, D, W>(d, w, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
+    normalize_with::<Sha384, D, W, true>(d, w, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
 /// Write into `w` a canonical N-quads representation of `d`, where
@@ -49,16 +49,31 @@ pub fn normalize_sha384<D: SetDataset, W: io::Write>(
 ///   - the [hash function](HashFunction) `H`,
 ///   - the given `depth_factor`,
 ///   - the given `permutation_limit`;
-/// - quads are sorted in codepoint order.
+/// + quads are sorted in codepoint order;
+/// + if the generic parameter `S` (strict) is false,
+///   a (non-standard) generalized version of RDFC1.0 is used,
+///   that supports RDF 1.2 and Sophia's generalized RDF.
 ///
 /// See also [`normalize`].
-pub fn normalize_with<H: HashFunction, D: SetDataset, W: io::Write>(
+pub fn normalize_with<H: HashFunction, D: SetDataset, W: io::Write, const S: bool>(
     d: &D,
-    mut w: W,
+    w: W,
     depth_factor: f32,
     permutation_limit: usize,
 ) -> Result<(), C14nError<D::Error>> {
-    let (mut quads, _) = relabel_with::<H, D>(d, depth_factor, permutation_limit)?;
+    let (quads, _) = relabel_with::<H, D, S>(d, depth_factor, permutation_limit)?;
+    normalize_with_inner::<DTerm<'_, D>, D::Error, W, S>(quads, w)
+}
+
+pub(crate) fn normalize_with_inner<T, E, W, const S: bool>(
+    mut quads: Vec<Spog<C14nTerm<T>>>,
+    mut w: W,
+) -> Result<(), C14nError<E>>
+where
+    T: Term,
+    E: std::error::Error + Send + Sync + 'static,
+    W: io::Write,
+{
     let mut buf1 = String::new();
     let mut buf2 = String::new();
     // we sort the quads, but comparing the terms based on their NQ serialization,
@@ -76,11 +91,15 @@ pub fn normalize_with<H: HashFunction, D: SetDataset, W: io::Write>(
     });
     for quad in quads {
         buf1.clear();
-        nq(quad.s(), &mut buf1);
-        nq(quad.p(), &mut buf1);
-        nq(quad.o(), &mut buf1);
+        nq(quad.s(), &mut buf1).unwrap();
+        buf1.push(' ');
+        nq(quad.p(), &mut buf1).unwrap();
+        buf1.push(' ');
+        nq(quad.o(), &mut buf1).unwrap();
+        buf1.push(' ');
         if let Some(gn) = quad.g() {
-            nq(gn, &mut buf1);
+            nq(gn, &mut buf1).unwrap();
+            buf1.push(' ');
         }
         w.write_all(buf1.as_bytes()).map_err(C14nError::Io)?;
         w.write_all(b".\n").map_err(C14nError::Io)?;
@@ -100,7 +119,7 @@ pub fn normalize_with<H: HashFunction, D: SetDataset, W: io::Write>(
 ///
 /// See also [`normalize`].
 pub fn relabel<D: SetDataset>(d: &D) -> Result<(C14nQuads<'_, D>, C14nIdMap), C14nError<D::Error>> {
-    relabel_with::<Sha256, D>(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
+    relabel_with::<Sha256, D, true>(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
 /// Return a [`Dataset`](sophia_api::dataset::Dataset) isomorphic to `d`,
@@ -117,7 +136,7 @@ pub fn relabel<D: SetDataset>(d: &D) -> Result<(C14nQuads<'_, D>, C14nIdMap), C1
 pub fn relabel_sha384<D: SetDataset>(
     d: &D,
 ) -> Result<(C14nQuads<'_, D>, C14nIdMap), C14nError<D::Error>> {
-    relabel_with::<Sha384, D>(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
+    relabel_with::<Sha384, D, true>(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
 /// Return a [`Dataset`](sophia_api::dataset::Dataset) isomorphic to `d`,
@@ -136,34 +155,58 @@ pub fn relabel_sha384<D: SetDataset>(
 /// More preciselity:
 /// * the algorithm will not recurse more deeply than`depth_factor`*N,
 ///   where N is the total number of blank nodes in the dataset;
-/// * the algorithl will not try to disambiguate more than
+/// * the algorithm will not try to disambiguate more than
 ///   `permutation_limit` undistinguishable blank nodes
 ///   (blank nodes with the same immediate neighbourhood).
 ///
-/// Implements <https://www.w3.org/TR/rdf-canon/#canon-algorithm>
+/// Implements <https://www.w3.org/TR/rdf-canon/#canon-algorithm>;
+/// if the generic parameter `S` (strict) is false,
+/// that algorithm is extended to supports RDF 1.2 and Sophia's generalized RDF.
 ///
 /// See also [`relabel`], [`normalize_with`].
-pub fn relabel_with<'a, H: HashFunction, D: SetDataset>(
+pub fn relabel_with<'a, H: HashFunction, D: SetDataset, const S: bool>(
     d: &'a D,
     depth_factor: f32,
     permutation_limit: usize,
 ) -> Result<(C14nQuads<'a, D>, C14nIdMap), C14nError<D::Error>> {
     let quads: Result<Vec<Spog<DTerm<'a, D>>>, _> =
         d.quads().map(|res| res.map(Quad::to_spog)).collect();
-    let quads = quads?;
+    relabel_with_inner::<'a, H, DTerm<'a, D>, D::Error, true>(
+        quads?,
+        depth_factor,
+        permutation_limit,
+    )
+}
+
+#[expect(clippy::type_complexity)]
+pub(crate) fn relabel_with_inner<'a, H, T, E, const S: bool>(
+    quads: Vec<Spog<T>>,
+    depth_factor: f32,
+    permutation_limit: usize,
+) -> Result<(Vec<Spog<C14nTerm<T>>>, C14nIdMap), C14nError<E>>
+where
+    H: HashFunction,
+    T: Term + 'a,
+    E: std::error::Error + Send + Sync + 'static,
+{
     // Step 1
-    let mut state = C14nState::<H, _>::new(depth_factor, permutation_limit);
+    let mut state = C14nState::<H, _, S>::new(depth_factor, permutation_limit);
     // Step 2
     for quad in &quads {
-        if quad.p().is_blank_node() {
+        if S && quad.p().is_blank_node() {
             return Err(C14nError::Unsupported(
                 "RDFC-1.0 does not support blank node as predicate".to_string(),
             ));
         }
         for component in iter_spog(quad.spog()) {
-            if component.is_triple() || component.is_variable() {
+            if S && (component.is_triple() || component.is_variable()) {
                 return Err(C14nError::Unsupported(
-                    "RDFC-1.0 does not support variables nor quoted triples".to_string(),
+                    "RDFC-1.0 does not support variables nor triple terms".to_string(),
+                ));
+            } else if !S && component.is_triple() {
+                return Err(C14nError::Unsupported(
+                    "Sophia-C14N expects triple-terms to be encoded as singleton named graph."
+                        .into(),
                 ));
             }
             if let Some(bnid) = component.bnode_id() {
@@ -178,14 +221,13 @@ pub fn relabel_with<'a, H: HashFunction, D: SetDataset>(
     // Step 3
     for (bnid, quads) in &state.b2q {
         let hash = hash_first_degree_quads::<H, _>(bnid, &quads[..]);
-        let bnid2 = Rc::clone(bnid);
-        state.h2b.entry(hash).or_default().push(bnid2);
-        state.b2h.insert(Rc::clone(bnid), hash);
+        state.h2b.entry(hash).or_default().push(bnid.clone());
+        state.b2h.insert(bnid.clone(), hash);
     }
     // Step 4
     // NB: we are relying on the fact that BTreeMap's elements are sorted
     let mut next_h2b = BTreeMap::new();
-    // TODO once BTreeMap::drain_filter is stabilize,
+    // TODO once BTreeMap::extract_if is stabilize,
     // use it in the loop below instead of reinserting elements into a new map
     for (hash, bnids) in state.h2b {
         debug_assert!(!bnids.is_empty());
@@ -200,10 +242,10 @@ pub fn relabel_with<'a, H: HashFunction, D: SetDataset>(
     for identifier_list in state.h2b.values() {
         let mut hash_path_list = vec![];
         // Step 5.2
-        for n in identifier_list {
+        for i in identifier_list {
             let mut issuer = BnodeIssuer::new(BnodeId::new_unchecked("b"));
-            issuer.issue(n);
-            hash_path_list.push(state.hash_n_degree_quads(n, &issuer, 0)?);
+            issuer.issue(i);
+            hash_path_list.push(state.hash_n_degree_quads(i, &issuer, 0)?);
         }
         // Step 5.3
         hash_path_list.sort_unstable_by_key(|p| p.0);
@@ -219,7 +261,7 @@ pub fn relabel_with<'a, H: HashFunction, D: SetDataset>(
         .into_iter()
         .map(|q| {
             let (spo, g) = q;
-            let convert = |t: DTerm<'a, D>| {
+            let convert = |t: T| {
                 if let Some(bnid) = t.bnode_id() {
                     let canon_id = issued.get(bnid.as_str()).unwrap();
                     return C14nTerm::Blank(canon_id.clone());
@@ -248,7 +290,7 @@ pub type C14nQuads<'a, D> = Vec<Spog<C14nTerm<DTerm<'a, D>>>>;
 pub type C14nIdMap = BTreeMap<Rc<str>, BnodeId<Rc<str>>>;
 
 #[derive(Clone, Debug)]
-struct C14nState<'a, H: HashFunction, T: Term> {
+struct C14nState<'a, H: HashFunction, T: Term, const S: bool> {
     b2q: BTreeMap<Rc<str>, Vec<&'a Spog<T>>>,
     h2b: BTreeMap<H::Output, Vec<Rc<str>>>,
     canonical: BnodeIssuer,
@@ -260,7 +302,7 @@ struct C14nState<'a, H: HashFunction, T: Term> {
     permutation_limit: usize,
 }
 
-impl<H: HashFunction, T: Term> C14nState<'_, H, T> {
+impl<H: HashFunction, T: Term, const S: bool> C14nState<'_, H, T, S> {
     fn new(depth_factor: f32, permutation_limit: usize) -> Self {
         C14nState {
             b2q: BTreeMap::new(),
@@ -282,11 +324,23 @@ impl<H: HashFunction, T: Term> C14nState<'_, H, T> {
     ) -> H::Output {
         let mut input = H::initialize();
         input.update(position.as_bytes());
-        if position != "g" {
-            input.update(b"<");
-            input.update(quad.p().iri().unwrap().as_bytes());
-            input.update(b">");
+        #[expect(clippy::collapsible_else_if)]
+        if S {
+            if position != "g" {
+                input.update(b"<");
+                input.update(quad.p().iri().unwrap().as_bytes());
+                input.update(b">");
+            }
+        } else {
+            if position != "g" && position != "p" {
+                self.hash_related_bnode_step_2_generalized(quad, issuer, &mut input);
+            }
         }
+        self.hash_related_bnode_steps_3_4(related, issuer, &mut input);
+        input.finalize()
+    }
+
+    fn hash_related_bnode_steps_3_4(&self, related: &str, issuer: &BnodeIssuer, input: &mut H) {
         if let Some(canon_id) = self.canonical.issued.get(related) {
             input.update(b"_:");
             input.update(canon_id.as_bytes());
@@ -298,7 +352,48 @@ impl<H: HashFunction, T: Term> C14nState<'_, H, T> {
             let h1d = self.b2h.get(related).unwrap();
             input.update(hex(h1d).as_bytes());
         }
-        input.finalize()
+    }
+
+    fn hash_related_bnode_step_2_generalized(
+        &self,
+        quad: &Spog<T>,
+        issuer: &BnodeIssuer,
+        input: &mut H,
+    ) {
+        match quad.p().as_simple() {
+            SimpleTerm::Iri(iri_ref) => {
+                input.update(b"<");
+                input.update(iri_ref.as_bytes());
+                input.update(b">");
+            }
+            SimpleTerm::BlankNode(bnode_id) => {
+                self.hash_related_bnode_steps_3_4(&bnode_id, issuer, input);
+            }
+            SimpleTerm::LiteralDatatype(mown_str, iri_ref) => {
+                input.update(b"\"");
+                input.update(mown_str.as_bytes());
+                input.update(b"\"^^<");
+                input.update(iri_ref.as_bytes());
+                input.update(b">");
+            }
+            SimpleTerm::LiteralLanguage(mown_str, language_tag, base_direction) => {
+                input.update(b"\"");
+                input.update(mown_str.as_bytes());
+                input.update(b"\"@");
+                input.update(language_tag.as_bytes());
+                match base_direction {
+                    Some(BaseDirection::Ltr) => input.update(b"--ltr "),
+                    Some(BaseDirection::Rtl) => input.update(b"--rtl "),
+                    None => input.update(b" "),
+                }
+            }
+            SimpleTerm::Triple(_) => unreachable!(),
+            SimpleTerm::Variable(var_name) => {
+                input.update(b"?");
+                input.update(var_name.as_bytes());
+                input.update(b" ");
+            }
+        }
     }
 
     /// Implements <https://www.w3.org/TR/rdf-canon/#hash-nd-quads>
@@ -328,7 +423,10 @@ impl<H: HashFunction, T: Term> C14nState<'_, H, T> {
                     }
                     let hash = self.hash_related_bnode(&bnid, quad, issuer, position);
                     let bnid = Box::from(bnid.as_str());
-                    hn.entry(hash).or_default().push(bnid);
+                    let v = hn.entry(hash).or_default();
+                    if !v.iter().any(|txt| txt == &bnid) {
+                        v.push(bnid);
+                    }
                 }
             }
         }
@@ -484,7 +582,8 @@ fn nq_for_hash<T: Term>(term: T, buffer: &mut String, ref_bnid: &str) {
             buffer.push_str("_:z ");
         }
     } else {
-        nq(term.borrow_term(), buffer);
+        nq(term.borrow_term(), buffer).unwrap();
+        buffer.push(' ');
     }
 }
 
@@ -514,7 +613,7 @@ fn iter_spog_opt<T: Quad>(q: T) -> impl Iterator<Item = Option<T::Term>> {
 }
 
 #[cfg(test)]
-mod test {
+pub(crate) mod test {
     use super::*;
     use sophia_api::term::{LanguageTag, SimpleTerm, VarName};
 
@@ -595,7 +694,7 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
         ]);
         let mut output = Vec::<u8>::new();
         // set depth_factor too low for this graph
-        let res = normalize_with::<Sha256, _, _>(
+        let res = normalize_with::<Sha256, _, _, true>(
             &dataset,
             &mut output,
             0.5,
@@ -657,6 +756,58 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
     }
 
     #[test]
+    fn clique5_named_graphs() {
+        crate::test_setup();
+
+        let dataset = ez_quads(&[
+            "_:e0 <http://example.com/#p> _:e1 _:e0 .",
+            "_:e0 <http://example.com/#p> _:e2 _:e0 .",
+            "_:e0 <http://example.com/#p> _:e3 _:e0 .",
+            "_:e0 <http://example.com/#p> _:e4 _:e0 .",
+            "_:e1 <http://example.com/#p> _:e0 _:e0 .",
+            "_:e1 <http://example.com/#p> _:e2 _:e0 .",
+            "_:e1 <http://example.com/#p> _:e3 _:e0 .",
+            "_:e1 <http://example.com/#p> _:e4 _:e0 .",
+            "_:e2 <http://example.com/#p> _:e0 _:e0 .",
+            "_:e2 <http://example.com/#p> _:e1 _:e0 .",
+            "_:e2 <http://example.com/#p> _:e3 _:e0 .",
+            "_:e2 <http://example.com/#p> _:e4 _:e0 .",
+            "_:e3 <http://example.com/#p> _:e0 _:e0 .",
+            "_:e3 <http://example.com/#p> _:e1 _:e0 .",
+            "_:e3 <http://example.com/#p> _:e2 _:e0 .",
+            "_:e3 <http://example.com/#p> _:e4 _:e0 .",
+            "_:e4 <http://example.com/#p> _:e0 _:e0 .",
+            "_:e4 <http://example.com/#p> _:e1 _:e0 .",
+            "_:e4 <http://example.com/#p> _:e2 _:e0 .",
+            "_:e4 <http://example.com/#p> _:e3 _:e0 .",
+        ]);
+        let exp = r"_:c14n0 <http://example.com/#p> _:c14n1 _:c14n0 .
+_:c14n0 <http://example.com/#p> _:c14n2 _:c14n0 .
+_:c14n0 <http://example.com/#p> _:c14n3 _:c14n0 .
+_:c14n0 <http://example.com/#p> _:c14n4 _:c14n0 .
+_:c14n1 <http://example.com/#p> _:c14n0 _:c14n0 .
+_:c14n1 <http://example.com/#p> _:c14n2 _:c14n0 .
+_:c14n1 <http://example.com/#p> _:c14n3 _:c14n0 .
+_:c14n1 <http://example.com/#p> _:c14n4 _:c14n0 .
+_:c14n2 <http://example.com/#p> _:c14n0 _:c14n0 .
+_:c14n2 <http://example.com/#p> _:c14n1 _:c14n0 .
+_:c14n2 <http://example.com/#p> _:c14n3 _:c14n0 .
+_:c14n2 <http://example.com/#p> _:c14n4 _:c14n0 .
+_:c14n3 <http://example.com/#p> _:c14n0 _:c14n0 .
+_:c14n3 <http://example.com/#p> _:c14n1 _:c14n0 .
+_:c14n3 <http://example.com/#p> _:c14n2 _:c14n0 .
+_:c14n3 <http://example.com/#p> _:c14n4 _:c14n0 .
+_:c14n4 <http://example.com/#p> _:c14n0 _:c14n0 .
+_:c14n4 <http://example.com/#p> _:c14n1 _:c14n0 .
+_:c14n4 <http://example.com/#p> _:c14n2 _:c14n0 .
+_:c14n4 <http://example.com/#p> _:c14n3 _:c14n0 .
+";
+        let got = c14n_nquads(&dataset).unwrap();
+        println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
+        assert!(got == exp);
+    }
+
+    #[test]
     fn clique5_toxic() {
         crate::test_setup();
 
@@ -684,8 +835,12 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
         ]);
         let mut output = Vec::<u8>::new();
         // set permutation limit too low for this graph
-        let res =
-            normalize_with::<Sha256, _, _>(&dataset, &mut output, 2.0 * DEFAULT_DEPTH_FACTOR, 3);
+        let res = normalize_with::<Sha256, _, _, true>(
+            &dataset,
+            &mut output,
+            2.0 * DEFAULT_DEPTH_FACTOR,
+            3,
+        );
         assert!(matches!(res, Err(C14nError::ToxicGraph(_))));
     }
 
@@ -741,14 +896,16 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
 
     /// Simplistic Quad parser, useful for writing test cases.
     /// It is based on `eq_quad` below.
-    fn ez_quads<'a>(lines: &[&'a str]) -> std::collections::HashSet<Spog<SimpleTerm<'a>>> {
+    pub(crate) fn ez_quads<'a>(
+        lines: &[&'a str],
+    ) -> std::collections::HashSet<Spog<SimpleTerm<'a>>> {
         lines.iter().map(|line| ez_quad(line)).collect()
     }
 
     /// Simplistic Quad parser, useful for writing test cases.
     /// The syntax is a subset of N-Quads-star,
     /// where spaces are not allowed in literals, and a space is required before the ending '.'.
-    fn ez_quad(txt: &str) -> Spog<SimpleTerm<'_>> {
+    pub(crate) fn ez_quad(txt: &str) -> Spog<SimpleTerm<'_>> {
         let mut tokens: Vec<_> = txt.split(' ').collect();
         assert!(tokens.len() == 4 || tokens.len() == 5);
         assert!(tokens.pop().unwrap() == ".");
@@ -767,11 +924,11 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
     /// The syntax is a subset of Turtle 1.2
     /// (with the caveat that triple terms still use the Turtle-star syntax,
     ///  i.e. << ... >> instead of <<( ... )>> )
-    fn ez_term(txt: &str) -> SimpleTerm<'_> {
+    pub(crate) fn ez_term(txt: &str) -> SimpleTerm<'_> {
         use sophia_iri::IriRef;
         match txt.as_bytes() {
-            [b'<', b'<', .., b'>', b'>'] => {
-                let subterms: Vec<&str> = txt[2..txt.len() - 2].split(' ').collect();
+            [b'<', b'<', b'(', .., b')', b'>', b'>'] => {
+                let subterms: Vec<&str> = txt[3..txt.len() - 3].split('\t').collect();
                 assert_eq!(subterms.len(), 3);
                 SimpleTerm::Triple(Box::new([
                     ez_term(subterms[0]),
