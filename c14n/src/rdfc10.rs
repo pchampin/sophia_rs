@@ -291,6 +291,16 @@ impl<H: HashFunction, T: Term, const S: bool> C14nState<'_, H, T, S> {
             input.update(quad.p().iri().unwrap().as_bytes());
             input.update(b">");
         }
+        self.hash_related_bnode_steps_3_4(related, issuer, &mut input);
+        input.finalize()
+    }
+
+    fn hash_related_bnode_steps_3_4(
+        &self,
+        related: &str,
+        issuer: &BnodeIssuer,
+        input: &mut H,
+    ) {
         if let Some(canon_id) = self.canonical.issued.get(related) {
             input.update(b"_:");
             input.update(canon_id.as_bytes());
@@ -302,7 +312,6 @@ impl<H: HashFunction, T: Term, const S: bool> C14nState<'_, H, T, S> {
             let h1d = self.b2h.get(related).unwrap();
             input.update(hex(h1d).as_bytes());
         }
-        input.finalize()
     }
 
     /// Implements <https://www.w3.org/TR/rdf-canon/#hash-nd-quads>
