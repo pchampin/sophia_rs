@@ -73,7 +73,7 @@ pub fn normalize_with<H: HashFunction, D: SetDataset, W: io::Write>(
     permutation_limit: usize,
 ) -> Result<(), C14nError<D::Error>> {
     let (quads, _) = relabel_with::<H, D>(d, depth_factor, permutation_limit)?;
-    normalize_with_inner::<H, C14nTerm<DTerm<'_, D>>, D::Error, W, false>(quads, w)
+    normalize_with_inner::<C14nTerm<DTerm<'_, D>>, D::Error, W, false>(quads, w)
 }
 
 /// Return a [`Dataset`](sophia_api::dataset::Dataset) isomorphic to `d`,
@@ -140,7 +140,7 @@ pub fn relabel_with<'a, H: HashFunction, D: SetDataset>(
 ) -> Result<(C14nQuads<'a, D>, C14nIdMap), C14nError<D::Error>> {
     let d_quads = d.quads();
     let mut quads: Vec<Spog<C14nTerm<DTerm<'a, D>>>> = Vec::with_capacity(d_quads.size_hint().0);
-    let mut aliases: BTreeMap<H::Output, (Rc<str>, bool, C14nTriple<'a, D>)> = BTreeMap::new();
+    let mut aliases: Aliases<'a, H, D> = BTreeMap::new();
 
     for q in d_quads {
         let (spo, g) = q?.to_spog();
@@ -189,7 +189,7 @@ pub fn relabel_with<'a, H: HashFunction, D: SetDataset>(
 
 fn escape_triple_terms<'a, H: HashFunction, D: SetDataset>(
     t: DTerm<'a, D>,
-    aliases: &mut BTreeMap<H::Output, (Rc<str>, bool, C14nTriple<'a, D>)>,
+    aliases: &mut Aliases<'a, H, D>,
 ) -> C14nTerm<DTerm<'a, D>> {
     if t.is_triple() {
         let triple = t.to_triple().unwrap();
@@ -219,6 +219,8 @@ fn escape_triple_terms<'a, H: HashFunction, D: SetDataset>(
         C14nTerm::Other(t)
     }
 }
+
+type Aliases<'a, H, D> = BTreeMap<<H as HashFunction>::Output, (Rc<str>, bool, C14nTriple<'a, D>)>;
 
 type C14nTriple<'a, D> = [C14nTerm<DTerm<'a, D>>; 3];
 

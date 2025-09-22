@@ -62,15 +62,14 @@ pub fn normalize_with<H: HashFunction, D: SetDataset, W: io::Write, const S: boo
     permutation_limit: usize,
 ) -> Result<(), C14nError<D::Error>> {
     let (quads, _) = relabel_with::<H, D, S>(d, depth_factor, permutation_limit)?;
-    normalize_with_inner::<H, DTerm<'_, D>, D::Error, W, S>(quads, w)
+    normalize_with_inner::<DTerm<'_, D>, D::Error, W, S>(quads, w)
 }
 
-pub(crate) fn normalize_with_inner<H, T, E, W, const S: bool>(
+pub(crate) fn normalize_with_inner<T, E, W, const S: bool>(
     mut quads: Vec<Spog<C14nTerm<T>>>,
     mut w: W,
 ) -> Result<(), C14nError<E>>
 where
-    H: HashFunction,
     T: Term,
     E: std::error::Error + Send + Sync + 'static,
     W: io::Write,
@@ -179,6 +178,7 @@ pub fn relabel_with<'a, H: HashFunction, D: SetDataset, const S: bool>(
     )
 }
 
+#[expect(clippy::type_complexity)]
 pub(crate) fn relabel_with_inner<'a, H, T, E, const S: bool>(
     quads: Vec<Spog<T>>,
     depth_factor: f32,
@@ -324,6 +324,7 @@ impl<H: HashFunction, T: Term, const S: bool> C14nState<'_, H, T, S> {
     ) -> H::Output {
         let mut input = H::initialize();
         input.update(position.as_bytes());
+        #[expect(clippy::collapsible_else_if)]
         if S {
             if position != "g" {
                 input.update(b"<");
