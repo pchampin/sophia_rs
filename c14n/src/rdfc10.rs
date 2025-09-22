@@ -22,7 +22,7 @@ use crate::hash::{HashFunction, Sha256, Sha384};
 ///   - the [SHA-256](Sha256) hash function,
 ///   - the [`DEFAULT_DEPTH_FACTOR`],
 ///   - the [`DEFAULT_PERMUTATION_LIMIT`];
-/// - quads are sorted in codepoint order.
+/// + quads are sorted in codepoint order.
 ///
 /// See also [`normalize_with`].
 pub fn normalize<D: SetDataset, W: io::Write>(d: &D, w: W) -> Result<(), C14nError<D::Error>> {
@@ -34,7 +34,7 @@ pub fn normalize<D: SetDataset, W: io::Write>(d: &D, w: W) -> Result<(), C14nErr
 ///   - the [SHA-384](Sha384) hash function,
 ///   - the [`DEFAULT_DEPTH_FACTOR`],
 ///   - the [`DEFAULT_PERMUTATION_LIMIT`];
-/// - quads are sorted in codepoint order.
+/// + quads are sorted in codepoint order.
 ///
 /// See also [`normalize_with`].
 pub fn normalize_sha384<D: SetDataset, W: io::Write>(
@@ -178,14 +178,13 @@ pub fn relabel_with<'a, H: HashFunction, D: SetDataset>(
     // Step 3
     for (bnid, quads) in &state.b2q {
         let hash = hash_first_degree_quads::<H, _>(bnid, &quads[..]);
-        let bnid2 = Rc::clone(bnid);
-        state.h2b.entry(hash).or_default().push(bnid2);
-        state.b2h.insert(Rc::clone(bnid), hash);
+        state.h2b.entry(hash).or_default().push(bnid.clone());
+        state.b2h.insert(bnid.clone(), hash);
     }
     // Step 4
     // NB: we are relying on the fact that BTreeMap's elements are sorted
     let mut next_h2b = BTreeMap::new();
-    // TODO once BTreeMap::drain_filter is stabilize,
+    // TODO once BTreeMap::extract_if is stabilize,
     // use it in the loop below instead of reinserting elements into a new map
     for (hash, bnids) in state.h2b {
         debug_assert!(!bnids.is_empty());
@@ -200,10 +199,10 @@ pub fn relabel_with<'a, H: HashFunction, D: SetDataset>(
     for identifier_list in state.h2b.values() {
         let mut hash_path_list = vec![];
         // Step 5.2
-        for n in identifier_list {
+        for i in identifier_list {
             let mut issuer = BnodeIssuer::new(BnodeId::new_unchecked("b"));
-            issuer.issue(n);
-            hash_path_list.push(state.hash_n_degree_quads(n, &issuer, 0)?);
+            issuer.issue(i);
+            hash_path_list.push(state.hash_n_degree_quads(i, &issuer, 0)?);
         }
         // Step 5.3
         hash_path_list.sort_unstable_by_key(|p| p.0);
