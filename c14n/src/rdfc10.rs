@@ -73,7 +73,7 @@ where
     H: HashFunction,
     T: Term,
     E: std::error::Error + Send + Sync + 'static,
-    W: io::Write
+    W: io::Write,
 {
     let mut buf1 = String::new();
     let mut buf2 = String::new();
@@ -172,7 +172,11 @@ pub fn relabel_with<'a, H: HashFunction, D: SetDataset, const S: bool>(
 ) -> Result<(C14nQuads<'a, D>, C14nIdMap), C14nError<D::Error>> {
     let quads: Result<Vec<Spog<DTerm<'a, D>>>, _> =
         d.quads().map(|res| res.map(Quad::to_spog)).collect();
-    relabel_with_inner::<'a, H, DTerm<'a, D>, D::Error, true>(quads?, depth_factor, permutation_limit)
+    relabel_with_inner::<'a, H, DTerm<'a, D>, D::Error, true>(
+        quads?,
+        depth_factor,
+        permutation_limit,
+    )
 }
 
 pub(crate) fn relabel_with_inner<'a, H, T, E, const S: bool>(
@@ -201,7 +205,8 @@ where
                 ));
             } else if !S && component.is_triple() {
                 return Err(C14nError::Unsupported(
-                    "Sophia-C14N expects triple-terms to be encoded as singleton named graph.".into()
+                    "Sophia-C14N expects triple-terms to be encoded as singleton named graph."
+                        .into(),
                 ));
             }
             if let Some(bnid) = component.bnode_id() {
@@ -334,12 +339,7 @@ impl<H: HashFunction, T: Term, const S: bool> C14nState<'_, H, T, S> {
         input.finalize()
     }
 
-    fn hash_related_bnode_steps_3_4(
-        &self,
-        related: &str,
-        issuer: &BnodeIssuer,
-        input: &mut H,
-    ) {
+    fn hash_related_bnode_steps_3_4(&self, related: &str, issuer: &BnodeIssuer, input: &mut H) {
         if let Some(canon_id) = self.canonical.issued.get(related) {
             input.update(b"_:");
             input.update(canon_id.as_bytes());
@@ -834,8 +834,12 @@ _:c14n4 <http://example.com/#p> _:c14n3 _:c14n0 .
         ]);
         let mut output = Vec::<u8>::new();
         // set permutation limit too low for this graph
-        let res =
-            normalize_with::<Sha256, _, _, true>(&dataset, &mut output, 2.0 * DEFAULT_DEPTH_FACTOR, 3);
+        let res = normalize_with::<Sha256, _, _, true>(
+            &dataset,
+            &mut output,
+            2.0 * DEFAULT_DEPTH_FACTOR,
+            3,
+        );
         assert!(matches!(res, Err(C14nError::ToxicGraph(_))));
     }
 
@@ -891,7 +895,9 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
 
     /// Simplistic Quad parser, useful for writing test cases.
     /// It is based on `eq_quad` below.
-    pub(crate) fn ez_quads<'a>(lines: &[&'a str]) -> std::collections::HashSet<Spog<SimpleTerm<'a>>> {
+    pub(crate) fn ez_quads<'a>(
+        lines: &[&'a str],
+    ) -> std::collections::HashSet<Spog<SimpleTerm<'a>>> {
         lines.iter().map(|line| ez_quad(line)).collect()
     }
 

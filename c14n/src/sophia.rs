@@ -10,11 +10,23 @@
 
 use std::{collections::BTreeMap, io, rc::Rc};
 
-use base64::{prelude::BASE64_URL_SAFE_NO_PAD, Engine};
-use sophia_api::{dataset::{DTerm, SetDataset}, quad::{Quad, Spog}, term::{BnodeId, IriRef, Term}};
+use base64::{Engine, prelude::BASE64_URL_SAFE_NO_PAD};
+use sophia_api::{
+    dataset::{DTerm, SetDataset},
+    quad::{Quad, Spog},
+    term::{BnodeId, IriRef, Term},
+};
 
-use crate::{hash::{HashFunction, Sha256, Sha384}, rdfc10::{normalize_with_inner, relabel_with_inner, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT}, C14nError, _c14n_term::C14nTerm, _cnq::nq};
 pub use crate::rdfc10::C14nIdMap;
+use crate::{
+    _c14n_term::C14nTerm,
+    _cnq::nq,
+    C14nError,
+    hash::{HashFunction, Sha256, Sha384},
+    rdfc10::{
+        DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT, normalize_with_inner, relabel_with_inner,
+    },
+};
 
 /// Write into `w` a canonical N-quads representation of `d`, where
 /// + blank nodes are canonically [relabelled](relabel) with
@@ -135,37 +147,50 @@ pub fn relabel_with<'a, H: HashFunction, D: SetDataset>(
         let spo = spo.map(|t| escape_triple_terms::<H, D>(t, &mut aliases));
         if g.as_ref().map(Term::is_triple).unwrap_or(false) {
             return Err(C14nError::Unsupported(
-                "Generalized RDFC-1.0 does not support triple terms as graph names.".into()
+                "Generalized RDFC-1.0 does not support triple terms as graph names.".into(),
             ));
         }
         quads.push((spo, g.map(C14nTerm::Other)));
     }
     let aaa: IriRef<Rc<str>> = IriRef::new_unchecked("aaa:basic-encoded".into());
     if !aliases.is_empty() {
-        quads.push(([
-            C14nTerm::Aaa(aaa.clone()),
-            C14nTerm::Aaa(aaa.clone()),
-            C14nTerm::Aaa(aaa.clone()),
-        ], None))
+        quads.push((
+            [
+                C14nTerm::Aaa(aaa.clone()),
+                C14nTerm::Aaa(aaa.clone()),
+                C14nTerm::Aaa(aaa.clone()),
+            ],
+            None,
+        ))
     }
     for (id, is_bnode, tt) in aliases.into_values() {
         let gn = if is_bnode {
             let bnid = BnodeId::new_unchecked(id);
-            quads.push(([
-                C14nTerm::Aaa(aaa.clone()),
-                C14nTerm::Aaa(aaa.clone()),
-                C14nTerm::Blank(bnid.clone()),
-            ], None));
+            quads.push((
+                [
+                    C14nTerm::Aaa(aaa.clone()),
+                    C14nTerm::Aaa(aaa.clone()),
+                    C14nTerm::Blank(bnid.clone()),
+                ],
+                None,
+            ));
             C14nTerm::Blank(bnid)
         } else {
             C14nTerm::Aaa(IriRef::new_unchecked(id))
         };
         quads.push((tt, Some(gn)));
     }
-    relabel_with_inner::<'a, H, C14nTerm<DTerm<'a, D>>, D::Error, false>(quads, depth_factor, permutation_limit)
+    relabel_with_inner::<'a, H, C14nTerm<DTerm<'a, D>>, D::Error, false>(
+        quads,
+        depth_factor,
+        permutation_limit,
+    )
 }
 
-fn escape_triple_terms<'a, H: HashFunction, D: SetDataset>(t: DTerm<'a, D>, aliases: &mut BTreeMap<H::Output, (Rc<str>, bool, C14nTriple<'a, D>)>) -> C14nTerm<DTerm<'a, D>> {
+fn escape_triple_terms<'a, H: HashFunction, D: SetDataset>(
+    t: DTerm<'a, D>,
+    aliases: &mut BTreeMap<H::Output, (Rc<str>, bool, C14nTriple<'a, D>)>,
+) -> C14nTerm<DTerm<'a, D>> {
     if t.is_triple() {
         let triple = t.to_triple().unwrap();
         let triple = triple.map(|t| escape_triple_terms::<H, D>(t, aliases));
@@ -232,9 +257,7 @@ _:c14n0 _:c14n1 _:c14n3 _:c14n2 .
     fn rdf12() {
         crate::test_setup();
 
-        let dataset = ez_quads(&[
-            "_:r <x:reifies> <<(_:s\t<x:p>\t'o'@en--ltr)>> .",
-        ]);
+        let dataset = ez_quads(&["_:r <x:reifies> <<(_:s\t<x:p>\t'o'@en--ltr)>> ."]);
         let exp = r#"<aaa:basic-encoded> <aaa:basic-encoded> <aaa:basic-encoded> .
 <aaa:basic-encoded> <aaa:basic-encoded> _:c14n2 .
 _:c14n0 <x:reifies> _:c14n2 .
@@ -261,14 +284,16 @@ _:c14n1 <x:p> "o'@en"@en--ltr _:c14n2 .
             "_:b3 <x:p3> <<('s'\t'p'\t'o')>> .",
             "_:b4 <x:p4> <<(?s\t?p\t?o)>> .",
         ]);
-        MutableDataset::insert(&mut dataset,
+        MutableDataset::insert(
+            &mut dataset,
             ez_term("_:b5"),
             ez_term("<x:p5>"),
             SimpleTerm::Triple(Box::new(
-                ez_quad("<<(<x:s>\t<x:p>\t<x:o>)>> <<(_:s\t_:p\t_:o)>> <<('s'\t'p'\t'o')>> .").0
+                ez_quad("<<(<x:s>\t<x:p>\t<x:o>)>> <<(_:s\t_:p\t_:o)>> <<('s'\t'p'\t'o')>> .").0,
             )),
             None as Option<i32>,
-        ).unwrap();
+        )
+        .unwrap();
         let exp = r#""s" "p" "o" <aaa:cREOCpsydLSqBK4M7AM-OVVH-02ZmXlJ-8RucuCvILc> .
 <aaa:1GMFI6F3I3vhuhyKDXg7i9TeLkd_iSRdSDvlytoJydg> _:c14n2 <aaa:cREOCpsydLSqBK4M7AM-OVVH-02ZmXlJ-8RucuCvILc> _:c14n6 .
 <aaa:basic-encoded> <aaa:basic-encoded> <aaa:basic-encoded> .
@@ -287,5 +312,4 @@ _:c14n8 <x:p2> _:c14n2 .
         println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
         assert!(got == exp);
     }
-
 }

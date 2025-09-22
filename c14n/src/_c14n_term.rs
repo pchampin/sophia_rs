@@ -13,7 +13,7 @@ pub enum C14nTerm<T: Term> {
     /// Unmodified term from the dataset to canonicalize
     Other(T),
 }
-use C14nTerm::{Blank, Aaa, Other};
+use C14nTerm::{Aaa, Blank, Other};
 
 impl<T: Term> Term for C14nTerm<T> {
     type BorrowTerm<'x>
