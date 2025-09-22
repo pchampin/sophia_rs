@@ -422,7 +422,10 @@ impl<H: HashFunction, T: Term, const S: bool> C14nState<'_, H, T, S> {
                     }
                     let hash = self.hash_related_bnode(&bnid, quad, issuer, position);
                     let bnid = Box::from(bnid.as_str());
-                    hn.entry(hash).or_default().push(bnid);
+                    let v = hn.entry(hash).or_default();
+                    if !v.iter().any(|txt| txt == &bnid) {
+                        v.push(bnid);
+                    }
                 }
             }
         }
@@ -745,6 +748,58 @@ _:c14n4 <http://example.com/#p> _:c14n0 .
 _:c14n4 <http://example.com/#p> _:c14n1 .
 _:c14n4 <http://example.com/#p> _:c14n2 .
 _:c14n4 <http://example.com/#p> _:c14n3 .
+";
+        let got = c14n_nquads(&dataset).unwrap();
+        println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
+        assert!(got == exp);
+    }
+
+    #[test]
+    fn clique5_named_graphs() {
+        crate::test_setup();
+
+        let dataset = ez_quads(&[
+            "_:e0 <http://example.com/#p> _:e1 _:e0 .",
+            "_:e0 <http://example.com/#p> _:e2 _:e0 .",
+            "_:e0 <http://example.com/#p> _:e3 _:e0 .",
+            "_:e0 <http://example.com/#p> _:e4 _:e0 .",
+            "_:e1 <http://example.com/#p> _:e0 _:e0 .",
+            "_:e1 <http://example.com/#p> _:e2 _:e0 .",
+            "_:e1 <http://example.com/#p> _:e3 _:e0 .",
+            "_:e1 <http://example.com/#p> _:e4 _:e0 .",
+            "_:e2 <http://example.com/#p> _:e0 _:e0 .",
+            "_:e2 <http://example.com/#p> _:e1 _:e0 .",
+            "_:e2 <http://example.com/#p> _:e3 _:e0 .",
+            "_:e2 <http://example.com/#p> _:e4 _:e0 .",
+            "_:e3 <http://example.com/#p> _:e0 _:e0 .",
+            "_:e3 <http://example.com/#p> _:e1 _:e0 .",
+            "_:e3 <http://example.com/#p> _:e2 _:e0 .",
+            "_:e3 <http://example.com/#p> _:e4 _:e0 .",
+            "_:e4 <http://example.com/#p> _:e0 _:e0 .",
+            "_:e4 <http://example.com/#p> _:e1 _:e0 .",
+            "_:e4 <http://example.com/#p> _:e2 _:e0 .",
+            "_:e4 <http://example.com/#p> _:e3 _:e0 .",
+        ]);
+        let exp = r"_:c14n0 <http://example.com/#p> _:c14n1 _:c14n0 .
+_:c14n0 <http://example.com/#p> _:c14n2 _:c14n0 .
+_:c14n0 <http://example.com/#p> _:c14n3 _:c14n0 .
+_:c14n0 <http://example.com/#p> _:c14n4 _:c14n0 .
+_:c14n1 <http://example.com/#p> _:c14n0 _:c14n0 .
+_:c14n1 <http://example.com/#p> _:c14n2 _:c14n0 .
+_:c14n1 <http://example.com/#p> _:c14n3 _:c14n0 .
+_:c14n1 <http://example.com/#p> _:c14n4 _:c14n0 .
+_:c14n2 <http://example.com/#p> _:c14n0 _:c14n0 .
+_:c14n2 <http://example.com/#p> _:c14n1 _:c14n0 .
+_:c14n2 <http://example.com/#p> _:c14n3 _:c14n0 .
+_:c14n2 <http://example.com/#p> _:c14n4 _:c14n0 .
+_:c14n3 <http://example.com/#p> _:c14n0 _:c14n0 .
+_:c14n3 <http://example.com/#p> _:c14n1 _:c14n0 .
+_:c14n3 <http://example.com/#p> _:c14n2 _:c14n0 .
+_:c14n3 <http://example.com/#p> _:c14n4 _:c14n0 .
+_:c14n4 <http://example.com/#p> _:c14n0 _:c14n0 .
+_:c14n4 <http://example.com/#p> _:c14n1 _:c14n0 .
+_:c14n4 <http://example.com/#p> _:c14n2 _:c14n0 .
+_:c14n4 <http://example.com/#p> _:c14n3 _:c14n0 .
 ";
         let got = c14n_nquads(&dataset).unwrap();
         println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
