@@ -64,6 +64,18 @@ pub struct AsWrite<'a, H: ?Sized>(&'a mut H);
 
 impl<'a, H: HashFunction + ?Sized> std::fmt::Write for AsWrite<'a, H> {
     fn write_str(&mut self, s: &str) -> std::fmt::Result {
-        Ok(self.0.update(s.as_bytes()))
+        self.0.update(s.as_bytes());
+        Ok(())
+    }
+}
+
+impl<'a, H: HashFunction + ?Sized> std::io::Write for AsWrite<'a, H> {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0.update(buf);
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
     }
 }
