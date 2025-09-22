@@ -26,7 +26,7 @@ use crate::hash::{HashFunction, Sha256, Sha384};
 ///
 /// See also [`normalize_with`].
 pub fn normalize<D: SetDataset, W: io::Write>(d: &D, w: W) -> Result<(), C14nError<D::Error>> {
-    normalize_with::<Sha256, D, W>(d, w, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
+    normalize_with::<Sha256, D, W, true>(d, w, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
 /// Write into `w` a canonical N-quads representation of `d`, where
@@ -41,7 +41,7 @@ pub fn normalize_sha384<D: SetDataset, W: io::Write>(
     d: &D,
     w: W,
 ) -> Result<(), C14nError<D::Error>> {
-    normalize_with::<Sha384, D, W>(d, w, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
+    normalize_with::<Sha384, D, W, true>(d, w, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
 /// Write into `w` a canonical N-quads representation of `d`, where
@@ -49,16 +49,19 @@ pub fn normalize_sha384<D: SetDataset, W: io::Write>(
 ///   - the [hash function](HashFunction) `H`,
 ///   - the given `depth_factor`,
 ///   - the given `permutation_limit`;
-/// - quads are sorted in codepoint order.
+/// + quads are sorted in codepoint order;
+/// + if the generic parameter `S` (strict) is false,
+///   a (non-standard) generalized version of RDFC1.0 is used,
+///   that supports RDF 1.2 and Sophia's generalized RDF.
 ///
 /// See also [`normalize`].
-pub fn normalize_with<H: HashFunction, D: SetDataset, W: io::Write>(
+pub fn normalize_with<H: HashFunction, D: SetDataset, W: io::Write, const S: bool>(
     d: &D,
     mut w: W,
     depth_factor: f32,
     permutation_limit: usize,
 ) -> Result<(), C14nError<D::Error>> {
-    let (mut quads, _) = relabel_with::<H, D>(d, depth_factor, permutation_limit)?;
+    let (mut quads, _) = relabel_with::<H, D, S>(d, depth_factor, permutation_limit)?;
     let mut buf1 = String::new();
     let mut buf2 = String::new();
     // we sort the quads, but comparing the terms based on their NQ serialization,
@@ -100,7 +103,7 @@ pub fn normalize_with<H: HashFunction, D: SetDataset, W: io::Write>(
 ///
 /// See also [`normalize`].
 pub fn relabel<D: SetDataset>(d: &D) -> Result<(C14nQuads<'_, D>, C14nIdMap), C14nError<D::Error>> {
-    relabel_with::<Sha256, D>(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
+    relabel_with::<Sha256, D, true>(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
 /// Return a [`Dataset`](sophia_api::dataset::Dataset) isomorphic to `d`,
@@ -117,7 +120,7 @@ pub fn relabel<D: SetDataset>(d: &D) -> Result<(C14nQuads<'_, D>, C14nIdMap), C1
 pub fn relabel_sha384<D: SetDataset>(
     d: &D,
 ) -> Result<(C14nQuads<'_, D>, C14nIdMap), C14nError<D::Error>> {
-    relabel_with::<Sha384, D>(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
+    relabel_with::<Sha384, D, true>(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
 
 /// Return a [`Dataset`](sophia_api::dataset::Dataset) isomorphic to `d`,
@@ -140,10 +143,12 @@ pub fn relabel_sha384<D: SetDataset>(
 ///   `permutation_limit` undistinguishable blank nodes
 ///   (blank nodes with the same immediate neighbourhood).
 ///
-/// Implements <https://www.w3.org/TR/rdf-canon/#canon-algorithm>
+/// Implements <https://www.w3.org/TR/rdf-canon/#canon-algorithm>;
+/// if the generic parameter `S` (strict) is false,
+/// that algorithm is extended to supports RDF 1.2 and Sophia's generalized RDF.
 ///
 /// See also [`relabel`], [`normalize_with`].
-pub fn relabel_with<'a, H: HashFunction, D: SetDataset>(
+pub fn relabel_with<'a, H: HashFunction, D: SetDataset, const S: bool>(
     d: &'a D,
     depth_factor: f32,
     permutation_limit: usize,
@@ -152,10 +157,10 @@ pub fn relabel_with<'a, H: HashFunction, D: SetDataset>(
         d.quads().map(|res| res.map(Quad::to_spog)).collect();
     let quads = quads?;
     // Step 1
-    let mut state = C14nState::<H, _>::new(depth_factor, permutation_limit);
+    let mut state = C14nState::<H, _, S>::new(depth_factor, permutation_limit);
     // Step 2
     for quad in &quads {
-        if quad.p().is_blank_node() {
+        if S && quad.p().is_blank_node() {
             return Err(C14nError::Unsupported(
                 "RDFC-1.0 does not support blank node as predicate".to_string(),
             ));
@@ -247,7 +252,7 @@ pub type C14nQuads<'a, D> = Vec<Spog<C14nTerm<DTerm<'a, D>>>>;
 pub type C14nIdMap = BTreeMap<Rc<str>, BnodeId<Rc<str>>>;
 
 #[derive(Clone, Debug)]
-struct C14nState<'a, H: HashFunction, T: Term> {
+struct C14nState<'a, H: HashFunction, T: Term, const S: bool> {
     b2q: BTreeMap<Rc<str>, Vec<&'a Spog<T>>>,
     h2b: BTreeMap<H::Output, Vec<Rc<str>>>,
     canonical: BnodeIssuer,
@@ -259,7 +264,7 @@ struct C14nState<'a, H: HashFunction, T: Term> {
     permutation_limit: usize,
 }
 
-impl<H: HashFunction, T: Term> C14nState<'_, H, T> {
+impl<H: HashFunction, T: Term, const S: bool> C14nState<'_, H, T, S> {
     fn new(depth_factor: f32, permutation_limit: usize) -> Self {
         C14nState {
             b2q: BTreeMap::new(),
@@ -594,7 +599,7 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
         ]);
         let mut output = Vec::<u8>::new();
         // set depth_factor too low for this graph
-        let res = normalize_with::<Sha256, _, _>(
+        let res = normalize_with::<Sha256, _, _, true>(
             &dataset,
             &mut output,
             0.5,
@@ -684,7 +689,7 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
         let mut output = Vec::<u8>::new();
         // set permutation limit too low for this graph
         let res =
-            normalize_with::<Sha256, _, _>(&dataset, &mut output, 2.0 * DEFAULT_DEPTH_FACTOR, 3);
+            normalize_with::<Sha256, _, _, true>(&dataset, &mut output, 2.0 * DEFAULT_DEPTH_FACTOR, 3);
         assert!(matches!(res, Err(C14nError::ToxicGraph(_))));
     }
 
