@@ -100,10 +100,10 @@ pub fn cmp_c14n_terms<'a, 'b, T: Term>(
     buf2: &'b mut String,
 ) -> Ordering {
     if let Some(t1) = t1 {
-        nq(t1, buf1);
+        nq(t1, buf1).unwrap();
     }
     if let Some(t2) = t2 {
-        nq(t2, buf2);
+        nq(t2, buf2).unwrap();
     }
     buf1.cmp(&buf2)
 }

@@ -57,11 +57,24 @@ pub fn normalize_sha384<D: SetDataset, W: io::Write>(
 /// See also [`normalize`].
 pub fn normalize_with<H: HashFunction, D: SetDataset, W: io::Write, const S: bool>(
     d: &D,
-    mut w: W,
+    w: W,
     depth_factor: f32,
     permutation_limit: usize,
 ) -> Result<(), C14nError<D::Error>> {
-    let (mut quads, _) = relabel_with::<H, D, S>(d, depth_factor, permutation_limit)?;
+    let (quads, _) = relabel_with::<H, D, S>(d, depth_factor, permutation_limit)?;
+    normalize_with_inner::<H, DTerm<'_, D>, D::Error, W, S>(quads, w)
+}
+
+pub(crate) fn normalize_with_inner<H, T, E, W, const S: bool>(
+    mut quads: Vec<Spog<C14nTerm<T>>>,
+    mut w: W,
+) -> Result<(), C14nError<E>>
+where
+    H: HashFunction,
+    T: Term,
+    E: std::error::Error + Send + Sync + 'static,
+    W: io::Write
+{
     let mut buf1 = String::new();
     let mut buf2 = String::new();
     // we sort the quads, but comparing the terms based on their NQ serialization,
@@ -79,11 +92,15 @@ pub fn normalize_with<H: HashFunction, D: SetDataset, W: io::Write, const S: boo
     });
     for quad in quads {
         buf1.clear();
-        nq(quad.s(), &mut buf1);
-        nq(quad.p(), &mut buf1);
-        nq(quad.o(), &mut buf1);
+        nq(quad.s(), &mut buf1).unwrap();
+        buf1.push(' ');
+        nq(quad.p(), &mut buf1).unwrap();
+        buf1.push(' ');
+        nq(quad.o(), &mut buf1).unwrap();
+        buf1.push(' ');
         if let Some(gn) = quad.g() {
-            nq(gn, &mut buf1);
+            nq(gn, &mut buf1).unwrap();
+            buf1.push(' ');
         }
         w.write_all(buf1.as_bytes()).map_err(C14nError::Io)?;
         w.write_all(b".\n").map_err(C14nError::Io)?;
@@ -139,7 +156,7 @@ pub fn relabel_sha384<D: SetDataset>(
 /// More preciselity:
 /// * the algorithm will not recurse more deeply than`depth_factor`*N,
 ///   where N is the total number of blank nodes in the dataset;
-/// * the algorithl will not try to disambiguate more than
+/// * the algorithm will not try to disambiguate more than
 ///   `permutation_limit` undistinguishable blank nodes
 ///   (blank nodes with the same immediate neighbourhood).
 ///
@@ -155,7 +172,19 @@ pub fn relabel_with<'a, H: HashFunction, D: SetDataset, const S: bool>(
 ) -> Result<(C14nQuads<'a, D>, C14nIdMap), C14nError<D::Error>> {
     let quads: Result<Vec<Spog<DTerm<'a, D>>>, _> =
         d.quads().map(|res| res.map(Quad::to_spog)).collect();
-    let quads = quads?;
+    relabel_with_inner::<'a, H, DTerm<'a, D>, D::Error, true>(quads?, depth_factor, permutation_limit)
+}
+
+pub(crate) fn relabel_with_inner<'a, H, T, E, const S: bool>(
+    quads: Vec<Spog<T>>,
+    depth_factor: f32,
+    permutation_limit: usize,
+) -> Result<(Vec<Spog<C14nTerm<T>>>, C14nIdMap), C14nError<E>>
+where
+    H: HashFunction,
+    T: Term + 'a,
+    E: std::error::Error + Send + Sync + 'static,
+{
     // Step 1
     let mut state = C14nState::<H, _, S>::new(depth_factor, permutation_limit);
     // Step 2
@@ -172,7 +201,7 @@ pub fn relabel_with<'a, H: HashFunction, D: SetDataset, const S: bool>(
                 ));
             } else if !S && component.is_triple() {
                 return Err(C14nError::Unsupported(
-                    "Generalized RDFC-1.0 does not support triple terms".to_string(),
+                    "Sophia-C14N expects triple-terms to be encoded as singleton named graph.".into()
                 ));
             }
             if let Some(bnid) = component.bnode_id() {
@@ -227,7 +256,7 @@ pub fn relabel_with<'a, H: HashFunction, D: SetDataset, const S: bool>(
         .into_iter()
         .map(|q| {
             let (spo, g) = q;
-            let convert = |t: DTerm<'a, D>| {
+            let convert = |t: T| {
                 if let Some(bnid) = t.bnode_id() {
                     let canon_id = issued.get(bnid.as_str()).unwrap();
                     return C14nTerm::Blank(canon_id.clone());
@@ -549,7 +578,8 @@ fn nq_for_hash<T: Term>(term: T, buffer: &mut String, ref_bnid: &str) {
             buffer.push_str("_:z ");
         }
     } else {
-        nq(term.borrow_term(), buffer);
+        nq(term.borrow_term(), buffer).unwrap();
+        buffer.push(' ');
     }
 }
 
