@@ -21,6 +21,7 @@ mod _permutations;
 
 pub mod hash;
 pub mod rdfc10;
+pub mod sophia;
 
 use thiserror::Error;
 
