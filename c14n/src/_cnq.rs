@@ -1,5 +1,7 @@
 //! Canonical N-Quads
 
+use std::fmt::Write;
+
 use sophia_api::{
     ns::xsd,
     term::{Term, TermKind},
@@ -33,6 +35,10 @@ pub fn nq<T: Term>(term: T, buffer: &mut String) {
             if let Some(tag) = term.language_tag() {
                 buffer.push('@');
                 buffer.push_str(&tag);
+                if let Some(dir) = term.base_direction() {
+                    buffer.push_str("--");
+                    write!(buffer, "{dir}").unwrap();
+                }
             } else {
                 let datatype = term.datatype().unwrap();
                 if !Term::eq(&datatype, xsd::string) {
