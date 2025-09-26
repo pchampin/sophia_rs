@@ -75,6 +75,7 @@ pub mod rdf {
         language,
         object,
         predicate,
+        reifies,
         rest,
         subject,
         value,
