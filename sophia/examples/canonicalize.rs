@@ -39,7 +39,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Err(other) => return Err(other.into()),
     };
     // TODO make it possible to select another hash function
-    rdfc10::normalize_with::<Sha256, _, _, true>(
+    rdfc10::normalize_with::<Sha256, _, _>(
         &dataset,
         output,
         depth_factor,
