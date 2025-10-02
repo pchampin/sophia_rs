@@ -7,7 +7,7 @@ use sophia_api::{graph::CollectibleGraph, prelude::*, term::SimpleTerm};
 /// An iterator of terms over a "blank node label" such as the ones modelling RDF lists.
 ///
 /// # Error
-/// This iterator will yield an error if the underlyin graph errs,
+/// This iterator will yield an error if the underlying graph errs,
 /// or if the ladder is malformed (no unique value or successor on a node).
 /// Note however than cyclic ladders will not be detected, and will iterate forever.
 #[derive(Debug)]

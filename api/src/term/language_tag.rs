@@ -305,10 +305,10 @@ mod test {
     #[test_case("en", "fr"; "all_lower")]
     #[test_case("en", "FR"; "lower_upper")]
     #[test_case("EN", "fr"; "upper_lower")]
-    #[test_case("en-UK", "en-US"; "counry_all_upper")]
-    #[test_case("en-uk", "en-us"; "counry_all_lower")]
-    #[test_case("en-uk", "en-US"; "counry_lower_upper")]
-    #[test_case("en-UK", "en-us"; "counry_upper_lower")]
+    #[test_case("en-UK", "en-US"; "country_all_upper")]
+    #[test_case("en-uk", "en-us"; "country_all_lower")]
+    #[test_case("en-uk", "en-US"; "country_lower_upper")]
+    #[test_case("en-UK", "en-us"; "country_upper_lower")]
     fn case_insensitive_cmp(tag1: &str, tag2: &str) {
         let ltag1 = LanguageTag::new_unchecked(tag1);
         let ltag2 = LanguageTag::new_unchecked(tag2);

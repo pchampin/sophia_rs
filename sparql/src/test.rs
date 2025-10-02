@@ -1114,7 +1114,7 @@ fn test_expr_eq(expr1: &str, expr2: &str, exp: Option<bool>) -> TestResult {
 
     let (exp_eq, exp_neq) = match exp {
         Some(true) => (TRUE, FALSE),
-        Some(fale) => (FALSE, TRUE),
+        Some(false) => (FALSE, TRUE),
         None => ("", ""),
     };
     assert_eq!(eval_expr(&format!("{expr1} = {expr2}"))?, exp_eq);

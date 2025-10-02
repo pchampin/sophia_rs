@@ -222,19 +222,19 @@ mod test {
     fn check_trait_impls() {
         let mut g: Vec<[SimpleTerm; 3]> = vec![];
 
-        // check that Graph::as_dataset implememnts Dataset
+        // check that Graph::as_dataset implements Dataset
         for _ in g.as_dataset().quads() {}
 
         let mut gd = g.as_dataset_mut();
-        // check that Graph::as_dataset_mut implememnts Dataset
+        // check that Graph::as_dataset_mut implements Dataset
         for _ in gd.quads() {}
-        // check that Graph::as_dataset_mut implememnts MutableDataset
+        // check that Graph::as_dataset_mut implements MutableDataset
         gd.remove_quad(([1, 2, 3], None)).unwrap();
 
         let mut gd = g.into_dataset();
-        // check that Graph::as_dataset_mut implememnts Dataset
+        // check that Graph::as_dataset_mut implements Dataset
         for _ in gd.quads() {}
-        // check that Graph::as_dataset_mut implememnts MutableDataset
+        // check that Graph::as_dataset_mut implements MutableDataset
         gd.remove_quad(([1, 2, 3], None)).unwrap();
     }
 }
