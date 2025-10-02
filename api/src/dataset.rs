@@ -606,6 +606,8 @@ pub trait MutableDataset: Dataset {
 /// *must not* implement this trait.
 pub trait SetDataset: Dataset {}
 
+#[cfg(test)]
+#[allow(dead_code)]
 mod check_implementability {
     /// This is a naive implementation of an RDF-star dataset,
     /// where the dataset maintains
@@ -665,6 +667,7 @@ mod check_implementability {
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 mod check_implementability_lazy_term {
     /// This implementation is internally similar to the one above,
     /// but using dedicated lazy implementations of Term
@@ -674,7 +677,6 @@ mod check_implementability_lazy_term {
     use std::collections::HashMap;
 
     #[derive(Clone, Debug, Eq, PartialEq)]
-    #[allow(dead_code)] // testing implementability
     enum MyInternalTerm {
         Atom(SimpleTerm<'static>),
         QuotedTriple(usize),

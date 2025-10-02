@@ -701,6 +701,7 @@ where
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 mod check_implementability {
     use super::*;
 

@@ -528,6 +528,7 @@ pub trait MutableGraph: Graph {
 pub trait SetGraph: Graph {}
 
 #[cfg(test)]
+#[allow(dead_code)]
 mod check_implementability {
     /// This is a naive implementation of an RDF-star graph,
     /// where the graph maintains
@@ -590,6 +591,7 @@ mod check_implementability {
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 mod check_implementability_lazy_term {
     /// This implementation is internally similar to the one above,
     /// but using dedicated lazy implementations of Term
@@ -598,7 +600,6 @@ mod check_implementability_lazy_term {
     use crate::term::{SimpleTerm, TermKind};
 
     #[derive(Clone, Debug, Eq, PartialEq)]
-    #[allow(dead_code)] // testing implementability
     enum MyInternalTerm {
         Atom(SimpleTerm<'static>),
         QuotedTriple(usize),
