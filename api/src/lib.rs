@@ -62,6 +62,7 @@ pub mod source;
 pub mod sparql;
 pub mod term;
 pub mod triple;
+pub mod version;
 
 /// Re-export MownStr to avoid dependency version mismatch.
 ///
