@@ -205,9 +205,7 @@ fn escape_triple_terms<'a, H: HashFunction, D: SetDataset>(
         let (id, is_bnode, _) = aliases.entry(hash).or_insert_with_key(|hash| {
             let is_bnode = triple.iter().any(Term::is_blank_node);
             let mut buffer = String::new();
-            if !is_bnode {
-                buffer.push_str("aaa:");
-            }
+            buffer.push_str(if is_bnode { "b" } else { "aaa:" });
             BASE64_URL_SAFE_NO_PAD.encode_string(hash, &mut buffer);
             (buffer.into(), is_bnode, triple)
         });
