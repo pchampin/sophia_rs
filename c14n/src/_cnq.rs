@@ -32,7 +32,7 @@ pub fn nq<T: Term, W: std::fmt::Write>(term: T, write: &mut W) -> std::fmt::Resu
             write.write_char('"')?;
             if let Some(tag) = term.language_tag() {
                 write.write_char('@')?;
-                write.write_str(&tag)?;
+                write.write_str(&tag.to_ascii_lowercase())?;
                 if let Some(dir) = term.base_direction() {
                     write.write_str("--")?;
                     write!(write, "{dir}").unwrap();
