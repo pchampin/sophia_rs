@@ -189,7 +189,7 @@
 <ul>
 <li>Core crates:
 <ul>
-<li><a href="https://crates.io/crates/sophia_api"><code>sophia_api</code></a> defines a generic API for RDF and linked data,
+<li><a href="https://crates.io/crates/sophia_api"><code>sophia_api</code></a> defines a generic API for RDF 1.2 and linked data,
 as a set of core traits and types;
 more precisely, it provides traits for describing
 <ul>
@@ -205,17 +205,17 @@ more precisely, it provides traits for describing
 </li>
 <li>Parsers and serializers
 <ul>
-<li><a href="https://crates.io/crates/sophia_turtle"><code>sophia_turtle</code></a> provides parsers and serializers for the Turtle-family of concrete syntaxes.</li>
-<li><a href="https://crates.io/crates/sophia_jsonld"><code>sophia_jsonld</code></a> provides parsers and serializers for JSON-LD.</li>
-<li><a href="https://crates.io/crates/sophia_xml"><code>sophia_xml</code></a> provides parsers and serializers for RDF/XML.</li>
-<li><a href="https://crates.io/crates/sophia_rio"><code>sophia_rio</code></a> is a lower-level crate, used by the ones above.</li>
+<li><a href="https://crates.io/crates/sophia_turtle"><code>sophia_turtle</code></a> provides parsers and serializers for the Turtle-family of concrete syntaxes (for RDF 1.2).</li>
+<li><a href="https://crates.io/crates/sophia_jsonld"><code>sophia_jsonld</code></a> provides parsers and serializers for JSON-LD 1.1.</li>
+<li><a href="https://crates.io/crates/sophia_xml"><code>sophia_xml</code></a> provides parsers and serializers for RDF/XML 1.1.</li>
+<li><a href="https://crates.io/crates/sophia_rio"><code>sophia_rio</code></a> is a lower-level crate, used by <a href="https://crates.io/crates/sophia_xml"><code>sophia_xml</code></a>.</li>
 </ul>
 </li>
 <li>Other
 <ul>
 <li><a href="https://crates.io/crates/sophia_c14n"><code>sophia_c14n</code></a> implements <a href="https://www.w3.org/TR/rdf-canon/">RDF canonicalization</a>.</li>
 <li><a href="https://crates.io/crates/sophia_isomorphism"><code>sophia_isomorphism</code></a> provides functions to determine if two graphs or datasets are <a href="https://www.w3.org/TR/rdf11-concepts/#h3_graph-isomorphism">isomorphic</a>.</li>
-<li>[<code>sophia_sparql</code>] provides a (currently partial) implementation of the <a href="https://www.w3.org/TR/sparql11-query">SPARQL 1.1 Query Language</a>.</li>
+<li>[<code>sophia_sparql</code>] provides a (currently partial) implementation of the [SPARQL 1.2 Query Language].</li>
 <li><a href="https://crates.io/crates/sophia_sparql_client"><code>sophia_sparql_client</code></a> provides a client for the <a href="https://www.w3.org/TR/sparql11-protocol">SPARQL 1.1 Protocol</a>.</li>
 <li><a href="https://crates.io/crates/sophia_resource"><code>sophia_resource</code></a> provides a resource-centric API.</li>
 </ul>
