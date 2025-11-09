@@ -413,7 +413,7 @@ impl<H: HashFunction, T: Term, const S: bool> C14nState<'_, H, T, S> {
         // Step 3
         for quad in quads {
             for (component, position) in iter_spog(quad.spog()).zip(["s", "p", "o", "g"].iter()) {
-                assert!(!component.is_triple() && !component.is_variable());
+                assert!(!S || !component.is_triple() && !component.is_variable());
                 if let Some(bnid) = component.bnode_id() {
                     if &bnid == identifier {
                         continue;
