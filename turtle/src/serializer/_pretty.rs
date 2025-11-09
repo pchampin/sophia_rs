@@ -10,17 +10,17 @@
 //!    and decide on line breaks and indentation based on the overall structure,
 //!    rather than a priori.
 
+use crate::serializer::_common::{write_language_string, write_typed_literal};
+
 use super::turtle::TurtleConfig;
-use regex::Regex;
 use sophia_api::MownStr;
 use sophia_api::dataset::Dataset;
-use sophia_api::ns::{rdf, xsd};
+use sophia_api::ns::rdf;
 use sophia_api::prefix::PrefixMap;
 use sophia_api::quad::{Gspo, Quad, Spog, iter_spog};
 use sophia_api::term::matcher::Any;
 use sophia_api::term::{GraphName, SimpleTerm, Term, TermKind};
-use sophia_api::triple::Triple;
-use sophia_iri::{Iri, IriRef};
+use sophia_iri::IriRef;
 use std::cmp::Ordering;
 use std::collections::btree_map::Entry::{Occupied, Vacant};
 use std::collections::{BTreeMap, BTreeSet};
@@ -69,6 +69,7 @@ struct Prettifier<'a, W> {
     indent: String,
     config: &'a TurtleConfig,
     labelled: BTreeSet<&'a SimpleTerm<'a>>,
+    annotations: BTreeMap<Spog<&'a SimpleTerm<'a>>, Vec<(&'a SimpleTerm<'a>, bool)>>,
     subject_types: Vec<(
         GraphName<&'a SimpleTerm<'a>>,
         &'a SimpleTerm<'a>,
@@ -91,8 +92,9 @@ impl<'a, W: Write> Prettifier<'a, W> {
         indent: String,
         config: &'a TurtleConfig,
     ) -> Self {
-        let labelled = build_labelled(dataset);
-        let mut subject_types = build_subject_types(dataset, &labelled);
+        let mut labelled = build_labelled(dataset);
+        let mut annotations = BTreeMap::new();
+        let mut subject_types = build_subject_types(dataset, &mut labelled, &mut annotations);
         let lists = build_lists(dataset, &mut subject_types);
         let subject_types: Vec<_> = subject_types
             .into_iter()
@@ -112,6 +114,7 @@ impl<'a, W: Write> Prettifier<'a, W> {
             indent,
             config,
             labelled,
+            annotations,
             subject_types,
             lists,
             graph_range,
@@ -141,43 +144,65 @@ impl<'a, W: Write> Prettifier<'a, W> {
     }
 
     /// Pre-condition:
-    /// swt is not empty;
+    /// self.subject_types[self.graph_range] is not empty;
     /// all its elements have the same graph name,
     /// and all subjects of that graph are contained in it.
     fn write_graph(&mut self) -> io::Result<()> {
         for i in self.graph_range.clone() {
             let (_, s, st) = &self.subject_types[i];
-            if *st != SubjectType::Root {
-                continue;
+            match st {
+                SubjectType::Root => self.write_tree(s, false)?,
+                SubjectType::SingleReifier => self.write_tree(s, true)?,
+                _ => continue,
             }
-            self.write_tree(s)?;
             self.subject_types[i].2 = SubjectType::Done;
         }
-        /*
-        // some blank node cycles can cause all of them to be SubTree;
-        // here we detect and break these cycles
-        for i in self.graph_range.clone() {
-            let (_, s, st) = &self.subject_types[i];
-                if *st == SubjectType::Done {
-                continue
-            }
-            assert!(*st == SubjectType::SubTree);
-            self.write_tree(*s)?;
-            self.subject_types[i].2 = SubjectType::Done;
-        }
-        */
         Ok(())
     }
 
-    fn write_tree(&mut self, root: &'a SimpleTerm<'a>) -> io::Result<()> {
+    fn write_tree(&mut self, root: &'a SimpleTerm<'a>, reifier: bool) -> io::Result<()> {
         self.write_newline()?;
-        self.write_term(root)?;
-        self.write_properties(root)?;
+        if reifier {
+            self.write_reified(root)?;
+        } else {
+            self.write_term(root)?;
+        }
+        self.write_properties(root, reifier)?;
         self.write_bytes(b".\n")?;
         Ok(())
     }
 
-    fn write_properties(&mut self, subject: &'a SimpleTerm<'a>) -> io::Result<()> {
+    /// Precondition: root is a SingleReifier
+    fn write_reified(&mut self, root: &'a SimpleTerm<'a>) -> io::Result<()> {
+        let g = self.current_graph_name();
+        let [s1, p1, o1] = self
+            .dataset
+            .quads_matching([root], [rdf::reifies], TermKind::Triple, [g])
+            .next()
+            .unwrap()
+            .unwrap()
+            .o()
+            .triple()
+            .unwrap();
+        self.write_bytes(b"<< ")?;
+        self.write_term(s1)?;
+        self.write_bytes(b" ")?;
+        self.write_term(p1)?;
+        self.write_bytes(b" ")?;
+        self.write_term(o1)?;
+        if !root.is_blank_node() || self.labelled.contains(&root) {
+            self.write_bytes(b" ~ ")?;
+            self.write_term(root)?;
+        }
+        self.write_bytes(b" >>")?;
+        Ok(())
+    }
+
+    fn write_properties(
+        &mut self,
+        subject: &'a SimpleTerm<'a>,
+        skip_reifies: bool,
+    ) -> io::Result<()> {
         let mut predicate = None;
         self.indent(); // to predicate-level
         let g = self.current_graph_name();
@@ -206,6 +231,9 @@ impl<'a, W: Write> Prettifier<'a, W> {
         {
             let p = t.p();
             if rdf::type_ == p {
+                continue;
+            }
+            if skip_reifies && rdf::reifies == p {
                 continue;
             }
             if Some(p) != predicate {
@@ -252,63 +280,53 @@ impl<'a, W: Write> Prettifier<'a, W> {
         predicate: &'a SimpleTerm<'a>,
         object: &'a SimpleTerm<'a>,
     ) -> io::Result<()> {
-        self.write_term(object)?;
-        let tr = SimpleTerm::Triple(Box::new([
-            subject.clone(),
-            predicate.clone(),
-            object.clone(),
-        ]));
-        if let Some(i) = self.find_st_index(tr) {
-            let (_, s, st) = self.subject_types[i];
-            if st == SubjectType::Annotation {
-                self.write_bytes(b" {|")?;
-                self.write_properties(s)?;
-                self.write_bytes(b" |}")?;
-                self.subject_types[i].2 = SubjectType::Done;
+        if rdf::nil == object {
+            self.write_bytes(b"()")?;
+        } else {
+            self.write_term(object)?;
+        }
+        let key = ([subject, predicate, object], self.current_graph_name());
+        if let Some(reifiers) = self.annotations.remove(&key) {
+            for (r, has_props) in reifiers {
+                if !r.is_blank_node() || self.labelled.contains(r) || !has_props {
+                    self.write_bytes(b" ~ ")?;
+                    self.write_term(r)?;
+                }
+                if has_props {
+                    self.write_bytes(b" {|")?;
+                    self.write_properties(r, true)?;
+                    self.write_bytes(b" |}")?;
+                }
             }
         }
         Ok(())
     }
 
     fn write_term(&mut self, term: &'a SimpleTerm<'a>) -> io::Result<()> {
-        use TermKind::{BlankNode, Iri, Literal, Triple, Variable};
-        match term.kind() {
-            Iri => self.write_iri(&term.iri().unwrap()),
-            BlankNode => self.write_bnode(term),
-            Literal => self.write_literal(term),
-            Variable => {
-                write!(&mut self.write, "?{}", term.variable().unwrap().as_str())
+        use SimpleTerm::*;
+        match term {
+            Iri(iri_ref) => self.write_iri(iri_ref),
+            BlankNode(_) => self.write_bnode(term),
+            LiteralDatatype(lex, dt) => {
+                write_typed_literal(lex, dt, &mut self.write, &self.config.prefix_map)
             }
-            Triple => {
-                self.write_bytes(b"<< ")?;
-                for t in term.triple().unwrap() {
+            LiteralLanguage(lex, tag, dir) => {
+                write_language_string(lex, tag, *dir, &mut self.write)
+            }
+            Triple(triple) => {
+                self.write_bytes(b"<<( ")?;
+                for t in &triple[..] {
                     self.write_term(t)?;
                     self.write_bytes(b" ")?;
                 }
-                self.write_bytes(b">>")
+                self.write_bytes(b")>>")
             }
+            Variable(var_name) => write!(&mut self.write, "?{}", var_name.as_str()),
         }
     }
 
     fn write_iri(&mut self, iri: &IriRef<MownStr>) -> io::Result<()> {
-        if rdf::nil == iri {
-            return self.write_bytes(b"()");
-        }
-        let Some(iri) = Iri::new(iri.as_str()).ok() else {
-            return write!(self.write, "<{}>", iri.as_str());
-        };
-        match self
-            .config
-            .prefix_map
-            .get_checked_prefixed_pair(iri, |txt| PN_LOCAL.is_match(txt))
-        {
-            Some((pre, suf)) => {
-                write!(self.write, "{}:{}", pre.as_str(), suf)
-            }
-            None => {
-                write!(self.write, "<{}>", iri.as_str())
-            }
-        }
+        super::_common::write_iri(iri, &mut self.write, &self.config.prefix_map)
     }
 
     fn write_bnode(&mut self, bn: &'a SimpleTerm<'a>) -> io::Result<()> {
@@ -329,41 +347,17 @@ impl<'a, W: Write> Prettifier<'a, W> {
             match st {
                 SubjectType::SubTree => {
                     self.write_bytes(b"[")?;
-                    self.write_properties(s)?;
+                    self.write_properties(s, false)?;
                     self.write_bytes(b"]")?;
                     self.subject_types[i].2 = SubjectType::Done;
                 }
-                SubjectType::Root => {
+                SubjectType::Root | SubjectType::SingleReifier | SubjectType::Annotation => {
                     self.write_bytes(b"[]")?;
                 }
-                _ => {}
+                SubjectType::Done => {}
             }
         } else {
             self.write_bytes(b"[]")?;
-        }
-        Ok(())
-    }
-
-    fn write_literal(&mut self, lit: &'a SimpleTerm<'a>) -> io::Result<()> {
-        debug_assert!(lit.kind() == TermKind::Literal);
-        let datatype = lit.datatype().unwrap();
-        let value = lit.lexical_form().unwrap();
-        if xsd::integer == datatype && INTEGER.is_match(&value)
-            || xsd::decimal == datatype && DECIMAL.is_match(&value)
-            || xsd::double == datatype && DOUBLE.is_match(&value)
-            || xsd::boolean == datatype && BOOLEAN.is_match(&value)
-        {
-            self.write_bytes(value.as_bytes())?;
-        } else {
-            self.write_bytes(b"\"")?;
-            super::nt::quoted_string(&mut self.write, value.as_bytes())?;
-            self.write_bytes(b"\"")?;
-            if let Some(tag) = lit.language_tag() {
-                write!(self.write, "@{}", tag.as_str())?;
-            } else if xsd::string != datatype {
-                self.write_bytes(b"^^")?;
-                self.write_iri(&datatype)?;
-            }
         }
         Ok(())
     }
@@ -415,16 +409,18 @@ impl<'a, W: Write> Prettifier<'a, W> {
 /// - they are used in several named graphs, or
 /// - they are used several times as object, or
 /// - they are used as predicate or `graph_name`, or
-/// - they are used in a quoted triple, or
+/// - they are used in a triple term, or
 /// - they are involved in a blank node cycle.
 ///
-/// NB1: actually, blank nodes that are the subject of a quoted triple that is also
-/// asserted (in the same graph) are not forced to be labelled,
-/// because the quoted triple can be "hidden" by an annotating the asserted one.
+/// NB: actually, blank nodes in triple terms can sometimes be written as ANON (`[]`),
+/// but detecting this is pretty involved, for example:
+/// if the blank node is used only once in the triple term AND
+/// - if the triple term is used only once with an arbitrary predicate OR
+/// - if the triple term is used several times, only with rdf:reifies AND the triple is also asserted
+///   (then we can "factorize" the blank node using the annotation syntax).
 ///
-/// NB2: there would be other cases where a bnode in a quoted triples could,
-/// theory, be written using the square brackets, but the added value is not worth
-/// the trouble of identifying those cases.
+/// There may be other corner cases...
+/// This implementation currently does not support that.
 fn build_labelled<'a>(d: &'a PrettifiableDataset) -> BTreeSet<&'a SimpleTerm<'a>> {
     let mut profiles = BTreeMap::new();
     for q in d.quads() {
@@ -449,13 +445,6 @@ fn build_labelled<'a>(d: &'a PrettifiableDataset) -> BTreeSet<&'a SimpleTerm<'a>
                         });
                 }
                 TermKind::Triple => {
-                    let mut atoms = t.atoms();
-                    let [s, p, o] = t.triple().unwrap().spo();
-                    if s.is_blank_node() && Dataset::contains(d, s, p, o, q.g()).unwrap() {
-                        atoms.next(); // skip the subject blank nodes in atoms
-                        //               and leave it to the "asserted" blank node to determine
-                        //               if it must be labelled or not
-                    }
                     for a in t.atoms().filter(Term::is_blank_node) {
                         profiles
                             .entry(a)
@@ -538,35 +527,43 @@ impl<'a> BnodeProfile<'a> {
 /// For each pair (graph-name, subject), determine the subject type
 fn build_subject_types<'a>(
     d: &'a PrettifiableDataset,
-    labelled: &BTreeSet<&'a SimpleTerm<'a>>,
+    labelled: &mut BTreeSet<&'a SimpleTerm<'a>>,
+    annotations: &mut BTreeMap<Spog<&'a SimpleTerm<'a>>, Vec<(&'a SimpleTerm<'a>, bool)>>,
 ) -> BTreeMap<(GraphName<&'a SimpleTerm<'a>>, &'a SimpleTerm<'a>), SubjectType> {
     d.iter()
         .map(|q| (q.g(), q.s()))
         .dedup()
         .map(|(g, s)| {
             use TermKind::{BlankNode, Triple};
-            let st = match s.kind() {
-                BlankNode => {
-                    if !labelled.contains(&s)
-                        && d.quads_matching(Any, Any, [s], [g]).take(2).count() == 1
-                    {
-                        SubjectType::SubTree
-                    } else {
-                        SubjectType::Root
-                    }
+            let tts: Vec<_> = d
+                .quads_matching([s], [rdf::reifies], Triple, [g])
+                .take(2)
+                .map(|r| r.unwrap().o().triple().unwrap())
+                .collect();
+            let st = if let [[s1, p1, o1]] = tts[..] {
+                // s reifies exactly one triple term
+                if d.quads_matching(Any, Any, [s], [g]).next().is_some() {
+                    // if reifier is used in the object position, it must be labelled
+                    labelled.insert(s);
                 }
-                Triple => {
-                    let tr = s.triple().unwrap();
-                    if rdf::first != tr.p()
-                        && rdf::rest != tr.p()
-                        && Dataset::contains(d, tr.s(), tr.p(), tr.o(), g).unwrap()
-                    {
-                        SubjectType::Annotation
-                    } else {
-                        SubjectType::Root
-                    }
+                if d.quads_matching([s1], [p1], [o1], [g]).next().is_some() {
+                    let key = ([s1, p1, o1], g);
+                    let has_props = d.quads_matching([s], Any, Any, [g]).take(2).count() == 2; // has at least 1 property besides rdf:reifies
+                    annotations.entry(key).or_default().push((s, has_props));
+                    // the reified triple is also asserted
+                    SubjectType::Annotation
+                } else {
+                    // the reified triple is not asserted
+                    SubjectType::SingleReifier
                 }
-                _ => SubjectType::Root,
+            } else if s.kind() == BlankNode
+                && !labelled.contains(&s)
+                && d.quads_matching(Any, Any, [s], [g]).take(2).count() == 1
+            {
+                // bnodes that do not need to be labelled and have exactly one incoming arc can be serialized as subtrees
+                SubjectType::SubTree
+            } else {
+                SubjectType::Root
             };
             ((g, s), st)
         })
@@ -580,9 +577,11 @@ enum SubjectType {
     Root,
     /// A node that can be used as a subtree (square brackets with property list)
     SubTree,
-    /// A quoted triple that is also asserted
+    /// A reifier of a single and unasserted triple
+    SingleReifier,
+    /// A reifier of a single and asserted triple
     Annotation,
-    /// A dummy subject type, to indicate that this subject has been serialized already
+    /// A reifier of an asserted triple
     Done,
 }
 
@@ -667,38 +666,6 @@ fn find_subject<T: Term>(s: T, swt: &SubjectsWithType) -> Option<usize> {
 //                                      inners
 // ---------------------------------------------------------------------------------
 
-lazy_static::lazy_static! {
-    /// Match an absolute IRI reference.
-    pub(crate) static ref PN_LOCAL: Regex = Regex::new(r"(?x)^
-        #(PN_CHARS_U | ':' | [0-9] | PLX)
-        (
-            [A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}_:0-9]
-            # | PLX
-            | \\ [_~.!$&'()*+,;=/?\#@%-]
-            | % [0-9A-Fa-f]{2}
-        )
-        # ((PN_CHARS | '.' | ':' | PLX)* (PN_CHARS | ':' | PLX))?
-        (
-            (
-                [A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}_0-9\u{00B7}\u{0300}-\u{036F}\u{203F}-\u{2040}.:-]
-                | \\ [_~.!$&'()*+,;=/?\#@%-]
-                | % [0-9A-Fa-f]{2}
-            )*
-            (
-                [A-Za-z\u{00C0}-\u{00D6}\u{00D8}-\u{00F6}\u{00F8}-\u{02FF}\u{0370}-\u{037D}\u{037F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\u{10000}-\u{EFFFF}_0-9\u{00B7}\u{0300}-\u{036F}\u{203F}-\u{2040}:-]
-                | \\ [_~.!$&'()*+,;=/?\#@%-]
-                | % [0-9A-Fa-f]{2}
-            )
-        )?
-    $").unwrap();
-    pub(crate) static ref INTEGER: Regex = Regex::new(r"^[+-]?[0-9]+$").unwrap();
-    pub(crate) static ref DECIMAL: Regex = Regex::new(r"^[+-]?[0-9]*.[0-9]+$").unwrap();
-    pub(crate) static ref DOUBLE: Regex = Regex::new(r"(?x)^
-      [+-]? ( [0-9]+ ( . [0-9]* )? | . [0-9]+ ) [eE] [+-]? [0-9]+
-    $").unwrap();
-    pub(crate) static ref BOOLEAN: Regex = Regex::new(r"^(true|false)$").unwrap();
-}
-
 trait Dedup: Iterator + Sized {
     fn dedup(self) -> DedupIterator<Self> {
         DedupIterator {
@@ -754,41 +721,6 @@ pub mod test {
         let v1 = [1, 1, 1, 2, 2, 1, 3, 3];
         let v2: Vec<_> = v1.into_iter().dedup().collect();
         assert_eq!(&v2, &[1, 2, 1, 3]);
-    }
-
-    #[test]
-    fn pn_local() {
-        for positive in [
-            "a",
-            "aBc",
-            "éàïsophia_api::graph::",
-            ":::",
-            "123",
-            "%20%21%22",
-            "\\%\\?\\&",
-        ] {
-            assert!(PN_LOCAL.is_match(positive), "{}", positive);
-        }
-        for negative in [" ", ".a", "a."] {
-            assert!(!PN_LOCAL.is_match(negative), "{}", negative);
-        }
-    }
-
-    #[test]
-    fn double() {
-        for positive in [
-            "3.14e0",
-            "+3.14e0",
-            "-3.14e0",
-            "3.14e+0",
-            "3.14e-0",
-            "0000e0000",
-            ".1E0",
-            "1.e+3",
-            "1E-3",
-        ] {
-            assert!(DOUBLE.is_match(positive), "{}", positive);
-        }
     }
 
     #[test]

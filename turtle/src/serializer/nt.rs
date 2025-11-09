@@ -5,7 +5,7 @@
 //! make no effort to minimize the number of write operations.
 //! Hence, in most cased, they should be passed a [`BufWriter`].
 //!
-//! [N-Triples]: https://www.w3.org/TR/n-triples/
+//! [N-Triples]: https://www.w3.org/TR/rdf12-n-triples/
 //! [`Write`]: https://doc.rust-lang.org/std/io/trait.Write.html
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
@@ -16,48 +16,83 @@ use sophia_api::term::{Term, TermKind};
 use sophia_api::triple::Triple;
 use std::io;
 
+use super::_common::quoted_string;
+
 /// N-Triples serializer configuration.
 #[derive(Clone, Debug, Default)]
-pub struct NtConfig {
+pub struct NTriplesConfig {
     pub(super) ascii: bool,
+    pub(super) canonical: bool,
 }
 
-impl NtConfig {
-    /// Set the ascii configuration.
-    pub fn set_ascii(&mut self, ascii: bool) -> &mut Self {
-        self.ascii = ascii;
-        self
+/// Type alias of `NTriplesConfig` for backward compatibility
+#[deprecated(since = "0.10.0", note = "please use NTriplesConfig instead")]
+pub type NtConfig = NTriplesConfig;
+
+impl NTriplesConfig {
+    /// Construct a default configuration
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Indicate whether all non-ascii characters should be encoded (using `\uxxxx` or `\Uxxxxxxxx`).
+    ///
+    /// Defaults to false.
+    #[must_use]
+    pub fn with_ascii(self, ascii: bool) -> Self {
+        NTriplesConfig { ascii, ..self }
+    }
+
+    /// Indicates whether [canonical N-triples] should be generated.
+    ///
+    /// Defaults to false.
+    /// The default mode uses tabulations to separate the subject, predicate and object of asserted triples,
+    /// effectively producing data that is also [TSV],
+    /// making it easier to process with veadsheet applications,
+    /// as well Unix-style command line tools (e.g. `sort`, `cut`, `column`...).
+    ///
+    /// [canonical N-triples]: https://www.w3.org/TR/rdf12-n-triples/#canonical-ntriples
+    /// [TSV]: https://en.wikipedia.org/wiki/Tab-separated_values
+    #[must_use]
+    pub fn with_canonical(self, canonical: bool) -> Self {
+        NTriplesConfig { canonical, ..self }
     }
 }
 
 /// N-Triples serializer.
-pub struct NtSerializer<W> {
-    config: NtConfig,
+pub struct NTriplesSerializer<W> {
+    config: NTriplesConfig,
     write: W,
 }
 
-impl<W> NtSerializer<W>
+/// Type alias of `NTriplesSerializer` for backward compatibility
+#[deprecated(since = "0.10.0", note = "please use NTriplesSerializer instead")]
+pub type NtSerializer<W> = NTriplesSerializer<W>;
+
+impl<W> NTriplesSerializer<W>
 where
     W: io::Write,
 {
     /// Build a new N-Triples serializer writing to `write`, with the default config.
     #[inline]
     pub fn new(write: W) -> Self {
-        Self::new_with_config(write, NtConfig::default())
+        Self::new_with_config(write, NTriplesConfig::default())
     }
 
     /// Build a new N-Triples serializer writing to `write`, with the given config.
-    pub const fn new_with_config(write: W, config: NtConfig) -> Self {
+    #[inline]
+    pub const fn new_with_config(write: W, config: NTriplesConfig) -> Self {
         Self { config, write }
     }
 
     /// Borrow this serializer's configuration.
-    pub const fn config(&self) -> &NtConfig {
+    #[inline]
+    pub const fn config(&self) -> &NTriplesConfig {
         &self.config
     }
 }
 
-impl<W> TripleSerializer for NtSerializer<W>
+impl<W> TripleSerializer for NTriplesSerializer<W>
 where
     W: io::Write,
 {
@@ -73,56 +108,67 @@ where
         if self.config.ascii {
             todo!("Pure-ASCII N-Triples is not implemented yet")
         }
-        source
-            .try_for_each_triple(|t| {
+        if self.config.canonical {
+            source.try_for_each_triple(|t| {
                 {
                     let w = &mut self.write;
-                    write_triple(w, t)?;
-                    w.write_all(b".\n")
+                    write_triple::<_, _, true>(w, t, b' ')?;
+                    w.write_all(b" .\n")
                 }
                 .map_err(io::Error::other)
             })
-            .map(|()| self)
+        } else {
+            source.try_for_each_triple(|t| {
+                {
+                    let w = &mut self.write;
+                    write_triple::<_, _, false>(w, t, b'\t')?;
+                    w.write_all(b"\t.\n")
+                }
+                .map_err(io::Error::other)
+            })
+        }
+        .map(|()| self)
     }
 }
 
-impl NtSerializer<Vec<u8>> {
+impl NTriplesSerializer<Vec<u8>> {
     /// Create a new serializer which targets a `String`.
     #[inline]
-    #[must_use]
     pub fn new_stringifier() -> Self {
         Self::new(Vec::new())
     }
     /// Create a new serializer which targets a `String` with a custom config.
     #[inline]
-    #[must_use]
-    pub const fn new_stringifier_with_config(config: NtConfig) -> Self {
+    pub const fn new_stringifier_with_config(config: NTriplesConfig) -> Self {
         Self::new_with_config(Vec::new(), config)
     }
 }
 
-impl Stringifier for NtSerializer<Vec<u8>> {
+impl Stringifier for NTriplesSerializer<Vec<u8>> {
     fn as_utf8(&self) -> &[u8] {
         &self.write[..]
     }
 }
 
 /// Write the given term into the given write in the N-Triples format.
-pub fn write_triple<W, T>(w: &mut W, t: T) -> io::Result<()>
+pub fn write_triple<W, T, const C: bool>(w: &mut W, t: T, separator: u8) -> io::Result<()>
 where
     W: io::Write,
     T: Triple,
 {
-    write_term(w, t.s())?;
-    w.write_all(b" ")?;
-    write_term(w, t.p())?;
-    w.write_all(b" ")?;
-    write_term(w, t.o())?;
+    write_term::<_, _, C>(w, t.s())?;
+    w.write_all(&[separator])?;
+    write_term::<_, _, C>(w, t.p())?;
+    w.write_all(&[separator])?;
+    write_term::<_, _, C>(w, t.o())?;
     Ok(())
 }
 
 /// Write the given term into the given write in the N-Triples format.
-pub fn write_term<W, T>(w: &mut W, t: T) -> io::Result<()>
+///
+/// Generic parameter C determines whether the canonical form of N-Triples/N-Quads should be enforced,
+/// which only impacts the case of language tags in this function.
+pub fn write_term<W, T, const C: bool>(w: &mut W, t: T) -> io::Result<()>
 where
     W: io::Write,
     T: Term,
@@ -140,10 +186,17 @@ where
         }
         Literal => {
             w.write_all(b"\"")?;
-            quoted_string(w, t.lexical_form().unwrap().as_bytes())?;
+            quoted_string(w, &t.lexical_form().unwrap())?;
             if let Some(tag) = t.language_tag() {
                 w.write_all(b"\"@")?;
-                w.write_all(tag.as_bytes())?;
+                if C {
+                    w.write_all(tag.to_ascii_lowercase().as_bytes())?;
+                } else {
+                    w.write_all(tag.as_bytes())?;
+                }
+                if let Some(dir) = t.base_direction() {
+                    write!(w, "--{dir}")?;
+                }
             } else {
                 let dt = t.datatype().unwrap();
                 if xsd::string != dt {
@@ -156,9 +209,9 @@ where
             }
         }
         Triple => {
-            w.write_all(b"<<")?;
-            write_triple(w, t.to_triple().unwrap())?;
-            w.write_all(b">>")?;
+            w.write_all(b"<<( ")?;
+            write_triple::<_, _, C>(w, t.to_triple().unwrap(), b' ')?;
+            w.write_all(b" )>>")?;
         }
         Variable => {
             w.write_all(b"?")?;
@@ -168,53 +221,23 @@ where
     Ok(())
 }
 
-pub(crate) fn quoted_string<W: io::Write>(w: &mut W, txt: &[u8]) -> io::Result<()> {
-    let mut cut = txt.len();
-    let mut cutchar = b'\0';
-    for (pos, chr) in txt.iter().enumerate() {
-        let chr = *chr;
-        if chr <= b'\\' && (chr == b'\n' || chr == b'\r' || chr == b'\\' || chr == b'"') {
-            cut = pos;
-            cutchar = chr;
-            break;
-        }
-    }
-    w.write_all(&txt[..cut])?;
-    if cut < txt.len() {
-        match cutchar {
-            b'\n' => {
-                w.write_all(b"\\n")?;
-            }
-            b'\r' => {
-                w.write_all(b"\\r")?;
-            }
-            b'"' => {
-                w.write_all(b"\\\"")?;
-            }
-            b'\\' => {
-                w.write_all(b"\\\\")?;
-            }
-            _ => unreachable!(),
-        }
-    };
-    if cut + 1 >= txt.len() {
-        Ok(())
-    } else {
-        quoted_string(w, &txt[cut + 1..])
-    }
-}
-
 // ---------------------------------------------------------------------------------
 //                                      tests
 // ---------------------------------------------------------------------------------
 
 #[cfg(test)]
 pub(crate) mod test {
+    use std::error::Error;
+
+    use crate::test::{LazyMap, nt_samples};
+
     use super::*;
-    use sophia_api::graph::MutableGraph;
+    use sophia_api::graph::{Graph, MutableGraph};
     use sophia_api::ns::*;
     use sophia_api::term::{BnodeId, LanguageTag, SimpleTerm, VarName};
     use sophia_iri::Iri;
+    use sophia_isomorphism::isomorphic_graphs;
+    use test_case::test_case;
 
     #[test]
     fn graph() -> Result<(), Box<dyn std::error::Error>> {
@@ -248,27 +271,110 @@ pub(crate) mod test {
                 None,
             ),
         )?;
+        let r = BnodeId::new_unchecked("r");
         let tr = g[0].clone();
+        MutableGraph::insert(&mut g, r, rdf::reifies, SimpleTerm::Triple(Box::new(tr)))?;
         MutableGraph::insert(
             &mut g,
-            SimpleTerm::Triple(Box::new(tr)),
+            r,
             Iri::new_unchecked("http://schema.org/creator"),
             VarName::new_unchecked("x"),
         )?;
 
-        let s = NtSerializer::new_stringifier()
+        let exp = r#"_:me	<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>	<http://schema.org/Person>	.
+_:me	<http://schema.org/name>	"Pierre-Antoine"	.
+_:me	<http://example.org/value>	"42"^^<http://www.w3.org/2001/XMLSchema#integer>	.
+_:me	<http://example.org/message>	"hello\nworld"@en	.
+_:r	<http://www.w3.org/1999/02/22-rdf-syntax-ns#reifies>	<<( _:me <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person> )>>	.
+_:r	<http://schema.org/creator>	?x	.
+"#;
+
+        let s1 = NTriplesSerializer::new_stringifier()
             .serialize_graph(&g)
             .unwrap()
             .to_string();
-        assert_eq!(
-            &s,
-            r#"_:me <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person>.
-_:me <http://schema.org/name> "Pierre-Antoine".
-_:me <http://example.org/value> "42"^^<http://www.w3.org/2001/XMLSchema#integer>.
-_:me <http://example.org/message> "hello\nworld"@en.
-<<_:me <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person>>> <http://schema.org/creator> ?x.
-"#
-        );
+        assert_eq!(&s1, exp);
+
+        let s2 = NTriplesSerializer::new_stringifier_with_config(
+            NTriplesConfig::new().with_canonical(true),
+        )
+        .serialize_graph(&g)
+        .unwrap()
+        .to_string();
+        assert_eq!(&s2, &exp.replace("\t", " "));
+
+        Ok(())
+    }
+
+    #[test_case("empty")]
+    #[test_case("comment")]
+    #[test_case("version")]
+    #[test_case("triple i i i")]
+    #[test_case("triple b i i")]
+    #[test_case("triple i i b")]
+    #[test_case("triple b i b")]
+    #[test_case("triple i i l")]
+    #[test_case("triple b i l")]
+    #[test_case("triple i i ld")]
+    #[test_case("triple b i ld")]
+    #[test_case("triple i i ll")]
+    #[test_case("triple b i ll")]
+    #[test_case("triple i i lb")]
+    #[test_case("triple b i lb")]
+    #[test_case("triple i i t")]
+    #[test_case("triple b i t")]
+    #[test_case("escape")]
+    #[test_case("escape useless")]
+    fn roundtrip(key: &str) -> Result<(), Box<dyn Error>> {
+        static TESTS: LazyMap = nt_samples();
+        let (nt, _) = TESTS.get(key).unwrap();
+        let g1: Vec<[SimpleTerm; 3]> = crate::parser::nt::parse_str(nt).collect_triples()?;
+
+        let config = NTriplesConfig::new();
+        let out = NTriplesSerializer::new_stringifier_with_config(config)
+            .serialize_triples(g1.triples())?
+            .to_string();
+        println!("\n>>> DEBUG\n{}", &out);
+
+        let g2: Vec<[SimpleTerm; 3]> = crate::parser::nt::parse_str(&out).collect_triples()?;
+
+        assert!(isomorphic_graphs(&g1, &g2)?, "G1 = \n{g1:#?}\nG2 = {g2:#?}");
+        Ok(())
+    }
+
+    #[test_case("empty")]
+    #[test_case("comment")]
+    #[test_case("version")]
+    #[test_case("triple i i i")]
+    #[test_case("triple b i i")]
+    #[test_case("triple i i b")]
+    #[test_case("triple b i b")]
+    #[test_case("triple i i l")]
+    #[test_case("triple b i l")]
+    #[test_case("triple i i ld")]
+    #[test_case("triple b i ld")]
+    #[test_case("triple i i ll")]
+    #[test_case("triple b i ll")]
+    #[test_case("triple i i lb")]
+    #[test_case("triple b i lb")]
+    #[test_case("triple i i t")]
+    #[test_case("triple b i t")]
+    #[test_case("escape")]
+    #[test_case("escape useless")]
+    fn roundtrip_canonical(key: &str) -> Result<(), Box<dyn Error>> {
+        static TESTS: LazyMap = nt_samples();
+        let (nt, _) = TESTS.get(key).unwrap();
+        let g1: Vec<[SimpleTerm; 3]> = crate::parser::nt::parse_str(nt).collect_triples()?;
+
+        let config = NTriplesConfig::new().with_canonical(true);
+        let out = NTriplesSerializer::new_stringifier_with_config(config)
+            .serialize_triples(g1.triples())?
+            .to_string();
+        println!("\n>>> DEBUG\n{}", &out);
+
+        let g2: Vec<[SimpleTerm; 3]> = crate::parser::nt::parse_str(&out).collect_triples()?;
+
+        assert!(isomorphic_graphs(&g1, &g2)?, "G1 = \n{g1:#?}\nG2 = {g2:#?}");
         Ok(())
     }
 }

@@ -1,0 +1,103 @@
+use sophia_api::{
+    parser::{QuadParser, TripleParser},
+    prelude::{Dataset, Graph},
+    quad::{Quad, Spog},
+    strict::{
+        QuadWrapper, StrictDataset, StrictGraph, StrictQuad, StrictQuadSource, StrictTriple,
+        StrictTripleSource, TripleWrapper,
+    },
+    term::SimpleTerm,
+    triple::Triple,
+};
+use sophia_iri::Iri;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!(
+        r"
+        The main purpose of this example is to check that the compiler infers correctly that some
+        RDF types are strictly implementing the spec. The output of this program is therefore not
+        relevant, only the fact that it compiles is.
+    "
+    );
+    let p = sophia::xml::parser::RdfXmlParser {
+        base: Some(Iri::new_unchecked("http://ex.co/foo/".into())),
+    };
+    let ts = p.parse_str(
+        r#"
+        <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+            <rdf:Description rdf:about="../bar"><rdf:type rdf:value="42"/></rdf:Description>
+        </rdf:RDF>
+    "#,
+    );
+    let mut g = vec![];
+    // check that ts is recognized as a StrictTripleSource by the compiler
+    // (and copy all triples in g)
+    consume_strict_triples_1(ts, &mut g);
+    // check that g.triples() is recognized as a StrictTripleSource by the compiler
+    consume_strict_triples_2(g.triples());
+    // check that g is recognized as a StrictGraph by the compiler
+    consume_strict_graph(g);
+
+    let p = sophia::turtle::parser::trig::TriGParser {
+        base: Some(Iri::new_unchecked("http://ex.co/bar/".into())),
+    };
+    let qs = p.parse_str("GRAPH <g> { <../baz> a 43. }");
+    let mut d = vec![];
+    // check that qs is recognized as a StrictQuadSource by the compiler
+    // (and copy all triples in d)
+    consume_strict_quads_1(qs, &mut d);
+    // check that d.quads() is recognized as a StrictQuadSource by the compiler
+    consume_strict_quads_2(d.quads());
+    // check that d is recognized as a StrictDataset by the compiler
+    consume_strict_dataset(d);
+
+    Ok(())
+}
+
+fn consume_strict_triples_1<TS: StrictTripleSource>(
+    mut ts: TS,
+    v: &mut Vec<TripleWrapper<[SimpleTerm<'static>; 3]>>,
+) {
+    ts.for_each_triple(|t| {
+        v.push(t.to_strict_spo().map_into_term());
+    })
+    .unwrap();
+}
+
+fn consume_strict_triples_2<TS: StrictTripleSource>(mut ts: TS) {
+    ts.for_each_triple(|t| {
+        println!("\nS: {:?}\nP: {:?}\nO: {:?}\n", t.s(), t.p(), t.o(),);
+    })
+    .unwrap();
+}
+
+fn consume_strict_graph<G: StrictGraph>(g: G) {
+    consume_strict_triples_2(g.triples());
+}
+
+fn consume_strict_quads_1<QS: StrictQuadSource>(
+    mut qs: QS,
+    v: &mut Vec<QuadWrapper<Spog<SimpleTerm<'static>>>>,
+) {
+    qs.for_each_quad(|q| {
+        v.push(q.to_strict_spog().map_into_term());
+    })
+    .unwrap();
+}
+
+fn consume_strict_quads_2<QS: StrictQuadSource>(mut qs: QS) {
+    qs.for_each_quad(|q| {
+        println!(
+            "\nS: {:?}\nP: {:?}\nO: {:?}\nG: {:?}\n",
+            q.s(),
+            q.p(),
+            q.o(),
+            q.g(),
+        );
+    })
+    .unwrap();
+}
+
+fn consume_strict_dataset<D: StrictDataset>(d: D) {
+    consume_strict_quads_2(d.quads());
+}

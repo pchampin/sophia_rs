@@ -11,7 +11,7 @@ use sophia::{
         source::QuadSource,
     },
     jsonld::{JsonLdOptions, JsonLdParser, Policy},
-    turtle::serializer::trig::{TrigConfig, TrigSerializer},
+    turtle::serializer::trig::{TriGConfig, TriGSerializer},
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -41,7 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 fn to_trig(quads: impl QuadSource) -> Result<String, Box<dyn std::error::Error>> {
     let mut stringifier =
-        TrigSerializer::new_stringifier_with_config(TrigConfig::new().with_pretty(true));
+        TriGSerializer::new_stringifier_with_config(TriGConfig::new().with_pretty(true));
     stringifier.serialize_quads(quads)?;
     Ok(stringifier.to_string())
 }

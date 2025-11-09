@@ -32,7 +32,7 @@ use sophia::turtle::parser::{
     gnq::GNQuadsParser, gtrig::GTriGParser, nq::NQuadsParser, nt::NTriplesParser, trig::TriGParser,
     turtle::TurtleParser,
 };
-use sophia::turtle::serializer::{nq::NqSerializer, nt::NtSerializer};
+use sophia::turtle::serializer::{nq::NQuadsSerializer, nt::NTriplesSerializer};
 #[cfg(feature = "xml")]
 use sophia::xml::parser::RdfXmlParser;
 
@@ -65,22 +65,31 @@ fn main() {
         let iri = iri
             .into_string()
             .expect("Invalid UTF-8 data in SOPHIA_BASE");
-        Iri::new(iri).expect("Invalid IRI in SOPHIA_BASE")
+        Iri::new(Box::from(iri)).expect("Invalid IRI in SOPHIA_BASE")
     } else if let Some(path) = &path {
         let cwd = std::env::current_dir().expect("No current directory");
         let url = url::Url::from_file_path(cwd.join(path)).expect("Invalid path");
-        Iri::new(url.into()).expect("Invalid file: IRI")
+        Iri::new(url.to_string().into()).expect("Invalid file: IRI")
     } else {
-        Iri::new_unchecked("x-stdin://localhost/".into())
+        Iri::new("x-stdin://localhost/".into()).unwrap()
     };
     let input = Input::new(path);
     let res = match &format[..] {
-        "ntriples" | "nt" => dump_triples(input, NTriplesParser {}),
-        "turtle" | "ttl" => dump_triples(input, TurtleParser { base: Some(base) }),
-        "nquads" | "nq" => dump_quads(input, NQuadsParser {}),
-        "trig" => dump_quads(input, TriGParser { base: Some(base) }),
-        "gnq" => dump_quads(input, GNQuadsParser {}),
-        "gtrig" => dump_quads(input, GTriGParser { base: Some(base) }),
+        "ntriples" | "nt" => dump_triples(input, NTriplesParser::new()),
+        "turtle" | "ttl" => dump_triples(
+            input,
+            TurtleParser::new().with_base(Some(base.to_iri_ref().to_base())),
+        ),
+        "nquads" | "nq" => dump_quads(input, NQuadsParser::new()),
+        "trig" => dump_quads(
+            input,
+            TriGParser::new().with_base(Some(base.to_iri_ref().to_base())),
+        ),
+        "gnq" => dump_quads(input, GNQuadsParser::new()),
+        "gtrig" => dump_quads(
+            input,
+            GTriGParser::new().with_base(Some(base.to_iri_ref().to_base())),
+        ),
         #[cfg(feature = "jsonld")]
         "json-ld" | "jsonld" => {
             let options = JsonLdOptions::new().with_base(base.map_unchecked(std::sync::Arc::from));
@@ -96,7 +105,12 @@ fn main() {
             dump_quads(input, JsonLdParser::new_with_options(options))
         }
         #[cfg(feature = "xml")]
-        "rdfxml" | "rdf" => dump_triples(input, RdfXmlParser { base: Some(base) }),
+        "rdfxml" | "rdf" => dump_triples(
+            input,
+            RdfXmlParser {
+                base: Some(base.map_unchecked(String::from)),
+            },
+        ),
         _ => {
             eprintln!("Unrecognized format: {format}");
             std::process::exit(-1);
@@ -112,7 +126,7 @@ fn dump_triples<P: TripleParser<Input>>(input: Input, p: P) -> Result<(), String
     let triple_source = p.parse(input);
 
     let output = BufWriter::new(stdout());
-    let mut ser = NtSerializer::new(output);
+    let mut ser = NTriplesSerializer::new(output);
     match ser.serialize_triples(triple_source) {
         Ok(_) => Ok(()),
         Err(SourceError(e)) => Err(format!("Error while parsing input: {e}")),
@@ -124,7 +138,7 @@ fn dump_quads<P: QuadParser<Input>>(input: Input, p: P) -> Result<(), String> {
     let quad_source = p.parse(input);
 
     let output = BufWriter::new(stdout());
-    let mut ser = NqSerializer::new(output);
+    let mut ser = NQuadsSerializer::new(output);
     match ser.serialize_quads(quad_source) {
         Ok(_) => Ok(()),
         Err(SourceError(e)) => Err(format!("Error while parsing input: {e}")),

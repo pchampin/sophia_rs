@@ -255,10 +255,10 @@ pub enum Error {
 
     #[error("turtle parsing error: {0}")]
     /// Invalid Turtle syntax was returned by the SPARQL endpoint.
-    RioTurtle(
+    Turtle(
         #[source]
         #[from]
-        rio_turtle::TurtleError,
+        sophia_turtle::parser::Error,
     ),
 
     #[error("RDF/XML parsing error: {0}")]

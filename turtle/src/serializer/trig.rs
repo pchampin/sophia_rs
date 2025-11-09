@@ -5,51 +5,73 @@
 //! make no effort to minimize the number of write operations.
 //! Hence, in most cased, they should be passed a [`BufWriter`].
 //!
-//! [TriG]: https://www.w3.org/TR/trig/
+//! ## Pretty vs. lazy serializer
+//! The option [`TriGConfig::pretty`]
+//! determines how much effort the serializer will make:
+//! * when `true`, it will first analyze the whole graph,
+//!   in order to group quads in an optimal way,
+//!   and use as much syntactic sugar as possible;
+//! * when `false`, it will serializer quads in the order they come,
+//!   only using similarities with the previous quad to simplify the output.
+//!
+//! The first option is *much more* costly,
+//! and therefore is not the default.
+//!
+//! [TriG]: https://www.w3.org/TR/rdf12-trig/
 //! [`Write`]: https://doc.rust-lang.org/std/io/trait.Write.html
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 
-use rio_turtle::TriGFormatter;
-use sophia_api::prelude::Term;
 use sophia_api::quad::Quad;
 use sophia_api::serializer::{QuadSerializer, Stringifier};
-use sophia_api::source::{QuadSource, SinkError, SourceError, StreamResult};
-use sophia_rio::serializer::rio_format_quads;
+use sophia_api::source::StreamResult;
+use sophia_api::source::{QuadSource, SinkError, StreamResultExt};
+use sophia_api::term::{SimpleTerm, Term};
 use std::io;
 
-pub(super) use super::_pretty::*;
+use crate::serializer::_streaming::StreamingSerializerState;
 
-/// Trig serializer configuration.
-pub type TrigConfig = super::turtle::TurtleConfig;
+use super::_pretty::*;
 
-/// Trig serializer.
-pub struct TrigSerializer<W> {
-    pub(super) config: TrigConfig,
+/// TriG serializer configuration.
+pub type TriGConfig = super::turtle::TurtleConfig;
+
+/// Type alias of `NTriplesConfig` for backward compatibility
+#[deprecated(since = "0.10.0", note = "please use TriGConfig instead")]
+pub type TrigConfig = TriGConfig;
+/// Type alias of `NTriplesSerializer` for backward compatibility
+#[deprecated(since = "0.10.0", note = "please use TriGSerializer instead")]
+pub type TrigSerializer<W> = TriGSerializer<W>;
+
+/// TriG serializer.
+pub struct TriGSerializer<W> {
+    pub(super) config: TriGConfig,
     pub(super) write: W,
 }
 
-impl<W> TrigSerializer<W>
+impl<W> TriGSerializer<W>
 where
     W: io::Write,
 {
-    /// Build a new Trig serializer writing to `write`, with the default config.
+    /// Build a new TriG serializer writing to `write`, with the default config.
     #[inline]
     pub fn new(write: W) -> Self {
-        Self::new_with_config(write, TrigConfig::default())
+        Self::new_with_config(write, TriGConfig::default())
     }
 
-    /// Build a new Trig serializer writing to `write`, with the given config.
-    pub const fn new_with_config(write: W, config: TrigConfig) -> Self {
+    /// Build a new TriG serializer writing to `write`, with the given config.
+    #[inline]
+    pub const fn new_with_config(write: W, config: TriGConfig) -> Self {
         Self { config, write }
     }
 
     /// Borrow this serializer's configuration.
-    pub const fn config(&self) -> &TrigConfig {
+    #[inline]
+    pub const fn config(&self) -> &TriGConfig {
         &self.config
     }
 }
 
-impl<W> QuadSerializer for TrigSerializer<W>
+impl<W> QuadSerializer for TriGSerializer<W>
 where
     W: io::Write,
 {
@@ -63,157 +85,80 @@ where
         TS: QuadSource,
     {
         if self.config.pretty {
-            let mut dataset = PrettifiableDataset::new();
-            source
-                .for_each_quad(|t| {
-                    let (spo, g) = t.spog();
-                    let spo = spo.map(Term::into_term);
-                    let g = g.map(Term::into_term);
-                    dataset.insert((g, spo));
-                })
-                .map_err(SourceError)?;
+            let dataset = source
+                .collect_quads::<PrettifiableDataset>()
+                .map_sink_err(|_| -> io::Error { unreachable!() })?;
             prettify(dataset, &mut self.write, &self.config, "").map_err(SinkError)?;
         } else {
-            let mut tf = TriGFormatter::new(&mut self.write);
-            rio_format_quads(&mut tf, source)?;
-            tf.finish().map_err(SinkError)?;
+            for (prefix, ns) in &self.config.prefix_map {
+                writeln!(&mut self.write, "PREFIX {}: <{ns}>", prefix.as_str())
+                    .map_err(SinkError)?;
+            }
+            let mut current_graph: Option<SimpleTerm<'static>> = None;
+            let mut state = StreamingSerializerState::new(&mut self.write, &self.config);
+            source.try_for_each_quad(|q| {
+                match (&current_graph, q.g()) {
+                    (None, None) => {}
+                    (Some(_), None) => {
+                        if state.has_s() {
+                            state.write_all(b".\n")?;
+                        }
+                        state.write_all(b"\n}\n")?;
+                        state.pop_all();
+                        current_graph.take();
+                    }
+                    (_, Some(gnq)) => {
+                        let change = current_graph
+                            .as_ref()
+                            .map(|gnc| !Term::eq(gnc, gnq))
+                            .unwrap_or(true);
+                        if change {
+                            if state.has_s() {
+                                state.write_all(b".\n")?;
+                            }
+                            state.write_all(b"\n")?;
+                            if current_graph.is_some() {
+                                state.write_all(b"}\n")?;
+                            }
+                            state.write_all(b"\nGRAPH ")?;
+                            state.write_node(gnq)?;
+                            state.write_all(b" {\n")?;
+                            state.pop_all();
+                            current_graph = q.g().map(|t| t.into_term())
+                        }
+                    }
+                }
+                state.write_asserted_triple(q.spog().0)
+            })?;
+            if state.has_s() {
+                state.write_all(b".\n").map_err(SinkError)?;
+            }
+            if current_graph.is_some() {
+                state.write_all(b"}\n").map_err(SinkError)?;
+            }
         }
         Ok(self)
     }
 }
 
-impl TrigSerializer<Vec<u8>> {
+impl TriGSerializer<Vec<u8>> {
     /// Create a new serializer which targets a `String`.
     #[inline]
-    #[must_use]
     pub fn new_stringifier() -> Self {
         Self::new(Vec::new())
     }
     /// Create a new serializer which targets a `String` with a custom config.
     #[inline]
-    #[must_use]
-    pub const fn new_stringifier_with_config(config: TrigConfig) -> Self {
+    pub const fn new_stringifier_with_config(config: TriGConfig) -> Self {
         Self::new_with_config(Vec::new(), config)
     }
 }
 
-impl Stringifier for TrigSerializer<Vec<u8>> {
+impl Stringifier for TriGSerializer<Vec<u8>> {
     fn as_utf8(&self) -> &[u8] {
         &self.write[..]
     }
 }
 
-// ---------------------------------------------------------------------------------
-//                                      tests
-// ---------------------------------------------------------------------------------
-
 #[cfg(test)]
-pub(crate) mod test {
-    use std::error::Error;
-
-    use super::*;
-    use sophia_api::term::SimpleTerm;
-
-    use sophia_api::{dataset::Dataset, quad::Spog};
-    use sophia_isomorphism::isomorphic_datasets;
-
-    const TESTS: &[&str] = &[
-        "#empty trig",
-        r#"# simple quads
-            PREFIX : <http://example.org/ns/>
-            :alice a :Person; :name "Alice"; :age 42.
-
-            GRAPH :g {
-                :bob a :Person, :Man; :nick "bob"@fr, "bobby"@en; :admin true.
-            }
-        "#,
-        r#"# lists
-            GRAPH <tag:g> { <tag:alice> <tag:likes> ( 1 2 ( 3 4 ) 5 6 ), ("a" "b"). }
-        "#,
-        r"# subject lists
-            GRAPH <tag:g> { (1 2 3) a <tag:List>. }
-        ",
-        r"# malformed list
-            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-            GRAPH <tag:g> {
-                _:a rdf:first 42, 43; rdf:rest (44 45).
-                _:b rdf:first 42; rdf:rest (43), (44).
-            }
-        ",
-        r#"# bnode cycles
-            PREFIX : <http://example.org/ns/>
-            GRAPH <tag:g> {
-                _:a :n "a"; :p [ :q [ :r _:a ]].
-                _:b :n "b"; :s [ :s _:b ].
-                _:c :b "c"; :t _:c.
-            }
-        "#,
-        r"# quoted triples
-            PREFIX : <http://example.org/ns/>
-            GRAPH <tag:g> {
-                << :s :p :o1 >> :a :b.
-                :s :p :o2 {| :c :d |}.
-            }
-        ",
-        r"# blank node graph name
-            PREFIX : <http://example.org/ns/>
-            :lois :believes _:b.
-            GRAPH _:b1 { :clark a :Human }
-        ",
-        r#"# blank node sharred across graphs
-            PREFIX : <http://example.org/ns/>
-            _:a :name "alice".
-            GRAPH <tag:g> { _:a a :Person }
-        "#,
-        r"# list split over different graphs
-            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-            _:a rdf:first 42; rdf:rest _:b.
-
-            GRAPH [] {
-                _:b rdf:first 43; rdf:rest ().
-            }
-        ",
-        r"# issue 149
-            PREFIX : <https://example.org/>
-            :s :p :o .
-            GRAPH :g { _:b :p2 :o2 }
-        ",
-    ];
-
-    #[test]
-    fn roundtrip_not_pretty() -> Result<(), Box<dyn Error>> {
-        for ttl in TESTS {
-            println!("==========\n{ttl}\n----------");
-            let g1: Vec<Spog<SimpleTerm>> = crate::parser::trig::parse_str(ttl).collect_quads()?;
-
-            let out = TrigSerializer::new_stringifier()
-                .serialize_quads(g1.quads())?
-                .to_string();
-            println!("{}", &out);
-
-            let g2: Vec<Spog<SimpleTerm>> = crate::parser::trig::parse_str(&out).collect_quads()?;
-
-            assert!(isomorphic_datasets(&g1, &g2)?);
-        }
-        Ok(())
-    }
-
-    #[test]
-    fn roundtrip_pretty() -> Result<(), Box<dyn Error>> {
-        for ttl in TESTS {
-            println!("==========\n{ttl}\n----------");
-            let g1: Vec<Spog<SimpleTerm>> = crate::parser::trig::parse_str(ttl).collect_quads()?;
-
-            let config = TrigConfig::new().with_pretty(true);
-            let out = TrigSerializer::new_stringifier_with_config(config)
-                .serialize_quads(g1.quads())?
-                .to_string();
-            println!("{}", &out);
-
-            let g2: Vec<Spog<SimpleTerm>> = crate::parser::trig::parse_str(&out).collect_quads()?;
-
-            assert!(isomorphic_datasets(&g1, &g2)?);
-        }
-        Ok(())
-    }
-}
+mod test;

@@ -9,7 +9,7 @@ A Rust toolkit for RDF and Linked Data.
 It comprises the following crates:
 
 * Core crates:
-  + [`sophia_api`] defines a generic API for RDF and linked data,
+  + [`sophia_api`] defines a generic API for RDF 1.2 and linked data,
     as a set of core traits and types;
     more precisely, it provides traits for describing
     - terms, triples and quads,
@@ -19,14 +19,14 @@ It comprises the following crates:
   + [`sophia_term`] defines various implementations of the `Term` trait from `sophia_api`.
   + [`sophia_inmem`] defines in-memory implementations of the `Graph` and `Dataset` traits from `sophia_api`.
 * Parsers and serializers
-  + [`sophia_turtle`] provides parsers and serializers for the Turtle-family of concrete syntaxes.
-  + [`sophia_jsonld`] provides parsers and serializers for JSON-LD.
-  + [`sophia_xml`] provides parsers and serializers for RDF/XML.
-  + [`sophia_rio`] is a lower-level crate, used by the ones above.
+  + [`sophia_turtle`] provides parsers and serializers for the Turtle-family of concrete syntaxes (for RDF 1.2).
+  + [`sophia_jsonld`] provides parsers and serializers for JSON-LD 1.1.
+  + [`sophia_xml`] provides parsers and serializers for RDF/XML 1.1.
+  + [`sophia_rio`] is a lower-level crate, used by [`sophia_xml`].
 * Other
   + [`sophia_c14n`] implements [RDF canonicalization].
   + [`sophia_isomorphism`] provides functions to determine if two graphs or datasets are [isomorphic].
-  + [`sophia_sparql`] provides a (currently partial) implementation of the [SPARQL 1.1 Query Language].
+  + [`sophia_sparql`] provides a (currently partial) implementation of the [SPARQL 1.2 Query Language].
   + [`sophia_sparql_client`] provides a client for the [SPARQL 1.1 Protocol].
   + [`sophia_resource`] provides a resource-centric API.
 * All-inclusive

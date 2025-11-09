@@ -18,7 +18,7 @@ default = []
 # This feature enables the JSON-LD parser and serializer
 jsonld = ["dep:sophia_jsonld", "sophia_resource/jsonld"]
 # This feature enables the RDF/XML parser and serializer
-xml = ["dep:sophia_xml", "sophia_resource/xml"]
+xml = ["dep:sophia_rio", "dep:sophia_xml", "sophia_resource/xml"]
 # This feature enables to use the graph and dataset test macros in other crates
 test_macro = ["sophia_api/test_macro"]
 # This feature enables the file: URL support in dependencies
@@ -38,7 +38,7 @@ sophia_jsonld = { workspace = true, optional = true }
 sophia_resource.workspace = true
 sophia_sparql = { workspace = true, optional = true }
 sophia_sparql_client = { workspace = true, optional = true }
-sophia_rio.workspace = true
+sophia_rio = { workspace = true, optional = true }
 sophia_turtle.workspace = true
 sophia_term.workspace = true
 sophia_xml = { workspace = true, optional = true }

@@ -6,14 +6,13 @@ use sophia_api::graph::CollectibleGraph;
 use sophia_api::parser::TripleParser;
 use sophia_api::source::TripleSource;
 use sophia_api::term::Term;
-use sophia_iri::Iri;
+use sophia_iri::{AsIriRef, Iri};
 #[cfg(feature = "jsonld")]
 use sophia_jsonld::loader_factory::ClosureLoaderFactory;
 use sophia_turtle::parser::{nt, turtle};
 use std::borrow::Borrow;
 use std::convert::Into;
 use std::io;
-use std::string::ToString;
 use std::sync::Arc;
 
 /// A loader resolves URLs into [`Resource`]s.
@@ -39,14 +38,13 @@ pub trait Loader: Sync + Sized {
         let (data, ctype) = self.get(iri.as_ref())?;
         let bufread = io::BufReader::new(&data[..]);
         match &ctype[..] {
-            "text/turtle" => turtle::TurtleParser {
-                base: Some(iri.as_ref().map_unchecked(ToString::to_string)),
-            }
-            .parse(bufread)
-            .collect_triples()
-            .map_err(|err| LoaderError::ParseError(iri_buf(iri_str), Box::new(err))),
+            "text/turtle" => turtle::TurtleParser::new()
+                .with_base(Some(iri.as_iri_ref().map_unchecked(Box::from).to_base()))
+                .parse(bufread)
+                .collect_triples()
+                .map_err(|err| LoaderError::ParseError(iri_buf(iri_str), Box::new(err))),
 
-            "application/n-triples" => nt::NTriplesParser {}
+            "application/n-triples" => nt::NTriplesParser::new()
                 .parse(bufread)
                 .collect_triples()
                 .map_err(|err| LoaderError::ParseError(iri_buf(iri_str), Box::new(err))),
@@ -81,7 +79,7 @@ pub trait Loader: Sync + Sized {
 
             #[cfg(feature = "xml")]
             "application/rdf+xml" => sophia_xml::parser::RdfXmlParser {
-                base: Some(iri.as_ref().map_unchecked(ToString::to_string)),
+                base: Some(iri.as_ref().map_unchecked(std::string::ToString::to_string)),
             }
             .parse(bufread)
             .collect_triples()

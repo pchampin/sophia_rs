@@ -24,9 +24,9 @@ use sophia::api::source::StreamError::{SinkError, SourceError};
 use sophia::jsonld::{JsonLdOptions, serializer::JsonLdSerializer};
 use sophia::turtle::parser::gnq;
 use sophia::turtle::serializer::{
-    nq::NqSerializer,
-    nt::NtSerializer,
-    trig::{TrigConfig, TrigSerializer},
+    nq::NQuadsSerializer,
+    nt::NTriplesSerializer,
+    trig::{TriGConfig, TriGSerializer},
     turtle::{TurtleConfig, TurtleSerializer},
 };
 #[cfg(feature = "xml")]
@@ -45,16 +45,16 @@ fn main() {
         .nth(1)
         .unwrap_or_else(|| "trig".to_string());
     let res = match &format[..] {
-        "ntriples" | "nt" => serialize_triples(quad_source, NtSerializer::new(out)),
+        "ntriples" | "nt" => serialize_triples(quad_source, NTriplesSerializer::new(out)),
         "turtle" | "ttl" => {
             let config = TurtleConfig::new().with_pretty(pretty);
             let ser = TurtleSerializer::new_with_config(out, config);
             serialize_triples(quad_source, ser)
         }
-        "nquads" | "nq" => serialize_quads(quad_source, NqSerializer::new(out)),
+        "nquads" | "nq" => serialize_quads(quad_source, NQuadsSerializer::new(out)),
         "trig" => {
-            let config = TrigConfig::new().with_pretty(pretty);
-            let ser = TrigSerializer::new_with_config(out, config);
+            let config = TriGConfig::new().with_pretty(pretty);
+            let ser = TriGSerializer::new_with_config(out, config);
             serialize_quads(quad_source, ser)
         }
         #[cfg(feature = "jsonld")]

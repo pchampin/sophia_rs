@@ -589,7 +589,11 @@ fn pred_all_typed_empty() -> TestResult {
 fn no_reload() -> TestResult {
     let base = Some(F1.map_unchecked(String::from));
     let ttl = std::fs::read_to_string("test/file1.ttl")?;
-    let graph = sophia_turtle::parser::turtle::TurtleParser { base: base.clone() }
+    let graph = sophia_turtle::parser::turtle::TurtleParser::new()
+        .with_base(
+            base.clone()
+                .map(|iri| iri.to_iri_ref().map_unchecked(Box::from).to_base()),
+        )
         .parse(ttl.as_bytes())
         .collect_triples::<MyGraph>()?;
     let res = Resource::new(F1R1, base, Arc::new(graph), Arc::new(NoLoader()));
