@@ -26,6 +26,8 @@ mod test {
 
     #[test_case(""; "empty")]
     #[test_case("a")]
+    #[test_case("a-"; "a minus")]
+    #[test_case("a_"; "a underscore")]
     #[test_case("foo")]
     #[test_case("é.hê"; "with dot and accents")]
     fn valid_prefix(p: &str) {
@@ -35,7 +37,9 @@ mod test {
 
     #[test_case(" "; "space")]
     #[test_case("1a")]
+    #[test_case(".a"; "starting with dot")]
     #[test_case("a."; "ending with dot")]
+    #[test_case("-a"; "starting with minus")]
     fn invalid_prefix(p: &str) {
         assert!(!is_valid_prefix(p));
         assert!(Prefix::new(p).is_err());
