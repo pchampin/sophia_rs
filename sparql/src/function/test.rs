@@ -861,6 +861,17 @@ fn str_lang(lex: &str, lang: &str, exp: Option<&str>) -> TestResult {
     Ok(())
 }
 
+#[test_case("abc", "en", "ltr", Some("abc@en--ltr"))]
+#[test_case("abc", "en", "LTR", None)]
+#[test_case("قطة", "ar", "rtl", Some("قطة@ar--rtl"))]
+#[test_case("abc", "en", "", None)]
+#[test_case("abc", "", "ltr", None)]
+fn str_lang_dir(lex: &str, lang: &str, dir: &str, exp: Option<&str>) -> TestResult {
+    let exp = exp.map(|exp| EvalResult::from(txt2pair(exp)));
+    assert!(eval_eq(super::str_lang_dir(lex, lang, dir), exp));
+    Ok(())
+}
+
 #[test_case("123", "http://www.w3.org/2001/XMLSchema#integer", true)]
 #[test_case("iii", "http://example/romanNumeral", true)]
 #[test_case(

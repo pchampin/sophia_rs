@@ -347,7 +347,16 @@ pub fn call_function<D: ?Sized>(
                 lang.as_xsd_string("StrLang#2")?,
             )
         }
-        StrLangDir => todo!(),
+        StrLangDir => {
+            let [lex, lang, dir] = &arguments[..] else {
+                unreachable!();
+            };
+            str_lang_dir(
+                lex.as_xsd_string("StrLangDir#1")?,
+                lang.as_xsd_string("StrLangDir#2")?,
+                dir.as_xsd_string("StrLangDir#3")?,
+            )
+        }
         StrDt => {
             let [lex, lang] = &arguments[..] else {
                 unreachable!();
@@ -898,11 +907,30 @@ pub fn sha512(arg: &str) -> EvalResult {
 pub fn str_lang(lex: &str, lang: &str) -> Option<EvalResult> {
     let lang = LanguageTag::new(lang.into())
         .inspect_err(|err| {
-            log::warn!("StrLang#1 is an invalid language tag");
+            log::warn!("StrLang#2 is an invalid language tag");
             log::debug!(" {err}")
         })
         .ok()?;
     Some((lex.into(), Some((lang, None))).into())
+}
+
+pub fn str_lang_dir(lex: &str, lang: &str, dir: &str) -> Option<EvalResult> {
+    let lang = LanguageTag::new(lang.into())
+        .inspect_err(|err| {
+            log::warn!("StrLangDir#2 is an invalid language tag");
+            log::debug!(" {err}")
+        })
+        .ok()?;
+    let dir = match dir {
+        "ltr" => Some(BaseDirection::Ltr),
+        "rtl" => Some(BaseDirection::Rtl),
+        other => {
+            log::warn!("StrLangDir#3 is an invalid base direction");
+            log::debug!(" '{other}'");
+            return None;
+        }
+    };
+    Some((lex.into(), Some((lang, dir))).into())
 }
 
 pub fn str_dt(lex: &str, dt: &IriRef<Arc<str>>) -> Option<EvalResult> {
