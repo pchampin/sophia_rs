@@ -67,7 +67,12 @@ pub fn call_function<D: ?Sized>(
             };
             Some(has_lang(arg))
         }
-        HasLangDir => todo!(),
+        HasLangDir => {
+            let [arg] = &arguments[..] else {
+                unreachable!()
+            };
+            Some(has_lang_dir(arg))
+        }
         Datatype => {
             let [arg] = &arguments[..] else {
                 unreachable!()
@@ -476,6 +481,17 @@ pub fn has_lang(er: &EvalResult) -> EvalResult {
     match er {
         EvalResult::Term(t) => t.language_tag().is_some(),
         EvalResult::Value(v) => v.compound_tag().is_some(),
+    }
+    .into()
+}
+
+pub fn has_lang_dir(er: &EvalResult) -> EvalResult {
+    match er {
+        EvalResult::Term(t) => t.base_direction().is_some(),
+        EvalResult::Value(v) => v
+            .compound_tag()
+            .map(|pair| pair.1.is_some())
+            .unwrap_or(false),
     }
     .into()
 }

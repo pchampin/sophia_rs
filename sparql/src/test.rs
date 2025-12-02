@@ -334,6 +334,14 @@ fn test_expr_variable() -> TestResult {
 #[test_case("hasLang(042)", "false"; "hasLang for number")]
 #[test_case("hasLang(<<( <tag:s> <tag:p> <tag:o> )>>)", "false"; "hasLang for triple")]
 #[test_case("hasLang(42/0)", ""; "hasLang error")]
+// test hasLangDir
+#[test_case("hasLangDir(<tag:x>)", "false"; "hasLangDir for IRI")]
+#[test_case("hasLangDir(\"a b\")", "false"; "hasLangDir for string")]
+#[test_case("hasLangDir(\"chat\"@en)", "false"; "hasLangDir for language string")]
+#[test_case("hasLangDir(\"chat\"@en--ltr)", "true"; "hasLangDir for directional language string")]
+#[test_case("hasLangDir(042)", "false"; "hasLangDir for number")]
+#[test_case("hasLangDir(<<( <tag:s> <tag:p> <tag:o> )>>)", "false"; "hasLangDir for triple")]
+#[test_case("hasLangDir(42/0)", ""; "hasLangDir error")]
 // test datatype nominal
 #[test_case("datatype(\"42\")", "xsd:string"; "datatype for string")]
 #[test_case("datatype(\"chat\"@en)", "rdf:langString"; "datatype for language string")]
