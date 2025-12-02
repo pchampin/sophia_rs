@@ -61,7 +61,12 @@ pub fn call_function<D: ?Sized>(
             };
             Some(lang_dir(arg.as_literal("LangDir")?))
         }
-        HasLang => todo!(),
+        HasLang => {
+            let [arg] = &arguments[..] else {
+                unreachable!()
+            };
+            Some(has_lang(arg))
+        }
         HasLangDir => todo!(),
         Datatype => {
             let [arg] = &arguments[..] else {
@@ -465,6 +470,14 @@ pub fn lang_dir(lit: GenericLiteral<Arc<str>>) -> EvalResult {
         LanguageString(_, _, Some(BaseDirection::Ltr)) => LTR.clone().into(),
         LanguageString(_, _, Some(BaseDirection::Rtl)) => RTL.clone().into(),
     }
+}
+
+pub fn has_lang(er: &EvalResult) -> EvalResult {
+    match er {
+        EvalResult::Term(t) => t.language_tag().is_some(),
+        EvalResult::Value(v) => v.compound_tag().is_some(),
+    }
+    .into()
 }
 
 pub fn datatype(lit: GenericLiteral<Arc<str>>) -> EvalResult {

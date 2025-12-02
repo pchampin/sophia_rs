@@ -151,6 +151,15 @@ impl SparqlValue {
             String(_, Some(_)) => RDF_LANG_STRING.clone(),
         }
     }
+
+    pub fn compound_tag(&self) -> Option<&CompoundTag> {
+        use SparqlValue::*;
+        if let String(_, r) = self {
+            r.as_ref()
+        } else {
+            None
+        }
+    }
 }
 
 impl From<bool> for SparqlValue {
