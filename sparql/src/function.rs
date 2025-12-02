@@ -12,7 +12,7 @@ use sha1::{Digest, Sha1};
 use sha2::{Sha256, Sha384, Sha512};
 use sophia_api::{
     ns::xsd,
-    term::{BnodeId, IriRef, LanguageTag, Term},
+    term::{BaseDirection, BnodeId, IriRef, LanguageTag, Term},
 };
 use sophia_term::GenericLiteral;
 use spargebra::algebra::Function::{self, *};
@@ -55,7 +55,12 @@ pub fn call_function<D: ?Sized>(
             };
             Some(lang(arg.as_literal("Lang")?))
         }
-        LangDir => todo!(),
+        LangDir => {
+            let [arg] = &arguments[..] else {
+                unreachable!()
+            };
+            Some(lang_dir(arg.as_literal("LangDir")?))
+        }
         HasLang => todo!(),
         HasLangDir => todo!(),
         Datatype => {
@@ -440,11 +445,25 @@ pub fn str_literal(lit: GenericLiteral<Arc<str>>) -> EvalResult {
     }
 }
 
+static EMPTY_STR: LazyLock<Arc<str>> = LazyLock::new(|| Arc::from(""));
+
 pub fn lang(lit: GenericLiteral<Arc<str>>) -> EvalResult {
     use GenericLiteral::*;
     match lit {
-        Typed(..) => Arc::<str>::from("").into(),
+        Typed(..) => EMPTY_STR.clone().into(),
         LanguageString(_, tag, _) => tag.unwrap().into(),
+    }
+}
+
+pub fn lang_dir(lit: GenericLiteral<Arc<str>>) -> EvalResult {
+    static LTR: LazyLock<Arc<str>> = LazyLock::new(|| Arc::from("ltr"));
+    static RTL: LazyLock<Arc<str>> = LazyLock::new(|| Arc::from("rtl"));
+
+    use GenericLiteral::*;
+    match lit {
+        Typed(..) | LanguageString(_, _, None) => EMPTY_STR.clone().into(),
+        LanguageString(_, _, Some(BaseDirection::Ltr)) => LTR.clone().into(),
+        LanguageString(_, _, Some(BaseDirection::Rtl)) => RTL.clone().into(),
     }
 }
 

@@ -66,6 +66,22 @@ fn lang(lex: &str, tag: &str, dt: &str) -> TestResult {
     Ok(())
 }
 
+#[test_case("chat", "", "tag:dt")]
+#[test_case("chat", "en", "")]
+#[test_case("chat", "en--ltr", "")]
+fn lang_dir(lex: &str, tag: &str, dt: &str) -> TestResult {
+    let lit = if tag.is_empty() {
+        GenericLiteral::Typed(lex.into(), IriRef::new_unchecked(dt.into()))
+    } else {
+        let (lang, dir) = dbg!(parse_lang(tag));
+        GenericLiteral::LanguageString(lex.into(), lang, dir)
+    };
+    let got = Some(super::lang_dir(lit));
+    let exp = Some(EvalResult::from(Arc::<str>::from(&tag[4.min(tag.len())..])));
+    assert!(eval_eq(got, exp));
+    Ok(())
+}
+
 #[allow(clippy::needless_pass_by_value)]
 #[test_case("chat", "", "tag:dt")]
 #[test_case("chat", "en", rdf::langString)]

@@ -315,6 +315,17 @@ fn test_expr_variable() -> TestResult {
 #[test_case("lang(bnode())", ""; "lang for bnode")]
 #[test_case("lang(<<( <tag:s> <tag:p> <tag:o> )>>)", ""; "lang for triple")]
 #[test_case("lang(42/0)", ""; "lang error")]
+// test langDir nominal
+#[test_case("langDir(\"42\")", "\"\""; "langDir for string")]
+#[test_case("langDir(\"chat\"@en)", "\"\""; "langDir for langDiruage string")]
+#[test_case("langDir(\"chat\"@en--ltr)", "\"ltr\""; "langDir for directional langDiruage string")]
+#[test_case("langDir(042)", "\"\""; "langDir for number")]
+#[test_case("langDir(\"a\"^^xsd:integer)", "\"\""; "langDir for ill-formed")]
+// test langDir error
+#[test_case("langDir(<tag:x>)", ""; "langDir for IRI")]
+#[test_case("langDir(bnode())", ""; "langDir for bnode")]
+#[test_case("langDir(<<( <tag:s> <tag:p> <tag:o> )>>)", ""; "langDir for triple")]
+#[test_case("langDir(42/0)", ""; "langDir error")]
 // test datatype nominal
 #[test_case("datatype(\"42\")", "xsd:string"; "datatype for string")]
 #[test_case("datatype(\"chat\"@en)", "rdf:langString"; "datatype for language string")]
