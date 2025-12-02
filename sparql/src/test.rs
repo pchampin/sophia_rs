@@ -39,13 +39,11 @@ use test_case::test_case;
     vec![];
     "union0"
 )]
-#[allow(clippy::needless_pass_by_value)]
 #[test_case(
     "SELECT ?x { GRAPH ?x { ?s ?p ?o } }",
     vec!["<https://example.org/test#g>", "<https://example.org/test#g>", "_:b"];
     "graphs"
 )]
-#[allow(clippy::needless_pass_by_value)]
 #[test_case(
     "SELECT ?x { GRAPH ?g { <#a> s:name ?x } }",
     vec!["\"Albert\"^^<http://www.w3.org/2001/XMLSchema#string>"];

@@ -696,7 +696,7 @@ pub fn contains(
     heystack: StringLiteralRef<'_>,
     needle: StringLiteralRef<'_>,
 ) -> Option<EvalResult> {
-    dbg!(check_compatible(heystack, needle, "arguments of Contains")?);
+    check_compatible(heystack, needle, "arguments of Contains")?;
     Some(heystack.0.contains(needle.0.as_ref()).into())
 }
 
