@@ -66,10 +66,9 @@ pub type BindingMap = HashMap<Arc<str>, ResultTerm>;
 pub fn populate_variables(
     patterns: &[TriplePattern],
     stash: &mut ArcStrStash,
-    binding: Option<&Binding>,
+    context: Option<&Binding>,
 ) -> Vec<VarName<Arc<str>>> {
-    let mut variable_set = binding
-        .as_slice()
+    let mut variable_set = context
         .iter()
         .flat_map(|b| {
             b.v.keys()

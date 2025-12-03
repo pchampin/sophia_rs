@@ -98,11 +98,11 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         &mut self,
         pattern: &GraphPattern,
         graph_matcher: &[Option<ArcTerm>],
-        binding: Option<&Binding>,
+        context: Option<&Binding>,
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
         use GraphPattern::*;
         match pattern {
-            Bgp { patterns } => Ok(self.bgp(patterns, graph_matcher, binding)),
+            Bgp { patterns } => Ok(self.bgp(patterns, graph_matcher, context)),
             Path {
                 subject,
                 path,
@@ -114,30 +114,30 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 right,
                 expression,
             } => Err(SparqlWrapperError::NotImplemented("LeftJoin")),
-            Filter { expr, inner } => self.filter(expr, inner, graph_matcher, binding),
-            Union { left, right } => self.union(left, right, graph_matcher, binding),
-            Graph { name, inner } => self.graph(name, inner, binding),
+            Filter { expr, inner } => self.filter(expr, inner, graph_matcher, context),
+            Union { left, right } => self.union(left, right, graph_matcher, context),
+            Graph { name, inner } => self.graph(name, inner, context),
             Extend {
                 inner,
                 variable,
                 expression,
-            } => self.extend(inner, variable, expression, graph_matcher, binding),
+            } => self.extend(inner, variable, expression, graph_matcher, context),
             Minus { left, right } => Err(SparqlWrapperError::NotImplemented("Minus")),
             Values {
                 variables,
                 bindings,
             } => Err(SparqlWrapperError::NotImplemented("Values")),
             OrderBy { inner, expression } => {
-                self.order_by(inner, expression, graph_matcher, binding)
+                self.order_by(inner, expression, graph_matcher, context)
             }
-            Project { inner, variables } => self.project(inner, variables, graph_matcher, binding),
-            Distinct { inner } => self.distinct(inner, graph_matcher, binding),
+            Project { inner, variables } => self.project(inner, variables, graph_matcher, context),
+            Distinct { inner } => self.distinct(inner, graph_matcher, context),
             Reduced { inner } => Err(SparqlWrapperError::NotImplemented("Reduced")),
             Slice {
                 inner,
                 start,
                 length,
-            } => self.slice(inner, *start, *length, graph_matcher, binding),
+            } => self.slice(inner, *start, *length, graph_matcher, context),
             Group {
                 inner,
                 variables,
@@ -155,9 +155,9 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         &mut self,
         pattern: &GraphPattern,
         graph_matcher: &[Option<ArcTerm>],
-        binding: Option<&Binding>,
+        context: Option<&Binding>,
     ) -> Result<bool, SparqlWrapperError<D::Error>> {
-        self.select(pattern, graph_matcher, binding)
+        self.select(pattern, graph_matcher, context)
             .map(|binding| binding.into_iter().next().is_some())
     }
 
@@ -165,10 +165,10 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         &mut self,
         patterns: &[TriplePattern],
         graph_matcher: &[Option<ArcTerm>],
-        binding: Option<&Binding>,
+        context: Option<&Binding>,
     ) -> Bindings<'a, D> {
-        let variables = populate_variables(patterns, &mut self.stash, binding);
-        let iter = Box::new(bgp::make_iterator(self, patterns, graph_matcher, binding));
+        let variables = populate_variables(patterns, &mut self.stash, context);
+        let iter = Box::new(bgp::make_iterator(self, patterns, graph_matcher, context));
         Bindings { variables, iter }
     }
 
@@ -176,9 +176,9 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         &mut self,
         inner: &GraphPattern,
         graph_matcher: &[Option<ArcTerm>],
-        binding: Option<&Binding>,
+        context: Option<&Binding>,
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
-        let Bindings { variables, iter } = self.select(inner, graph_matcher, binding)?;
+        let Bindings { variables, iter } = self.select(inner, graph_matcher, context)?;
         let mut seen = HashSet::new();
         // config and graph_matcher will be moved in the closure;
         let config = Arc::clone(&self.config);
@@ -206,9 +206,9 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         expression: &Expression,
         inner: &GraphPattern,
         graph_matcher: &[Option<ArcTerm>],
-        binding: Option<&Binding>,
+        context: Option<&Binding>,
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
-        let Bindings { variables, iter } = self.select(inner, graph_matcher, binding)?;
+        let Bindings { variables, iter } = self.select(inner, graph_matcher, context)?;
         let arc_expr = ArcExpression::from_expr(expression, &mut self.stash);
         // config and graph_matcher will be moved in the closure;
         let config = Arc::clone(&self.config);
@@ -234,16 +234,16 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         left: &GraphPattern,
         right: &GraphPattern,
         graph_matcher: &[Option<ArcTerm>],
-        binding: Option<&Binding>,
+        context: Option<&Binding>,
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
         let Bindings {
             variables: lv,
             iter: li,
-        } = self.select(left, graph_matcher, binding)?;
+        } = self.select(left, graph_matcher, context)?;
         let Bindings {
             variables: rv,
             iter: ri,
-        } = self.select(right, graph_matcher, binding)?;
+        } = self.select(right, graph_matcher, context)?;
         let mut variables = lv.clone();
         for v in rv {
             if lv.iter().all(|i| *i != v) {
@@ -258,21 +258,21 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         &mut self,
         name: &NamedNodePattern,
         inner: &GraphPattern,
-        binding: Option<&Binding>,
+        context: Option<&Binding>,
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
         match name {
             NamedNodePattern::NamedNode(nn) => {
                 let graph_matcher = vec![Some(ArcTerm::Iri(IriRef::new_unchecked(
                     self.stash.copy_str(nn.as_str()),
                 )))];
-                self.select(inner, &graph_matcher, binding)
+                self.select(inner, &graph_matcher, context)
             }
             NamedNodePattern::Variable(var) => {
-                if let Some(name) = binding.and_then(|b| b.v.get(var.as_str())) {
+                if let Some(name) = context.and_then(|b| b.v.get(var.as_str())) {
                     let graph_matcher = vec![Some(name.inner().clone())];
-                    self.select(inner, &graph_matcher, binding)
+                    self.select(inner, &graph_matcher, context)
                 } else {
-                    let Bindings { variables, .. } = self.select(inner, &[], binding)?;
+                    let Bindings { variables, .. } = self.select(inner, &[], context)?;
                     let graph_names = self
                         .config()
                         .dataset
@@ -281,9 +281,9 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                         .collect::<Result<BTreeSet<_>, _>>()
                         .map_err(SparqlWrapperError::Dataset)?;
                     if graph_names.is_empty() {
-                        self.select(inner, &[], binding)
+                        self.select(inner, &[], context)
                     } else {
-                        self.graph_rec(var.as_str(), graph_names.into_iter(), inner, binding)
+                        self.graph_rec(var.as_str(), graph_names.into_iter(), inner, context)
                     }
                 }
             }
@@ -295,15 +295,15 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         var: &str,
         mut graph_names: std::collections::btree_set::IntoIter<ArcTerm>,
         inner: &GraphPattern,
-        binding: Option<&Binding>,
+        context: Option<&Binding>,
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
         if let Some(name) = graph_names.next() {
-            let mut b = binding.cloned().unwrap_or_else(Binding::default);
+            let mut b = context.cloned().unwrap_or_else(Binding::default);
             b.v.insert(self.stash.copy_str(var), name.clone().into());
             let graph_matcher = vec![Some(name)];
             let Bindings { variables, iter } = self.select(inner, &graph_matcher, Some(&b))?;
             let iter = Box::new(iter.chain(Box::new(
-                self.graph_rec(var, graph_names, inner, binding)?.iter,
+                self.graph_rec(var, graph_names, inner, context)?.iter,
             )));
             Ok(Bindings { variables, iter })
         } else {
@@ -319,13 +319,13 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         variable: &Variable,
         expression: &Expression,
         graph_matcher: &[Option<ArcTerm>],
-        binding: Option<&Binding>,
+        context: Option<&Binding>,
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
         let variable = self.stash.copy_variable(variable);
         let Bindings {
             mut variables,
             iter,
-        } = self.select(inner, graph_matcher, binding)?;
+        } = self.select(inner, graph_matcher, context)?;
         if variables.contains(&variable) {
             return Err(SparqlWrapperError::Override(variable.unwrap()));
         }
@@ -355,7 +355,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         inner: &GraphPattern,
         expression: &[OrderExpression],
         graph_matcher: &[Option<ArcTerm>],
-        binding: Option<&Binding>,
+        context: Option<&Binding>,
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
         let criteria: Vec<_> = expression
             .iter()
@@ -396,7 +396,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             }
         }
 
-        let Bindings { variables, iter } = self.select(inner, graph_matcher, binding)?;
+        let Bindings { variables, iter } = self.select(inner, graph_matcher, context)?;
         let mut bindings = iter.collect::<Result<Vec<_>, _>>()?;
         bindings.sort_unstable_by(|b1, b2| {
             cmp_bindings_with(b1, b2, &criteria, &config, &graph_matcher2)
@@ -410,13 +410,13 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         inner: &GraphPattern,
         variables: &[Variable],
         graph_matcher: &[Option<ArcTerm>],
-        binding: Option<&Binding>,
+        context: Option<&Binding>,
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
         let new_variables: Vec<VarName<Arc<str>>> = variables
             .iter()
             .map(|v| self.stash.copy_variable(v))
             .collect();
-        let filtered_binding = binding.map(|b| {
+        let filtered_context = context.map(|b| {
             let v: std::collections::HashMap<_, _> = new_variables
                 .iter()
                 .filter_map(|v| b.v.get(v.as_str()).map(|t| (v.clone().unwrap(), t.clone())))
@@ -424,7 +424,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             let b = Default::default();
             Binding { v, b }
         });
-        let mut bindings = self.select(inner, graph_matcher, filtered_binding.as_ref())?;
+        let mut bindings = self.select(inner, graph_matcher, filtered_context.as_ref())?;
         bindings.variables = new_variables;
         Ok(bindings)
     }
@@ -435,9 +435,9 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         start: usize,
         length: Option<usize>,
         graph_matcher: &[Option<ArcTerm>],
-        binding: Option<&Binding>,
+        context: Option<&Binding>,
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
-        let mut bindings = self.select(inner, graph_matcher, binding)?;
+        let mut bindings = self.select(inner, graph_matcher, context)?;
         let skipped = bindings.iter.skip(start);
         bindings.iter = match length {
             Some(n) => Box::new(skipped.take(n)),
