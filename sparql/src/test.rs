@@ -149,7 +149,7 @@ fn test_limit_offset(limit: usize) -> TestResult {
 #[test_case("FILTER EXISTS { ?x s:name ?e }", vec!["<https://example.org/test#a>", "_:b"]; "exists redundant")]
 #[test_case("FILTER EXISTS { ?x s:performerIn ?e }", vec!["<https://example.org/test#a>"]; "exists success")]
 #[test_case("FILTER EXISTS { ?x s:knows ?e }", vec![]; "exists failure")]
-#[test_case("FILTER EXISTS { BIND(42 as ?x) }", vec![]; "exists error")]
+#[test_case("FILTER EXISTS { BIND(42 as ?x) }", vec!["<https://example.org/test#a>", "_:b"]; "exists bind")]
 fn test_filter(filter: &str, exp: Vec<&str>) -> TestResult {
     let dataset = dataset_101()?;
     let dataset = SparqlWrapper(&dataset);

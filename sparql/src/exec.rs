@@ -94,6 +94,25 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         &mut self.stash
     }
 
+    /// Evaluates `pattern` on the active graph identified by `graph_matcher`.
+    ///
+    /// ### About `graph_matcher`
+    ///
+    /// SPARQL uses a single "active graph" at any time.
+    /// However, this implementation allows `graph_matcher` to match several graphs in the underlying dataset.
+    /// This is useful when using multiple `FROM` clauses (as opposed to `FROM NAMED`),
+    /// to compose an ad-hoc default graph.
+    /// Conceptually, the (unique) active graph is this composed default graph,
+    /// but technically, this graph is not materialized,
+    /// and the multiple named graphs that compose it are queried instead.
+    ///
+    /// ### About `context`
+    ///
+    /// If provided, `context` is a binding that all resulting bindings are intended to be merged into
+    /// (and thereforme, compatible with).
+    /// Note that this is only an optimization hint used by some evaluation sub-functions (e.g. [`ExecState::bgp`]).
+    /// This function **does not** guarantee that the returned bindings are actually compatible with the `context` or are merged with it.
+    /// It is still the responsibility of the caller function to ensure that.
     pub fn select(
         &mut self,
         pattern: &GraphPattern,
@@ -114,22 +133,20 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 right,
                 expression,
             } => Err(SparqlWrapperError::NotImplemented("LeftJoin")),
-            Filter { expr, inner } => self.filter(expr, inner, graph_matcher, context),
+            Filter { expr, inner } => self.filter(expr, inner, graph_matcher),
             Union { left, right } => self.union(left, right, graph_matcher, context),
             Graph { name, inner } => self.graph(name, inner, context),
             Extend {
                 inner,
                 variable,
                 expression,
-            } => self.extend(inner, variable, expression, graph_matcher, context),
+            } => self.extend(inner, variable, expression, graph_matcher),
             Minus { left, right } => Err(SparqlWrapperError::NotImplemented("Minus")),
             Values {
                 variables,
                 bindings,
             } => Err(SparqlWrapperError::NotImplemented("Values")),
-            OrderBy { inner, expression } => {
-                self.order_by(inner, expression, graph_matcher, context)
-            }
+            OrderBy { inner, expression } => self.order_by(inner, expression, graph_matcher),
             Project { inner, variables } => self.project(inner, variables, graph_matcher, context),
             Distinct { inner } => self.distinct(inner, graph_matcher, context),
             Reduced { inner } => Err(SparqlWrapperError::NotImplemented("Reduced")),
@@ -155,12 +172,15 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         &mut self,
         pattern: &GraphPattern,
         graph_matcher: &[Option<ArcTerm>],
-        context: Option<&Binding>,
     ) -> Result<bool, SparqlWrapperError<D::Error>> {
-        self.select(pattern, graph_matcher, context)
+        self.select(pattern, graph_matcher, None)
             .map(|binding| binding.into_iter().next().is_some())
     }
 
+    /// Evaluates `patterns` on the active graph identified by `graph_matcher`.
+    ///
+    /// The hint `context` is used by this method;
+    /// the returned bindings are all compatible with it, and include it.
     fn bgp(
         &mut self,
         patterns: &[TriplePattern],
@@ -206,9 +226,8 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         expression: &Expression,
         inner: &GraphPattern,
         graph_matcher: &[Option<ArcTerm>],
-        context: Option<&Binding>,
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
-        let Bindings { variables, iter } = self.select(inner, graph_matcher, context)?;
+        let Bindings { variables, iter } = self.select(inner, graph_matcher, None)?;
         let arc_expr = ArcExpression::from_expr(expression, &mut self.stash);
         // config and graph_matcher will be moved in the closure;
         let config = Arc::clone(&self.config);
@@ -316,19 +335,18 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         variable: &Variable,
         expression: &Expression,
         graph_matcher: &[Option<ArcTerm>],
-        context: Option<&Binding>,
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
         let variable = self.stash.copy_variable(variable);
         let Bindings {
             mut variables,
             iter,
-        } = self.select(inner, graph_matcher, context)?;
+        } = self.select(inner, graph_matcher, None)?;
         if variables.contains(&variable) {
             return Err(SparqlWrapperError::Override(variable.unwrap()));
         }
         let arc_expr = ArcExpression::from_expr(expression, &mut self.stash);
         variables.push(variable.clone());
-        // config, varkey, and graph_matcher will be moved in the closure;
+        // config, varkey and graph_matcher will be moved in the closure;
         let config = Arc::clone(&self.config);
         let varkey = variable.unwrap();
         let graph_matcher = graph_matcher.iter().map(Clone::clone).collect::<Vec<_>>();
@@ -352,7 +370,6 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         inner: &GraphPattern,
         expression: &[OrderExpression],
         graph_matcher: &[Option<ArcTerm>],
-        context: Option<&Binding>,
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
         let criteria: Vec<_> = expression
             .iter()
@@ -393,7 +410,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             }
         }
 
-        let Bindings { variables, iter } = self.select(inner, graph_matcher, context)?;
+        let Bindings { variables, iter } = self.select(inner, graph_matcher, None)?;
         let mut bindings = iter.collect::<Result<Vec<_>, _>>()?;
         bindings.sort_unstable_by(|b1, b2| {
             cmp_bindings_with(b1, b2, &criteria, &config, &graph_matcher2)
@@ -409,21 +426,15 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         graph_matcher: &[Option<ArcTerm>],
         context: Option<&Binding>,
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
-        let new_variables: Vec<VarName<Arc<str>>> = variables
+        let variables: Vec<VarName<Arc<str>>> = variables
             .iter()
             .map(|v| self.stash.copy_variable(v))
             .collect();
-        let filtered_context = context.map(|b| {
-            let v: std::collections::HashMap<_, _> = new_variables
-                .iter()
-                .filter_map(|v| b.v.get(v.as_str()).map(|t| (v.clone().unwrap(), t.clone())))
-                .collect();
-            let b = Default::default();
-            Binding { v, b }
-        });
-        let mut bindings = self.select(inner, graph_matcher, filtered_context.as_ref())?;
-        bindings.variables = new_variables;
-        Ok(bindings)
+        let variables2 = variables.clone(); // for the closure
+        let filtered_context = context.map(|b| b.clone().project(&variables));
+        let Bindings { iter, .. } = self.select(inner, graph_matcher, filtered_context.as_ref())?;
+        let iter = Box::new(iter.map(move |resb| resb.map(|b| b.project(&variables2))));
+        Ok(Bindings { variables, iter })
     }
 
     fn slice(

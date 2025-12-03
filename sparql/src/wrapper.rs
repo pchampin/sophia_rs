@@ -62,7 +62,7 @@ impl<'a, D: Dataset + ?Sized> SparqlDataset for SparqlWrapper<'a, D> {
             } => {
                 let mut exec = ExecState::new(self.0, dataset, base_iri)?;
                 let cfg = exec.config_cloned();
-                exec.ask(pattern, &cfg.default_matcher, None)
+                exec.ask(pattern, &cfg.default_matcher)
                     .map(SparqlResult::Boolean)
             }
         }

@@ -2,6 +2,8 @@
 
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::collections::hash_map::Entry::Occupied;
+use std::collections::hash_map::Entry::Vacant;
 use std::sync::Arc;
 
 use sophia_api::prelude::*;
@@ -70,6 +72,35 @@ pub struct Binding {
     /// Binding of blank nodes
     pub b: BindingMap,
 }
+
+impl Binding {
+    pub fn merge_if_compatible(mut self, context: Option<&Binding>) -> Option<Binding> {
+        if let Some(context) = context {
+            for (vn, vv) in &context.v {
+                match self.v.entry(vn.clone()) {
+                    Occupied(e) => {
+                        if e.get() != vv {
+                            return None;
+                        }
+                    }
+                    Vacant(e) => {
+                        e.insert(vv.clone());
+                    }
+                };
+            }
+        }
+        Some(self)
+    }
+
+    pub fn project(mut self, variables: &[VarName<Arc<str>>]) -> Binding {
+        self.v
+            .retain(|k, _| variables.iter().any(|i| i.as_str() == k.as_ref()));
+        self.b.clear();
+        self
+    }
+}
+
+//
 
 pub type BindingMap = HashMap<Arc<str>, ResultTerm>;
 
