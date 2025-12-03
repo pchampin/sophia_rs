@@ -24,13 +24,25 @@ use crate::term::ResultTerm;
 
 pub struct Bindings<'a, D: Dataset + ?Sized> {
     pub(crate) variables: Vec<VarName<Arc<str>>>,
-    pub(crate) iter: Box<dyn Iterator<Item = Result<Binding, SparqlWrapperError<D::Error>>> + 'a>,
+    pub(crate) iter: BindingsIter<'a, D>,
 }
+
+pub type BindingsIter<'a, D> =
+    Box<dyn Iterator<Item = Result<Binding, SparqlWrapperError<<D as Dataset>::Error>>> + 'a>;
 
 impl<'a, D: Dataset + ?Sized> Bindings<'a, D> {
     pub fn empty() -> Self {
-        let variables = vec![];
+        Self::empty_with(vec![])
+    }
+
+    pub fn empty_with(variables: Vec<VarName<Arc<str>>>) -> Self {
         let iter = Box::new(std::iter::empty());
+        Self { variables, iter }
+    }
+
+    pub fn err<T: Into<SparqlWrapperError<D::Error>>>(err: T) -> Self {
+        let variables = vec![];
+        let iter = Box::new(std::iter::once(Err(err.into())));
         Self { variables, iter }
     }
 }

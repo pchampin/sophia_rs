@@ -22,9 +22,7 @@ use spargebra::term::Variable;
 
 use crate::SparqlWrapperError;
 use crate::bgp;
-use crate::binding::Binding;
-use crate::binding::Bindings;
-use crate::binding::populate_variables;
+use crate::binding::{Binding, Bindings, populate_variables};
 use crate::expression::ArcExpression;
 use crate::stash::ArcStrStashExt;
 
@@ -129,7 +127,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 path,
                 object,
             } => Err(SparqlWrapperError::NotImplemented("Path")),
-            Join { left, right } => Err(SparqlWrapperError::NotImplemented("Join")),
+            Join { left, right } => self.join(left, right, graph_matcher, context),
             LeftJoin {
                 left,
                 right,
@@ -197,6 +195,62 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             context,
         ));
         Bindings { variables, iter }
+    }
+
+    fn join(
+        self: &Arc<Self>,
+        left: &GraphPattern,
+        right: &GraphPattern,
+        graph_matcher: &[Option<ArcTerm>],
+        context: Option<&Binding>,
+    ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
+        let Bindings {
+            mut variables,
+            iter: mut iter1,
+        } = self.select(left, graph_matcher, context)?;
+
+        let first1 = iter1.next().transpose()?;
+
+        let Bindings {
+            variables: vars2,
+            iter: iter2,
+        } = self.select(right, graph_matcher, first1.as_ref())?;
+
+        for v in vars2 {
+            if !variables.contains(&v) {
+                variables.push(v);
+            }
+        }
+        if first1.is_none() {
+            return Ok(Bindings::empty_with(variables));
+        }
+        // right and graph_matcher will be moved in the closure;
+        // note that they must be cloned, so that we don't "leak" the lifetime of `self` in the return value
+        let state = Arc::clone(self);
+        let right = right.clone();
+        let graph_matcher = graph_matcher.iter().map(Clone::clone).collect::<Vec<_>>();
+        let iter = Box::new(
+            iter2
+                .filter_map(move |resb| {
+                    resb.map(|b| b.merge_if_compatible(first1.as_ref()))
+                        .transpose()
+                })
+                .chain(iter1.flat_map(move |resb1| match resb1 {
+                    Ok(b1) => match state.select(&right, &graph_matcher, Some(&b1)) {
+                        Ok(bs) => {
+                            MyIterator::PassThrough(Box::new(bs.iter.filter_map(move |resb2| {
+                                resb2
+                                    .map(|b2| b2.merge_if_compatible(Some(&b1)))
+                                    .transpose()
+                            })))
+                        }
+                        Err(err) => MyIterator::Err(err),
+                    },
+                    Err(err) => MyIterator::Err(err),
+                })),
+        );
+
+        Ok(Bindings { variables, iter })
     }
 
     fn distinct(
@@ -445,9 +499,42 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     }
 }
 
-// impl<'a, D: Dataset + ?Sized> From<Arc<ExecConfig<'a, D>>> for ExecState<'a, D> {
-//     fn from(config: Arc<ExecConfig<'a, D>>) -> Self {
-//         let stash = ArcStrStash::new();
-//         ExecState { stash, config }
-//     }
-// }
+/// A utility iterator used by ExecState for Join and LeftJoin
+enum MyIterator<T, E, I> {
+    FallBack(I, T),
+    PassThrough(I),
+    Err(E),
+    Finish,
+}
+
+impl<T, E, I> Iterator for MyIterator<T, E, I>
+where
+    I: Iterator<Item = Result<T, E>>,
+{
+    type Item = Result<T, E>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut tmp = MyIterator::Finish;
+        std::mem::swap(self, &mut tmp);
+        match tmp {
+            MyIterator::FallBack(mut iter, fallback) => {
+                let ret = iter.next();
+                if ret.is_some() {
+                    *self = MyIterator::PassThrough(iter);
+                    ret
+                } else {
+                    Some(Ok(fallback))
+                }
+            }
+            MyIterator::PassThrough(mut iter) => {
+                let ret = iter.next();
+                if ret.is_some() {
+                    *self = MyIterator::PassThrough(iter);
+                }
+                ret
+            }
+            MyIterator::Err(err) => Some(Err(err)),
+            MyIterator::Finish => None,
+        }
+    }
+}
