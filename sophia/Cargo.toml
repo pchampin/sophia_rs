@@ -49,3 +49,7 @@ url.workspace = true
 [[example]]
 name = "jsonld-context"
 required-features = ["jsonld"]
+
+[[example]]
+name = "sparql"
+required-features = ["sparql"]

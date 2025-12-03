@@ -15,6 +15,8 @@ pub fn make_iterator<'a, D: Dataset + ?Sized>(
     graph_matcher: &[Option<ArcTerm>],
     context: Option<&Binding>,
 ) -> impl Iterator<Item = Result<Binding, SparqlWrapperError<D::Error>>> + use<'a, D> {
+    // TODO later
+    // implement this as a pure iterator, rather than buffering in a Vec
     // TODO one day:
     // test the following "greedy" optimization :
     // 1. first search all ground triple patterns (no var/bnode)
