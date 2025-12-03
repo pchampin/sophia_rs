@@ -6,6 +6,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use sophia_api::prelude::*;
+use sophia_api::term::VarName;
 use sophia_iri::resolve::BaseIri;
 use sophia_term::ArcStrStash;
 use sophia_term::ArcTerm;
@@ -411,11 +412,19 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         graph_matcher: &[Option<ArcTerm>],
         binding: Option<&Binding>,
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
-        let new_variables = variables
+        let new_variables: Vec<VarName<Arc<str>>> = variables
             .iter()
             .map(|v| self.stash.copy_variable(v))
             .collect();
-        let mut bindings = self.select(inner, graph_matcher, binding)?;
+        let filtered_binding = binding.map(|b| {
+            let v: std::collections::HashMap<_, _> = new_variables
+                .iter()
+                .filter_map(|v| b.v.get(v.as_str()).map(|t| (v.clone().unwrap(), t.clone())))
+                .collect();
+            let b = Default::default();
+            Binding { v, b }
+        });
+        let mut bindings = self.select(inner, graph_matcher, filtered_binding.as_ref())?;
         bindings.variables = new_variables;
         Ok(bindings)
     }
