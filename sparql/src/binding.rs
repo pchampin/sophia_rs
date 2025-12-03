@@ -24,6 +24,14 @@ pub struct Bindings<'a, D: Dataset + ?Sized> {
     pub(crate) iter: Box<dyn Iterator<Item = Result<Binding, SparqlWrapperError<D::Error>>> + 'a>,
 }
 
+impl<'a, D: Dataset + ?Sized> Bindings<'a, D> {
+    pub fn empty() -> Self {
+        let variables = vec![];
+        let iter = Box::new(std::iter::empty());
+        Self { variables, iter }
+    }
+}
+
 impl<D: Dataset + ?Sized> Bindings<'_, D> {
     pub fn variables(&self) -> Vec<&str> {
         self.variables.iter().map(VarName::as_str).collect()
@@ -52,6 +60,8 @@ impl<'a, D: Dataset + ?Sized> IntoIterator for Bindings<'a, D> {
         }))
     }
 }
+
+//
 
 #[derive(Clone, Debug, Default)]
 pub struct Binding {

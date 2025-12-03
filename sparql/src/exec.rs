@@ -272,7 +272,6 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                     let graph_matcher = vec![Some(name.inner().clone())];
                     self.select(inner, &graph_matcher, context)
                 } else {
-                    let Bindings { variables, .. } = self.select(inner, &[], context)?;
                     let graph_names = self
                         .config()
                         .dataset
@@ -281,7 +280,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                         .collect::<Result<BTreeSet<_>, _>>()
                         .map_err(SparqlWrapperError::Dataset)?;
                     if graph_names.is_empty() {
-                        self.select(inner, &[], context)
+                        Ok(Bindings::empty())
                     } else {
                         self.graph_rec(var.as_str(), graph_names.into_iter(), inner, context)
                     }
@@ -307,9 +306,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             )));
             Ok(Bindings { variables, iter })
         } else {
-            let variables = vec![];
-            let iter = Box::new(std::iter::empty());
-            Ok(Bindings { variables, iter })
+            Ok(Bindings::empty())
         }
     }
 
