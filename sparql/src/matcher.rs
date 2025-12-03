@@ -1,6 +1,6 @@
 #![allow(clippy::module_name_repetitions)]
 
-use std::sync::Arc;
+use std::sync::{Arc, MutexGuard};
 
 use sophia_api::{
     MownStr,
@@ -29,7 +29,11 @@ pub enum SparqlMatcher {
 }
 
 impl SparqlMatcher {
-    pub fn build(pattern: AnyPattern, bindings: &Binding, stash: &mut ArcStrStash) -> Self {
+    pub fn build(
+        pattern: AnyPattern,
+        bindings: &Binding,
+        stash: &mut MutexGuard<'_, ArcStrStash>,
+    ) -> Self {
         use SparqlMatcher::*;
         match pattern.as_simple() {
             SimpleTerm::BlankNode(bnid) => {
@@ -42,7 +46,7 @@ impl SparqlMatcher {
             SimpleTerm::Triple(_) => {
                 // the following is safe because we know we have a triple
                 let tr = unsafe { pattern.to_triple().unwrap_unchecked() };
-                match tr.map(|t| SparqlMatcher::build(t, bindings, stash)) {
+                match tr.map(move |t| SparqlMatcher::build(t, bindings, stash)) {
                     [Bound(s), Bound(p), Bound(o)] => Bound([s, p, o].into()),
                     spo => Triple(Box::new(spo)),
                 }
@@ -65,7 +69,7 @@ impl SparqlMatcher {
     pub fn build3(
         pattern: &TriplePattern,
         bindings: &Binding,
-        stash: &mut ArcStrStash,
+        stash: &mut MutexGuard<'_, ArcStrStash>,
     ) -> [Self; 3] {
         [
             AnyPattern::from(&pattern.subject),

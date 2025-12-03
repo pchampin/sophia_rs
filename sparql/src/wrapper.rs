@@ -39,7 +39,7 @@ impl<'a, D: Dataset + ?Sized> SparqlDataset for SparqlWrapper<'a, D> {
                 pattern,
                 base_iri,
             } => {
-                let mut exec = ExecState::new(self.0, dataset, base_iri)?;
+                let exec = ExecState::new(self.0, dataset, base_iri)?;
                 let cfg = exec.config_cloned();
                 exec.select(pattern, &cfg.default_matcher, None)
                     .map(SparqlResult::Bindings)
@@ -60,7 +60,7 @@ impl<'a, D: Dataset + ?Sized> SparqlDataset for SparqlWrapper<'a, D> {
                 pattern,
                 base_iri,
             } => {
-                let mut exec = ExecState::new(self.0, dataset, base_iri)?;
+                let exec = ExecState::new(self.0, dataset, base_iri)?;
                 let cfg = exec.config_cloned();
                 exec.ask(pattern, &cfg.default_matcher)
                     .map(SparqlResult::Boolean)

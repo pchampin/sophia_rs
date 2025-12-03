@@ -4,6 +4,8 @@ use std::cmp::Ordering;
 use std::collections::BTreeSet;
 use std::collections::HashSet;
 use std::sync::Arc;
+use std::sync::Mutex;
+use std::sync::MutexGuard;
 
 use sophia_api::prelude::*;
 use sophia_api::term::VarName;
@@ -26,9 +28,9 @@ use crate::binding::populate_variables;
 use crate::expression::ArcExpression;
 use crate::stash::ArcStrStashExt;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct ExecState<'a, D: ?Sized> {
-    stash: ArcStrStash,
+    stash: Mutex<ArcStrStash>,
     config: Arc<ExecConfig<'a, D>>,
 }
 
@@ -46,8 +48,8 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         dataset: &'a D,
         query_dataset: &Option<QueryDataset>,
         base_iri: &Option<oxiri::Iri<String>>,
-    ) -> Result<Self, SparqlWrapperError<D::Error>> {
-        let mut stash = ArcStrStash::new();
+    ) -> Result<Arc<Self>, SparqlWrapperError<D::Error>> {
+        let stash = Mutex::new(ArcStrStash::new());
         let default_matcher = match query_dataset {
             None => vec![None],
             Some(query_dataset) => query_dataset
@@ -55,7 +57,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 .iter()
                 .map(|nn| {
                     Some(ArcTerm::Iri(IriRef::new_unchecked(
-                        stash.copy_str(nn.as_str()),
+                        stash.lock().unwrap().copy_str(nn.as_str()),
                     )))
                 })
                 .collect(),
@@ -63,7 +65,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         let named_graphs = match query_dataset.as_ref().and_then(|qd| qd.named.as_ref()) {
             None => dataset
                 .graph_names()
-                .map(|res| res.map(|t| [Some(stash.copy_term(t))]))
+                .map(|res| res.map(|t| [Some(stash.lock().unwrap().copy_term(t))]))
                 .collect::<Result<Vec<_>, _>>()
                 .map_err(SparqlWrapperError::Dataset)?,
             Some(_) => {
@@ -79,7 +81,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             base_iri,
             now,
         });
-        Ok(ExecState { stash, config })
+        Ok(Arc::new(ExecState { stash, config }))
     }
 
     pub fn config(&self) -> &ExecConfig<'a, D> {
@@ -90,8 +92,8 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         Arc::clone(&self.config)
     }
 
-    pub fn stash_mut(&mut self) -> &mut ArcStrStash {
-        &mut self.stash
+    pub fn stash_mut(&self) -> MutexGuard<'_, ArcStrStash> {
+        self.stash.lock().unwrap()
     }
 
     /// Evaluates `pattern` on the active graph identified by `graph_matcher`.
@@ -114,7 +116,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     /// This function **does not** guarantee that the returned bindings are actually compatible with the `context` or are merged with it.
     /// It is still the responsibility of the caller function to ensure that.
     pub fn select(
-        &mut self,
+        self: &Arc<Self>,
         pattern: &GraphPattern,
         graph_matcher: &[Option<ArcTerm>],
         context: Option<&Binding>,
@@ -169,7 +171,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     }
 
     pub fn ask(
-        &mut self,
+        self: &Arc<Self>,
         pattern: &GraphPattern,
         graph_matcher: &[Option<ArcTerm>],
     ) -> Result<bool, SparqlWrapperError<D::Error>> {
@@ -182,31 +184,29 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     /// The hint `context` is used by this method;
     /// the returned bindings are all compatible with it, and include it.
     fn bgp(
-        &mut self,
+        self: &Arc<Self>,
         patterns: &[TriplePattern],
         graph_matcher: &[Option<ArcTerm>],
         context: Option<&Binding>,
     ) -> Bindings<'a, D> {
-        let variables = populate_variables(patterns, &mut self.stash, context);
-        let iter = Box::new(bgp::make_iterator(self, patterns, graph_matcher, context));
+        let variables = populate_variables(patterns, &mut self.stash_mut(), context);
+        let iter = Box::new(bgp::make_iterator(
+            self.clone(),
+            patterns,
+            graph_matcher,
+            context,
+        ));
         Bindings { variables, iter }
     }
 
     fn distinct(
-        &mut self,
+        self: &Arc<Self>,
         inner: &GraphPattern,
         graph_matcher: &[Option<ArcTerm>],
         context: Option<&Binding>,
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
         let Bindings { variables, iter } = self.select(inner, graph_matcher, context)?;
         let mut seen = HashSet::new();
-        // config and graph_matcher will be moved in the closure;
-        let config = Arc::clone(&self.config);
-        let graph_matcher = graph_matcher.iter().map(Clone::clone).collect::<Vec<_>>();
-        // note that config must be an Arc clone,
-        // so that we don't "leak" the lifetime of `self` in the return value;
-        // for the same reason, we clone the ArcTerms in graph_matcher
-        // before passing them to the closure.
         let variables2 = variables.clone();
         let iter = Box::new(iter.filter(move |resb| match resb {
             Err(_) => true,
@@ -222,25 +222,22 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     }
 
     fn filter(
-        &mut self,
+        self: &Arc<Self>,
         expression: &Expression,
         inner: &GraphPattern,
         graph_matcher: &[Option<ArcTerm>],
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
         let Bindings { variables, iter } = self.select(inner, graph_matcher, None)?;
-        let arc_expr = ArcExpression::from_expr(expression, &mut self.stash);
-        // config and graph_matcher will be moved in the closure;
-        let config = Arc::clone(&self.config);
+        let arc_expr = ArcExpression::from_expr(expression, &mut self.stash_mut());
+        // self (as state) and graph_matcher will be moved in the closure;
+        // they must be cloned to avoid leaking the lifetime of `self`
+        let state = self.clone();
         let graph_matcher = graph_matcher.iter().map(Clone::clone).collect::<Vec<_>>();
-        // note that config must be an Arc clone,
-        // so that we don't "leak" the lifetime of `self` in the return value;
-        // for the same reason, we clone the ArcTerms in graph_matcher
-        // before passing them to the closure.
         let iter = Box::new(iter.filter(move |resb| {
             match resb {
                 Err(_) => true,
                 Ok(b) => arc_expr
-                    .eval(b, &config, &graph_matcher)
+                    .eval(b, &state, &graph_matcher)
                     .and_then(|e| e.is_truthy())
                     .unwrap_or(false),
             }
@@ -249,7 +246,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     }
 
     fn union(
-        &mut self,
+        self: &Arc<Self>,
         left: &GraphPattern,
         right: &GraphPattern,
         graph_matcher: &[Option<ArcTerm>],
@@ -274,7 +271,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     }
 
     fn graph(
-        &mut self,
+        self: &Arc<Self>,
         name: &NamedNodePattern,
         inner: &GraphPattern,
         context: Option<&Binding>,
@@ -282,7 +279,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         match name {
             NamedNodePattern::NamedNode(nn) => {
                 let graph_matcher = vec![Some(ArcTerm::Iri(IriRef::new_unchecked(
-                    self.stash.copy_str(nn.as_str()),
+                    self.stash_mut().copy_str(nn.as_str()),
                 )))];
                 self.select(inner, &graph_matcher, context)
             }
@@ -295,7 +292,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                         .config()
                         .dataset
                         .graph_names()
-                        .map(|res| res.map(|t| self.stash.copy_term(t)))
+                        .map(|res| res.map(|t| self.stash_mut().copy_term(t)))
                         .collect::<Result<BTreeSet<_>, _>>()
                         .map_err(SparqlWrapperError::Dataset)?;
                     if graph_names.is_empty() {
@@ -309,7 +306,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     }
 
     fn graph_rec(
-        &mut self,
+        self: &Arc<Self>,
         var: &str,
         mut graph_names: std::collections::btree_set::IntoIter<ArcTerm>,
         inner: &GraphPattern,
@@ -317,7 +314,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
         if let Some(name) = graph_names.next() {
             let mut b = context.cloned().unwrap_or_else(Binding::default);
-            b.v.insert(self.stash.copy_str(var), name.clone().into());
+            b.v.insert(self.stash_mut().copy_str(var), name.clone().into());
             let graph_matcher = vec![Some(name)];
             let Bindings { variables, iter } = self.select(inner, &graph_matcher, Some(&b))?;
             let iter = Box::new(iter.chain(Box::new(
@@ -330,13 +327,13 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     }
 
     fn extend(
-        &mut self,
+        self: &Arc<Self>,
         inner: &GraphPattern,
         variable: &Variable,
         expression: &Expression,
         graph_matcher: &[Option<ArcTerm>],
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
-        let variable = self.stash.copy_variable(variable);
+        let variable = self.stash_mut().copy_variable(variable);
         let Bindings {
             mut variables,
             iter,
@@ -344,19 +341,17 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         if variables.contains(&variable) {
             return Err(SparqlWrapperError::Override(variable.unwrap()));
         }
-        let arc_expr = ArcExpression::from_expr(expression, &mut self.stash);
+        let arc_expr = ArcExpression::from_expr(expression, &mut self.stash_mut());
         variables.push(variable.clone());
-        // config, varkey and graph_matcher will be moved in the closure;
-        let config = Arc::clone(&self.config);
+        // self (as state) and graph_matcher will be moved in the closure;
+        // they must be cloned to avoid leaking the lifetime of `self`
+        let state = Arc::clone(self);
         let varkey = variable.unwrap();
         let graph_matcher = graph_matcher.iter().map(Clone::clone).collect::<Vec<_>>();
-        // note that config must be an Arc clone,
-        // so that we don't "leak" the lifetime of `self` in the return value;
-        // for the same reason, we clone the ArcTerms in graph_matcher
-        // before passing them to the closure.
+
         let iter = Box::new(iter.map(move |resb| {
             resb.map(|mut b| {
-                if let Some(val) = arc_expr.eval(&b, &config, &graph_matcher) {
+                if let Some(val) = arc_expr.eval(&b, &state, &graph_matcher) {
                     b.v.insert(varkey.clone(), val.into_term());
                 }
                 b
@@ -366,7 +361,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     }
 
     fn order_by(
-        &mut self,
+        self: &Arc<Self>,
         inner: &GraphPattern,
         expression: &[OrderExpression],
         graph_matcher: &[Option<ArcTerm>],
@@ -374,53 +369,48 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         let criteria: Vec<_> = expression
             .iter()
             .map(|oe| match oe {
-                OrderExpression::Asc(e) => (ArcExpression::from_expr(e, &mut self.stash), false),
-                OrderExpression::Desc(e) => (ArcExpression::from_expr(e, &mut self.stash), true),
+                OrderExpression::Asc(e) => {
+                    (ArcExpression::from_expr(e, &mut self.stash_mut()), false)
+                }
+                OrderExpression::Desc(e) => {
+                    (ArcExpression::from_expr(e, &mut self.stash_mut()), true)
+                }
             })
             .collect();
-
-        // config and graph_matcher will be moved in the closure;
-        let config = Arc::clone(&self.config);
-        let graph_matcher2 = graph_matcher.iter().map(Clone::clone).collect::<Vec<_>>();
-        // note that config must be an Arc clone,
-        // so that we don't "leak" the lifetime of `self` in the return value;
-        // for the same reason, we clone the ArcTerms in graph_matcher
-        // before passing them to the closure.
 
         fn cmp_bindings_with<D: Dataset + ?Sized>(
             b1: &Binding,
             b2: &Binding,
             criteria: &[(ArcExpression, bool)],
-            config: &Arc<ExecConfig<D>>,
+            state: &Arc<ExecState<D>>,
             graph_matcher: &[Option<ArcTerm>],
         ) -> Ordering {
             match criteria {
                 [] => Ordering::Equal,
                 [(expr, desc), rest @ ..] => {
-                    let v1 = expr.eval(b1, config, graph_matcher);
-                    let v2 = expr.eval(b2, config, graph_matcher);
+                    let v1 = expr.eval(b1, state, graph_matcher);
+                    let v2 = expr.eval(b2, state, graph_matcher);
                     let o = match (v1, v2) {
                         (None, None) => Ordering::Equal,
                         (None, Some(_)) => Ordering::Less,
                         (Some(v1), v2) => v1.sparql_order_by(&v2),
                     };
                     let o = if *desc { o.reverse() } else { o };
-                    o.then_with(|| cmp_bindings_with(b1, b2, rest, config, graph_matcher))
+                    o.then_with(|| cmp_bindings_with(b1, b2, rest, state, graph_matcher))
                 }
             }
         }
 
         let Bindings { variables, iter } = self.select(inner, graph_matcher, None)?;
         let mut bindings = iter.collect::<Result<Vec<_>, _>>()?;
-        bindings.sort_unstable_by(|b1, b2| {
-            cmp_bindings_with(b1, b2, &criteria, &config, &graph_matcher2)
-        });
+        bindings
+            .sort_unstable_by(|b1, b2| cmp_bindings_with(b1, b2, &criteria, self, graph_matcher));
         let iter = Box::new(bindings.into_iter().map(Ok));
         Ok(Bindings { variables, iter })
     }
 
     fn project(
-        &mut self,
+        self: &Arc<Self>,
         inner: &GraphPattern,
         variables: &[Variable],
         graph_matcher: &[Option<ArcTerm>],
@@ -428,7 +418,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
         let variables: Vec<VarName<Arc<str>>> = variables
             .iter()
-            .map(|v| self.stash.copy_variable(v))
+            .map(|v| self.stash_mut().copy_variable(v))
             .collect();
         let variables2 = variables.clone(); // for the closure
         let filtered_context = context.map(|b| b.clone().project(&variables));
@@ -438,7 +428,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     }
 
     fn slice(
-        &mut self,
+        self: &Arc<Self>,
         inner: &GraphPattern,
         start: usize,
         length: Option<usize>,
@@ -455,9 +445,9 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     }
 }
 
-impl<'a, D: Dataset + ?Sized> From<Arc<ExecConfig<'a, D>>> for ExecState<'a, D> {
-    fn from(config: Arc<ExecConfig<'a, D>>) -> Self {
-        let stash = ArcStrStash::new();
-        ExecState { stash, config }
-    }
-}
+// impl<'a, D: Dataset + ?Sized> From<Arc<ExecConfig<'a, D>>> for ExecState<'a, D> {
+//     fn from(config: Arc<ExecConfig<'a, D>>) -> Self {
+//         let stash = ArcStrStash::new();
+//         ExecState { stash, config }
+//     }
+// }

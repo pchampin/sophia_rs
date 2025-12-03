@@ -12,6 +12,7 @@ use sha1::{Digest, Sha1};
 use sha2::{Sha256, Sha384, Sha512};
 use sophia_api::{
     ns::xsd,
+    prelude::Dataset,
     term::{BaseDirection, BnodeId, IriRef, LanguageTag, Term},
 };
 use sophia_term::GenericLiteral;
@@ -23,17 +24,17 @@ use uuid::{
 
 use crate::{
     ResultTerm,
-    exec::ExecConfig,
+    exec::ExecState,
     expression::{EvalResult, StringLiteralRef},
     ns::{RDF_DIR_LANG_STRING, RDF_LANG_STRING},
     value::{SparqlNumber, SparqlValue, XsdDateTime},
 };
 
 #[allow(clippy::module_name_repetitions, clippy::too_many_lines)]
-pub fn call_function<D: ?Sized>(
+pub fn call_function<D: Dataset + ?Sized>(
     function: &Function,
     mut arguments: Vec<EvalResult>,
-    config: &ExecConfig<D>,
+    state: &Arc<ExecState<D>>,
 ) -> Option<EvalResult> {
     match function {
         Str => {
@@ -86,7 +87,7 @@ pub fn call_function<D: ?Sized>(
             if let Some(iri) = arg.as_iri("") {
                 Some(iri.clone().into())
             } else if let Some(st) = arg.as_xsd_string("Iri") {
-                let res = if let Some(base_iri) = &config.base_iri {
+                let res = if let Some(base_iri) = &state.config().base_iri {
                     base_iri
                         .resolve(st.as_ref())
                         .map(|iri| iri.map_unchecked(Arc::from).to_iri_ref())
@@ -297,7 +298,7 @@ pub fn call_function<D: ?Sized>(
         Now => {
             debug_assert!(arguments.is_empty());
             Some(EvalResult::from(SparqlValue::DateTime(Some(
-                XsdDateTime::Timezoned(config.now),
+                XsdDateTime::Timezoned(state.config().now),
             ))))
         }
         Uuid => {

@@ -13,7 +13,7 @@ use std::{cmp::Ordering, sync::Arc};
 use crate::{
     ResultTerm,
     binding::Binding,
-    exec::{ExecConfig, ExecState},
+    exec::ExecState,
     function::call_function,
     stash::{ArcStrStashExt, value_ref_to_arcterm, value_to_term},
     value::{SparqlNumber, SparqlValue, XsdDateTime},
@@ -179,7 +179,7 @@ impl ArcExpression {
     pub fn eval<D>(
         &self,
         binding: &Binding,
-        config: &Arc<ExecConfig<'_, D>>,
+        state: &Arc<ExecState<'_, D>>,
         graph_matcher: &[Option<ArcTerm>],
     ) -> Option<EvalResult>
     where
@@ -191,8 +191,8 @@ impl ArcExpression {
             Literal(lit) => Some(ResultTerm::from(ArcTerm::Literal(lit.clone())).into()),
             Variable(var) => binding.v.get(var.as_str()).cloned().map(EvalResult::from),
             Or(lhs, rhs) => {
-                let lhs = lhs.eval(binding, config, graph_matcher)?.is_truthy();
-                let rhs = rhs.eval(binding, config, graph_matcher)?.is_truthy();
+                let lhs = lhs.eval(binding, state, graph_matcher)?.is_truthy();
+                let rhs = rhs.eval(binding, state, graph_matcher)?.is_truthy();
                 match (lhs, rhs) {
                     (Some(a), Some(b)) => Some(a || b),
                     (Some(true), None) | (None, Some(true)) => Some(true),
@@ -201,8 +201,8 @@ impl ArcExpression {
                 .map(EvalResult::from)
             }
             And(lhs, rhs) => {
-                let lhs = lhs.eval(binding, config, graph_matcher)?.is_truthy();
-                let rhs = rhs.eval(binding, config, graph_matcher)?.is_truthy();
+                let lhs = lhs.eval(binding, state, graph_matcher)?.is_truthy();
+                let rhs = rhs.eval(binding, state, graph_matcher)?.is_truthy();
                 match (lhs, rhs) {
                     (Some(a), Some(b)) => Some(a && b),
                     (Some(false), None) | (None, Some(false)) => Some(false),
@@ -211,45 +211,45 @@ impl ArcExpression {
                 .map(EvalResult::from)
             }
             Equal(lhs, rhs) => {
-                let lhs = lhs.eval(binding, config, graph_matcher)?;
-                let rhs = rhs.eval(binding, config, graph_matcher)?;
+                let lhs = lhs.eval(binding, state, graph_matcher)?;
+                let rhs = rhs.eval(binding, state, graph_matcher)?;
                 lhs.sparql_eq(&rhs).map(EvalResult::from)
             }
             SameTerm(lhs, rhs) => {
-                let lhs = lhs.eval(binding, config, graph_matcher)?.into_term();
-                let rhs = rhs.eval(binding, config, graph_matcher)?.into_term();
+                let lhs = lhs.eval(binding, state, graph_matcher)?.into_term();
+                let rhs = rhs.eval(binding, state, graph_matcher)?.into_term();
                 Some(Term::eq(&lhs, rhs).into())
             }
             Greater(lhs, rhs) => {
-                let lhs = lhs.eval(binding, config, graph_matcher)?;
-                let rhs = rhs.eval(binding, config, graph_matcher)?;
+                let lhs = lhs.eval(binding, state, graph_matcher)?;
+                let rhs = rhs.eval(binding, state, graph_matcher)?;
                 lhs.sparql_cmp(&rhs)
                     .map(|ord| EvalResult::from(ord.is_gt()))
             }
             GreaterOrEqual(lhs, rhs) => {
-                let lhs = lhs.eval(binding, config, graph_matcher)?;
-                let rhs = rhs.eval(binding, config, graph_matcher)?;
+                let lhs = lhs.eval(binding, state, graph_matcher)?;
+                let rhs = rhs.eval(binding, state, graph_matcher)?;
                 lhs.sparql_cmp(&rhs)
                     .map(|ord| EvalResult::from(ord.is_ge()))
             }
             Less(lhs, rhs) => {
-                let lhs = lhs.eval(binding, config, graph_matcher)?;
-                let rhs = rhs.eval(binding, config, graph_matcher)?;
+                let lhs = lhs.eval(binding, state, graph_matcher)?;
+                let rhs = rhs.eval(binding, state, graph_matcher)?;
                 lhs.sparql_cmp(&rhs)
                     .map(|ord| EvalResult::from(ord.is_lt()))
             }
             LessOrEqual(lhs, rhs) => {
-                let lhs = lhs.eval(binding, config, graph_matcher)?;
-                let rhs = rhs.eval(binding, config, graph_matcher)?;
+                let lhs = lhs.eval(binding, state, graph_matcher)?;
+                let rhs = rhs.eval(binding, state, graph_matcher)?;
                 lhs.sparql_cmp(&rhs)
                     .map(|ord| EvalResult::from(ord.is_le()))
             }
             In(lhs, rhs) => {
-                let lhs = lhs.eval(binding, config, graph_matcher)?;
+                let lhs = lhs.eval(binding, state, graph_matcher)?;
                 rhs.iter()
                     .map(|other| {
                         other
-                            .eval(binding, config, graph_matcher)
+                            .eval(binding, state, graph_matcher)
                             .and_then(|other| lhs.sparql_eq(&other))
                     })
                     .find(|res| res != &Some(false))
@@ -261,45 +261,44 @@ impl ArcExpression {
                 // TODO check what the spec says
             }
             Add(lhs, rhs) => {
-                let lhs = lhs.eval(binding, config, graph_matcher)?;
-                let rhs = rhs.eval(binding, config, graph_matcher)?;
+                let lhs = lhs.eval(binding, state, graph_matcher)?;
+                let rhs = rhs.eval(binding, state, graph_matcher)?;
                 (lhs.as_number("Add#1")? + rhs.as_number("Add#2")?)
                     .map(|n| SparqlValue::from(n).into())
             }
             Subtract(lhs, rhs) => {
-                let lhs = lhs.eval(binding, config, graph_matcher)?;
-                let rhs = rhs.eval(binding, config, graph_matcher)?;
+                let lhs = lhs.eval(binding, state, graph_matcher)?;
+                let rhs = rhs.eval(binding, state, graph_matcher)?;
                 (lhs.as_number("Subtract#1")? - rhs.as_number("Subtract#2")?)
                     .map(|n| SparqlValue::from(n).into())
             }
             Multiply(lhs, rhs) => {
-                let lhs = lhs.eval(binding, config, graph_matcher)?;
-                let rhs = rhs.eval(binding, config, graph_matcher)?;
+                let lhs = lhs.eval(binding, state, graph_matcher)?;
+                let rhs = rhs.eval(binding, state, graph_matcher)?;
                 (lhs.as_number("Multiply#1")? * rhs.as_number("Multiply#2")?)
                     .map(|n| SparqlValue::from(n).into())
             }
             Divide(lhs, rhs) => {
-                let lhs = lhs.eval(binding, config, graph_matcher)?;
-                let rhs = rhs.eval(binding, config, graph_matcher)?;
+                let lhs = lhs.eval(binding, state, graph_matcher)?;
+                let rhs = rhs.eval(binding, state, graph_matcher)?;
                 (lhs.as_number("Divide#1")? / rhs.as_number("Divide#2")?)
                     .map(|n| SparqlValue::from(n).into())
             }
             UnaryPlus(e) => {
-                let e = e.eval(binding, config, graph_matcher)?;
+                let e = e.eval(binding, state, graph_matcher)?;
                 e.as_number("UnaryPlus")
                     .map(|n| SparqlValue::from(n.clone()).into())
             }
             UnaryMinus(e) => {
-                let e = e.eval(binding, config, graph_matcher)?;
+                let e = e.eval(binding, state, graph_matcher)?;
                 (-e.as_number("UnaryMinus")?).map(|n| SparqlValue::from(n).into())
             }
             Not(e) => {
-                let e = e.eval(binding, config, graph_matcher)?.is_truthy()?;
+                let e = e.eval(binding, state, graph_matcher)?.is_truthy()?;
                 Some((!e).into())
             }
             Exists(graph_pattern) => {
-                let mut exec_state = ExecState::from(Arc::clone(config));
-                let res = exec_state.select(graph_pattern, graph_matcher, Some(binding));
+                let res = state.select(graph_pattern, graph_matcher, Some(binding));
                 let exists = match res {
                     Ok(mut bindings) => bindings.iter.next().is_some(),
                     Err(_) => false,
@@ -308,25 +307,25 @@ impl ArcExpression {
             }
             Bound(varname) => Some(binding.v.contains_key(varname.as_str()).into()),
             If(c, t, e) => {
-                if c.eval(binding, config, graph_matcher)?
+                if c.eval(binding, state, graph_matcher)?
                     .is_truthy()
                     .unwrap_or(false)
                 {
-                    t.eval(binding, config, graph_matcher)
+                    t.eval(binding, state, graph_matcher)
                 } else {
-                    e.eval(binding, config, graph_matcher)
+                    e.eval(binding, state, graph_matcher)
                 }
             }
             Coalesce(exprs) => exprs
                 .iter()
-                .find_map(|e| e.eval(binding, config, graph_matcher)),
+                .find_map(|e| e.eval(binding, state, graph_matcher)),
             FunctionCall(function, arguments) => {
                 let evaluated: Vec<EvalResult> = arguments
                     .iter()
-                    .map_while(|e| e.eval(binding, config, graph_matcher))
+                    .map_while(|e| e.eval(binding, state, graph_matcher))
                     .collect();
                 if evaluated.len() == arguments.len() {
-                    call_function(function, evaluated, config.as_ref())
+                    call_function(function, evaluated, state)
                 } else {
                     None
                 }

@@ -5,6 +5,7 @@ use std::collections::HashSet;
 use std::collections::hash_map::Entry::Occupied;
 use std::collections::hash_map::Entry::Vacant;
 use std::sync::Arc;
+use std::sync::MutexGuard;
 
 use sophia_api::prelude::*;
 use sophia_api::sparql::SparqlBindings;
@@ -129,7 +130,7 @@ pub(crate) fn populate_bindings<T: Term>(
     pattern: &TriplePattern,
     result: &[T; 3],
     b: &mut Binding,
-    stash: &mut ArcStrStash,
+    stash: &mut MutexGuard<ArcStrStash>,
 ) -> Result<(), ()> {
     populate_bindings_term(AnyPattern::Term(&pattern.subject), &result[0], b, stash)?;
     populate_bindings_term(AnyPattern::Named(&pattern.predicate), &result[1], b, stash)?;
@@ -141,7 +142,7 @@ fn populate_bindings_term<T: Term>(
     pattern: AnyPattern,
     result: &T,
     b: &mut Binding,
-    stash: &mut ArcStrStash,
+    stash: &mut MutexGuard<ArcStrStash>,
 ) -> Result<(), ()> {
     let st = pattern.as_simple();
     match st {

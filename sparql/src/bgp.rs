@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use sophia_api::prelude::*;
 use sophia_term::ArcTerm;
 use spargebra::term::TriplePattern;
@@ -8,7 +10,7 @@ use crate::exec::ExecState;
 use crate::matcher::SparqlMatcher;
 
 pub fn make_iterator<'a, D: Dataset + ?Sized>(
-    state: &mut ExecState<'a, D>,
+    state: Arc<ExecState<'a, D>>,
     patterns: &[TriplePattern],
     graph_matcher: &[Option<ArcTerm>],
     context: Option<&Binding>,
@@ -30,14 +32,14 @@ pub fn make_iterator<'a, D: Dataset + ?Sized>(
     // then simply calling self.bgp_rec as below
     let mut bindings = vec![];
     let b = context.cloned().unwrap_or_default();
-    if let Err(e) = bgp_rec(state, patterns, &mut bindings, b, graph_matcher) {
+    if let Err(e) = bgp_rec(&state, patterns, &mut bindings, b, graph_matcher) {
         bindings.push(Err(e));
     }
     bindings.into_iter()
 }
 
 fn bgp_rec<D: Dataset + ?Sized>(
-    state: &mut ExecState<D>,
+    state: &Arc<ExecState<D>>,
     patterns: &[TriplePattern],
     bs: &mut Vec<Result<Binding, SparqlWrapperError<D::Error>>>,
     mut b: Binding,
@@ -48,7 +50,7 @@ fn bgp_rec<D: Dataset + ?Sized>(
         bs.push(Ok(b));
         return Ok(());
     };
-    let [sm, pm, om] = SparqlMatcher::build3(first, &b, state.stash_mut());
+    let [sm, pm, om] = SparqlMatcher::build3(first, &b, &mut state.stash_mut());
     let all_bound = sm.is_bound() && pm.is_bound() && om.is_bound();
     let matches: Vec<_> = state
         .config()
@@ -67,26 +69,12 @@ fn bgp_rec<D: Dataset + ?Sized>(
     }
     for m in first_matches {
         let mut b = b.clone();
-        if populate_bindings(first, m, &mut b, state.stash_mut()).is_ok() {
+        if populate_bindings(first, m, &mut b, &mut state.stash_mut()).is_ok() {
             bgp_rec(state, remaining, bs, b, graph_matcher)?;
         }
     }
-    if populate_bindings(first, last_match, &mut b, state.stash_mut()).is_ok() {
+    if populate_bindings(first, last_match, &mut b, &mut state.stash_mut()).is_ok() {
         bgp_rec(state, remaining, bs, b, graph_matcher)?;
     }
     Ok(())
 }
-
-/*
-pub struct BgpIterator<D> {
-    _phantom: PhantomData<D>,
-}
-
-impl<D> Iterator for BgpIterator<D> {
-    type Item = ();
-
-    fn next(&mut self) -> Option<Self::Item> {
-        todo!()
-    }
-}
-*/
