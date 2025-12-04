@@ -1,6 +1,6 @@
 #![allow(clippy::module_name_repetitions)]
 
-use std::sync::{Arc, MutexGuard};
+use std::sync::MutexGuard;
 
 use sophia_api::{
     MownStr,
@@ -20,11 +20,12 @@ mod _ox2so;
 pub(crate) use _ox2so::*;
 
 pub enum SparqlMatcher {
-    Var(Arc<str>),
-    Bnode(Arc<str>),
-    // NB: this variant is for non-ground triples only;
-    // for ground triples, the `Bound` variant should be used instead
+    /// Free variable or bnode
+    Free, // free variable or bnode
+    /// Non-ground triple
+    /// NB: for ground triples, the `Bound` variant should be used instead
     Triple(Box<[SparqlMatcher; 3]>),
+    /// Ground term
     Bound(ResultTerm),
 }
 
@@ -40,7 +41,7 @@ impl SparqlMatcher {
                 if let Some(b) = bindings.b.get(bnid.as_str()) {
                     Bound(b.clone())
                 } else {
-                    Bnode(stash.copy_str(bnid))
+                    Free
                 }
             }
             SimpleTerm::Triple(_) => {
@@ -55,7 +56,7 @@ impl SparqlMatcher {
                 if let Some(b) = bindings.v.get(vn.as_str()) {
                     Bound(b.clone())
                 } else {
-                    Var(stash.copy_str(vn))
+                    Free
                 }
             }
             _ => Bound(stash.copy_result_term(pattern)),

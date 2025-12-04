@@ -101,20 +101,6 @@ fn datatype<T: ToString>(lex: &str, tag: &str, dt: T) -> TestResult {
     Ok(())
 }
 
-#[test_case("tag:x", true)]
-#[test_case("../a", true)]
-#[test_case("a b", false)]
-fn iri(arg: &str, exp: bool) -> TestResult {
-    let arg = Arc::<str>::from(arg);
-    let got = super::iri(&arg);
-    let exp = true
-        .then_some(arg)
-        .and_then(|arg| IriRef::new(arg.clone()).ok())
-        .map(EvalResult::from);
-    assert!(eval_eq(dbg!(got), dbg!(exp)));
-    Ok(())
-}
-
 #[test]
 fn bnode1() -> TestResult {
     let got = super::bnode1(&Arc::from("foo"));

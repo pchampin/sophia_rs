@@ -33,6 +33,7 @@ impl<'a, D: Dataset + ?Sized> SparqlDataset for SparqlWrapper<'a, D> {
     {
         let query = query.into_query()?;
         log::trace!("{:#?}", query.borrow().algebra);
+        #[expect(unused_variables)]
         match &(query.borrow().algebra) {
             QueryAST::Select {
                 dataset,

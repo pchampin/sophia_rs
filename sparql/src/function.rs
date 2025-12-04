@@ -105,13 +105,10 @@ pub fn call_function<D: Dataset + ?Sized>(
                 None
             }
         }
-        BNode => {
-            let o: Option<Option<i32>> = Some(None);
-            match arguments.pop() {
-                None => Some(bnode0()),
-                Some(arg) => Some(bnode1(arg.as_xsd_string("Bnode")?)),
-            }
-        }
+        BNode => match arguments.pop() {
+            None => Some(bnode0()),
+            Some(arg) => Some(bnode1(arg.as_xsd_string("Bnode")?)),
+        },
         Rand => Some(rand()),
         Abs => {
             let [arg] = &arguments[..] else {
@@ -582,17 +579,13 @@ fn make_regex(pattern: &str, flags: Option<&Arc<str>>) -> Option<Regex> {
     .ok()
 }
 
-pub fn iri(st: &Arc<str>) -> Option<EvalResult> {
-    IriRef::new(st.clone()).ok().map(EvalResult::from)
-}
-
 pub fn bnode0() -> EvalResult {
     let bnid = Uuid::now_v7().to_string();
     let bnid = BnodeId::<Arc<str>>::new_unchecked(bnid.into());
     bnid.into()
 }
 
-pub fn bnode1(arg: &Arc<str>) -> EvalResult {
+pub fn bnode1(_arg: &Arc<str>) -> EvalResult {
     // mimic Jena for the moment: ignore the argument
     // because we don't know whether we are in the same result or not.
     // TODO improve compliance and generate same bnode for a given 'arg' AND result number?
@@ -865,7 +858,7 @@ pub fn tz(valid_xsd_date_time: &str) -> EvalResult {
 
 pub fn uuid() -> EvalResult {
     let mut buf = vec![b' '; Urn::LENGTH];
-    let urn = Uuid::new_v4().urn().encode_lower(&mut buf[..]);
+    Uuid::new_v4().urn().encode_lower(&mut buf[..]);
     let str = unsafe {
         // SAFETY: we now that buf contain only ASCII characters
         String::from_utf8_unchecked(buf)
@@ -875,7 +868,7 @@ pub fn uuid() -> EvalResult {
 
 pub fn str_uuid() -> EvalResult {
     let mut buf = vec![b' '; Hyphenated::LENGTH];
-    let urn = Uuid::new_v4().hyphenated().encode_lower(&mut buf[..]);
+    Uuid::new_v4().hyphenated().encode_lower(&mut buf[..]);
     let str = unsafe {
         // SAFETY: we now that buf contain only ASCII characters
         String::from_utf8_unchecked(buf)

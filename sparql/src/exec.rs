@@ -36,7 +36,6 @@ pub struct ExecState<'a, D: ?Sized> {
 pub struct ExecConfig<'a, D: ?Sized> {
     pub dataset: &'a D,
     pub default_matcher: Vec<Option<ArcTerm>>,
-    pub named_graphs: Vec<[Option<ArcTerm>; 1]>,
     pub base_iri: Option<BaseIri<String>>,
     pub now: chrono::DateTime<chrono::FixedOffset>,
 }
@@ -60,22 +59,11 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 })
                 .collect(),
         };
-        let named_graphs = match query_dataset.as_ref().and_then(|qd| qd.named.as_ref()) {
-            None => dataset
-                .graph_names()
-                .map(|res| res.map(|t| [Some(stash.lock().unwrap().copy_term(t))]))
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(SparqlWrapperError::Dataset)?,
-            Some(_) => {
-                return Err(SparqlWrapperError::NotImplemented("FROM NAMED"));
-            }
-        };
         let base_iri = base_iri.clone().map(Into::into);
         let now = chrono::Local::now().fixed_offset();
         let config = Arc::new(ExecConfig {
             dataset,
             default_matcher,
-            named_graphs,
             base_iri,
             now,
         });
@@ -120,6 +108,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         context: Option<&Binding>,
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
         use GraphPattern::*;
+        #[expect(unused_variables)]
         match pattern {
             Bgp { patterns } => Ok(self.bgp(patterns, graph_matcher, context)),
             Path {
@@ -229,6 +218,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         let state = Arc::clone(self);
         let right = right.clone();
         let graph_matcher = graph_matcher.iter().map(Clone::clone).collect::<Vec<_>>();
+
         let iter = Box::new(
             iter2
                 .filter_map(move |resb| {
@@ -501,6 +491,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
 
 /// A utility iterator used by ExecState for Join and LeftJoin
 enum MyIterator<T, E, I> {
+    #[expect(dead_code)]
     FallBack(I, T),
     PassThrough(I),
     Err(E),

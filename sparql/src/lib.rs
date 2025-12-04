@@ -18,7 +18,6 @@
 //! # Ok(()) }
 //! ```
 
-#![allow(dead_code, unused_variables)]
 mod bgp;
 mod binding;
 mod exec;

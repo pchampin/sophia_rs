@@ -45,6 +45,8 @@ macro_rules! impl_sparqlnumber_integer_from {
         impl From<$t> for SparqlNumber {
             fn from(value: $t) -> Self {
                 #[allow(irrefutable_let_patterns)]
+                // because depending on the arguments of the macro,
+                // the pattern bellow *may* be irrefutable
                 if let Ok(val) = value.try_into() {
                     SparqlNumber::NativeInt(val)
                 } else {
