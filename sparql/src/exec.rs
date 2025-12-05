@@ -228,11 +228,11 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 .chain(iter1.flat_map(move |resb1| match resb1 {
                     Ok(b1) => match state.select(&right, &graph_matcher, Some(&b1)) {
                         Ok(bs) => {
-                            MyIterator::PassThrough(Box::new(bs.iter.filter_map(move |resb2| {
+                            MyIterator::PassThrough(bs.iter.filter_map(move |resb2| {
                                 resb2
                                     .map(|b2| b2.merge_if_compatible(Some(&b1)))
                                     .transpose()
-                            })))
+                            }))
                         }
                         Err(err) => MyIterator::Err(err),
                     },
@@ -361,9 +361,9 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             b.v.insert(self.stash_mut().copy_str(var), name.clone().into());
             let graph_matcher = vec![Some(name)];
             let Bindings { variables, iter } = self.select(inner, &graph_matcher, Some(&b))?;
-            let iter = Box::new(iter.chain(Box::new(
+            let iter = Box::new(iter.chain(
                 self.graph_rec(var, graph_names, inner, context)?.iter,
-            )));
+            ));
             Ok(Bindings { variables, iter })
         } else {
             Ok(Bindings::empty())
