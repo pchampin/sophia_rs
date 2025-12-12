@@ -47,7 +47,22 @@ use test_case::test_case;
 #[test_case(
     "SELECT ?x { GRAPH ?g { <#a> s:name ?x } }",
     vec!["\"Albert\"^^<http://www.w3.org/2001/XMLSchema#string>"];
-    "name_in_g"
+    "name in g"
+)]
+#[test_case(
+    "SELECT ?x { GRAPH ?g { ?y s:name ?x } }",
+    vec!["\"Albert\"^^<http://www.w3.org/2001/XMLSchema#string>", "\"Alice\"^^<http://www.w3.org/2001/XMLSchema#string>"];
+    "names in g"
+)]
+#[test_case(
+    "SELECT ?x { GRAPH ?g { ?x s:name ?y } }",
+    vec!["<https://example.org/test#a>", "<https://example.org/test#b>"];
+    "named in g"
+)]
+#[test_case(
+    "SELECT ?x { <#a> s:name ?n. BIND (?n as ?n2) GRAPH ?g { ?x s:name ?n2 } }",
+    vec!["<https://example.org/test#b>"];
+    "join"
 )]
 fn test_select_1_and_ask(query: &str, exp: Vec<&str>) -> TestResult {
     let dataset = dataset_101()?;
@@ -56,13 +71,36 @@ fn test_select_1_and_ask(query: &str, exp: Vec<&str>) -> TestResult {
     let parsed_query = SparqlQuery::parse(&query)?;
     let bindings = dataset.query(&parsed_query)?.into_bindings();
     assert_eq!(bindings.variables(), &["x"]);
-    let mut got = bindings_to_vec(bindings);
+    let mut got = bindings_to_vec(bindings, 1);
     got.sort();
     assert_eq!(exp, got);
 
     let parsed_query = SparqlQuery::parse(&query.replace("SELECT ?x", "ASK"))?;
     let response = dataset.query(&parsed_query)?.into_boolean();
     assert_eq!(response, !exp.is_empty());
+    Ok(())
+}
+
+#[test_case(
+    "SELECT ?x ?y { ?z a ?x. OPTIONAL { ?z s:performerIn ?y } } ORDER BY ?x",
+    vec!["<http://schema.org/Event>", "", "<http://schema.org/Person>", "_:b"];
+    "left join no condition"
+)]
+#[test_case(
+    "SELECT ?x ?y { ?x a ?z. OPTIONAL { ?x s:name ?y. FILTER (?y < \"B\") } } ORDER BY ?x",
+    vec!["_:b", "", "<https://example.org/test#a>", "\"Alice\"^^<http://www.w3.org/2001/XMLSchema#string>"];
+    "left join with condition"
+)]
+fn test_select_2(query: &str, exp: Vec<&str>) -> TestResult {
+    let dataset = dataset_101()?;
+    let dataset = SparqlWrapper(&dataset);
+    let query = format!("BASE <https://example.org/test> PREFIX s: <http://schema.org/> {query}");
+    let parsed_query = SparqlQuery::parse(&query)?;
+    let bindings = dataset.query(&parsed_query)?.into_bindings();
+    assert_eq!(bindings.variables(), &["x", "y"]);
+    let got = bindings_to_vec(bindings, 2);
+    assert_eq!(exp, got);
+
     Ok(())
 }
 
@@ -109,14 +147,14 @@ fn test_limit_offset(limit: usize) -> TestResult {
     let dataset = dataset_101()?;
     let dataset = SparqlWrapper(&dataset);
     let query0 = format!("SELECT ?p {{ [] ?p [] }} LIMIT {limit}");
-    let got = bindings_to_vec(dataset.query(query0.as_str())?.into_bindings());
+    let got = bindings_to_vec(dataset.query(query0.as_str())?.into_bindings(), 1);
     assert_eq!(got.len(), limit.min(5));
 
     let mut offset = 0;
     let mut got = vec![];
     loop {
         let query = format!("SELECT ?p {{ [] ?p [] }} OFFSET {offset} LIMIT {limit}");
-        let partial = bindings_to_vec(dataset.query(query.as_str())?.into_bindings());
+        let partial = bindings_to_vec(dataset.query(query.as_str())?.into_bindings(), 1);
         let exp_len = if offset >= 5 {
             0
         } else {
@@ -157,7 +195,7 @@ fn test_filter(filter: &str, exp: Vec<&str>) -> TestResult {
         "PREFIX s: <http://schema.org/> SELECT ?x {{ ?x s:name ?n. {filter} }}"
     ))?;
     let bindings = dataset.query(&query)?.into_bindings();
-    let mut got = bindings_to_vec(bindings);
+    let mut got = bindings_to_vec(bindings, 1);
     got.sort();
     assert_eq!(exp, got);
     Ok(())
@@ -187,7 +225,7 @@ fn test_expr_variable() -> TestResult {
     let dataset = SparqlWrapper(&dataset);
     let query = SparqlQuery::parse("SELECT (?y as ?x) { BIND(<http://schema.org/name> as ?y)}")?;
     let bindings = dataset.query(&query)?.into_bindings();
-    let got = bindings_to_vec(bindings);
+    let got = bindings_to_vec(bindings, 1);
     assert_eq!(&["<http://schema.org/name>"], &got[..]);
     Ok(())
 }
@@ -1222,7 +1260,7 @@ fn test_is_blank() -> TestResult {
         "PREFIX s: <http://schema.org/> SELECT ?x {{ ?x s:name ?n. FILTER (isBlank(?x)) }}",
     )?;
     let bindings = dataset.query(&query)?.into_bindings();
-    let mut got = bindings_to_vec(bindings);
+    let mut got = bindings_to_vec(bindings, 1);
     got.sort();
     assert_eq!(vec!["_:b"], got);
     Ok(())
@@ -1236,7 +1274,7 @@ fn eval_expr(expr: &str) -> TestResult<String> {
         "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> SELECT ({expr} as ?x) {{}}"
     ))?;
     let bindings = dataset.query(&query)?.into_bindings();
-    let mut got = bindings_to_vec(bindings);
+    let mut got = bindings_to_vec(bindings, 1);
     assert_eq!(got.len(), 1);
     Ok(got.pop().unwrap())
 }
@@ -1252,6 +1290,7 @@ fn test_bound(body: &str, exp: &str) -> TestResult {
         dataset
             .query(format!("SELECT (BOUND(?x) as ?b) {{ {body} }}").as_str())?
             .into_bindings(),
+        1,
     );
     assert_eq!(got.len(), 1);
     assert_eq!(&got[0], exp);
@@ -1289,14 +1328,14 @@ fn dataset_101() -> TestResult<LightDataset> {
     Ok(dataset)
 }
 
-fn bindings_to_vec(bindings: Bindings<LightDataset>) -> Vec<String> {
-    assert_eq!(bindings.variables().len(), 1);
+/// Return a flat list of all bindings, in serialized form.
+fn bindings_to_vec(bindings: Bindings<LightDataset>, nbvar: usize) -> Vec<String> {
+    assert_eq!(bindings.variables().len(), nbvar);
     bindings
         .into_iter()
-        .map(|b| {
-            b.unwrap()[0]
-                .as_ref()
-                .map(|t| {
+        .flat_map(|bs| {
+            bs.unwrap().into_iter().map(|o| {
+                o.map(|t| {
                     if t.is_blank_node() {
                         "_:b".to_string()
                     } else {
@@ -1304,6 +1343,7 @@ fn bindings_to_vec(bindings: Bindings<LightDataset>) -> Vec<String> {
                     }
                 })
                 .unwrap_or_default()
+            })
         })
         .collect()
 }

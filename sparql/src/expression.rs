@@ -172,9 +172,6 @@ impl ArcExpression {
         }
     }
 
-    // NB: `config` is a reference to an Arc.
-    // * why not just an Arc: to avoid the case of cloning it at each step of recursion;
-    // * why not just a reference: because the Exists variant needs an Arc to build an ExecState.
     #[allow(clippy::too_many_lines)]
     pub fn eval<D>(
         &self,
@@ -331,6 +328,21 @@ impl ArcExpression {
                 }
             }
         }
+    }
+
+    #[allow(clippy::too_many_lines)]
+    pub fn eval_truthy<D>(
+        &self,
+        binding: &Binding,
+        state: &Arc<ExecState<'_, D>>,
+        graph_matcher: &[Option<ArcTerm>],
+    ) -> bool
+    where
+        D: Dataset + ?Sized,
+    {
+        self.eval(binding, state, graph_matcher)
+            .and_then(|e| e.is_truthy())
+            .unwrap_or(false)
     }
 }
 

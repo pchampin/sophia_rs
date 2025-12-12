@@ -22,9 +22,13 @@ use spargebra::term::Variable;
 
 use crate::SparqlWrapperError;
 use crate::bgp;
+use crate::binding::BindingsIter;
 use crate::binding::{Binding, Bindings, populate_variables};
 use crate::expression::ArcExpression;
 use crate::stash::ArcStrStashExt;
+
+mod join_iter;
+mod left_join_iter;
 
 #[derive(Debug)]
 pub struct ExecState<'a, D: ?Sized> {
@@ -121,7 +125,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 left,
                 right,
                 expression,
-            } => Err(SparqlWrapperError::NotImplemented("LeftJoin")),
+            } => self.left_join(left, right, expression, graph_matcher),
             Filter { expr, inner } => self.filter(expr, inner, graph_matcher),
             Union { left, right } => self.union(left, right, graph_matcher, context),
             Graph { name, inner } => self.graph(name, inner, context),
@@ -193,53 +197,54 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         graph_matcher: &[Option<ArcTerm>],
         context: Option<&Binding>,
     ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
-        let Bindings {
-            mut variables,
-            iter: mut iter1,
-        } = self.select(left, graph_matcher, context)?;
-
-        let first1 = iter1.next().transpose()?;
-
-        let Bindings {
-            variables: vars2,
-            iter: iter2,
-        } = self.select(right, graph_matcher, first1.as_ref())?;
-
-        for v in vars2 {
-            if !variables.contains(&v) {
-                variables.push(v);
-            }
-        }
-        if first1.is_none() {
+        let (variables, iter1, first1, iter2) =
+            self.prepare_join(left, right, graph_matcher, context)?;
+        let Some(first1) = first1 else {
             return Ok(Bindings::empty_with(variables));
-        }
+        };
         // right and graph_matcher will be moved in the closure;
         // note that they must be cloned, so that we don't "leak" the lifetime of `self` in the return value
         let state = Arc::clone(self);
         let right = right.clone();
         let graph_matcher = graph_matcher.iter().map(Clone::clone).collect::<Vec<_>>();
 
-        let iter = Box::new(
-            iter2
-                .filter_map(move |resb| {
-                    resb.map(|b| b.merge_if_compatible(first1.as_ref()))
-                        .transpose()
-                })
-                .chain(iter1.flat_map(move |resb1| match resb1 {
-                    Ok(b1) => match state.select(&right, &graph_matcher, Some(&b1)) {
-                        Ok(bs) => {
-                            MyIterator::PassThrough(bs.iter.filter_map(move |resb2| {
-                                resb2
-                                    .map(|b2| b2.merge_if_compatible(Some(&b1)))
-                                    .transpose()
-                            }))
-                        }
-                        Err(err) => MyIterator::Err(err),
-                    },
-                    Err(err) => MyIterator::Err(err),
-                })),
-        );
+        let do_join = |b1, b2s: BindingsIter<'a, D>| {
+            b2s.filter_map(move |resb| resb.map(|b2| b2.merge_if_compatible(Some(&b1))).transpose())
+        };
 
+        let iter = Box::new(do_join(first1, iter2).chain(iter1.flat_map(
+            move |resb1| match resb1 {
+                Ok(b1) => match state.select(&right, &graph_matcher, Some(&b1)) {
+                    Ok(b2s) => join_iter::JoinIter::PassThrough(do_join(b1, b2s.iter)),
+                    Err(err) => join_iter::JoinIter::Err(err),
+                },
+                Err(err) => join_iter::JoinIter::Err(err),
+            },
+        )));
+        Ok(Bindings { variables, iter })
+    }
+
+    fn left_join(
+        self: &Arc<Self>,
+        left: &GraphPattern,
+        right: &GraphPattern,
+        expression: &Option<Expression>,
+        graph_matcher: &[Option<ArcTerm>],
+    ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
+        let (variables, iter1, first1, iter2) =
+            self.prepare_join(left, right, graph_matcher, None)?;
+        let Some(first1) = first1 else {
+            return Ok(Bindings::empty_with(variables));
+        };
+        let iter = Box::new(left_join_iter::LeftJoinIter::new(
+            iter1,
+            first1,
+            iter2,
+            self,
+            right,
+            expression,
+            graph_matcher,
+        ));
         Ok(Bindings { variables, iter })
     }
 
@@ -277,14 +282,9 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         // they must be cloned to avoid leaking the lifetime of `self`
         let state = self.clone();
         let graph_matcher = graph_matcher.iter().map(Clone::clone).collect::<Vec<_>>();
-        let iter = Box::new(iter.filter(move |resb| {
-            match resb {
-                Err(_) => true,
-                Ok(b) => arc_expr
-                    .eval(b, &state, &graph_matcher)
-                    .and_then(|e| e.is_truthy())
-                    .unwrap_or(false),
-            }
+        let iter = Box::new(iter.filter(move |resb| match resb {
+            Err(_) => true,
+            Ok(b) => arc_expr.eval_truthy(b, &state, &graph_matcher),
         }));
         Ok(Bindings { variables, iter })
     }
@@ -361,9 +361,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             b.v.insert(self.stash_mut().copy_str(var), name.clone().into());
             let graph_matcher = vec![Some(name)];
             let Bindings { variables, iter } = self.select(inner, &graph_matcher, Some(&b))?;
-            let iter = Box::new(iter.chain(
-                self.graph_rec(var, graph_names, inner, context)?.iter,
-            ));
+            let iter = Box::new(iter.chain(self.graph_rec(var, graph_names, inner, context)?.iter));
             Ok(Bindings { variables, iter })
         } else {
             Ok(Bindings::empty())
@@ -487,45 +485,41 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         };
         Ok(bindings)
     }
-}
 
-/// A utility iterator used by ExecState for Join and LeftJoin
-enum MyIterator<T, E, I> {
-    #[expect(dead_code)]
-    FallBack(I, T),
-    PassThrough(I),
-    Err(E),
-    Finish,
-}
+    #[allow(clippy::type_complexity)]
+    fn prepare_join(
+        self: &Arc<Self>,
+        left: &GraphPattern,
+        right: &GraphPattern,
+        graph_matcher: &[Option<ArcTerm>],
+        context: Option<&Binding>,
+    ) -> Result<
+        (
+            Vec<VarName<Arc<str>>>,
+            BindingsIter<'a, D>,
+            Option<Binding>,
+            BindingsIter<'a, D>,
+        ),
+        SparqlWrapperError<D::Error>,
+    > {
+        let Bindings {
+            mut variables,
+            iter: mut iter1,
+        } = self.select(left, graph_matcher, context)?;
 
-impl<T, E, I> Iterator for MyIterator<T, E, I>
-where
-    I: Iterator<Item = Result<T, E>>,
-{
-    type Item = Result<T, E>;
+        let first1 = iter1.next().transpose()?;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut tmp = MyIterator::Finish;
-        std::mem::swap(self, &mut tmp);
-        match tmp {
-            MyIterator::FallBack(mut iter, fallback) => {
-                let ret = iter.next();
-                if ret.is_some() {
-                    *self = MyIterator::PassThrough(iter);
-                    ret
-                } else {
-                    Some(Ok(fallback))
-                }
+        let Bindings {
+            iter: iter2,
+            variables: vars2,
+        } = self.select(right, graph_matcher, first1.as_ref())?;
+
+        for v in vars2 {
+            if !variables.contains(&v) {
+                variables.push(v);
             }
-            MyIterator::PassThrough(mut iter) => {
-                let ret = iter.next();
-                if ret.is_some() {
-                    *self = MyIterator::PassThrough(iter);
-                }
-                ret
-            }
-            MyIterator::Err(err) => Some(Err(err)),
-            MyIterator::Finish => None,
         }
+
+        Ok((variables, iter1, first1, iter2))
     }
 }
