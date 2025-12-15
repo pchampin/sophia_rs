@@ -2,7 +2,7 @@
 [book]
 authors = ["Pierre-Antoine Champin <http://champin.net>"]
 language = "en"
-multilingual = false
+#multilingual = false
 src = "./book/src"
 title = "Sophia"
 

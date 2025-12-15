@@ -94,6 +94,7 @@ An outdated comparison of Sophia with other RDF libraries is still available
 [`sophia_jsonld`]: https://crates.io/crates/sophia_jsonld
 [`sophia_resource`]: https://crates.io/crates/sophia_resource
 [`sophia_rio`]: https://crates.io/crates/sophia_rio
+[`sophia_sparql`]: https://crates.io/crates/sophia_sparql
 [`sophia_sparql_client`]: https://crates.io/crates/sophia_sparql_client
 [`sophia_term`]: https://crates.io/crates/sophia_inmem
 [`sophia_turtle`]: https://crates.io/crates/sophia_turtle
