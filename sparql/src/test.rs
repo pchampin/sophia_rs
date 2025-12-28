@@ -64,6 +64,16 @@ use test_case::test_case;
     vec!["<https://example.org/test#b>"];
     "join"
 )]
+#[test_case(
+    "SELECT ?x { VALUES ?t { s:Event s:Person } ?x a ?t. }",
+    vec!["<https://example.org/test#a>", "_:b"];
+    "values"
+)]
+#[test_case(
+    "SELECT ?x { VALUES ?y { 10 20 } VALUES ?z { 1 2 } BIND (?y+?z as ?x) }",
+    vec!["\"11\"^^<http://www.w3.org/2001/XMLSchema#integer>","\"12\"^^<http://www.w3.org/2001/XMLSchema#integer>", "\"21\"^^<http://www.w3.org/2001/XMLSchema#integer>", "\"22\"^^<http://www.w3.org/2001/XMLSchema#integer>"];
+    "values cross-product"
+)]
 fn test_select_1_and_ask(query: &str, exp: Vec<&str>) -> TestResult {
     let dataset = dataset_101()?;
     let dataset = SparqlWrapper(&dataset);
@@ -90,6 +100,11 @@ fn test_select_1_and_ask(query: &str, exp: Vec<&str>) -> TestResult {
     "SELECT ?x ?y { ?x a ?z. OPTIONAL { ?x s:name ?y. FILTER (?y < \"B\") } } ORDER BY ?x",
     vec!["_:b", "", "<https://example.org/test#a>", "\"Alice\"^^<http://www.w3.org/2001/XMLSchema#string>"];
     "left join with condition"
+)]
+#[test_case(
+    "SELECT ?x ?y { VALUES (?x ?y) { (<x:a> <x:b>) ( <x:c> <x:d>)} } ORDER BY ?x",
+    vec![ "<x:a>", "<x:b>", "<x:c>", "<x:d>"];
+    "values"
 )]
 fn test_select_2(query: &str, exp: Vec<&str>) -> TestResult {
     let dataset = dataset_101()?;

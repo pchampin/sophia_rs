@@ -2,6 +2,7 @@
 
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -16,10 +17,12 @@ use spargebra::algebra::Expression;
 use spargebra::algebra::GraphPattern;
 use spargebra::algebra::OrderExpression;
 use spargebra::algebra::QueryDataset;
+use spargebra::term::GroundTerm;
 use spargebra::term::NamedNodePattern;
 use spargebra::term::TriplePattern;
 use spargebra::term::Variable;
 
+use crate::ResultTerm;
 use crate::SparqlWrapperError;
 use crate::bgp;
 use crate::binding::BindingsIter;
@@ -138,7 +141,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             Values {
                 variables,
                 bindings,
-            } => Err(SparqlWrapperError::NotImplemented("Values")),
+            } => Ok(self.values(variables, bindings, context)),
             OrderBy { inner, expression } => self.order_by(inner, expression, graph_matcher),
             Project { inner, variables } => self.project(inner, variables, graph_matcher, context),
             Distinct { inner } => self.distinct(inner, graph_matcher, context),
@@ -400,6 +403,40 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             })
         }));
         Ok(Bindings { variables, iter })
+    }
+
+    fn values(
+        self: &Arc<Self>,
+        variables: &[Variable],
+        bindings: &[Vec<Option<GroundTerm>>],
+        _context: Option<&Binding>,
+    ) -> Bindings<'a, D> {
+        let variables: Vec<VarName<Arc<str>>> = variables
+            .iter()
+            .map(|v| VarName::new_unchecked(self.stash_mut().copy_str(v.as_str())))
+            .collect();
+        let bindings: Vec<Vec<Option<ResultTerm>>> = bindings
+            .iter()
+            .map(|v| {
+                v.iter()
+                    .map(|opt| {
+                        opt.as_ref()
+                            .map(|gterm| self.stash_mut().copy_ground_term(gterm))
+                    })
+                    .collect()
+            })
+            .collect();
+        let vars = variables.clone();
+        let iter = Box::new(bindings.into_iter().map(move |bs| {
+            let v: HashMap<Arc<str>, ResultTerm> = vars
+                .iter()
+                .zip(bs)
+                .filter_map(|(var, opt)| opt.map(|rterm| (var.clone().unwrap(), rterm)))
+                .collect();
+            let b = HashMap::default();
+            Ok(Binding { v, b })
+        }));
+        Bindings { variables, iter }
     }
 
     fn order_by(
