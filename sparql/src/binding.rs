@@ -87,6 +87,16 @@ pub struct Binding {
 }
 
 impl Binding {
+    /// Return whether self and other are compatible with non-disjoint domain,
+    /// or None if their domain are disjoint.
+    pub fn compatible(&self, other: &Binding) -> Option<bool> {
+        other
+            .v
+            .iter()
+            .filter_map(|(vn, vv)| self.v.get(vn).map(|ov| ov == vv))
+            .reduce(|b1, b2| b1 && b2)
+    }
+
     pub fn merge_if_compatible(mut self, context: Option<&Binding>) -> Option<Binding> {
         if let Some(context) = context {
             for (vn, vv) in &context.v {

@@ -74,6 +74,16 @@ use test_case::test_case;
     vec!["\"11\"^^<http://www.w3.org/2001/XMLSchema#integer>","\"12\"^^<http://www.w3.org/2001/XMLSchema#integer>", "\"21\"^^<http://www.w3.org/2001/XMLSchema#integer>", "\"22\"^^<http://www.w3.org/2001/XMLSchema#integer>"];
     "values cross-product"
 )]
+#[test_case(
+    "SELECT ?x { ?x s:name ?n. MINUS { ?x s:performerIn [] }}",
+    vec!["_:b"];
+    "minus"
+)]
+#[test_case(
+    "SELECT ?x { ?x s:name ?n. MINUS { ?y s:performerIn [] }}",
+    vec!["<https://example.org/test#a>", "_:b"];
+    "minus disjoint domain"
+)]
 fn test_select_1_and_ask(query: &str, exp: Vec<&str>) -> TestResult {
     let dataset = dataset_101()?;
     let dataset = SparqlWrapper(&dataset);

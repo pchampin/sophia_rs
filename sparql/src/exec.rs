@@ -137,7 +137,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 variable,
                 expression,
             } => self.extend(inner, variable, expression, graph_matcher),
-            Minus { left, right } => Err(SparqlWrapperError::NotImplemented("Minus")),
+            Minus { left, right } => self.minus(left, right, graph_matcher, context),
             Values {
                 variables,
                 bindings,
@@ -401,6 +401,49 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 }
                 b
             })
+        }));
+        Ok(Bindings { variables, iter })
+    }
+
+    fn minus(
+        self: &Arc<Self>,
+        left: &GraphPattern,
+        right: &GraphPattern,
+        graph_matcher: &[Option<ArcTerm>],
+        context: Option<&Binding>,
+    ) -> Result<Bindings<'a, D>, SparqlWrapperError<D::Error>> {
+        let Bindings {
+            variables,
+            iter: iter1,
+        } = self.select(left, graph_matcher, context)?;
+
+        // right and graph_matcher will be moved in the closure;
+        // note that they must be cloned, so that we don't "leak" the lifetime of `self` in the return value
+        let state = Arc::clone(self);
+        let right = right.clone();
+        let graph_matcher = graph_matcher.iter().map(Clone::clone).collect::<Vec<_>>();
+
+        let iter = Box::new(iter1.filter_map(move |rb1| match rb1 {
+            Err(err) => Some(Err(err)),
+            Ok(b1) => {
+                let rbs2 = state.select(&right, &graph_matcher, None);
+                match rbs2 {
+                    Err(err) => Some(Err(err)),
+                    Ok(bs2) => {
+                        for rb2 in bs2.iter {
+                            match rb2 {
+                                Err(err) => return Some(Err(err)),
+                                Ok(b2) => {
+                                    if b1.compatible(&b2).unwrap_or(false) {
+                                        return None;
+                                    }
+                                }
+                            }
+                        }
+                        Some(Ok(b1))
+                    }
+                }
+            }
         }));
         Ok(Bindings { variables, iter })
     }
