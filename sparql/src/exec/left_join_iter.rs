@@ -5,7 +5,7 @@ use sophia_term::ArcTerm;
 use spargebra::algebra::{Expression, GraphPattern};
 
 use crate::{
-    Bindings, SparqlWrapperError,
+    SparqlWrapperError,
     binding::{Binding, BindingsIter},
     exec::ExecState,
     expression::ArcExpression,
@@ -53,20 +53,12 @@ impl<'a, D: Dataset + ?Sized> LeftJoinIter<'a, D> {
     }
 
     fn next_b2s_needs_init(&mut self) -> Option<<Self as Iterator>::Item> {
-        match self
+        self.b2s = self
             .state
             .select(&self.right, &self.graph_matcher, Some(&self.b1))
-        {
-            Ok(Bindings { iter, .. }) => {
-                self.iter_state = IterState::B2DidntMatch;
-                self.b2s = iter;
-                self.next_b2s_ready()
-            }
-            Err(err) => {
-                self.iter_state = IterState::Finished;
-                Some(Err(err))
-            }
-        }
+            .iter;
+        self.iter_state = IterState::B2DidntMatch;
+        self.next_b2s_ready()
     }
 
     fn next_b2s_ready(&mut self) -> Option<<Self as Iterator>::Item> {

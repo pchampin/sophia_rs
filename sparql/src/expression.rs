@@ -295,12 +295,15 @@ impl ArcExpression {
                 Some((!e).into())
             }
             Exists(graph_pattern) => {
-                let res = state.select(graph_pattern, graph_matcher, Some(binding));
-                let exists = match res {
-                    Ok(mut bindings) => bindings.iter.next().is_some(),
-                    Err(_) => false,
-                };
-                Some(exists.into())
+                let first = state
+                    .select(graph_pattern, graph_matcher, Some(binding))
+                    .iter
+                    .next();
+                match first {
+                    None => Some(false.into()),
+                    Some(Ok(_)) => Some(true.into()),
+                    Some(Err(_)) => None,
+                }
             }
             Bound(varname) => Some(binding.v.contains_key(varname.as_str()).into()),
             If(c, t, e) => {

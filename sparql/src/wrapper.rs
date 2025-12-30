@@ -42,8 +42,11 @@ impl<'a, D: Dataset + ?Sized> SparqlDataset for SparqlWrapper<'a, D> {
             } => {
                 let exec = ExecState::new(self.0, dataset, base_iri)?;
                 let cfg = exec.config_cloned();
-                exec.select(pattern, &cfg.default_matcher, None)
-                    .map(SparqlResult::Bindings)
+                Ok(SparqlResult::Bindings(exec.select(
+                    pattern,
+                    &cfg.default_matcher,
+                    None,
+                )))
             }
             QueryAST::Construct {
                 template,

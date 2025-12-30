@@ -41,7 +41,13 @@ impl<'a, D: Dataset + ?Sized> Bindings<'a, D> {
     }
 
     pub fn err<T: Into<SparqlWrapperError<D::Error>>>(err: T) -> Self {
-        let variables = vec![];
+        Self::err_with(err, vec![])
+    }
+
+    pub fn err_with<T: Into<SparqlWrapperError<D::Error>>>(
+        err: T,
+        variables: Vec<VarName<Arc<str>>>,
+    ) -> Self {
         let iter = Box::new(std::iter::once(Err(err.into())));
         Self { variables, iter }
     }
