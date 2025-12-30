@@ -145,7 +145,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             OrderBy { inner, expression } => self.order_by(inner, expression, graph_matcher),
             Project { inner, variables } => self.project(inner, variables, graph_matcher, context),
             Distinct { inner } => self.distinct(inner, graph_matcher, context),
-            Reduced { inner } => Bindings::err(SparqlWrapperError::NotImplemented("Reduced")),
+            Reduced { inner } => self.reduced(inner, graph_matcher, context),
             Slice {
                 inner,
                 start,
@@ -264,16 +264,36 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         context: Option<&Binding>,
     ) -> Bindings<'a, D> {
         let Bindings { variables, iter } = self.select(inner, graph_matcher, context);
+        #[allow(clippy::mutable_key_type)]
+        // ResultTerm appears to have interior mutability, but that does not change their hash
         let mut seen = HashSet::new();
-        let variables2 = variables.clone();
         let iter = Box::new(iter.filter(move |resb| match resb {
             Err(_) => true,
             Ok(b) => {
-                let hashable: Vec<_> = variables2
-                    .iter()
-                    .map(|v| b.v.get(v.as_str()).map(|t| t.inner().clone()))
-                    .collect();
+                let hashable: Vec<_> = b.v.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
                 seen.insert(hashable)
+            }
+        }));
+        Bindings { variables, iter }
+    }
+
+    fn reduced(
+        self: &Arc<Self>,
+        inner: &GraphPattern,
+        graph_matcher: &[Option<ArcTerm>],
+        context: Option<&Binding>,
+    ) -> Bindings<'a, D> {
+        let Bindings { variables, iter } = self.select(inner, graph_matcher, context);
+        let mut seen = None;
+        let iter = Box::new(iter.filter(move |resb| match resb {
+            Err(_) => true,
+            Ok(b) => {
+                if seen.as_ref() == Some(&b.v) {
+                    false
+                } else {
+                    seen = Some(b.v.clone());
+                    true
+                }
             }
         }));
         Bindings { variables, iter }

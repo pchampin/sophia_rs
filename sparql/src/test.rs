@@ -129,6 +129,28 @@ fn test_select_2(query: &str, exp: Vec<&str>) -> TestResult {
     Ok(())
 }
 
+#[test_case(
+    "SELECT DISTINCT ?x { VALUES ?x { \"a\" \"a\" \"b\" \"a\" } }",
+    vec!["\"a\"^^<http://www.w3.org/2001/XMLSchema#string>", "\"b\"^^<http://www.w3.org/2001/XMLSchema#string>"];
+    "distinct"
+)]
+#[test_case(
+    "SELECT REDUCED ?x { VALUES ?x { \"a\" \"a\" \"b\" \"a\" } }",
+    vec!["\"a\"^^<http://www.w3.org/2001/XMLSchema#string>", "\"b\"^^<http://www.w3.org/2001/XMLSchema#string>", "\"a\"^^<http://www.w3.org/2001/XMLSchema#string>"];
+    "reduced"
+)]
+fn test_reduce(query: &str, exp: Vec<&str>) -> TestResult {
+    let dataset = dataset_101()?;
+    let dataset = SparqlWrapper(&dataset);
+    let query = format!("BASE <https://example.org/test> PREFIX s: <http://schema.org/> {query}");
+    let parsed_query = SparqlQuery::parse(&query)?;
+    let bindings = dataset.query(&parsed_query)?.into_bindings();
+    assert_eq!(bindings.variables(), &["x"]);
+    let got = bindings_to_vec(bindings, 1);
+    assert_eq!(exp, got);
+    Ok(())
+}
+
 #[test]
 fn test_union() -> TestResult {
     let dataset = dataset_101()?;
