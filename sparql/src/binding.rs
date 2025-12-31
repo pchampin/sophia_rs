@@ -159,11 +159,10 @@ pub(crate) fn populate_bindings<T: Term>(
     result: &[T; 3],
     b: &mut Binding,
     stash: &mut MutexGuard<ArcStrStash>,
-) -> Result<(), ()> {
-    populate_bindings_term(AnyPattern::Term(&pattern.subject), &result[0], b, stash)?;
-    populate_bindings_term(AnyPattern::Named(&pattern.predicate), &result[1], b, stash)?;
-    populate_bindings_term(AnyPattern::Term(&pattern.object), &result[2], b, stash)?;
-    Ok(())
+) -> bool {
+    populate_bindings_term(AnyPattern::Term(&pattern.subject), &result[0], b, stash)
+        && populate_bindings_term(AnyPattern::Named(&pattern.predicate), &result[1], b, stash)
+        && populate_bindings_term(AnyPattern::Term(&pattern.object), &result[2], b, stash)
 }
 
 fn populate_bindings_term<T: Term>(
@@ -171,13 +170,13 @@ fn populate_bindings_term<T: Term>(
     result: &T,
     b: &mut Binding,
     stash: &mut MutexGuard<ArcStrStash>,
-) -> Result<(), ()> {
+) -> bool {
     let st = pattern.as_simple();
     match st {
         SimpleTerm::BlankNode(bnid) => {
             if let Some(already_bound) = b.b.get(bnid.as_str()) {
                 if !Term::eq(already_bound, result.borrow_term()) {
-                    return Err(());
+                    return false;
                 }
             } else {
                 b.b.insert(
@@ -189,7 +188,7 @@ fn populate_bindings_term<T: Term>(
         SimpleTerm::Variable(var) => {
             if let Some(already_bound) = b.v.get(var.as_str()) {
                 if !Term::eq(already_bound, result.borrow_term()) {
-                    return Err(());
+                    return false;
                 }
             } else {
                 b.v.insert(
@@ -204,13 +203,13 @@ fn populate_bindings_term<T: Term>(
             };
             debug_assert!(result.is_triple());
             let result = result.triple().unwrap();
-            populate_bindings(triple_pattern, &result, b, stash)?;
+            return populate_bindings(triple_pattern, &result, b, stash);
         }
         _ => {
             debug_assert!(Term::eq(&pattern, result.borrow_term()));
         }
     }
-    Ok(())
+    true
 }
 
 fn collect_variables<'a, T>(

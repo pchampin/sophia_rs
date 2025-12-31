@@ -71,11 +71,11 @@ fn bgp_rec<D: Dataset + ?Sized>(
     }
     for m in first_matches {
         let mut b = b.clone();
-        if populate_bindings(first, m, &mut b, &mut state.stash_mut()).is_ok() {
+        if populate_bindings(first, m, &mut b, &mut state.stash_mut()) {
             bgp_rec(state, remaining, bs, b, graph_matcher)?;
         }
     }
-    if populate_bindings(first, last_match, &mut b, &mut state.stash_mut()).is_ok() {
+    if populate_bindings(first, last_match, &mut b, &mut state.stash_mut()) {
         bgp_rec(state, remaining, bs, b, graph_matcher)?;
     }
     Ok(())
