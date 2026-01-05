@@ -105,7 +105,7 @@ pub struct PartialUnionGraph<D: Dataset, M: GraphNameMatcher> {
     m: M,
 }
 
-impl<D: Dataset, M: GraphNameMatcher + Copy> PartialUnionGraph<D, M> {
+impl<D: Dataset, M: GraphNameMatcher> PartialUnionGraph<D, M> {
     /// Wrap the given dataset as a single [`Graph`]
     /// (selected via the given graph name).
     pub fn new(d: D, m: M) -> Self {
@@ -118,7 +118,7 @@ impl<D: Dataset, M: GraphNameMatcher + Copy> PartialUnionGraph<D, M> {
     }
 }
 
-impl<D: Dataset, M: GraphNameMatcher + Copy> Graph for PartialUnionGraph<D, M> {
+impl<D: Dataset, M: GraphNameMatcher> Graph for PartialUnionGraph<D, M> {
     type Triple<'x>
         = [DTerm<'x, D>; 3]
     where
@@ -127,7 +127,7 @@ impl<D: Dataset, M: GraphNameMatcher + Copy> Graph for PartialUnionGraph<D, M> {
 
     fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
         self.d
-            .quads_matching(Any, Any, Any, self.m)
+            .quads_matching(Any, Any, Any, self.m.matcher_ref())
             // NB: for some reason, .map_ok(...) below does not compile since 1.66 nightly
             .map(|r| r.map(Quad::into_triple))
     }
@@ -145,7 +145,7 @@ impl<D: Dataset, M: GraphNameMatcher + Copy> Graph for PartialUnionGraph<D, M> {
         O: TermMatcher + 't,
     {
         self.d
-            .quads_matching(sm, pm, om, self.m)
+            .quads_matching(sm, pm, om, self.m.matcher_ref())
             // NB: for some reason, .map_ok(...) below does not compile since 1.66 nightly
             .map(|r| r.map(Quad::into_triple))
     }
@@ -158,7 +158,7 @@ impl<D: Dataset, M: GraphNameMatcher + Copy> Graph for PartialUnionGraph<D, M> {
 ///
 /// This graph is also [mutable](MutableGraph) if the underlying dataset is.
 ///
-/// NB: this type is design to be the return type of [`Dataset::graph`] and [`Dataset::graph_mut`].
+/// NB: this type is design to be the return type of [`Dataset::graph`] and [`MutableDataset::graph_mut`].
 /// It is not designed to be usable "from scratch".
 #[derive(Clone, Copy, Debug)]
 pub struct DatasetGraph<D: Dataset, G: Term> {
@@ -280,7 +280,7 @@ mod test {
             let [s, p, o] = t.spo();
             ds.insert_quad(([s, p, o], Some(s))).unwrap();
         })?;
-        Ok(ds.into_union_graph())
+        Ok(UnionGraph(ds))
     }
     crate::test_immutable_graph_impl!(union_graph, MyUG, true, true, collect_union_graph);
 
@@ -343,6 +343,7 @@ mod test {
         for _ in gm.triples() {}
         // check that Dataset::graph_mut returns a MutableGraph
         gm.remove_triple([1, 2, 3]).unwrap();
+        drop(gm);
 
         // check that Dataset::partial_union_graph returns a Graph
         for _ in ds.partial_union_graph(GM).triples() {}

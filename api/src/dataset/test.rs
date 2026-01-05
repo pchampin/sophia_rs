@@ -675,6 +675,26 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
+            fn subjects_matching() -> Result<(), Box<dyn std::error::Error>> {
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
+
+                let subjects: HashSet<StaticTerm> = d.subjects_matching([*C1, *P2]).map(|t| t.unwrap().into_term()).collect();
+                assert_eq!(subjects.len(), 2);
+                assert_contains(&subjects, &*C1);
+                assert_contains(&subjects, &*P2);
+
+                let d = if $is_gen {
+                    $dataset_collector(generalized_node_types_quads()).unwrap()
+                } else {
+                    $dataset_collector(strict_node_types_quads()).unwrap()
+                };
+                let kinds: HashSet<_> = d.subjects_matching(TermKind::BlankNode).map(|t| t.unwrap().kind()).collect();
+                assert_eq!(kinds.len(), if $is_gen {1} else {1});
+                assert!(kinds.contains(&TermKind::BlankNode));
+                Ok(())
+            }
+
+            #[test]
             fn predicates() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
@@ -694,6 +714,26 @@ macro_rules! test_dataset_impl {
                 };
                 let kinds: HashSet<_> = d.predicates().map(|t| t.unwrap().kind()).collect();
                 assert_eq!(kinds.len(), if $is_gen {5} else {1});
+                assert!(kinds.contains(&TermKind::Iri));
+                Ok(())
+            }
+
+            #[test]
+            fn predicates_matching() -> Result<(), Box<dyn std::error::Error>> {
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
+
+                let predicates: HashSet<StaticTerm> = d.predicates_matching([*P1, *P2]).map(|t| t.unwrap().into_term()).collect();
+                assert_eq!(predicates.len(), 2);
+                assert_contains(&predicates, &*P1);
+                assert_contains(&predicates, &*P2);
+
+                let d = if $is_gen {
+                    $dataset_collector(generalized_node_types_quads()).unwrap()
+                } else {
+                    $dataset_collector(strict_node_types_quads()).unwrap()
+                };
+                let kinds: HashSet<_> = d.predicates_matching(TermKind::Iri).map(|t| t.unwrap().kind()).collect();
+                assert_eq!(kinds.len(), if $is_gen {1} else {1});
                 assert!(kinds.contains(&TermKind::Iri));
                 Ok(())
             }
@@ -726,6 +766,26 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
+            fn objects_matching() -> Result<(), Box<dyn std::error::Error>> {
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
+
+                let objects: HashSet<StaticTerm> = d.objects_matching([*C1, *I2B]).map(|t| t.unwrap().into_term()).collect();
+                assert_eq!(objects.len(), 2);
+                assert_contains(&objects, &*C1);
+                assert_contains(&objects, &*I2B);
+
+                let d = if $is_gen {
+                    $dataset_collector(generalized_node_types_quads()).unwrap()
+                } else {
+                    $dataset_collector(strict_node_types_quads()).unwrap()
+                };
+                let kinds: HashSet<_> = d.objects_matching(TermKind::Literal).map(|t| t.unwrap().kind()).collect();
+                assert_eq!(kinds.len(), if $is_gen {1} else {1});
+                assert!(kinds.contains(&TermKind::Literal));
+                Ok(())
+            }
+
+            #[test]
             fn graph_names() -> Result<(), Box<dyn std::error::Error>> {
                 let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
 
@@ -742,6 +802,25 @@ macro_rules! test_dataset_impl {
                 let kinds: HashSet<_> = d.graph_names().map(|t| t.unwrap().kind()).collect();
                 assert_eq!(kinds.len(), if $is_gen {5} else {2});
                 assert!(kinds.contains(&TermKind::Iri));
+                assert!(kinds.contains(&TermKind::BlankNode));
+                Ok(())
+            }
+
+            #[test]
+            fn graph_names_matching() -> Result<(), Box<dyn std::error::Error>> {
+                let d: $dataset_impl = $dataset_collector(some_quads()).unwrap();
+
+                let graph_names: HashSet<StaticTerm> = d.graph_names_matching([*G2]).map(|t| t.unwrap().into_term()).collect();
+                assert_eq!(graph_names.len(), 1);
+                assert_contains(&graph_names, &*G2);
+
+                let d = if $is_gen {
+                    $dataset_collector(generalized_node_types_quads()).unwrap()
+                } else {
+                    $dataset_collector(strict_node_types_quads()).unwrap()
+                };
+                let kinds: HashSet<_> = d.graph_names_matching(TermKind::BlankNode).map(|t| t.unwrap().kind()).collect();
+                assert_eq!(kinds.len(), if $is_gen {1} else {1});
                 assert!(kinds.contains(&TermKind::BlankNode));
                 Ok(())
             }

@@ -9,7 +9,10 @@ use std::error::Error;
 
 use crate::dataset::adapter::GraphAsDataset;
 use crate::source::{IntoSource, StreamResult, TripleSource};
-use crate::term::{SimpleTerm, Term, matcher::TermMatcher};
+use crate::term::{
+    SimpleTerm, Term,
+    matcher::{Any, TermMatcher},
+};
 use crate::triple::Triple;
 
 use resiter::{filter::*, flat_map::*, map::*};
@@ -191,6 +194,18 @@ pub trait Graph {
         self.triples().map_ok(Triple::to_s)
     }
 
+    /// Build a fallible iterator of all the terms used as subject in this Graph and matching the given [`TermMatcher`].
+    ///
+    /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
+    /// Users MUST therefore be prepared to deal with duplicates.
+    fn subjects_matching<'s, M: TermMatcher + 's>(
+        &'s self,
+        matcher: M,
+    ) -> impl Iterator<Item = GResult<Self, GTerm<'s, Self>>> + 's {
+        self.triples_matching(matcher, Any, Any)
+            .map_ok(Triple::to_s)
+    }
+
     /// Build a fallible iterator of all the terms used as predicate in this Graph.
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
@@ -199,12 +214,36 @@ pub trait Graph {
         self.triples().map_ok(Triple::to_p)
     }
 
+    /// Build a fallible iterator of all the terms used as predicate in this Graph and matching the given [`TermMatcher`].
+    ///
+    /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
+    /// Users MUST therefore be prepared to deal with duplicates.
+    fn predicates_matching<'s, M: TermMatcher + 's>(
+        &'s self,
+        matcher: M,
+    ) -> impl Iterator<Item = GResult<Self, GTerm<'s, Self>>> + 's {
+        self.triples_matching(Any, matcher, Any)
+            .map_ok(Triple::to_p)
+    }
+
     /// Build a fallible iterator of all the terms used as object in this Graph.
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
     fn objects(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
         self.triples().map_ok(Triple::to_o)
+    }
+
+    /// Build a fallible iterator of all the terms used as object in this Graph and matching the given [`TermMatcher`].
+    ///
+    /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
+    /// Users MUST therefore be prepared to deal with duplicates.
+    fn objects_matching<'s, M: TermMatcher + 's>(
+        &'s self,
+        matcher: M,
+    ) -> impl Iterator<Item = GResult<Self, GTerm<'s, Self>>> + 's {
+        self.triples_matching(Any, Any, matcher)
+            .map_ok(Triple::to_o)
     }
 
     /// Build a fallible iterator of all the IRIs used in this Graph

@@ -10,9 +10,10 @@
 use std::error::Error;
 
 use crate::graph::adapter::{DatasetGraph, PartialUnionGraph, UnionGraph};
+use crate::graph::{Graph, MutableGraph};
 use crate::quad::{Quad, iter_spog};
 use crate::source::{IntoSource, QuadSource, StreamResult};
-use crate::term::matcher::{GraphNameMatcher, TermMatcher};
+use crate::term::matcher::{Any, GraphNameMatcher, TermMatcher};
 use crate::term::{GraphName, SimpleTerm, Term};
 
 use resiter::{filter::*, filter_map::*, flat_map::*, map::*};
@@ -207,12 +208,36 @@ pub trait Dataset {
         self.quads().map_ok(Quad::to_s)
     }
 
+    /// Build a fallible iterator of all the terms used as subject in this Dataset and matching a given [`TermMatcher`].
+    ///
+    /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
+    /// Users MUST therefore be prepared to deal with duplicates.
+    fn subjects_matching<'s, M: TermMatcher + 's>(
+        &'s self,
+        matcher: M,
+    ) -> impl Iterator<Item = DResult<Self, DTerm<'s, Self>>> + 's {
+        self.quads_matching(matcher, Any, Any, Any)
+            .map_ok(Quad::to_s)
+    }
+
     /// Build a fallible iterator of all the terms used as predicate in this Dataset.
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
     fn predicates(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         self.quads().map_ok(Quad::to_p)
+    }
+
+    /// Build a fallible iterator of all the terms used as predicate in this Dataset and matching a given [`TermMatcher`].
+    ///
+    /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
+    /// Users MUST therefore be prepared to deal with duplicates.
+    fn predicates_matching<'s, M: TermMatcher + 's>(
+        &'s self,
+        matcher: M,
+    ) -> impl Iterator<Item = DResult<Self, DTerm<'s, Self>>> + 's {
+        self.quads_matching(Any, matcher, Any, Any)
+            .map_ok(Quad::to_p)
     }
 
     /// Build a fallible iterator of all the terms used as object in this Dataset.
@@ -223,12 +248,36 @@ pub trait Dataset {
         self.quads().map_ok(Quad::to_o)
     }
 
+    /// Build a fallible iterator of all the terms used as object in this Dataset and matching a given [`TermMatcher`].
+    ///
+    /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
+    /// Users MUST therefore be prepared to deal with duplicates.
+    fn objects_matching<'s, M: TermMatcher + 's>(
+        &'s self,
+        matcher: M,
+    ) -> impl Iterator<Item = DResult<Self, DTerm<'s, Self>>> + 's {
+        self.quads_matching(Any, Any, matcher, Any)
+            .map_ok(Quad::to_o)
+    }
+
     /// Build a fallible iterator of all the terms used as graph name in this Dataset.
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
     fn graph_names(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
         self.quads().filter_map_ok(Quad::to_g)
+    }
+
+    /// Build a fallible iterator of all the terms used as graph name in this Dataset matching a given [`TermMatcher`].
+    ///
+    /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
+    /// Users MUST therefore be prepared to deal with duplicates.
+    fn graph_names_matching<'s, M: TermMatcher + 's>(
+        &'s self,
+        matcher: M,
+    ) -> impl Iterator<Item = DResult<Self, DTerm<'s, Self>>> + 's {
+        self.quads_matching(Any, Any, Any, matcher.gn())
+            .filter_map_ok(Quad::to_g)
     }
 
     /// Build a fallible iterator of all the IRIs used in this Dataset
@@ -297,36 +346,28 @@ pub trait Dataset {
     }
 
     /// Borrows one of the graphs of this dataset
-    fn graph<T>(&self, graph_name: GraphName<T>) -> DatasetGraph<&Self, T>
+    fn graph<'s, T>(&'s self, graph_name: GraphName<T>) -> impl Graph<Error = Self::Error> + 's
     where
-        T: for<'x> Term<BorrowTerm<'x> = DTerm<'x, Self>> + 'static,
-    {
-        DatasetGraph::new(self, graph_name)
-    }
-
-    /// Borrows mutably one of the graphs of this dataset
-    fn graph_mut<T>(&mut self, graph_name: GraphName<T>) -> DatasetGraph<&mut Self, T>
-    where
-        T: for<'x> Term<BorrowTerm<'x> = DTerm<'x, Self>> + 'static,
+        T: Term + 's,
     {
         DatasetGraph::new(self, graph_name)
     }
 
     /// Borrows a graph that is the union of some of this dataset's graphs
-    fn partial_union_graph<M>(&self, selector: M) -> PartialUnionGraph<&Self, M>
+    fn partial_union_graph<'s, M>(&'s self, selector: M) -> impl Graph<Error = Self::Error> + 's
     where
-        M: GraphNameMatcher + Copy,
+        M: GraphNameMatcher + 's,
     {
         PartialUnionGraph::new(self, selector)
     }
 
     /// Borrows a graph that is the union of all this dataset's graphs (default and named)
-    fn union_graph(&self) -> UnionGraph<&Self> {
+    fn union_graph<'s>(&'s self) -> impl Graph<Error = Self::Error> + 's {
         UnionGraph::new(self)
     }
 
     /// Convert into a graph that is the union of all this dataset's graphs (default and named)
-    fn into_union_graph(self) -> UnionGraph<Self>
+    fn into_union_graph(self) -> impl Graph<Error = Self::Error>
     where
         Self: Sized,
     {
@@ -586,6 +627,14 @@ pub trait MutableDataset: Dataset {
         self.remove_all(to_remove?.into_iter().into_source())
             .map_err(|err| err.unwrap_sink_error())?;
         Ok(())
+    }
+
+    /// Borrows mutably one of the graphs of this dataset
+    fn graph_mut<'s, T>(&'s mut self, graph_name: GraphName<T>) -> impl MutableGraph + 's
+    where
+        T: Term + 's,
+    {
+        DatasetGraph::new(self, graph_name)
     }
 }
 

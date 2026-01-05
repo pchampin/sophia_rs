@@ -498,6 +498,26 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
+            fn subjects_matching() -> Result<(), Box<dyn std::error::Error>> {
+                let g: $graph_impl = $graph_collector(some_triples()).unwrap();
+
+                let subjects: HashSet<StaticTerm> = g.subjects_matching([*C1, *P2]).map(|t| t.unwrap().into_term()).collect();
+                assert_eq!(subjects.len(), 2);
+                assert_contains(&subjects, &*C1);
+                assert_contains(&subjects, &*P2);
+
+                let g = if $is_gen {
+                    $graph_collector(generalized_node_types_triples()).unwrap()
+                } else {
+                    $graph_collector(strict_node_types_triples()).unwrap()
+                };
+                let kinds: HashSet<_> = g.subjects_matching(TermKind::BlankNode).map(|t| t.unwrap().kind()).collect();
+                assert_eq!(kinds.len(), if $is_gen {1} else {1});
+                assert!(kinds.contains(&TermKind::BlankNode));
+                Ok(())
+            }
+
+            #[test]
             fn predicates() -> Result<(), Box<dyn std::error::Error>> {
                 let g: $graph_impl = $graph_collector(some_triples()).unwrap();
 
@@ -517,6 +537,26 @@ macro_rules! test_graph_impl {
                 };
                 let kinds: HashSet<_> = g.predicates().map(|t| t.unwrap().kind()).collect();
                 assert_eq!(kinds.len(), if $is_gen {5} else {1});
+                assert!(kinds.contains(&TermKind::Iri));
+                Ok(())
+            }
+
+            #[test]
+            fn predicates_matching() -> Result<(), Box<dyn std::error::Error>> {
+                let g: $graph_impl = $graph_collector(some_triples()).unwrap();
+
+                let predicates: HashSet<StaticTerm> = g.predicates_matching([*P1, *P2]).map(|t| t.unwrap().into_term()).collect();
+                assert_eq!(predicates.len(), 2);
+                assert_contains(&predicates, &*P1);
+                assert_contains(&predicates, &*P2);
+
+                let g = if $is_gen {
+                    $graph_collector(generalized_node_types_triples()).unwrap()
+                } else {
+                    $graph_collector(strict_node_types_triples()).unwrap()
+                };
+                let kinds: HashSet<_> = g.predicates_matching(TermKind::Iri).map(|t| t.unwrap().kind()).collect();
+                assert_eq!(kinds.len(), if $is_gen {1} else {1});
                 assert!(kinds.contains(&TermKind::Iri));
                 Ok(())
             }
@@ -544,6 +584,26 @@ macro_rules! test_graph_impl {
                 assert_eq!(kinds.len(), if $is_gen {5} else {3});
                 assert!(kinds.contains(&TermKind::Iri));
                 assert!(kinds.contains(&TermKind::BlankNode));
+                assert!(kinds.contains(&TermKind::Literal));
+                Ok(())
+            }
+
+            #[test]
+            fn objects_matching() -> Result<(), Box<dyn std::error::Error>> {
+                let g: $graph_impl = $graph_collector(some_triples()).unwrap();
+
+                let objects: HashSet<StaticTerm> = g.objects_matching([*C1, *I2B]).map(|t| t.unwrap().into_term()).collect();
+                assert_eq!(objects.len(), 2);
+                assert_contains(&objects, &*C1);
+                assert_contains(&objects, &*I2B);
+
+                let g = if $is_gen {
+                    $graph_collector(generalized_node_types_triples()).unwrap()
+                } else {
+                    $graph_collector(strict_node_types_triples()).unwrap()
+                };
+                let kinds: HashSet<_> = g.objects_matching(TermKind::Literal).map(|t| t.unwrap().kind()).collect();
+                assert_eq!(kinds.len(), if $is_gen {1} else {1});
                 assert!(kinds.contains(&TermKind::Literal));
                 Ok(())
             }

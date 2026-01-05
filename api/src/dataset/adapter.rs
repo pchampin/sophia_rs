@@ -207,7 +207,7 @@ mod test {
     type MyGaDG = DatasetGraph<GraphAsDataset<MyGraph>, MyTerm>;
     fn collect_graph_as_dataset<T: TripleSource>(ts: T) -> Result<MyGaDG, T::Error> {
         ts.collect_triples()
-            .map(|g: MyGraph| DatasetGraph::new(g.into_dataset(), None))
+            .map(|g: MyGraph| DatasetGraph::new(GraphAsDataset(g), None))
             .map_err(StreamError::unwrap_source_error)
     }
     crate::test_immutable_graph_impl!(
