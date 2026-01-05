@@ -151,6 +151,479 @@ fn test_reduce(query: &str, exp: Vec<&str>) -> TestResult {
     Ok(())
 }
 
+#[test_case(
+    "SELECT ?s ?o { ?s :q|:z ?o }",
+    vec![
+        ["<x:a2>", "<x:b2>"],
+        ["<x:b2>", "<x:c2>"],
+        ["<x:c2>", "<x:d2>"],
+        ["<x:d2>", "<x:b2>"],
+        ["<x:d2>", "<x:e2>"],
+    ];
+    "alt"
+)]
+#[test_case(
+    "SELECT ?s ?o { ?s :p|:s ?o }",
+    vec![
+        ["<x:a1>", "<x:b1>"],
+        ["<x:a1>", "<x:b1>"],
+        ["<x:b1>", "<x:c1>"],
+        ["<x:c1>", "<x:d1>"],
+        ["<x:d1>", "<x:e1>"],
+    ];
+    "alt with multiple paths"
+)]
+#[test_case(
+    "SELECT ?s ?o { ?s (:p/:r)|(:r/:q) ?o }",
+    vec![
+        ["<x:a1>", "<x:b2>"],
+        ["<x:a1>", "<x:b2>"],
+        ["<x:b1>", "<x:c2>"],
+        ["<x:b1>", "<x:c2>"],
+        ["<x:c1>", "<x:d2>"],
+        ["<x:c1>", "<x:d2>"],
+        ["<x:d1>", "<x:b2>"],
+        ["<x:d1>", "<x:e2>"],
+        ["<x:d1>", "<x:e2>"],
+    ];
+    "alt of seqs"
+)]
+#[test_case(
+    "SELECT ?s ?o { ?s (:p|:s)/:p ?o }",
+    vec![
+        ["<x:a1>", "<x:c1>"],
+        ["<x:a1>", "<x:c1>"],
+        ["<x:b1>", "<x:d1>"],
+        ["<x:c1>", "<x:e1>"],
+    ];
+    "seq with multiple paths"
+)]
+#[test_case(
+    "SELECT ?s ?o { ?s (:p/:r)|(:q/^:r) ?o }",
+    vec![
+        ["<x:a1>", "<x:b2>"],
+        ["<x:a2>", "<x:b1>"],
+        ["<x:b1>", "<x:c2>"],
+        ["<x:b2>", "<x:c1>"],
+        ["<x:c1>", "<x:d2>"],
+        ["<x:c2>", "<x:d1>"],
+        ["<x:d1>", "<x:e2>"],
+        ["<x:d2>", "<x:b1>"],
+        ["<x:d2>", "<x:e1>"],
+    ];
+    "alt of seqs with rev"
+)]
+#[test_case(
+    "SELECT ?s ?o { ?s :p* ?o }",
+    vec![
+        ["<< <x:a1> <x:b1> <x:c1> >>", "<< <x:a1> <x:b1> <x:c1> >>"],
+        ["<< <x:a2> <x:b1> <x:c2> >>", "<< <x:a2> <x:b1> <x:c2> >>"],
+        ["<x:a1>", "<x:a1>"],
+        ["<x:a1>", "<x:b1>"],
+        ["<x:a1>", "<x:c1>"],
+        ["<x:a1>", "<x:d1>"],
+        ["<x:a1>", "<x:e1>"],
+        ["<x:a2>", "<x:a2>"],
+        ["<x:b1>", "<x:b1>"],
+        ["<x:b1>", "<x:c1>"],
+        ["<x:b1>", "<x:d1>"],
+        ["<x:b1>", "<x:e1>"],
+        ["<x:b2>", "<x:b2>"],
+        ["<x:c1>", "<x:c1>"],
+        ["<x:c1>", "<x:d1>"],
+        ["<x:c1>", "<x:e1>"],
+        ["<x:c2>", "<x:c2>"],
+        ["<x:d1>", "<x:d1>"],
+        ["<x:d1>", "<x:e1>"],
+        ["<x:d2>", "<x:d2>"],
+        ["<x:e1>", "<x:e1>"],
+        ["<x:e2>", "<x:e2>"],
+    ];
+    "zero or more"
+)]
+#[test_case(
+    "SELECT ?s ?o { ?s :q* ?o }",
+    vec![
+        ["<< <x:a1> <x:b1> <x:c1> >>", "<< <x:a1> <x:b1> <x:c1> >>"],
+        ["<< <x:a2> <x:b1> <x:c2> >>", "<< <x:a2> <x:b1> <x:c2> >>"],
+        ["<x:a1>", "<x:a1>"],
+        ["<x:a2>", "<x:a2>"],
+        ["<x:a2>", "<x:b2>"],
+        ["<x:a2>", "<x:c2>"],
+        ["<x:a2>", "<x:d2>"],
+        ["<x:a2>", "<x:e2>"],
+        ["<x:b1>", "<x:b1>"],
+        ["<x:b2>", "<x:b2>"],
+        ["<x:b2>", "<x:c2>"],
+        ["<x:b2>", "<x:d2>"],
+        ["<x:b2>", "<x:e2>"],
+        ["<x:c1>", "<x:c1>"],
+        ["<x:c2>", "<x:b2>"],
+        ["<x:c2>", "<x:c2>"],
+        ["<x:c2>", "<x:d2>"],
+        ["<x:c2>", "<x:e2>"],
+        ["<x:d1>", "<x:d1>"],
+        ["<x:d2>", "<x:b2>"],
+        ["<x:d2>", "<x:c2>"],
+        ["<x:d2>", "<x:d2>"],
+        ["<x:d2>", "<x:e2>"],
+        ["<x:e1>", "<x:e1>"],
+        ["<x:e2>", "<x:e2>"],
+    ];
+    "zero or more with loop"
+)]
+#[test_case(
+    "SELECT ?s ?o { ?s :p+ ?o }",
+    vec![
+        ["<x:a1>", "<x:b1>"],
+        ["<x:a1>", "<x:c1>"],
+        ["<x:a1>", "<x:d1>"],
+        ["<x:a1>", "<x:e1>"],
+        ["<x:b1>", "<x:c1>"],
+        ["<x:b1>", "<x:d1>"],
+        ["<x:b1>", "<x:e1>"],
+        ["<x:c1>", "<x:d1>"],
+        ["<x:c1>", "<x:e1>"],
+        ["<x:d1>", "<x:e1>"],
+    ];
+    "one or more"
+)]
+// NB: the duplicate (d2, e2) below is specific to Sophia,
+// neither Jena nor Oxigraph do it, and their behavior is consistent with the spec
+// BUT the spec is not entirely self-consistent
+// ppeval is supposed to return a *multiset*,
+// so the notion of UNION, when implicit, is arguably ambiguous
+#[test_case(
+    "SELECT ?s ?o { ?s :q+ ?o }",
+    vec![
+        ["<x:a2>", "<x:b2>"],
+        ["<x:a2>", "<x:c2>"],
+        ["<x:a2>", "<x:d2>"],
+        ["<x:a2>", "<x:e2>"],
+        ["<x:b2>", "<x:b2>"],
+        ["<x:b2>", "<x:c2>"],
+        ["<x:b2>", "<x:d2>"],
+        ["<x:b2>", "<x:e2>"],
+        ["<x:c2>", "<x:b2>"],
+        ["<x:c2>", "<x:c2>"],
+        ["<x:c2>", "<x:d2>"],
+        ["<x:c2>", "<x:e2>"],
+        ["<x:d2>", "<x:b2>"],
+        ["<x:d2>", "<x:c2>"],
+        ["<x:d2>", "<x:d2>"],
+        ["<x:d2>", "<x:e2>"],
+        ["<x:d2>", "<x:e2>"],
+    ];
+    "one or more with loop"
+)]
+#[test_case(
+    "SELECT ?s ?o { ?s :p? ?o }",
+    vec![
+        ["<< <x:a1> <x:b1> <x:c1> >>", "<< <x:a1> <x:b1> <x:c1> >>"],
+        ["<< <x:a2> <x:b1> <x:c2> >>", "<< <x:a2> <x:b1> <x:c2> >>"],
+        ["<x:a1>", "<x:a1>"],
+        ["<x:a1>", "<x:b1>"],
+        ["<x:a2>", "<x:a2>"],
+        ["<x:b1>", "<x:b1>"],
+        ["<x:b1>", "<x:c1>"],
+        ["<x:b2>", "<x:b2>"],
+        ["<x:c1>", "<x:c1>"],
+        ["<x:c1>", "<x:d1>"],
+        ["<x:c2>", "<x:c2>"],
+        ["<x:d1>", "<x:d1>"],
+        ["<x:d1>", "<x:e1>"],
+        ["<x:d2>", "<x:d2>"],
+        ["<x:e1>", "<x:e1>"],
+        ["<x:e2>", "<x:e2>"],
+    ];
+    "zero or one"
+)]
+#[test_case(
+    "SELECT ?s ?o { ?s :q? ?o }",
+    vec![
+        ["<< <x:a1> <x:b1> <x:c1> >>", "<< <x:a1> <x:b1> <x:c1> >>"],
+        ["<< <x:a2> <x:b1> <x:c2> >>", "<< <x:a2> <x:b1> <x:c2> >>"],
+        ["<x:a1>", "<x:a1>"],
+        ["<x:a2>", "<x:a2>"],
+        ["<x:a2>", "<x:b2>"],
+        ["<x:b1>", "<x:b1>"],
+        ["<x:b2>", "<x:b2>"],
+        ["<x:b2>", "<x:c2>"],
+        ["<x:c1>", "<x:c1>"],
+        ["<x:c2>", "<x:c2>"],
+        ["<x:c2>", "<x:d2>"],
+        ["<x:d1>", "<x:d1>"],
+        ["<x:d2>", "<x:b2>"],
+        ["<x:d2>", "<x:d2>"],
+        ["<x:d2>", "<x:e2>"],
+        ["<x:e1>", "<x:e1>"],
+        ["<x:e2>", "<x:e2>"],
+    ];
+    "zero or one with loop"
+)]
+// NB in the test below, it is questionable whether (a1, b1) should be duplicated
+// Jena produces the duplicate, but the spec mentions a set, so it should not
+// Currently, we also return the duplicate because it is easier.
+#[test_case(
+    "SELECT ?s ?o { ?s !(:q|:t) ?o }",
+    vec![
+        ["<x:a1>", "<x:a2>"],
+        ["<x:a1>", "<x:b1>"],
+        ["<x:a1>", "<x:b1>"], 
+        ["<x:b1>", "<x:b2>"],
+        ["<x:b1>", "<x:c1>"],
+        ["<x:c1>", "<x:c2>"],
+        ["<x:c1>", "<x:d1>"],
+        ["<x:d1>", "<x:d2>"],
+        ["<x:d1>", "<x:e1>"],
+        ["<x:e1>", "<x:e2>"],
+    ];
+    "negated property set"
+)]
+#[test_case(
+    "SELECT ?s ?o { :d2 :q* ?o }",
+    vec![
+        ["", "<x:b2>"],
+        ["", "<x:c2>"],
+        ["", "<x:d2>"],
+        ["", "<x:e2>"],
+    ];
+    "zero or more with bound subject"
+)]
+#[test_case(
+    "SELECT ?s ?o { ?s :q* :e2 }",
+    vec![
+        ["<x:a2>", ""],
+        ["<x:b2>", ""],
+        ["<x:c2>", ""],
+        ["<x:d2>", ""],
+        ["<x:e2>", ""],
+    ];
+    "zero or more with bound object"
+)]
+#[test_case(
+    "SELECT ?s ?o { :d2 :q* :e2 }",
+    vec![
+        ["", ""],
+    ];
+    "zero or more with both bound and success"
+)]
+#[test_case(
+    "SELECT ?s ?o { :d2 :q* :a2 }",
+    vec![];
+    "zero or more with both bound and failure"
+)]
+// The test below is really a corner case.
+// It is required by the spec by, for example, Oxigraph does not pass it (Jena does).
+// I might decide to not support it in the future.
+#[test_case(
+    "SELECT ?s ?o { :z :q* ?o }",
+    vec![
+        ["", "<x:z>"],
+    ];
+    "zero or more with bound subject absent from graph"
+)]
+// NB: the test below fails (no bindings are returned).
+// Strictly speaking, the spec requires it to pass,
+// but this is rather a corner case.
+// #[test_case(
+//     "SELECT ?s ?o { ?s :q* :z}",
+//     vec![
+//         ["<x:z>", ""],
+//     ];
+//     "zero or more with bound object absent from graph"
+// )]
+#[test_case(
+    "SELECT ?s ?o { :z :q* :z}",
+    vec![
+        ["", ""],
+    ];
+    "zero or more with both bound absent from graph"
+)]
+#[test_case(
+    "SELECT ?s ?o { ?s :q* ?s}",
+    vec![
+        ["<< <x:a1> <x:b1> <x:c1> >>", ""],
+        ["<< <x:a2> <x:b1> <x:c2> >>", ""],
+        ["<x:a1>", ""],
+        ["<x:a2>", ""],
+        ["<x:b1>", ""],
+        ["<x:b2>", ""],
+        ["<x:c1>", ""],
+        ["<x:c2>", ""],
+        ["<x:d1>", ""],
+        ["<x:d2>", ""],
+        ["<x:e1>", ""],
+        ["<x:e2>", ""],
+    ];
+    "zero or more with same variable"
+)]
+// About the test below, see "one or more with loop" about the duplicate (d2, e2)
+#[test_case(
+    "SELECT ?s ?o { :d2 :q+ ?o }",
+    vec![
+        ["", "<x:b2>"],
+        ["", "<x:c2>"],
+        ["", "<x:d2>"],
+        ["", "<x:e2>"],
+        ["", "<x:e2>"],
+    ];
+    "one or more with bound subject"
+)]
+// About the test below, see "one or more with loop" about the duplicate (d2, e2)
+#[test_case(
+    "SELECT ?s ?o { ?s :q+ :e2 }",
+    vec![
+        ["<x:a2>", ""],
+        ["<x:b2>", ""],
+        ["<x:c2>", ""],
+        ["<x:d2>", ""],
+        ["<x:d2>", ""],
+    ];
+    "one or more with bound object"
+)]
+// About the test below, see "one or more with loop" about the duplicate (d2, e2)
+#[test_case(
+    "SELECT ?s ?o { :d2 :q+ :e2 }",
+    vec![
+        ["", ""],
+        ["", ""],
+    ];
+    "one or more with both bound and success"
+)]
+#[test_case(
+    "SELECT ?s ?o { :d2 :q+ :a2 }",
+    vec![];
+    "one or more with both bound and failure"
+)]
+#[test_case(
+    "SELECT ?s ?o { ?s :q+ ?s }",
+    vec![
+        ["<x:b2>", ""],
+        ["<x:c2>", ""],
+        ["<x:d2>", ""],
+    ];
+    "one or more with same variable"
+)]
+#[test_case(
+    "SELECT ?s ?o { :d2 :q? ?o }",
+    vec![
+        ["", "<x:b2>"],
+        ["", "<x:d2>"],
+        ["", "<x:e2>"],
+    ];
+    "zero or one with bound subject"
+)]
+#[test_case(
+    "SELECT ?s ?o { ?s :q? :e2 }",
+    vec![
+        ["<x:d2>", ""],
+        ["<x:e2>", ""],
+    ];
+    "zero or one with bound object"
+)]
+#[test_case(
+    "SELECT ?s ?o { :d2 :q? :e2 }",
+    vec![
+        ["", ""],
+    ];
+    "zero or one with both bound and success"
+)]
+#[test_case(
+    "SELECT ?s ?o { :d2 :q? :c2 }",
+    vec![];
+    "zero or one with both bound and failure"
+)]
+// The test below is really a corner case.
+// It is required by the spec by, for example, Oxigraph does not pass it (Jena does).
+// I might decide to not support it in the future.
+#[test_case(
+    "SELECT ?s ?o { :z :q? ?o }",
+    vec![
+        ["", "<x:z>"],
+    ];
+    "zero or one with bound subject absent from the graph"
+)]
+// NB: the test below fails (no bindings are returned).
+// Strictly speaking, the spec requires it to pass,
+// but this is rather a corner case.
+// #[test_case(
+//     "SELECT ?s ?o { ?s :q? :z }",
+//     vec![
+//         ["<x:z>", ""],
+//     ];
+//     "zero or one with bound object absent from the graph"
+// )]
+#[test_case(
+    "SELECT ?s ?o { :z :q? :z }",
+    vec![
+        ["", ""],
+    ];
+    "zero or one with both bound absent from the graph"
+)]
+#[test_case(
+    "SELECT ?s ?o { ?s :q? ?s }",
+    vec![
+        ["<< <x:a1> <x:b1> <x:c1> >>", ""],
+        ["<< <x:a2> <x:b1> <x:c2> >>", ""],
+        ["<x:a1>", ""],
+        ["<x:a2>", ""],
+        ["<x:b1>", ""],
+        ["<x:b2>", ""],
+        ["<x:c1>", ""],
+        ["<x:c2>", ""],
+        ["<x:d1>", ""],
+        ["<x:d2>", ""],
+        ["<x:e1>", ""],
+        ["<x:e2>", ""],
+    ];
+    "zero or one with same variable"
+)]
+// In the following tests, the alternative with :z is a trick,
+// to prevent the query parsing to convert it to a BGP.
+// The purpose is to test the property path evaluation.
+#[test_case(
+    "SELECT ?s ?o { <<( ?s ?p1 [] )>> (^:t/:p/:t)|:z <<( [] ?p2 ?o )>>}",
+    vec![];
+    "triple patterns failing"
+)]
+#[test_case(
+    "SELECT ?s ?o { <<( ?s ?p1 [] )>> (^:t/:r/:t)|:z <<( [] ?p2 ?o )>>}",
+    vec![
+        ["<x:a1>", "<x:c2>"],
+    ];
+    "triple patterns succeeding"
+)]
+#[test_case(
+    "SELECT ?s ?o { <<( ?s ?p1 ?v )>> (^:t/:r/:t)|:z <<( ?v ?p2 ?o )>>}",
+    vec![];
+    "triple patterns failing because of similar variables v"
+)]
+#[test_case(
+    "SELECT ?s ?o { <<( ?s ?p1 _:b )>> (^:t/:r/:t)|:z <<( _:b ?p2 ?o )>>}",
+    vec![];
+    "triple patterns failing because of similar bnode b"
+)]
+#[test_case(
+    "SELECT ?s ?o { <<( ?s ?o [] )>> (^:t/:r/:t)|:z <<( [] ?o [] )>>}",
+    vec![
+        ["<x:a1>", "<x:b1>"],
+    ];
+    "triple patterns with common variable"
+)]
+fn test_ppath(query: &str, exp: Vec<[&str; 2]>) -> TestResult {
+    let dataset = dataset_ppath()?;
+    let dataset = SparqlWrapper(&dataset);
+    let query = format!("BASE <https://example.org/test> PREFIX : <x:> {query}");
+    let parsed_query = SparqlQuery::parse(&query)?;
+    let bindings = dataset.query(&parsed_query)?.into_bindings();
+    assert_eq!(bindings.variables(), &["s", "o"]);
+    let mut got = bindings_to_vec_of_arrays(bindings, ["s", "o"]);
+    got.sort_unstable();
+    assert_eq!(exp, got);
+    Ok(())
+}
+
 #[test]
 fn test_union() -> TestResult {
     let dataset = dataset_101()?;
@@ -1375,6 +1848,37 @@ fn dataset_101() -> TestResult<LightDataset> {
     Ok(dataset)
 }
 
+fn dataset_ppath() -> TestResult<LightDataset> {
+    let dataset: LightDataset = sophia_turtle::parser::trig::parse_str(
+        r#"
+            PREFIX : <x:>
+
+            :a1 :p :b1.
+            :b1 :p :c1.
+            :c1 :p :d1.
+            :d1 :p :e1.
+
+            :a2 :q :b2.
+            :b2 :q :c2.
+            :c2 :q :d2.
+            :d2 :q :e2, :b2.
+
+            :a1 :r :a2.
+            :b1 :r :b2.
+            :c1 :r :c2.
+            :d1 :r :d2.
+            :e1 :r :e2.
+
+            :a1 :s :b1.
+
+            :d1 :t <<( :a1 :b1 :c1 )>>.
+            :d2 :t <<( :a2 :b1 :c2 )>>.
+        "#,
+    )
+    .collect_quads()?;
+    Ok(dataset)
+}
+
 /// Return a flat list of all bindings, in serialized form.
 fn bindings_to_vec(bindings: Bindings<LightDataset>, nbvar: usize) -> Vec<String> {
     assert_eq!(bindings.variables().len(), nbvar);
@@ -1391,6 +1895,21 @@ fn bindings_to_vec(bindings: Bindings<LightDataset>, nbvar: usize) -> Vec<String
                 })
                 .unwrap_or_default()
             })
+        })
+        .collect()
+}
+
+/// Return a flat list of all bindings, in serialized form.
+fn bindings_to_vec_of_arrays(
+    bindings: Bindings<LightDataset>,
+    vars: [&str; 2],
+) -> Vec<[String; 2]> {
+    assert_eq!(bindings.variables(), vars);
+    bindings
+        .into_iter()
+        .map(|bs| {
+            let values: [_; 2] = bs.unwrap().try_into().unwrap();
+            values.map(|opt| opt.map(|t| t.to_string()).unwrap_or_else(|| "".into()))
         })
         .collect()
 }

@@ -19,6 +19,7 @@ pub(crate) use _any_pattern::*;
 mod _ox2so;
 pub(crate) use _ox2so::*;
 
+#[derive(Clone, Debug)]
 pub enum SparqlMatcher {
     /// Free variable or bnode
     Free, // free variable or bnode

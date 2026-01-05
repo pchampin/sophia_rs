@@ -5,20 +5,28 @@ use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::Arc;
+use std::sync::LazyLock;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
 
+use resiter::FlatMap;
+use resiter::Map;
+use sophia_api::dataset::DResult;
 use sophia_api::prelude::*;
 use sophia_api::term::VarName;
+use sophia_api::term::matcher::Not;
+use sophia_api::term::matcher::TermMatcher;
 use sophia_iri::resolve::BaseIri;
 use sophia_term::ArcStrStash;
 use sophia_term::ArcTerm;
 use spargebra::algebra::Expression;
 use spargebra::algebra::GraphPattern;
 use spargebra::algebra::OrderExpression;
+use spargebra::algebra::PropertyPathExpression;
 use spargebra::algebra::QueryDataset;
 use spargebra::term::GroundTerm;
 use spargebra::term::NamedNodePattern;
+use spargebra::term::TermPattern;
 use spargebra::term::TriplePattern;
 use spargebra::term::Variable;
 
@@ -26,12 +34,16 @@ use crate::ResultTerm;
 use crate::SparqlWrapperError;
 use crate::bgp;
 use crate::binding::BindingsIter;
+use crate::binding::collect_variables;
+use crate::binding::populate_bindings_arcterm;
 use crate::binding::{Binding, Bindings, populate_variables};
 use crate::expression::ArcExpression;
+use crate::matcher::SparqlMatcher;
 use crate::stash::ArcStrStashExt;
 
 mod join_iter;
 mod left_join_iter;
+mod path_or_more;
 
 #[derive(Debug)]
 pub struct ExecState<'a, D: ?Sized> {
@@ -122,7 +134,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 subject,
                 path,
                 object,
-            } => Bindings::err(SparqlWrapperError::NotImplemented("Path")),
+            } => self.path(subject, path, object, graph_matcher, context),
             Join { left, right } => self.join(left, right, graph_matcher, context),
             LeftJoin {
                 left,
@@ -194,6 +206,222 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             context,
         ));
         Bindings { variables, iter }
+    }
+
+    fn path(
+        self: &Arc<Self>,
+        subject: &TermPattern,
+        path: &PropertyPathExpression,
+        object: &TermPattern,
+        graph_matcher: &[Option<ArcTerm>],
+        context: Option<&Binding>,
+    ) -> Bindings<'a, D> {
+        static EMPTY: LazyLock<Binding> = LazyLock::new(Binding::default);
+        // self (as state), subject and object will be moved in a closure;
+        // they must be cloned to avoid leaking the lifetime of `self`
+        let state = self.clone();
+        let subject2 = subject.clone();
+        let object2 = object.clone();
+
+        let mut variables = HashSet::new();
+        collect_variables(subject, &mut variables, &mut self.stash_mut());
+        collect_variables(object, &mut variables, &mut self.stash_mut());
+        let variables: Vec<_> = variables.into_iter().collect();
+
+        let context = context.unwrap_or(&EMPTY);
+        let smatcher = SparqlMatcher::build(subject.into(), context, &mut self.stash_mut());
+        let omatcher = SparqlMatcher::build(object.into(), context, &mut self.stash_mut());
+
+        let iter = Box::new(
+            self.path_rec(smatcher, path, omatcher, graph_matcher)
+                .filter_map(move |res| {
+                    res.map(|[s, o]| {
+                        let mut b = Binding::default();
+                        let compatible = populate_bindings_arcterm(
+                            (&subject2).into(),
+                            s,
+                            &mut b,
+                            &mut state.stash_mut(),
+                        ) && populate_bindings_arcterm(
+                            (&object2).into(),
+                            o,
+                            &mut b,
+                            &mut state.stash_mut(),
+                        );
+                        compatible.then_some(b)
+                    })
+                    .map_err(SparqlWrapperError::Dataset)
+                    .transpose()
+                }),
+        );
+        Bindings { variables, iter }
+    }
+
+    fn path_rec(
+        self: &Arc<Self>,
+        smatcher: SparqlMatcher,
+        path: &PropertyPathExpression,
+        omatcher: SparqlMatcher,
+        graph_matcher: &[Option<ArcTerm>],
+    ) -> Box<dyn Iterator<Item = DResult<D, [ArcTerm; 2]>> + 'a> {
+        use PropertyPathExpression::*;
+        match path {
+            NamedNode(predicate) => {
+                // self (as state) will be moved in a closure;
+                // it must be cloned to avoid leaking the lifetime of `self`
+                let state = self.clone();
+                let predicate =
+                    IriRef::new_unchecked(self.stash_mut().copy_str(predicate.as_str()));
+                Box::new(
+                    state
+                        .config()
+                        .dataset
+                        .quads_matching(smatcher, [predicate], omatcher, graph_matcher.to_vec())
+                        .map_ok(move |q| {
+                            let mut stash = state.stash_mut();
+                            [stash.copy_term(q.s()), stash.copy_term(q.o())]
+                        }),
+                )
+            }
+            Reverse(path) => Box::new(
+                self.path_rec(omatcher, path, smatcher, graph_matcher)
+                    .map_ok(|[o, s]| [s, o]),
+            ),
+            Sequence(path1, path2) => {
+                // self (as state), graph_matcher (as g_matcher) and path2 will be moved in a closure;
+                // they must be cloned to avoid leaking the lifetime of `self`
+                let state = self.clone();
+                let gmatcher = graph_matcher.to_vec();
+                let path2 = path2.clone();
+                Box::new(
+                    self.path_rec(smatcher, path1, SparqlMatcher::Free, graph_matcher)
+                        .flat_map_ok(move |[s, i]| {
+                            state
+                                .path_rec(
+                                    SparqlMatcher::Bound(i.into()),
+                                    &path2,
+                                    omatcher.clone(),
+                                    &gmatcher,
+                                )
+                                .map_ok(move |[_, o]| [s.clone(), o])
+                        })
+                        .map(Result::unwrap),
+                )
+            }
+            Alternative(path1, path2) => Box::new(
+                self.path_rec(smatcher.clone(), path1, omatcher.clone(), graph_matcher)
+                    .chain(self.path_rec(smatcher, path2, omatcher, graph_matcher)),
+            ),
+            ZeroOrMore(path) => {
+                // self (as state), graph_matcher (as g_matcher) and path will be moved in a closure;
+                // they must be cloned to avoid leaking the lifetime of `self`
+                let state = self.clone();
+                let gmatcher = graph_matcher.to_vec();
+                let path = PropertyPathExpression::clone(path);
+
+                Box::new(
+                    self.path_zero(smatcher, graph_matcher)
+                        .flat_map_ok(move |node| {
+                            path_or_more::PathOrMore::new(
+                                state.clone(),
+                                node.clone(),
+                                node,
+                                path.clone(),
+                                omatcher.clone(),
+                                gmatcher.clone(),
+                            )
+                        })
+                        .map(Result::flatten),
+                )
+            }
+            OneOrMore(path) => {
+                // self (as state), graph_matcher (as g_matcher) and path will be moved in a closure;
+                // they must be cloned to avoid leaking the lifetime of `self`
+                let state = self.clone();
+                let gmatcher = graph_matcher.to_vec();
+                let path = PropertyPathExpression::clone(path);
+                Box::new(
+                    self.path_rec(smatcher, &path, SparqlMatcher::Free, graph_matcher)
+                        .flat_map_ok(move |[s, o]| {
+                            path_or_more::PathOrMore::new(
+                                state.clone(),
+                                s,
+                                o,
+                                path.clone(),
+                                omatcher.clone(),
+                                gmatcher.clone(),
+                            )
+                        })
+                        .map(Result::flatten),
+                )
+            }
+            ZeroOrOne(path) => {
+                // self (as state), graph_matcher (as g_matcher) and path will be moved in a closure;
+                // they must be cloned to avoid leaking the lifetime of `self`
+                let state = self.clone();
+                let gmatcher = graph_matcher.to_vec();
+                let path = PropertyPathExpression::clone(path);
+
+                Box::new(
+                    self.path_zero(smatcher, graph_matcher)
+                        .flat_map_ok(move |t| {
+                            let iter_zero = omatcher
+                                .matches(&t)
+                                .then(|| Ok([t.clone(), t.clone()]))
+                                .into_iter();
+                            let iter_one = state.path_rec(
+                                SparqlMatcher::Bound(t.into()),
+                                &path,
+                                omatcher.clone(),
+                                &gmatcher.clone(),
+                            );
+                            iter_zero.chain(iter_one)
+                        })
+                        .map(Result::flatten),
+                )
+            }
+            NegatedPropertySet(predicates) => {
+                // self (as state) will be moved in a closure;
+                // it must be cloned to avoid leaking the lifetime of `self`
+                let state = self.clone();
+                let predicates: Vec<_> = predicates
+                    .iter()
+                    .map(|iri| IriRef::new_unchecked(self.stash_mut().copy_str(iri.as_str())))
+                    .collect();
+                Box::new(
+                    state
+                        .config()
+                        .dataset
+                        .quads_matching(smatcher, Not(predicates), omatcher, graph_matcher.to_vec())
+                        .map_ok(move |q| {
+                            let mut stash = state.stash_mut();
+                            [stash.copy_term(q.s()), stash.copy_term(q.o())]
+                        }),
+                )
+            }
+        }
+    }
+
+    /// Iter subjects for property paths 'ZeroOrMOre' and 'ZeroOrOne'
+    fn path_zero(
+        self: &Arc<Self>,
+        smatcher: SparqlMatcher,
+        graph_matcher: &[Option<ArcTerm>],
+    ) -> Box<dyn Iterator<Item = DResult<D, ArcTerm>>> {
+        if let SparqlMatcher::Bound(t) = smatcher {
+            Box::new(std::iter::once(Ok(t.unwrap())))
+        } else {
+            let active_graph = self.config().dataset.partial_union_graph(graph_matcher);
+            let nodes: Result<HashSet<_>, _> = active_graph
+                .subjects_matching(smatcher.clone())
+                .chain(active_graph.objects_matching(smatcher))
+                .map_ok(|n| self.stash_mut().copy_term(n))
+                .collect();
+            match nodes {
+                Err(err) => Box::new(std::iter::once(Err(err))),
+                Ok(nodes) => Box::new(nodes.into_iter().map(Ok)),
+            }
+        }
     }
 
     fn join(

@@ -12,6 +12,7 @@ use sophia_api::sparql::SparqlBindings;
 use sophia_api::term::SimpleTerm;
 use sophia_api::term::VarName;
 use sophia_term::ArcStrStash;
+use sophia_term::ArcTerm;
 use spargebra::term::NamedNodePattern;
 use spargebra::term::TermPattern;
 use spargebra::term::TriplePattern;
@@ -212,7 +213,50 @@ fn populate_bindings_term<T: Term>(
     true
 }
 
-fn collect_variables<'a, T>(
+pub(crate) fn populate_bindings_arcterm(
+    pattern: AnyPattern,
+    t: ArcTerm,
+    b: &mut Binding,
+    stash: &mut MutexGuard<ArcStrStash>,
+) -> bool {
+    let st = pattern.as_simple();
+    match st {
+        SimpleTerm::BlankNode(bnid) => {
+            if let Some(already_bound) = b.b.get(bnid.as_str()) {
+                if !Term::eq(already_bound, &t) {
+                    return false;
+                }
+            } else {
+                b.b.insert(stash.copy_str(bnid), t.into());
+            }
+        }
+        SimpleTerm::Variable(var) => {
+            if let Some(already_bound) = b.v.get(var.as_str()) {
+                if !Term::eq(already_bound, &t) {
+                    return false;
+                }
+            } else {
+                b.v.insert(stash.copy_str(var), t.into());
+            }
+        }
+        SimpleTerm::Triple(_) => {
+            let AnyPattern::Term(TermPattern::Triple(triple_pattern)) = pattern else {
+                unreachable!();
+            };
+            debug_assert!(t.is_triple());
+            let [s, p, o] = t.to_triple().unwrap();
+            return populate_bindings_arcterm((&triple_pattern.subject).into(), s, b, stash)
+                && populate_bindings_arcterm((&triple_pattern.predicate).into(), p, b, stash)
+                && populate_bindings_arcterm((&triple_pattern.object).into(), o, b, stash);
+        }
+        _ => {
+            debug_assert!(Term::eq(&pattern, &t));
+        }
+    }
+    true
+}
+
+pub(crate) fn collect_variables<'a, T>(
     pattern: &'a T,
     set: &mut HashSet<VarName<Arc<str>>>,
     stash: &mut ArcStrStash,
