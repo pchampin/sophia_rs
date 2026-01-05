@@ -85,6 +85,29 @@ where
     }
 }
 
+impl<T> GraphNameMatcher for Vec<GraphName<T>>
+where
+    T: Term,
+{
+    type Term = T;
+
+    fn matches<T2: Term + ?Sized>(&self, graph_name: GraphName<&T2>) -> bool {
+        self.iter().any(|mine| {
+            graph_name_eq(
+                mine.as_ref().map(|gn| gn.borrow_term()),
+                graph_name.map(|gn| gn.borrow_term()),
+            )
+        })
+    }
+    fn constant(&self) -> Option<GraphName<&Self::Term>> {
+        if self.len() == 1 {
+            Some(self[0].as_ref())
+        } else {
+            None
+        }
+    }
+}
+
 impl GraphNameMatcher for Option<TermKind> {
     type Term = SimpleTerm<'static>; // not actually used
 

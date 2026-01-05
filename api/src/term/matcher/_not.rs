@@ -1,6 +1,7 @@
 use super::*;
 
 /// Matches on the inverse of the inner [`Term`] or [`GraphName`]
+#[derive(Clone, Copy, Debug)]
 pub struct Not<M>(pub M);
 
 impl<M: TermMatcher> TermMatcher for Not<M> {

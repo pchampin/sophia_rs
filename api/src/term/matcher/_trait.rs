@@ -86,6 +86,25 @@ where
     }
 }
 
+/// Matches any of the terms in the vector.
+impl<T> TermMatcher for Vec<T>
+where
+    T: Term,
+{
+    type Term = T;
+
+    fn matches<T2: Term + ?Sized>(&self, term: &T2) -> bool {
+        self.iter().any(|mine| mine.eq(term.borrow_term()))
+    }
+    fn constant(&self) -> Option<&Self::Term> {
+        if self.len() == 1 {
+            Some(&self[0])
+        } else {
+            None
+        }
+    }
+}
+
 /// Matches only embedded triple whose components match the corresponding matchers.
 impl<S, P, O> TermMatcher for (S, P, O)
 where
