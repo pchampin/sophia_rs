@@ -9,6 +9,7 @@ use sophia_api::sparql::{IntoQuery, SparqlResult};
 use spargebra::{Query as QueryAST, SparqlParser};
 use thiserror::Error;
 
+use crate::exec::ConstructIter;
 use crate::{binding::Bindings, exec::ExecState, term::ResultTerm};
 
 #[derive(Debug)]
@@ -21,7 +22,7 @@ impl<'a, D: Dataset + ?Sized> SparqlDataset for SparqlWrapper<'a, D> {
 
     type BindingsResult = Bindings<'a, D>;
 
-    type TriplesResult = Box<dyn Iterator<Item = Result<[Self::BindingsTerm; 3], D::Error>>>;
+    type TriplesResult = ConstructIter<'a, D>;
 
     type SparqlError = SparqlWrapperError<D::Error>;
 
@@ -52,7 +53,14 @@ impl<'a, D: Dataset + ?Sized> SparqlDataset for SparqlWrapper<'a, D> {
                 dataset,
                 pattern,
                 base_iri,
-            } => Err(SparqlWrapperError::NotImplemented("CONSTRUCT query")),
+            } => {
+                let exec = ExecState::new(self.0, dataset, base_iri)?;
+                Ok(SparqlResult::Triples(exec.construct(
+                    template,
+                    pattern,
+                    &exec.config().default_matcher,
+                )))
+            }
             QueryAST::Describe {
                 dataset,
                 pattern,

@@ -1,6 +1,6 @@
 use crate::*;
 use sophia_api::{prelude::*, sparql::Query};
-use sophia_inmem::dataset::LightDataset;
+use sophia_inmem::{dataset::LightDataset, graph::LightGraph};
 use test_case::test_case;
 
 #[allow(clippy::needless_pass_by_value)]
@@ -1814,6 +1814,59 @@ fn test_bound(body: &str, exp: &str) -> TestResult {
     );
     assert_eq!(got.len(), 1);
     assert_eq!(&got[0], exp);
+    Ok(())
+}
+
+#[test_case(
+    "CONSTRUCT { <x:s> <x:p> <x:o> } {}" ,
+    "<x:s> <x:p> <x:o>.";
+    "simple"
+)]
+#[test_case(
+    "CONSTRUCT { [] a ?o } { VALUES ?o {1 2} }" ,
+    "_:b1 a 1. _:b2 a 2.";
+    "simple with bnodes"
+)]
+#[test_case(
+    r#"CONSTRUCT {
+      <x:ALL> <x:value> (?s ?p ?o).
+      <x:TRIPLE_TERM> <x:value> <<( ?s ?p ?o )>>.
+      ?s ?p ?o.
+    } WHERE {
+      VALUES ?s {<x:s> "s"}
+      VALUES ?p {<x:p> "p"}
+      VALUES ?o {<x:o> "o"}
+    }"#,
+    r#"   
+        <x:ALL> <x:value>
+          (<x:s> <x:p> <x:o>),
+          (<x:s> <x:p> "o"  ),
+          (<x:s> "p"   <x:o>),
+          (<x:s> "p"   "o"  ),
+          ("s"   <x:p> <x:o>),
+          ("s"   <x:p> "o"  ),
+          ("s"   "p"   <x:o>),
+          ("s"   "p"   "o"  ).
+
+        <x:TRIPLE_TERM> <x:value>
+          <<( <x:s> <x:p> <x:o> )>>,
+          <<( <x:s> <x:p> "o"   )>>.
+
+        <x:s> <x:p> <x:o>, "o".
+    "#;
+    "filter generalized triples"
+)]
+fn test_construct(query: &str, exp: &str) -> TestResult {
+    let dataset = dataset_ppath()?;
+    let dataset = SparqlWrapper(&dataset);
+    let query = format!("BASE <https://example.org/test> PREFIX : <x:> {query}");
+    let parsed_query = SparqlQuery::parse(&query)?;
+    let exp: LightGraph = sophia_turtle::parser::turtle::parse_str(exp).collect_triples()?;
+    let got: LightGraph = dataset
+        .query(&parsed_query)?
+        .into_triples()
+        .collect_triples()?;
+    assert!(sophia_isomorphism::isomorphic_graphs(&got, &exp)?);
     Ok(())
 }
 

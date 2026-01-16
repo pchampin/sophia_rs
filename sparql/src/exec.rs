@@ -41,6 +41,8 @@ use crate::expression::ArcExpression;
 use crate::matcher::SparqlMatcher;
 use crate::stash::ArcStrStashExt;
 
+mod construct_iter;
+pub use construct_iter::ConstructIter;
 mod join_iter;
 mod left_join_iter;
 mod path_or_more;
@@ -170,6 +172,29 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 silent,
             } => Bindings::err(SparqlWrapperError::NotImplemented("Service")),
         }
+    }
+
+    pub fn construct(
+        self: &Arc<Self>,
+        template: &[TriplePattern],
+        pattern: &GraphPattern,
+        graph_matcher: &Arc<[Option<ArcTerm>]>,
+    ) -> ConstructIter<'a, D> {
+        let template = {
+            let mut stash = self.stash_mut();
+            template
+                .iter()
+                .map(|triple| {
+                    [
+                        stash.copy_term_pattern(&triple.subject),
+                        stash.copy_named_node_pattern(&triple.predicate),
+                        stash.copy_term_pattern(&triple.object),
+                    ]
+                })
+                .collect()
+        };
+        let bindings = self.select(pattern, graph_matcher, None);
+        ConstructIter::new(template, bindings)
     }
 
     pub fn ask(

@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
-use sophia_api::term::{BaseDirection, IriRef, LanguageTag, Term, VarName};
+use sophia_api::term::{BaseDirection, BnodeId, IriRef, LanguageTag, Term, VarName};
 use sophia_term::{ArcStrStash, ArcTerm, GenericLiteral};
-use spargebra::term::GroundTerm;
+use spargebra::term::{GroundTerm, NamedNodePattern, TermPattern};
 
 use crate::{term::ResultTerm, value::SparqlValue};
 
@@ -12,6 +12,8 @@ pub trait ArcStrStashExt {
     fn copy_result_term<T: Term>(&mut self, t: T) -> ResultTerm;
     fn copy_variable(&mut self, v: &spargebra::term::Variable) -> VarName<Arc<str>>;
     fn copy_ground_term(&mut self, gterm: &GroundTerm) -> ResultTerm;
+    fn copy_term_pattern(&mut self, tp: &TermPattern) -> ArcTerm;
+    fn copy_named_node_pattern(&mut self, nnp: &NamedNodePattern) -> ArcTerm;
 }
 
 impl ArcStrStashExt for ArcStrStash {
@@ -54,6 +56,52 @@ impl ArcStrStashExt for ArcStrStash {
                 .into();
                 let o = self.copy_ground_term(&triple.object);
                 [s, p, o].into()
+            }
+        }
+    }
+
+    fn copy_term_pattern(&mut self, tp: &TermPattern) -> ArcTerm {
+        match tp {
+            TermPattern::NamedNode(named_node) => {
+                ArcTerm::Iri(IriRef::new_unchecked(self.copy_str(named_node.as_str())))
+            }
+            TermPattern::Literal(literal) => {
+                let val = self.copy_str(literal.value());
+                let lit = if let Some(tag) = literal.language() {
+                    let tag = LanguageTag::new_unchecked(self.copy_str(tag));
+                    let dir = literal.direction().map(|oxdir| match oxdir {
+                        oxrdf::BaseDirection::Ltr => BaseDirection::Ltr,
+                        oxrdf::BaseDirection::Rtl => BaseDirection::Rtl,
+                    });
+                    GenericLiteral::LanguageString(val, tag, dir)
+                } else {
+                    let dt = IriRef::new_unchecked(self.copy_str(literal.datatype().as_str()));
+                    GenericLiteral::Typed(val, dt)
+                };
+                ArcTerm::Literal(lit)
+            }
+            TermPattern::Triple(triple) => {
+                let s = self.copy_term_pattern(&triple.subject);
+                let p = self.copy_named_node_pattern(&triple.predicate);
+                let o = self.copy_term_pattern(&triple.object);
+                ArcTerm::Triple(Arc::new([s, p, o]))
+            }
+            TermPattern::BlankNode(bnode) => {
+                ArcTerm::BlankNode(BnodeId::new_unchecked(self.copy_str(bnode.as_str())))
+            }
+            TermPattern::Variable(variable) => {
+                ArcTerm::Variable(VarName::new_unchecked(self.copy_str(variable.as_str())))
+            }
+        }
+    }
+
+    fn copy_named_node_pattern(&mut self, nnp: &NamedNodePattern) -> ArcTerm {
+        match nnp {
+            NamedNodePattern::NamedNode(named_node) => {
+                ArcTerm::Iri(IriRef::new_unchecked(self.copy_str(named_node.as_str())))
+            }
+            NamedNodePattern::Variable(variable) => {
+                ArcTerm::Variable(VarName::new_unchecked(self.copy_str(variable.as_str())))
             }
         }
     }

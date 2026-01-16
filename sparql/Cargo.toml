@@ -38,4 +38,5 @@ sha2.workspace = true
 
 [dev-dependencies]
 sophia_turtle.workspace = true
+sophia_isomorphism.workspace = true
 test-case = "3.3"
