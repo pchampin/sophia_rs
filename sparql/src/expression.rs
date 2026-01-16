@@ -177,7 +177,7 @@ impl ArcExpression {
         &self,
         binding: &Binding,
         state: &Arc<ExecState<'_, D>>,
-        graph_matcher: &[Option<ArcTerm>],
+        graph_matcher: &Arc<[Option<ArcTerm>]>,
     ) -> Option<EvalResult>
     where
         D: Dataset + ?Sized,
@@ -338,7 +338,7 @@ impl ArcExpression {
         &self,
         binding: &Binding,
         state: &Arc<ExecState<'_, D>>,
-        graph_matcher: &[Option<ArcTerm>],
+        graph_matcher: &Arc<[Option<ArcTerm>]>,
     ) -> bool
     where
         D: Dataset + ?Sized,

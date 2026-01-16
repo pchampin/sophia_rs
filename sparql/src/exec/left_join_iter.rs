@@ -16,7 +16,7 @@ pub struct LeftJoinIter<'a, D: Dataset + ?Sized> {
     b1: Binding,
     b2s: BindingsIter<'a, D>,
     state: Arc<ExecState<'a, D>>,
-    graph_matcher: Vec<Option<ArcTerm>>,
+    graph_matcher: Arc<[Option<ArcTerm>]>,
     right: GraphPattern,
     expression: Option<ArcExpression>,
     iter_state: IterState,
@@ -30,14 +30,13 @@ impl<'a, D: Dataset + ?Sized> LeftJoinIter<'a, D> {
         state: &Arc<ExecState<'a, D>>,
         right: &GraphPattern,
         expression: &Option<Expression>,
-        graph_matcher: &[Option<ArcTerm>],
+        graph_matcher: Arc<[Option<ArcTerm>]>,
     ) -> Self {
         let state = Arc::clone(state);
         let right = right.clone();
         let expression = expression
             .as_ref()
             .map(|e| ArcExpression::from_expr(e, &mut state.stash_mut()));
-        let graph_matcher = graph_matcher.iter().map(Clone::clone).collect::<Vec<_>>();
         let iter_state = IterState::B2DidntMatch;
 
         Self {
