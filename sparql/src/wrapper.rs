@@ -12,6 +12,8 @@ use thiserror::Error;
 use crate::exec::{ConstructIter, DescribeIter};
 use crate::{binding::Bindings, exec::ExecState, term::ResultTerm};
 
+mod _graph_to_query;
+
 #[derive(Debug)]
 /// Wrap any Sophia [`Dataset`] into a [`SparqlDataset`],
 /// which can therefore be queried with SPARQL.
