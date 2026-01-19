@@ -9,7 +9,7 @@ use sophia_api::sparql::{IntoQuery, SparqlResult};
 use spargebra::{Query as QueryAST, SparqlParser};
 use thiserror::Error;
 
-use crate::exec::ConstructIter;
+use crate::exec::{ConstructIter, DescribeIter};
 use crate::{binding::Bindings, exec::ExecState, term::ResultTerm};
 
 #[derive(Debug)]
@@ -22,7 +22,7 @@ impl<'a, D: Dataset + ?Sized> SparqlDataset for SparqlWrapper<'a, D> {
 
     type BindingsResult = Bindings<'a, D>;
 
-    type TriplesResult = ConstructIter<'a, D>;
+    type TriplesResult = TripleIter<'a, D>;
 
     type SparqlError = SparqlWrapperError<D::Error>;
 
@@ -34,7 +34,6 @@ impl<'a, D: Dataset + ?Sized> SparqlDataset for SparqlWrapper<'a, D> {
     {
         let query = query.into_query()?;
         log::trace!("{:#?}", query.borrow().algebra);
-        #[expect(unused_variables)]
         match &(query.borrow().algebra) {
             QueryAST::Select {
                 dataset,
@@ -55,17 +54,20 @@ impl<'a, D: Dataset + ?Sized> SparqlDataset for SparqlWrapper<'a, D> {
                 base_iri,
             } => {
                 let exec = ExecState::new(self.0, dataset, base_iri)?;
-                Ok(SparqlResult::Triples(exec.construct(
-                    template,
-                    pattern,
-                    &exec.config().default_matcher,
+                Ok(SparqlResult::Triples(TripleIter::Construct(
+                    exec.construct(template, pattern, &exec.config().default_matcher),
                 )))
             }
             QueryAST::Describe {
                 dataset,
                 pattern,
                 base_iri,
-            } => Err(SparqlWrapperError::NotImplemented("DESCRIBE query")),
+            } => {
+                let exec = ExecState::new(self.0, dataset, base_iri)?;
+                Ok(SparqlResult::Triples(TripleIter::Describe(
+                    exec.describe(pattern, &exec.config().default_matcher),
+                )))
+            }
             QueryAST::Ask {
                 dataset,
                 pattern,
@@ -127,5 +129,21 @@ impl<D: Dataset + ?Sized> sophia_api::sparql::Query for SparqlQuery<D> {
     fn parse_with(query_source: &str, base: Iri<&str>) -> Result<Self, Self::Error> {
         let p = SparqlParser::new().with_base_iri(base.as_str()).unwrap();
         Ok(SparqlQuery::from(p.parse_query(query_source)?))
+    }
+}
+
+pub enum TripleIter<'a, D: Dataset + ?Sized> {
+    Construct(ConstructIter<'a, D>),
+    Describe(DescribeIter<'a, D>),
+}
+
+impl<'a, D: Dataset + ?Sized> Iterator for TripleIter<'a, D> {
+    type Item = Result<[ResultTerm; 3], SparqlWrapperError<D::Error>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            TripleIter::Construct(construct_iter) => construct_iter.next(),
+            TripleIter::Describe(describe_iter) => describe_iter.next(),
+        }
     }
 }

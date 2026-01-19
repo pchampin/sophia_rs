@@ -42,7 +42,9 @@ use crate::matcher::SparqlMatcher;
 use crate::stash::ArcStrStashExt;
 
 mod construct_iter;
-pub use construct_iter::ConstructIter;
+pub(crate) use construct_iter::ConstructIter;
+mod describe_iter;
+pub(crate) use describe_iter::DescribeIter;
 mod join_iter;
 mod left_join_iter;
 mod path_or_more;
@@ -195,6 +197,15 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         };
         let bindings = self.select(pattern, graph_matcher, None);
         ConstructIter::new(template, bindings)
+    }
+
+    pub fn describe(
+        self: &Arc<Self>,
+        pattern: &GraphPattern,
+        graph_matcher: &Arc<[Option<ArcTerm>]>,
+    ) -> DescribeIter<'a, D> {
+        let bindings = self.select(pattern, graph_matcher, None);
+        DescribeIter::new(self.clone(), bindings)
     }
 
     pub fn ask(

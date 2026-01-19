@@ -1,5 +1,5 @@
 use crate::*;
-use sophia_api::{prelude::*, sparql::Query};
+use sophia_api::{prelude::*, serializer::Stringifier, sparql::Query};
 use sophia_inmem::{dataset::LightDataset, graph::LightGraph};
 use test_case::test_case;
 
@@ -1866,6 +1866,113 @@ fn test_construct(query: &str, exp: &str) -> TestResult {
         .query(&parsed_query)?
         .into_triples()
         .collect_triples()?;
+    assert!(sophia_isomorphism::isomorphic_graphs(&got, &exp)?);
+    Ok(())
+}
+
+#[test_case(
+    ":a :b :c. :c :d :e, :e2. :e :f :g. :g :h :a.",
+    "DESCRIBE :z",
+    "";
+    "empty"
+)]
+#[test_case(
+    ":a :b :c. :c :d :e, :e2. :e :f :g. :g :h :a.",
+    "DESCRIBE :c",
+    ":a :b :c. :c :d :e, :e2.";
+    "simple"
+)]
+#[test_case(
+    ":a :b _:c. _:c :d :e. :e :f _:g. _:g :h :i. :i :j :a.",
+    "DESCRIBE :e",
+    ":a :b _:c. _:c :d :e. :e :f _:g. _:g :h :i.";
+    "bnodes"
+)]
+#[test_case(
+    ":a :b _:c. _:c :d _:e. _:e :f :g. :g :h _:i. _:i :j _:k. _:k :l :m. :m :n :a.",
+    "DESCRIBE :g",
+    ":a :b _:c. _:c :d _:e. _:e :f :g. :g :h _:i. _:i :j _:k. _:k :l :m.";
+    "bnodes deep"
+)]
+#[test_case(
+    ":a :b (:c :d _:e).   _:e :f :g.   :d :h (:i :j).   :j :k :l.",
+    "DESCRIBE :d",
+    ":a :b (:c :d _:e).   _:e :f :g.   :d :h (:i :j).";
+    "lists"
+)]
+#[test_case(
+    ":a :b :c {| :d :e {| :f :g |} |}.    :c :h :i {| :j :k {| :l :m |} |}.   :i :n :a.",
+    "DESCRIBE :c",
+    ":a :b :c {| :d :e {| :f :g |} |}.    :c :h :i {| :j :k {| :l :m |} |}.";
+    "triple annotation"
+)]
+#[test_case(
+    ":a :b :c ~ :r1 {| :d :e ~ :r2 {| :f :g |} |}.    :c :h :i ~ :r3 {| :j :k ~ :r4 {| :l :m |} |}.   :i :n :a.",
+    "DESCRIBE :c",
+    ":a :b :c ~ :r1 .    :c :h :i ~ :r3 .";
+    "triple annotation with named reifier"
+)]
+#[test_case(
+    ":a :b :c.   :c :d :e.   :f :g <<(:c :h :i)>>.",
+    "DESCRIBE :c",
+    ":a :b :c.   :c :d :e.";
+    "unasserted triple terms not included"
+)]
+#[test_case(
+    ":a :b <<(_:c :d :e)>>. _:c :f :g. :g :h :i.",
+    "DESCRIBE :a",
+    ":a :b <<(_:c :d :e)>>. _:c :f :g.";
+    "follow bnodes in triple terms"
+)]
+#[test_case(
+    ":a :b _:c. _:c :d _:e. _:e :f :g. :g :h :a.",
+    "DESCRIBE ?o { ?s :b ?o }",
+    ":a :b _:c. _:c :d _:e. _:e :f :g.";
+    "selected bnode"
+)]
+#[test_case(
+    ":a :p _:b. _:b :c :d.   :e :p _:f. :g :h _:f.   :i :j :k.",
+    "DESCRIBE ?s { ?s :p ?o }",
+    ":a :p _:b. _:b :c :d.   :e :p _:f. :g :h _:f.";
+    "multiple bindings"
+)]
+#[test_case(
+    ":a :b :c. :c :d :e. :e :f :g. :g :h :i. :i :j :k. :k :d :l. :l :m :n.",
+    "DESCRIBE ?s ?o { ?s :d ?o }",
+    ":a :b :c. :c :d :e. :e :f :g.           :i :j :k. :k :d :l. :l :m :n.";
+    "multiple variables"
+)]
+#[test_case(
+    ":a :b :c. GRAPH :g1 { :a :d :e }",
+    "DESCRIBE :a",
+    ":a :b :c.";
+    "default graph only"
+)]
+#[test_case(
+    ":a :b :c. GRAPH :g1 { :a :d :e } GRAPH :g2 { :a :f :g } GRAPH :g3 { :a :h :i }",
+    "DESCRIBE :a FROM :g1 FROM :g3",
+    ":a :d :e; :h :i.";
+    "selected named graphs"
+)]
+fn test_describe(dataset: &str, query: &str, exp: &str) -> TestResult {
+    static PROLOGUE: &str = "BASE <https://example.org/test> PREFIX : <x:>\n";
+    let dataset: LightDataset =
+        sophia_turtle::parser::trig::parse_str(&format!("{PROLOGUE}{dataset}")).collect_quads()?;
+    let dataset = SparqlWrapper(&dataset);
+    let query = format!("{PROLOGUE}{query}");
+    let parsed_query = SparqlQuery::parse(&query)?;
+    let exp: LightGraph =
+        sophia_turtle::parser::turtle::parse_str(&format!("{PROLOGUE}{exp}")).collect_triples()?;
+    let got: LightGraph = dataset
+        .query(&parsed_query)?
+        .into_triples()
+        .collect_triples()?;
+    println!(
+        "{}",
+        sophia_turtle::serializer::nt::NTriplesSerializer::new_stringifier()
+            .serialize_graph(&got)?
+            .as_str()
+    );
     assert!(sophia_isomorphism::isomorphic_graphs(&got, &exp)?);
     Ok(())
 }
