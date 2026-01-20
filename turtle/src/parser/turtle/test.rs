@@ -7,6 +7,7 @@ use crate::{
 
 use super::*;
 use sophia_api::{
+    ns::{NsTerm, rdf},
     parser::TripleParser,
     source::{StreamError::SourceError, TripleSource},
     term::{BaseDirection, SimpleTerm, Term},
@@ -482,6 +483,58 @@ fn rdf_literal_simple(input: &str, exp_lex: &str) -> TestResult {
         assert_eq!(got_dt, "#string");
     }
     Ok(())
+}
+
+#[test_case("[] a true .", rdf::type_; "space")]
+#[test_case("[] a true\n.", rdf::type_; "new line")]
+#[test_case("[] a true\r.", rdf::type_; "vertical tab")]
+#[test_case("[] a true\t.", rdf::type_; "tab")]
+#[test_case("[] a true# comment\n.", rdf::type_; "comment")]
+#[test_case("[] a true~ <x:r>.", rdf::type_; "reifier")]
+#[test_case("[] a true, 42.", rdf::type_; "comma")]
+#[test_case("[] a true; <x:p> 42.", rdf::type_; "semicolon")]
+#[test_case("[] a true.", rdf::type_; "period")]
+#[test_case("[] a true{| a 42 |}.", rdf::type_; "annotation")]
+#[test_case("[  a true].", rdf::type_; "closing square bracket")]
+#[test_case("[] a (true[]).", rdf::first; "square bracket")]
+#[test_case("[] a (true()).", rdf::first; "list")]
+#[test_case("[] a (true).", rdf::first; "closing list")]
+#[test_case("[] <x:p> 42 {| a true|}.", rdf::type_; "closing annotation")]
+fn rdf_literal_boolean(input: &str, pred: NsTerm) -> TestResult {
+    let p = TurtleParser::new();
+    let g: Vec<[SimpleTerm; 3]> = p.parse_str(input).collect_triples()?;
+    for t in g {
+        if pred == t[1] {
+            assert!(Term::eq(&t[2], true));
+            return Ok(());
+        }
+    }
+    panic!("boolean not found in parsed triples");
+}
+
+#[test_case("<<[] a true >>."; "RT space")]
+#[test_case("<<[] a true\n>>."; "RT new line")]
+#[test_case("<<[] a true\r>>."; "RT vertical tab")]
+#[test_case("<<[] a true\t>>."; "RT tab")]
+#[test_case("<<[] a true# comment\n>>."; "RT comment")]
+#[test_case("<<[] a true~ <x:r>>>."; "RT reifier")]
+#[test_case("<<[] a true>>."; "RT closing")]
+#[test_case("<x:s> <x:p> <<([] a true )>>."; "TT space")]
+#[test_case("<x:s> <x:p> <<([] a true\n)>>."; "TT new line")]
+#[test_case("<x:s> <x:p> <<([] a true\r)>>."; "TT vertical tab")]
+#[test_case("<x:s> <x:p> <<([] a true\t)>>."; "TT tab")]
+#[test_case("<x:s> <x:p> <<([] a true# comment\n)>>."; "TT comment")]
+#[test_case("<x:s> <x:p> <<([] a true)>>."; "TT closing")]
+fn rdf_literal_boolean_in_triple_term(input: &str) -> TestResult {
+    let p = TurtleParser::new();
+    let g: Vec<[SimpleTerm; 3]> = p.parse_str(input).collect_triples()?;
+    for t in g {
+        if let Some(tt) = t[2].triple() {
+            assert!(Term::eq(&tt[2], true));
+            return Ok(());
+        }
+    }
+    panic!("boolean not found in parsed triples");
 }
 
 #[test_case(r#"[] a "hello" ^^ <ex:dt>"#, "hello", "ex:dt")]

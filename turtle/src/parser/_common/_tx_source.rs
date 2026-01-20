@@ -732,7 +732,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
                 self.enter_rdf_literal(txt)
             }
             _ => {
-                lazy_regex!(BOOL = r"^(?:true|false)[ \n\r\t#~{,;.]");
+                lazy_regex!(BOOL = r"^(?:true|false)[ \n\r\t#~,;.{\[()\]|]");
                 match BOOL.find(txt).iter().next() {
                     Some(cap) => self
                         .boolean_literal(cap.as_str())
@@ -1098,7 +1098,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
             b'0'..=b'9' | b'-' | b'+' | b'.' => self.numeric_literal(txt),
             b'"' | b'\'' => self.enter_rdf_literal(txt),
             _ => {
-                lazy_regex!(BOOL = r"^(?:true|false)[ \n\r\t#~{,;.]");
+                lazy_regex!(BOOL = r"^(?:true|false)[ \n\r\t#~>]");
                 match BOOL.find(txt).iter().next() {
                     Some(cap) => self.boolean_literal(cap.as_str()),
                     None => self.prefixed_name(txt),
@@ -1291,7 +1291,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
             b'0'..=b'9' | b'-' | b'+' | b'.' => self.numeric_literal(txt),
             b'"' | b'\'' => self.enter_rdf_literal(txt),
             _ => {
-                lazy_regex!(BOOL = r"^(?:true|false)[ \n\r\t#~{,;.]");
+                lazy_regex!(BOOL = r"^(?:true|false)[ \n\r\t#)]");
                 match BOOL.find(txt).iter().next() {
                     Some(cap) => self.boolean_literal(cap.as_str()),
                     None => self.prefixed_name(txt),
