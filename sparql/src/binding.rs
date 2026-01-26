@@ -155,48 +155,28 @@ pub fn populate_variables(
     variable_set.into_iter().collect()
 }
 
-pub(crate) fn populate_bindings<T: Term>(
-    pattern: &TriplePattern,
-    result: &[T; 3],
+pub(crate) fn populate_binding_unchecked<'a, T: Term, P: Into<AnyPattern<'a>>>(
+    pattern: P,
+    result: T,
     b: &mut Binding,
     stash: &mut MutexGuard<ArcStrStash>,
-) -> bool {
-    populate_bindings_term(AnyPattern::Term(&pattern.subject), &result[0], b, stash)
-        && populate_bindings_term(AnyPattern::Named(&pattern.predicate), &result[1], b, stash)
-        && populate_bindings_term(AnyPattern::Term(&pattern.object), &result[2], b, stash)
-}
-
-fn populate_bindings_term<T: Term>(
-    pattern: AnyPattern,
-    result: &T,
-    b: &mut Binding,
-    stash: &mut MutexGuard<ArcStrStash>,
-) -> bool {
+) {
+    let pattern = pattern.into();
     let st = pattern.as_simple();
     match st {
         SimpleTerm::BlankNode(bnid) => {
-            if let Some(already_bound) = b.b.get(bnid.as_str()) {
-                if !Term::eq(already_bound, result.borrow_term()) {
-                    return false;
-                }
-            } else {
-                b.b.insert(
-                    stash.copy_str(bnid),
-                    stash.copy_result_term(result.borrow_term()),
-                );
-            }
+            debug_assert!(!b.b.contains_key(bnid.as_str()));
+            b.b.insert(
+                stash.copy_str(bnid),
+                stash.copy_result_term(result.borrow_term()),
+            );
         }
         SimpleTerm::Variable(var) => {
-            if let Some(already_bound) = b.v.get(var.as_str()) {
-                if !Term::eq(already_bound, result.borrow_term()) {
-                    return false;
-                }
-            } else {
-                b.v.insert(
-                    stash.copy_str(var),
-                    stash.copy_result_term(result.borrow_term()),
-                );
-            }
+            debug_assert!(!b.v.contains_key(var.as_str()));
+            b.v.insert(
+                stash.copy_str(var),
+                stash.copy_result_term(result.borrow_term()),
+            );
         }
         SimpleTerm::Triple(_) => {
             let AnyPattern::Term(TermPattern::Triple(triple_pattern)) = pattern else {
@@ -204,16 +184,17 @@ fn populate_bindings_term<T: Term>(
             };
             debug_assert!(result.is_triple());
             let result = result.triple().unwrap();
-            return populate_bindings(triple_pattern, &result, b, stash);
+            populate_binding_unchecked(&triple_pattern.subject, result.s(), b, stash);
+            populate_binding_unchecked(&triple_pattern.predicate, result.p(), b, stash);
+            populate_binding_unchecked(&triple_pattern.object, result.o(), b, stash);
         }
         _ => {
             debug_assert!(Term::eq(&pattern, result.borrow_term()));
         }
     }
-    true
 }
 
-pub(crate) fn populate_bindings_arcterm(
+pub(crate) fn populate_binding_arcterm(
     pattern: AnyPattern,
     t: ArcTerm,
     b: &mut Binding,
@@ -245,9 +226,9 @@ pub(crate) fn populate_bindings_arcterm(
             };
             debug_assert!(t.is_triple());
             let [s, p, o] = t.to_triple().unwrap();
-            return populate_bindings_arcterm((&triple_pattern.subject).into(), s, b, stash)
-                && populate_bindings_arcterm((&triple_pattern.predicate).into(), p, b, stash)
-                && populate_bindings_arcterm((&triple_pattern.object).into(), o, b, stash);
+            return populate_binding_arcterm((&triple_pattern.subject).into(), s, b, stash)
+                && populate_binding_arcterm((&triple_pattern.predicate).into(), p, b, stash)
+                && populate_binding_arcterm((&triple_pattern.object).into(), o, b, stash);
         }
         _ => {
             debug_assert!(Term::eq(&pattern, &t));

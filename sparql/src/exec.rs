@@ -35,7 +35,7 @@ use crate::SparqlWrapperError;
 use crate::bgp;
 use crate::binding::BindingsIter;
 use crate::binding::collect_variables;
-use crate::binding::populate_bindings_arcterm;
+use crate::binding::populate_binding_arcterm;
 use crate::binding::{Binding, Bindings, populate_variables};
 use crate::expression::ArcExpression;
 use crate::matcher::SparqlMatcher;
@@ -256,31 +256,37 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         let object2 = object.clone();
 
         let mut variables = HashSet::new();
-        collect_variables(subject, &mut variables, &mut self.stash_mut());
-        collect_variables(object, &mut variables, &mut self.stash_mut());
+        let mut stash = self.stash_mut();
+        collect_variables(subject, &mut variables, &mut stash);
+        collect_variables(object, &mut variables, &mut stash);
+        drop(stash);
         let variables: Vec<_> = variables.into_iter().collect();
 
         let context = context.unwrap_or(&EMPTY);
-        let smatcher = SparqlMatcher::build(subject.into(), context, &mut self.stash_mut());
-        let omatcher = SparqlMatcher::build(object.into(), context, &mut self.stash_mut());
+        let mut stash = self.stash_mut();
+        let smatcher = SparqlMatcher::build_with(subject, context, &mut stash);
+        let omatcher = SparqlMatcher::build_with(object, context, &mut stash);
+        drop(stash);
 
         let iter = Box::new(
             self.path_rec(smatcher, path, omatcher, graph_matcher)
                 .filter_map(move |res| {
                     res.map(|[s, o]| {
-                        let mut b = Binding::default();
-                        let compatible = populate_bindings_arcterm(
+                        let mut binding = Binding::default();
+                        let mut stash = state.stash_mut();
+                        let compatible = populate_binding_arcterm(
                             (&subject2).into(),
                             s,
-                            &mut b,
-                            &mut state.stash_mut(),
-                        ) && populate_bindings_arcterm(
+                            &mut binding,
+                            &mut stash,
+                        ) && populate_binding_arcterm(
                             (&object2).into(),
                             o,
-                            &mut b,
-                            &mut state.stash_mut(),
+                            &mut binding,
+                            &mut stash,
                         );
-                        compatible.then_some(b)
+                        drop(stash);
+                        compatible.then_some(binding)
                     })
                     .map_err(SparqlWrapperError::Dataset)
                     .transpose()

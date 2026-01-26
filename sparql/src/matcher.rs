@@ -31,12 +31,29 @@ pub enum SparqlMatcher {
 }
 
 impl SparqlMatcher {
-    pub fn build(
-        pattern: AnyPattern,
+    pub fn build(pattern: AnyPattern, stash: &mut MutexGuard<'_, ArcStrStash>) -> Self {
+        use SparqlMatcher::*;
+        match pattern.as_simple() {
+            SimpleTerm::BlankNode(_) | SimpleTerm::Variable(_) => Free,
+            SimpleTerm::Triple(_) => {
+                // the following is safe because we know we have a triple
+                let tr = unsafe { pattern.to_triple().unwrap_unchecked() };
+                match tr.map(move |t| SparqlMatcher::build(t, stash)) {
+                    [Bound(s), Bound(p), Bound(o)] => Bound([s, p, o].into()),
+                    spo => Triple(Box::new(spo)),
+                }
+            }
+            _ => Bound(stash.copy_result_term(pattern)),
+        }
+    }
+
+    pub fn build_with<'a, T: Into<AnyPattern<'a>>>(
+        pattern: T,
         bindings: &Binding,
         stash: &mut MutexGuard<'_, ArcStrStash>,
     ) -> Self {
         use SparqlMatcher::*;
+        let pattern = pattern.into();
         match pattern.as_simple() {
             SimpleTerm::BlankNode(bnid) => {
                 if let Some(b) = bindings.b.get(bnid.as_str()) {
@@ -48,7 +65,7 @@ impl SparqlMatcher {
             SimpleTerm::Triple(_) => {
                 // the following is safe because we know we have a triple
                 let tr = unsafe { pattern.to_triple().unwrap_unchecked() };
-                match tr.map(move |t| SparqlMatcher::build(t, bindings, stash)) {
+                match tr.map(move |t| SparqlMatcher::build_with(t, bindings, stash)) {
                     [Bound(s), Bound(p), Bound(o)] => Bound([s, p, o].into()),
                     spo => Triple(Box::new(spo)),
                 }
@@ -68,17 +85,20 @@ impl SparqlMatcher {
         matches!(self, SparqlMatcher::Bound(_))
     }
 
-    pub fn build3(
-        pattern: &TriplePattern,
-        bindings: &Binding,
-        stash: &mut MutexGuard<'_, ArcStrStash>,
-    ) -> [Self; 3] {
+    pub fn build3(pattern: &TriplePattern, stash: &mut MutexGuard<'_, ArcStrStash>) -> [Self; 3] {
         [
             AnyPattern::from(&pattern.subject),
             AnyPattern::from(&pattern.predicate),
             AnyPattern::from(&pattern.object),
         ]
-        .map(|p| Self::build(p, bindings, stash))
+        .map(|p| Self::build(p, stash))
+    }
+
+    pub fn bound_or_else<F>(&self, f: F) -> Self
+    where
+        F: FnOnce() -> Self,
+    {
+        if self.is_bound() { self.clone() } else { f() }
     }
 }
 

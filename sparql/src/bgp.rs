@@ -1,22 +1,21 @@
 use std::sync::Arc;
 
+use sophia_api::dataset::DResult;
 use sophia_api::prelude::*;
 use sophia_term::ArcTerm;
 use spargebra::term::TriplePattern;
 
 use crate::SparqlWrapperError;
-use crate::binding::{Binding, populate_bindings};
+use crate::binding::{Binding, populate_binding_unchecked};
 use crate::exec::ExecState;
 use crate::matcher::SparqlMatcher;
 
 pub fn make_iterator<'a, D: Dataset + ?Sized>(
     state: Arc<ExecState<'a, D>>,
     patterns: &[TriplePattern],
-    graph_matcher: &[Option<ArcTerm>],
+    graph_matcher: &Arc<[Option<ArcTerm>]>,
     context: Option<&Binding>,
-) -> impl Iterator<Item = Result<Binding, SparqlWrapperError<D::Error>>> + use<'a, D> {
-    // TODO later
-    // implement this as a pure iterator, rather than buffering in a Vec
+) -> BgpIterator<'a, D> {
     // TODO one day:
     // test the following "greedy" optimization :
     // 1. first search all ground triple patterns (no var/bnode)
@@ -32,51 +31,180 @@ pub fn make_iterator<'a, D: Dataset + ?Sized>(
     // NB: this can be achieved by simply sorting `patterns`
     // in the corresponding order (by simply looking at the vars/bnodes in the patterns),
     // then simply calling self.bgp_rec as below
-    let mut bindings = vec![];
-    let b = context.cloned().unwrap_or_default();
-    if let Err(e) = bgp_rec(&state, patterns, &mut bindings, b, graph_matcher) {
-        bindings.push(Err(e));
+    let mut ret = BgpIterator::new(state, patterns, graph_matcher);
+    match ret.reseed(Some(context.cloned().unwrap_or_default())) {
+        Ok(()) => ret,
+        Err(err) => BgpIterator::Empty {
+            result: Some(Err(SparqlWrapperError::Dataset(err))),
+        },
     }
-    bindings.into_iter()
 }
 
-fn bgp_rec<D: Dataset + ?Sized>(
-    state: &Arc<ExecState<D>>,
-    patterns: &[TriplePattern],
-    bs: &mut Vec<Result<Binding, SparqlWrapperError<D::Error>>>,
-    mut b: Binding,
-    graph_matcher: &[Option<ArcTerm>],
-) -> Result<(), SparqlWrapperError<D::Error>> {
-    let [first, remaining @ ..] = &patterns else {
-        // empty BGP, always succeeds
-        bs.push(Ok(b));
-        return Ok(());
-    };
-    let [sm, pm, om] = SparqlMatcher::build3(first, &b, &mut state.stash_mut());
-    let all_bound = sm.is_bound() && pm.is_bound() && om.is_bound();
-    let matches: Vec<_> = state
-        .config()
-        .dataset
-        .quads_matching(sm, pm, om, graph_matcher)
-        .map(|res| res.map(Quad::into_triple))
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(SparqlWrapperError::Dataset)?;
-    let [first_matches @ .., last_match] = &matches[..] else {
-        // no matches for this triple pattern, abort BGP matching
-        return Ok(());
-    };
-    if all_bound {
-        // triple-pattern has no unbound variable, continue with current bindings
-        return bgp_rec(state, remaining, bs, b, graph_matcher);
-    }
-    for m in first_matches {
-        let mut b = b.clone();
-        if populate_bindings(first, m, &mut b, &mut state.stash_mut()) {
-            bgp_rec(state, remaining, bs, b, graph_matcher)?;
+#[expect(clippy::large_enum_variant)]
+pub enum BgpIterator<'a, D: Dataset + ?Sized> {
+    Empty {
+        result: Option<Result<Binding, SparqlWrapperError<D::Error>>>,
+    },
+    Triple {
+        state: Arc<ExecState<'a, D>>,
+        graph_matcher: Arc<[Option<ArcTerm>]>,
+        pattern: TriplePattern,
+        matchers: [SparqlMatcher; 3],
+        seed: Option<Binding>,
+        is_bound: [bool; 3],
+        quads: Box<dyn Iterator<Item = DResult<D, <D as Dataset>::Quad<'a>>> + 'a>,
+        bindings: Box<BgpIterator<'a, D>>,
+    },
+}
+
+impl<'a, D: Dataset + ?Sized> BgpIterator<'a, D> {
+    pub fn new(
+        state: Arc<ExecState<'a, D>>,
+        patterns: &[TriplePattern],
+        graph_matcher: &Arc<[Option<ArcTerm>]>,
+    ) -> Self {
+        let seed = None;
+        if let [first, remaining @ ..] = patterns {
+            let graph_matcher = graph_matcher.clone();
+            let pattern = first.clone();
+            let matchers = SparqlMatcher::build3(&pattern, &mut state.stash_mut());
+            let is_bound = [false; 3];
+            let quads = Box::new(std::iter::empty());
+            let bindings = Box::new(BgpIterator::new(state.clone(), remaining, &graph_matcher));
+            Self::Triple {
+                state,
+                graph_matcher,
+                pattern,
+                matchers,
+                seed,
+                is_bound,
+                quads,
+                bindings,
+            }
+        } else {
+            Self::Empty {
+                result: seed.map(Ok),
+            }
         }
     }
-    if populate_bindings(first, last_match, &mut b, &mut state.stash_mut()) {
-        bgp_rec(state, remaining, bs, b, graph_matcher)?;
+
+    pub fn reseed(&mut self, new_seed: Option<Binding>) -> DResult<D, ()> {
+        match self {
+            Self::Empty { result } => {
+                *result = new_seed.map(Ok);
+            }
+            Self::Triple {
+                state,
+                graph_matcher,
+                pattern,
+                matchers,
+                seed,
+                is_bound,
+                quads,
+                bindings,
+            } => {
+                *seed = new_seed;
+                if let Some(context) = &seed {
+                    let mut stash = state.stash_mut();
+                    let sm = matchers[0].bound_or_else(|| {
+                        SparqlMatcher::build_with(&pattern.subject, context, &mut stash)
+                    });
+                    let pm = matchers[1].bound_or_else(|| {
+                        SparqlMatcher::build_with(&pattern.predicate, context, &mut stash)
+                    });
+                    let om = matchers[2].bound_or_else(|| {
+                        SparqlMatcher::build_with(&pattern.object, context, &mut stash)
+                    });
+                    drop(stash);
+                    *is_bound = [sm.is_bound(), pm.is_bound(), om.is_bound()];
+                    *quads = Box::new(state.config().dataset.quads_matching(
+                        sm,
+                        pm,
+                        om,
+                        graph_matcher.to_vec(),
+                    ));
+                    Self::handle_new_quad(quads.next(), seed, *is_bound, pattern, bindings, state)?;
+                }
+            }
+        }
+        Ok(())
     }
-    Ok(())
+
+    fn handle_new_quad(
+        opt: Option<DResult<D, D::Quad<'_>>>,
+        seed: &mut Option<Binding>,
+        [sb, pb, ob]: [bool; 3],
+        pattern: &TriplePattern,
+        bindings: &mut Box<BgpIterator<'a, D>>,
+        state: &mut Arc<ExecState<'a, D>>,
+    ) -> DResult<D, ()> {
+        debug_assert!(seed.is_some());
+        let Some(context) = seed else { unreachable!() };
+        match opt {
+            Some(Ok(quad)) => {
+                let mut b = context.clone();
+                let mut stash = state.stash_mut();
+                if !sb {
+                    populate_binding_unchecked(&pattern.subject, quad.s(), &mut b, &mut stash);
+                }
+                if !pb {
+                    populate_binding_unchecked(&pattern.predicate, quad.p(), &mut b, &mut stash);
+                }
+                if !ob {
+                    populate_binding_unchecked(&pattern.object, quad.o(), &mut b, &mut stash);
+                }
+                drop(stash);
+                bindings.reseed(Some(b))?;
+            }
+            Some(Err(err)) => {
+                *seed = None;
+                return Err(err);
+            }
+            None => {
+                *seed = None;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl<'a, D: Dataset + ?Sized> Iterator for BgpIterator<'a, D> {
+    type Item = Result<Binding, SparqlWrapperError<D::Error>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            Self::Empty { result } => result.take(),
+            Self::Triple {
+                state,
+                pattern,
+                seed,
+                is_bound,
+                quads,
+                bindings,
+                ..
+            } => {
+                if seed.is_some() {
+                    let opt = bindings.next();
+                    if opt.is_some() {
+                        opt
+                    } else {
+                        let res = Self::handle_new_quad(
+                            quads.next(),
+                            seed,
+                            *is_bound,
+                            pattern,
+                            bindings,
+                            state,
+                        );
+                        match res {
+                            Ok(()) => self.next(),
+                            Err(err) => Some(Err(SparqlWrapperError::Dataset(err))),
+                        }
+                    }
+                } else {
+                    None
+                }
+            }
+        }
+    }
 }
