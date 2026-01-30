@@ -87,7 +87,7 @@ pub fn call_function<D: Dataset + ?Sized>(
             if let Some(iri) = arg.as_iri("") {
                 Some(iri.clone().into())
             } else if let Some(st) = arg.as_xsd_string("Iri") {
-                let res = if let Some(base_iri) = &state.config().base_iri {
+                let res = if let Some(base_iri) = state.base_iri() {
                     base_iri
                         .resolve(st.as_ref())
                         .map(|iri| iri.map_unchecked(Arc::from).to_iri_ref())
@@ -295,7 +295,7 @@ pub fn call_function<D: Dataset + ?Sized>(
         Now => {
             debug_assert!(arguments.is_empty());
             Some(EvalResult::from(SparqlValue::DateTime(Some(
-                XsdDateTime::Timezoned(state.config().now),
+                XsdDateTime::Timezoned(state.now()),
             ))))
         }
         Uuid => {

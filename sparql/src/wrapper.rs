@@ -43,7 +43,7 @@ impl<'a, D: Dataset + ?Sized> SparqlDataset for SparqlWrapper<'a, D> {
                 let exec = ExecState::new(self.0, dataset, base_iri)?;
                 Ok(SparqlResult::Bindings(exec.select(
                     pattern,
-                    &exec.config().default_matcher,
+                    exec.default_matcher(),
                     None,
                 )))
             }
@@ -55,7 +55,7 @@ impl<'a, D: Dataset + ?Sized> SparqlDataset for SparqlWrapper<'a, D> {
             } => {
                 let exec = ExecState::new(self.0, dataset, base_iri)?;
                 Ok(SparqlResult::Triples(TripleIter::Construct(
-                    exec.construct(template, pattern, &exec.config().default_matcher),
+                    exec.construct(template, pattern, exec.default_matcher()),
                 )))
             }
             QueryAST::Describe {
@@ -65,7 +65,7 @@ impl<'a, D: Dataset + ?Sized> SparqlDataset for SparqlWrapper<'a, D> {
             } => {
                 let exec = ExecState::new(self.0, dataset, base_iri)?;
                 Ok(SparqlResult::Triples(TripleIter::Describe(
-                    exec.describe(pattern, &exec.config().default_matcher),
+                    exec.describe(pattern, exec.default_matcher()),
                 )))
             }
             QueryAST::Ask {
@@ -74,7 +74,7 @@ impl<'a, D: Dataset + ?Sized> SparqlDataset for SparqlWrapper<'a, D> {
                 base_iri,
             } => {
                 let exec = ExecState::new(self.0, dataset, base_iri)?;
-                exec.ask(pattern, &exec.config().default_matcher)
+                exec.ask(pattern, exec.default_matcher())
                     .map(SparqlResult::Boolean)
             }
         }

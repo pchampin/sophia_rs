@@ -1,10 +1,10 @@
 use std::collections::{HashSet, VecDeque};
-use std::sync::{Arc, MutexGuard};
+use std::sync::Arc;
 
 use sophia_api::dataset::{DResult, Dataset};
 use sophia_api::prelude::Any;
 use sophia_api::quad::Quad;
-use sophia_term::{ArcStrStash, ArcTerm};
+use sophia_term::ArcTerm;
 
 use crate::exec::ExecState;
 use crate::{Bindings, ResultTerm, SparqlWrapperError};
@@ -37,18 +37,6 @@ where
         }
     }
 
-    fn dataset(&self) -> &'a D {
-        self.state.config().dataset
-    }
-
-    fn graph_matcher(&self) -> &Arc<[Option<ArcTerm>]> {
-        &self.state.config().default_matcher
-    }
-
-    fn stash_mut(&mut self) -> MutexGuard<'_, ArcStrStash> {
-        self.state.stash_mut()
-    }
-
     fn consider_candidates(&mut self, term: &ArcTerm) {
         match term {
             ArcTerm::BlankNode(_) => {
@@ -68,7 +56,7 @@ where
                 .map_err(SparqlWrapperError::Dataset)?
                 .to_spog()
                 .0
-                .map(|t| self.stash_mut().copy_term(t));
+                .map(|t| self.state.stash_mut().copy_term(t));
             if self.out {
                 self.consider_candidates(&t[2]);
             } else {
@@ -83,21 +71,21 @@ where
             self.out = false;
             debug_assert!(!self.candidates.is_empty());
             let candidate = self.candidates.pop_front().unwrap();
-            self.iter = Box::new(self.dataset().quads_matching(
+            self.iter = Box::new(self.state.dataset().quads_matching(
                 Any,
                 Any,
                 [candidate],
-                self.graph_matcher().to_vec(),
+                self.state.default_matcher().to_vec(),
             ));
             self.next_triple()
         } else if !self.candidates.is_empty() {
             self.out = true;
             let candidate = self.candidates.front().unwrap().clone();
-            self.iter = Box::new(self.dataset().quads_matching(
+            self.iter = Box::new(self.state.dataset().quads_matching(
                 [candidate],
                 Any,
                 Any,
-                self.graph_matcher().to_vec(),
+                self.state.default_matcher().to_vec(),
             ));
             self.next_triple()
         } else if let Some(res) = self.bindings.iter.next() {

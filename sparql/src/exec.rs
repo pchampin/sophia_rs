@@ -51,16 +51,11 @@ mod path_or_more;
 
 #[derive(Debug)]
 pub struct ExecState<'a, D: ?Sized> {
+    dataset: &'a D,
+    default_matcher: Arc<[Option<ArcTerm>]>,
+    base_iri: Option<BaseIri<String>>,
+    now: chrono::DateTime<chrono::FixedOffset>,
     stash: Mutex<ArcStrStash>,
-    config: ExecConfig<'a, D>,
-}
-
-#[derive(Clone, Debug)]
-pub struct ExecConfig<'a, D: ?Sized> {
-    pub dataset: &'a D,
-    pub default_matcher: Arc<[Option<ArcTerm>]>,
-    pub base_iri: Option<BaseIri<String>>,
-    pub now: chrono::DateTime<chrono::FixedOffset>,
 }
 
 impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
@@ -84,17 +79,29 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         };
         let base_iri = base_iri.clone().map(Into::into);
         let now = chrono::Local::now().fixed_offset();
-        let config = ExecConfig {
+        Ok(Arc::new(ExecState {
             dataset,
             default_matcher,
             base_iri,
             now,
-        };
-        Ok(Arc::new(ExecState { stash, config }))
+            stash,
+        }))
     }
 
-    pub fn config(&self) -> &ExecConfig<'a, D> {
-        &self.config
+    pub fn dataset(&self) -> &'a D {
+        self.dataset
+    }
+
+    pub fn default_matcher(&self) -> &Arc<[Option<ArcTerm>]> {
+        &self.default_matcher
+    }
+
+    pub fn base_iri(&self) -> &Option<BaseIri<String>> {
+        &self.base_iri
+    }
+
+    pub fn now(&self) -> chrono::DateTime<chrono::FixedOffset> {
+        self.now
     }
 
     pub fn stash_mut(&self) -> MutexGuard<'_, ArcStrStash> {
@@ -312,8 +319,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                     IriRef::new_unchecked(self.stash_mut().copy_str(predicate.as_str()));
                 Box::new(
                     state
-                        .config()
-                        .dataset
+                        .dataset()
                         .quads_matching(smatcher, [predicate], omatcher, graph_matcher.to_vec())
                         .map_ok(move |q| {
                             let mut stash = state.stash_mut();
@@ -428,8 +434,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                     .collect();
                 Box::new(
                     state
-                        .config()
-                        .dataset
+                        .dataset()
                         .quads_matching(smatcher, Not(predicates), omatcher, graph_matcher.to_vec())
                         .map_ok(move |q| {
                             let mut stash = state.stash_mut();
@@ -449,10 +454,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         if let SparqlMatcher::Bound(t) = smatcher {
             Box::new(std::iter::once(Ok(t.unwrap())))
         } else {
-            let active_graph = self
-                .config()
-                .dataset
-                .partial_union_graph(&graph_matcher[..]);
+            let active_graph = self.dataset().partial_union_graph(&graph_matcher[..]);
             let nodes: Result<HashSet<_>, _> = active_graph
                 .subjects_matching(smatcher.clone())
                 .chain(active_graph.objects_matching(smatcher))
@@ -631,8 +633,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                     self.select(inner, &graph_matcher, context)
                 } else {
                     let res = self
-                        .config()
-                        .dataset
+                        .dataset()
                         .graph_names()
                         .map(|res| res.map(|t| self.stash_mut().copy_term(t)))
                         .collect::<Result<BTreeSet<_>, _>>()

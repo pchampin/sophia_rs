@@ -117,7 +117,7 @@ impl<'a, D: Dataset + ?Sized> BgpIterator<'a, D> {
                     });
                     drop(stash);
                     *is_bound = [sm.is_bound(), pm.is_bound(), om.is_bound()];
-                    *quads = Box::new(state.config().dataset.quads_matching(
+                    *quads = Box::new(state.dataset().quads_matching(
                         sm,
                         pm,
                         om,
