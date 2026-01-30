@@ -9,7 +9,10 @@ use sophia_api::{dataset::DResult, prelude::Dataset, term::matcher::TermMatcher}
 use sophia_term::ArcTerm;
 use spargebra::algebra::PropertyPathExpression;
 
-use crate::{exec::ExecState, matcher::SparqlMatcher};
+use crate::{
+    exec::{ExecState, GraphMatcher},
+    matcher::SparqlMatcher,
+};
 
 pub struct PathOrMore<'a, D: Dataset + ?Sized> {
     state: Arc<ExecState<'a, D>>,
@@ -19,7 +22,7 @@ pub struct PathOrMore<'a, D: Dataset + ?Sized> {
     seen: HashMap<ArcTerm, ()>,
     path: PropertyPathExpression,
     omatcher: SparqlMatcher,
-    gmatcher: Arc<[Option<ArcTerm>]>,
+    gmatcher: GraphMatcher,
 }
 
 impl<'a, D: Dataset + ?Sized> PathOrMore<'a, D> {
@@ -29,7 +32,7 @@ impl<'a, D: Dataset + ?Sized> PathOrMore<'a, D> {
         first: ArcTerm,
         path: PropertyPathExpression,
         omatcher: SparqlMatcher,
-        gmatcher: Arc<[Option<ArcTerm>]>,
+        gmatcher: GraphMatcher,
     ) -> Self {
         let current = Some(Ok(first));
         let iter_stack = vec![];

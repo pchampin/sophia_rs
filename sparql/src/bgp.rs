@@ -2,18 +2,18 @@ use std::sync::Arc;
 
 use sophia_api::dataset::DResult;
 use sophia_api::prelude::*;
-use sophia_term::ArcTerm;
 use spargebra::term::TriplePattern;
 
 use crate::SparqlWrapperError;
 use crate::binding::{Binding, populate_binding_unchecked};
 use crate::exec::ExecState;
+use crate::graph_matcher::GraphMatcher;
 use crate::matcher::SparqlMatcher;
 
 pub fn make_iterator<'a, D: Dataset + ?Sized>(
     state: Arc<ExecState<'a, D>>,
     patterns: &[TriplePattern],
-    graph_matcher: &Arc<[Option<ArcTerm>]>,
+    graph_matcher: &GraphMatcher,
     context: Option<&Binding>,
 ) -> BgpIterator<'a, D> {
     // TODO one day:
@@ -47,7 +47,7 @@ pub enum BgpIterator<'a, D: Dataset + ?Sized> {
     },
     Triple {
         state: Arc<ExecState<'a, D>>,
-        graph_matcher: Arc<[Option<ArcTerm>]>,
+        graph_matcher: GraphMatcher,
         pattern: TriplePattern,
         matchers: [SparqlMatcher; 3],
         seed: Option<Binding>,
@@ -61,7 +61,7 @@ impl<'a, D: Dataset + ?Sized> BgpIterator<'a, D> {
     pub fn new(
         state: Arc<ExecState<'a, D>>,
         patterns: &[TriplePattern],
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
     ) -> Self {
         let seed = None;
         if let [first, remaining @ ..] = patterns {
@@ -121,7 +121,7 @@ impl<'a, D: Dataset + ?Sized> BgpIterator<'a, D> {
                         sm,
                         pm,
                         om,
-                        graph_matcher.to_vec(),
+                        graph_matcher.clone(),
                     ));
                     Self::handle_new_quad(quads.next(), seed, *is_bound, pattern, bindings, state)?;
                 }

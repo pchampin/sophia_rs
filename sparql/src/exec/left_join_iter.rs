@@ -1,13 +1,12 @@
 use std::sync::Arc;
 
 use sophia_api::prelude::Dataset;
-use sophia_term::ArcTerm;
 use spargebra::algebra::{Expression, GraphPattern};
 
 use crate::{
     SparqlWrapperError,
     binding::{Binding, BindingsIter},
-    exec::ExecState,
+    exec::{ExecState, GraphMatcher},
     expression::ArcExpression,
 };
 
@@ -16,7 +15,7 @@ pub struct LeftJoinIter<'a, D: Dataset + ?Sized> {
     b1: Binding,
     b2s: BindingsIter<'a, D>,
     state: Arc<ExecState<'a, D>>,
-    graph_matcher: Arc<[Option<ArcTerm>]>,
+    graph_matcher: GraphMatcher,
     right: GraphPattern,
     expression: Option<ArcExpression>,
     iter_state: IterState,
@@ -30,7 +29,7 @@ impl<'a, D: Dataset + ?Sized> LeftJoinIter<'a, D> {
         state: &Arc<ExecState<'a, D>>,
         right: &GraphPattern,
         expression: &Option<Expression>,
-        graph_matcher: Arc<[Option<ArcTerm>]>,
+        graph_matcher: GraphMatcher,
     ) -> Self {
         let state = Arc::clone(state);
         let right = right.clone();

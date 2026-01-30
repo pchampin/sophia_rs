@@ -15,6 +15,7 @@ use crate::{
     binding::Binding,
     exec::ExecState,
     function::call_function,
+    graph_matcher::GraphMatcher,
     stash::{ArcStrStashExt, value_ref_to_arcterm, value_to_term},
     value::{SparqlNumber, SparqlValue, XsdDateTime},
 };
@@ -177,7 +178,7 @@ impl ArcExpression {
         &self,
         binding: &Binding,
         state: &Arc<ExecState<'_, D>>,
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
     ) -> Option<EvalResult>
     where
         D: Dataset + ?Sized,
@@ -338,7 +339,7 @@ impl ArcExpression {
         &self,
         binding: &Binding,
         state: &Arc<ExecState<'_, D>>,
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
     ) -> bool
     where
         D: Dataset + ?Sized,

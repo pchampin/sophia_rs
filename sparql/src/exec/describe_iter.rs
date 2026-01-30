@@ -75,7 +75,7 @@ where
                 Any,
                 Any,
                 [candidate],
-                self.state.default_matcher().to_vec(),
+                self.state.default_matcher().clone(),
             ));
             self.next_triple()
         } else if !self.candidates.is_empty() {
@@ -85,7 +85,7 @@ where
                 [candidate],
                 Any,
                 Any,
-                self.state.default_matcher().to_vec(),
+                self.state.default_matcher().clone(),
             ));
             self.next_triple()
         } else if let Some(res) = self.bindings.iter.next() {

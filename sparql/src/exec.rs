@@ -38,6 +38,7 @@ use crate::binding::collect_variables;
 use crate::binding::populate_binding_arcterm;
 use crate::binding::{Binding, Bindings, populate_variables};
 use crate::expression::ArcExpression;
+use crate::graph_matcher::GraphMatcher;
 use crate::matcher::SparqlMatcher;
 use crate::stash::ArcStrStashExt;
 
@@ -52,7 +53,7 @@ mod path_or_more;
 #[derive(Debug)]
 pub struct ExecState<'a, D: ?Sized> {
     dataset: &'a D,
-    default_matcher: Arc<[Option<ArcTerm>]>,
+    default_matcher: GraphMatcher,
     base_iri: Option<BaseIri<String>>,
     now: chrono::DateTime<chrono::FixedOffset>,
     stash: Mutex<ArcStrStash>,
@@ -65,18 +66,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         base_iri: &Option<oxiri::Iri<String>>,
     ) -> Result<Arc<Self>, SparqlWrapperError<D::Error>> {
         let stash = Mutex::new(ArcStrStash::new());
-        let default_matcher = match query_dataset {
-            None => Arc::from([None]),
-            Some(query_dataset) => query_dataset
-                .default
-                .iter()
-                .map(|nn| {
-                    Some(ArcTerm::Iri(IriRef::new_unchecked(
-                        stash.lock().unwrap().copy_str(nn.as_str()),
-                    )))
-                })
-                .collect(),
-        };
+        let default_matcher = GraphMatcher::from_with(query_dataset, &stash);
         let base_iri = base_iri.clone().map(Into::into);
         let now = chrono::Local::now().fixed_offset();
         Ok(Arc::new(ExecState {
@@ -92,7 +82,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         self.dataset
     }
 
-    pub fn default_matcher(&self) -> &Arc<[Option<ArcTerm>]> {
+    pub fn default_matcher(&self) -> &GraphMatcher {
         &self.default_matcher
     }
 
@@ -130,7 +120,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     pub fn select(
         self: &Arc<Self>,
         pattern: &GraphPattern,
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
         context: Option<&Binding>,
     ) -> Bindings<'a, D> {
         use GraphPattern::*;
@@ -187,7 +177,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         self: &Arc<Self>,
         template: &[TriplePattern],
         pattern: &GraphPattern,
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
     ) -> ConstructIter<'a, D> {
         let template = {
             let mut stash = self.stash_mut();
@@ -209,7 +199,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     pub fn describe(
         self: &Arc<Self>,
         pattern: &GraphPattern,
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
     ) -> DescribeIter<'a, D> {
         let bindings = self.select(pattern, graph_matcher, None);
         DescribeIter::new(self.clone(), bindings)
@@ -218,7 +208,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     pub fn ask(
         self: &Arc<Self>,
         pattern: &GraphPattern,
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
     ) -> Result<bool, SparqlWrapperError<D::Error>> {
         match self.select(pattern, graph_matcher, None).iter.next() {
             None => Ok(false),
@@ -234,7 +224,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     fn bgp(
         self: &Arc<Self>,
         patterns: &[TriplePattern],
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
         context: Option<&Binding>,
     ) -> Bindings<'a, D> {
         let variables = populate_variables(patterns, &mut self.stash_mut(), context);
@@ -252,7 +242,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         subject: &TermPattern,
         path: &PropertyPathExpression,
         object: &TermPattern,
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
         context: Option<&Binding>,
     ) -> Bindings<'a, D> {
         static EMPTY: LazyLock<Binding> = LazyLock::new(Binding::default);
@@ -307,7 +297,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         smatcher: SparqlMatcher,
         path: &PropertyPathExpression,
         omatcher: SparqlMatcher,
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
     ) -> Box<dyn Iterator<Item = DResult<D, [ArcTerm; 2]>> + 'a> {
         use PropertyPathExpression::*;
         match path {
@@ -320,7 +310,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 Box::new(
                     state
                         .dataset()
-                        .quads_matching(smatcher, [predicate], omatcher, graph_matcher.to_vec())
+                        .quads_matching(smatcher, [predicate], omatcher, graph_matcher.clone())
                         .map_ok(move |q| {
                             let mut stash = state.stash_mut();
                             [stash.copy_term(q.s()), stash.copy_term(q.o())]
@@ -435,7 +425,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 Box::new(
                     state
                         .dataset()
-                        .quads_matching(smatcher, Not(predicates), omatcher, graph_matcher.to_vec())
+                        .quads_matching(smatcher, Not(predicates), omatcher, graph_matcher.clone())
                         .map_ok(move |q| {
                             let mut stash = state.stash_mut();
                             [stash.copy_term(q.s()), stash.copy_term(q.o())]
@@ -449,7 +439,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     fn path_zero(
         self: &Arc<Self>,
         smatcher: SparqlMatcher,
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
     ) -> Box<dyn Iterator<Item = DResult<D, ArcTerm>>> {
         if let SparqlMatcher::Bound(t) = smatcher {
             Box::new(std::iter::once(Ok(t.unwrap())))
@@ -471,7 +461,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         self: &Arc<Self>,
         left: &GraphPattern,
         right: &GraphPattern,
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
         context: Option<&Binding>,
     ) -> Bindings<'a, D> {
         let (variables, iter1, first1, iter2) =
@@ -508,7 +498,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         left: &GraphPattern,
         right: &GraphPattern,
         expression: &Option<Expression>,
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
     ) -> Bindings<'a, D> {
         let (variables, iter1, first1, iter2) = self.prepare_join(left, right, graph_matcher, None);
         let first1 = match first1 {
@@ -531,7 +521,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     fn distinct(
         self: &Arc<Self>,
         inner: &GraphPattern,
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
         context: Option<&Binding>,
     ) -> Bindings<'a, D> {
         let Bindings { variables, iter } = self.select(inner, graph_matcher, context);
@@ -551,7 +541,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     fn reduced(
         self: &Arc<Self>,
         inner: &GraphPattern,
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
         context: Option<&Binding>,
     ) -> Bindings<'a, D> {
         let Bindings { variables, iter } = self.select(inner, graph_matcher, context);
@@ -574,7 +564,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         self: &Arc<Self>,
         expression: &Expression,
         inner: &GraphPattern,
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
     ) -> Bindings<'a, D> {
         let Bindings { variables, iter } = self.select(inner, graph_matcher, None);
         let arc_expr = ArcExpression::from_expr(expression, &mut self.stash_mut());
@@ -593,7 +583,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         self: &Arc<Self>,
         left: &GraphPattern,
         right: &GraphPattern,
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
         context: Option<&Binding>,
     ) -> Bindings<'a, D> {
         let Bindings {
@@ -622,14 +612,14 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     ) -> Bindings<'a, D> {
         match name {
             NamedNodePattern::NamedNode(nn) => {
-                let graph_matcher = Arc::from([Some(ArcTerm::Iri(IriRef::new_unchecked(
-                    self.stash_mut().copy_str(nn.as_str()),
-                )))]);
+                let graph_matcher = GraphMatcher::from([Some(ArcTerm::Iri(
+                    IriRef::new_unchecked(self.stash_mut().copy_str(nn.as_str())),
+                ))]);
                 self.select(inner, &graph_matcher, context)
             }
             NamedNodePattern::Variable(var) => {
                 if let Some(name) = context.and_then(|b| b.v.get(var.as_str())) {
-                    let graph_matcher = Arc::from([Some(name.inner().clone())]);
+                    let graph_matcher = GraphMatcher::from([Some(name.inner().clone())]);
                     self.select(inner, &graph_matcher, context)
                 } else {
                     let res = self
@@ -660,7 +650,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         if let Some(name) = graph_names.next() {
             let mut b = context.cloned().unwrap_or_else(Binding::default);
             b.v.insert(self.stash_mut().copy_str(var), name.clone().into());
-            let graph_matcher = Arc::from([Some(name)]);
+            let graph_matcher = GraphMatcher::from([Some(name)]);
             let Bindings { variables, iter } = self.select(inner, &graph_matcher, Some(&b));
             let iter = Box::new(iter.chain(self.graph_rec(var, graph_names, inner, context).iter));
             Bindings { variables, iter }
@@ -674,7 +664,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         inner: &GraphPattern,
         variable: &Variable,
         expression: &Expression,
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
     ) -> Bindings<'a, D> {
         let variable = self.stash_mut().copy_variable(variable);
         let Bindings {
@@ -707,7 +697,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         self: &Arc<Self>,
         left: &GraphPattern,
         right: &GraphPattern,
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
         context: Option<&Binding>,
     ) -> Bindings<'a, D> {
         let Bindings {
@@ -779,7 +769,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         self: &Arc<Self>,
         inner: &GraphPattern,
         expression: &[OrderExpression],
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
     ) -> Bindings<'a, D> {
         let criteria: Vec<_> = expression
             .iter()
@@ -798,7 +788,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             b2: &Binding,
             criteria: &[(ArcExpression, bool)],
             state: &Arc<ExecState<D>>,
-            graph_matcher: &Arc<[Option<ArcTerm>]>,
+            graph_matcher: &GraphMatcher,
         ) -> Ordering {
             match criteria {
                 [] => Ordering::Equal,
@@ -834,7 +824,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         self: &Arc<Self>,
         inner: &GraphPattern,
         variables: &[Variable],
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
         context: Option<&Binding>,
     ) -> Bindings<'a, D> {
         let variables: Vec<VarName<Arc<str>>> = variables
@@ -853,7 +843,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         inner: &GraphPattern,
         start: usize,
         length: Option<usize>,
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
         context: Option<&Binding>,
     ) -> Bindings<'a, D> {
         let mut bindings = self.select(inner, graph_matcher, context);
@@ -878,7 +868,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         self: &Arc<Self>,
         left: &GraphPattern,
         right: &GraphPattern,
-        graph_matcher: &Arc<[Option<ArcTerm>]>,
+        graph_matcher: &GraphMatcher,
         context: Option<&Binding>,
     ) -> (
         Vec<VarName<Arc<str>>>,

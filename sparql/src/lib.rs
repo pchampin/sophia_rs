@@ -23,6 +23,7 @@ mod binding;
 mod exec;
 mod expression;
 mod function;
+mod graph_matcher;
 mod matcher;
 mod ns;
 mod stash;
