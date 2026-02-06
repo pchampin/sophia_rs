@@ -69,7 +69,7 @@ impl<'a, D: Dataset + ?Sized> LeftJoinIter<'a, D> {
                 if let Some(b) = b2.merge_if_compatible(Some(&self.b1)).filter(|b| {
                     self.expression
                         .as_ref()
-                        .map(|e| e.eval_truthy(b, &self.state, &self.graph_matcher))
+                        .map(|e| e.eval_truthy(&b.v, &self.state, &self.graph_matcher))
                         .unwrap_or(true)
                 }) {
                     self.iter_state = IterState::B2Matched;

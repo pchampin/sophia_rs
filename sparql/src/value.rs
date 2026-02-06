@@ -201,6 +201,12 @@ impl From<bool> for SparqlValue {
     }
 }
 
+impl From<String> for SparqlValue {
+    fn from(value: String) -> Self {
+        SparqlValue::String(value.into(), None)
+    }
+}
+
 impl From<SparqlNumber> for SparqlValue {
     fn from(value: SparqlNumber) -> Self {
         SparqlValue::Number(Some(value))

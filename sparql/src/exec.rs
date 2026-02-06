@@ -19,6 +19,7 @@ use sophia_api::term::matcher::TermMatcher;
 use sophia_iri::resolve::BaseIri;
 use sophia_term::ArcStrStash;
 use sophia_term::ArcTerm;
+use spargebra::algebra::AggregateExpression;
 use spargebra::algebra::Expression;
 use spargebra::algebra::GraphPattern;
 use spargebra::algebra::OrderExpression;
@@ -30,6 +31,7 @@ use spargebra::term::TermPattern;
 use spargebra::term::TriplePattern;
 use spargebra::term::Variable;
 
+use crate::BindingMap;
 use crate::ResultTerm;
 use crate::SparqlWrapperError;
 use crate::bgp;
@@ -46,6 +48,7 @@ mod construct_iter;
 pub(crate) use construct_iter::ConstructIter;
 mod describe_iter;
 pub(crate) use describe_iter::DescribeIter;
+mod aggregate_iter;
 mod join_iter;
 mod left_join_iter;
 mod path_or_more;
@@ -164,7 +167,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 inner,
                 variables,
                 aggregates,
-            } => Bindings::err(SparqlWrapperError::NotImplemented("Group")),
+            } => self.group(inner, variables, aggregates, graph_matcher, context),
             Service {
                 name,
                 inner,
@@ -574,7 +577,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         let graph_matcher = graph_matcher.clone();
         let iter = Box::new(iter.filter(move |resb| match resb {
             Err(_) => true,
-            Ok(b) => arc_expr.eval_truthy(b, &state, &graph_matcher),
+            Ok(b) => arc_expr.eval_truthy(&b.v, &state, &graph_matcher),
         }));
         Bindings { variables, iter }
     }
@@ -622,6 +625,10 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                     let graph_matcher = GraphMatcher::from([Some(name.inner().clone())]);
                     self.select(inner, &graph_matcher, context)
                 } else {
+                    // TODO this could be implemented as a flatmap instead,
+                    // although that would need
+                    // - to deal specifically with the case where no graphs are mapped
+                    // - to extract the first binding just to get the variables
                     let res = self
                         .dataset()
                         .graph_names()
@@ -684,7 +691,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
 
         let iter = Box::new(iter.map(move |resb| {
             resb.map(|mut b| {
-                if let Some(val) = arc_expr.eval(&b, &state, &graph_matcher) {
+                if let Some(val) = arc_expr.eval(&b.v, &state, &graph_matcher) {
                     b.v.insert(varkey.clone(), val.into_term());
                 }
                 b
@@ -754,12 +761,12 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             .collect();
         let vars = variables.clone();
         let iter = Box::new(bindings.into_iter().map(move |bs| {
-            let v: HashMap<Arc<str>, ResultTerm> = vars
+            let v: BindingMap = vars
                 .iter()
                 .zip(bs)
                 .filter_map(|(var, opt)| opt.map(|rterm| (var.clone().unwrap(), rterm)))
                 .collect();
-            let b = HashMap::default();
+            let b = BindingMap::default();
             Ok(Binding { v, b })
         }));
         Bindings { variables, iter }
@@ -793,12 +800,12 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             match criteria {
                 [] => Ordering::Equal,
                 [(expr, desc), rest @ ..] => {
-                    let v1 = expr.eval(b1, state, graph_matcher);
-                    let v2 = expr.eval(b2, state, graph_matcher);
+                    let v1 = expr.eval(&b1.v, state, graph_matcher);
+                    let v2 = expr.eval(&b2.v, state, graph_matcher);
                     let o = match (v1, v2) {
                         (None, None) => Ordering::Equal,
                         (None, Some(_)) => Ordering::Less,
-                        (Some(v1), v2) => v1.sparql_order_by(&v2),
+                        (Some(v1), v2) => v1.sparql_order_by(v2.as_ref()),
                     };
                     let o = if *desc { o.reverse() } else { o };
                     o.then_with(|| cmp_bindings_with(b1, b2, rest, state, graph_matcher))
@@ -861,6 +868,65 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             bindings.iter = Box::new(bindings.iter.take(n));
         }
         bindings
+    }
+
+    fn group(
+        self: &Arc<Self>,
+        inner: &GraphPattern,
+        group_variables: &[Variable],
+        aggregates: &[(Variable, AggregateExpression)],
+        graph_matcher: &GraphMatcher,
+        context: Option<&Binding>,
+    ) -> Bindings<'a, D> {
+        let bindings = self.select(inner, graph_matcher, context);
+
+        let mut variables = bindings.variables;
+        let mut stash = self.stash_mut();
+        variables.extend(aggregates.iter().map(|(v, _)| stash.copy_variable(v)));
+        drop(stash);
+
+        #[allow(clippy::mutable_key_type)]
+        // ResultTerm appears to have interior mutability, but that does not change their hash
+        let mut groups = HashMap::<Vec<Option<ResultTerm>>, Vec<BindingMap>>::new();
+        for res in bindings.iter {
+            let b = match res {
+                Err(err) => return Bindings::err_with(err, variables),
+                Ok(b) => b,
+            };
+            let key: Vec<_> = group_variables
+                .iter()
+                .map(|v| b.v.get(v.as_str()).cloned())
+                .collect();
+            groups.entry(key).or_default().push(b.v);
+        }
+
+        let mut stash = self.stash_mut();
+        let group_variables: Vec<_> = group_variables
+            .iter()
+            .map(|v| stash.copy_str(v.as_str()))
+            .collect();
+        let aggregators = aggregates
+            .iter()
+            .map(|(v, a)| {
+                (
+                    stash.copy_str(v.as_str()),
+                    aggregate_iter::Aggregator::from_with(a, &mut stash),
+                )
+            })
+            .collect();
+        drop(stash);
+
+        let iter = Box::new(
+            aggregate_iter::AggregateIter::new(
+                self.clone(),
+                graph_matcher.clone(),
+                group_variables,
+                groups.into_iter(),
+                aggregators,
+            )
+            .map(Ok),
+        );
+        Bindings { variables, iter }
     }
 
     #[expect(clippy::type_complexity)]

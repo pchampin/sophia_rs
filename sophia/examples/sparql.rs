@@ -19,16 +19,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let res = sds.query(&query)?;
     match res {
         SparqlResult::Bindings(bs) => {
-            for v in bs.variables() {
-                print!("{v}\t")
-            }
-            println!();
+            let header = bs.variables().join("\t");
+            // header (variable names)
+            println!("{header}");
+            // results
             for b in bs.into_iter() {
                 for bv in b? {
-                    print!("{bv:?}\t")
+                    print!("{}\t", bv.map(|t| t.to_string()).unwrap_or("_".into()));
                 }
                 println!();
             }
+            // footer (repeat variables, and make it easier to spot an empty line in the results)
+            println!("#{header}");
         }
         SparqlResult::Boolean(ans) => println!("{ans}"),
         SparqlResult::Triples(mut triples) => {

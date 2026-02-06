@@ -11,7 +11,10 @@ use sophia_api::{
 };
 use sophia_term::ArcTerm;
 
-use crate::value::SparqlValue;
+use crate::{
+    expression::EvalResult,
+    value::{SparqlNumber, SparqlValue},
+};
 
 #[derive(Clone, Debug)]
 pub struct ResultTerm {
@@ -127,6 +130,24 @@ impl From<ArcTerm> for ResultTerm {
             inner,
             value: OnceLock::new(),
         }
+    }
+}
+
+impl From<EvalResult> for ResultTerm {
+    fn from(value: EvalResult) -> Self {
+        value.into_term()
+    }
+}
+
+impl From<SparqlValue> for ResultTerm {
+    fn from(value: SparqlValue) -> Self {
+        EvalResult::from(value).into()
+    }
+}
+
+impl From<SparqlNumber> for ResultTerm {
+    fn from(value: SparqlNumber) -> Self {
+        EvalResult::from(value).into()
     }
 }
 

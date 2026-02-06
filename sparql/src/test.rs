@@ -1,4 +1,7 @@
-use crate::*;
+use crate::{
+    value::{SparqlNumber, SparqlValue},
+    *,
+};
 use sophia_api::{prelude::*, serializer::Stringifier, sparql::Query};
 use sophia_inmem::{dataset::LightDataset, graph::LightGraph};
 use test_case::test_case;
@@ -756,6 +759,146 @@ fn test_filter(filter: &str, exp: Vec<&str>) -> TestResult {
     let mut got = bindings_to_vec(bindings, 1);
     got.sort();
     assert_eq!(exp, got);
+    Ok(())
+}
+
+#[test_case("SELECT (COUNT(*) as ?a) { VALUES ?x { 1 2 } VALUES ?y { 3 3 }}", "\"4\"^^<http://www.w3.org/2001/XMLSchema#integer>"; "count star")]
+#[test_case("SELECT (COUNT(DISTINCT *) as ?a) { VALUES ?x { 1 2 } VALUES ?y { 3 3 }}", "\"2\"^^<http://www.w3.org/2001/XMLSchema#integer>"; "count_star distinct")]
+#[test_case("SELECT (COUNT(DISTINCT *) as ?a) { VALUES ?x { 1 2 } VALUES ?y { 3 3.0 }}", "\"4\"^^<http://www.w3.org/2001/XMLSchema#integer>"; "count_star distinct mixed")]
+#[test_case("SELECT (COUNT(abs(?x)) as ?a) { VALUES ?x { 1 2 -2 } }", "\"3\"^^<http://www.w3.org/2001/XMLSchema#integer>"; "count expr")]
+#[test_case("SELECT (COUNT(DISTINCT abs(?x)) as ?a) { VALUES ?x { 1 2 -2 } }", "\"2\"^^<http://www.w3.org/2001/XMLSchema#integer>"; "count expr distinct")]
+#[test_case("SELECT (COUNT(DISTINCT abs(?x)) as ?a) { VALUES ?x { 1 2 -2.0 } }", "\"3\"^^<http://www.w3.org/2001/XMLSchema#integer>"; "count expr distinct mixed")]
+#[test_case("SELECT (COUNT(DISTINCT xsd:integer(abs(?x))) as ?a) { VALUES ?x { 1 2 -2.0 } }", "\"2\"^^<http://www.w3.org/2001/XMLSchema#integer>"; "count expr distinct coerced")]
+#[test_case("SELECT (COUNT(abs(?x)) as ?a) { VALUES ?x { 1 true -2 } }", "\"2\"^^<http://www.w3.org/2001/XMLSchema#integer>"; "count expr err")]
+#[test_case("SELECT (SUM(abs(?x)) as ?a) { VALUES ?x { 1 2 -2 } }", "\"5\"^^<http://www.w3.org/2001/XMLSchema#integer>"; "sum")]
+#[test_case("SELECT (SUM(DISTINCT abs(?x)) as ?a) { VALUES ?x { 1 2 -2 } }", "\"3\"^^<http://www.w3.org/2001/XMLSchema#integer>"; "sum distinct")]
+#[test_case("SELECT (SUM(DISTINCT abs(?x)) as ?a) { VALUES ?x { 1 2.0 -2e0 } }", "\"5e0\"^^<http://www.w3.org/2001/XMLSchema#double>"; "sum distinct mixed")]
+#[test_case("SELECT (SUM(DISTINCT xsd:integer(abs(?x))) as ?a) { VALUES ?x { 1 2.0 -2e0 } }", "\"3\"^^<http://www.w3.org/2001/XMLSchema#integer>"; "sum distinct coerced")]
+#[test_case("SELECT (SUM(abs(?x)) as ?a) { VALUES ?x { 1 true -2 } }", ""; "sum err")]
+#[test_case("SELECT (AVG(abs(?x)) as ?a) { VALUES ?x { 1 2 -2 0 3 } }", "\"1.6\"^^<http://www.w3.org/2001/XMLSchema#decimal>"; "avg")]
+#[test_case("SELECT (AVG(DISTINCT abs(?x)) as ?a) { VALUES ?x { 1 2 -2 0 3 } }", "\"1.5\"^^<http://www.w3.org/2001/XMLSchema#decimal>"; "avg distinct")]
+#[test_case("SELECT (AVG(DISTINCT abs(?x)) as ?a) { VALUES ?x { 1 2.0 -2e0 0 3 } }", "\"1.6e0\"^^<http://www.w3.org/2001/XMLSchema#double>"; "avg distinct mixed")]
+#[test_case("SELECT (AVG(DISTINCT xsd:decimal(abs(?x))) as ?a) { VALUES ?x { 1 2.0 -2e0 0 3 } }", "\"1.5\"^^<http://www.w3.org/2001/XMLSchema#decimal>"; "avg distinct coerced")]
+#[test_case("SELECT (AVG(abs(?x)) as ?a) { VALUES ?x { 1 true -2 0 3 } }", ""; "avg err")]
+#[test_case("SELECT (MIN(abs(?x)) as ?a) { VALUES ?x { 2 1 -3 -2 } }", "\"1\"^^<http://www.w3.org/2001/XMLSchema#integer>"; "min")]
+#[test_case("SELECT (MIN(abs(?x)) as ?a) { VALUES ?x { 2 1.0 -3e0 -2 } }", "\"1.0\"^^<http://www.w3.org/2001/XMLSchema#decimal>"; "min mixed number")]
+#[test_case("SELECT (MIN(abs(?x)) as ?a) { VALUES ?x { 2 1.0 -3e0 \"-2\" } }", ""; "min err")]
+#[test_case("SELECT (MIN(substr(?x, 2)) as ?a) { VALUES ?x { \"aC\" \"bA\" \"cD\" \"dB\" } }", "\"A\"^^<http://www.w3.org/2001/XMLSchema#string>"; "min string")]
+#[test_case("SELECT (MIN(?x) as ?a) { VALUES ?x { 3 <x:1> 2 <x:2> } }", "<x:1>"; "min mixed terms")]
+#[test_case("SELECT (MAX(abs(?x)) as ?a) { VALUES ?x { 2 1 -3 -2 } }", "\"3\"^^<http://www.w3.org/2001/XMLSchema#integer>"; "max")]
+#[test_case("SELECT (MAX(abs(?x)) as ?a) { VALUES ?x { 2 1.0 -3e0 -2 } }", "\"3e0\"^^<http://www.w3.org/2001/XMLSchema#double>"; "max mixed number")]
+#[test_case("SELECT (MAX(abs(?x)) as ?a) { VALUES ?x { 2 1.0 -3e0 \"-2\" } }", ""; "max err")]
+#[test_case("SELECT (MAX(substr(?x, 2)) as ?a) { VALUES ?x { \"aC\" \"bA\" \"cD\" \"dB\" } }", "\"D\"^^<http://www.w3.org/2001/XMLSchema#string>"; "max string")]
+#[test_case("SELECT (MAX(?x) as ?a) { VALUES ?x { 3 <x:1> 4 <x:2> } }", "\"4\"^^<http://www.w3.org/2001/XMLSchema#integer>"; "max mixed terms")]
+#[test_case("SELECT (GROUP_CONCAT(str(abs(?x))) as ?a) { VALUES ?x { 1 2 -2 } }", "\"1 2 2\"^^<http://www.w3.org/2001/XMLSchema#string>"; "group_concat")]
+#[test_case("SELECT (GROUP_CONCAT(DISTINCT str(abs(?x))) as ?a) { VALUES ?x { 1 2 -2 } }", "\"1 2\"^^<http://www.w3.org/2001/XMLSchema#string>"; "group_concat distinct")]
+#[test_case("SELECT (GROUP_CONCAT(DISTINCT str(abs(?x))) as ?a) { VALUES ?x { 1 2.0 -2e0 } }", "\"1 2.0 2e0\"^^<http://www.w3.org/2001/XMLSchema#string>"; "group_concat distinct mixed")]
+#[test_case("SELECT (GROUP_CONCAT(DISTINCT str(xsd:integer(abs(?x)))) as ?a) { VALUES ?x { 1 2.0 -2e0 } }", "\"1 2\"^^<http://www.w3.org/2001/XMLSchema#string>"; "group_concat distinct coerced")]
+#[test_case("SELECT (GROUP_CONCAT(str(abs(?x))) as ?a) { VALUES ?x { 1 true -2 } }", ""; "group_concat err")]
+#[test_case("SELECT (GROUP_CONCAT(str(abs(?x)); separator=\"|\") as ?a) { VALUES ?x { 1 2 -2 } }", "\"1|2|2\"^^<http://www.w3.org/2001/XMLSchema#string>"; "group_concat separator")]
+#[test_case("SELECT (SAMPLE(abs(?x)) as ?a) { VALUES ?x { 1 2 -2 } }", "\"1\"^^<http://www.w3.org/2001/XMLSchema#integer>"; "sample")]
+fn test_aggregate(query: &str, exp: &str) -> TestResult {
+    let dataset = LightDataset::default();
+    let dataset = SparqlWrapper(&dataset);
+    let query = SparqlQuery::parse(&format!(
+        "PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>  {query}"
+    ))?;
+    let bindings = dataset.query(&query)?.into_bindings();
+    assert_eq!(bindings.variables(), &["a"]);
+    let got_owned = bindings
+        .into_iter()
+        .next()
+        .unwrap() // Option::unwrap → there must be a result
+        .unwrap() // Result::unwrap → no error
+        .pop() // Vec::pop
+        .unwrap() // Option::pop → the vec must have exactly 1 element
+        .map(|t| t.to_string());
+    let got = got_owned.as_deref();
+    let exp = if exp.is_empty() { None } else { Some(exp) };
+    assert_eq!(got, exp);
+    Ok(())
+}
+
+#[test]
+fn test_multiple_aggregates() -> TestResult {
+    let dataset = LightDataset::default();
+    let dataset = SparqlWrapper(&dataset);
+    let query = SparqlQuery::parse(
+        "
+        SELECT
+          (count(?y)          as ?cy)
+          (count(distinct ?y) as ?cdy)
+          (avg(?y)            as ?ay)
+          (avg(distinct ?y)   as ?ady)
+          (min(?y)            as ?miny)
+          (max(?y)            as ?maxy)
+        {
+          VALUES (?x ?y) { (1 10) (2 14) (1 16) (2 16) (2 12) (1 10) (1 13) }
+        }
+        ",
+    )?;
+    let bindings = dataset.query(&query)?.into_bindings();
+    let got: Vec<_> = bindings
+        .into_iter()
+        .next()
+        .unwrap() // Option::unwrap → there must be a result
+        .unwrap() // Result::unwrap → no error
+        .into_iter()
+        .map(|opt| opt.unwrap().value().unwrap().clone())
+        .collect();
+    let exp: Vec<_> = vec![7.0, 5.0, 13.0, 13.0, 10.0, 16.0]
+        .into_iter()
+        .map(SparqlNumber::from)
+        .map(SparqlValue::from)
+        .collect();
+    assert_eq!(got, exp);
+    Ok(())
+}
+
+#[test]
+fn test_group_by() -> TestResult {
+    let dataset = LightDataset::default();
+    let dataset = SparqlWrapper(&dataset);
+    let query = SparqlQuery::parse(
+        "
+        SELECT
+          ?x
+          (count(?y)          as ?cy)
+          (count(distinct ?y) as ?cdy)
+          (avg(?y)            as ?ay)
+          (avg(distinct ?y)   as ?ady)
+          (min(?y)            as ?miny)
+          (max(?y)            as ?maxy)
+        {
+          VALUES (?x ?y) { (1 10) (2 14) (1 16) (2 16) (2 12) (1 10) (1 13) }
+        }
+        GROUP BY ?x
+        ORDER BY ?x
+        ",
+    )?;
+    let bindings = dataset.query(&query)?.into_bindings();
+    let got: Vec<_> = bindings
+        .into_iter()
+        .map(|res| -> Vec<_> {
+            res.unwrap()
+                .into_iter()
+                .map(|opt| opt.unwrap().value().unwrap().clone())
+                .collect()
+        })
+        .collect();
+    let exp: Vec<_> = vec![
+        vec![1.0, 4.0, 3.0, 12.25, 13.0, 10.0, 16.0],
+        vec![2.0, 3.0, 3.0, 14.0, 14.0, 12.0, 16.0],
+    ]
+    .into_iter()
+    .map(|v| -> Vec<_> {
+        v.into_iter()
+            .map(SparqlNumber::from)
+            .map(SparqlValue::from)
+            .collect()
+    })
+    .collect();
+    assert_eq!(got, exp);
     Ok(())
 }
 
