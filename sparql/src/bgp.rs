@@ -5,7 +5,7 @@ use sophia_api::prelude::*;
 use spargebra::term::TriplePattern;
 
 use crate::SparqlWrapperError;
-use crate::binding::{Binding, populate_binding_unchecked};
+use crate::binding::{Binding, populate_binding};
 use crate::exec::ExecState;
 use crate::graph_matcher::GraphMatcher;
 use crate::matcher::SparqlMatcher;
@@ -34,7 +34,7 @@ pub fn make_iterator<'a, D: Dataset + ?Sized>(
     let mut ret = BgpIterator::new(state, patterns, graph_matcher);
     match ret.reseed(Some(context.cloned().unwrap_or_default())) {
         Ok(()) => ret,
-        Err(err) => BgpIterator::Empty {
+        Err(err) => BgpIterator::EmptyBgp {
             result: Some(Err(SparqlWrapperError::Dataset(err))),
         },
     }
@@ -42,7 +42,7 @@ pub fn make_iterator<'a, D: Dataset + ?Sized>(
 
 #[expect(clippy::large_enum_variant)]
 pub enum BgpIterator<'a, D: Dataset + ?Sized> {
-    Empty {
+    EmptyBgp {
         result: Option<Result<Binding, SparqlWrapperError<D::Error>>>,
     },
     Triple {
@@ -82,7 +82,7 @@ impl<'a, D: Dataset + ?Sized> BgpIterator<'a, D> {
                 bindings,
             }
         } else {
-            Self::Empty {
+            Self::EmptyBgp {
                 result: seed.map(Ok),
             }
         }
@@ -90,7 +90,7 @@ impl<'a, D: Dataset + ?Sized> BgpIterator<'a, D> {
 
     pub fn reseed(&mut self, new_seed: Option<Binding>) -> DResult<D, ()> {
         match self {
-            Self::Empty { result } => {
+            Self::EmptyBgp { result } => {
                 *result = new_seed.map(Ok);
             }
             Self::Triple {
@@ -123,7 +123,7 @@ impl<'a, D: Dataset + ?Sized> BgpIterator<'a, D> {
                         om,
                         graph_matcher.clone(),
                     ));
-                    Self::handle_new_quad(quads.next(), seed, *is_bound, pattern, bindings, state)?;
+                    Self::handle_new_quad(quads, seed, *is_bound, pattern, bindings, state)?;
                 }
             }
         }
@@ -131,7 +131,7 @@ impl<'a, D: Dataset + ?Sized> BgpIterator<'a, D> {
     }
 
     fn handle_new_quad(
-        opt: Option<DResult<D, D::Quad<'_>>>,
+        quads: &mut Box<dyn Iterator<Item = DResult<D, <D as Dataset>::Quad<'a>>> + 'a>,
         seed: &mut Option<Binding>,
         [sb, pb, ob]: [bool; 3],
         pattern: &TriplePattern,
@@ -140,31 +140,31 @@ impl<'a, D: Dataset + ?Sized> BgpIterator<'a, D> {
     ) -> DResult<D, ()> {
         debug_assert!(seed.is_some());
         let Some(context) = seed else { unreachable!() };
-        match opt {
-            Some(Ok(quad)) => {
+        match quads.next() {
+            Some(Ok(q)) => {
                 let mut b = context.clone();
-                let mut stash = state.stash_mut();
-                if !sb {
-                    populate_binding_unchecked(&pattern.subject, quad.s(), &mut b, &mut stash);
+                let we_have_a_match = {
+                    let mut stash = state.stash_mut();
+                    (sb || populate_binding(&pattern.subject, q.s(), &mut b, &mut stash))
+                        && (pb || populate_binding(&pattern.predicate, q.p(), &mut b, &mut stash))
+                        && (ob || populate_binding(&pattern.object, q.o(), &mut b, &mut stash))
+                };
+                if we_have_a_match {
+                    bindings.reseed(Some(b))?;
+                    Ok(())
+                } else {
+                    Self::handle_new_quad(quads, seed, [sb, pb, ob], pattern, bindings, state)
                 }
-                if !pb {
-                    populate_binding_unchecked(&pattern.predicate, quad.p(), &mut b, &mut stash);
-                }
-                if !ob {
-                    populate_binding_unchecked(&pattern.object, quad.o(), &mut b, &mut stash);
-                }
-                drop(stash);
-                bindings.reseed(Some(b))?;
             }
             Some(Err(err)) => {
                 *seed = None;
-                return Err(err);
+                Err(err)
             }
             None => {
                 *seed = None;
+                Ok(())
             }
         }
-        Ok(())
     }
 }
 
@@ -173,7 +173,7 @@ impl<'a, D: Dataset + ?Sized> Iterator for BgpIterator<'a, D> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self {
-            Self::Empty { result } => result.take(),
+            Self::EmptyBgp { result } => result.take(),
             Self::Triple {
                 state,
                 pattern,
@@ -188,14 +188,8 @@ impl<'a, D: Dataset + ?Sized> Iterator for BgpIterator<'a, D> {
                     if opt.is_some() {
                         opt
                     } else {
-                        let res = Self::handle_new_quad(
-                            quads.next(),
-                            seed,
-                            *is_bound,
-                            pattern,
-                            bindings,
-                            state,
-                        );
+                        let res =
+                            Self::handle_new_quad(quads, seed, *is_bound, pattern, bindings, state);
                         match res {
                             Ok(()) => self.next(),
                             Err(err) => Some(Err(SparqlWrapperError::Dataset(err))),

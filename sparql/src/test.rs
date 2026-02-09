@@ -84,6 +84,11 @@ use test_case::test_case;
     vec!["<https://example.org/test#a>", "_:b"];
     "minus disjoint domain"
 )]
+#[test_case(
+    "SELECT ?x { ?x s:name ?x }",
+    vec![];
+    "multiple occurrence of variable in triple pattern"
+)]
 fn test_select_1_and_ask(query: &str, exp: Vec<&str>) -> TestResult {
     let dataset = dataset_101()?;
     let dataset = SparqlWrapper(&dataset);
@@ -98,6 +103,39 @@ fn test_select_1_and_ask(query: &str, exp: Vec<&str>) -> TestResult {
     let parsed_query = SparqlQuery::parse(&query.replace("SELECT ?x", "ASK"))?;
     let response = dataset.query(&parsed_query)?.into_boolean();
     assert_eq!(response, !exp.is_empty());
+    Ok(())
+}
+
+#[test_case(
+    "SELECT ?x { ?x <#p> ?x }",
+    vec!["<https://example.org/test#a>"];
+    "variable"
+)]
+#[test_case(
+    "SELECT ?x { ?x <#p> _:y. _:y <#p> _:y. }",
+    vec!["<https://example.org/test#a>", "<https://example.org/test#c>"];
+    "bnode"
+)]
+fn test_select_1_multiple_occurrences(query: &str, exp: Vec<&str>) -> TestResult {
+    let dataset: LightDataset = sophia_turtle::parser::trig::parse_str(
+        r#"
+                BASE <https://example.org/test>
+                PREFIX s: <http://schema.org/>
+
+                <#a> <#p> <#a>.
+                <#a> <#p> <#b>.
+                <#c> <#p> <#a>.
+            "#,
+    )
+    .collect_quads()?;
+    let dataset = SparqlWrapper(&dataset);
+    let query = format!("BASE <https://example.org/test> PREFIX s: <http://schema.org/> {query}");
+    let parsed_query = SparqlQuery::parse(&query)?;
+    let bindings = dataset.query(&parsed_query)?.into_bindings();
+    assert_eq!(bindings.variables(), &["x"]);
+    let mut got = bindings_to_vec(bindings, 1);
+    got.sort();
+    assert_eq!(exp, got);
     Ok(())
 }
 

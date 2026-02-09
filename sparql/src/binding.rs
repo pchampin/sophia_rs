@@ -155,28 +155,34 @@ pub fn populate_variables(
     variable_set.into_iter().collect()
 }
 
-pub(crate) fn populate_binding_unchecked<'a, T: Term, P: Into<AnyPattern<'a>>>(
+pub(crate) fn populate_binding<'a, T: Term, P: Into<AnyPattern<'a>>>(
     pattern: P,
     result: T,
     b: &mut Binding,
     stash: &mut MutexGuard<ArcStrStash>,
-) {
+) -> bool {
     let pattern = pattern.into();
     let st = pattern.as_simple();
     match st {
         SimpleTerm::BlankNode(bnid) => {
-            debug_assert!(!b.b.contains_key(bnid.as_str()));
-            b.b.insert(
-                stash.copy_str(bnid),
-                stash.copy_result_term(result.borrow_term()),
-            );
+            let key = stash.copy_str(bnid);
+            match b.b.entry(key) {
+                Occupied(occupied) => Term::eq(occupied.get(), result),
+                Vacant(vacant) => {
+                    vacant.insert(stash.copy_result_term(result.borrow_term()));
+                    true
+                }
+            }
         }
         SimpleTerm::Variable(var) => {
-            debug_assert!(!b.v.contains_key(var.as_str()));
-            b.v.insert(
-                stash.copy_str(var),
-                stash.copy_result_term(result.borrow_term()),
-            );
+            let key = stash.copy_str(var);
+            match b.v.entry(key) {
+                Occupied(occupied) => Term::eq(occupied.get(), result),
+                Vacant(vacant) => {
+                    vacant.insert(stash.copy_result_term(result.borrow_term()));
+                    true
+                }
+            }
         }
         SimpleTerm::Triple(_) => {
             let AnyPattern::Term(TermPattern::Triple(triple_pattern)) = pattern else {
@@ -184,12 +190,13 @@ pub(crate) fn populate_binding_unchecked<'a, T: Term, P: Into<AnyPattern<'a>>>(
             };
             debug_assert!(result.is_triple());
             let result = result.triple().unwrap();
-            populate_binding_unchecked(&triple_pattern.subject, result.s(), b, stash);
-            populate_binding_unchecked(&triple_pattern.predicate, result.p(), b, stash);
-            populate_binding_unchecked(&triple_pattern.object, result.o(), b, stash);
+            populate_binding(&triple_pattern.subject, result.s(), b, stash)
+                && populate_binding(&triple_pattern.predicate, result.p(), b, stash)
+                && populate_binding(&triple_pattern.object, result.o(), b, stash)
         }
         _ => {
             debug_assert!(Term::eq(&pattern, result.borrow_term()));
+            true
         }
     }
 }
@@ -203,21 +210,23 @@ pub(crate) fn populate_binding_arcterm(
     let st = pattern.as_simple();
     match st {
         SimpleTerm::BlankNode(bnid) => {
-            if let Some(already_bound) = b.b.get(bnid.as_str()) {
-                if !Term::eq(already_bound, &t) {
-                    return false;
+            let key = stash.copy_str(bnid);
+            match b.b.entry(key) {
+                Occupied(occupied) => Term::eq(occupied.get(), t),
+                Vacant(vacant) => {
+                    vacant.insert(t.into());
+                    true
                 }
-            } else {
-                b.b.insert(stash.copy_str(bnid), t.into());
             }
         }
         SimpleTerm::Variable(var) => {
-            if let Some(already_bound) = b.v.get(var.as_str()) {
-                if !Term::eq(already_bound, &t) {
-                    return false;
+            let key = stash.copy_str(var);
+            match b.v.entry(key) {
+                Occupied(occupied) => Term::eq(occupied.get(), t),
+                Vacant(vacant) => {
+                    vacant.insert(t.into());
+                    true
                 }
-            } else {
-                b.v.insert(stash.copy_str(var), t.into());
             }
         }
         SimpleTerm::Triple(_) => {
@@ -226,15 +235,15 @@ pub(crate) fn populate_binding_arcterm(
             };
             debug_assert!(t.is_triple());
             let [s, p, o] = t.to_triple().unwrap();
-            return populate_binding_arcterm((&triple_pattern.subject).into(), s, b, stash)
+            populate_binding_arcterm((&triple_pattern.subject).into(), s, b, stash)
                 && populate_binding_arcterm((&triple_pattern.predicate).into(), p, b, stash)
-                && populate_binding_arcterm((&triple_pattern.object).into(), o, b, stash);
+                && populate_binding_arcterm((&triple_pattern.object).into(), o, b, stash)
         }
         _ => {
             debug_assert!(Term::eq(&pattern, &t));
+            true
         }
     }
-    true
 }
 
 pub(crate) fn collect_variables<'a, T>(
