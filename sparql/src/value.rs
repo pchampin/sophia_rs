@@ -3,7 +3,7 @@
 use std::{cmp::Ordering, sync::Arc};
 
 use bigdecimal::{BigDecimal, Signed};
-use sophia_api::{ns::xsd, term::IriRef};
+use sophia_api::{MownStr, ns::xsd, term::IriRef};
 use sophia_term::{ArcTerm, GenericLiteral};
 
 mod _xsd_date_time;
@@ -41,53 +41,66 @@ impl SparqlValue {
         }
     }
 
+    pub fn try_from_parts<T: LexicalPart>(lex: T, datatype: IriRef<&str>) -> Option<Self> {
+        let dt = datatype.as_str();
+        if !dt.starts_with(xsd::PREFIX.as_str()) {
+            return None;
+        }
+        match &dt[xsd::PREFIX.len()..] {
+            "integer" => Some(Self::Number(SparqlNumber::try_parse_integer(lex.as_str()))),
+            "decimal" => Some(Self::Number(SparqlNumber::try_parse::<BigDecimal>(
+                lex.as_str(),
+            ))),
+            "float" => Some(Self::Number(SparqlNumber::try_parse::<f32>(lex.as_str()))),
+            "double" => Some(Self::Number(SparqlNumber::try_parse::<f64>(lex.as_str()))),
+            "string" => Some(Self::String(lex.to_arc(), None)),
+            "boolean" => Some(Self::Boolean(match lex.as_str() {
+                "true" | "1" => Some(true),
+                "false" | "0" => Some(false),
+                _ => None,
+            })),
+            "dateTime" => Some(Self::DateTime(lex.as_str().parse().ok())),
+            "nonPositiveInteger" => Some(Self::Number(
+                SparqlNumber::try_parse_integer(lex.as_str()).filter(|n| !n.is_positive()),
+            )),
+            "negativeInteger" => Some(Self::Number(
+                SparqlNumber::try_parse_integer(lex.as_str())
+                    .filter(_number::SparqlNumber::is_negative),
+            )),
+            "long" => Some(Self::Number(SparqlNumber::try_parse::<i64>(lex.as_str()))),
+            "int" => Some(Self::Number(SparqlNumber::try_parse::<i32>(lex.as_str()))),
+            "short" => Some(Self::Number(SparqlNumber::try_parse::<i16>(lex.as_str()))),
+            "byte" => Some(Self::Number(SparqlNumber::try_parse::<i8>(lex.as_str()))),
+            "nonNegativeInteger" => Some(Self::Number(
+                SparqlNumber::try_parse_integer(lex.as_str()).filter(|n| !n.is_negative()),
+            )),
+            "unsignedLong" => Some(Self::Number(SparqlNumber::try_parse::<u64>(lex.as_str()))),
+            "unsignedInt" => Some(Self::Number(SparqlNumber::try_parse::<u32>(lex.as_str()))),
+            "unsignedShort" => Some(Self::Number(SparqlNumber::try_parse::<u16>(lex.as_str()))),
+            "unsignedByte" => Some(Self::Number(SparqlNumber::try_parse::<u8>(lex.as_str()))),
+            "positiveInteger" => Some(Self::Number(
+                SparqlNumber::try_parse_integer(lex.as_str())
+                    .filter(_number::SparqlNumber::is_positive),
+            )),
+            _ => None,
+        }
+    }
+
     pub fn try_from_literal(genlit: &GenericLiteral<Arc<str>>) -> Option<Self> {
         match genlit {
             GenericLiteral::LanguageString(lex, tag, dir) => {
                 Some(Self::String(lex.clone(), Some((tag.clone(), *dir))))
             }
-            GenericLiteral::Typed(lex, dt) => {
-                let dt = dt.as_str();
-                if !dt.starts_with(xsd::PREFIX.as_str()) {
-                    return None;
-                }
-                match &dt[xsd::PREFIX.len()..] {
-                    "integer" => Some(Self::Number(SparqlNumber::try_parse_integer(lex))),
-                    "decimal" => Some(Self::Number(SparqlNumber::try_parse::<BigDecimal>(lex))),
-                    "float" => Some(Self::Number(SparqlNumber::try_parse::<f32>(lex))),
-                    "double" => Some(Self::Number(SparqlNumber::try_parse::<f64>(lex))),
-                    "string" => Some(Self::String(lex.clone(), None)),
-                    "boolean" => Some(Self::Boolean(match lex.as_ref() {
-                        "true" | "1" => Some(true),
-                        "false" | "0" => Some(false),
-                        _ => None,
-                    })),
-                    "dateTime" => Some(Self::DateTime(lex.parse().ok())),
-                    "nonPositiveInteger" => Some(Self::Number(
-                        SparqlNumber::try_parse_integer(lex).filter(|n| !n.is_positive()),
-                    )),
-                    "negativeInteger" => Some(Self::Number(
-                        SparqlNumber::try_parse_integer(lex)
-                            .filter(_number::SparqlNumber::is_negative),
-                    )),
-                    "long" => Some(Self::Number(SparqlNumber::try_parse::<i64>(lex))),
-                    "int" => Some(Self::Number(SparqlNumber::try_parse::<i32>(lex))),
-                    "short" => Some(Self::Number(SparqlNumber::try_parse::<i16>(lex))),
-                    "byte" => Some(Self::Number(SparqlNumber::try_parse::<i8>(lex))),
-                    "nonNegativeInteger" => Some(Self::Number(
-                        SparqlNumber::try_parse_integer(lex).filter(|n| !n.is_negative()),
-                    )),
-                    "unsignedLong" => Some(Self::Number(SparqlNumber::try_parse::<u64>(lex))),
-                    "unsignedInt" => Some(Self::Number(SparqlNumber::try_parse::<u32>(lex))),
-                    "unsignedShort" => Some(Self::Number(SparqlNumber::try_parse::<u16>(lex))),
-                    "unsignedByte" => Some(Self::Number(SparqlNumber::try_parse::<u8>(lex))),
-                    "positiveInteger" => Some(Self::Number(
-                        SparqlNumber::try_parse_integer(lex)
-                            .filter(_number::SparqlNumber::is_positive),
-                    )),
-                    _ => None,
-                }
-            }
+            GenericLiteral::Typed(lex, dt) => Self::try_from_parts(lex, dt.as_ref()),
+        }
+    }
+
+    pub fn is_ill_formed(&self) -> bool {
+        match self {
+            SparqlValue::Boolean(opt) => opt.is_none(),
+            SparqlValue::DateTime(opt) => opt.is_none(),
+            SparqlValue::Number(opt) => opt.is_none(),
+            SparqlValue::String(_, _) => false,
         }
     }
 
@@ -114,7 +127,7 @@ impl SparqlValue {
         }
     }
 
-    pub fn lexical_form<F>(&self, mut factory: F) -> Arc<str>
+    pub fn lexical_form_arc<F>(&self, mut factory: F) -> Arc<str>
     where
         F: FnMut(&str) -> Arc<str>,
     {
@@ -133,7 +146,27 @@ impl SparqlValue {
             Number(Some(Double(d))) if d.is_infinite() && d.is_negative() => factory("-INF"),
             Number(Some(Double(d))) => factory(&format!("{d:e}")),
             String(lex, _) => lex.clone(),
-            Boolean(None) | DateTime(None) | Number(None) => factory("ill-formed"),
+            Boolean(None) | DateTime(None) | Number(None) => factory("ill-typed"),
+        }
+    }
+
+    pub fn lexical_form(&self) -> MownStr<'_> {
+        use SparqlNumber::*;
+        use SparqlValue::*;
+        match self {
+            Boolean(Some(b)) => (if *b { "true" } else { "false" }).into(),
+            DateTime(Some(d)) => d.to_string().into(),
+            Number(Some(NativeInt(i))) => i.to_string().into(),
+            Number(Some(BigInt(i))) => i.to_string().into(),
+            Number(Some(Decimal(d))) => dec2string(d).into(),
+            Number(Some(Float(f))) if f.is_infinite() && f.is_positive() => ("INF").into(),
+            Number(Some(Float(f))) if f.is_infinite() && f.is_negative() => ("-INF").into(),
+            Number(Some(Float(f))) => format!("{f:e}").into(),
+            Number(Some(Double(d))) if d.is_infinite() && d.is_positive() => ("INF").into(),
+            Number(Some(Double(d))) if d.is_infinite() && d.is_negative() => ("-INF").into(),
+            Number(Some(Double(d))) => format!("{d:e}").into(),
+            String(lex, _) => lex.as_ref().into(),
+            Boolean(None) | DateTime(None) | Number(None) => ("ill-typed").into(),
         }
     }
 
@@ -196,11 +229,37 @@ impl PartialOrd for SparqlValue {
     }
 }
 
-pub fn dec2string(d: &BigDecimal) -> String {
+fn dec2string(d: &BigDecimal) -> String {
     let d = d.normalized();
     if d.fractional_digit_count() <= 0 {
         format!("{}.0", d.with_scale(0))
     } else {
         d.to_string()
+    }
+}
+
+/// Trait use for an argument of [`SparqlValue::try_from_parts`]
+pub trait LexicalPart {
+    fn as_str(&self) -> &str;
+    fn to_arc(self) -> Arc<str>;
+}
+
+impl LexicalPart for &'_ str {
+    fn as_str(&self) -> &str {
+        self
+    }
+
+    fn to_arc(self) -> Arc<str> {
+        Arc::from(self)
+    }
+}
+
+impl LexicalPart for &'_ Arc<str> {
+    fn as_str(&self) -> &str {
+        self.as_ref()
+    }
+
+    fn to_arc(self) -> Arc<str> {
+        self.clone()
     }
 }

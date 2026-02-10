@@ -10,10 +10,12 @@
 //! * [`iri`]
 //! * [`isomorphism`]
 //! * [`jsonld`] (with the `jsonld` feature enabled)
+//! * [`reasoner`] (with the `reasoner` feature enabled)
 //! * [`resource`]
+//! * [`sparql`] (with the `sparql` feature enabled)
 //! * [`sparql_client`] (with the `http_client` feature enabled)
-//! * [`turtle`]
 //! * [`term`]
+//! * [`turtle`]
 //! * [`xml`] (with the `xml` feature enabled)
 //!
 //! # Getting Started
@@ -38,6 +40,9 @@ pub use sophia_isomorphism as isomorphism;
 #[cfg(feature = "jsonld")]
 #[doc(inline)]
 pub use sophia_jsonld as jsonld;
+#[cfg(feature = "reasoner")]
+#[doc(inline)]
+pub use sophia_reasoner as reasoner;
 #[doc(inline)]
 pub use sophia_resource as resource;
 #[cfg(feature = "sparql")]

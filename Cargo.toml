@@ -7,6 +7,7 @@ members = [
     "iri",
     "isomorphism",
     "jsonld",
+    "reasoner",
     "resource",
     "rio",
     "sophia",
@@ -35,6 +36,7 @@ sophia_inmem = { version = "0.9.0", path = "./inmem" }
 sophia_iri = { version = "0.9.0", path = "./iri" }
 sophia_isomorphism = { version = "0.9.0", path = "./isomorphism" }
 sophia_jsonld = { version = "0.9.0", path = "./jsonld" }
+sophia_reasoner = { version = "0.9.0", path = "./reasoner" }
 sophia_resource = { version = "0.9.0", path = "./resource" }
 sophia_sparql = { version = "0.9.0", path = "./sparql" }
 sophia_sparql_client = { version = "0.9.0", path = "./sparql_client" }

@@ -28,7 +28,7 @@ mod matcher;
 mod ns;
 mod stash;
 mod term;
-mod value;
+pub mod value;
 mod wrapper;
 
 pub use binding::{BindingMap, Bindings};

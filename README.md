@@ -28,6 +28,7 @@ It comprises the following crates:
   + [`sophia_isomorphism`] provides functions to determine if two graphs or datasets are [isomorphic].
   + [`sophia_sparql`] provides a (currently partial) implementation of the [SPARQL 1.2 Query Language].
   + [`sophia_sparql_client`] provides a client for the [SPARQL 1.1 Protocol].
+  + [`sophia_reasoner`] provides reasoning over Simple, RDF and RDF-Schema entailment regimes
   + [`sophia_resource`] provides a resource-centric API.
 * All-inclusive
   + [`sophia`] re-exports symbols from all the crates above, with the following provisio:

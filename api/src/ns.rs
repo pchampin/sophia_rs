@@ -167,6 +167,7 @@ pub mod rdfs {
         ContainerMembershipProperty,
         Datatype,
         Literal,
+        Proposition,
         Resource,
         // semantic properties
         domain,

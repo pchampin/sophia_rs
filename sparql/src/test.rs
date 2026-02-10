@@ -822,7 +822,7 @@ fn test_expr_variable() -> TestResult {
 #[test_case("!(!\"\"@en)           ", "false"; "bool lang-string empty")]
 #[test_case("!(!\"\"@en--ltr)      ", "false"; "bool dir-lang-string empty")]
 #[test_case("!(!\"1\"^^xsd:boolean)", "true"; "bool numeric-formed")]
-#[test_case("!(!\"x\"^^xsd:boolean)", "false"; "bool ill-formed")]
+#[test_case("!(!\"x\"^^xsd:boolean)", "false"; "bool ill-typed")]
 #[test_case("!(!<tag:x>)           ", ""; "bool iri")]
 // test add
 #[test_case("40+2", "42"; "add int")]
@@ -895,7 +895,7 @@ fn test_expr_variable() -> TestResult {
 #[test_case("str(\"chat\"@en--ltr)", "\"chat\""; "str for directional language string")]
 #[test_case("str(042)", "\"042\""; "str for number")]
 #[test_case("str(042+1)", "\"43\""; "str for number computed")]
-#[test_case("str(\"a\"^^xsd:integer)", "\"a\""; "str for ill-formed")]
+#[test_case("str(\"a\"^^xsd:integer)", "\"a\""; "str for ill-typed")]
 // test str error
 #[test_case("str(bnode())", ""; "str for bnode")]
 #[test_case("str(<<( <tag:s> <tag:p> <tag:o> )>>)", ""; "str for triple")]
@@ -905,7 +905,7 @@ fn test_expr_variable() -> TestResult {
 #[test_case("lang(\"chat\"@en)", "\"en\""; "lang for language string")]
 #[test_case("lang(\"chat\"@en--ltr)", "\"en\""; "lang for directional language string")]
 #[test_case("lang(042)", "\"\""; "lang for number")]
-#[test_case("lang(\"a\"^^xsd:integer)", "\"\""; "lang for ill-formed")]
+#[test_case("lang(\"a\"^^xsd:integer)", "\"\""; "lang for ill-typed")]
 // test lang error
 #[test_case("lang(<tag:x>)", ""; "lang for IRI")]
 #[test_case("lang(bnode())", ""; "lang for bnode")]
@@ -916,7 +916,7 @@ fn test_expr_variable() -> TestResult {
 #[test_case("langDir(\"chat\"@en)", "\"\""; "langDir for langDiruage string")]
 #[test_case("langDir(\"chat\"@en--ltr)", "\"ltr\""; "langDir for directional langDiruage string")]
 #[test_case("langDir(042)", "\"\""; "langDir for number")]
-#[test_case("langDir(\"a\"^^xsd:integer)", "\"\""; "langDir for ill-formed")]
+#[test_case("langDir(\"a\"^^xsd:integer)", "\"\""; "langDir for ill-typed")]
 // test langDir error
 #[test_case("langDir(<tag:x>)", ""; "langDir for IRI")]
 #[test_case("langDir(bnode())", ""; "langDir for bnode")]
@@ -943,7 +943,7 @@ fn test_expr_variable() -> TestResult {
 #[test_case("datatype(\"chat\"@en)", "rdf:langString"; "datatype for language string")]
 #[test_case("datatype(\"chat\"@en--ltr)", "rdf:dirLangString"; "datatype for directional language string")]
 #[test_case("datatype(042)", "xsd:integer"; "datatype for number")]
-#[test_case("datatype(\"a\"^^xsd:integer)", "xsd:integer"; "datatype for ill-formed")]
+#[test_case("datatype(\"a\"^^xsd:integer)", "xsd:integer"; "datatype for ill-typed")]
 // test datatype error
 #[test_case("datatype(<tag:x>)", ""; "datatype for IRI")]
 #[test_case("datatype(<<( <tag:s> <tag:p> <tag:o> )>>)", ""; "datatype for triple")]
@@ -957,7 +957,7 @@ fn test_expr_variable() -> TestResult {
 #[test_case("iri(\"tag:z\"@en)", ""; "iri for language string")]
 #[test_case("iri(\"tag:z\"@en--ltr)", ""; "iri for directional language string")]
 #[test_case("iri(042)", ""; "iri for number")]
-#[test_case("iri(\"tag:t\"^^xsd:integer)", ""; "iri for iill-formed")]
+#[test_case("iri(\"tag:t\"^^xsd:integer)", ""; "iri for ill-typed")]
 #[test_case("iri(<<( <tag:s> <tag:p> <tag:o> )>>)", ""; "iri for triple")]
 #[test_case("iri(42/0)", ""; "iri error")]
 // test uri nominal
@@ -969,7 +969,7 @@ fn test_expr_variable() -> TestResult {
 #[test_case("uri(\"tag:z\"@en)", ""; "uri for language string")]
 #[test_case("uri(\"tag:z\"@en--ltr)", ""; "uri for directional language string")]
 #[test_case("uri(042)", ""; "uri for number")]
-#[test_case("uri(\"tag:t\"^^xsd:integer)", ""; "uri for iill-formed")]
+#[test_case("uri(\"tag:t\"^^xsd:integer)", ""; "uri for ill-typed")]
 #[test_case("uri(<<( <tag:s> <tag:p> <tag:o> )>>)", ""; "uri for triple")]
 #[test_case("uri(42/0)", ""; "uri error")]
 // test bnode nominal
@@ -1006,7 +1006,7 @@ fn test_expr_variable() -> TestResult {
 #[test_case("abs(\"42\")", ""; "abs for string")]
 #[test_case("abs(\"chat\"@en)", ""; "abs for language string")]
 #[test_case("abs(\"chat\"@en--ltr)", ""; "abs for directional language string")]
-#[test_case("abs(\"a\"^^xsd:integer)", ""; "abs for ill formed")]
+#[test_case("abs(\"a\"^^xsd:integer)", ""; "abs for ill-typed")]
 #[test_case("abs(<<( <tag:s> <tag:p> <tag:o> )>>)", ""; "abs for triple")]
 // test ceil nominal
 #[test_case("ceil(042)", "42"; "ceil for integer")]
@@ -1040,7 +1040,7 @@ fn test_expr_variable() -> TestResult {
 #[test_case("ceil(\"42\")", ""; "ceil for string")]
 #[test_case("ceil(\"chat\"@en)", ""; "ceil for language string")]
 #[test_case("ceil(\"chat\"@en--ltr)", ""; "ceil for directional language string")]
-#[test_case("ceil(\"a\"^^xsd:integer)", ""; "ceil for ill formed")]
+#[test_case("ceil(\"a\"^^xsd:integer)", ""; "ceil for ill-typed")]
 #[test_case("ceil(<<( <tag:s> <tag:p> <tag:o> )>>)", ""; "ceil for triple")]
 // test floor nominal
 #[test_case("floor(042)", "42"; "floor for integer")]
@@ -1074,7 +1074,7 @@ fn test_expr_variable() -> TestResult {
 #[test_case("floor(\"42\")", ""; "floor for string")]
 #[test_case("floor(\"chat\"@en)", ""; "floor for language string")]
 #[test_case("floor(\"chat\"@en--ltr)", ""; "floor for directional language string")]
-#[test_case("floor(\"a\"^^xsd:integer)", ""; "floor for ill formed")]
+#[test_case("floor(\"a\"^^xsd:integer)", ""; "floor for ill-typed")]
 #[test_case("floor(<<( <tag:s> <tag:p> <tag:o> )>>)", ""; "floor for triple")]
 // test round nominal
 #[test_case("round(042)", "42"; "round for integer")]
@@ -1108,7 +1108,7 @@ fn test_expr_variable() -> TestResult {
 #[test_case("round(\"42\")", ""; "round for string")]
 #[test_case("round(\"chat\"@en)", ""; "round for language string")]
 #[test_case("round(\"chat\"@en--ltr)", ""; "round for directional language string")]
-#[test_case("round(\"a\"^^xsd:integer)", ""; "round for ill formed")]
+#[test_case("round(\"a\"^^xsd:integer)", ""; "round for ill-typed")]
 #[test_case("round(<<( <tag:s> <tag:p> <tag:o> )>>)", ""; "round for triple")]
 // test concat nominal
 #[test_case("concat(\"foo\", \"bar\")", "\"foobar\"")]
