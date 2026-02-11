@@ -132,9 +132,11 @@ impl<TI: TermIndex> MutableGraph for GenericLightGraph<TI> {
 }
 
 impl<TI: TermIndex + Default> CollectibleGraph for GenericLightGraph<TI> {
+    type CollectError = TI::Error;
+
     fn from_triple_source<TS: TripleSource>(
         mut triples: TS,
-    ) -> sophia_api::source::StreamResult<Self, TS::Error, Self::Error> {
+    ) -> sophia_api::source::StreamResult<Self, TS::Error, Self::CollectError> {
         let mut g = Self::new();
         triples.try_for_each_triple(|t| g.insert_triple(t).map(|_| ()))?;
         Ok(g)
@@ -327,6 +329,8 @@ impl<TI: TermIndex> MutableGraph for GenericFastGraph<TI> {
 }
 
 impl<TI: TermIndex + Default> CollectibleGraph for GenericFastGraph<TI> {
+    type CollectError = TI::Error;
+
     fn from_triple_source<TS: TripleSource>(
         mut triples: TS,
     ) -> sophia_api::source::StreamResult<Self, TS::Error, Self::Error> {

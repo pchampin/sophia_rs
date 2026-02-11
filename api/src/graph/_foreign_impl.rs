@@ -249,9 +249,11 @@ impl<T> CollectibleGraph for Vec<[T; 3]>
 where
     T: Term + FromTerm,
 {
+    type CollectError = Infallible;
+
     fn from_triple_source<TS: TripleSource>(
         mut triples: TS,
-    ) -> StreamResult<Self, TS::Error, Self::Error> {
+    ) -> StreamResult<Self, TS::Error, Self::CollectError> {
         let min_cap = triples.size_hint_triples().0;
         let mut v = Vec::with_capacity(min_cap);
         triples
@@ -317,9 +319,11 @@ where
     T: Term + Eq + FromTerm + Hash,
     S: BuildHasher + Default,
 {
+    type CollectError = Infallible;
+
     fn from_triple_source<TS: TripleSource>(
         mut triples: TS,
-    ) -> StreamResult<Self, TS::Error, Self::Error> {
+    ) -> StreamResult<Self, TS::Error, Self::CollectError> {
         let min_cap = triples.size_hint_triples().0;
         let mut s = HashSet::<_, S>::with_capacity_and_hasher(min_cap, S::default());
         triples
@@ -380,9 +384,11 @@ impl<T> CollectibleGraph for BTreeSet<[T; 3]>
 where
     T: Term + FromTerm + Ord,
 {
+    type CollectError = Infallible;
+
     fn from_triple_source<TS: TripleSource>(
         mut triples: TS,
-    ) -> StreamResult<Self, TS::Error, Self::Error> {
+    ) -> StreamResult<Self, TS::Error, Self::CollectError> {
         let mut s = BTreeSet::new();
         triples
             .for_each_triple(|t| {

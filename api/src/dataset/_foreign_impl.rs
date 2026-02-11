@@ -291,9 +291,11 @@ impl<T> CollectibleDataset for Vec<Spog<T>>
 where
     T: Term + FromTerm,
 {
+    type CollectError = Infallible;
+
     fn from_quad_source<TS: QuadSource>(
         mut quads: TS,
-    ) -> StreamResult<Self, TS::Error, Self::Error> {
+    ) -> StreamResult<Self, TS::Error, Self::CollectError> {
         let min_cap = quads.size_hint_quads().0;
         let mut v = Vec::with_capacity(min_cap);
         quads
@@ -367,9 +369,11 @@ impl<T> CollectibleDataset for Vec<Gspo<T>>
 where
     T: Term + FromTerm,
 {
+    type CollectError = Infallible;
+
     fn from_quad_source<TS: QuadSource>(
         mut quads: TS,
-    ) -> StreamResult<Self, TS::Error, Self::Error> {
+    ) -> StreamResult<Self, TS::Error, Self::CollectError> {
         let min_cap = quads.size_hint_quads().0;
         let mut v = Vec::with_capacity(min_cap);
         quads
@@ -456,9 +460,11 @@ where
     T: Term + Eq + FromTerm + Hash,
     S: BuildHasher + Default,
 {
+    type CollectError = Infallible;
+
     fn from_quad_source<TS: QuadSource>(
         mut quads: TS,
-    ) -> StreamResult<Self, TS::Error, Self::Error> {
+    ) -> StreamResult<Self, TS::Error, Self::CollectError> {
         let min_cap = quads.size_hint_quads().0;
         let mut s = HashSet::<_, S>::with_capacity_and_hasher(min_cap, S::default());
         quads
@@ -524,9 +530,11 @@ where
     T: Term + Eq + FromTerm + Hash,
     S: BuildHasher + Default,
 {
+    type CollectError = Infallible;
+
     fn from_quad_source<TS: QuadSource>(
         mut quads: TS,
-    ) -> StreamResult<Self, TS::Error, Self::Error> {
+    ) -> StreamResult<Self, TS::Error, Self::CollectError> {
         let min_cap = quads.size_hint_quads().0;
         let mut s = HashSet::<_, S>::with_capacity_and_hasher(min_cap, S::default());
         quads
@@ -610,9 +618,11 @@ impl<T> CollectibleDataset for BTreeSet<Spog<T>>
 where
     T: Term + FromTerm + Ord,
 {
+    type CollectError = Infallible;
+
     fn from_quad_source<TS: QuadSource>(
         mut quads: TS,
-    ) -> StreamResult<Self, TS::Error, Self::Error> {
+    ) -> StreamResult<Self, TS::Error, Self::CollectError> {
         let mut s = BTreeSet::new();
         quads
             .for_each_quad(|q| {
@@ -675,9 +685,11 @@ impl<T> CollectibleDataset for BTreeSet<Gspo<T>>
 where
     T: Term + FromTerm + Ord,
 {
+    type CollectError = Infallible;
+
     fn from_quad_source<TS: QuadSource>(
         mut quads: TS,
-    ) -> StreamResult<Self, TS::Error, Self::Error> {
+    ) -> StreamResult<Self, TS::Error, Self::CollectError> {
         let mut s = BTreeSet::new();
         quads
             .for_each_quad(|q| {

@@ -332,10 +332,13 @@ pub trait Graph {
 
 /// A [`Graph`] that can be constructed from a [`TripleSource`]
 pub trait CollectibleGraph: Graph + Sized {
+    /// The error type that this graph may raise during collecting.
+    type CollectError: Error + Send + Sync + 'static;
+
     /// Construct a graph from the given source
     fn from_triple_source<TS: TripleSource>(
         triples: TS,
-    ) -> StreamResult<Self, TS::Error, Self::Error>;
+    ) -> StreamResult<Self, TS::Error, Self::CollectError>;
 }
 
 /// Type alias for results produced by a mutable graph.

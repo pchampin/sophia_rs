@@ -377,6 +377,9 @@ pub trait Dataset {
 
 /// A [`Dataset`] that can be constructed from a [`QuadSource`]
 pub trait CollectibleDataset: Dataset + Sized {
+    /// The error type that this dataset may raise during collecting.
+    type CollectError: Error + Send + Sync + 'static;
+
     /// Construct a dataset from the given source
     fn from_quad_source<TS: QuadSource>(quads: TS) -> StreamResult<Self, TS::Error, Self::Error>;
 }

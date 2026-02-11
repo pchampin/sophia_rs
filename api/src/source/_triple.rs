@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use super::*;
-use crate::graph::{CollectibleGraph, Graph, MutableGraph};
+use crate::graph::{CollectibleGraph, MutableGraph};
 use crate::triple::Triple;
 
 /// A triple source is a [`Source`] producing [triples](Triple).
@@ -134,7 +134,9 @@ pub trait TripleSource: Sized + for<'x> Source<Item<'x>: Triple> {
 
     /// Collect these triples into a new graph.
     #[inline]
-    fn collect_triples<G>(self) -> StreamResult<G, Self::Error, <G as Graph>::Error>
+    fn collect_triples<G>(
+        self,
+    ) -> StreamResult<G, Self::Error, <G as CollectibleGraph>::CollectError>
     where
         Self: Sized,
         G: CollectibleGraph,
@@ -162,7 +164,10 @@ impl<T: Sized + for<'x> Source<Item<'x>: Triple>> TripleSource for T {}
 #[cfg(test)]
 mod check_triple_source {
     use super::*;
-    use crate::term::{SimpleTerm, Term};
+    use crate::{
+        graph::Graph,
+        term::{SimpleTerm, Term},
+    };
     use sophia_iri::IriRef;
     use std::convert::Infallible;
     use std::fmt::Write;

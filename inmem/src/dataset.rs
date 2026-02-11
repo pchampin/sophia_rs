@@ -183,9 +183,11 @@ impl<TI: GraphNameIndex> MutableDataset for GenericLightDataset<TI> {
 }
 
 impl<TI: GraphNameIndex + Default> CollectibleDataset for GenericLightDataset<TI> {
+    type CollectError = TI::Error;
+
     fn from_quad_source<QS: QuadSource>(
         mut quads: QS,
-    ) -> sophia_api::source::StreamResult<Self, QS::Error, Self::Error> {
+    ) -> sophia_api::source::StreamResult<Self, QS::Error, Self::CollectError> {
         let mut d = Self::new();
         quads.try_for_each_quad(|q| d.insert_quad(q).map(|_| ()))?;
         Ok(d)
@@ -541,9 +543,11 @@ impl<TI: GraphNameIndex> MutableDataset for GenericFastDataset<TI> {
 }
 
 impl<TI: GraphNameIndex + Default> CollectibleDataset for GenericFastDataset<TI> {
+    type CollectError = TI::Error;
+
     fn from_quad_source<QS: QuadSource>(
         mut quads: QS,
-    ) -> sophia_api::source::StreamResult<Self, QS::Error, Self::Error> {
+    ) -> sophia_api::source::StreamResult<Self, QS::Error, Self::CollectError> {
         let mut d = Self::new();
         quads.try_for_each_quad(|q| d.insert_quad(q).map(|_| ()))?;
         Ok(d)
