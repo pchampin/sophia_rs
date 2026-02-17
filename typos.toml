@@ -5,9 +5,11 @@ extend-ignore-identifiers-re = [
   "pn_local",
   # I prefer this to 'type_'
   "typ",
+  "iz",
 ]
 extend-ignore-re = [
   "raison d'être",
   "Tak, tak, tak! - da kommen sie",
+  "SELECTed",
 ]
 
