@@ -13,13 +13,22 @@ use crate::{
 
 use super::*;
 
-// /* this test is commented out because the test on Graph::iris fails, but that's OK
-//    This implementation yields datatypes in Graph::iris, which is not assumed by the test suite.
+// /* these tests are commented out because the tests on Graph::iris and Dataset::iris fail,
+//    but that's OK. This implementation yields IRIs that appear only as datatypes,
+//    which is not assumed by the test suite.
 //    Arguably, it is a valid behaviour, especilly when entailment is involved
-//    (because RDF entailment produces triples where datatypes become nodes)
+//    (because RDF entailment produces triples where datatypes become nodes).
 // */
-// type SimpleEntailementGraph = ReasonableGraph<crate::d_entailment::Nothing, Simple>;
-// sophia_api::test_immutable_graph_impl!(SimpleEntailementGraph);
+// mod graph_impl {
+//     use super::*;
+//     type SimpleEntailementGraph = ReasonableGraph<crate::d_entailment::Nothing, Simple>;
+//     sophia_api::test_immutable_graph_impl!(SimpleEntailementGraph);
+// }
+// mod dataset_impl {
+//     use super::*;
+//     type SimpleEntailementDataset = crate::dataset::ReasonableDataset<crate::d_entailment::Nothing, Simple>;
+//     sophia_api::test_immutable_dataset_impl!(SimpleEntailementDataset);
+// }
 
 #[test]
 fn literal_normalization_sparql() {

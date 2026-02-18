@@ -20,6 +20,22 @@ use crate::{
     ruleset::RuleSet,
 };
 
+impl<D, R> Clone for ReasonableGraph<D, R> {
+    fn clone(&self) -> Self {
+        Self {
+            i2t: self.i2t.clone(),
+            t2i: self.t2i.clone(),
+            rdt: self.rdt.clone(),
+            spo: self.spo.clone(),
+            pos: self.pos.clone(),
+            osp: self.osp.clone(),
+            _phantom: self._phantom,
+            #[cfg(debug_assertions)]
+            finalized: self.finalized,
+        }
+    }
+}
+
 impl<D, R> std::fmt::Debug for ReasonableGraph<D, R> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ReasonableGraph")
@@ -34,7 +50,12 @@ impl<D, R> std::fmt::Debug for ReasonableGraph<D, R> {
 }
 
 impl<D: Recognized, R: RuleSet> ReasonableGraph<D, R> {
-    fn new() -> Self {
+    /// This method prepares a [`ReasonableGraph`] that still needs to be
+    /// [finalized](ReasonableGraph::finalize), potentially after several calls to
+    /// [`insert_triple`](ReasonableGraph::insert_triple).
+    ///
+    /// Using a [`ReasonableGraph`] before it is finalized will produce incorrect results.
+    pub(crate) fn prepare() -> Self {
         let mut ret = Self {
             i2t: Default::default(),
             t2i: Default::default(),
@@ -43,14 +64,33 @@ impl<D: Recognized, R: RuleSet> ReasonableGraph<D, R> {
             pos: Default::default(),
             osp: Default::default(),
             _phantom: PhantomData,
+            #[cfg(debug_assertions)]
+            finalized: false,
         };
         R::prepare(&mut ret);
         ret
     }
 
+    /// This method must not be used after this [`ReasonableGraph`] has been [finalized](ReasonableGraph::finalize).
+    pub(crate) fn insert_triple<T: Triple>(&mut self, t: T) -> Result<(), Inconsistency> {
+        let si = self.get_or_make_index(&t.s())?;
+        let pi = self.get_or_make_index(&t.p())?;
+        let oi = self.get_or_make_index(&t.o())?;
+        self.insert([si, pi, oi]);
+        Ok(())
+    }
+
+    pub(crate) fn finalize(&mut self) -> Result<(), Inconsistency> {
+        if cfg!(debug_assertions) {
+            self.finalized = true;
+        }
+        R::saturate(self)
+    }
+
     /// Return true if `self` entails the `other` graph,
     /// under the entailment regimes captured by `D` and `R`.
     pub fn entails<G: Graph>(&self, other: G) -> Result<bool, NormalizeError<G::Error>> {
+        debug_assert!(self.finalized);
         self.entails_triples(other.triples())
     }
 
@@ -60,13 +100,14 @@ impl<D: Recognized, R: RuleSet> ReasonableGraph<D, R> {
         &self,
         triples: TS,
     ) -> Result<bool, NormalizeError<TS::Error>> {
+        debug_assert!(self.finalized);
         let query = SparqlWrapper::prepare_ask_from_triples(D::normalize_triples(triples))?;
         let sparql_other = SparqlWrapper(&self.as_dataset());
         Ok(sparql_other.query(&query).unwrap().into_boolean())
     }
 
     /// Return a ReasonableTerm, assuming the index is valid
-    fn get_term(&self, index: usize) -> ReasonableTerm<'_, D, R> {
+    pub(crate) fn get_term(&self, index: usize) -> ReasonableTerm<'_, D, R> {
         debug_assert!(index < self.i2t.len());
         ReasonableTerm::new(self, index)
     }
@@ -175,6 +216,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     type Error = std::convert::Infallible;
 
     fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
+        debug_assert!(self.finalized);
         self.spo
             .iter()
             .copied()
@@ -193,6 +235,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
         P: TermMatcher + 't,
         O: TermMatcher + 't,
     {
+        debug_assert!(self.finalized);
         match (sm.constant(), pm.constant(), om.constant()) {
             (None, None, None) => Box::new(
                 self.spo
@@ -305,6 +348,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     fn subjects(
         &self,
     ) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'_, Self>>> + '_ {
+        debug_assert!(self.finalized);
         self.spo
             .iter()
             .map(|spo| spo[0])
@@ -316,6 +360,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
         &'s self,
         matcher: M,
     ) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'s, Self>>> + 's {
+        debug_assert!(self.finalized);
         if matcher.constant().is_some() {
             if let Some(t) = self.triples_matching(matcher, Any, Any).next() {
                 Box::new(std::iter::once(Ok(t.unwrap()[0]))) as Box<dyn Iterator<Item = _>>
@@ -333,6 +378,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     fn predicates(
         &self,
     ) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'_, Self>>> + '_ {
+        debug_assert!(self.finalized);
         self.pos
             .iter()
             .map(|pos| pos[0])
@@ -344,6 +390,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
         &'s self,
         matcher: M,
     ) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'s, Self>>> + 's {
+        debug_assert!(self.finalized);
         if matcher.constant().is_some() {
             if let Some(t) = self.triples_matching(Any, matcher, Any).next() {
                 Box::new(std::iter::once(Ok(t.unwrap()[1]))) as Box<dyn Iterator<Item = _>>
@@ -361,6 +408,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     fn objects(
         &self,
     ) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'_, Self>>> + '_ {
+        debug_assert!(self.finalized);
         self.osp
             .iter()
             .map(|osp| osp[0])
@@ -372,6 +420,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
         &'s self,
         matcher: M,
     ) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'s, Self>>> + 's {
+        debug_assert!(self.finalized);
         if matcher.constant().is_some() {
             if let Some(t) = self.triples_matching(Any, Any, matcher).next() {
                 Box::new(std::iter::once(Ok(t.unwrap()[2]))) as Box<dyn Iterator<Item = _>>
@@ -387,6 +436,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     }
 
     fn iris(&self) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'_, Self>>> + '_ {
+        debug_assert!(self.finalized);
         self.i2t.iter().enumerate().filter_map(|(idx, item)| {
             if matches!(item.as_ref(), InternalTerm::Iri(_)) {
                 Some(Ok(self.get_term(idx)))
@@ -399,6 +449,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     fn blank_nodes(
         &self,
     ) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'_, Self>>> + '_ {
+        debug_assert!(self.finalized);
         self.i2t.iter().enumerate().filter_map(|(idx, item)| {
             if matches!(item.as_ref(), InternalTerm::BlankNode(_)) {
                 Some(Ok(self.get_term(idx)))
@@ -411,6 +462,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     fn literals(
         &self,
     ) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'_, Self>>> + '_ {
+        debug_assert!(self.finalized);
         self.i2t.iter().enumerate().filter_map(|(idx, item)| {
             if matches!(
                 item.as_ref(),
@@ -429,6 +481,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     where
         sophia_api::graph::GTerm<'s, Self>: Clone,
     {
+        debug_assert!(self.finalized);
         Box::new(self.i2t.iter().enumerate().filter_map(|(idx, item)| {
             if matches!(item.as_ref(), InternalTerm::TripleTerm(_)) {
                 Some(Ok(self.get_term(idx)))
@@ -441,6 +494,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     fn variables(
         &self,
     ) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'_, Self>>> + '_ {
+        debug_assert!(self.finalized);
         self.i2t.iter().enumerate().filter_map(|(idx, item)| {
             if matches!(item.as_ref(), InternalTerm::Variable(_)) {
                 Some(Ok(self.get_term(idx)))
@@ -456,6 +510,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
         TP: Term,
         TO: Term,
     {
+        debug_assert!(self.finalized);
         self.triples_matching([s], [p], [o])
             .next()
             .transpose()
@@ -469,15 +524,9 @@ impl<D: Recognized, R: RuleSet> CollectibleGraph for ReasonableGraph<D, R> {
     fn from_triple_source<TS: sophia_api::prelude::TripleSource>(
         mut triples: TS,
     ) -> sophia_api::source::StreamResult<Self, TS::Error, Self::CollectError> {
-        let mut ret = Self::new();
-        triples.try_for_each_triple(|t| -> Result<(), Inconsistency> {
-            let si = ret.get_or_make_index(&t.s())?;
-            let pi = ret.get_or_make_index(&t.p())?;
-            let oi = ret.get_or_make_index(&t.o())?;
-            ret.insert([si, pi, oi]);
-            Ok(())
-        })?;
-        R::saturate(&mut ret).map_err(SinkError)?;
+        let mut ret = Self::prepare();
+        triples.try_for_each_triple(|t| -> Result<(), Inconsistency> { ret.insert_triple(t) })?;
+        ret.finalize().map_err(SinkError)?;
         Ok(ret)
     }
 }

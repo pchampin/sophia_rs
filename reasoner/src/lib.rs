@@ -15,6 +15,7 @@ use sophia_api::term::{BaseDirection, BnodeId, IriRef, LanguageTag, VarName};
 use crate::d_entailment::IllTypedLiteral;
 
 pub mod d_entailment;
+pub mod dataset;
 pub mod ruleset;
 
 mod _dedup;
@@ -31,7 +32,6 @@ mod _term_impl;
 /// * method [`Graph::triples_matching`](sophia_api::graph::Graph::triples_matching),
 ///   which will match any asserted *or inferred* triple,
 /// * [`entails`](Self::entails) and [`entails_triples`](Self::entails_triples).
-#[derive(Clone)]
 pub struct ReasonableGraph<D, R> {
     /// index-to-term
     i2t: Vec<Arc<InternalTerm>>,
@@ -46,6 +46,8 @@ pub struct ReasonableGraph<D, R> {
     /// asserted triples, sorted by object-subject-predicate
     osp: BTreeSet<[usize; 3]>,
     _phantom: PhantomData<(D, R)>,
+    #[cfg(debug_assertions)]
+    finalized: bool,
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]

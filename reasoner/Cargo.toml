@@ -18,6 +18,7 @@ all-features = true
 [dependencies]
 rayon = "1.11.0"
 regex.workspace = true
+resiter.workspace = true
 smallvec = { version = "1.15.1", features = ["const_generics"] }
 sophia_api.workspace = true
 sophia_iri.workspace = true
