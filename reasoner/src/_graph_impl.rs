@@ -81,7 +81,8 @@ impl<D: Recognized, R: RuleSet> ReasonableGraph<D, R> {
     }
 
     pub(crate) fn finalize(&mut self) -> Result<(), Inconsistency> {
-        if cfg!(debug_assertions) {
+        #[cfg(debug_assertions)]
+        {
             self.finalized = true;
         }
         R::saturate(self)
@@ -90,6 +91,7 @@ impl<D: Recognized, R: RuleSet> ReasonableGraph<D, R> {
     /// Return true if `self` entails the `other` graph,
     /// under the entailment regimes captured by `D` and `R`.
     pub fn entails<G: Graph>(&self, other: G) -> Result<bool, NormalizeError<G::Error>> {
+        #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
         self.entails_triples(other.triples())
     }
@@ -100,6 +102,7 @@ impl<D: Recognized, R: RuleSet> ReasonableGraph<D, R> {
         &self,
         triples: TS,
     ) -> Result<bool, NormalizeError<TS::Error>> {
+        #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
         let query = SparqlWrapper::prepare_ask_from_triples(D::normalize_triples(triples))?;
         let sparql_other = SparqlWrapper(&self.as_dataset());
@@ -216,6 +219,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     type Error = std::convert::Infallible;
 
     fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
+        #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
         self.spo
             .iter()
@@ -235,6 +239,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
         P: TermMatcher + 't,
         O: TermMatcher + 't,
     {
+        #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
         match (sm.constant(), pm.constant(), om.constant()) {
             (None, None, None) => Box::new(
@@ -348,6 +353,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     fn subjects(
         &self,
     ) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'_, Self>>> + '_ {
+        #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
         self.spo
             .iter()
@@ -360,6 +366,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
         &'s self,
         matcher: M,
     ) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'s, Self>>> + 's {
+        #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
         if matcher.constant().is_some() {
             if let Some(t) = self.triples_matching(matcher, Any, Any).next() {
@@ -378,6 +385,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     fn predicates(
         &self,
     ) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'_, Self>>> + '_ {
+        #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
         self.pos
             .iter()
@@ -390,6 +398,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
         &'s self,
         matcher: M,
     ) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'s, Self>>> + 's {
+        #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
         if matcher.constant().is_some() {
             if let Some(t) = self.triples_matching(Any, matcher, Any).next() {
@@ -408,6 +417,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     fn objects(
         &self,
     ) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'_, Self>>> + '_ {
+        #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
         self.osp
             .iter()
@@ -420,6 +430,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
         &'s self,
         matcher: M,
     ) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'s, Self>>> + 's {
+        #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
         if matcher.constant().is_some() {
             if let Some(t) = self.triples_matching(Any, Any, matcher).next() {
@@ -436,6 +447,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     }
 
     fn iris(&self) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'_, Self>>> + '_ {
+        #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
         self.i2t.iter().enumerate().filter_map(|(idx, item)| {
             if matches!(item.as_ref(), InternalTerm::Iri(_)) {
@@ -449,6 +461,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     fn blank_nodes(
         &self,
     ) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'_, Self>>> + '_ {
+        #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
         self.i2t.iter().enumerate().filter_map(|(idx, item)| {
             if matches!(item.as_ref(), InternalTerm::BlankNode(_)) {
@@ -462,6 +475,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     fn literals(
         &self,
     ) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'_, Self>>> + '_ {
+        #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
         self.i2t.iter().enumerate().filter_map(|(idx, item)| {
             if matches!(
@@ -481,6 +495,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     where
         sophia_api::graph::GTerm<'s, Self>: Clone,
     {
+        #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
         Box::new(self.i2t.iter().enumerate().filter_map(|(idx, item)| {
             if matches!(item.as_ref(), InternalTerm::TripleTerm(_)) {
@@ -494,6 +509,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     fn variables(
         &self,
     ) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'_, Self>>> + '_ {
+        #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
         self.i2t.iter().enumerate().filter_map(|(idx, item)| {
             if matches!(item.as_ref(), InternalTerm::Variable(_)) {
@@ -510,6 +526,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
         TP: Term,
         TO: Term,
     {
+        #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
         self.triples_matching([s], [p], [o])
             .next()
