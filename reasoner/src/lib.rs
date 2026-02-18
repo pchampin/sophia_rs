@@ -11,6 +11,8 @@ use std::{
 
 use sophia_api::term::{BaseDirection, BnodeId, IriRef, LanguageTag, VarName};
 
+use crate::d_entailment::IllTypedLiteral;
+
 pub mod d_entailment;
 pub mod ruleset;
 
@@ -52,6 +54,21 @@ enum InternalTerm {
 pub struct ReasonableTerm<'a, D, R> {
     graph: &'a ReasonableGraph<D, R>,
     index: usize,
+}
+
+/// The error that can occur while collecting a [`ReasonableGraph`]
+#[derive(Clone, Debug, thiserror::Error)]
+pub enum Inconsistency {
+    /// An ill-typed literal was encountered
+    #[error("Ill-typed literal")]
+    IllTypedLiteral(
+        #[from]
+        #[source]
+        IllTypedLiteral,
+    ),
+    /// An inconsistency was derived
+    #[error("Other inconsistency: {0}")]
+    Other(String),
 }
 
 #[cfg(test)]

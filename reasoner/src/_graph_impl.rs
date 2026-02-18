@@ -5,7 +5,7 @@ use std::{marker::PhantomData, sync::Arc};
 use sophia_api::{
     graph::{CollectibleGraph, GResult, Graph},
     prelude::Any,
-    source::TripleSource,
+    source::{StreamError::SinkError, TripleSource},
     sparql::SparqlDataset,
     term::{SimpleTerm, Term, matcher::TermMatcher},
     triple::Triple,
@@ -15,7 +15,7 @@ use sophia_sparql::SparqlWrapper;
 use crate::{
     _dedup::UsizeIteratorDedup,
     _range_n::RangeN,
-    InternalTerm, ReasonableGraph, ReasonableTerm,
+    Inconsistency, InternalTerm, ReasonableGraph, ReasonableTerm,
     d_entailment::{IllTypedLiteral, NormalizeError, Recognized},
     ruleset::RuleSet,
 };
@@ -462,20 +462,20 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
 }
 
 impl<D: Recognized, R: RuleSet> CollectibleGraph for ReasonableGraph<D, R> {
-    type CollectError = IllTypedLiteral;
+    type CollectError = Inconsistency;
 
     fn from_triple_source<TS: sophia_api::prelude::TripleSource>(
         mut triples: TS,
     ) -> sophia_api::source::StreamResult<Self, TS::Error, Self::CollectError> {
         let mut ret = Self::new();
-        triples.try_for_each_triple(|t| -> Result<(), IllTypedLiteral> {
+        triples.try_for_each_triple(|t| -> Result<(), Inconsistency> {
             let si = ret.get_or_make_index(&t.s())?;
             let pi = ret.get_or_make_index(&t.p())?;
             let oi = ret.get_or_make_index(&t.o())?;
             ret.insert([si, pi, oi]);
             Ok(())
         })?;
-        R::saturate(&mut ret);
+        R::saturate(&mut ret).map_err(SinkError)?;
         Ok(ret)
     }
 }

@@ -7,7 +7,7 @@ use sophia_api::{
 use test_case::test_case;
 
 use crate::{
-    d_entailment::{IllTypedLiteral, Nothing, Sparql},
+    d_entailment::{Nothing, Sparql},
     ruleset::{Rdf, Rdfs, Simple},
 };
 
@@ -172,10 +172,7 @@ fn d_sparql_ill_formed(g1: &str) {
         sophia_turtle::parser::gtrig::parse_str(&format!(r"{PREFIXES}{g1}"))
             .to_triples()
             .collect_triples();
-    assert!(
-        matches!(res, Err(SinkError(IllTypedLiteral { .. }))),
-        "simple + D_sparql"
-    );
+    assert!(matches!(res, Err(SinkError(_))), "simple + D_sparql");
 
     let res: Result<ReasonableGraph<Nothing, Rdf>, _> =
         sophia_turtle::parser::gtrig::parse_str(&format!(r"{PREFIXES}{g1}"))
@@ -187,10 +184,7 @@ fn d_sparql_ill_formed(g1: &str) {
         sophia_turtle::parser::gtrig::parse_str(&format!(r"{PREFIXES}{g1}"))
             .to_triples()
             .collect_triples();
-    assert!(
-        matches!(res, Err(SinkError(IllTypedLiteral { .. }))),
-        "RDF + D_sparql"
-    );
+    assert!(matches!(res, Err(SinkError(_))), "RDF + D_sparql");
 
     let res: Result<ReasonableGraph<Nothing, Rdfs>, _> =
         sophia_turtle::parser::gtrig::parse_str(&format!(r"{PREFIXES}{g1}"))
@@ -202,10 +196,7 @@ fn d_sparql_ill_formed(g1: &str) {
         sophia_turtle::parser::gtrig::parse_str(&format!(r"{PREFIXES}{g1}"))
             .to_triples()
             .collect_triples();
-    assert!(
-        matches!(res, Err(SinkError(IllTypedLiteral { .. }))),
-        "RDF-S + D_sparql"
-    );
+    assert!(matches!(res, Err(SinkError(_))), "RDF-S + D_sparql");
 }
 
 #[test_case(r#":s :p 01 ."#, ":s :p 1 ."; "graph non-normalized integer")]

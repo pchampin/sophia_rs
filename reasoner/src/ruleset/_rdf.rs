@@ -11,8 +11,8 @@ use sophia_api::{
 };
 
 use crate::{
-    _dedup::UsizeIteratorDedup, InternalTerm, ReasonableGraph, d_entailment::Recognized,
-    ruleset::RuleSet,
+    _dedup::UsizeIteratorDedup, Inconsistency, InternalTerm, ReasonableGraph,
+    d_entailment::Recognized, ruleset::RuleSet,
 };
 
 /// A [`RuleSet`] for [RDF semantics](https://www.w3.org/TR/rdf-semantics/#rdf_d_interpretations)
@@ -48,10 +48,11 @@ impl RuleSet for Rdf {
         prepare_recognized_datatypes(graph);
         prepare_witnesses(graph);
     }
-    fn saturate<D: Recognized>(graph: &mut ReasonableGraph<D, Self>) {
+    fn saturate<D: Recognized>(graph: &mut ReasonableGraph<D, Self>) -> Result<(), Inconsistency> {
         let mut buf = vec![];
         buf.par_extend(rdf_types::<D, Self, false>(graph));
         graph.insert_all(&mut buf);
+        Ok(())
     }
 }
 

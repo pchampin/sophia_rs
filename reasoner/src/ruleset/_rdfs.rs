@@ -8,7 +8,8 @@ use regex::Regex;
 use sophia_api::ns::{rdf, rdfs};
 
 use crate::{
-    _range_n::RangeN, InternalTerm, ReasonableGraph, d_entailment::Recognized, ruleset::RuleSet,
+    _range_n::RangeN, Inconsistency, InternalTerm, ReasonableGraph, d_entailment::Recognized,
+    ruleset::RuleSet,
 };
 
 use super::_rdf::*;
@@ -43,7 +44,7 @@ impl RuleSet for Rdfs {
         buf.par_extend(rdfs1(graph));
         graph.insert_all(&mut buf);
     }
-    fn saturate<D: Recognized>(graph: &mut ReasonableGraph<D, Self>) {
+    fn saturate<D: Recognized>(graph: &mut ReasonableGraph<D, Self>) -> Result<(), Inconsistency> {
         let mut buf = vec![];
 
         buf.par_extend(rdf_types::<D, Self, true>(graph));
@@ -94,6 +95,7 @@ impl RuleSet for Rdfs {
             buf.par_extend(rdfs9(graph)); // rdfs:subClassOf
             changed = changed || graph.insert_all(&mut buf);
         }
+        Ok(())
     }
 }
 
