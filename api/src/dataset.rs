@@ -381,7 +381,9 @@ pub trait CollectibleDataset: Dataset + Sized {
     type CollectError: Error + Send + Sync + 'static;
 
     /// Construct a dataset from the given source
-    fn from_quad_source<TS: QuadSource>(quads: TS) -> StreamResult<Self, TS::Error, Self::Error>;
+    fn from_quad_source<TS: QuadSource>(
+        quads: TS,
+    ) -> StreamResult<Self, TS::Error, Self::CollectError>;
 }
 
 /// Type alias for results produced by a mutable dataset.

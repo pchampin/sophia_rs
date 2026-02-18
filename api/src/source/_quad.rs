@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use super::*;
-use crate::dataset::{CollectibleDataset, Dataset, MutableDataset};
+use crate::dataset::{CollectibleDataset, MutableDataset};
 use crate::quad::Quad;
 
 /// A quad source is a [`Source`] producing [quads](Quad).
@@ -133,7 +133,9 @@ pub trait QuadSource: Sized + for<'x> Source<Item<'x>: Quad> {
 
     /// Collect these quads into a new dataset.
     #[inline]
-    fn collect_quads<D>(self) -> StreamResult<D, Self::Error, <D as Dataset>::Error>
+    fn collect_quads<D>(
+        self,
+    ) -> StreamResult<D, Self::Error, <D as CollectibleDataset>::CollectError>
     where
         Self: Sized,
         for<'x> Self::Item<'x>: Quad,
@@ -164,6 +166,7 @@ impl<T: Sized + for<'x> Source<Item<'x>: Quad>> QuadSource for T {}
 #[cfg(test)]
 mod check_quad_source {
     use super::*;
+    use crate::dataset::Dataset;
     use crate::quad::Spog;
     use crate::term::{SimpleTerm, Term};
     use sophia_iri::IriRef;
