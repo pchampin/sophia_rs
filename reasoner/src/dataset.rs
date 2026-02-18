@@ -42,6 +42,26 @@ pub struct ReasonableDataset<D, R> {
     empty: ReasonableGraph<D, R>,
 }
 
+impl<D, R> Clone for ReasonableDataset<D, R> {
+    fn clone(&self) -> Self {
+        Self {
+            names: self.names.clone(),
+            graphs: self.graphs.clone(),
+            empty: self.empty.clone(),
+        }
+    }
+}
+
+impl<D, R> std::fmt::Debug for ReasonableDataset<D, R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ReasonableDataset")
+            .field("names", &self.names)
+            .field("graphs", &self.graphs)
+            .field("empty", &self.empty)
+            .finish()
+    }
+}
+
 impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
     type Quad<'x>
         = Spog<ReasonableTerm<'x, D, R>>
