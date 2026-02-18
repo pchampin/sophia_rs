@@ -7,7 +7,7 @@ use rayon::iter::{
 use smallvec::SmallVec;
 use sophia_api::{
     ns::{rdf, xsd},
-    term::IriRef,
+    term::{BaseDirection, IriRef, LanguageTag},
 };
 
 use crate::{
@@ -114,8 +114,22 @@ pub(crate) fn prepare_recognized_datatypes<D: Recognized, R: RuleSet>(
 
 pub(crate) fn prepare_witnesses<D: Recognized, R: RuleSet>(graph: &mut ReasonableGraph<D, R>) {
     for (lex, dt) in D::witnesses() {
-        let idt = graph.get_or_make_index(&dt).unwrap();
+        let idt = graph.get_index(&dt).unwrap();
         let lit = Arc::new(InternalTerm::TypedLiteral(lex.into(), idt));
+        graph.t2i.entry(lit).or_insert_with_key(|lit| {
+            let ret = graph.i2t.len();
+            graph.i2t.push(lit.clone());
+            ret
+        });
+    }
+    // also insert witnesses for rdf:langString, rdf::dirLangString and xsd::string
+    let en = LanguageTag::new_unchecked("en");
+    for lit in [
+        "never gonna give you up" * en,
+        "" * en * BaseDirection::Ltr,
+        "" * xsd::string,
+    ] {
+        let lit = Arc::new(graph.try_to_internal(&lit).unwrap());
         graph.t2i.entry(lit).or_insert_with_key(|lit| {
             let ret = graph.i2t.len();
             graph.i2t.push(lit.clone());

@@ -83,7 +83,7 @@ impl<D: Recognized, R: RuleSet> ReasonableGraph<D, R> {
     ///
     /// It is not possible if the subterms (literal's datatype, triple term's component)
     /// are not already present in the graph.
-    fn try_to_internal<T: Term + ?Sized>(&self, term: &T) -> Option<InternalTerm> {
+    pub(crate) fn try_to_internal<T: Term + ?Sized>(&self, term: &T) -> Option<InternalTerm> {
         Some(match term.as_simple() {
             SimpleTerm::Iri(iri_ref) => {
                 InternalTerm::Iri(iri_ref.map_unchecked(|m| m.to_string().into()))

@@ -303,6 +303,9 @@ fn simple_d_sparql_entailment(g1: &str, g2: &str) {
 #[test_case(r#":s :p "hello"@en."#, r#""hello"@en a rdf:langString."#; "langString has types generalized")]
 #[test_case(r#":s :p "hello"@en--ltr."#, ":s :p [ a rdf:dirLangString ]."; "dirLangString has types")]
 #[test_case(r#":s :p "hello"@en--ltr."#, r#""hello"@en--ltr a rdf:dirLangString."#; "dirLangString has types generalized")]
+#[test_case(r#""#, "[] a rdf:langString."; "there exists a langString")]
+#[test_case(r#""#, "[] a rdf:dirLangString."; "there exists a dirLangString")]
+#[test_case(r#""#, "[] a xsd:string."; "there exists a string")]
 fn rdf_entailment(g1: &str, g2: &str) {
     static PREFIXES: &str = r"
         PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
