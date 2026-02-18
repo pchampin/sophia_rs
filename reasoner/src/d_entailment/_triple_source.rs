@@ -14,10 +14,11 @@ use crate::d_entailment::IllTypedLiteral;
 
 use super::Recognized;
 
+/// The iterator type returned by [`Recognized::normalize_triples`].
 pub struct NormalizeTriples<D: ?Sized, TS>(TS, PhantomData<D>);
 
 impl<D: ?Sized, TS> NormalizeTriples<D, TS> {
-    pub fn new(ts: TS) -> Self {
+    pub(crate) fn new(ts: TS) -> Self {
         Self(ts, PhantomData)
     }
 }
@@ -51,12 +52,15 @@ impl<D: Recognized + ?Sized, TS: TripleSource> Source for NormalizeTriples<D, TS
     }
 }
 
+/// The error returned by [`NormalizeTriples`].
 #[derive(Clone, Debug, thiserror::Error)]
 pub enum NormalizeError<E> {
+    /// An error from the normalized triple source
     #[error("Upstream")]
     Upstream(#[source] E),
+    /// The triple source contains an ill-typed literal
     #[error("Ill-typed literal")]
-    IllFormedLiteral(
+    IllTypedLiteral(
         #[from]
         #[source]
         IllTypedLiteral,

@@ -1,7 +1,4 @@
 //! I define the trait [`Recognized`], as well as a number of implementations of that trait.
-
-mod _triple_source;
-
 use std::borrow::Borrow;
 
 use smallvec::SmallVec;
@@ -12,14 +9,15 @@ use sophia_api::{
     triple::Triple,
 };
 
-use crate::d_entailment::_triple_source::NormalizeTriples;
-
 mod _nothing;
 pub use _nothing::Nothing;
 mod _and;
 pub use _and::And;
 mod _sparql;
 pub use _sparql::Sparql;
+
+mod _triple_source;
+pub use _triple_source::{NormalizeError, NormalizeTriples};
 
 /// A trait for dealing with recognized datatypes.
 pub trait Recognized: Send + Sync {

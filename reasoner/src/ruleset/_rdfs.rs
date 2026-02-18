@@ -17,10 +17,18 @@ use super::_rdf::*;
 ///
 /// # Limitations
 ///
-/// All those of `Rdf`, plus
-/// * TODO rdf:type rdfs:Resource only on used terms
-/// * TODO rdf:type rdfs:Proposition only on used triple terms
-/// * TODO others?
+/// All those of [`Rdf`](super::Rdf), plus
+///
+/// * any IRI (or literal, in generalized RDF) should have `rdf:type` `rdfs:Resource`,
+///   but this implementation only infers it for terms used in the graph
+/// * any triple term should have `rdf:type` `rdfs:Proposition`,
+///   but this implementation only infers it for triple terms used in the graph
+///
+/// ## Limitations regarding D-entailment
+///
+/// * range clash for literals are not detected; for example
+///   `:p rdfs:range rdf:langString.  [] :p "foo".` is inconsistent,
+///   but this implementation does not detect it.
 pub struct Rdfs;
 
 impl RuleSet for Rdfs {
@@ -242,15 +250,8 @@ pub(crate) fn rdfs2<D: Recognized, R: RuleSet>(
     graph
         .pos
         .range1(RDFS_DOMAIN)
-        .inspect(|i| println!("--- {i:?}"))
         .par_bridge()
-        .flat_map_iter(|[_, c, p]| {
-            graph
-                .pos
-                .range1(*p)
-                .map(|[_, _, s]| [*s, RDF_TYPE, *c])
-                .inspect(|i| println!("--- --- {i:?}"))
-        })
+        .flat_map_iter(|[_, c, p]| graph.pos.range1(*p).map(|[_, _, s]| [*s, RDF_TYPE, *c]))
 }
 
 /// https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs3

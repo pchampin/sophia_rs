@@ -16,7 +16,7 @@ use crate::{
     _dedup::UsizeIteratorDedup,
     _range_n::RangeN,
     InternalTerm, ReasonableGraph, ReasonableTerm,
-    d_entailment::{IllTypedLiteral, Recognized},
+    d_entailment::{IllTypedLiteral, NormalizeError, Recognized},
     ruleset::RuleSet,
 };
 
@@ -48,14 +48,17 @@ impl<D: Recognized, R: RuleSet> ReasonableGraph<D, R> {
 
     /// Return true if `self` entails the `other` graph,
     /// under the entailment regimes captured by `D` and `R`.
-    pub fn entails<G: Graph>(&self, other: G) -> GResult<G, bool> {
+    pub fn entails<G: Graph>(&self, other: G) -> Result<bool, NormalizeError<G::Error>> {
         self.entails_triples(other.triples())
     }
 
     /// Return true if `self` entails all given `triples`,
     /// under the entailment regimes captured by `D` and `R`.
-    pub fn entails_triples<TS: TripleSource>(&self, triples: TS) -> Result<bool, TS::Error> {
-        let query = SparqlWrapper::prepare_ask_from_triples(D::normalize_triples(triples)).unwrap();
+    pub fn entails_triples<TS: TripleSource>(
+        &self,
+        triples: TS,
+    ) -> Result<bool, NormalizeError<TS::Error>> {
+        let query = SparqlWrapper::prepare_ask_from_triples(D::normalize_triples(triples))?;
         let sparql_other = SparqlWrapper(&self.as_dataset());
         Ok(sparql_other.query(&query).unwrap().into_boolean())
     }
