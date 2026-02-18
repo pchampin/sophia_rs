@@ -157,7 +157,7 @@ fn simple_entail(g1: &str, g2: &str, exp: bool) {
 #[test_case(r#":s :p "foo"^^xsd:int."#; "int")]
 #[test_case(r#":s :p "299"^^xsd:byte."#; "byte")]
 #[test_case(r#":s :p "-1"^^xsd:positiveInteger."#; "positiveInteger")]
-fn d_sparql_ill_formed(g1: &str) {
+fn d_sparql_ill_typed(g1: &str) {
     static PREFIXES: &str = r"
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
         PREFIX : <x:>
@@ -297,6 +297,12 @@ fn simple_d_sparql_entailment(g1: &str, g2: &str) {
 #[test_case(r#""#, "rdf:type rdf:type rdf:Property . rdf:subject rdf:type rdf:Property . rdf:predicate rdf:type rdf:Property . rdf:object rdf:type rdf:Property . rdf:reifies rdf:type rdf:Property . rdf:first rdf:type rdf:Property . rdf:rest rdf:type rdf:Property . rdf:value rdf:type rdf:Property . rdf:nil rdf:type rdf:List . rdf:_1 a rdf:Property . "; "RDF axioms")]
 #[test_case(r#":s :p 42 ."#, ":p a rdf:Property."; "used predicate is a Property")]
 #[test_case(r#":s :p <<( :a :b :c )>> ."#, ":b a rdf:Property."; "predicate in triple term is a Property")]
+#[test_case(r#":s :p "hello"."#, ":s :p [ a xsd:string ]."; "string has types")]
+#[test_case(r#":s :p "hello"."#, r#""hello" a xsd:string."#; "string has types generalized")]
+#[test_case(r#":s :p "hello"@en."#, ":s :p [ a rdf:langString ]."; "langString has types")]
+#[test_case(r#":s :p "hello"@en."#, r#""hello"@en a rdf:langString."#; "langString has types generalized")]
+#[test_case(r#":s :p "hello"@en--ltr."#, ":s :p [ a rdf:dirLangString ]."; "dirLangString has types")]
+#[test_case(r#":s :p "hello"@en--ltr."#, r#""hello"@en--ltr a rdf:dirLangString."#; "dirLangString has types generalized")]
 fn rdf_entailment(g1: &str, g2: &str) {
     static PREFIXES: &str = r"
         PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -308,7 +314,7 @@ fn rdf_entailment(g1: &str, g2: &str) {
             .to_triples()
             .collect_triples()
             .unwrap();
-    debug_graph("Probe", &probe);
+    // debug_graph("Probe", &probe);
 
     let g: ReasonableGraph<Nothing, Simple> =
         sophia_turtle::parser::gtrig::parse_str(&format!(r"{PREFIXES}{g1}"))
@@ -342,7 +348,7 @@ fn rdf_entailment(g1: &str, g2: &str) {
             .to_triples()
             .collect_triples()
             .unwrap();
-    debug_graph("Graph", &g);
+    // debug_graph("Graph", &g);
 
     assert!(g.entails(&probe).unwrap(), "RDF + D_sparql");
 
@@ -439,6 +445,72 @@ fn rdf_d_sparql_entailment(g1: &str, g2: &str) {
     // debug_graph("Graph", &g);
 
     assert!(g.entails(&probe).unwrap(), "RDF-S + D_sparql");
+}
+
+#[test_case(r#"[] a xsd:string, rdf:langString."#, false, false; "node with incompatible string types")]
+#[test_case(r#"[] a xsd:positiveInteger, xsd:negativeInteger."#, true, false; "node with incompatible integer types")]
+#[test_case(r#"[] a xsd:decimal, xsd:double."#, true, false; "node with incompatible XSD types")]
+#[test_case(r#""foo"@en a rdf:dirLangString."#, false, false; "literal with incompatible string type")]
+#[test_case(r#"25 a xsd:string."#, true, false; "literal with incompatible XSD type 1")]
+#[test_case(r#""25" a xsd:integer."#, true, false; "literal with incompatible XSD type 2")]
+#[test_case(r#"-2 a xsd:positiveInteger."#, true, false; "literal with incompatible XSD type 3")]
+#[test_case(r#":s :p 25. :p rdfs:range xsd:string."#, true, true; "range clash 1")]
+#[test_case(r#":s :p "25". :p rdfs:range xsd:integer."#, true, true; "range clash 2")]
+#[test_case(r#":s :p -2. :p rdfs:range xsd:positiveInteger."#, true, true; "range clash 3")]
+fn rdf_inconsistent(g1: &str, sparql: bool, rdfs: bool) {
+    static PREFIXES: &str = r"
+        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+        PREFIX : <x:>
+";
+    let res: Result<ReasonableGraph<Nothing, Simple>, _> =
+        sophia_turtle::parser::gtrig::parse_str(&format!(r"{PREFIXES}{g1}"))
+            .to_triples()
+            .collect_triples();
+    assert!(res.is_ok(), "simple, no D");
+
+    let res: Result<ReasonableGraph<Sparql, Simple>, _> =
+        sophia_turtle::parser::gtrig::parse_str(&format!(r"{PREFIXES}{g1}"))
+            .to_triples()
+            .collect_triples();
+    assert!(res.is_ok(), "simple + D_sparql");
+
+    let res: Result<ReasonableGraph<Nothing, Rdf>, _> =
+        sophia_turtle::parser::gtrig::parse_str(&format!(r"{PREFIXES}{g1}"))
+            .to_triples()
+            .collect_triples();
+    if sparql || rdfs {
+        assert!(res.is_ok(), "RDF, no D");
+    } else {
+        assert!(matches!(res, Err(SinkError(_))), "RDF, no D");
+    }
+
+    let res: Result<ReasonableGraph<Sparql, Rdf>, _> =
+        sophia_turtle::parser::gtrig::parse_str(&format!(r"{PREFIXES}{g1}"))
+            .to_triples()
+            .collect_triples();
+    if rdfs {
+        assert!(res.is_ok(), "RDF + D_sparql");
+    } else {
+        assert!(matches!(res, Err(SinkError(_))), "RDF + D_sparql");
+    }
+
+    let res: Result<ReasonableGraph<Nothing, Rdfs>, _> =
+        sophia_turtle::parser::gtrig::parse_str(&format!(r"{PREFIXES}{g1}"))
+            .to_triples()
+            .collect_triples();
+    if sparql {
+        assert!(res.is_ok(), "RDF-S, no D");
+    } else {
+        assert!(matches!(res, Err(SinkError(_))), "RDF-S, no D");
+    }
+
+    let res: Result<ReasonableGraph<Sparql, Rdfs>, _> =
+        sophia_turtle::parser::gtrig::parse_str(&format!(r"{PREFIXES}{g1}"))
+            .to_triples()
+            .collect_triples();
+    assert!(matches!(res, Err(SinkError(_))), "RDF-S + D_sparql");
 }
 
 #[test_case(r#""#, "rdf:type rdfs:domain rdfs:Resource . rdf:reifies rdfs:domain rdfs:Resource . rdfs:domain rdfs:domain rdf:Property . rdfs:range rdfs:domain rdf:Property . rdfs:subPropertyOf rdfs:domain rdf:Property . rdfs:subClassOf rdfs:domain rdfs:Class . rdf:subject rdfs:domain rdf:Statement . rdf:predicate rdfs:domain rdf:Statement . rdf:object rdfs:domain rdf:Statement . rdfs:member rdfs:domain rdfs:Resource . rdf:first rdfs:domain rdf:List . rdf:rest rdfs:domain rdf:List . rdfs:seeAlso rdfs:domain rdfs:Resource . rdfs:isDefinedBy rdfs:domain rdfs:Resource . rdfs:comment rdfs:domain rdfs:Resource . rdfs:label rdfs:domain rdfs:Resource . rdf:value rdfs:domain rdfs:Resource . rdf:type rdfs:range rdfs:Class . rdf:reifies rdfs:range rdfs:Proposition . rdfs:domain rdfs:range rdfs:Class . rdfs:range rdfs:range rdfs:Class . rdfs:subPropertyOf rdfs:range rdf:Property . rdfs:subClassOf rdfs:range rdfs:Class . rdf:subject rdfs:range rdfs:Resource . rdf:predicate rdfs:range rdfs:Resource . rdf:object rdfs:range rdfs:Resource . rdfs:member rdfs:range rdfs:Resource . rdf:first rdfs:range rdfs:Resource . rdf:rest rdfs:range rdf:List . rdfs:seeAlso rdfs:range rdfs:Resource . rdfs:isDefinedBy rdfs:range rdfs:Resource . rdfs:comment rdfs:range rdfs:Literal . rdfs:label rdfs:range rdfs:Literal . rdf:value rdfs:range rdfs:Resource . rdf:Alt rdfs:subClassOf rdfs:Container . rdf:Bag rdfs:subClassOf rdfs:Container . rdf:Seq rdfs:subClassOf rdfs:Container . rdfs:ContainerMembershipProperty rdfs:subClassOf rdf:Property . rdfs:isDefinedBy rdfs:subPropertyOf rdfs:seeAlso . rdfs:Datatype rdfs:subClassOf rdfs:Class . rdf:_1 rdf:type rdfs:ContainerMembershipProperty . rdf:_1 rdfs:domain rdfs:Resource . rdf:_1 rdfs:range rdfs:Resource . "; "RDFS axioms")]

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::BTreeSet, iter::once, sync::Arc};
 
 use rayon::iter::{
     IndexedParallelIterator, IntoParallelRefIterator, ParallelBridge, ParallelExtend,
@@ -52,7 +52,8 @@ impl RuleSet for Rdf {
         let mut buf = vec![];
         buf.par_extend(rdf_types::<D, Self, false>(graph));
         graph.insert_all(&mut buf);
-        Ok(())
+
+        check_recognized_datatypes(graph)
     }
 }
 
@@ -128,6 +129,7 @@ pub(crate) fn rdf_types<D: Recognized, R: RuleSet, const RDFS: bool>(
 ) -> impl ParallelIterator<Item = [usize; 3]> {
     let rdf_lang_string = graph.get_index(&rdf::langString).unwrap();
     let rdf_dir_lang_string = graph.get_index(&rdf::dirLangString).unwrap();
+    let xsd_string = graph.get_index(&xsd::string).unwrap();
     graph
         .i2t
         .par_iter()
@@ -148,7 +150,13 @@ pub(crate) fn rdf_types<D: Recognized, R: RuleSet, const RDFS: bool>(
                             v.push([i, RDF_TYPE, *idt]);
                             v
                         }
-                        None => SmallVec::new(),
+                        None => {
+                            if *idt == xsd_string {
+                                SmallVec::from_elem([i, RDF_TYPE, xsd_string], 1)
+                            } else {
+                                SmallVec::new()
+                            }
+                        }
                     }
                 }
                 InternalTerm::LangString(_, _, dir) => {
@@ -184,6 +192,67 @@ pub(crate) fn rdf_types<D: Recognized, R: RuleSet, const RDFS: bool>(
                 .map(|p| [p, RDF_TYPE, RDF_PROPERTY])
                 .par_bridge(),
         )
+}
+
+/// Checks that no resources has rdf:types D1 and D2 where D1 and D2 are disjoint recognized datatypes.
+///
+/// To determine which datatypes are disjoint,
+/// we are inspecting the endorsed datatypes (via [`D::datatypes_for`]) of all [`D::witnesses`],
+/// since the contract requires that any pair of overlapping datatypes must have a witness.
+pub(crate) fn check_recognized_datatypes<D: Recognized, R: RuleSet>(
+    graph: &mut ReasonableGraph<D, R>,
+) -> Result<(), Inconsistency> {
+    let disjoint = compute_disjoint_datatypes(graph);
+    let instance_of_disjoint_datatypes = graph
+        .pos
+        .range([RDF_TYPE, graph.rdt.start, 0]..[RDF_TYPE, graph.rdt.end, 0])
+        .par_bridge()
+        .flat_map_iter(|[_, dt1, s]| {
+            graph
+                .spo
+                .range([*s, RDF_TYPE, *dt1 + 1]..[*s, RDF_TYPE, graph.rdt.end])
+                .filter_map(|[_, _, dt2]| disjoint.get(&(*dt1, *dt2)).copied())
+        })
+        .find_map_any(|(dt1, dt2)| {
+            let InternalTerm::Iri(iri1) = graph.i2t[dt1].as_ref() else {
+                unreachable!()
+            };
+            let InternalTerm::Iri(iri2) = graph.i2t[dt2].as_ref() else {
+                unreachable!()
+            };
+            Some(format!(
+                "instance of disjoint datatypes <{iri1}> and <{iri2}>"
+            ))
+        });
+    if let Some(msg) = instance_of_disjoint_datatypes {
+        Err(Inconsistency::Other(msg))
+    } else {
+        Ok(())
+    }
+}
+
+fn compute_disjoint_datatypes<D: Recognized, R: RuleSet>(
+    graph: &mut ReasonableGraph<D, R>,
+) -> BTreeSet<(usize, usize)> {
+    let mut disjoint: BTreeSet<_> = graph
+        .rdt
+        .clone()
+        .flat_map(|i| ((i + 1)..graph.rdt.end).map(move |j| (i, j)))
+        .collect();
+    for w in D::witnesses() {
+        let wdts: Vec<_> = once(w.1.clone())
+            .chain(D::datatypes_for(&w.0, w.1.as_ref()).unwrap())
+            .map(|t| graph.get_index(&t).unwrap())
+            .collect();
+        for overlapping in wdts.iter().copied().flat_map(|i| {
+            wdts.iter()
+                .copied()
+                .filter_map(move |j| (i < j).then_some((i, j)))
+        }) {
+            disjoint.remove(&overlapping);
+        }
+    }
+    disjoint
 }
 
 pub(crate) const RDF_TYPE: usize = 0;

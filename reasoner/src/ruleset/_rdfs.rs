@@ -95,7 +95,7 @@ impl RuleSet for Rdfs {
             buf.par_extend(rdfs9(graph)); // rdfs:subClassOf
             changed = changed || graph.insert_all(&mut buf);
         }
-        Ok(())
+        check_recognized_datatypes(graph)
     }
 }
 
@@ -240,9 +240,11 @@ pub(crate) fn rdfs_membership_properties<D: Recognized, R: RuleSet>(
 pub(crate) fn rdfs1<D: Recognized, R: RuleSet>(
     graph: &ReasonableGraph<D, R>,
 ) -> impl ParallelIterator<Item = [usize; 3]> {
-    D::datatypes()
+    graph
+        .rdt
+        .clone()
         .par_bridge()
-        .map(|iriref| [graph.get_index(&iriref).unwrap(), RDF_TYPE, RDFS_DATATYPE])
+        .map(|idt| [idt, RDF_TYPE, RDFS_DATATYPE])
 }
 
 /// https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs2

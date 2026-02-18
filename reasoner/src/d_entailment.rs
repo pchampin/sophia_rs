@@ -42,7 +42,7 @@ pub trait Recognized: Send + Sync {
     /// NB: one literal can be a witness for several supported datatypes,
     /// e.g. `xsd:decimal`, `xsd:integer`, `xsd:int` and others...
     ///
-    /// Note however that all combinations of supported datatypes that share a value should have a witness.
+    /// Note however that all combinations of supported datatypes that share a value must have a witness.
     /// Imagine 3 datatypes :multipleOf2, :multipleOf3 and :prime,
     /// 2 (:multipleOf2 + :prime) and 3 (:multipleOf3 + :prime) are not sufficient,
     /// another witness should exist for :multipleOf2 and :multipleOf3 (e.g. 6).
