@@ -61,7 +61,6 @@ impl Recognized for Sparql {
             xsd::decimal,
             xsd::float,
             xsd::double,
-            xsd::string,
             xsd::boolean,
             xsd::dateTime,
             xsd::nonPositiveInteger,

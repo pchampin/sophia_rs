@@ -385,24 +385,24 @@ pub(crate) fn rdfs13<D: Recognized, R: RuleSet>(
 }
 
 // terms in the RDF ns that only have a meaning in RDFS
-pub(crate) const RDF_ALT: usize = 15;
-pub(crate) const RDF_BAG: usize = 16;
-pub(crate) const RDF_SEQ: usize = 17;
-pub(crate) const RDF_STATEMENT: usize = 18;
+pub(crate) const RDF_ALT: usize = 12;
+pub(crate) const RDF_BAG: usize = 13;
+pub(crate) const RDF_SEQ: usize = 14;
+pub(crate) const RDF_STATEMENT: usize = 15;
 
-pub(crate) const RDFS_DOMAIN: usize = 19;
-pub(crate) const RDFS_RANGE: usize = 20;
-pub(crate) const RDFS_RESOURCE: usize = 21;
-pub(crate) const RDFS_LITERAL: usize = 22;
-pub(crate) const RDFS_DATATYPE: usize = 23;
-pub(crate) const RDFS_CLASS: usize = 24;
-pub(crate) const RDFS_SUB_CLASS_OF: usize = 25;
-pub(crate) const RDFS_SUB_PROPERTY_OF: usize = 26;
-pub(crate) const RDFS_PROPOSITION: usize = 27;
-pub(crate) const RDFS_MEMBER: usize = 28;
-pub(crate) const RDFS_CONTAINER: usize = 29;
-pub(crate) const RDFS_CONTAINER_MEMBERSHIP_PROPERTY: usize = 30;
-pub(crate) const RDFS_COMMENT: usize = 31;
-pub(crate) const RDFS_SEE_ALSO: usize = 32;
-pub(crate) const RDFS_IS_DEFINED_BY: usize = 33;
-pub(crate) const RDFS_LABEL: usize = 34;
+pub(crate) const RDFS_DOMAIN: usize = 16;
+pub(crate) const RDFS_RANGE: usize = 17;
+pub(crate) const RDFS_RESOURCE: usize = 18;
+pub(crate) const RDFS_LITERAL: usize = 19;
+pub(crate) const RDFS_DATATYPE: usize = 20;
+pub(crate) const RDFS_CLASS: usize = 21;
+pub(crate) const RDFS_SUB_CLASS_OF: usize = 22;
+pub(crate) const RDFS_SUB_PROPERTY_OF: usize = 23;
+pub(crate) const RDFS_PROPOSITION: usize = 24;
+pub(crate) const RDFS_MEMBER: usize = 25;
+pub(crate) const RDFS_CONTAINER: usize = 26;
+pub(crate) const RDFS_CONTAINER_MEMBERSHIP_PROPERTY: usize = 27;
+pub(crate) const RDFS_COMMENT: usize = 28;
+pub(crate) const RDFS_SEE_ALSO: usize = 29;
+pub(crate) const RDFS_IS_DEFINED_BY: usize = 30;
+pub(crate) const RDFS_LABEL: usize = 31;

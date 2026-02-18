@@ -6,6 +6,7 @@
 use std::{
     collections::{BTreeSet, HashMap},
     marker::PhantomData,
+    ops::Range,
     sync::Arc,
 };
 
@@ -32,10 +33,17 @@ mod _term_impl;
 /// * [`entails`](Self::entails) and [`entails_triples`](Self::entails_triples).
 #[derive(Clone)]
 pub struct ReasonableGraph<D, R> {
+    /// index-to-term
     i2t: Vec<Arc<InternalTerm>>,
+    /// term-to-index
     t2i: HashMap<Arc<InternalTerm>, usize>,
+    /// recognized datatypes, as (min-index, max-index)
+    rdt: Range<usize>,
+    /// asserted triples, sorted by subject-predicate-object
     spo: BTreeSet<[usize; 3]>,
+    /// asserted triples, sorted by predicate-object-subject
     pos: BTreeSet<[usize; 3]>,
+    /// asserted triples, sorted by object-subject-predicate
     osp: BTreeSet<[usize; 3]>,
     _phantom: PhantomData<(D, R)>,
 }

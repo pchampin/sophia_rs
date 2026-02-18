@@ -25,6 +25,7 @@ impl<D, R> std::fmt::Debug for ReasonableGraph<D, R> {
         f.debug_struct("ReasonableGraph")
             .field("i2t", &self.i2t)
             .field("t2i", &self.t2i)
+            .field("rdt", &self.rdt)
             .field("spo", &self.spo)
             .field("pos", &self.pos)
             .field("osp", &self.osp)
@@ -37,6 +38,7 @@ impl<D: Recognized, R: RuleSet> ReasonableGraph<D, R> {
         let mut ret = Self {
             i2t: Default::default(),
             t2i: Default::default(),
+            rdt: (0..0),
             spo: Default::default(),
             pos: Default::default(),
             osp: Default::default(),

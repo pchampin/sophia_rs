@@ -77,16 +77,10 @@ pub(crate) fn prepare_rdf_vocab<D: Recognized, R: RuleSet>(graph: &mut Reasonabl
     debug_assert_eq!(res.ok(), Some(RDF_NIL));
     let res = graph.get_or_make_index(&rdf::List);
     debug_assert_eq!(res.ok(), Some(RDF_LIST));
-    let res = graph.get_or_make_index(&rdf::langString);
-    debug_assert_eq!(res.ok(), Some(RDF_LANG_STRING));
-    let res = graph.get_or_make_index(&rdf::dirLangString);
-    debug_assert_eq!(res.ok(), Some(RDF_DIR_LANG_STRING));
     let res = graph.get_or_make_index(&rdf::Property);
     debug_assert_eq!(res.ok(), Some(RDF_PROPERTY));
     let res = graph.get_or_make_index(&IriRef::new_unchecked(format!("{}_1", rdf::PREFIX)));
     debug_assert_eq!(res.ok(), Some(RDF_1));
-    let res = graph.get_or_make_index(&xsd::string);
-    debug_assert_eq!(res.ok(), Some(XSD_STRING));
     // axioms
     graph.insert([RDF_TYPE, RDF_TYPE, RDF_PROPERTY]);
     graph.insert([RDF_SUBJECT, RDF_TYPE, RDF_PROPERTY]);
@@ -103,9 +97,18 @@ pub(crate) fn prepare_rdf_vocab<D: Recognized, R: RuleSet>(graph: &mut Reasonabl
 pub(crate) fn prepare_recognized_datatypes<D: Recognized, R: RuleSet>(
     graph: &mut ReasonableGraph<D, R>,
 ) {
+    let dtmin = graph.i2t.len();
+    graph.get_or_make_index(&rdf::langString).unwrap();
+    debug_assert_eq!(graph.i2t.len(), dtmin + 1);
+    graph.get_or_make_index(&rdf::dirLangString).unwrap();
+    debug_assert_eq!(graph.i2t.len(), dtmin + 2);
+    graph.get_or_make_index(&xsd::string).unwrap();
+    debug_assert_eq!(graph.i2t.len(), dtmin + 3);
     D::datatypes().for_each(|iri| {
         graph.get_or_make_index(&iri).unwrap();
     });
+    debug_assert_eq!(graph.i2t.len(), dtmin + 3 + D::datatypes().count());
+    graph.rdt = dtmin..graph.i2t.len();
 }
 
 pub(crate) fn prepare_witnesses<D: Recognized, R: RuleSet>(graph: &mut ReasonableGraph<D, R>) {
@@ -123,11 +126,13 @@ pub(crate) fn prepare_witnesses<D: Recognized, R: RuleSet>(graph: &mut Reasonabl
 pub(crate) fn rdf_types<D: Recognized, R: RuleSet, const RDFS: bool>(
     graph: &ReasonableGraph<D, R>,
 ) -> impl ParallelIterator<Item = [usize; 3]> {
+    let rdf_lang_string = graph.get_index(&rdf::langString).unwrap();
+    let rdf_dir_lang_string = graph.get_index(&rdf::dirLangString).unwrap();
     graph
         .i2t
         .par_iter()
         .enumerate()
-        .flat_map_iter(|(i, t)| -> SmallVec<[[usize; 3]; 16]> {
+        .flat_map_iter(move |(i, t)| -> SmallVec<[[usize; 3]; 16]> {
             let mut v = match t.as_ref() {
                 InternalTerm::TypedLiteral(lex, idt) => {
                     // add rdf:type {datatype} for all recognized datatypes
@@ -149,9 +154,9 @@ pub(crate) fn rdf_types<D: Recognized, R: RuleSet, const RDFS: bool>(
                 InternalTerm::LangString(_, _, dir) => {
                     // add rdf:type {datatype} for language strings
                     if dir.is_some() {
-                        SmallVec::from_elem([i, RDF_TYPE, RDF_DIR_LANG_STRING], 1)
+                        SmallVec::from_elem([i, RDF_TYPE, rdf_dir_lang_string], 1)
                     } else {
-                        SmallVec::from_elem([i, RDF_TYPE, RDF_LANG_STRING], 1)
+                        SmallVec::from_elem([i, RDF_TYPE, rdf_lang_string], 1)
                     }
                 }
                 InternalTerm::TripleTerm([_, p, _]) => {
@@ -191,8 +196,5 @@ pub(crate) const RDF_REST: usize = 6;
 pub(crate) const RDF_VALUE: usize = 7;
 pub(crate) const RDF_NIL: usize = 8;
 pub(crate) const RDF_LIST: usize = 9;
-pub(crate) const RDF_LANG_STRING: usize = 10;
-pub(crate) const RDF_DIR_LANG_STRING: usize = 11;
-pub(crate) const RDF_PROPERTY: usize = 12;
-pub(crate) const RDF_1: usize = 13;
-pub(crate) const XSD_STRING: usize = 14;
+pub(crate) const RDF_PROPERTY: usize = 10;
+pub(crate) const RDF_1: usize = 11;
