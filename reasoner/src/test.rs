@@ -460,6 +460,8 @@ fn rdf_d_sparql_entailment(g1: &str, g2: &str) {
 #[test_case(r#":s :p 25. :p rdfs:range xsd:string."#, true, true; "range clash 1")]
 #[test_case(r#":s :p "25". :p rdfs:range xsd:integer."#, true, true; "range clash 2")]
 #[test_case(r#":s :p -2. :p rdfs:range xsd:positiveInteger."#, true, true; "range clash 3")]
+#[test_case(r#"rdf:type rdfs:domain xsd:integer."#, true, true; "not everything can be an integer 1")]
+#[test_case(r#"rdfs:Resource rdfs:subClassOf xsd:integer."#, true, true; "not everything can be an integer 2")]
 fn rdf_inconsistent(g1: &str, sparql: bool, rdfs: bool) {
     static PREFIXES: &str = r"
         PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -513,6 +515,7 @@ fn rdf_inconsistent(g1: &str, sparql: bool, rdfs: bool) {
         sophia_turtle::parser::gtrig::parse_str(&format!(r"{PREFIXES}{g1}"))
             .to_triples()
             .collect_triples();
+    // res.as_ref().map(|g| debug_graph("Graph", g));
     assert!(matches!(res, Err(SinkError(_))), "RDF-S + D_sparql");
 }
 

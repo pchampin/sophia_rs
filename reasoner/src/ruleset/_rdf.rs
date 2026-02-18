@@ -28,10 +28,6 @@ use crate::{
 ///   such as
 ///   `:s :p true. :s :p false. :v a xsd:boolean.` ⊧ `:s :p :v.`
 ///
-/// * inferences based on disjoint value spaces is not supported,
-///   such as
-///   `:v a xsd:integer. :v a xsd:boolean.` is inconsistent.
-///
 /// # Limitations for generalized graphs
 ///
 /// The following limitations only impact generalized graphs,
