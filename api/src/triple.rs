@@ -1,4 +1,4 @@
-//! I define how [RDF triples](https://www.w3.org/TR/rdf11-concepts/#section-triples)
+//! I define how [RDF triples](https://www.w3.org/TR/rdf12-concepts/#section-triples)
 //! are represented in Sophia.
 //!
 //! I provide the main trait [`Triple`].

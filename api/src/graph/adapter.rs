@@ -82,11 +82,11 @@ impl<T: Dataset> Graph for UnionGraph<T> {
         self.0.literals()
     }
 
-    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = GResult<Self, GTerm<'s, Self>>> + 's>
+    fn triple_terms<'s>(&'s self) -> Box<dyn Iterator<Item = GResult<Self, GTerm<'s, Self>>> + 's>
     where
         GTerm<'s, Self>: Clone,
     {
-        self.0.quoted_triples()
+        self.0.triple_terms()
     }
 
     fn variables(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {

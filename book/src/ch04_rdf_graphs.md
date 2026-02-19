@@ -172,7 +172,7 @@ In particular, any iterator of `Result<T, E>` where `T: `[`Triple`] is a [`Tripl
 
 [`Graph`]: https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html
 [`MutableGraph`]: https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html
-[RDF graphs]: https://www.w3.org/TR/rdf-concepts/#dfn-rdf-graph
+[RDF graphs]: https://www.w3.org/TR/rdf12-concepts/#dfn-rdf-graph
 [`Graph::triples`]: https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#tymethod.triples
 [`Result`]: https://doc.rust-lang.org/std/result/enum.Result.html
 [`Graph::triples_matching`]: https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html#method.triples_matching

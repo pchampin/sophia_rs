@@ -4,7 +4,7 @@
 //! Serializer and parser for the [JSON-LD] concrete syntax of RDF.
 //!
 //! [Sophia]: https://docs.rs/sophia/latest/sophia/
-//! [RDF]: https://www.w3.org/TR/rdf-primer/
+//! [RDF]: https://www.w3.org/TR/rdf12-primer/
 //! [Linked Data]: http://linkeddata.org/
 //! [JSON-LD]: https://www.w3.org/TR/json-ld11/
 //! [expanded document form]: https://www.w3.org/TR/json-ld11/#expanded-document-form

@@ -20,19 +20,19 @@ use crate::{
     value::{SparqlNumber, SparqlValue, XsdDateTime},
 };
 
-/// An [expression](https://www.w3.org/TR/sparql11-query/#expressions).
+/// An [expression](https://www.w3.org/TR/sparql12-query/#expressions).
 #[derive(Debug, Clone)]
 pub(crate) enum ArcExpression {
     NamedNode(IriRef<Arc<str>>),
     Literal(GenericLiteral<Arc<str>>),
     Variable(VarName<Arc<str>>),
-    /// [Logical-or](https://www.w3.org/TR/sparql11-query/#func-logical-or).
+    /// [Logical-or](https://www.w3.org/TR/sparql12-query/#func-logical-or).
     Or(Box<Self>, Box<Self>),
-    /// [Logical-and](https://www.w3.org/TR/sparql11-query/#func-logical-and).
+    /// [Logical-and](https://www.w3.org/TR/sparql12-query/#func-logical-and).
     And(Box<Self>, Box<Self>),
-    /// [RDFterm-equal](https://www.w3.org/TR/sparql11-query/#func-RDFterm-equal) and all the XSD equalities.
+    /// [RDFterm-equal](https://www.w3.org/TR/sparql12-query/#func-RDFterm-equal) and all the XSD equalities.
     Equal(Box<Self>, Box<Self>),
-    /// [sameTerm](https://www.w3.org/TR/sparql11-query/#func-sameTerm).
+    /// [sameTerm](https://www.w3.org/TR/sparql12-query/#func-sameTerm).
     SameTerm(Box<Self>, Box<Self>),
     /// [op:numeric-greater-than](https://www.w3.org/TR/xpath-functions-31/#func-numeric-greater-than) and other XSD greater than operators.
     Greater(Box<Self>, Box<Self>),
@@ -40,7 +40,7 @@ pub(crate) enum ArcExpression {
     /// [op:numeric-less-than](https://www.w3.org/TR/xpath-functions-31/#func-numeric-less-than) and other XSD greater than operators.
     Less(Box<Self>, Box<Self>),
     LessOrEqual(Box<Self>, Box<Self>),
-    /// [IN](https://www.w3.org/TR/sparql11-query/#func-in)
+    /// [IN](https://www.w3.org/TR/sparql12-query/#func-in)
     In(Box<Self>, Vec<Self>),
     /// [op:numeric-add](https://www.w3.org/TR/xpath-functions-31/#func-numeric-add) and other XSD additions.
     Add(Box<Self>, Box<Self>),
@@ -56,13 +56,13 @@ pub(crate) enum ArcExpression {
     UnaryMinus(Box<Self>),
     /// [fn:not](https://www.w3.org/TR/xpath-functions-31/#func-not).
     Not(Box<Self>),
-    /// [EXISTS](https://www.w3.org/TR/sparql11-query/#func-filter-exists).
+    /// [EXISTS](https://www.w3.org/TR/sparql12-query/#func-filter-exists).
     Exists(Box<GraphPattern>),
-    /// [BOUND](https://www.w3.org/TR/sparql11-query/#func-bound).
+    /// [BOUND](https://www.w3.org/TR/sparql12-query/#func-bound).
     Bound(VarName<Arc<str>>),
-    /// [IF](https://www.w3.org/TR/sparql11-query/#func-if).
+    /// [IF](https://www.w3.org/TR/sparql12-query/#func-if).
     If(Box<Self>, Box<Self>, Box<Self>),
-    /// [COALESCE](https://www.w3.org/TR/sparql11-query/#func-coalesce).
+    /// [COALESCE](https://www.w3.org/TR/sparql12-query/#func-coalesce).
     Coalesce(Vec<Self>),
     /// A regular function call.
     FunctionCall(Function, Vec<Self>),
@@ -425,7 +425,7 @@ impl EvalResult {
         }
     }
 
-    /// Coerce to [string literal](https://www.w3.org/TR/sparql11-query/#func-string)
+    /// Coerce to [string literal](https://www.w3.org/TR/sparql12-query/#func-string)
     pub fn as_string_lit(&self, diag: &str) -> Option<StringLiteralRef<'_>> {
         let fail = || {
             if !diag.is_empty() {

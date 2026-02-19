@@ -5,9 +5,9 @@
 //! are [isomorphic]
 //!
 //! [Sophia]: https://docs.rs/sophia/latest/sophia/
-//! [RDF]: https://www.w3.org/TR/rdf-primer/
+//! [RDF]: https://www.w3.org/TR/rdf12-primer/
 //! [Linked Data]: http://linkeddata.org/
-//! [isomorphic]: https://www.w3.org/TR/rdf11-concepts/#h3_graph-isomorphism
+//! [isomorphic]: https://www.w3.org/TR/rdf12-concepts/#graph-isomorphism
 #![deny(missing_docs)]
 
 mod dataset;

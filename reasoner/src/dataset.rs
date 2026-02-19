@@ -230,7 +230,7 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
             .chain(self.names.literals())
     }
 
-    fn quoted_triples<'s>(
+    fn triple_terms<'s>(
         &'s self,
     ) -> Box<
         dyn Iterator<
@@ -243,8 +243,8 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
         Box::new(
             self.graphs
                 .iter()
-                .flat_map(|(_, g)| g.quoted_triples())
-                .chain(self.names.quoted_triples()),
+                .flat_map(|(_, g)| g.triple_terms())
+                .chain(self.names.triple_terms()),
         )
     }
 

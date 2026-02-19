@@ -1,7 +1,8 @@
 //! I define how RDF terms
-//! (such as [IRIs](https://www.w3.org/TR/rdf11-concepts/#section-IRIs),
-//! [blank nodes](https://www.w3.org/TR/rdf11-concepts/#section-blank-nodes)
-//! and [literals](https://www.w3.org/TR/rdf11-concepts/#section-Graph-Literal))
+//! (such as [IRIs](https://www.w3.org/TR/rdf12-concepts/#section-IRIs),
+//! [blank nodes](https://www.w3.org/TR/rdf12-concepts/#section-blank-nodes),
+//! [literals](https://www.w3.org/TR/rdf12-concepts/#section-Graph-Literal),
+//! and [triple terms](https://www.w3.org/TR/rdf12-concepts/#section-triple-terms))
 //! are represented in Sophia.
 //!
 //! I provide the main trait [`Term`],
@@ -44,13 +45,13 @@ lazy_static::lazy_static! {
 /// The different kinds of terms that a [`Term`] can represent.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialOrd, PartialEq)]
 pub enum TermKind {
-    /// An [RDF IRI](https://www.w3.org/TR/rdf11-concepts/#section-IRIs)
+    /// An [RDF IRI](https://www.w3.org/TR/rdf12-concepts/#section-IRIs)
     Iri = 1,
-    /// An RDF [literal](https://www.w3.org/TR/rdf11-concepts/#section-Graph-Literal)
+    /// An RDF [literal](https://www.w3.org/TR/rdf12-concepts/#section-Graph-Literal)
     Literal = 2,
-    /// An RDF [blank node](https://www.w3.org/TR/rdf11-concepts/#section-blank-nodes)
+    /// An RDF [blank node](https://www.w3.org/TR/rdf12-concepts/#section-blank-nodes)
     BlankNode = 0,
-    /// An RDF-star [quoted triple](https://www.w3.org/2021/12/rdf-star.html#dfn-quoted)
+    /// An RDF [triple term](https://www.w3.org/TR/rdf12-concepts/#section-triple-terms)
     Triple = 3,
     /// A SPARQL or Notation3 variable
     Variable = 4,
@@ -95,7 +96,7 @@ pub enum TermKind {
 pub trait Term: std::fmt::Debug {
     /// A type of [`Term`] that can be borrowed from this type
     /// (i.e. that can be obtained from a simple reference to this type).
-    /// It is used in particular for accessing constituents of quoted tripes ([`Term::triple`])
+    /// It is used in particular for accessing constituents of triple terms ([`Term::triple`])
     /// or for sharing this term with a function that expects `T: Term` (rather than `&T`)
     /// using [`Term::borrow_term`].
     ///
@@ -158,7 +159,7 @@ pub trait Term: std::fmt::Debug {
         }
     }
 
-    /// Return true if this [`Term`] is an RDF-star quoted triple,
+    /// Return true if this [`Term`] is a triple term,
     /// i.e. if [`kind`](Term::kind) returns [`TermKind::Triple`].
     #[inline]
     fn is_triple(&self) -> bool {
@@ -319,7 +320,7 @@ pub trait Term: std::fmt::Debug {
     /// Iter over all the constituents of this term.
     ///
     /// If this term is [atomic](Term::is_atom), the iterator yields only the term itself.
-    /// If it is a quoted triple, the iterator yields the quoted triple itself,
+    /// If it is a triple term, the iterator yields the triple term itself,
     /// and the constituents of its subject, predicate and object.
     fn constituents<'s>(&'s self) -> Box<dyn Iterator<Item = Self::BorrowTerm<'s>> + 's> {
         let this_term = std::iter::once(self.borrow_term());
@@ -355,7 +356,7 @@ pub trait Term: std::fmt::Debug {
     /// Iter over all the [atomic] constituents of this term.
     ///
     /// If this term is [atomic], the iterator yields only the term itself.
-    /// If it is a quoted triple, the iterator yields the atoms of its subject, predicate and object.
+    /// If it is a triple term, the iterator yields the atoms of its subject, predicate and object.
     ///
     /// [atomic]: Term::is_atom
     fn atoms<'s>(&'s self) -> Box<dyn Iterator<Item = Self::BorrowTerm<'s>> + 's> {
@@ -410,11 +411,12 @@ pub trait Term: std::fmt::Debug {
     }
 
     /// Compare two terms:
-    /// * blank nodes < IRIs < literals < quoted triples < variables
+    /// * blank nodes < IRIs < literals < triple term < variables
     /// * IRIs, blank nodes and variables are ordered by their value
     /// * Literals are ordered by their datatype, then their language (if any),
     ///   then their base direction (if any), then their lexical form
-    /// * Quoted triples are ordered in lexicographical order
+    /// * Triple terms are ordered recursively by their subject, then their predicate,
+    ///   then their object.
     ///
     /// NB: literals are ordered by their *lexical* value,
     /// so for example, `"10"^^xsd:integer` comes *before* `"2"^^xsd:integer`.

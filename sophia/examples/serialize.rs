@@ -7,7 +7,7 @@
 //! - [`nquads`](https://www.w3.org/TR/n-quads/) (alias `nq`)
 //! - [`trig`](https://www.w3.org/TR/trig/)
 //! - [`jsonld`](https://www.w3.org/TR/json-ld11) (if compiled with the `jsonld` feature)
-//! - [`rdfxml`](https://www.w3.org/TR/rdf-syntax-grammar) (if compiled with the `xml` feature, alias `rdf`)
+//! - [`rdfxml`](https://www.w3.org/TR/rdf11-xml) (if compiled with the `xml` feature, alias `rdf`)
 //!
 //! NB: if the input is a dataset with named graphs,
 //! and the output format is a graph format,

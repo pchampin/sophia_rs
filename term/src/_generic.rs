@@ -15,14 +15,15 @@ lazy_static::lazy_static! {
 /// It can however be used as a specialized [`Term`] implementation.
 #[derive(Clone, Debug)]
 pub enum GenericLiteral<T: Borrow<str>> {
-    /// An RDF [literal](https://www.w3.org/TR/rdf11-concepts/#section-Graph-Literal)
+    /// An RDF [literal](https://www.w3.org/TR/rdf12-concepts/#section-Graph-Literal)
     Typed(T, IriRef<T>),
-    /// An RDF [language-tagged string](https://www.w3.org/TR/rdf11-concepts/#dfn-language-tagged-string) (with or without base direction)
+    /// An RDF [language-tagged string](https://www.w3.org/TR/rdf12-concepts/#dfn-language-tagged-string)
+    /// (with or without [base direction](https://www.w3.org/TR/rdf12-concepts/#dfn-dir-lang-string))
     LanguageString(T, LanguageTag<T>, Option<BaseDirection>),
 }
 
 impl<T: Borrow<str>> GenericLiteral<T> {
-    /// The [lexical form](https://www.w3.org/TR/rdf11-concepts/#dfn-lexical-form) of this literal
+    /// The [lexical form](https://www.w3.org/TR/rdf12-concepts/#dfn-lexical-form) of this literal
     pub fn get_lexical_form(&self) -> &str {
         match self {
             Self::LanguageString(lex, ..) | Self::Typed(lex, ..) => lex,
@@ -30,7 +31,7 @@ impl<T: Borrow<str>> GenericLiteral<T> {
         .borrow()
     }
 
-    /// The [datatype](https://www.w3.org/TR/rdf11-concepts/#dfn-datatype-iri) of this literal
+    /// The [datatype](https://www.w3.org/TR/rdf12-concepts/#dfn-datatype-iri) of this literal
     pub fn get_datatype(&self) -> IriRef<&str> {
         match self {
             Self::Typed(_, dt) => dt.as_ref(),
@@ -39,7 +40,7 @@ impl<T: Borrow<str>> GenericLiteral<T> {
         }
     }
 
-    /// The [language tag](https://www.w3.org/TR/rdf11-concepts/#dfn-language-tag) of this literal, if any
+    /// The [language tag](https://www.w3.org/TR/rdf12-concepts/#dfn-language-tag) of this literal, if any
     pub fn get_language_tag(&self) -> Option<LanguageTag<&str>> {
         match self {
             Self::Typed(..) => None,
@@ -55,7 +56,7 @@ impl<T: Borrow<str>> GenericLiteral<T> {
         }
     }
 
-    /// The [lexical form](https://www.w3.org/TR/rdf11-concepts/#dfn-lexical-form) of this literal
+    /// The [lexical form](https://www.w3.org/TR/rdf12-concepts/#dfn-lexical-form) of this literal
     pub fn unwrap_lexical_form(self) -> T {
         match self {
             Self::LanguageString(lex, ..) | Self::Typed(lex, ..) => lex,

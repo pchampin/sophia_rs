@@ -32,11 +32,12 @@ If you are interested in the "value" of the term, the trait provides the followi
   + [`Term::datatype`] returns its datatype IRI[^relative_iris],
   + [`Term::language_tag`] returns its [language tag], if any.
 
-* If the term is a [quoted triple]:
+* If the term is a [triple term]:
 
   + [`Term::triple`] returns its 3 components in an array of terms,
-  + [`Term::constituents`] iterates over all its [constituents],
-  + [`Term::atoms`] iterates over all its atomic (i.e. non quoted-triple) constituents.
+  + [`Term::constituents`] iterates over all its constituents
+    (i.e. the term itself, plus, for [triple term]s, the terms that constitute it, directly or indorectly)
+  + [`Term::atoms`] iterates over all its [basic] (i.e. non triple) constituents.
   + (those three methods also have a `to_X` version that destructs the original term instead of borrowing it)
 
 * If the term is a variable[^variables], [`Term::variable`] returns its name.
@@ -154,7 +155,7 @@ IRIs can be *relative* IRI reference.
 
 
 [`Term`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html
-[RDF terms]: https://www.w3.org/TR/rdf-concepts/#dfn-rdf-term
+[RDF terms]: https://www.w3.org/TR/rdf12-concepts/#dfn-rdf-term
 [generalized RDF]: ch00_introduction.html#generalized
 [`TermKind`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/enum.TermKind.html
 [`Term::kind`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#tymethod.kind
@@ -179,12 +180,12 @@ IRIs can be *relative* IRI reference.
 [`t.borrow_term()`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#tymethod.borrow_term
 [`Term::BorrowTerm`]: https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#associatedtype.BorrowTerm
 
-[blank node identifier]: https://www.w3.org/TR/rdf-concepts/#dfn-blank-node-identifier
-[lexical form]: https://www.w3.org/TR/rdf-concepts/#dfn-lexical-form
-[datatype]: https://www.w3.org/TR/rdf-concepts/#dfn-datatype-iri
-[language tag]: https://www.w3.org/TR/rdf-concepts/#dfn-language-tag
-[quoted triple]: https://www.w3.org/2021/12/rdf-star.html#dfn-quoted
-[constituents]: https://www.w3.org/2021/12/rdf-star.html#dfn-constituent
+[blank node identifier]: https://www.w3.org/TR/rdf12-concepts/#dfn-blank-node-identifier
+[lexical form]: https://www.w3.org/TR/rdf12-concepts/#dfn-lexical-form
+[datatype]: https://www.w3.org/TR/rdf12-concepts/#dfn-datatype-iri
+[language tag]: https://www.w3.org/TR/rdf12-concepts/#dfn-language-tag
+[triple term]: https://www.w3.org/TR/rdf12-concepts/#section-triple-terms
+[basic]: https://www.w3.org/TR/rdf12-concepts/#dfn-basic-rdf-term
 
 [`Iri`]: https://docs.rs/sophia_iri/0.8.0/sophia_iri/struct.Iri.html
 [`IriRef`]: https://docs.rs/sophia_iri/0.8.0/sophia_iri/struct.IriRef.html

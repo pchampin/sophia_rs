@@ -6,7 +6,7 @@
 //! make no effort to minimize the number of write operations.
 //! Hence, in most cased, they should be passed a [`BufWriter`].
 //!
-//! [RDF/XML]: https://www.w3.org/TR/rdf-syntax-grammar/
+//! [RDF/XML]: https://www.w3.org/TR/rdf11-xml/
 //! [`Write`]: https://doc.rust-lang.org/std/io/trait.Write.html
 //! [`BufWriter`]: https://doc.rust-lang.org/std/io/struct.BufWriter.html
 

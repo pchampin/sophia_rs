@@ -14,7 +14,7 @@ use crate::{
 
 use super::_rdf::*;
 
-/// A [`RuleSet`] for [RDFS semantics](https://www.w3.org/TR/rdf-semantics/#rdfs-interpretations)
+/// A [`RuleSet`] for [RDFS semantics](https://www.w3.org/TR/rdf12-semantics/#rdfs_interpretations)
 ///
 /// # Limitations
 ///

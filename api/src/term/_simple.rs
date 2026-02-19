@@ -9,15 +9,15 @@ lazy_static::lazy_static! {
 /// A straightforward implementation of [`Term`] as an enum.
 #[derive(Clone, Debug)]
 pub enum SimpleTerm<'a> {
-    /// An [RDF IRI](https://www.w3.org/TR/rdf11-concepts/#section-IRIs)
+    /// An [RDF IRI](https://www.w3.org/TR/rdf12-concepts/#section-IRIs)
     Iri(IriRef<MownStr<'a>>),
-    /// An RDF [blank node](https://www.w3.org/TR/rdf11-concepts/#section-blank-nodes)
+    /// An RDF [blank node](https://www.w3.org/TR/rdf12-concepts/#section-blank-nodes)
     BlankNode(BnodeId<MownStr<'a>>),
-    /// An RDF [literal](https://www.w3.org/TR/rdf11-concepts/#section-Graph-Literal)
+    /// An RDF [literal](https://www.w3.org/TR/rdf12-concepts/#section-Graph-Literal)
     LiteralDatatype(MownStr<'a>, IriRef<MownStr<'a>>),
-    /// An RDF [language-tagged string](https://www.w3.org/TR/rdf11-concepts/#dfn-language-tagged-string), potentially with base direction
+    /// An RDF [language-tagged string](https://www.w3.org/TR/rdf12-concepts/#dfn-language-tagged-string), potentially with base direction
     LiteralLanguage(MownStr<'a>, LanguageTag<MownStr<'a>>, Option<BaseDirection>),
-    /// An RDF-star [quoted triple](https://www.w3.org/2021/12/rdf-star.html#dfn-quoted)
+    /// An RDF [triple term](https://www.w3.org/TR/rdf12-concepts/#section-blank-nodes)
     Triple(Box<[Self; 3]>),
     /// A SPARQL or Notation3 variable
     Variable(VarName<MownStr<'a>>),

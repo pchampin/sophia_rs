@@ -71,11 +71,11 @@ impl<T: Graph + ?Sized> Graph for &T {
         T::literals(*self)
     }
 
-    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = GResult<Self, GTerm<'s, Self>>> + 's>
+    fn triple_terms<'s>(&'s self) -> Box<dyn Iterator<Item = GResult<Self, GTerm<'s, Self>>> + 's>
     where
         GTerm<'s, Self>: Clone,
     {
-        T::quoted_triples(*self)
+        T::triple_terms(*self)
     }
 
     fn variables(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {
@@ -144,11 +144,11 @@ impl<T: Graph + ?Sized> Graph for &mut T {
         T::literals(*self)
     }
 
-    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = GResult<Self, GTerm<'s, Self>>> + 's>
+    fn triple_terms<'s>(&'s self) -> Box<dyn Iterator<Item = GResult<Self, GTerm<'s, Self>>> + 's>
     where
         GTerm<'s, Self>: Clone,
     {
-        T::quoted_triples(*self)
+        T::triple_terms(*self)
     }
 
     fn variables(&self) -> impl Iterator<Item = GResult<Self, GTerm<'_, Self>>> + '_ {

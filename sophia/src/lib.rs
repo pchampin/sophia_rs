@@ -23,7 +23,7 @@
 //! See the [Sophia book](https://pchampin.github.io/sophia_rs/ch01_getting_started.html)
 //!
 //!
-//! [RDF]: https://www.w3.org/TR/rdf-primer/
+//! [RDF]: https://www.w3.org/TR/rdf12-primer/
 //! [Linked Data]: http://linkeddata.org/
 #![deny(missing_docs)]
 

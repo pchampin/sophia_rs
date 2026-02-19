@@ -72,7 +72,7 @@ in most situations the following types will be used:
 
 
 
-[RDF statements]: https://www.w3.org/TR/rdf-concepts/#dfn-rdf-statement
+[RDF statements]: https://www.w3.org/TR/rdf12-concepts/#dfn-rdf-statement
 [generalized RDF]: ch00_introduction.html#generalized
 [`Triple`]: https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html
 [`Quad`]: https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html
@@ -80,7 +80,7 @@ in most situations the following types will be used:
 [`Triple::p`]: https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#tymethod.p
 [`Triple::o`]: https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#tymethod.o
 [`Triple::spo`]: https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html#method.spo
-[named graph]: https://www.w3.org/TR/rdf-concepts/#dfn-named-graph
+[named graph]: https://www.w3.org/TR/rdf12-concepts/#dfn-named-graph
 [`Quad::s`]: https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#tymethod.s
 [`Quad::p`]: https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#tymethod.p
 [`Quad::o`]: https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#tymethod.o

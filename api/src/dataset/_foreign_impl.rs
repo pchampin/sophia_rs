@@ -79,11 +79,11 @@ impl<T: Dataset + ?Sized> Dataset for &T {
         T::literals(*self)
     }
 
-    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = DResult<Self, DTerm<'s, Self>>> + 's>
+    fn triple_terms<'s>(&'s self) -> Box<dyn Iterator<Item = DResult<Self, DTerm<'s, Self>>> + 's>
     where
         DTerm<'s, Self>: Clone,
     {
-        T::quoted_triples(*self)
+        T::triple_terms(*self)
     }
 
     fn variables(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {
@@ -159,11 +159,11 @@ impl<T: Dataset + ?Sized> Dataset for &mut T {
         T::literals(*self)
     }
 
-    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = DResult<Self, DTerm<'s, Self>>> + 's>
+    fn triple_terms<'s>(&'s self) -> Box<dyn Iterator<Item = DResult<Self, DTerm<'s, Self>>> + 's>
     where
         DTerm<'s, Self>: Clone,
     {
-        T::quoted_triples(*self)
+        T::triple_terms(*self)
     }
 
     fn variables(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {

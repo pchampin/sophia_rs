@@ -112,11 +112,11 @@ where
         self.0.literals()
     }
 
-    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = DResult<Self, DTerm<'s, Self>>> + 's>
+    fn triple_terms<'s>(&'s self) -> Box<dyn Iterator<Item = DResult<Self, DTerm<'s, Self>>> + 's>
     where
         GTerm<'s, T>: Clone,
     {
-        self.0.quoted_triples()
+        self.0.triple_terms()
     }
 
     fn variables(&self) -> impl Iterator<Item = DResult<Self, DTerm<'_, Self>>> + '_ {

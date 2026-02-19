@@ -84,7 +84,7 @@ fn simple() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn no_bnode_quoted_triple() -> Result<(), Box<dyn Error>> {
+fn no_bnode_triple_term() -> Result<(), Box<dyn Error>> {
     const A: MyTerm = MyTerm::Iri("#a");
     const B: MyTerm = MyTerm::Iri("#b");
     const C: MyTerm = MyTerm::Iri("#c");
@@ -116,7 +116,7 @@ fn no_bnode_quoted_triple() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-fn quoted_triple() -> Result<(), Box<dyn Error>> {
+fn triple_term() -> Result<(), Box<dyn Error>> {
     const A: MyTerm = MyTerm::Bnode("a");
     const B: MyTerm = MyTerm::Bnode("b");
     const C: MyTerm = MyTerm::Bnode("c");

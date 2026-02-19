@@ -1,6 +1,6 @@
 //! I define the [`VarName`] wrapper type,
 //! which guarantees that the underlying `str`
-//! satisfies the `VARNAME` rule in [SPARQL](https://www.w3.org/TR/sparql11-query/#rVARNAME).
+//! satisfies the `VARNAME` rule in [SPARQL](https://www.w3.org/TR/sparql12-query/#rVARNAME).
 
 use super::*;
 use lazy_static::lazy_static;
@@ -12,7 +12,7 @@ use thiserror::Error;
 
 lazy_static! {
     /// Production of SPARQL's VARNAME according to the
-    /// [SPARQL spec](https://www.w3.org/TR/sparql11-query/#rVARNAME).
+    /// [SPARQL spec](https://www.w3.org/TR/sparql12-query/#rVARNAME).
     ///
     /// # Captures
     ///
@@ -32,7 +32,7 @@ lazy_static! {
 
 wrap! { VarName borrowing str :
     /// This wrapper guarantees that the underlying `str`
-    /// satisfies the `VARNAME` rule in [SPARQL](https://www.w3.org/TR/sparql11-query/#rVARNAME).
+    /// satisfies the `VARNAME` rule in [SPARQL](https://www.w3.org/TR/sparql12-query/#rVARNAME).
     pub fn new(name: T) -> Result<Self, InvalidVarName> {
         if VARNAME.is_match(name.borrow()) {
             Ok(VarName(name))

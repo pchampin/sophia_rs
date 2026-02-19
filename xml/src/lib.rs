@@ -5,9 +5,9 @@
 //! based on [`rio_xml`].
 //!
 //! [Sophia]: https://docs.rs/sophia/latest/sophia/
-//! [RDF]: https://www.w3.org/TR/rdf-primer/
+//! [RDF]: https://www.w3.org/TR/rdf12-primer/
 //! [Linked Data]: http://linkeddata.org/
-//! [RDF/XML]: https://www.w3.org/TR/rdf-syntax-grammar/
+//! [RDF/XML]: https://www.w3.org/TR/rdf11-xml/
 #![deny(missing_docs)]
 
 pub mod parser;

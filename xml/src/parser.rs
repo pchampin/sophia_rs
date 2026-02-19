@@ -1,7 +1,7 @@
 //! Parser for the [RDF/XML] concrete syntax of RDF,
 //! based on [`rio_xml`].
 //!
-//! [RDF/XML]: https://www.w3.org/TR/rdf-syntax-grammar/
+//! [RDF/XML]: https://www.w3.org/TR/rdf11-xml/
 
 use rio_xml::RdfXmlParser as RioRdfXmlParser;
 use sophia_api::parser::TripleParser;

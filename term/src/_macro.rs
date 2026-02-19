@@ -18,13 +18,13 @@ macro_rules! gen_term {
             #[derive(Clone, Debug)]
             pub enum $type_name {
                 /// A straightforward implementation of [`Term`] as an enum.
-                /// An [RDF IRI](https://www.w3.org/TR/rdf11-concepts/#section-IRIs)
+                /// An [RDF IRI](https://www.w3.org/TR/rdf12-concepts/#section-IRIs)
                 Iri(IriRef<W<str>>),
-                /// An RDF [blank node](https://www.w3.org/TR/rdf11-concepts/#section-blank-nodes)
+                /// An RDF [blank node](https://www.w3.org/TR/rdf12-concepts/#section-blank-nodes)
                 BlankNode(BnodeId<W<str>>),
-                /// An RDF [literal](https://www.w3.org/TR/rdf11-concepts/#section-Graph-Literal)
+                /// An RDF [literal](https://www.w3.org/TR/rdf12-concepts/#section-Graph-Literal)
                 Literal($crate::GenericLiteral<W<str>>),
-                /// An RDF-star [quoted triple](https://www.w3.org/2021/12/rdf-star.html#dfn-quoted)
+                /// An RDF [triple term](https://www.w3.org/TR/rdf12-concepts/#section-triple-term)
                 Triple(W<[Self; 3]>),
                 /// A SPARQL or Notation3 variable
                 Variable(VarName<W<str>>),

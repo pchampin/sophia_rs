@@ -15,7 +15,7 @@ use crate::{
     d_entailment::Recognized, ruleset::RuleSet,
 };
 
-/// A [`RuleSet`] for [RDF semantics](https://www.w3.org/TR/rdf-semantics/#rdf_d_interpretations)
+/// A [`RuleSet`] for [RDF semantics](https://www.w3.org/TR/rdf12-semantics/#rdf_d_interpretations)
 ///
 /// # Limitations
 ///

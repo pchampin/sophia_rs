@@ -1,4 +1,4 @@
-//! Common traits for working with [SPARQL](https://www.w3.org/TR/sparql11-query/).
+//! Common traits for working with [SPARQL](https://www.w3.org/TR/sparql12-query/).
 //!
 //! # Design rationale
 //!

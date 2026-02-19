@@ -104,6 +104,6 @@ An outdated comparison of Sophia with other RDF libraries is still available
 [RDF test-suite]: https://github.com/w3c/rdf-tests/
 [JSON-LD test-suite]: https://github.com/w3c/json-ld-api/
 [RDF canonicalization]: https://www.w3.org/TR/rdf-canon/
-[SPARQL 1.1 query language]: https://www.w3.org/TR/sparql11-query
+[SPARQL 1.2 query language]: https://www.w3.org/TR/sparql12-query
 [SPARQL 1.1 protocol]: https://www.w3.org/TR/sparql11-protocol
-[isomorphic]: https://www.w3.org/TR/rdf11-concepts/#h3_graph-isomorphism
+[isomorphic]: https://www.w3.org/TR/rdf12-concepts/#dfn-graph-isomorphism

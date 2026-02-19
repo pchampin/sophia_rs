@@ -17,7 +17,7 @@
 //! Finally, several [graph]s can be grouped in a collection
 //! called a [dataset], where each [graph] is identified by a unique name.
 //!
-//! [RDF]: https://www.w3.org/TR/rdf-primer/
+//! [RDF]: https://www.w3.org/TR/rdf12-primer/
 //! [Linked Data]: http://linkeddata.org/
 //!
 //! # Generalized vs. Strict RDF model
@@ -30,23 +30,20 @@
 //!
 //! The generalized RDF model extends RDF as follows:
 //!
-//! * In addition to standard RDF terms (IRIs, blank nodes and literals),
-//!   Sophia supports
-//!
-//!   - RDF-star [quoted triples](https://www.w3.org/2021/12/rdf-star.html#dfn-quoted)
-//!   - Variables (a concept borrowed from [SPARQL] or [Notation3])
+//! * In addition to standard RDF terms (IRIs, blank nodes, literals, and triple terms),
+//!   Sophia supports variables (a concept borrowed from [SPARQL] or [Notation3])
 //!
 //! * Sophia allows any kind of term in any position (subject, predicate, object, graph name).
 //!
 //! * Sophia allow IRIs to be relative IRI references
-//!   (while in strict RDF, [IRIs must be absolute](https://www.w3.org/TR/rdf11-concepts/#h3_section-IRIs)).
+//!   (while in strict RDF, [IRIs must be absolute](https://www.w3.org/TR/rdf12-concepts/#section-IRIs)).
 //!
 //! # Feature gates
 //!
 //! - **test_macros**: with this feature enabled,
 //!   this crate exposes macros that can help implementors of the API to test their implementation.
 //!
-//! [SPARQL]: https://www.w3.org/TR/sparql11-query/
+//! [SPARQL]: https://www.w3.org/TR/sparql12-query/
 //! [Notation3]: https://www.w3.org/TeamSubmission/n3/
 #![deny(missing_docs)]
 

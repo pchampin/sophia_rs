@@ -16,7 +16,7 @@ use thiserror::Error;
 /// as it does not check that the different subtags are registered (language, country...) codes.
 ///
 /// A [`LanguageTag`] can be combined to a `&str` with the `*` operator,
-/// to produce an RDF [language tagged string](https://www.w3.org/TR/rdf11-concepts/#dfn-language-tagged-string)
+/// to produce an RDF [language tagged string](https://www.w3.org/TR/rdf12-concepts/#dfn-language-tagged-string)
 /// implementing the [`Term`](crate::term::Term) trait:
 ///
 /// ```

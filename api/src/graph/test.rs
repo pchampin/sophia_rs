@@ -77,7 +77,7 @@ pub(crate) fn t<T: Term>(t: T) -> StaticTerm {
     t.into_term()
 }
 
-/// Concert any triple to a |`StaticTerm`] quoted triple.
+/// Concert any triple to a |`StaticTerm`] triple term.
 pub(crate) fn tt<T1: Term, T2: Term, T3: Term>(s: T1, p: T2, o: T3) -> StaticTerm {
     StaticTerm::from_triple([t(s), t(p), t(o)])
 }
@@ -658,11 +658,11 @@ macro_rules! test_graph_impl {
             }
 
             #[test]
-            fn quoted_triples() -> Result<(), Box<dyn std::error::Error>> {
+            fn triple_terms() -> Result<(), Box<dyn std::error::Error>> {
                 if $is_gen {
                     let g: $graph_impl = $graph_collector(generalized_node_types_triples()).unwrap();
 
-                    let triples: HashSet<StaticTerm> = g.quoted_triples().map(|t| t.unwrap().into_term()).collect();
+                    let triples: HashSet<StaticTerm> = g.triple_terms().map(|t| t.unwrap().into_term()).collect();
                     assert_eq!(triples.len(), 4);
                     let t1 = StaticTerm::from_triple([
                         V1.as_simple(),
@@ -691,7 +691,7 @@ macro_rules! test_graph_impl {
                 } else {
                     let g: $graph_impl = $graph_collector(strict_node_types_triples()).unwrap();
 
-                    let triples: HashSet<StaticTerm> = g.quoted_triples().map(|t| t.unwrap().into_term()).collect();
+                    let triples: HashSet<StaticTerm> = g.triple_terms().map(|t| t.unwrap().into_term()).collect();
                     assert_eq!(triples.len(), 0);
                 }
                 Ok(())

@@ -489,7 +489,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
         })
     }
 
-    fn quoted_triples<'s>(
+    fn triple_terms<'s>(
         &'s self,
     ) -> Box<dyn Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'s, Self>>> + 's>
     where

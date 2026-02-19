@@ -8,7 +8,7 @@
 //! [`sophia_xml`](https://docs.rs/sophia_xml/).
 //!
 //! [Sophia]: https://docs.rs/sophia/latest/sophia/
-//! [RDF]: https://www.w3.org/TR/rdf-primer/
+//! [RDF]: https://www.w3.org/TR/rdf12-primer/
 //! [Linked Data]: http://linkeddata.org/
 #![deny(missing_docs)]
 

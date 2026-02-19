@@ -1,6 +1,6 @@
 use crate::{Inconsistency, ReasonableGraph, d_entailment::Recognized, ruleset::RuleSet};
 
-/// A [`RuleSet`] for [Simple semantics](https://www.w3.org/TR/rdf-semantics/#simple-interpretations)
+/// A [`RuleSet`] for [Simple semantics](https://www.w3.org/TR/rdf12-semantics/#simple)
 pub struct Simple;
 
 impl RuleSet for Simple {

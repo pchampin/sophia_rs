@@ -1,7 +1,7 @@
 use super::*;
 
 /// A [`GraphName`] is an optional [`Term`](super::Term),
-/// used to name a graph in an [RDF dataset](https://www.w3.org/TR/rdf11-concepts/#section-dataset).
+/// used to name a graph in an [RDF dataset](https://www.w3.org/TR/rdf12-concepts/#section-dataset).
 ///
 /// By convention, `None` is the "name" of the default graph.
 pub type GraphName<T> = Option<T>;

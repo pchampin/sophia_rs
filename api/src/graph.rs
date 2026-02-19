@@ -247,7 +247,7 @@ pub trait Graph {
     }
 
     /// Build a fallible iterator of all the IRIs used in this Graph
-    /// (including those used inside quoted triples, if any).
+    /// (including those used inside triple terms, if any).
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
@@ -259,7 +259,7 @@ pub trait Graph {
     }
 
     /// Build a fallible iterator of all the blank nodes used in this Graph
-    /// (including those used inside quoted triples, if any).
+    /// (including those used inside triple terms, if any).
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
@@ -271,7 +271,7 @@ pub trait Graph {
     }
 
     /// Build a fallible iterator of all the literals used in this Graph
-    /// (including those used inside quoted triples, if any).
+    /// (including those used inside triple terms, if any).
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
@@ -282,12 +282,12 @@ pub trait Graph {
             .filter_ok(Term::is_literal)
     }
 
-    /// Build a fallible iterator of all the quoted triples used in this Graph
-    /// (including those used inside quoted triples, if any).
+    /// Build a fallible iterator of all the triple terms used in this Graph
+    /// (including those used inside other triple terms, if any).
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
-    fn quoted_triples<'s>(&'s self) -> Box<dyn Iterator<Item = GResult<Self, GTerm<'s, Self>>> + 's>
+    fn triple_terms<'s>(&'s self) -> Box<dyn Iterator<Item = GResult<Self, GTerm<'s, Self>>> + 's>
     where
         GTerm<'s, Self>: Clone,
     {
@@ -300,7 +300,7 @@ pub trait Graph {
     }
 
     /// Build a fallible iterator of all the variables used in this Graph
-    /// (including those used inside quoted triples, if any).
+    /// (including those used inside triple terms, if any).
     ///
     /// NB: implementations SHOULD avoid yielding the same term multiple times, but MAY do so.
     /// Users MUST therefore be prepared to deal with duplicates.
@@ -585,7 +585,7 @@ mod check_implementability {
     #[allow(dead_code)] // testing implementability
     enum MyInternalTerm {
         Atom(SimpleTerm<'static>),
-        QuotedTriple(usize),
+        TripleTerm(usize),
     }
     use MyInternalTerm::*;
 
@@ -605,7 +605,7 @@ mod check_implementability {
         fn make_term(&self, i: usize) -> SimpleTerm<'_> {
             match &self.terms[i] {
                 Atom(t) => t.as_simple(),
-                QuotedTriple(j) => {
+                TripleTerm(j) => {
                     SimpleTerm::Triple(Box::new(self.make_triple(self.triples[*j].spo)))
                 }
             }
@@ -644,7 +644,7 @@ mod check_implementability_lazy_term {
     #[derive(Clone, Debug, Eq, PartialEq)]
     enum MyInternalTerm {
         Atom(SimpleTerm<'static>),
-        QuotedTriple(usize),
+        TripleTerm(usize),
     }
     use MyInternalTerm::*;
 
@@ -741,7 +741,7 @@ mod check_implementability_lazy_term {
         }
 
         fn to_triple(self) -> Option<[Self; 3]> {
-            if let QuotedTriple(i) = &self.graph.terms[self.index] {
+            if let TripleTerm(i) = &self.graph.terms[self.index] {
                 Some(self.graph.triples[*i].spo.map(|t| MyTerm {
                     graph: self.graph,
                     index: t,

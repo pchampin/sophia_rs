@@ -15,7 +15,7 @@
 //! - `gnq` (Generalized [N-Quads](https://www.w3.org/TR/n-quads/))
 //! - `gtrig` (Generalized [TriG](https://www.w3.org/TR/trig/), default)
 //! - [`jsonld`](https://www.w3.org/TR/json-ld11) (if compiled with the `jsonld` feature)
-//! - [`rdfxml`](https://www.w3.org/TR/rdf-syntax-grammar) (if compiled with the `xml` feature, alias `rdf`)
+//! - [`rdfxml`](https://www.w3.org/TR/rdf11-xml) (if compiled with the `xml` feature, alias `rdf`)
 //! - [`guess`] try to guess syntax from filename
 //!
 //! [N-Triples]: https://www.w3.org/TR/n-triples/

@@ -877,11 +877,11 @@ macro_rules! test_dataset_impl {
             }
 
             #[test]
-            fn quoted_triples() -> Result<(), Box<dyn std::error::Error>> {
+            fn triple_terms() -> Result<(), Box<dyn std::error::Error>> {
                 if $is_gen {
                     let d: $dataset_impl = $dataset_collector(generalized_node_types_quads()).unwrap();
 
-                    let quads: HashSet<StaticTerm> = d.quoted_triples().map(|t| t.unwrap().into_term()).collect();
+                    let quads: HashSet<StaticTerm> = d.triple_terms().map(|t| t.unwrap().into_term()).collect();
                     assert_eq!(quads.len(), 5);
                     let t1 = StaticTerm::from_triple([
                         V1.as_simple(),
@@ -916,7 +916,7 @@ macro_rules! test_dataset_impl {
                 } else {
                     let d: $dataset_impl = $dataset_collector(strict_node_types_quads()).unwrap();
 
-                    let quads: HashSet<StaticTerm> = d.quoted_triples().map(|t| t.unwrap().into_term()).collect();
+                    let quads: HashSet<StaticTerm> = d.triple_terms().map(|t| t.unwrap().into_term()).collect();
                     assert_eq!(quads.len(), 0);
                 }
                 Ok(())
