@@ -3,8 +3,8 @@
 
 use rio_api::formatter::{QuadsFormatter, TriplesFormatter};
 use rio_api::model::{
-    BlankNode, GraphName as RioGraphName, Literal, NamedNode, Quad as RioQuad, Subject,
-    Term as RioTerm, Triple as RioTriple,
+    BlankNode, GraphName as RioGraphName, Literal, NamedNode, Quad as RioQuad, Term as RioTerm,
+    Triple as RioTriple,
 };
 use sophia_api::ns::xsd;
 use sophia_api::quad::Quad;
@@ -27,7 +27,10 @@ where
     triples.try_for_each_triple(|t| {
         let t = t.to_spo().map(SimpleTerm::from_term);
         match convert_triple(&t, Empty).head() {
-            None => Ok(()),
+            None => {
+                log::warn!("Skipping triple: triple not allowed in strict RDF {t:?}");
+                Ok(())
+            }
             Some(head) => tf.format(head),
         }
     })
@@ -53,12 +56,16 @@ where
             None => None,
             Some(SimpleTerm::Iri(iri)) => Some(NamedNode { iri }.into()),
             Some(SimpleTerm::BlankNode(id)) => Some(BlankNode { id }.into()),
-            _ => {
+            Some(gn) => {
+                log::warn!("Skipping quad: graph name not allowed in strict RDF {gn:?}");
                 return Ok(());
             }
         };
         match convert_triple(&t, Empty).head() {
-            None => Ok(()),
+            None => {
+                log::warn!("Skipping quad: triple not allowed in strict RDF {t:?}");
+                Ok(())
+            }
             Some(RioTriple {
                 subject,
                 predicate,
@@ -85,16 +92,6 @@ fn convert_triple<'a>(
     let subject = match t.s() {
         SimpleTerm::Iri(iri) => NamedNode { iri }.into(),
         SimpleTerm::BlankNode(id) => BlankNode { id }.into(),
-        SimpleTerm::Triple(triple) => {
-            stack = convert_triple(triple, stack);
-            // Safety: the line below is safe because the triple will then be inserted in the same stack
-            match unsafe { stack.head2() } {
-                Some(t) => Subject::Triple(t),
-                None => {
-                    return Empty;
-                }
-            }
-        }
         _ => {
             return Empty;
         }
