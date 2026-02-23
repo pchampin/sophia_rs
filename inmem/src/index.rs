@@ -159,6 +159,27 @@ pub struct IndexedTerm<'a, I: Index> {
     i: I,
 }
 
+impl<'a, I: Index> IndexedTerm<'a, I> {
+    /// Return the [`BasicTermIndex`] this [`IndexedTerm`] comes from
+    pub fn term_index(&self) -> &BasicTermIndex<I> {
+        self.t
+    }
+
+    /// Return the index of that [`IndexedTerm`]
+    pub fn index(&self) -> I {
+        self.i
+    }
+
+    /// Return the index of that [`IndexedTerm`]'s datatype of it contains one.
+    pub fn datatype_index(&self) -> Option<I> {
+        if let InternalTerm::LiteralTyped(_, idt) = &self.t.i2t[self.i.into_usize()] {
+            Some(*idt)
+        } else {
+            None
+        }
+    }
+}
+
 impl<'a, I: Index> Term for IndexedTerm<'a, I> {
     type BorrowTerm<'x>
         = Self
@@ -259,6 +280,32 @@ impl<'a, I: Index> Term for IndexedTerm<'a, I> {
     }
 }
 
+impl<'a, I: Index, T: Term> PartialEq<T> for IndexedTerm<'a, I> {
+    fn eq(&self, other: &T) -> bool {
+        Term::eq(self, other.borrow_term())
+    }
+}
+
+impl<'a, I: Index> Eq for IndexedTerm<'a, I> {}
+
+impl<'a, I: Index, T: Term> PartialOrd<T> for IndexedTerm<'a, I> {
+    fn partial_cmp(&self, other: &T) -> Option<std::cmp::Ordering> {
+        Some(Term::cmp(self, other.borrow_term()))
+    }
+}
+
+impl<'a, I: Index> Ord for IndexedTerm<'a, I> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        Term::cmp(self, *other)
+    }
+}
+
+impl<'a, I: Index> std::hash::Hash for IndexedTerm<'a, I> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        Term::hash(self, state)
+    }
+}
+
 /// A generic implementation of [`TermIndex`].
 #[derive(Clone, Debug, Default)]
 pub struct BasicTermIndex<I: Index> {
@@ -283,6 +330,98 @@ impl<I: Index> BasicTermIndex<I> {
     /// Whether this index is empty
     pub fn is_empty(&self) -> bool {
         self.len() == 0
+    }
+
+    /// Ensure a triple term is indexed, returning its index
+    ///
+    /// This is more efficient than [`TermIndex::ensure_index`]
+    /// when the indexes of the constituents are already known.
+    pub fn ensure_triple_term_index(&mut self, spo: [I; 3]) -> Result<I, TermIndexFullError> {
+        debug_assert!(spo.iter().copied().all(|i| i.into_usize() < self.len()));
+        self.ensure_index_internal(InternalTerm::Triple(spo))
+    }
+
+    fn ensure_index_internal(&mut self, it: InternalTerm<I>) -> Result<I, TermIndexFullError> {
+        match self.t2i.entry(it) {
+            Entry::Vacant(e) => {
+                let i = I::from_usize(self.i2t.len());
+                if i >= I::MAX {
+                    return Err(TermIndexFullError());
+                }
+                self.i2t.push(e.key().clone());
+                e.insert(i);
+                Ok(i)
+            }
+            Entry::Occupied(e) => Ok(*e.get()),
+        }
+    }
+
+    /// Iter over all term in this TermIndex
+    pub fn iter(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
+        let t = self;
+        (0..self.i2t.len()).map(|i| IndexedTerm {
+            t,
+            i: I::from_usize(i),
+        })
+    }
+
+    /// Iter over all IRIs in this TermIndex
+    pub fn iris(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
+        let t = self;
+        self.i2t.iter().enumerate().filter_map(|(i, it)| {
+            matches!(it, InternalTerm::Iri(_)).then_some(IndexedTerm {
+                t,
+                i: I::from_usize(i),
+            })
+        })
+    }
+
+    /// Iter over all blank nodes in this TermIndex
+    pub fn blank_nodes(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
+        let t = self;
+        self.i2t.iter().enumerate().filter_map(|(i, it)| {
+            matches!(it, InternalTerm::BlankNode(_)).then_some(IndexedTerm {
+                t,
+                i: I::from_usize(i),
+            })
+        })
+    }
+
+    /// Iter over all literals in this TermIndex
+    pub fn literals(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
+        let t = self;
+        self.i2t.iter().enumerate().filter_map(|(i, it)| {
+            matches!(
+                it,
+                InternalTerm::LiteralTyped(..) | InternalTerm::LiteralLang(..)
+            )
+            .then_some(IndexedTerm {
+                t,
+                i: I::from_usize(i),
+            })
+        })
+    }
+
+    /// Iter over all triple terms in this TermIndex
+    pub fn triple_terms(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
+        let t = self;
+        self.i2t.iter().enumerate().filter_map(|(i, it)| {
+            matches!(it, InternalTerm::Triple(_)).then_some(IndexedTerm {
+                t,
+                i: I::from_usize(i),
+            })
+        })
+    }
+
+    /// Iter over all variables in this TermIndex
+    pub fn variables(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
+        let t = self;
+        self.i2t.iter().enumerate().filter_map(|(i, it)| {
+            matches!(it, InternalTerm::Variable(_)).then_some(IndexedTerm {
+                t,
+                i: I::from_usize(i),
+            })
+        })
     }
 }
 
@@ -310,7 +449,7 @@ impl<I: Index> TermIndex for BasicTermIndex<I> {
     }
 
     fn ensure_index<T: Term>(&mut self, t: T) -> Result<Self::Index, Self::Error> {
-        let key = if let Some([s, p, o]) = t.triple() {
+        let it = if let Some([s, p, o]) = t.triple() {
             let is = self.ensure_index(s)?;
             let ip = self.ensure_index(p)?;
             let io = self.ensure_index(o)?;
@@ -321,18 +460,7 @@ impl<I: Index> TermIndex for BasicTermIndex<I> {
         } else {
             InternalTerm::copy_atom(t)
         };
-        match self.t2i.entry(key) {
-            Entry::Vacant(e) => {
-                let i = I::from_usize(self.i2t.len());
-                if i >= I::MAX {
-                    return Err(TermIndexFullError());
-                }
-                self.i2t.push(e.key().clone());
-                e.insert(i);
-                Ok(i)
-            }
-            Entry::Occupied(e) => Ok(*e.get()),
-        }
+        self.ensure_index_internal(it)
     }
 
     fn get_term(&self, i: Self::Index) -> Self::Term<'_> {

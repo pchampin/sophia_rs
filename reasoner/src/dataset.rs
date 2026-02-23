@@ -14,12 +14,11 @@ use sophia_api::{
     prelude::Dataset,
     quad::{Quad, Spog},
     source::StreamError::SinkError,
-    term::matcher::TermMatcher,
+    term::{Term, matcher::TermMatcher},
 };
+use sophia_inmem::index::{BasicTermIndex, IndexedTerm, TermIndex};
 
-use crate::{
-    Inconsistency, ReasonableGraph, ReasonableTerm, d_entailment::Recognized, ruleset::RuleSet,
-};
+use crate::{Inconsistency, ReasonableGraph, d_entailment::Recognized, ruleset::RuleSet};
 
 /// A [`ReasonableDataset`] is a dataset where each graph (default or named)
 /// is a [`ReasonableGraph`].
@@ -29,11 +28,7 @@ use crate::{
 /// Note also that all graphs share the same set of [`Recognized`] datatypes,
 /// and the same [`RuleSet`].
 pub struct ReasonableDataset<D, R> {
-    // This dummy graph is merely used to allow graph names to be retuned as ReasonableTerms.
-    // In contains triples of the form <N, N, N> where N is a named graph.
-    //
-    // Keys in `graphs` are term-indexes in this graph.
-    names: ReasonableGraph<D, R>,
+    names: BasicTermIndex<usize>,
     graphs: BTreeMap<Option<usize>, ReasonableGraph<D, R>>,
     // used when a graph is required which is not present in this dataset
     //
@@ -64,7 +59,7 @@ impl<D, R> std::fmt::Debug for ReasonableDataset<D, R> {
 
 impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
     type Quad<'x>
-        = Spog<ReasonableTerm<'x, D, R>>
+        = Spog<IndexedTerm<'x, usize>>
     where
         Self: 'x;
 
@@ -99,7 +94,10 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
         G: sophia_api::term::matcher::GraphNameMatcher + 't,
     {
         if let Some(gn) = gm.constant() {
-            match gn.map(|t| self.names.get_index(t).ok_or(())).transpose() {
+            match gn
+                .map(|t| self.names.get_index(t.borrow_term()).ok_or(()))
+                .transpose()
+            {
                 Ok(opt) => {
                     let g = self.graphs.get(&opt).unwrap();
                     let gn = opt.map(|i| self.names.get_term(i));
@@ -110,10 +108,10 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
             }
         } else {
             let dataset = self;
-            let graphs = once((None, None)).chain((0..self.names.i2t.len()).filter_map(move |i| {
-                let t = self.names.get_term(i);
-                gm.matches(Some(&t)).then_some((Some(i), Some(t)))
-            }));
+            let graphs =
+                once((None, None)).chain(self.names.iter().filter_map(move |t| {
+                    gm.matches(Some(&t)).then_some((Some(t.index()), Some(t)))
+                }));
             let current = Some(None);
             let triples = vec![].into_iter();
 
@@ -185,7 +183,7 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
     ) -> impl Iterator<
         Item = sophia_api::dataset::DResult<Self, sophia_api::dataset::DTerm<'_, Self>>,
     > + '_ {
-        (0..self.names.i2t.len()).map(|i| Ok(self.names.get_term(i)))
+        self.names.iter().map(Ok)
     }
 
     fn graph_names_matching<'s, M: TermMatcher + 's>(
@@ -205,7 +203,7 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
         self.graphs
             .iter()
             .flat_map(|(_, g)| g.iris())
-            .chain(self.names.iris())
+            .chain(self.names.iris().map(Ok))
     }
 
     fn blank_nodes(
@@ -216,7 +214,7 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
         self.graphs
             .iter()
             .flat_map(|(_, g)| g.blank_nodes())
-            .chain(self.names.blank_nodes())
+            .chain(self.names.blank_nodes().map(Ok))
     }
 
     fn literals(
@@ -227,7 +225,7 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
         self.graphs
             .iter()
             .flat_map(|(_, g)| g.literals())
-            .chain(self.names.literals())
+            .chain(self.names.literals().map(Ok))
     }
 
     fn triple_terms<'s>(
@@ -244,7 +242,7 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
             self.graphs
                 .iter()
                 .flat_map(|(_, g)| g.triple_terms())
-                .chain(self.names.triple_terms()),
+                .chain(self.names.triple_terms().map(Ok)),
         )
     }
 
@@ -256,7 +254,7 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
         self.graphs
             .iter()
             .flat_map(|(_, g)| g.variables())
-            .chain(self.names.variables())
+            .chain(self.names.variables().map(Ok))
     }
 
     fn graph<'s, T>(
@@ -268,7 +266,7 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
     {
         match graph_name {
             None => self.graphs.get(&None).unwrap(), // there is always a default graph
-            Some(t) => match self.names.get_index(&t) {
+            Some(t) => match self.names.get_index(t) {
                 Some(i) => self.graphs.get(&Some(i)).unwrap(),
                 None => &self.empty,
             },
@@ -283,13 +281,13 @@ impl<D: Recognized, R: RuleSet> CollectibleDataset for ReasonableDataset<D, R> {
         mut quads: TS,
     ) -> sophia_api::source::StreamResult<Self, TS::Error, Self::CollectError> {
         let mut ret = Self {
-            names: ReasonableGraph::prepare(),
+            names: BasicTermIndex::new(),
             graphs: [(None, ReasonableGraph::prepare())].into_iter().collect(),
             empty: ReasonableGraph::prepare(),
         };
         quads.try_for_each_quad(|q| -> Result<(), Inconsistency> {
             let g = if let Some(gn) = q.g() {
-                let ign = ret.names.get_or_make_index(&gn)?;
+                let ign = ret.names.ensure_index(gn).unwrap();
                 ret.graphs
                     .entry(Some(ign))
                     .or_insert_with(|| ReasonableGraph::prepare())
@@ -298,7 +296,6 @@ impl<D: Recognized, R: RuleSet> CollectibleDataset for ReasonableDataset<D, R> {
             };
             g.insert_triple(q.spog().0)
         })?;
-        ret.names.finalize().map_err(SinkError)?;
         ret.graphs
             .par_iter_mut()
             .try_for_each(|(_, g)| g.finalize())
@@ -313,8 +310,8 @@ impl<D: Recognized, R: RuleSet> CollectibleDataset for ReasonableDataset<D, R> {
 struct QuadsMatching<'a, D, R, I, S, P, O> {
     dataset: &'a ReasonableDataset<D, R>,
     graphs: I,
-    current: Option<Option<ReasonableTerm<'a, D, R>>>,
-    triples: std::vec::IntoIter<Result<[ReasonableTerm<'a, D, R>; 3], Infallible>>,
+    current: Option<Option<IndexedTerm<'a, usize>>>,
+    triples: std::vec::IntoIter<Result<[IndexedTerm<'a, usize>; 3], Infallible>>,
     sm: S,
     pm: P,
     om: O,
@@ -324,12 +321,12 @@ impl<'a, D, R, I, S, P, O> Iterator for QuadsMatching<'a, D, R, I, S, P, O>
 where
     D: Recognized,
     R: RuleSet,
-    I: Iterator<Item = (Option<usize>, Option<ReasonableTerm<'a, D, R>>)>,
+    I: Iterator<Item = (Option<usize>, Option<IndexedTerm<'a, usize>>)>,
     S: TermMatcher,
     P: TermMatcher,
     O: TermMatcher,
 {
-    type Item = Result<Spog<ReasonableTerm<'a, D, R>>, Infallible>;
+    type Item = Result<Spog<IndexedTerm<'a, usize>>, Infallible>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(gn) = self.current {

@@ -1,18 +1,16 @@
-use std::{collections::BTreeSet, iter::once, sync::Arc};
+use std::{collections::BTreeSet, iter::once};
 
-use rayon::iter::{
-    IndexedParallelIterator, IntoParallelRefIterator, ParallelBridge, ParallelExtend,
-    ParallelIterator,
-};
+use rayon::iter::{ParallelBridge, ParallelExtend, ParallelIterator};
 use smallvec::SmallVec;
 use sophia_api::{
     ns::{rdf, xsd},
-    term::{BaseDirection, IriRef, LanguageTag},
+    term::{BaseDirection, IriRef, LanguageTag, SimpleTerm, Term},
 };
+use sophia_inmem::index::TermIndex;
 
 use crate::{
-    _dedup::UsizeIteratorDedup, Inconsistency, InternalTerm, ReasonableGraph,
-    d_entailment::Recognized, ruleset::RuleSet,
+    _dedup::UsizeIteratorDedup, Inconsistency, ReasonableGraph, d_entailment::Recognized,
+    ruleset::RuleSet,
 };
 
 /// A [`RuleSet`] for [RDF semantics](https://www.w3.org/TR/rdf12-semantics/#rdf_d_interpretations)
@@ -94,29 +92,26 @@ pub(crate) fn prepare_rdf_vocab<D: Recognized, R: RuleSet>(graph: &mut Reasonabl
 pub(crate) fn prepare_recognized_datatypes<D: Recognized, R: RuleSet>(
     graph: &mut ReasonableGraph<D, R>,
 ) {
-    let dtmin = graph.i2t.len();
+    let dtmin = graph.terms.len();
     graph.get_or_make_index(&rdf::langString).unwrap();
-    debug_assert_eq!(graph.i2t.len(), dtmin + 1);
+    debug_assert_eq!(graph.terms.len(), dtmin + 1);
     graph.get_or_make_index(&rdf::dirLangString).unwrap();
-    debug_assert_eq!(graph.i2t.len(), dtmin + 2);
+    debug_assert_eq!(graph.terms.len(), dtmin + 2);
     graph.get_or_make_index(&xsd::string).unwrap();
-    debug_assert_eq!(graph.i2t.len(), dtmin + 3);
+    debug_assert_eq!(graph.terms.len(), dtmin + 3);
     D::datatypes().for_each(|iri| {
         graph.get_or_make_index(&iri).unwrap();
     });
-    debug_assert_eq!(graph.i2t.len(), dtmin + 3 + D::datatypes().count());
-    graph.rdt = dtmin..graph.i2t.len();
+    debug_assert_eq!(graph.terms.len(), dtmin + 3 + D::datatypes().count());
+    graph.rdt = dtmin..graph.terms.len();
 }
 
 pub(crate) fn prepare_witnesses<D: Recognized, R: RuleSet>(graph: &mut ReasonableGraph<D, R>) {
     for (lex, dt) in D::witnesses() {
-        let idt = graph.get_index(&dt).unwrap();
-        let lit = Arc::new(InternalTerm::TypedLiteral(lex.into(), idt));
-        graph.t2i.entry(lit).or_insert_with_key(|lit| {
-            let ret = graph.i2t.len();
-            graph.i2t.push(lit.clone());
-            ret
-        });
+        graph
+            .terms
+            .ensure_index(SimpleTerm::LiteralDatatype(lex, dt))
+            .unwrap();
     }
     // also insert witnesses for rdf:langString, rdf::dirLangString and xsd::string
     let en = LanguageTag::new_unchecked("en");
@@ -125,12 +120,7 @@ pub(crate) fn prepare_witnesses<D: Recognized, R: RuleSet>(graph: &mut Reasonabl
         "" * en * BaseDirection::Ltr,
         "" * xsd::string,
     ] {
-        let lit = Arc::new(graph.try_to_internal(&lit).unwrap());
-        graph.t2i.entry(lit).or_insert_with_key(|lit| {
-            let ret = graph.i2t.len();
-            graph.i2t.push(lit.clone());
-            ret
-        });
+        graph.terms.ensure_index(lit).unwrap();
     }
 }
 
@@ -141,54 +131,49 @@ pub(crate) fn rdf_types<D: Recognized, R: RuleSet, const RDFS: bool>(
     let rdf_dir_lang_string = graph.get_index(&rdf::dirLangString).unwrap();
     let xsd_string = graph.get_index(&xsd::string).unwrap();
     graph
-        .i2t
-        .par_iter()
-        .enumerate()
-        .flat_map_iter(move |(i, t)| -> SmallVec<[[usize; 3]; 16]> {
-            let mut v = match t.as_ref() {
-                InternalTerm::TypedLiteral(lex, idt) => {
-                    // add rdf:type {datatype} for all recognized datatypes
-                    let InternalTerm::Iri(datatype) = graph.i2t[*idt].as_ref() else {
-                        unreachable!()
-                    };
-                    match D::datatypes_for(lex, datatype.as_ref()) {
-                        Some(v) => {
-                            let mut v: SmallVec<_> = v
-                                .into_iter()
-                                .map(|dt| [i, RDF_TYPE, graph.get_index(&dt).unwrap()])
-                                .collect();
-                            v.push([i, RDF_TYPE, *idt]);
-                            v
+        .terms
+        .iter()
+        .par_bridge()
+        .flat_map_iter(move |t| -> SmallVec<[[usize; 3]; 16]> {
+            let mut v: SmallVec<[[usize; 3]; 16]> = if let Some([_, p, _]) = t.triple() {
+                let mut v = SmallVec::from_elem([p.index(), RDF_TYPE, RDF_PROPERTY], 1);
+                if RDFS {
+                    v.push([t.index(), RDF_TYPE, super::_rdfs::RDFS_PROPOSITION]);
+                }
+                v
+            } else if t.base_direction().is_some() {
+                SmallVec::from_elem([t.index(), RDF_TYPE, rdf_dir_lang_string], 1)
+            } else if t.language_tag().is_some() {
+                SmallVec::from_elem([t.index(), RDF_TYPE, rdf_lang_string], 1)
+            } else if let Some(lex) = t.lexical_form() {
+                let Some(datatype) = t.datatype() else {
+                    unreachable!()
+                };
+                let i = t.index();
+                let idt = t.datatype_index().unwrap();
+                match D::datatypes_for(&lex, datatype.as_ref()) {
+                    Some(v) => {
+                        let mut v: SmallVec<_> = v
+                            .into_iter()
+                            .map(|dt| [i, RDF_TYPE, graph.get_index(&dt).unwrap()])
+                            .collect();
+                        v.push([i, RDF_TYPE, idt]);
+                        v
+                    }
+                    None => {
+                        if idt == xsd_string {
+                            SmallVec::from_elem([i, RDF_TYPE, xsd_string], 1)
+                        } else {
+                            SmallVec::new()
                         }
-                        None => {
-                            if *idt == xsd_string {
-                                SmallVec::from_elem([i, RDF_TYPE, xsd_string], 1)
-                            } else {
-                                SmallVec::new()
-                            }
-                        }
                     }
                 }
-                InternalTerm::LangString(_, _, dir) => {
-                    // add rdf:type {datatype} for language strings
-                    if dir.is_some() {
-                        SmallVec::from_elem([i, RDF_TYPE, rdf_dir_lang_string], 1)
-                    } else {
-                        SmallVec::from_elem([i, RDF_TYPE, rdf_lang_string], 1)
-                    }
-                }
-                InternalTerm::TripleTerm([_, p, _]) => {
-                    // add rdf:type rdf:Property to all predicate used in triple terms
-                    let mut v = SmallVec::from_elem([*p, RDF_TYPE, RDF_PROPERTY], 1);
-                    if RDFS {
-                        v.push([i, RDF_TYPE, super::_rdfs::RDFS_PROPOSITION]);
-                    }
-                    v
-                }
-                _ => SmallVec::new(),
+            } else {
+                SmallVec::new()
             };
+
             if RDFS {
-                v.push([i, RDF_TYPE, super::_rdfs::RDFS_RESOURCE])
+                v.push([t.index(), RDF_TYPE, super::_rdfs::RDFS_RESOURCE])
             }
             v
         })
@@ -224,12 +209,10 @@ pub(crate) fn check_recognized_datatypes<D: Recognized, R: RuleSet>(
                 .filter_map(|[_, _, dt2]| disjoint.get(&(*dt1, *dt2)).copied())
         })
         .find_map_any(|(dt1, dt2)| {
-            let InternalTerm::Iri(iri1) = graph.i2t[dt1].as_ref() else {
-                unreachable!()
-            };
-            let InternalTerm::Iri(iri2) = graph.i2t[dt2].as_ref() else {
-                unreachable!()
-            };
+            let dt1 = graph.get_term(dt1);
+            let iri1 = dt1.iri().unwrap();
+            let dt2 = graph.get_term(dt2);
+            let iri2 = dt2.iri().unwrap();
             Some(format!(
                 "instance of disjoint datatypes <{iri1}> and <{iri2}>"
             ))

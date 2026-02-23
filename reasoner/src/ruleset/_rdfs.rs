@@ -1,15 +1,14 @@
-use std::sync::{Arc, LazyLock};
+use std::sync::LazyLock;
 
-use rayon::iter::{
-    IndexedParallelIterator, IntoParallelRefIterator, ParallelBridge, ParallelExtend,
-    ParallelIterator,
-};
+use rayon::iter::{ParallelBridge, ParallelExtend, ParallelIterator};
 use regex::Regex;
-use sophia_api::ns::{rdf, rdfs};
+use sophia_api::{
+    ns::{rdf, rdfs},
+    term::Term,
+};
 
 use crate::{
-    _range_n::RangeN, Inconsistency, InternalTerm, ReasonableGraph, d_entailment::Recognized,
-    ruleset::RuleSet,
+    _range_n::RangeN, Inconsistency, ReasonableGraph, d_entailment::Recognized, ruleset::RuleSet,
 };
 
 use super::_rdf::*;
@@ -199,12 +198,10 @@ pub(crate) fn prepare_rdfs_vocab<D: Recognized, R: RuleSet>(graph: &mut Reasonab
 pub(crate) fn prepare_proposition_witness<D: Recognized, R: RuleSet>(
     graph: &mut ReasonableGraph<D, R>,
 ) {
-    let tt = Arc::new(InternalTerm::TripleTerm([RDF_TYPE, RDF_TYPE, RDF_PROPERTY]));
-    graph.t2i.entry(tt).or_insert_with_key(|lit| {
-        let ret = graph.i2t.len();
-        graph.i2t.push(lit.clone());
-        ret
-    });
+    graph
+        .terms
+        .ensure_triple_term_index([RDF_TYPE, RDF_TYPE, RDF_PROPERTY])
+        .unwrap();
 }
 
 /// add axiomatic triples for all used membership properties
@@ -215,14 +212,14 @@ pub(crate) fn rdfs_membership_properties<D: Recognized, R: RuleSet>(
         Regex::new("^http://www.w3.org/1999/02/22-rdf-syntax-ns#_[0-9]+$").unwrap()
     });
     graph
-        .i2t
-        .par_iter()
-        .enumerate()
-        .filter_map(|(i, t)| {
-            if let InternalTerm::Iri(iri) = t.as_ref()
+        .terms
+        .iter()
+        .par_bridge()
+        .filter_map(|t| {
+            if let Some(iri) = t.iri()
                 && RE.is_match(iri.as_str())
             {
-                Some(i)
+                Some(t.index())
             } else {
                 None
             }

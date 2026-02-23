@@ -1,6 +1,6 @@
 // An indexed graph where Triple Terms are also based on indexes (unlike, e.g. sophia_inmem::FastGraph)
 
-use std::{marker::PhantomData, sync::Arc};
+use std::marker::PhantomData;
 
 use sophia_api::{
     graph::{CollectibleGraph, GResult, Graph},
@@ -10,12 +10,13 @@ use sophia_api::{
     term::{SimpleTerm, Term, matcher::TermMatcher},
     triple::Triple,
 };
+use sophia_inmem::index::{IndexedTerm, TermIndex};
 use sophia_sparql::SparqlWrapper;
 
 use crate::{
     _dedup::UsizeIteratorDedup,
     _range_n::RangeN,
-    Inconsistency, InternalTerm, ReasonableGraph, ReasonableTerm,
+    Inconsistency, ReasonableGraph,
     d_entailment::{IllTypedLiteral, NormalizeError, Recognized},
     ruleset::RuleSet,
 };
@@ -23,8 +24,7 @@ use crate::{
 impl<D, R> Clone for ReasonableGraph<D, R> {
     fn clone(&self) -> Self {
         Self {
-            i2t: self.i2t.clone(),
-            t2i: self.t2i.clone(),
+            terms: self.terms.clone(),
             rdt: self.rdt.clone(),
             spo: self.spo.clone(),
             pos: self.pos.clone(),
@@ -39,8 +39,7 @@ impl<D, R> Clone for ReasonableGraph<D, R> {
 impl<D, R> std::fmt::Debug for ReasonableGraph<D, R> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ReasonableGraph")
-            .field("i2t", &self.i2t)
-            .field("t2i", &self.t2i)
+            .field("terms", &self.terms)
             .field("rdt", &self.rdt)
             .field("spo", &self.spo)
             .field("pos", &self.pos)
@@ -57,8 +56,7 @@ impl<D: Recognized, R: RuleSet> ReasonableGraph<D, R> {
     /// Using a [`ReasonableGraph`] before it is finalized will produce incorrect results.
     pub(crate) fn prepare() -> Self {
         let mut ret = Self {
-            i2t: Default::default(),
-            t2i: Default::default(),
+            terms: Default::default(),
             rdt: (0..0),
             spo: Default::default(),
             pos: Default::default(),
@@ -109,88 +107,37 @@ impl<D: Recognized, R: RuleSet> ReasonableGraph<D, R> {
         Ok(sparql_other.query(&query).unwrap().into_boolean())
     }
 
-    /// Return a ReasonableTerm, assuming the index is valid
-    pub(crate) fn get_term(&self, index: usize) -> ReasonableTerm<'_, D, R> {
-        debug_assert!(index < self.i2t.len());
-        ReasonableTerm::new(self, index)
+    /// Return a IndexedTerm, assuming the index is valid
+    pub(crate) fn get_term(&self, index: usize) -> IndexedTerm<'_, usize> {
+        debug_assert!(index < self.terms.len());
+        self.terms.get_term(index)
     }
 
-    fn get_triple(&self, spo: &[usize; 3]) -> [ReasonableTerm<'_, D, R>; 3] {
+    fn get_triple(&self, spo: &[usize; 3]) -> [IndexedTerm<'_, usize>; 3] {
         (*spo).map(|i| self.get_term(i))
     }
 
     pub(crate) fn get_index<T: Term + ?Sized>(&self, term: &T) -> Option<usize> {
-        self.t2i.get(&self.try_to_internal(term)?).copied()
-    }
-
-    /// Convert a given term to in InternalTerm, if possible
-    ///
-    /// It is not possible if the subterms (literal's datatype, triple term's component)
-    /// are not already present in the graph.
-    pub(crate) fn try_to_internal<T: Term + ?Sized>(&self, term: &T) -> Option<InternalTerm> {
-        Some(match term.as_simple() {
-            SimpleTerm::Iri(iri_ref) => {
-                InternalTerm::Iri(iri_ref.map_unchecked(|m| m.to_string().into()))
-            }
-            SimpleTerm::BlankNode(bnode_id) => {
-                InternalTerm::BlankNode(bnode_id.map_unchecked(|m| m.to_string().into()))
-            }
-            SimpleTerm::LiteralDatatype(lex, dt) => {
-                let (lex, dt) = D::normalize_or_fallback((lex, dt)).ok()?;
-                let idt = self.get_index(&dt)?;
-                InternalTerm::TypedLiteral(lex.into(), idt)
-            }
-            SimpleTerm::LiteralLanguage(lex, tag, dir) => InternalTerm::LangString(
-                lex.to_string().into(),
-                tag.map_unchecked(|m| m.to_string().into()),
-                dir,
-            ),
-            SimpleTerm::Triple(spo) => InternalTerm::TripleTerm([
-                self.get_index(&spo[0])?,
-                self.get_index(&spo[1])?,
-                self.get_index(&spo[2])?,
-            ]),
-            SimpleTerm::Variable(var_name) => {
-                InternalTerm::Variable(var_name.map_unchecked(|m| m.to_string().into()))
-            }
-        })
+        self.terms.get_index(term.borrow_term())
     }
 
     pub(crate) fn get_or_make_index<T: Term + ?Sized>(
         &mut self,
         term: &T,
     ) -> Result<usize, IllTypedLiteral> {
-        let key = Arc::new(match term.as_simple() {
-            SimpleTerm::Iri(iri_ref) => {
-                InternalTerm::Iri(iri_ref.map_unchecked(|m| m.to_string().into()))
-            }
-            SimpleTerm::BlankNode(bnode_id) => {
-                InternalTerm::BlankNode(bnode_id.map_unchecked(|m| m.to_string().into()))
-            }
+        Ok(match term.as_simple() {
             SimpleTerm::LiteralDatatype(lex, dt) => {
                 let (lex, dt) = D::normalize_or_fallback((lex, dt))?;
-                let idt = self.get_or_make_index(&dt)?;
-                InternalTerm::TypedLiteral(lex.into(), idt)
+                self.terms
+                    .ensure_index(SimpleTerm::LiteralDatatype(lex, dt))
+                    .unwrap()
             }
-            SimpleTerm::LiteralLanguage(lex, tag, dir) => InternalTerm::LangString(
-                lex.to_string().into(),
-                tag.map_unchecked(|m| m.to_string().into()),
-                dir,
-            ),
-            SimpleTerm::Triple(spo) => InternalTerm::TripleTerm([
-                self.get_or_make_index(&spo[0])?,
-                self.get_or_make_index(&spo[1])?,
-                self.get_or_make_index(&spo[2])?,
-            ]),
-            SimpleTerm::Variable(var_name) => {
-                InternalTerm::Variable(var_name.map_unchecked(|m| m.to_string().into()))
+            SimpleTerm::Triple(spo) => {
+                let spo = [0, 1, 2].map(|i| self.get_or_make_index(&spo[i]).unwrap());
+                self.terms.ensure_triple_term_index(spo).unwrap()
             }
-        });
-        Ok(*self.t2i.entry(key).or_insert_with_key(|key| {
-            let ret = self.i2t.len();
-            self.i2t.push(key.clone());
-            ret
-        }))
+            _ => self.terms.ensure_index(term.borrow_term()).unwrap(),
+        })
     }
 
     pub(crate) fn insert(&mut self, [si, pi, oi]: [usize; 3]) -> bool {
@@ -212,7 +159,7 @@ impl<D: Recognized, R: RuleSet> ReasonableGraph<D, R> {
 
 impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     type Triple<'x>
-        = [ReasonableTerm<'x, D, R>; 3]
+        = [IndexedTerm<'x, usize>; 3]
     where
         Self: 'x;
 
@@ -449,13 +396,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     fn iris(&self) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'_, Self>>> + '_ {
         #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
-        self.i2t.iter().enumerate().filter_map(|(idx, item)| {
-            if matches!(item.as_ref(), InternalTerm::Iri(_)) {
-                Some(Ok(self.get_term(idx)))
-            } else {
-                None
-            }
-        })
+        self.terms.iris().map(Ok)
     }
 
     fn blank_nodes(
@@ -463,13 +404,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     ) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'_, Self>>> + '_ {
         #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
-        self.i2t.iter().enumerate().filter_map(|(idx, item)| {
-            if matches!(item.as_ref(), InternalTerm::BlankNode(_)) {
-                Some(Ok(self.get_term(idx)))
-            } else {
-                None
-            }
-        })
+        self.terms.blank_nodes().map(Ok)
     }
 
     fn literals(
@@ -477,16 +412,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     ) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'_, Self>>> + '_ {
         #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
-        self.i2t.iter().enumerate().filter_map(|(idx, item)| {
-            if matches!(
-                item.as_ref(),
-                InternalTerm::TypedLiteral(..) | InternalTerm::LangString(..)
-            ) {
-                Some(Ok(self.get_term(idx)))
-            } else {
-                None
-            }
-        })
+        self.terms.literals().map(Ok)
     }
 
     fn triple_terms<'s>(
@@ -497,13 +423,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     {
         #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
-        Box::new(self.i2t.iter().enumerate().filter_map(|(idx, item)| {
-            if matches!(item.as_ref(), InternalTerm::TripleTerm(_)) {
-                Some(Ok(self.get_term(idx)))
-            } else {
-                None
-            }
-        }))
+        Box::new(self.terms.literals().map(Ok))
     }
 
     fn variables(
@@ -511,13 +431,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
     ) -> impl Iterator<Item = GResult<Self, sophia_api::graph::GTerm<'_, Self>>> + '_ {
         #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
-        self.i2t.iter().enumerate().filter_map(|(idx, item)| {
-            if matches!(item.as_ref(), InternalTerm::Variable(_)) {
-                Some(Ok(self.get_term(idx)))
-            } else {
-                None
-            }
-        })
+        self.terms.variables().map(Ok)
     }
 
     fn contains<TS, TP, TO>(&self, s: TS, p: TP, o: TO) -> GResult<Self, bool>

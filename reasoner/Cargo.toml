@@ -21,6 +21,7 @@ regex.workspace = true
 resiter.workspace = true
 smallvec = { version = "1.15.1", features = ["const_generics"] }
 sophia_api.workspace = true
+sophia_inmem.workspace = true
 sophia_iri.workspace = true
 sophia_sparql.workspace = true
 thiserror.workspace = true
