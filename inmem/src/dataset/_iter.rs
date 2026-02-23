@@ -3,7 +3,7 @@ use std::iter::empty;
 
 use sophia_api::quad::Gspo;
 use sophia_api::term::matcher::{GraphNameMatcher, TermMatcher};
-use sophia_api::term::{GraphName, Term, graph_name_eq};
+use sophia_api::term::{GraphName, graph_name_eq};
 
 use crate::index::{GraphNameIndex, TermIndex};
 
@@ -71,7 +71,7 @@ where
     }
 }
 
-pub type Qud<'a, TI> = Gspo<<<TI as TermIndex>::Term as Term>::BorrowTerm<'a>>;
+pub type Qud<'a, TI> = Gspo<<TI as TermIndex>::Term<'a>>;
 
 impl<'a, TI, GM, SM, PM, OM> Iterator for GspoMatchingIterator<'a, TI, GM, SM, PM, OM>
 where
@@ -129,7 +129,7 @@ where
 {
     terms: &'a TI,
     abcd: Range<'a, [TI::Index; 4]>,
-    a: GraphName<<TI::Term as Term>::BorrowTerm<'a>>,
+    a: GraphName<TI::Term<'a>>,
     b: GraphNameData<'a, TI, BM>,
     c: GraphNameData<'a, TI, CM>,
     d: GraphNameData<'a, TI, DM>,
@@ -196,7 +196,7 @@ where
     }
 }
 
-type GnQuad<'a, TI> = [GraphName<<<TI as TermIndex>::Term as Term>::BorrowTerm<'a>>; 4];
+type GnQuad<'a, TI> = [GraphName<<TI as TermIndex>::Term<'a>>; 4];
 
 impl<'a, TI, BM, CM, DM> Iterator for BcdMatchingIterator<'a, TI, BM, CM, DM>
 where
@@ -246,8 +246,8 @@ where
 {
     terms: &'a TI,
     abcd: Range<'a, [TI::Index; 4]>,
-    a: GraphName<<TI::Term as Term>::BorrowTerm<'a>>,
-    b: GraphName<<TI::Term as Term>::BorrowTerm<'a>>,
+    a: GraphName<TI::Term<'a>>,
+    b: GraphName<TI::Term<'a>>,
     c: GraphNameData<'a, TI, CM>,
     d: GraphNameData<'a, TI, DM>,
 }
@@ -343,20 +343,18 @@ use crate::graph::TermData;
 
 struct GraphNameData<'a, TI, M>
 where
-    TI: TermIndex,
-    TI::Term: 'a,
+    TI: TermIndex + 'a,
     M: GraphNameMatcher,
 {
     m: M,
     i: TI::Index,
-    t: GraphName<<TI::Term as Term>::BorrowTerm<'a>>,
+    t: GraphName<TI::Term<'a>>,
     b: bool,
 }
 
 impl<'a, TI, M> GraphNameData<'a, TI, M>
 where
-    TI: GraphNameIndex,
-    TI::Term: 'a,
+    TI: GraphNameIndex + 'a,
     M: GraphNameMatcher,
 {
     fn uninit(m: M, i: TI::Index, terms: &'a TI) -> Self {

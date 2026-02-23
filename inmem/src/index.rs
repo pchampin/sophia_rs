@@ -6,7 +6,7 @@ use std::collections::hash_map::Entry;
 use std::error::Error;
 
 /// Abstraction of the short numeric indices representing [terms](Term) in a [`TermIndex`].
-pub trait Index: Copy + std::fmt::Debug + Ord {
+pub trait Index: Copy + std::fmt::Debug + Eq + std::hash::Hash + Ord + std::ops::Shr {
     /// The minimal value of this index type
     const ZERO: Self;
     /// The maximal value of this index type
@@ -61,7 +61,9 @@ impl Index for u16 {
 /// A [`TermIndex`] is a bidirectional association of [terms](Term) with short numeric [indices](Index).
 pub trait TermIndex {
     /// The type of [`Term`]s contained in this [`TermIndex`]
-    type Term: Term;
+    type Term<'x>: Term + Copy
+    where
+        Self: 'x;
     /// The type of [indices](Index) used by this [`TermIndex`]
     type Index: Index;
     /// The type of error that this [`TermIndex`] may raise
@@ -81,7 +83,7 @@ pub trait TermIndex {
     /// # Precondition
     /// `i` must have been returned previously by [`get_index`](TermIndex::get_index) or [`ensure_index`](TermIndex::ensure_index),
     /// otherwise this method may panic.
-    fn get_term(&self, i: Self::Index) -> <Self::Term as Term>::BorrowTerm<'_>;
+    fn get_term(&self, i: Self::Index) -> Self::Term<'_>;
 }
 
 /// [`GraphNameIndex`] extends [`TermIndex`] to support graph names.
@@ -97,7 +99,7 @@ pub trait GraphNameIndex: TermIndex {
     /// # Precondition
     /// `i` must have been returned previously by [`get_index`](TermIndex::get_index) or [`ensure_index`](TermIndex::ensure_index),
     /// otherwise this method may panic.
-    fn get_graph_name(&self, i: Self::Index) -> GraphName<<Self::Term as Term>::BorrowTerm<'_>> {
+    fn get_graph_name(&self, i: Self::Index) -> GraphName<Self::Term<'_>> {
         if i == self.get_default_graph_index() {
             None
         } else {
@@ -143,7 +145,10 @@ impl<I: Index> SimpleTermIndex<I> {
 }
 
 impl<I: Index> TermIndex for SimpleTermIndex<I> {
-    type Term = SimpleTerm<'static>;
+    type Term<'x>
+        = &'x SimpleTerm<'static>
+    where
+        Self: 'x;
     type Index = I;
     type Error = TermIndexFullError;
 
@@ -172,7 +177,7 @@ impl<I: Index> TermIndex for SimpleTermIndex<I> {
         }
     }
 
-    fn get_term(&self, i: Self::Index) -> <Self::Term as Term>::BorrowTerm<'_> {
+    fn get_term(&self, i: Self::Index) -> Self::Term<'_> {
         let i = i.into_usize();
         self.i2t[i].borrow_term()
     }

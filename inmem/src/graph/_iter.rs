@@ -63,7 +63,7 @@ where
     }
 }
 
-type Trpl<'a, TI> = [<<TI as TermIndex>::Term as Term>::BorrowTerm<'a>; 3];
+type Trpl<'a, TI> = [<TI as TermIndex>::Term<'a>; 3];
 
 impl<'a, TI, SM, PM, OM> Iterator for SpoMatchingIterator<'a, TI, SM, PM, OM>
 where
@@ -112,7 +112,7 @@ where
 {
     terms: &'a TI,
     abc: Range<'a, [TI::Index; 3]>,
-    a: <TI::Term as Term>::BorrowTerm<'a>,
+    a: TI::Term<'a>,
     b: TermData<'a, TI, BM>,
     c: TermData<'a, TI, CM>,
 }
@@ -195,20 +195,18 @@ where
 
 pub struct TermData<'a, TI, M>
 where
-    TI: TermIndex,
-    TI::Term: 'a,
+    TI: TermIndex + 'a,
     M: TermMatcher,
 {
     pub m: M,
     pub i: TI::Index,
-    pub t: <TI::Term as Term>::BorrowTerm<'a>,
+    pub t: TI::Term<'a>,
     pub b: bool,
 }
 
 impl<'a, TI, M> TermData<'a, TI, M>
 where
-    TI: TermIndex,
-    TI::Term: 'a,
+    TI: TermIndex + 'a,
     M: TermMatcher,
 {
     pub fn uninit(m: M, i: TI::Index, terms: &'a TI) -> Self {

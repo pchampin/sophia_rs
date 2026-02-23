@@ -31,7 +31,7 @@ impl<TI: TermIndex + Default> GenericLightGraph<TI> {
 
 impl<TI: TermIndex> Graph for GenericLightGraph<TI> {
     type Triple<'x>
-        = [<TI::Term as Term>::BorrowTerm<'x>; 3]
+        = [TI::Term<'x>; 3]
     where
         Self: 'x;
     type Error = TI::Error;
@@ -171,7 +171,7 @@ impl<TI: TermIndex + Default> GenericFastGraph<TI> {
 
 impl<TI: TermIndex> Graph for GenericFastGraph<TI> {
     type Triple<'x>
-        = [<TI::Term as Term>::BorrowTerm<'x>; 3]
+        = [TI::Term<'x>; 3]
     where
         Self: 'x;
     type Error = TI::Error;
