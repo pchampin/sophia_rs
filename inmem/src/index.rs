@@ -156,10 +156,15 @@ impl<I: Index> InternalTerm<I> {
 #[derive(Clone, Copy, Debug)]
 pub struct IndexedTerm<'a, I: Index> {
     t: &'a BasicTermIndex<I>,
-    i: I,
+    i: &'a InternalTerm<I>,
 }
 
 impl<'a, I: Index> IndexedTerm<'a, I> {
+    fn new(t: &'a BasicTermIndex<I>, i: usize) -> Self {
+        debug_assert!(i < t.i2t.len());
+        Self { t, i: &t.i2t[i] }
+    }
+
     /// Return the [`BasicTermIndex`] this [`IndexedTerm`] comes from
     pub fn term_index(&self) -> &BasicTermIndex<I> {
         self.t
@@ -167,12 +172,17 @@ impl<'a, I: Index> IndexedTerm<'a, I> {
 
     /// Return the index of that [`IndexedTerm`]
     pub fn index(&self) -> I {
-        self.i
+        let offset = unsafe {
+            // SAFETY: we know that i belongs to t.i2
+            (self.i as *const InternalTerm<I>).offset_from(&self.t.i2t[0] as *const InternalTerm<I>)
+        };
+        debug_assert!(offset >= 0);
+        I::from_usize(offset as usize)
     }
 
     /// Return the index of that [`IndexedTerm`]'s datatype of it contains one.
     pub fn datatype_index(&self) -> Option<I> {
-        if let InternalTerm::LiteralTyped(_, idt) = &self.t.i2t[self.i.into_usize()] {
+        if let InternalTerm::LiteralTyped(_, idt) = &self.i {
             Some(*idt)
         } else {
             None
@@ -187,7 +197,7 @@ impl<'a, I: Index> Term for IndexedTerm<'a, I> {
         Self: 'x;
 
     fn kind(&self) -> TermKind {
-        match self.t.i2t[self.i.into_usize()] {
+        match self.i {
             InternalTerm::Iri(_) => TermKind::Iri,
             InternalTerm::BlankNode(_) => TermKind::BlankNode,
             InternalTerm::LiteralTyped(..) | InternalTerm::LiteralLang(..) => TermKind::Literal,
@@ -201,7 +211,7 @@ impl<'a, I: Index> Term for IndexedTerm<'a, I> {
     }
 
     fn iri(&self) -> Option<sophia_api::term::IriRef<sophia_api::MownStr<'_>>> {
-        if let InternalTerm::Iri(iri) = &self.t.i2t[self.i.into_usize()] {
+        if let InternalTerm::Iri(iri) = &self.i {
             Some(iri.as_ref().map_unchecked(Into::into))
         } else {
             None
@@ -209,7 +219,7 @@ impl<'a, I: Index> Term for IndexedTerm<'a, I> {
     }
 
     fn bnode_id(&self) -> Option<BnodeId<sophia_api::MownStr<'_>>> {
-        if let InternalTerm::BlankNode(bnid) = &self.t.i2t[self.i.into_usize()] {
+        if let InternalTerm::BlankNode(bnid) = &self.i {
             Some(bnid.as_ref().map_unchecked(Into::into))
         } else {
             None
@@ -217,7 +227,7 @@ impl<'a, I: Index> Term for IndexedTerm<'a, I> {
     }
 
     fn lexical_form(&self) -> Option<sophia_api::MownStr<'_>> {
-        match &self.t.i2t[self.i.into_usize()] {
+        match &self.i {
             InternalTerm::LiteralTyped(lex, ..) | InternalTerm::LiteralLang(lex, ..) => {
                 Some(lex.as_ref().into())
             }
@@ -226,7 +236,7 @@ impl<'a, I: Index> Term for IndexedTerm<'a, I> {
     }
 
     fn datatype(&self) -> Option<sophia_api::term::IriRef<sophia_api::MownStr<'_>>> {
-        match &self.t.i2t[self.i.into_usize()] {
+        match &self.i {
             InternalTerm::LiteralTyped(_, dt) => {
                 let InternalTerm::Iri(iri) = &self.t.i2t[dt.into_usize()] else {
                     unreachable!();
@@ -240,7 +250,7 @@ impl<'a, I: Index> Term for IndexedTerm<'a, I> {
     }
 
     fn language_tag(&self) -> Option<LanguageTag<sophia_api::MownStr<'_>>> {
-        if let InternalTerm::LiteralLang(_, tag, _) = &self.t.i2t[self.i.into_usize()] {
+        if let InternalTerm::LiteralLang(_, tag, _) = &self.i {
             Some(tag.as_ref().map_unchecked(Into::into))
         } else {
             None
@@ -248,7 +258,7 @@ impl<'a, I: Index> Term for IndexedTerm<'a, I> {
     }
 
     fn base_direction(&self) -> Option<BaseDirection> {
-        if let InternalTerm::LiteralLang(.., dir) = &self.t.i2t[self.i.into_usize()] {
+        if let InternalTerm::LiteralLang(.., dir) = &self.i {
             *dir
         } else {
             None
@@ -256,7 +266,7 @@ impl<'a, I: Index> Term for IndexedTerm<'a, I> {
     }
 
     fn variable(&self) -> Option<VarName<sophia_api::MownStr<'_>>> {
-        if let InternalTerm::Variable(varname) = &self.t.i2t[self.i.into_usize()] {
+        if let InternalTerm::Variable(varname) = &self.i {
             Some(varname.as_ref().map_unchecked(Into::into))
         } else {
             None
@@ -264,9 +274,9 @@ impl<'a, I: Index> Term for IndexedTerm<'a, I> {
     }
 
     fn triple(&self) -> Option<[Self::BorrowTerm<'_>; 3]> {
-        if let InternalTerm::Triple(spo) = &self.t.i2t[self.i.into_usize()] {
+        if let InternalTerm::Triple(spo) = &self.i {
             let t = self.t;
-            Some(spo.map(|i| Self { t, i }))
+            Some(spo.map(|i| Self::new(t, i.into_usize())))
         } else {
             None
         }
@@ -359,20 +369,14 @@ impl<I: Index> BasicTermIndex<I> {
     /// Iter over all term in this TermIndex
     pub fn iter(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
         let t = self;
-        (0..self.i2t.len()).map(|i| IndexedTerm {
-            t,
-            i: I::from_usize(i),
-        })
+        (0..self.i2t.len()).map(|i| IndexedTerm::new(t, i))
     }
 
     /// Iter over all IRIs in this TermIndex
     pub fn iris(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
         let t = self;
         self.i2t.iter().enumerate().filter_map(|(i, it)| {
-            matches!(it, InternalTerm::Iri(_)).then_some(IndexedTerm {
-                t,
-                i: I::from_usize(i),
-            })
+            matches!(it, InternalTerm::Iri(_)).then_some(IndexedTerm::new(t, i))
         })
     }
 
@@ -380,10 +384,7 @@ impl<I: Index> BasicTermIndex<I> {
     pub fn blank_nodes(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
         let t = self;
         self.i2t.iter().enumerate().filter_map(|(i, it)| {
-            matches!(it, InternalTerm::BlankNode(_)).then_some(IndexedTerm {
-                t,
-                i: I::from_usize(i),
-            })
+            matches!(it, InternalTerm::BlankNode(_)).then_some(IndexedTerm::new(t, i))
         })
     }
 
@@ -395,10 +396,7 @@ impl<I: Index> BasicTermIndex<I> {
                 it,
                 InternalTerm::LiteralTyped(..) | InternalTerm::LiteralLang(..)
             )
-            .then_some(IndexedTerm {
-                t,
-                i: I::from_usize(i),
-            })
+            .then_some(IndexedTerm::new(t, i))
         })
     }
 
@@ -406,10 +404,7 @@ impl<I: Index> BasicTermIndex<I> {
     pub fn triple_terms(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
         let t = self;
         self.i2t.iter().enumerate().filter_map(|(i, it)| {
-            matches!(it, InternalTerm::Triple(_)).then_some(IndexedTerm {
-                t,
-                i: I::from_usize(i),
-            })
+            matches!(it, InternalTerm::Triple(_)).then_some(IndexedTerm::new(t, i))
         })
     }
 
@@ -417,10 +412,7 @@ impl<I: Index> BasicTermIndex<I> {
     pub fn variables(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
         let t = self;
         self.i2t.iter().enumerate().filter_map(|(i, it)| {
-            matches!(it, InternalTerm::Variable(_)).then_some(IndexedTerm {
-                t,
-                i: I::from_usize(i),
-            })
+            matches!(it, InternalTerm::Variable(_)).then_some(IndexedTerm::new(t, i))
         })
     }
 }
@@ -465,7 +457,7 @@ impl<I: Index> TermIndex for BasicTermIndex<I> {
 
     fn get_term(&self, i: Self::Index) -> Self::Term<'_> {
         assert!(i.into_usize() < self.i2t.len());
-        IndexedTerm { t: self, i }
+        IndexedTerm::new(self, i.into_usize())
     }
 }
 
