@@ -560,13 +560,13 @@ impl<TI: GraphNameIndex> SetDataset for GenericFastDataset<TI> {}
 /// Fast to load but slow on some queries, with a relatively low memory footprint.
 ///
 /// Default configuration of [`GenericLightDataset`].
-pub type LightDataset = GenericLightDataset<SimpleTermIndex<u32>>;
+pub type LightDataset = GenericLightDataset<BasicTermIndex<u32>>;
 
 /// A heavily indexed dataset.
 /// Fast to query but slow to load, with a relatively high memory footprint.
 ///
 /// Default configuration of [`GenericFastDataset`].
-pub type FastDataset = GenericFastDataset<SimpleTermIndex<u32>>;
+pub type FastDataset = GenericFastDataset<BasicTermIndex<u32>>;
 
 #[cfg(test)]
 mod test {
@@ -589,14 +589,14 @@ mod test {
 /// The trade-off is that these implementations can only contain a small number (2^16) of distinct terms.
 ///
 pub mod small {
-    use crate::index::SimpleTermIndex;
+    use crate::index::BasicTermIndex;
 
     /// A dataset with a single quad index (GSPO).
     /// Fast to load but slow to query, with a relatively low memory footprint.
-    pub type LightDataset = super::GenericLightDataset<SimpleTermIndex<u16>>;
+    pub type LightDataset = super::GenericLightDataset<BasicTermIndex<u16>>;
     /// A heavily indexed dataset.
     /// Fast to query but slow to load, with a relatively high memory footprint.
-    pub type FastDataset = super::GenericFastDataset<SimpleTermIndex<u16>>;
+    pub type FastDataset = super::GenericFastDataset<BasicTermIndex<u16>>;
 
     #[cfg(all(test, feature = "all_tests"))]
     mod test {

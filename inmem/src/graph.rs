@@ -346,13 +346,13 @@ impl<TI: TermIndex> SetGraph for GenericFastGraph<TI> {}
 /// Fast to load but slow to query, with a relatively low memory footprint.
 ///
 /// Default configuration of [`GenericLightGraph`].
-pub type LightGraph = GenericLightGraph<SimpleTermIndex<u32>>;
+pub type LightGraph = GenericLightGraph<BasicTermIndex<u32>>;
 
 /// A heavily indexed graph.
 /// Fast to query but slow to load, with a relatively high memory footprint.
 ///
 /// Default configuration of [`GenericFastGraph`].
-pub type FastGraph = GenericFastGraph<SimpleTermIndex<u32>>;
+pub type FastGraph = GenericFastGraph<BasicTermIndex<u32>>;
 
 #[cfg(test)]
 mod test {
@@ -375,14 +375,14 @@ mod test {
 /// The trade-off is that these implementations can only contain a small number (2^16) of distinct terms.
 ///
 pub mod small {
-    use crate::index::SimpleTermIndex;
+    use crate::index::BasicTermIndex;
 
     /// A graph with a single triple index (SPO).
     /// Fast to load but slow to query, with a relatively low memory footprint.
-    pub type LightGraph = super::GenericLightGraph<SimpleTermIndex<u16>>;
+    pub type LightGraph = super::GenericLightGraph<BasicTermIndex<u16>>;
     /// A heavily indexed graph.
     /// Fast to query but slow to load, with a relatively high memory footprint.
-    pub type FastGraph = super::GenericFastGraph<SimpleTermIndex<u16>>;
+    pub type FastGraph = super::GenericFastGraph<BasicTermIndex<u16>>;
 
     #[cfg(all(test, feature = "all_tests"))]
     mod test {
