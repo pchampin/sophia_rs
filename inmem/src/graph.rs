@@ -1,5 +1,6 @@
 //! In-memory implementations of [`Graph`]
 use std::collections::BTreeSet;
+use std::convert::Infallible;
 use std::iter::{empty, once};
 
 use sophia_api::graph::{CollectibleGraph, GResult, SetGraph};
@@ -34,7 +35,7 @@ impl<TI: TermIndex> Graph for GenericLightGraph<TI> {
         = [TI::Term<'x>; 3]
     where
         Self: 'x;
-    type Error = TI::Error;
+    type Error = Infallible;
 
     fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
         self.triples
@@ -174,7 +175,7 @@ impl<TI: TermIndex> Graph for GenericFastGraph<TI> {
         = [TI::Term<'x>; 3]
     where
         Self: 'x;
-    type Error = TI::Error;
+    type Error = Infallible;
 
     fn triples(&self) -> impl Iterator<Item = GResult<Self, Self::Triple<'_>>> + '_ {
         self.spo
@@ -333,7 +334,7 @@ impl<TI: TermIndex + Default> CollectibleGraph for GenericFastGraph<TI> {
 
     fn from_triple_source<TS: TripleSource>(
         mut triples: TS,
-    ) -> sophia_api::source::StreamResult<Self, TS::Error, Self::Error> {
+    ) -> sophia_api::source::StreamResult<Self, TS::Error, Self::CollectError> {
         let mut g = Self::new();
         triples.try_for_each_triple(|t| g.insert_triple(t).map(|_| ()))?;
         Ok(g)

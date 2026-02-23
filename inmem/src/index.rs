@@ -6,6 +6,7 @@ use sophia_api::term::{
 
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
+use std::convert::Infallible;
 use std::error::Error;
 
 /// Abstraction of the short numeric indices representing [terms](Term) in a [`TermIndex`].
@@ -350,6 +351,12 @@ impl<I: Index> GraphNameIndex for BasicTermIndex<I> {
 #[derive(thiserror::Error, Copy, Clone, Debug)]
 #[error("This TermIndex can not contain more terms")]
 pub struct TermIndexFullError();
+
+impl From<Infallible> for TermIndexFullError {
+    fn from(_: Infallible) -> Self {
+        unreachable!()
+    }
+}
 
 #[cfg(test)]
 mod test {

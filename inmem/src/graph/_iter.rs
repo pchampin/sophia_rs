@@ -1,4 +1,5 @@
 use std::collections::btree_set::{Iter as BTreeSetIter, Range};
+use std::convert::Infallible;
 use std::iter::empty;
 
 use sophia_api::term::Term;
@@ -34,7 +35,7 @@ where
         sm: SM,
         pm: PM,
         om: OM,
-    ) -> Box<dyn Iterator<Item = Result<Trpl<'a, TI>, TI::Error>> + 'b> {
+    ) -> Box<dyn Iterator<Item = Result<Trpl<'a, TI>, Infallible>> + 'b> {
         match spo.clone().next() {
             None => Box::new(empty()),
             Some(first) => Box::new(Self::new(terms, spo, sm, pm, om, first).map(Ok)),
@@ -130,7 +131,7 @@ where
         bm: BM,
         cm: CM,
         mut to_spo: F,
-    ) -> Box<dyn Iterator<Item = Result<Trpl<'a, TI>, TI::Error>> + 'b>
+    ) -> Box<dyn Iterator<Item = Result<Trpl<'a, TI>, Infallible>> + 'b>
     where
         F: FnMut(Trpl<'a, TI>) -> Trpl<'a, TI> + 'b,
     {

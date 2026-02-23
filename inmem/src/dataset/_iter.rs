@@ -1,4 +1,5 @@
 use std::collections::btree_set::{Iter as BTreeSetIter, Range};
+use std::convert::Infallible;
 use std::iter::empty;
 
 use sophia_api::quad::Gspo;
@@ -39,7 +40,7 @@ where
         sm: SM,
         pm: PM,
         om: OM,
-    ) -> Box<dyn Iterator<Item = Result<Qud<'a, TI>, TI::Error>> + 'b> {
+    ) -> Box<dyn Iterator<Item = Result<Qud<'a, TI>, Infallible>> + 'b> {
         match gspo.clone().next() {
             None => Box::new(empty()),
             Some(first) => Box::new(Self::new(terms, gspo, gm, sm, pm, om, first).map(Ok)),
@@ -150,7 +151,7 @@ where
         cm: CM,
         dm: DM,
         mut to_gspo: F,
-    ) -> Box<dyn Iterator<Item = Result<Qud<'a, TI>, TI::Error>> + 'b>
+    ) -> Box<dyn Iterator<Item = Result<Qud<'a, TI>, Infallible>> + 'b>
     where
         F: FnMut(GnQuad<'a, TI>) -> GnQuad<'a, TI> + 'a,
     {
@@ -265,7 +266,7 @@ where
         cm: CM,
         dm: DM,
         mut to_gspo: F,
-    ) -> Box<dyn Iterator<Item = Result<Qud<'a, TI>, TI::Error>> + 'b>
+    ) -> Box<dyn Iterator<Item = Result<Qud<'a, TI>, Infallible>> + 'b>
     where
         F: FnMut(GnQuad<'a, TI>) -> GnQuad<'a, TI> + 'a,
     {

@@ -1,5 +1,6 @@
 //! In-memory implementations of [`Dataset`]
 use std::collections::BTreeSet;
+use std::convert::Infallible;
 use std::iter::{empty, once};
 
 use sophia_api::dataset::{CollectibleDataset, DResult, SetDataset};
@@ -35,7 +36,7 @@ impl<TI: GraphNameIndex> Dataset for GenericLightDataset<TI> {
         = Gspo<TI::Term<'x>>
     where
         Self: 'x;
-    type Error = TI::Error;
+    type Error = Infallible;
 
     fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {
         self.quads.iter().map(|[gi, ti @ ..]| {
@@ -231,7 +232,7 @@ impl<TI: GraphNameIndex> Dataset for GenericFastDataset<TI> {
         = Gspo<TI::Term<'x>>
     where
         Self: 'x;
-    type Error = TI::Error;
+    type Error = Infallible;
 
     fn quads(&self) -> impl Iterator<Item = DResult<Self, Self::Quad<'_>>> + '_ {
         self.gspo.iter().map(|[gi, ti @ ..]| {
