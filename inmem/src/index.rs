@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::convert::Infallible;
 use std::error::Error;
+use std::sync::Arc;
 
 /// Abstraction of the short numeric indices representing [terms](Term) in a [`TermIndex`].
 pub trait Index: Copy + std::fmt::Debug + Eq + std::hash::Hash + Ord + std::ops::Shr {
@@ -123,12 +124,12 @@ pub trait GraphNameIndex: TermIndex {
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 enum InternalTerm<I: Index> {
-    Iri(IriRef<Box<str>>),
-    BlankNode(BnodeId<Box<str>>),
-    LiteralTyped(Box<str>, I),
-    LiteralLang(Box<str>, LanguageTag<Box<str>>, Option<BaseDirection>),
+    Iri(IriRef<Arc<str>>),
+    BlankNode(BnodeId<Arc<str>>),
+    LiteralTyped(Arc<str>, I),
+    LiteralLang(Arc<str>, LanguageTag<Arc<str>>, Option<BaseDirection>),
     Triple([I; 3]),
-    Variable(VarName<Box<str>>),
+    Variable(VarName<Arc<str>>),
 }
 
 impl<I: Index> InternalTerm<I> {
