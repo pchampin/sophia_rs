@@ -9,6 +9,7 @@ use std::sync::LazyLock;
 use std::sync::Mutex;
 use std::sync::MutexGuard;
 
+use resiter::FilterMap;
 use resiter::FlatMap;
 use resiter::Map;
 use sophia_api::dataset::DResult;
@@ -140,21 +141,23 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 left,
                 right,
                 expression,
-            } => self.left_join(left, right, expression, graph_matcher),
-            Filter { expr, inner } => self.filter(expr, inner, graph_matcher),
+            } => self.left_join(left, right, expression, graph_matcher, context),
+            Filter { expr, inner } => self.filter(expr, inner, graph_matcher, context),
             Union { left, right } => self.union(left, right, graph_matcher, context),
             Graph { name, inner } => self.graph(name, inner, context),
             Extend {
                 inner,
                 variable,
                 expression,
-            } => self.extend(inner, variable, expression, graph_matcher),
+            } => self.extend(inner, variable, expression, graph_matcher, context),
             Minus { left, right } => self.minus(left, right, graph_matcher, context),
             Values {
                 variables,
                 bindings,
             } => self.values(variables, bindings, context),
-            OrderBy { inner, expression } => self.order_by(inner, expression, graph_matcher),
+            OrderBy { inner, expression } => {
+                self.order_by(inner, expression, graph_matcher, context)
+            }
             Project { inner, variables } => self.project(inner, variables, graph_matcher, context),
             Distinct { inner } => self.distinct(inner, graph_matcher, context),
             Reduced { inner } => self.reduced(inner, graph_matcher, context),
@@ -502,8 +505,10 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         right: &GraphPattern,
         expression: &Option<Expression>,
         graph_matcher: &GraphMatcher,
+        context: Option<&Binding>,
     ) -> Bindings<'a, D> {
-        let (variables, iter1, first1, iter2) = self.prepare_join(left, right, graph_matcher, None);
+        let (variables, iter1, first1, iter2) =
+            self.prepare_join(left, right, graph_matcher, context);
         let first1 = match first1 {
             None => return Bindings::empty_with(variables),
             Some(Err(err)) => return Bindings::err_with(err, variables),
@@ -568,17 +573,28 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         expression: &Expression,
         inner: &GraphPattern,
         graph_matcher: &GraphMatcher,
+        context: Option<&Binding>,
     ) -> Bindings<'a, D> {
+        // NB: we do not "push" the context into the evaluation of inner,
+        // as the context should not influence the evaluation of `expression`.
         let Bindings { variables, iter } = self.select(inner, graph_matcher, None);
         let arc_expr = ArcExpression::from_expr(expression, &mut self.stash_mut());
-        // self (as state) and graph_matcher will be moved in the closure;
+
+        // self (as state), graph_matcher and context will be moved in the closures;
         // they must be cloned to avoid leaking the lifetime of `self`
-        let state = self.clone();
+        let state = Arc::clone(self);
         let graph_matcher = graph_matcher.clone();
-        let iter = Box::new(iter.filter(move |resb| match resb {
-            Err(_) => true,
-            Ok(b) => arc_expr.eval_truthy(&b.v, &state, &graph_matcher),
-        }));
+        let context = context.cloned();
+
+        let iter = Box::new(
+            iter.filter(move |resb| match resb {
+                Err(_) => true,
+                Ok(b) => arc_expr.eval_truthy(&b.v, &state, &graph_matcher),
+            })
+            // we didn't push `context` into the evaluation of `inner`,
+            // so we must "join" the returned bindings are compatible with `context`
+            .filter_map_ok(move |b| b.merge_if_compatible(context.as_ref())),
+        );
         Bindings { variables, iter }
     }
 
@@ -672,8 +688,12 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         variable: &Variable,
         expression: &Expression,
         graph_matcher: &GraphMatcher,
+        context: Option<&Binding>,
     ) -> Bindings<'a, D> {
         let variable = self.stash_mut().copy_variable(variable);
+        // NB: we do not "push" the context into the evaluation of inner,
+        // as the context should not influence the evaluation of `expression`
+        // nor the binding (if it contains a similar variable).
         let Bindings {
             mut variables,
             iter,
@@ -683,20 +703,27 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         }
         let arc_expr = ArcExpression::from_expr(expression, &mut self.stash_mut());
         variables.push(variable.clone());
-        // self (as state) and graph_matcher will be moved in the closure;
+
+        // self (as state), graph_matcher and context will be moved in the closures;
         // they must be cloned to avoid leaking the lifetime of `self`
         let state = Arc::clone(self);
         let varkey = variable.unwrap();
         let graph_matcher = graph_matcher.clone();
+        let context = context.cloned();
 
-        let iter = Box::new(iter.map(move |resb| {
-            resb.map(|mut b| {
-                if let Some(val) = arc_expr.eval(&b.v, &state, &graph_matcher) {
-                    b.v.insert(varkey.clone(), val.into_term());
-                }
-                b
+        let iter = Box::new(
+            iter.map(move |resb| {
+                resb.map(|mut b| {
+                    if let Some(val) = arc_expr.eval(&b.v, &state, &graph_matcher) {
+                        b.v.insert(varkey.clone(), val.into_term());
+                    }
+                    b
+                })
             })
-        }));
+            // we didn't push `context` into the evaluation of `inner`,
+            // so we must "join" the returned bindings are compatible with `context`
+            .filter_map_ok(move |b| b.merge_if_compatible(context.as_ref())),
+        );
         Bindings { variables, iter }
     }
 
@@ -777,6 +804,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         inner: &GraphPattern,
         expression: &[OrderExpression],
         graph_matcher: &GraphMatcher,
+        context: Option<&Binding>,
     ) -> Bindings<'a, D> {
         let criteria: Vec<_> = expression
             .iter()
@@ -813,6 +841,9 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             }
         }
 
+        // NB: we do not "push" the context into the evaluation of inner,
+        // as the context should not influence the evaluation of `expression`
+        // nor the binding (if it contains a similar variable).
         let Bindings { variables, iter } = self.select(inner, graph_matcher, None);
         let res = iter.collect::<Result<Vec<_>, _>>();
         match res {
@@ -821,7 +852,17 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 bindings.sort_unstable_by(|b1, b2| {
                     cmp_bindings_with(b1, b2, &criteria, self, graph_matcher)
                 });
-                let iter = Box::new(bindings.into_iter().map(Ok));
+                // context will be moved in the closure;
+                // it must be cloned to avoid leaking the lifetime of `self`
+                let context = context.cloned();
+                let iter = Box::new(
+                    bindings
+                        .into_iter()
+                        // we didn't push `context` into the evaluation of `inner`,
+                        // so we must "join" the returned bindings are compatible with `context`
+                        .filter_map(move |b| b.merge_if_compatible(context.as_ref()))
+                        .map(Ok),
+                );
                 Bindings { variables, iter }
             }
         }

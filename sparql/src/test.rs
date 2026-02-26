@@ -748,7 +748,8 @@ fn test_limit_offset(limit: usize) -> TestResult {
 #[test_case("FILTER EXISTS { ?x s:name ?e }", vec!["<https://example.org/test#a>", "_:b"]; "exists redundant")]
 #[test_case("FILTER EXISTS { ?x s:performerIn ?e }", vec!["<https://example.org/test#a>"]; "exists success")]
 #[test_case("FILTER EXISTS { ?x s:knows ?e }", vec![]; "exists failure")]
-#[test_case("FILTER EXISTS { BIND(42 as ?x) }", vec!["<https://example.org/test#a>", "_:b"]; "exists bind")]
+#[test_case("FILTER EXISTS { BIND(<https://example.org/test#a> as ?x) }", vec!["<https://example.org/test#a>"]; "exists bind same")]
+#[test_case("FILTER EXISTS { BIND(42 as ?x) }", vec![]; "exists bind different")]
 fn test_filter(filter: &str, exp: Vec<&str>) -> TestResult {
     let dataset = dataset_101()?;
     let dataset = SparqlWrapper(&dataset);
@@ -899,6 +900,68 @@ fn test_group_by() -> TestResult {
     })
     .collect();
     assert_eq!(got, exp);
+    Ok(())
+}
+
+#[test_case(
+    "SELECT ?g ?x { GRAPH ?g { ?x :p []. } }",
+    vec![
+        ["<x:g>", "<x:s1>"],
+        ["<x:g>", "<x:s2>"],
+    ];
+    "graph only"
+)]
+#[test_case(
+    "SELECT ?g ?x { GRAPH ?g { ?x :p []. OPTIONAL { ?a :q ?x } } }",
+    vec![
+        ["<x:g>", "<x:s1>"],
+        ["<x:g>", "<x:s2>"],
+    ];
+    "graph and optional"
+)]
+#[test_case(
+    "SELECT ?g ?x { GRAPH ?g { ?x :p []. FILTER NOT EXISTS { ?a :q ?x } } }",
+    vec![
+        ["<x:g>", "<x:s2>"],
+    ];
+    "graph and filter not exists"
+)]
+#[test_case(
+    "SELECT ?g ?x { GRAPH ?g { ?x :p []. MINUS { ?a :q ?x } } }",
+    vec![
+        ["<x:g>", "<x:s2>"],
+    ];
+    "graph and minus"
+)]
+#[test_case(
+    "SELECT ?g ?x { GRAPH ?g { ?x :p []. { ?a :q ?x } } }",
+    vec![
+        ["<x:g>", "<x:s1>"],
+    ];
+    "graph and join"
+)]
+fn test_graph_and_optional(query: &str, exp: Vec<[&str; 2]>) -> TestResult {
+    let dataset: LightDataset = sophia_turtle::parser::trig::parse_str(
+        r#"
+            PREFIX : <x:>
+
+            :g {
+              :s1 :p :o1.
+              :s2 :p :o2.
+
+              :a1 :q :s1.
+            }
+        "#,
+    )
+    .collect_quads()?;
+    let dataset = SparqlWrapper(&dataset);
+    let query = format!("PREFIX : <x:> {query}");
+    let parsed_query = SparqlQuery::parse(&query)?;
+    let bindings = dataset.query(&parsed_query)?.into_bindings();
+    assert_eq!(bindings.variables(), &["g", "x"]);
+    let mut got = bindings_to_vec_of_arrays(bindings, ["g", "x"]);
+    got.sort_unstable();
+    assert_eq!(exp, got);
     Ok(())
 }
 
