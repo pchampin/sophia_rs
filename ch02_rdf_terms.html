@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-5e70f649.js";
+            window.path_to_searchindex_js = "searchindex-d14e730b.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-383d8c93.js"></script>
@@ -178,7 +178,7 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="rdf-terms"><a class="header" href="#rdf-terms">RDF Terms</a></h1>
-<p>The <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html"><code>Term</code></a> trait defines how you interact with <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-term">RDF terms</a> in Sophia.</p>
+<p>The <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html"><code>Term</code></a> trait defines how you interact with <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-rdf-term">RDF terms</a> in Sophia.</p>
 <h2 id="using-terms"><a class="header" href="#using-terms">Using terms</a></h2>
 <p>The first thing you usually need to know about a term is its <em>kind</em> (IRI, Literal…).
 The kind is described by the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/enum.TermKind.html"><code>TermKind</code></a> enum,
@@ -199,22 +199,23 @@ and available from the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term
 <p>If the term is an IRI, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.iri"><code>Term::iri</code></a> returns that IRI<sup class="footnote-reference" id="fr-relative_iris-1"><a href="#footnote-relative_iris">1</a></sup>.</p>
 </li>
 <li>
-<p>If the term is a blank node, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.bnode_id"><code>Term::bnode_id</code></a> returns its <a href="https://www.w3.org/TR/rdf-concepts/#dfn-blank-node-identifier">blank node identifier</a>.</p>
+<p>If the term is a blank node, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.bnode_id"><code>Term::bnode_id</code></a> returns its <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-blank-node-identifier">blank node identifier</a>.</p>
 </li>
 <li>
 <p>If the term is a literal:</p>
 <ul>
-<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.lexical_form"><code>Term::lexical_form</code></a> returns its <a href="https://www.w3.org/TR/rdf-concepts/#dfn-lexical-form">lexical form</a> (the “textual value” of the literal),</li>
+<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.lexical_form"><code>Term::lexical_form</code></a> returns its <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-lexical-form">lexical form</a> (the “textual value” of the literal),</li>
 <li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.datatype"><code>Term::datatype</code></a> returns its datatype IRI<sup class="footnote-reference" id="fr-relative_iris-2"><a href="#footnote-relative_iris">1</a></sup>,</li>
-<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.language_tag"><code>Term::language_tag</code></a> returns its <a href="https://www.w3.org/TR/rdf-concepts/#dfn-language-tag">language tag</a>, if any.</li>
+<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.language_tag"><code>Term::language_tag</code></a> returns its <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-language-tag">language tag</a>, if any.</li>
 </ul>
 </li>
 <li>
-<p>If the term is a <a href="https://www.w3.org/2021/12/rdf-star.html#dfn-quoted">quoted triple</a>:</p>
+<p>If the term is a <a href="https://www.w3.org/TR/rdf12-concepts/#section-triple-terms">triple term</a>:</p>
 <ul>
 <li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.triple"><code>Term::triple</code></a> returns its 3 components in an array of terms,</li>
-<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.constituents"><code>Term::constituents</code></a> iterates over all its <a href="https://www.w3.org/2021/12/rdf-star.html#dfn-constituent">constituents</a>,</li>
-<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.atoms"><code>Term::atoms</code></a> iterates over all its atomic (i.e. non quoted-triple) constituents.</li>
+<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.constituents"><code>Term::constituents</code></a> iterates over all its constituents
+(i.e. the term itself, plus, for <a href="https://www.w3.org/TR/rdf12-concepts/#section-triple-terms">triple term</a>s, the terms that constitute it, directly or indorectly)</li>
+<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.atoms"><code>Term::atoms</code></a> iterates over all its <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-basic-rdf-term">basic</a> (i.e. non triple) constituents.</li>
 <li>(those three methods also have a <code>to_X</code> version that destructs the original term instead of borrowing it)</li>
 </ul>
 </li>

@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-5e70f649.js";
+            window.path_to_searchindex_js = "searchindex-d14e730b.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-383d8c93.js"></script>
@@ -213,8 +213,8 @@ more precisely, it provides traits for describing
 <li>Other
 <ul>
 <li><a href="https://crates.io/crates/sophia_c14n"><code>sophia_c14n</code></a> implements <a href="https://www.w3.org/TR/rdf-canon/">RDF canonicalization</a>.</li>
-<li><a href="https://crates.io/crates/sophia_isomorphism"><code>sophia_isomorphism</code></a> provides functions to determine if two graphs or datasets are <a href="https://www.w3.org/TR/rdf11-concepts/#h3_graph-isomorphism">isomorphic</a>.</li>
-<li><a href="https://crates.io/crates/sophia_sparql"><code>sophia_sparql</code></a> provides a (currently partial) implementation of the [SPARQL 1.2 Query Language].</li>
+<li><a href="https://crates.io/crates/sophia_isomorphism"><code>sophia_isomorphism</code></a> provides functions to determine if two graphs or datasets are <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-graph-isomorphism">isomorphic</a>.</li>
+<li><a href="https://crates.io/crates/sophia_sparql"><code>sophia_sparql</code></a> provides a (currently partial) implementation of the <a href="https://www.w3.org/TR/sparql12-query">SPARQL 1.2 Query Language</a>.</li>
 <li><a href="https://crates.io/crates/sophia_sparql_client"><code>sophia_sparql_client</code></a> provides a client for the <a href="https://www.w3.org/TR/sparql11-protocol">SPARQL 1.1 Protocol</a>.</li>
 <li>[<code>sophia_reasoner</code>] provides reasoning over Simple, RDF and RDF-Schema entailment regimes</li>
 <li><a href="https://crates.io/crates/sophia_resource"><code>sophia_resource</code></a> provides a resource-centric API.</li>
@@ -276,7 +276,7 @@ compatible with BSD)</li>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
 <p>The <a href="https://crates.io/crates/sophia">sophia crate</a> aims at providing a comprehensive toolkit for working with RDF and Linked Data in Rust.</p>
-<p><a href="https://www.w3.org/TR/rdf-concepts/">RDF</a> is a data model designed to exchange knowledge on the Web in an interoperable way. Each piece of knowledge in RDF (a <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-statement">statement</a>) is represented by a <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-triple">triple</a>, made of three <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-term">terms</a>. A set of triples forms an RDF <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-graph">graph</a>. Finally, several graphs can be grouped in a collection called a <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-dataset">dataset</a>, where each graph is identified by a unique name.</p>
+<p><a href="https://www.w3.org/TR/rdf12-concepts/">RDF</a> is a data model designed to exchange knowledge on the Web in an interoperable way. Each piece of knowledge in RDF (a <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-rdf-statement">statement</a>) is represented by a <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-rdf-triple">triple</a>, made of three <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-rdf-term">terms</a>. A set of triples forms an RDF <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-rdf-graph">graph</a>. Finally, several graphs can be grouped in a collection called a <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-rdf-dataset">dataset</a>, where each graph is identified by a unique name.</p>
 <p>In Sophia, each of these core concepts is modeled by a trait, which can be implemented in multiple ways (see for example the <a href="https://docs.rs/sophia_api/latest/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> trait and <a href="https://docs.rs/sophia_api/latest/sophia_api/graph/trait.Graph.html#foreign-impls">some of the types implementing it</a>). Sophia is therefore not meant to provide the “ultimate” implementation of RDF in Rust, but a generic framework to help various implementations to interoperate with each other (in the spirit of <a href="https://github.com/apache/commons-rdf/">Apache Commons RDF</a> for Java or [RDFJS] for Javascript/Typescript).</p>
 <h2 id="generialized"><a class="header" href="#generialized">Generalized vs. Strict RDF model</a></h2>
 <p>The data model supported by this Sophia is in fact
@@ -286,16 +286,11 @@ they will be called, respectively,
 the <em>generalized</em> RDF model, and the <em>strict</em> RDF model.
 The generalized RDF model extends RDF as follows:</p>
 <ul>
-<li>In addition to standard RDF terms (IRIs, blank nodes and literals),
-Sophia supports
-<ul>
-<li>RDF-star <a href="https://www.w3.org/2021/12/rdf-star.html#dfn-quoted">quoted triples</a></li>
-<li>Variables (a concept borrowed from [SPARQL] or [Notation3])</li>
-</ul>
-</li>
+<li>In addition to standard RDF terms (IRIs, blank nodes, literals, and triple terms),
+Sophia supports variables (a concept borrowed from [SPARQL] or [Notation3])</li>
 <li>Sophia allows any kind of term in any position (subject, predicate, object, graph name).</li>
 <li>Sophia allow IRIs to be relative IRI references
-(while in strict RDF, <a href="https://www.w3.org/TR/rdf11-concepts/#h3_section-IRIs">IRIs must be absolute</a>).</li>
+(while in strict RDF, <a href="https://www.w3.org/TR/rdf12-concepts/#section-IRIs">IRIs must be absolute</a>).</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
@@ -344,7 +339,7 @@ println!("The resulting graph:\n{}", example2);
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="rdf-terms"><a class="header" href="#rdf-terms">RDF Terms</a></h1>
-<p>The <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html"><code>Term</code></a> trait defines how you interact with <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-term">RDF terms</a> in Sophia.</p>
+<p>The <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html"><code>Term</code></a> trait defines how you interact with <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-rdf-term">RDF terms</a> in Sophia.</p>
 <h2 id="using-terms"><a class="header" href="#using-terms">Using terms</a></h2>
 <p>The first thing you usually need to know about a term is its <em>kind</em> (IRI, Literal…).
 The kind is described by the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/enum.TermKind.html"><code>TermKind</code></a> enum,
@@ -365,22 +360,23 @@ and available from the <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term
 <p>If the term is an IRI, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.iri"><code>Term::iri</code></a> returns that IRI<sup class="footnote-reference" id="fr-relative_iris-1"><a href="#footnote-relative_iris">1</a></sup>.</p>
 </li>
 <li>
-<p>If the term is a blank node, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.bnode_id"><code>Term::bnode_id</code></a> returns its <a href="https://www.w3.org/TR/rdf-concepts/#dfn-blank-node-identifier">blank node identifier</a>.</p>
+<p>If the term is a blank node, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.bnode_id"><code>Term::bnode_id</code></a> returns its <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-blank-node-identifier">blank node identifier</a>.</p>
 </li>
 <li>
 <p>If the term is a literal:</p>
 <ul>
-<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.lexical_form"><code>Term::lexical_form</code></a> returns its <a href="https://www.w3.org/TR/rdf-concepts/#dfn-lexical-form">lexical form</a> (the “textual value” of the literal),</li>
+<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.lexical_form"><code>Term::lexical_form</code></a> returns its <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-lexical-form">lexical form</a> (the “textual value” of the literal),</li>
 <li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.datatype"><code>Term::datatype</code></a> returns its datatype IRI<sup class="footnote-reference" id="fr-relative_iris-2"><a href="#footnote-relative_iris">1</a></sup>,</li>
-<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.language_tag"><code>Term::language_tag</code></a> returns its <a href="https://www.w3.org/TR/rdf-concepts/#dfn-language-tag">language tag</a>, if any.</li>
+<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.language_tag"><code>Term::language_tag</code></a> returns its <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-language-tag">language tag</a>, if any.</li>
 </ul>
 </li>
 <li>
-<p>If the term is a <a href="https://www.w3.org/2021/12/rdf-star.html#dfn-quoted">quoted triple</a>:</p>
+<p>If the term is a <a href="https://www.w3.org/TR/rdf12-concepts/#section-triple-terms">triple term</a>:</p>
 <ul>
 <li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.triple"><code>Term::triple</code></a> returns its 3 components in an array of terms,</li>
-<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.constituents"><code>Term::constituents</code></a> iterates over all its <a href="https://www.w3.org/2021/12/rdf-star.html#dfn-constituent">constituents</a>,</li>
-<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.atoms"><code>Term::atoms</code></a> iterates over all its atomic (i.e. non quoted-triple) constituents.</li>
+<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.constituents"><code>Term::constituents</code></a> iterates over all its constituents
+(i.e. the term itself, plus, for <a href="https://www.w3.org/TR/rdf12-concepts/#section-triple-terms">triple term</a>s, the terms that constitute it, directly or indorectly)</li>
+<li><a href="https://docs.rs/sophia_api/0.8.0/sophia_api/term/trait.Term.html#method.atoms"><code>Term::atoms</code></a> iterates over all its <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-basic-rdf-term">basic</a> (i.e. non triple) constituents.</li>
 <li>(those three methods also have a <code>to_X</code> version that destructs the original term instead of borrowing it)</li>
 </ul>
 </li>
@@ -479,7 +475,7 @@ IRIs can be <em>relative</em> IRI reference. <a href="#fr-relative_iris-1">↩</
 </ol>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="rdf-statements"><a class="header" href="#rdf-statements">RDF Statements</a></h1>
-<p>The <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html"><code>Quad</code></a> traits define how you interact with <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-statement">RDF statements</a> in Sophia.</p>
+<p>The <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html"><code>Quad</code></a> traits define how you interact with <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-rdf-statement">RDF statements</a> in Sophia.</p>
 <p>Note that in Sophia’s <a href="#generalized">generalized RDF</a> model, terms of any kind can occur in any position in a statement.
 This contrasts to strict RDF where only IRIs can occur in predicate position,
 and where literals can only occur in the object position.</p>
@@ -501,7 +497,7 @@ where
     .map(|t| t.to_o())
 }</code></pre>
 <h2 id="using-quads"><a class="header" href="#using-quads">Using quads</a></h2>
-<p>Quads are used to represent triples in the context of an optional <a href="https://www.w3.org/TR/rdf-concepts/#dfn-named-graph">named graph</a>.
+<p>Quads are used to represent triples in the context of an optional <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-named-graph">named graph</a>.
 Like triples, they have methods <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#tymethod.s"><code>Quad::s</code></a>, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#tymethod.p"><code>Quad::p</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#tymethod.o"><code>Quad::o</code></a>,
 but also <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#tymethod.g"><code>Quad::g</code></a> to access the optional graph name,
 and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#method.spog"><code>Quad::spog</code></a> to obtain all four components all at once.
@@ -534,7 +530,7 @@ in most situations the following types will be used:</p>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="rdf-graphs"><a class="header" href="#rdf-graphs">RDF Graphs</a></h1>
-<p>The <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html"><code>MutableGraph</code></a> traits define how you interact with <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-graph">RDF graphs</a> in Sophia.</p>
+<p>The <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.Graph.html"><code>Graph</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/graph/trait.MutableGraph.html"><code>MutableGraph</code></a> traits define how you interact with <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-rdf-graph">RDF graphs</a> in Sophia.</p>
 <h2 id="using-graphs"><a class="header" href="#using-graphs">Using graphs</a></h2>
 <p>RDF graphs are sets of triples,
 so the most common thing you need to do with a graph is to iterate over its triples.

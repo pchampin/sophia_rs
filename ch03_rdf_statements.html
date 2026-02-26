@@ -35,7 +35,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-5e70f649.js";
+            window.path_to_searchindex_js = "searchindex-d14e730b.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-383d8c93.js"></script>
@@ -178,7 +178,7 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="rdf-statements"><a class="header" href="#rdf-statements">RDF Statements</a></h1>
-<p>The <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html"><code>Quad</code></a> traits define how you interact with <a href="https://www.w3.org/TR/rdf-concepts/#dfn-rdf-statement">RDF statements</a> in Sophia.</p>
+<p>The <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/triple/trait.Triple.html"><code>Triple</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html"><code>Quad</code></a> traits define how you interact with <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-rdf-statement">RDF statements</a> in Sophia.</p>
 <p>Note that in Sophia’s <a href="ch00_introduction.html#generalized">generalized RDF</a> model, terms of any kind can occur in any position in a statement.
 This contrasts to strict RDF where only IRIs can occur in predicate position,
 and where literals can only occur in the object position.</p>
@@ -200,7 +200,7 @@ where
     .map(|t| t.to_o())
 }</code></pre>
 <h2 id="using-quads"><a class="header" href="#using-quads">Using quads</a></h2>
-<p>Quads are used to represent triples in the context of an optional <a href="https://www.w3.org/TR/rdf-concepts/#dfn-named-graph">named graph</a>.
+<p>Quads are used to represent triples in the context of an optional <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-named-graph">named graph</a>.
 Like triples, they have methods <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#tymethod.s"><code>Quad::s</code></a>, <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#tymethod.p"><code>Quad::p</code></a> and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#tymethod.o"><code>Quad::o</code></a>,
 but also <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#tymethod.g"><code>Quad::g</code></a> to access the optional graph name,
 and <a href="https://docs.rs/sophia_api/0.8.0/sophia_api/quad/trait.Quad.html#method.spog"><code>Quad::spog</code></a> to obtain all four components all at once.
