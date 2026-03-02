@@ -9,7 +9,6 @@ members = [
     "jsonld",
     "reasoner",
     "resource",
-    "rio",
     "sophia",
     "sparql",
     "sparql_client",
@@ -40,7 +39,6 @@ sophia_reasoner = { version = "0.9.0", path = "./reasoner" }
 sophia_resource = { version = "0.9.0", path = "./resource" }
 sophia_sparql = { version = "0.9.0", path = "./sparql" }
 sophia_sparql_client = { version = "0.9.0", path = "./sparql_client" }
-sophia_rio = { version = "0.9.0", path = "./rio" }
 sophia_term = { version = "0.9.0", path = "./term" }
 sophia_turtle = { version = "0.9.0", path = "./turtle" }
 sophia_xml = { version = "0.9.0", path = "./xml" }
@@ -54,9 +52,6 @@ mownstr = "0.3"
 oxiri = "0.2"
 regex = "1.11"
 resiter = "0.5"
-rio_api = { version = "0.8", features = ["generalized"] }
-rio_turtle = { version = "0.8", features = ["generalized"] }
-rio_xml = { version = "0.8" }
 serde = { version = "1.0", features = ["derive"] }
 sha2 = "0.10"
 test-case = "3.3"

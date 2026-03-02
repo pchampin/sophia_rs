@@ -1,6 +1,6 @@
 //! Implement Sophia traits for types defined in oxrdf.
 //!
-//! Similar to `sophia_rio::model`, this module wraps oxrdf types
+//! This module wraps oxrdf types
 //! to implement Sophia's Term and Triple traits.
 //!
 //! The [`Trusted`] wrapper is used to materialize the fact that we trust

@@ -21,8 +21,7 @@ It comprises the following crates:
 * Parsers and serializers
   + [`sophia_turtle`] provides parsers and serializers for the Turtle-family of concrete syntaxes (for RDF 1.2).
   + [`sophia_jsonld`] provides parsers and serializers for JSON-LD 1.1.
-  + [`sophia_xml`] provides parsers and serializers for RDF/XML 1.1.
-  + [`sophia_rio`] is a lower-level crate, used by [`sophia_xml`].
+  + [`sophia_xml`] provides parsers and serializers for RDF/XML 1.2.
 * Other
   + [`sophia_c14n`] implements [RDF canonicalization].
   + [`sophia_isomorphism`] provides functions to determine if two graphs or datasets are [isomorphic].
@@ -94,7 +93,6 @@ An outdated comparison of Sophia with other RDF libraries is still available
 [`sophia_isomorphism`]: https://crates.io/crates/sophia_isomorphism
 [`sophia_jsonld`]: https://crates.io/crates/sophia_jsonld
 [`sophia_resource`]: https://crates.io/crates/sophia_resource
-[`sophia_rio`]: https://crates.io/crates/sophia_rio
 [`sophia_sparql`]: https://crates.io/crates/sophia_sparql
 [`sophia_sparql_client`]: https://crates.io/crates/sophia_sparql_client
 [`sophia_term`]: https://crates.io/crates/sophia_inmem
