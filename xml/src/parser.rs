@@ -1,15 +1,16 @@
 //! Parser for the [RDF/XML] concrete syntax of RDF,
-//! based on [`rio_xml`].
+//! based on [`oxrdfxml`].
 //!
-//! [RDF/XML]: https://www.w3.org/TR/rdf11-xml/
+//! [RDF/XML]: https://www.w3.org/TR/rdf12-xml/
 
-use rio_xml::RdfXmlParser as RioRdfXmlParser;
+use crate::model::Trusted;
+use oxrdfxml::{RdfXmlParseError, RdfXmlParser as OxRdfXmlParser};
 use sophia_api::parser::TripleParser;
+use sophia_api::source::{Source, StreamError, StreamResult};
 use sophia_iri::Iri;
-use sophia_rio::parser::StrictRioTripleSource;
 use std::io::BufRead;
 
-/// N-Triples parser based on RIO.
+/// RDF/XML parser.
 #[derive(Clone, Debug, Default)]
 pub struct RdfXmlParser {
     /// The base IRI used by this parser to resolve relative IRI-references.
@@ -17,19 +18,48 @@ pub struct RdfXmlParser {
 }
 
 impl<B: BufRead> TripleParser<B> for RdfXmlParser {
-    type Source = StrictRioTripleSource<RioRdfXmlParser<B>>;
+    type Source = OxRdfXmlTripleSource<B>;
     fn parse(&self, data: B) -> Self::Source {
-        let base = self
-            .base
-            .clone()
-            .map(Iri::unwrap)
-            .map(oxiri::Iri::parse)
-            .map(Result::unwrap);
-        StrictRioTripleSource(RioRdfXmlParser::new(data, base))
+        let mut parser = OxRdfXmlParser::new();
+        if let Some(ref base) = self.base {
+            parser = parser
+                .with_base_iri(base.as_str())
+                .expect("Invalid base IRI");
+        }
+        OxRdfXmlTripleSource {
+            parser: parser.for_reader(data),
+        }
     }
 }
 
 sophia_api::def_mod_functions_for_bufread_parser!(RdfXmlParser, TripleParser);
+
+/// A triple source reading from an oxrdfxml parser.
+pub struct OxRdfXmlTripleSource<R: BufRead> {
+    parser: oxrdfxml::ReaderRdfXmlParser<R>,
+}
+
+impl<R: BufRead> Source for OxRdfXmlTripleSource<R> {
+    type Error = Error;
+    type Item<'x> = Trusted<&'x oxrdf::Triple>;
+
+    fn try_for_some_item<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
+    where
+        E: std::error::Error,
+        F: FnMut(Self::Item<'_>) -> Result<(), E>,
+    {
+        match self.parser.next() {
+            Some(Ok(triple)) => f(Trusted(&triple))
+                .map(|_| true)
+                .map_err(StreamError::SinkError),
+            Some(Err(err)) => Err(StreamError::SourceError(err)),
+            None => Ok(false),
+        }
+    }
+}
+
+/// Error returned by [`RdfXmlParser`].
+pub type Error = RdfXmlParseError;
 
 // ---------------------------------------------------------------------------------
 //                                      tests

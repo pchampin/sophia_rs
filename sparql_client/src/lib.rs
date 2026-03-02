@@ -263,10 +263,10 @@ pub enum Error {
 
     #[error("RDF/XML parsing error: {0}")]
     /// Invalid RDF/XML syntax was returned by the SPARQL endpoint.
-    RioXml(
+    RdfXml(
         #[source]
         #[from]
-        rio_xml::RdfXmlError,
+        sophia_xml::parser::Error,
     ),
 
     #[error("JSON results parsing error: {0}")]

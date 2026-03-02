@@ -10,5 +10,6 @@
 //! [RDF/XML]: https://www.w3.org/TR/rdf11-xml/
 #![deny(missing_docs)]
 
+pub mod model;
 pub mod parser;
 pub mod serializer;
