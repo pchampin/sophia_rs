@@ -674,6 +674,7 @@ fn nested_reified_triple() -> TestResult {
 #[test_case(r"<< :s :p :o ~ >> :a :b", 2; "1p1 triples with empty reified triple")]
 #[test_case(r"<< :s :p :o ~ :r >> :a :b", 2; "1p1 triples with explicitly reified triple")]
 #[test_case(r"{[ :p  :o ] .}", 1; " trig-syntax-bnode-08")]
+#[test_case(r":G {<<:s :p :o>> :q :z .}", 2; " trig12-rt-01")]
 fn count_triples(input: &str, exp: usize) -> TestResult {
     for i in [input, &format!("{input}\n # this is a comment")] {
         let data = format!("PREFIX : <ex:> {i}");

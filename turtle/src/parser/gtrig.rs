@@ -840,7 +840,7 @@ impl<I> GTriGSource<I> {
                     if txt[2..].starts_with('(') {
                         Ok((3, Some(GTriGState::TripleTerm)))
                     } else {
-                        Ok((3, Some(GTriGState::ReifiedTriple(true))))
+                        Ok((2, Some(GTriGState::ReifiedTriple(true))))
                     }
                 } else {
                     self.iriref(txt).map(|offset| (offset, None))
