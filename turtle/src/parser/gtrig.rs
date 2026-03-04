@@ -717,17 +717,22 @@ impl<I> GTriGSource<I> {
     {
         self.extra.state.push(GTriGState::Triples(true));
         match self.enter_term(txt)? {
-            (offset, None) => Ok(offset),
+            (offset, None) => {
+                if self.extra.state.last().unwrap() == &GTriGState::BlankNodePropertyListOrAnon {
+                    let i = self.extra.state.len() - 2;
+                    let st = &mut self.extra.state[i];
+                    debug_assert!(matches!(st, &mut GTriGState::Triples(_)));
+                    *st = GTriGState::Triples(false);
+                }
+                Ok(offset)
+            }
             (offset, Some(GTriGState::RdfLiteral(after_dt))) => {
                 debug_assert_eq!(offset, 0);
                 debug_assert!(!after_dt);
                 self.enter_rdf_literal(txt)
             }
             (offset, Some(state)) => {
-                if matches!(
-                    state,
-                    GTriGState::ReifiedTriple(_) | GTriGState::BlankNodePropertyListOrAnon
-                ) {
+                if matches!(state, GTriGState::ReifiedTriple(_)) {
                     *self.extra.state.last_mut().unwrap() = GTriGState::Triples(false);
                 }
                 self.extra.state.push(state);
