@@ -291,10 +291,16 @@ impl<'a, L> Engine<'a, L> {
                         {
                             push_entry(&mut obj, "@value", val);
                         }
-                    } else if dt_str == XSD_BOOLEAN
-                        && let Ok(val) = txt.parse::<bool>()
-                    {
-                        push_entry(&mut obj, "@value", val.into());
+                    } else if dt_str == XSD_BOOLEAN {
+                        match txt {
+                            "false" | "0" => {
+                                push_entry(&mut obj, "@value", false.into());
+                            }
+                            "true" | "1" => {
+                                push_entry(&mut obj, "@value", true.into());
+                            }
+                            _ => {}
+                        }
                     }
                 }
                 if self.options.rdf_direction() == Some(RdfDirection::I18nDatatype)

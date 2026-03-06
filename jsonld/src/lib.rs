@@ -25,3 +25,5 @@ pub mod serializer;
 pub use serializer::*;
 mod util_traits;
 pub mod vocabulary;
+
+pub use json_ld;

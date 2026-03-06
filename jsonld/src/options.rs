@@ -213,7 +213,7 @@ impl<LF> JsonLdOptions<LF> {
             inner: self.inner,
             loader_factory: document_loader_factory,
             use_native_types: self.use_native_types,
-            use_rdf_type: self.use_native_types,
+            use_rdf_type: self.use_rdf_type,
             spaces: self.spaces,
             compact_context: self.compact_context,
         }
@@ -239,7 +239,7 @@ impl<LF> JsonLdOptions<LF> {
             inner: self.inner,
             loader_factory: ClosureLoaderFactory::new(f),
             use_native_types: self.use_native_types,
-            use_rdf_type: self.use_native_types,
+            use_rdf_type: self.use_rdf_type,
             spaces: self.spaces,
             compact_context: self.compact_context,
         }
@@ -264,7 +264,7 @@ impl<LF> JsonLdOptions<LF> {
             inner: self.inner,
             loader_factory: DefaultLoaderFactory::new(),
             use_native_types: self.use_native_types,
-            use_rdf_type: self.use_native_types,
+            use_rdf_type: self.use_rdf_type,
             spaces: self.spaces,
             compact_context: self.compact_context,
         }
@@ -292,7 +292,7 @@ impl<LF> JsonLdOptions<LF> {
             inner: self.inner,
             loader_factory: ClosureLoaderFactory::new_cloning(document_loader),
             use_native_types: self.use_native_types,
-            use_rdf_type: self.use_native_types,
+            use_rdf_type: self.use_rdf_type,
             spaces: self.spaces,
             compact_context: self.compact_context,
         }
