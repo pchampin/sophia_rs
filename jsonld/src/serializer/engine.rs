@@ -8,7 +8,6 @@ use crate::options::{
 use crate::util_traits::{HashMapUtil, QuadJsonLdUtil, TermJsonLdUtil, VecUtil};
 use json_syntax::object::Object;
 use json_syntax::{Parse, Value as JsonValue};
-use locspan::Meta;
 use sophia_api::ns::rdf;
 use sophia_api::quad::Quad;
 use sophia_api::source::{QuadSource, SinkError, StreamResult};
@@ -135,7 +134,7 @@ impl<'a, L> Engine<'a, L> {
     }
 
     /// Get the result as a `JsonValue`.
-    pub fn into_json(mut self) -> Result<JsonValue<()>, JsonLdError> {
+    pub fn into_json(mut self) -> Result<JsonValue, JsonLdError> {
         // check all list_seeds to mark them, if appropriate, as list nodes,
         // and also recursively mark other list nodes (traversing back rdf:rest links)
         let list_seeds = std::mem::take(&mut self.list_seeds);
@@ -193,7 +192,7 @@ impl<'a, L> Engine<'a, L> {
         inode: usize,
         node: &HashMap<Box<str>, Vec<RdfObject>>,
         root: bool,
-    ) -> Result<Option<Meta<JsonValue<()>, ()>>, JsonLdError> {
+    ) -> Result<Option<JsonValue>, JsonLdError> {
         //println!("=== jsonify {}", inode);
         if node.is_empty() {
             //println!("=== skipped because empty");
@@ -234,15 +233,14 @@ impl<'a, L> Engine<'a, L> {
                     .into(),
             );
         }
-        let obj = JsonValue::from(obj);
-        Ok(Some(obj.into()))
+        Ok(Some(JsonValue::from(obj)))
     }
 
     fn make_node_object(
         &self,
         id: &str,
         node: &HashMap<Box<str>, Vec<RdfObject>>,
-    ) -> Result<Object<()>, JsonLdError> {
+    ) -> Result<Object, JsonLdError> {
         let mut obj = Object::new();
         push_entry(&mut obj, "@id", id.into());
         for (key, vals) in node {
@@ -253,7 +251,7 @@ impl<'a, L> Engine<'a, L> {
                 let vals = vals
                     .iter()
                     .filter_map(|o| match o {
-                        RdfObject::Node(_, nid) => Some(Meta::from(JsonValue::from(nid.as_ref()))),
+                        RdfObject::Node(_, nid) => Some(JsonValue::from(nid.as_ref())),
                         _ => unreachable!(),
                     })
                     .collect::<Vec<_>>();
@@ -270,7 +268,7 @@ impl<'a, L> Engine<'a, L> {
         Ok(obj)
     }
 
-    fn convert_rdf_object(&self, val: &RdfObject) -> Result<Meta<JsonValue<()>, ()>, JsonLdError> {
+    fn convert_rdf_object(&self, val: &RdfObject) -> Result<JsonValue, JsonLdError> {
         let ret = match val {
             RdfObject::LangString(lex, tag) => {
                 let value = JsonValue::from(lex.as_ref());
@@ -320,13 +318,9 @@ impl<'a, L> Engine<'a, L> {
                     }
                 }
                 if dt_str == RDF_JSON {
-                    let _json_value = JsonValue::parse_str(txt, |span| span)?;
-                    // TODO Ideally, we should be able to strip the metadata like that:
-                    //let json_value = json_value.map_metadata_recursively(|_| ());
-                    // but because of a bug <https://github.com/timothee-haudebourg/json-syntax/issues/3>
-                    // we must instead parse the value again, without trackingh location
-                    let json_value = JsonValue::parse_str(txt, |_| ()).unwrap();
-                    push_entry(&mut obj, "@value", json_value.0);
+                    let (json_value, _) =
+                        JsonValue::parse_str(txt).map_err(JsonLdError::InvalidJsonLiteral)?;
+                    push_entry(&mut obj, "@value", json_value);
                     push_entry(&mut obj, "@type", "@json".into());
                 }
                 if obj.is_empty() {
@@ -336,8 +330,7 @@ impl<'a, L> Engine<'a, L> {
                         push_entry(&mut obj, "@type", dt_str.into());
                     }
                 }
-                let obj = JsonValue::from(obj);
-                obj.into()
+                JsonValue::from(obj)
             }
             RdfObject::Node(inode, id) => {
                 if id.as_ref() == RDF_NIL {
@@ -359,7 +352,7 @@ impl<'a, L> Engine<'a, L> {
                     && self.compound_literals.contains(inode)
                 {
                     let node = &self.node[*inode];
-                    let mut obj: Meta<JsonValue<()>, ()> = json_syntax::json!({
+                    let mut obj = json_syntax::json!({
                         "@value": JsonValue::from(node[RDF_VALUE][0].as_str()),
                         "@direction": JsonValue::from(node[RDF_DIRECTION][0].as_str()),
                     });
@@ -381,7 +374,7 @@ impl<'a, L> Engine<'a, L> {
 
     fn populate_list(
         &self,
-        list_items: &mut Vec<Meta<JsonValue<()>, ()>>,
+        list_items: &mut Vec<JsonValue>,
         inode: usize,
     ) -> Result<(), JsonLdError> {
         //println!("=== populate_list {}", gs_id);
@@ -442,6 +435,6 @@ const XSD_DOUBLE: &str = "http://www.w3.org/2001/XMLSchema#double";
 const XSD_INTEGER: &str = "http://www.w3.org/2001/XMLSchema#integer";
 const XSD_STRING: &str = "http://www.w3.org/2001/XMLSchema#string";
 
-fn push_entry(obj: &mut Object<()>, key: &str, value: JsonValue<()>) -> bool {
-    obj.push(Meta::new(key.into(), ()), value.into())
+fn push_entry(obj: &mut Object, key: &str, value: JsonValue) -> bool {
+    obj.push(key.into(), value)
 }
