@@ -80,21 +80,23 @@ impl<R: BufRead> SparqlXmlParser<R> {
     }
 
     fn parse_bindings_results(&mut self) -> Result<Results, Error> {
-        self.next_start_expecting("results")?;
+        let (_, results_is_empty) = self.next_start_or_empty_expecting("results")?;
         let mut bindings: Vec<HashMap<Box<str>, Term>> = vec![];
 
-        while self.next_start_expecting_maybe("result")?.is_some() {
-            let mut result = HashMap::new();
-            while let Some(binding) = self.next_start_expecting_maybe("binding")? {
-                let name = self.get_attr(&binding, "name")?;
-                let Some(elt) = self.next_start()? else {
-                    return Err(SparqlXml(format!("No child in <binding name='{name}'>")));
-                };
-                let term = self.parse_term(&elt, &name)?;
-                self.expect_closing(binding.name())?;
-                result.insert(name, term);
+        if !results_is_empty {
+            while self.next_start_expecting_maybe("result")?.is_some() {
+                let mut result = HashMap::new();
+                while let Some(binding) = self.next_start_expecting_maybe("binding")? {
+                    let name = self.get_attr(&binding, "name")?;
+                    let Some(elt) = self.next_start()? else {
+                        return Err(SparqlXml(format!("No child in <binding name='{name}'>")));
+                    };
+                    let term = self.parse_term(&elt, &name)?;
+                    self.expect_closing(binding.name())?;
+                    result.insert(name, term);
+                }
+                bindings.push(result);
             }
-            bindings.push(result);
         }
         Ok(Results { bindings })
     }
