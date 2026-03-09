@@ -193,7 +193,10 @@ fn lang_matches(tag: &str, range: &str, exp: bool) -> TestResult {
     let tag = Arc::<str>::from(tag);
     let range = Arc::<str>::from(range);
     let exp = Some(EvalResult::from(exp));
-    assert!(eval_eq(super::lang_matches(&tag, &range), exp.clone()));
+    assert!(eval_eq(
+        Some(super::lang_matches(&tag, &range)),
+        exp.clone()
+    ));
     Ok(())
 }
 

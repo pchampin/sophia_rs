@@ -145,10 +145,10 @@ pub fn call_function<D: Dataset + ?Sized>(
             let [tag, range] = &arguments[..] else {
                 unreachable!()
             };
-            lang_matches(
+            Some(lang_matches(
                 tag.as_xsd_string("LangMatch")?,
                 range.as_xsd_string("LangMatch")?,
-            )
+            ))
         }
         SubStr => match &arguments[..] {
             [source, starting_loc] => sub_str(
@@ -611,28 +611,27 @@ pub fn concat(args: &[StringLiteralRef<'_>]) -> EvalResult {
     EvalResult::from((Arc::from(lex), ctag.map(|(lang, dir)| (lang.clone(), dir))))
 }
 
-pub fn lang_matches(tag: &Arc<str>, range: &Arc<str>) -> Option<EvalResult> {
-    let tag = LanguageTag::new(tag.clone())
-        .inspect_err(|err| {
-            log::warn!("langMatch#1 is an invalid language tag");
-            log::debug!(" {err}")
-        })
-        .ok()?;
+pub fn lang_matches(tag: &Arc<str>, range: &Arc<str>) -> EvalResult {
+    let Ok(tag) = LanguageTag::new(tag.clone()).inspect_err(|err| {
+        log::warn!("langMatch#1 is an invalid language tag");
+        log::debug!(" {err}")
+    }) else {
+        return false.into();
+    };
     if range.as_ref() == "*" {
-        return Some(true.into());
+        return true.into();
     }
-    let range = LanguageTag::new(range.clone())
-        .inspect_err(|err| {
-            log::warn!("invalid language tag range: {err}");
-            log::debug!(" {err}")
-        })
-        .ok()?;
-    Some(
-        (range.len() <= tag.len()
-            && tag[..range.len()].eq_ignore_ascii_case(range.as_str())
-            && (tag.len() == range.len() || tag[range.len()..].starts_with('-')))
-        .into(),
-    )
+    let Ok(range) = LanguageTag::new(range.clone()).inspect_err(|err| {
+        log::warn!("invalid language tag range: {err}");
+        log::debug!(" {err}")
+    }) else {
+        return false.into();
+    };
+
+    (range.len() <= tag.len()
+        && tag[..range.len()].eq_ignore_ascii_case(range.as_str())
+        && (tag.len() == range.len() || tag[range.len()..].starts_with('-')))
+    .into()
 }
 
 pub fn sub_str(
