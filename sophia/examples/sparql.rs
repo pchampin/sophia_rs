@@ -1,3 +1,5 @@
+use std::{fs::File, io::BufReader};
+
 use sophia::api::prelude::*;
 use sophia::sparql::SparqlWrapper;
 
@@ -8,13 +10,20 @@ use sophia_turtle::serializer::turtle::{TurtleConfig, TurtleSerializer};
 
 /// Expect a SPARQL query as argument; display its algebra and execute it on an empty dataset.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let ds = LightDataset::new();
-    let sds = SparqlWrapper(&ds);
+    let ds: LightDataset = if let Some(nq) = std::env::args().nth(2) {
+        sophia_turtle::parser::nq::NQuadsParser::new()
+            .parse(BufReader::new(File::open(nq)?))
+            .collect_quads()?
+    } else {
+        LightDataset::new()
+    };
 
+    let sds = SparqlWrapper(&ds);
     let query = sds.prepare_query_with(
         &std::env::args().nth(1).unwrap(),
         Iri::new_unchecked("https://example.org/base/"),
     )?;
+
     println!("{query:#?}");
     let res = sds.query(&query)?;
     match res {

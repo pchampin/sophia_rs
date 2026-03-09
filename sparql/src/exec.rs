@@ -539,7 +539,9 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         let iter = Box::new(iter.filter(move |resb| match resb {
             Err(_) => true,
             Ok(b) => {
-                let hashable: Vec<_> = b.v.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+                let mut hashable: Vec<_> =
+                    b.v.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
+                hashable.sort_unstable();
                 seen.insert(hashable)
             }
         }));
