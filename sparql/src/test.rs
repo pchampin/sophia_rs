@@ -1902,6 +1902,7 @@ fn test_expr(expr: &str, result: &str) -> TestResult {
 #[test_case("42", "42e0", Some(true))]
 #[test_case("42.0", "42e0", Some(true))]
 #[test_case("42", "43", Some(false))]
+#[test_case("\"foo\"^^xsd:integer", "42", None)]
 #[test_case("\"a\"", "\"\"", Some(false))]
 #[test_case("\"a\"@en", "\"\"@en", Some(false))]
 #[test_case("\"a\"@en", "\"a\"@fr", Some(false))]
@@ -1949,7 +1950,7 @@ fn test_expr_eq(expr1: &str, expr2: &str, exp: Option<bool>) -> TestResult {
     assert_eq!(eval_expr(&format!("{expr2} = {expr2}"))?, TRUE);
     assert_eq!(eval_expr(&format!("{expr2} != {expr2}"))?, FALSE);
     // control: every recognized value is equal to itself via comparison operators
-    if !expr1.contains("<tag:") {
+    if !expr1.contains("<tag:") && !expr1.contains("\"foo\"") {
         assert_eq!(eval_expr(&format!("{expr1} <= {expr1}"))?, TRUE);
         assert_eq!(eval_expr(&format!("{expr1} >= {expr1}"))?, TRUE);
         assert_eq!(eval_expr(&format!("{expr1} < {expr1}"))?, FALSE);

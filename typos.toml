@@ -6,6 +6,7 @@ extend-ignore-identifiers-re = [
   # I prefer this to 'type_'
   "typ",
   "iz",
+  "ot",
 ]
 extend-ignore-re = [
   "raison d'être",

@@ -495,18 +495,35 @@ impl EvalResult {
     }
 
     pub fn sparql_eq(&self, other: &Self) -> Option<bool> {
-        if let (Some(s), Some(o)) = (self.as_value(), other.as_value()) {
-            s.sparql_eq(o)
-        } else {
-            let s = self.as_term();
-            let o = other.as_term();
-            if Term::eq(&s, &o) {
+        let st = self.as_term();
+        let ot = other.as_term();
+        if Term::eq(&st, &ot) {
+            Some(true)
+        } else if st.is_iri()
+            || st.is_blank_node()
+            || ot.is_iri()
+            || ot.is_blank_node()
+            || (st.is_triple() && !ot.is_triple() || !st.is_triple() && ot.is_triple())
+        {
+            Some(false)
+        } else if let Some(stt) = st.triple()
+            && let Some(ott) = ot.triple()
+        {
+            let [s1, p1, o1] = stt.map(|t| EvalResult::Term(t.clone().into()));
+            let [s2, p2, o2] = ott.map(|t| EvalResult::Term(t.clone().into()));
+            Some(s1.sparql_eq(&s2)? && p1.sparql_eq(&p2)? && o1.sparql_eq(&o2)?)
+        } else if let Some(sv) = self.as_value()
+            && let Some(ov) = other.as_value()
+        {
+            if sv.is_ill_formed() || ov.is_ill_formed() {
+                None
+            } else if sv.is_nan() && ov.is_nan() {
                 Some(true)
-            } else if s.is_literal() && o.is_literal() {
-                None // distinct unrecognized literals can not be compared
             } else {
-                Some(false)
+                sv.sparql_eq(ov)
             }
+        } else {
+            None
         }
     }
 
