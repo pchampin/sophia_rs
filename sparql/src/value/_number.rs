@@ -128,6 +128,14 @@ impl SparqlNumber {
         }
     }
 
+    pub fn is_nan(&self) -> bool {
+        match self {
+            SparqlNumber::Double(d) => d.is_nan(),
+            SparqlNumber::Float(f) => f.is_nan(),
+            _ => false,
+        }
+    }
+
     pub fn abs(&self) -> Self {
         match self {
             SparqlNumber::NativeInt(inner) => inner.abs().into(),

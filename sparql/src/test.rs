@@ -1902,7 +1902,6 @@ fn test_expr(expr: &str, result: &str) -> TestResult {
 #[test_case("42", "42e0", Some(true))]
 #[test_case("42.0", "42e0", Some(true))]
 #[test_case("42", "43", Some(false))]
-#[test_case("\"foo\"^^xsd:integer", "42", None)]
 #[test_case("\"a\"", "\"\"", Some(false))]
 #[test_case("\"a\"@en", "\"\"@en", Some(false))]
 #[test_case("\"a\"@en", "\"a\"@fr", Some(false))]
@@ -1938,11 +1937,11 @@ fn test_expr(expr: &str, result: &str) -> TestResult {
     "\"2024-03-25T00:00:00+01:00\"^^xsd:dateTime",
     Some(false)
 )]
-#[test_case("<tag:x>", "<tag:y>", Some(false))]
-#[test_case("\"a\"^^<tag:x>", "\"a\"^^<tag:y>", None)]
-#[test_case("\"a\"^^<tag:x>", "\"b\"^^<tag:x>", None)]
+#[test_case("\"a\"^^<x:dt1>", "\"a\"^^<x:dt2>", None; "two unrecognized datatypes")]
+#[test_case("\"a\"^^<x:dt1>", "\"b\"^^<x:dt1>", None; "two unrecognized lexical values")]
+#[test_case("\"xyz\"^^xsd:integer", "42", None; "ill formed literal")]
 #[allow(clippy::similar_names)]
-fn test_expr_eq(expr1: &str, expr2: &str, exp: Option<bool>) -> TestResult {
+fn test_expr_eq_literal(expr1: &str, expr2: &str, exp: Option<bool>) -> TestResult {
     dbg!(expr1, expr2);
     // control: every term is equal to itself
     assert_eq!(eval_expr(&format!("{expr1} = {expr1}"))?, TRUE);
@@ -1950,7 +1949,7 @@ fn test_expr_eq(expr1: &str, expr2: &str, exp: Option<bool>) -> TestResult {
     assert_eq!(eval_expr(&format!("{expr2} = {expr2}"))?, TRUE);
     assert_eq!(eval_expr(&format!("{expr2} != {expr2}"))?, FALSE);
     // control: every recognized value is equal to itself via comparison operators
-    if !expr1.contains("<tag:") && !expr1.contains("\"foo\"") {
+    if !expr1.contains("xyz") {
         assert_eq!(eval_expr(&format!("{expr1} <= {expr1}"))?, TRUE);
         assert_eq!(eval_expr(&format!("{expr1} >= {expr1}"))?, TRUE);
         assert_eq!(eval_expr(&format!("{expr1} < {expr1}"))?, FALSE);
@@ -1977,6 +1976,130 @@ fn test_expr_eq(expr1: &str, expr2: &str, exp: Option<bool>) -> TestResult {
         assert_eq!(eval_expr(&format!("{expr1} >= {expr2}"))?, TRUE);
         assert_eq!(eval_expr(&format!("{expr1} < {expr2}"))?, FALSE);
         assert_eq!(eval_expr(&format!("{expr1} > {expr2}"))?, FALSE);
+    }
+    Ok(())
+}
+
+#[test_case("iri", "iri", Some(true))]
+#[test_case("iri", "bnode", Some(false))]
+#[test_case("iri", "string", Some(false))]
+#[test_case("iri", "langString", Some(false))]
+#[test_case("iri", "dirLangString", Some(false))]
+#[test_case("iri", "unrecognized", Some(false))]
+#[test_case("iri", "illformed", Some(false))]
+#[test_case("iri", "tterm", Some(false))]
+#[test_case("bnode", "iri", Some(false))]
+#[test_case("bnode", "bnode", Some(true))]
+#[test_case("bnode", "string", Some(false))]
+#[test_case("bnode", "langString", Some(false))]
+#[test_case("bnode", "dirLangString", Some(false))]
+#[test_case("bnode", "unrecognized", Some(false))]
+#[test_case("bnode", "illformed", Some(false))]
+#[test_case("bnode", "tterm", Some(false))]
+#[test_case("string", "iri", Some(false))]
+#[test_case("string", "bnode", Some(false))]
+#[test_case("string", "string", Some(true))]
+#[test_case("string", "langString", Some(false))]
+#[test_case("string", "dirLangString", Some(false))]
+#[test_case("string", "unrecognized", None)]
+#[test_case("string", "illformed", None)]
+#[test_case("string", "tterm", Some(false))]
+#[test_case("langString", "iri", Some(false))]
+#[test_case("langString", "bnode", Some(false))]
+#[test_case("langString", "string", Some(false))]
+#[test_case("langString", "langString", Some(true))]
+#[test_case("langString", "dirLangString", Some(false))]
+#[test_case("langString", "unrecognized", None)]
+#[test_case("langString", "illformed", None)]
+#[test_case("langString", "tterm", Some(false))]
+#[test_case("dirLangString", "iri", Some(false))]
+#[test_case("dirLangString", "bnode", Some(false))]
+#[test_case("dirLangString", "string", Some(false))]
+#[test_case("dirLangString", "langString", Some(false))]
+#[test_case("dirLangString", "dirLangString", Some(true))]
+#[test_case("dirLangString", "unrecognized", None)]
+#[test_case("dirLangString", "illformed", None)]
+#[test_case("dirLangString", "tterm", Some(false))]
+#[test_case("unrecognized", "iri", Some(false))]
+#[test_case("unrecognized", "bnode", Some(false))]
+#[test_case("unrecognized", "string", None)]
+#[test_case("unrecognized", "langString", None)]
+#[test_case("unrecognized", "dirLangString", None)]
+#[test_case("unrecognized", "unrecognized", Some(true))]
+#[test_case("unrecognized", "illformed", None)]
+#[test_case("unrecognized", "tterm", Some(false))]
+#[test_case("illformed", "iri", Some(false))]
+#[test_case("illformed", "bnode", Some(false))]
+#[test_case("illformed", "string", None)]
+#[test_case("illformed", "langString", None)]
+#[test_case("illformed", "dirLangString", None)]
+#[test_case("illformed", "unrecognized", None)]
+#[test_case("illformed", "illformed", Some(true))]
+#[test_case("illformed", "tterm", Some(false))]
+#[test_case("tterm", "iri", Some(false))]
+#[test_case("tterm", "bnode", Some(false))]
+#[test_case("tterm", "string", Some(false))]
+#[test_case("tterm", "langString", Some(false))]
+#[test_case("tterm", "dirLangString", Some(false))]
+#[test_case("tterm", "unrecognized", Some(false))]
+#[test_case("tterm", "illformed", Some(false))]
+#[test_case("tterm", "tterm", Some(true))]
+#[test_case("iri", "iri2", Some(false))]
+#[test_case("bnode", "bnode2", Some(false))]
+#[test_case("string", "string2", Some(false))]
+#[test_case("langString", "langString2", Some(false))]
+#[test_case("dirLangString", "dirLangString2", Some(false))]
+#[test_case("unrecognized", "unrecognized2", None)]
+#[test_case("illformed", "illformed2", None)]
+#[test_case("tterm", "tterm2", Some(false))]
+fn test_expr_eq_matrix(x1: &str, x2: &str, eq: Option<bool>) -> TestResult {
+    let dataset: LightDataset = sophia_turtle::parser::trig::parse_str(
+        r#"
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+        PREFIX : <x:>
+
+        :iri            :p <x:xyz>.
+        :bnode          :p _:xyz.
+        :string         :p "xyz".
+        :langString     :p "xyz"@en.
+        :dirLangString  :p "xyz"@en--ltr.
+        :unrecognized   :p "xyz"^^<x:unrecognized>.
+        :illformed      :p "xyz"^^xsd:integer.
+        :tterm          :p <<( _:xyz <x:xyz> "xyz" )>>.
+
+        :iri2           :p <x:xyz2>.
+        :bnode2         :p _:xyz2.
+        :string2        :p "xyz2".
+        :langString2    :p "xyz2"@en.
+        :dirLangString2 :p "xyz2"@en--ltr.
+        :unrecognized2  :p "xyz2"^^<x:unrecognized>.
+        :illformed2     :p "xyz2"^^xsd:integer.
+        :tterm2          :p <<( _:xyz <x:xyz> "xyz2" )>>.
+
+    "#,
+    )
+    .collect_quads()?;
+    let dataset = SparqlWrapper(&dataset);
+    let query = format!(
+        r#"
+        PREFIX : <x:>
+
+        SELECT ((?v1 = ?v2) as ?eq) ((?v1 != ?v2) as ?neq) {{
+            <x:{x1}> :p ?v1.
+            <x:{x2}> :p ?v2.
+        }}
+
+    "#
+    );
+    let parsed_query = SparqlQuery::parse(&query)?;
+    let bindings = dataset.query(&parsed_query)?.into_bindings();
+    assert_eq!(bindings.variables(), &["eq", "neq"]);
+    let v: Vec<_> = bindings.into_iter().next().unwrap().unwrap();
+    if let Some(eq) = eq {
+        assert!(Term::eq(v[0].as_ref().unwrap(), eq));
+        assert!(Term::eq(v[1].as_ref().unwrap(), !eq));
+    } else {
+        assert_eq!(v, [None, None]);
     }
     Ok(())
 }

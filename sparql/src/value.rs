@@ -113,14 +113,6 @@ impl SparqlValue {
         }
     }
 
-    pub fn is_nan(&self) -> bool {
-        match self {
-            SparqlValue::Number(Some(SparqlNumber::Float(f))) => f.is_nan(),
-            SparqlValue::Number(Some(SparqlNumber::Double(d))) => d.is_nan(),
-            _ => false,
-        }
-    }
-
     pub fn sparql_eq(&self, other: &Self) -> Option<bool> {
         use SparqlValue::*;
         match (self, other) {
@@ -128,7 +120,7 @@ impl SparqlValue {
             (DateTime(Some(d1)), DateTime(Some(d2))) => {
                 d1.partial_cmp(d2).map(|o| o == Ordering::Equal)
             }
-            (Number(Some(n1)), Number(Some(n2))) => Some(n1 == n2),
+            (Number(Some(n1)), Number(Some(n2))) => Some(n1 == n2 || n1.is_nan() && n2.is_nan()),
             (String(s1, opt1), String(s2, opt2)) => Some(s1 == s2 && opt1 == opt2),
             _ if self.is_ill_formed() || other.is_ill_formed() => None,
             _ => Some(false),

@@ -515,13 +515,7 @@ impl EvalResult {
         } else if let Some(sv) = self.as_value()
             && let Some(ov) = other.as_value()
         {
-            if sv.is_ill_formed() || ov.is_ill_formed() {
-                None
-            } else if sv.is_nan() && ov.is_nan() {
-                Some(true)
-            } else {
-                sv.sparql_eq(ov)
-            }
+            sv.sparql_eq(ov)
         } else {
             None
         }
