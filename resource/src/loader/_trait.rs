@@ -57,9 +57,9 @@ pub trait Loader: Sync + Sized {
                     .with_base(iri.as_ref().map_unchecked(Into::into))
                     .with_document_loader_factory(ClosureLoaderFactory::new(|| {
                         ClosureLoader::new(|url| {
+                            let result = self.get(url).map_err(|e| e.to_string());
                             async move {
-                                let (content, ctype) =
-                                    self.get(url.as_ref()).map_err(|e| e.to_string())?;
+                                let (content, ctype) = result?;
                                 if ctype == "application/ld+json" {
                                     String::from_utf8(content).map_err(|e| e.to_string())
                                 } else {

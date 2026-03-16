@@ -1,10 +1,10 @@
-use super::{Arc, Iri, Value};
-use json_ld::future::{BoxFuture, FutureExt};
-use json_ld::{Loader, RemoteDocument};
+use iref::{Iri, IriBuf};
+use json_ld::{LoadError, Loader, RemoteDocument};
 use json_syntax::Parse;
-use locspan::{Location, Meta};
-use rdf_types::IriVocabulary;
-use std::fmt;
+use std::future::Future;
+use std::pin::Pin;
+
+type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
 /// Closure loader.
 ///
@@ -13,50 +13,28 @@ pub struct ClosureLoader<F> {
     closure: F,
 }
 
-impl<'f, F> Loader<Iri<Arc<str>>, Location<Iri<Arc<str>>>> for ClosureLoader<F>
+impl<F> Loader for ClosureLoader<F>
 where
-    F: Send + FnMut(Iri<String>) -> BoxFuture<'f, Result<String, String>>,
+    F: Send + Sync + for<'a> Fn(sophia_iri::Iri<&'a str>) -> BoxFuture<'a, Result<String, String>>,
 {
-    type Output = Value<Location<Iri<Arc<str>>>>;
-    type Error = ClosureLoaderError;
-
-    fn load_with<'a>(
-        &'a mut self,
-        vocabulary: &'a mut (impl Sync + Send + IriVocabulary<Iri = Iri<Arc<str>>>),
-        url: Iri<Arc<str>>,
-    ) -> BoxFuture<
-        'a,
-        Result<
-            RemoteDocument<Iri<Arc<str>>, Location<Iri<Arc<str>>>, Value<Location<Iri<Arc<str>>>>>,
-            Self::Error,
-        >,
-    >
-    where
-        Iri<Arc<str>>: 'a,
-    {
-        async move {
-            let iri = vocabulary.iri(&url).unwrap();
-            let url_str = iri.as_str().to_string();
-            let content = (self.closure)(Iri::new_unchecked(url_str))
-                .await
-                .map_err(Self::Error::Internal)?;
-            let doc = json_syntax::Value::parse_str(content.as_str(), |span| {
-                locspan::Location::new(url.clone(), span)
-            })
-            .map_err(Self::Error::Parse)?;
-            Ok(RemoteDocument::new(
-                Some(url),
-                Some("application/ld+json".parse().unwrap()),
-                doc,
-            ))
-        }
-        .boxed()
+    async fn load(&self, url: &Iri) -> Result<RemoteDocument<IriBuf>, LoadError> {
+        let content = (self.closure)(sophia_iri::Iri::new_unchecked(url.as_str()))
+            .await
+            .map_err(|e| LoadError::new(url.to_owned(), ClosureLoaderError::Internal(e)))?;
+        let (doc, _) = json_syntax::Value::parse_str(&content).map_err(|e| {
+            LoadError::new(url.to_owned(), ClosureLoaderError::Parse(format!("{e}")))
+        })?;
+        Ok(RemoteDocument::new(
+            Some(url.to_owned()),
+            Some("application/ld+json".parse().unwrap()),
+            doc,
+        ))
     }
 }
 
-impl<'f, F> ClosureLoader<F>
+impl<F> ClosureLoader<F>
 where
-    F: Send + FnMut(Iri<String>) -> BoxFuture<'f, Result<String, String>>,
+    F: Send + Sync + for<'a> Fn(sophia_iri::Iri<&'a str>) -> BoxFuture<'a, Result<String, String>>,
 {
     /// Creates a new closure loader with the given closure.
     pub const fn new(f: F) -> Self {
@@ -65,23 +43,13 @@ where
 }
 
 /// Loading error.
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum ClosureLoaderError {
     /// Error raised by the inner closure
+    #[error("{0}")]
     Internal(String),
 
     /// Parse error.
-    Parse(JsonParseError),
+    #[error("parse error: {0}")]
+    Parse(String),
 }
-
-impl fmt::Display for ClosureLoaderError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::Internal(e) => e.fmt(f),
-            Self::Parse(e) => e.fmt(f),
-        }
-    }
-}
-
-type JsonParseError =
-    Meta<json_syntax::parse::Error<Location<Iri<Arc<str>>>>, Location<Iri<Arc<str>>>>;
