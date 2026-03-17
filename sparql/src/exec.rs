@@ -508,22 +508,28 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         graph_matcher: &GraphMatcher,
         context: Option<&Binding>,
     ) -> Bindings<'a, D> {
-        let (variables, iter1, first1, iter2) =
-            self.prepare_join(left, right, graph_matcher, context);
+        let (variables, iter1, first1, iter2) = self.prepare_join(left, right, graph_matcher, None);
         let first1 = match first1 {
             None => return Bindings::empty_with(variables),
             Some(Err(err)) => return Bindings::err_with(err, variables),
             Some(Ok(first1)) => first1,
         };
-        let iter = Box::new(left_join_iter::LeftJoinIter::new(
-            iter1,
-            first1,
-            iter2,
-            self,
-            right,
-            expression,
-            graph_matcher.clone(),
-        ));
+        let context = context.cloned(); // to move into the closure
+        let iter = Box::new(
+            left_join_iter::LeftJoinIter::new(
+                iter1,
+                first1,
+                iter2,
+                self,
+                right,
+                expression,
+                graph_matcher.clone(),
+            )
+            .filter_map(move |res| {
+                res.map(|b| b.merge_if_compatible(context.as_ref()))
+                    .transpose()
+            }),
+        );
         Bindings { variables, iter }
     }
 
