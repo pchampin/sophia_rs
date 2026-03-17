@@ -9,7 +9,7 @@ use sophia_term::ArcTerm;
 use spargebra::algebra::GraphPattern;
 
 use crate::{
-    Bindings, SparqlWrapperError,
+    SparqlWrapperError,
     binding::{Binding, BindingsIter},
     exec::ExecState,
     graph_matcher::GraphMatcher,
@@ -63,10 +63,11 @@ impl<'a, D: Dataset + ?Sized> Iterator for GraphIter<'a, D> {
                     .v
                     .insert(self.variable.clone().unwrap(), graph_name.clone().into());
                 let graph_matcher = GraphMatcher::from([Some(graph_name)]);
-                let Bindings { iter, .. } =
+                self.inner_iter = Some(
                     self.state
-                        .select(&self.inner, &graph_matcher, Some(&context));
-                self.inner_iter = Some(iter);
+                        .select(&self.inner, &graph_matcher, Some(&context))
+                        .iter,
+                );
                 self.next()
             } else {
                 self.inner_iter = None;

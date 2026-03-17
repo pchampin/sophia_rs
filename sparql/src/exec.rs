@@ -659,9 +659,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                         Ok(graph_names) if graph_names.is_empty() => Bindings::empty(),
                         Ok(graph_names) => {
                             let dummy_matcher = GraphMatcher::empty();
-                            let Bindings { variables, .. } =
-                                self.select(inner, &dummy_matcher, None);
-
+                            let variables = self.select(inner, &dummy_matcher, None).variables;
                             let iter = Box::new(graph_iter::GraphIter::new(
                                 self,
                                 context,
@@ -876,8 +874,11 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             .collect();
         let variables2 = variables.clone(); // for the closure
         let filtered_context = context.map(|b| b.clone().project(&variables));
-        let Bindings { iter, .. } = self.select(inner, graph_matcher, filtered_context.as_ref());
-        let iter = Box::new(iter.map(move |resb| resb.map(|b| b.project(&variables2))));
+        let iter = Box::new(
+            self.select(inner, graph_matcher, filtered_context.as_ref())
+                .iter
+                .map(move |resb| resb.map(|b| b.project(&variables2))),
+        );
         Bindings { variables, iter }
     }
 
