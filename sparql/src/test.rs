@@ -142,6 +142,23 @@ fn test_select_1_multiple_occurrences(query: &str, exp: Vec<&str>) -> TestResult
     Ok(())
 }
 
+#[test_case("SELECT * { GRAPH <#g> {} }", false; "graph exist")]
+#[test_case("SELECT * { GRAPH <#absent> {} }", true; "graph not exist")]
+fn test_select_0_or_ask(query: &str, empty: bool) -> TestResult {
+    let dataset = dataset_101()?;
+    let dataset = SparqlWrapper(&dataset);
+    let query = format!("BASE <https://example.org/test> PREFIX s: <http://schema.org/> {query}");
+    let parsed_query = SparqlQuery::parse(&query)?;
+    let bindings = dataset.query(&parsed_query)?.into_bindings();
+    assert!(bindings.variables().is_empty());
+    assert_eq!(bindings.into_iter().next().is_none(), empty);
+
+    let parsed_query = SparqlQuery::parse(&query.replace("SELECT *", "ASK"))?;
+    let response = dataset.query(&parsed_query)?.into_boolean();
+    assert_eq!(response, !empty);
+    Ok(())
+}
+
 #[test_case(
     "SELECT ?x ?y { ?z a ?x. OPTIONAL { ?z s:performerIn ?y } } ORDER BY ?x",
     vec!["<http://schema.org/Event>", "", "<http://schema.org/Person>", "_:b"];

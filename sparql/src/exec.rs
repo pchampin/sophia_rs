@@ -235,6 +235,29 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         context: Option<&Binding>,
     ) -> Bindings<'a, D> {
         let variables = populate_variables(patterns, &mut self.stash_mut(), context);
+
+        if patterns.is_empty() {
+            let term_matcher: Vec<_> = graph_matcher.iter().filter_map(Clone::clone).collect();
+            let graph_exist = {
+                if term_matcher.len() < graph_matcher.len() {
+                    // graph_matcher contains None, i.e. the default graph,
+                    // and the default_graph always exist
+                    true
+                } else {
+                    self.dataset
+                        .graph_names_matching(term_matcher)
+                        .next()
+                        .is_some()
+                }
+            };
+            if !graph_exist {
+                // this special case is needed,
+                // because bgp::make_iterator will only rely on Dataset::quads_matching,
+                // which does not differentiate an empty graph from a non-existing graph
+                return Bindings::empty_with(variables);
+            }
+        }
+
         let iter = Box::new(bgp::make_iterator(
             self.clone(),
             patterns,
