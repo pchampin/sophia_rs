@@ -10,6 +10,10 @@ use spargebra::algebra::QueryDataset;
 pub struct GraphMatcher(Arc<[Option<ArcTerm>]>);
 
 impl GraphMatcher {
+    pub fn empty() -> Self {
+        GraphMatcher(Arc::new([]))
+    }
+
     pub fn from_with(value: &Option<QueryDataset>, mstash: &Mutex<ArcStrStash>) -> Self {
         match value {
             None => Self(Arc::from([None])),

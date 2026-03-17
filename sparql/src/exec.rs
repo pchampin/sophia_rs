@@ -50,6 +50,7 @@ pub(crate) use construct_iter::ConstructIter;
 mod describe_iter;
 pub(crate) use describe_iter::DescribeIter;
 mod aggregate_iter;
+mod graph_iter;
 mod join_iter;
 mod left_join_iter;
 mod path_or_more;
@@ -657,30 +658,22 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                         Err(err) => Bindings::err(err),
                         Ok(graph_names) if graph_names.is_empty() => Bindings::empty(),
                         Ok(graph_names) => {
-                            self.graph_rec(var.as_str(), graph_names.into_iter(), inner, context)
+                            let dummy_matcher = GraphMatcher::empty();
+                            let Bindings { variables, .. } =
+                                self.select(inner, &dummy_matcher, None);
+
+                            let iter = Box::new(graph_iter::GraphIter::new(
+                                self,
+                                context,
+                                var,
+                                graph_names,
+                                inner,
+                            ));
+                            Bindings { variables, iter }
                         }
                     }
                 }
             }
-        }
-    }
-
-    fn graph_rec(
-        self: &Arc<Self>,
-        var: &str,
-        mut graph_names: std::collections::btree_set::IntoIter<ArcTerm>,
-        inner: &GraphPattern,
-        context: Option<&Binding>,
-    ) -> Bindings<'a, D> {
-        if let Some(name) = graph_names.next() {
-            let mut b = context.cloned().unwrap_or_else(Binding::default);
-            b.v.insert(self.stash_mut().copy_str(var), name.clone().into());
-            let graph_matcher = GraphMatcher::from([Some(name)]);
-            let Bindings { variables, iter } = self.select(inner, &graph_matcher, Some(&b));
-            let iter = Box::new(iter.chain(self.graph_rec(var, graph_names, inner, context).iter));
-            Bindings { variables, iter }
-        } else {
-            Bindings::empty()
         }
     }
 
