@@ -38,6 +38,8 @@ pub struct TurtleParser {
     ///
     /// Will be applied until overridden with a `@version`/`VERSION` directive.
     pub version: Version,
+    /// Whether the parser should preserve blank node labels.
+    pub preserve_bn_labels: bool,
 }
 
 impl TurtleParser {
@@ -57,6 +59,15 @@ impl TurtleParser {
     pub fn with_version(self, version: Version) -> Self {
         Self { version, ..self }
     }
+
+    /// Change the [`preserve_bn_labels`](TurtleParser::preserve_bn_labels) option of this parser.
+    #[must_use]
+    pub fn with_preserve_bn_labels(self, preserve_bn_labels: bool) -> Self {
+        Self {
+            preserve_bn_labels,
+            ..self
+        }
+    }
 }
 
 impl<I: BufRead> TripleParser<I> for TurtleParser {
@@ -65,10 +76,7 @@ impl<I: BufRead> TripleParser<I> for TurtleParser {
     fn parse(&self, data: I) -> Self::Source {
         TurtleSource {
             input: data,
-            inner: Inner {
-                version: self.version,
-                ..Default::default()
-            },
+            inner: Inner::new(self.version, self.preserve_bn_labels),
             extra: Extra {
                 base: self.base.clone(),
                 ..Default::default()

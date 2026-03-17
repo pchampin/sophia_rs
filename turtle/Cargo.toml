@@ -17,6 +17,7 @@ regex.workspace = true
 sophia_api.workspace = true
 sophia_iri.workspace = true
 thiserror.workspace = true
+uuid = { workspace = true, features = ["v7"] }
 
 [dev-dependencies]
 sophia_isomorphism.workspace = true

@@ -1728,8 +1728,8 @@ pub(crate) trait TxSource<S: State>: GenericSource {
 
     fn dedup_bnode_label(&mut self) {
         debug_assert!(!self.inner().buffers.is_empty());
-        self.inner_mut().buffers.top_mut().push('d');
         debug_assert!(GENID_RE.find(self.inner().buffers.top()).is_some());
+        self.inner_mut().buffers.top_mut().push('d');
     }
 
     fn grow_collection<E>(&mut self) -> StreamResult<(), Error, E>
@@ -1765,4 +1765,4 @@ pub(crate) trait TxSource<S: State>: GenericSource {
 }
 
 // Regex for generated bnode generated IDs
-lazy_regex!(GENID_RE = "^bn[0-9]{4,}d*$");
+lazy_regex!(GENID_RE = "^bn[0-9]{4,}(_[0-9a-f]+)?d*$");

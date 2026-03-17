@@ -122,10 +122,11 @@ pub(crate) trait GenericSource {
         if !txt[1..].starts_with(':') {
             Err(ErrorKind::Expected("':'".into())).wrap_in_at(self, 1)
         } else if let Some(cap) = LABEL.find(&txt[2..]) {
-            self.inner_mut().buffers.push().push_str(cap.as_str());
-            self.inner_mut()
-                .terms
-                .push(IndexedTerm::BlankNode(buffer_idx));
+            let inner_mut = self.inner_mut();
+            let buf = inner_mut.buffers.push();
+            buf.push_str(cap.as_str());
+            buf.push_str(&inner_mut.bn_suffix);
+            inner_mut.terms.push(IndexedTerm::BlankNode(buffer_idx));
             Ok(2 + cap.len())
         } else {
             Err(ErrorKind::Bnode).wrap_in_at(self, 2)

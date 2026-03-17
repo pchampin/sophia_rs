@@ -30,6 +30,9 @@ pub struct NQuadsParser {
     ///
     /// Will be applied until overridden with a `@version`/`VERSION` directive.
     pub version: Version,
+
+    /// Whether the parser should preserve blank node labels.
+    pub preserve_bn_labels: bool,
 }
 
 impl NQuadsParser {
@@ -41,7 +44,16 @@ impl NQuadsParser {
     /// Change the [`version`](NQuadsParser::version) option of this parser.
     #[must_use]
     pub fn with_version(self, version: Version) -> Self {
-        Self { version }
+        Self { version, ..self }
+    }
+
+    /// Change the [`preserve_bn_labels`](NQuadsParser::preserve_bn_labels) option of this parser.
+    #[must_use]
+    pub fn with_preserve_bn_labels(self, preserve_bn_labels: bool) -> Self {
+        Self {
+            preserve_bn_labels,
+            ..self
+        }
     }
 }
 
@@ -51,10 +63,7 @@ impl<I: BufRead> QuadParser<I> for NQuadsParser {
     fn parse(&self, data: I) -> Self::Source {
         NQuadsSource {
             input: data,
-            inner: Inner {
-                version: self.version,
-                ..Default::default()
-            },
+            inner: Inner::new(self.version, self.preserve_bn_labels),
             is_quad: false,
         }
     }
@@ -188,7 +197,10 @@ mod test {
     use crate::test::{LazyMap, nq_samples};
 
     use super::*;
-    use sophia_api::source::QuadSource;
+    use sophia_api::{
+        source::QuadSource,
+        term::{SimpleTerm, Term},
+    };
     use test_case::test_case;
 
     static TESTS: LazyMap = nq_samples();
@@ -282,5 +294,27 @@ mod test {
             assert_eq!(err.position(), exp_pos);
         }
         Ok(())
+    }
+
+    #[test]
+    fn bnode_labels() {
+        static NQ: &str = "_:s <x:p> <x:o> <x:g> .";
+        let d1: Vec<Spog<SimpleTerm>> = NQuadsParser::new().parse_str(NQ).collect_quads().unwrap();
+        let d2: Vec<Spog<SimpleTerm>> = NQuadsParser::new().parse_str(NQ).collect_quads().unwrap();
+        let d3: Vec<Spog<SimpleTerm>> = NQuadsParser::new()
+            .with_preserve_bn_labels(true)
+            .parse_str(NQ)
+            .collect_quads()
+            .unwrap();
+
+        dbg!(&d1);
+        let s1 = d1[0].0[0].bnode_id().unwrap();
+        let s2 = d2[0].0[0].bnode_id().unwrap();
+        let s3 = d3[0].0[0].bnode_id().unwrap();
+
+        assert!(s1.starts_with("s_"));
+        assert!(s2.starts_with("s_"));
+        assert_ne!(s1, s2);
+        assert_eq!(s3.as_str(), "s");
     }
 }

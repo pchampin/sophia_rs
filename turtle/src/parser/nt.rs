@@ -29,6 +29,9 @@ pub struct NTriplesParser {
     ///
     /// Will be applied until overridden with a `@version`/`VERSION` directive.
     pub version: Version,
+
+    /// Whether the parser should preserve blank node labels.
+    pub preserve_bn_labels: bool,
 }
 
 impl NTriplesParser {
@@ -40,7 +43,16 @@ impl NTriplesParser {
     /// Change the [`version`](NTriplesParser::version) option of this parser.
     #[must_use]
     pub fn with_version(self, version: Version) -> Self {
-        Self { version }
+        Self { version, ..self }
+    }
+
+    /// Change the [`preserve_bn_labels`](NTriplesParser::preserve_bn_labels) option of this parser.
+    #[must_use]
+    pub fn with_preserve_bn_labels(self, preserve_bn_labels: bool) -> Self {
+        Self {
+            preserve_bn_labels,
+            ..self
+        }
     }
 }
 
@@ -50,10 +62,7 @@ impl<I: BufRead> TripleParser<I> for NTriplesParser {
     fn parse(&self, data: I) -> Self::Source {
         NTriplesSource {
             input: data,
-            inner: Inner {
-                version: self.version,
-                ..Default::default()
-            },
+            inner: Inner::new(self.version, self.preserve_bn_labels),
         }
     }
 }
@@ -168,7 +177,10 @@ mod test {
     use crate::test::{LazyMap, nt_samples};
 
     use super::*;
-    use sophia_api::source::TripleSource;
+    use sophia_api::{
+        source::TripleSource,
+        term::{SimpleTerm, Term},
+    };
     use test_case::test_case;
 
     #[test_case("empty")]
@@ -234,5 +246,32 @@ mod test {
             assert_eq!(err.position(), exp_pos);
         }
         Ok(())
+    }
+
+    #[test]
+    fn bnode_labels() {
+        static NT: &str = "_:s <x:p> <x:o> .";
+        let g1: Vec<[SimpleTerm; 3]> = NTriplesParser::new()
+            .parse_str(NT)
+            .collect_triples()
+            .unwrap();
+        let g2: Vec<[SimpleTerm; 3]> = NTriplesParser::new()
+            .parse_str(NT)
+            .collect_triples()
+            .unwrap();
+        let g3: Vec<[SimpleTerm; 3]> = NTriplesParser::new()
+            .with_preserve_bn_labels(true)
+            .parse_str(NT)
+            .collect_triples()
+            .unwrap();
+
+        let s1 = g1[0][0].bnode_id().unwrap();
+        let s2 = g2[0][0].bnode_id().unwrap();
+        let s3 = g3[0][0].bnode_id().unwrap();
+
+        assert!(s1.starts_with("s_"));
+        assert!(s2.starts_with("s_"));
+        assert_ne!(s1, s2);
+        assert_eq!(s3.as_str(), "s");
     }
 }

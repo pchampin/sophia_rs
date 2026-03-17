@@ -601,7 +601,7 @@ fn triple_term(s: &str, p: &str, o: &str) -> TestResult {
     let asserted = format!("PREFIX : <x:> {s} {p} {o} .");
     let triple_term = format!("PREFIX : <x:> : a <<( {s} {p} {o} )>> .");
 
-    let p = TurtleParser::new();
+    let p = TurtleParser::new().with_preserve_bn_labels(true);
     let g1 = p
         .parse_str(&asserted)
         .collect_triples::<Vec<[SimpleTerm<'static>; 3]>>()?;
@@ -625,11 +625,11 @@ fn reified_triple(s: &str, p: &str, o: &str) -> TestResult {
     let asserted = format!("PREFIX : <x:> {s} {p} {o} .");
     let triple_term = format!("PREFIX : <x:> << {s} {p} {o} ~ :r >> .");
 
-    let ts = TurtleParser::new();
-    let g1 = ts
+    let p = TurtleParser::new().with_preserve_bn_labels(true);
+    let g1 = p
         .parse_str(&asserted)
         .collect_triples::<Vec<[SimpleTerm<'static>; 3]>>()?;
-    let g2 = ts
+    let g2 = p
         .parse_str(&triple_term)
         .collect_triples::<Vec<[SimpleTerm<'static>; 3]>>()?;
     assert_eq!(g1.len(), 1);
@@ -656,11 +656,11 @@ fn nested_reified_triple() -> TestResult {
         :j :k :l.
     ";
 
-    let ts = TurtleParser::new();
-    let g1 = ts
+    let p = TurtleParser::new().with_preserve_bn_labels(true);
+    let g1 = p
         .parse_str(input)
         .collect_triples::<Vec<[SimpleTerm<'static>; 3]>>()?;
-    let g2 = ts
+    let g2 = p
         .parse_str(expected)
         .collect_triples::<Vec<[SimpleTerm<'static>; 3]>>()?;
     assert_eq!(g1, g2);
@@ -780,6 +780,33 @@ fn samples(name: &str) {
         })
         .unwrap();
     debug_assert_eq!(c, *count)
+}
+
+#[test]
+fn bnode_labels() {
+    static TTL: &str = "_:s a 42 .";
+    let g1: Vec<[SimpleTerm; 3]> = TurtleParser::new()
+        .parse_str(TTL)
+        .collect_triples()
+        .unwrap();
+    let g2: Vec<[SimpleTerm; 3]> = TurtleParser::new()
+        .parse_str(TTL)
+        .collect_triples()
+        .unwrap();
+    let g3: Vec<[SimpleTerm; 3]> = TurtleParser::new()
+        .with_preserve_bn_labels(true)
+        .parse_str(TTL)
+        .collect_triples()
+        .unwrap();
+
+    let s1 = g1[0][0].bnode_id().unwrap();
+    let s2 = g2[0][0].bnode_id().unwrap();
+    let s3 = g3[0][0].bnode_id().unwrap();
+
+    assert!(s1.starts_with("s_"));
+    assert!(s2.starts_with("s_"));
+    assert_ne!(s1, s2);
+    assert_eq!(s3.as_str(), "s");
 }
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;

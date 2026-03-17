@@ -556,7 +556,7 @@ fn triple_term(s: &str, p: &str, o: &str) -> TestResult {
     let asserted = format!("PREFIX : <x:> {s} {p} {o} .");
     let triple_term = format!("PREFIX : <x:> : a <<( {s} {p} {o} )>> .");
 
-    let p = GTriGParser::new();
+    let p = GTriGParser::new().with_preserve_bn_labels(true);
     let g1 = p
         .parse_str(&asserted)
         .collect_quads::<Vec<Spog<SimpleTerm<'static>>>>()?;
@@ -578,13 +578,13 @@ fn triple_term(s: &str, p: &str, o: &str) -> TestResult {
 )]
 fn reified_triple(s: &str, p: &str, o: &str) -> TestResult {
     let asserted = format!("PREFIX : <x:> {s} {p} {o} .");
-    let triple_term = format!("PREFIX : <x:> << {s} {p} {o} ~ :r >> .");
+    let triple_term = format!("PREFIX : <x:> : a <<( {s} {p} {o} )>> .");
 
-    let qs = GTriGParser::new();
-    let d1 = qs
+    let p = GTriGParser::new().with_preserve_bn_labels(true);
+    let d1 = p
         .parse_str(&asserted)
         .collect_quads::<Vec<Spog<SimpleTerm<'static>>>>()?;
-    let d2 = qs
+    let d2 = p
         .parse_str(&triple_term)
         .collect_quads::<Vec<Spog<SimpleTerm<'static>>>>()?;
     assert_eq!(d1.len(), 1);
@@ -611,11 +611,11 @@ fn nested_reified_triple() -> TestResult {
         :j :k :l.
     ";
 
-    let qs = GTriGParser::new();
-    let d1 = qs
+    let p = GTriGParser::new().with_preserve_bn_labels(true);
+    let d1 = p
         .parse_str(input)
         .collect_quads::<Vec<Spog<SimpleTerm<'static>>>>()?;
-    let d2 = qs
+    let d2 = p
         .parse_str(expected)
         .collect_quads::<Vec<Spog<SimpleTerm<'static>>>>()?;
     assert_eq!(d1, d2);
@@ -1119,6 +1119,28 @@ fn roundtrip_pretty(key: &str) -> TestResult {
 
     assert!(isomorphic_datasets(&d1, &d2)?);
     Ok(())
+}
+
+#[test]
+fn bnode_labels() {
+    static TRIG: &str = "<x:g> { _:s a 42 }";
+    let d1: Vec<Spog<SimpleTerm>> = GTriGParser::new().parse_str(TRIG).collect_quads().unwrap();
+    let d2: Vec<Spog<SimpleTerm>> = GTriGParser::new().parse_str(TRIG).collect_quads().unwrap();
+    let d3: Vec<Spog<SimpleTerm>> = GTriGParser::new()
+        .with_preserve_bn_labels(true)
+        .parse_str(TRIG)
+        .collect_quads()
+        .unwrap();
+
+    dbg!(&d1);
+    let s1 = d1[0].0[0].bnode_id().unwrap();
+    let s2 = d2[0].0[0].bnode_id().unwrap();
+    let s3 = d3[0].0[0].bnode_id().unwrap();
+
+    assert!(s1.starts_with("s_"));
+    assert!(s2.starts_with("s_"));
+    assert_ne!(s1, s2);
+    assert_eq!(s3.as_str(), "s");
 }
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
