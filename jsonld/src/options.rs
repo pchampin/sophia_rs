@@ -1,17 +1,10 @@
 //! Defines types for configuring JSON-LD processing.
 
-use std::fmt::Display;
-use std::sync::Arc;
-
 use json_ld::Loader;
 pub use json_ld::Options;
 pub use json_ld::ProcessingMode;
 pub use json_ld::expansion::Policy;
 pub use json_ld::rdf::RdfDirection;
-use json_ld::syntax::context::Value as ContextValue;
-use json_syntax::Value;
-use locspan::Location;
-use locspan::Span;
 use sophia_iri::Iri;
 
 use crate::context::{ContextRef, IntoContextRef, TryIntoContextRef};
@@ -54,7 +47,7 @@ impl<LF> JsonLdOptions<LF> {
     ///
     /// [`base`]: https://www.w3.org/TR/json-ld11-api/#dom-jsonldoptions-base
     pub fn base(&self) -> Option<Iri<&str>> {
-        self.inner.base.as_ref().map(|i| i.as_ref())
+        self.inner.base.as_ref().map(Iri::as_ref)
     }
 
     /// [`compactArrays`] instructs the JSON-LD processor to replace arrays of one element with that element during [compaction].
@@ -231,8 +224,7 @@ impl<LF> JsonLdOptions<LF> {
         f: F,
     ) -> JsonLdOptions<ClosureLoaderFactory<L, F>>
     where
-        L: Loader<ArcIri, Location<Iri<Arc<str>>>, Output = Value<Location<ArcIri>>> + Send + Sync,
-        L::Error: Display + Send,
+        L: Loader + Send + Sync,
         F: Fn() -> L,
     {
         JsonLdOptions {
@@ -254,11 +246,7 @@ impl<LF> JsonLdOptions<LF> {
     /// [`JsonLdOptions::with_document_loader`],
     pub fn with_default_document_loader<L>(self) -> JsonLdOptions<DefaultLoaderFactory<L>>
     where
-        L: Loader<ArcIri, Location<Iri<Arc<str>>>, Output = Value<Location<ArcIri>>>
-            + Default
-            + Send
-            + Sync,
-        L::Error: Display + Send,
+        L: Loader + Default + Send + Sync,
     {
         JsonLdOptions {
             inner: self.inner,
@@ -282,11 +270,7 @@ impl<LF> JsonLdOptions<LF> {
         document_loader: L,
     ) -> JsonLdOptions<ClosureLoaderFactory<L, impl Fn() -> L>>
     where
-        L: Loader<ArcIri, Location<Iri<Arc<str>>>, Output = Value<Location<ArcIri>>>
-            + Clone
-            + Send
-            + Sync,
-        L::Error: Display + Send,
+        L: Loader + Clone + Send + Sync,
     {
         JsonLdOptions {
             inner: self.inner,
@@ -435,5 +419,4 @@ impl<LF> std::ops::Deref for JsonLdOptions<LF> {
 }
 
 /// Type alias for [`json_ld::Options`] as used in this crate.
-type InnerOptions =
-    json_ld::Options<ArcIri, Location<ArcIri, Span>, ContextValue<Location<ArcIri, Span>>>;
+type InnerOptions = json_ld::Options<ArcIri>;
