@@ -69,7 +69,7 @@ impl<'a, D: Dataset + ?Sized> Iterator for ConstructIter<'a, D> {
         let res = self.current.take()?;
         match res {
             Err(err) => Some(Err(err)),
-            Ok((binding, i)) if i >= self.template.len() => {
+            Ok((_, i)) if i >= self.template.len() => {
                 self.current = self.bindings.next().map(|res| res.map(|b| (b, 0)));
                 self.bnodes.clear();
                 self.next()
