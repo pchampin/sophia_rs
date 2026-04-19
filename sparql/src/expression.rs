@@ -189,8 +189,12 @@ impl ArcExpression {
             Literal(lit) => Some(ResultTerm::from(ArcTerm::Literal(lit.clone())).into()),
             Variable(var) => vbinding.get(var.as_str()).cloned().map(EvalResult::from),
             Or(lhs, rhs) => {
-                let lhs = lhs.eval(vbinding, state, graph_matcher)?.is_truthy();
-                let rhs = rhs.eval(vbinding, state, graph_matcher)?.is_truthy();
+                let lhs = lhs
+                    .eval(vbinding, state, graph_matcher)
+                    .and_then(|r| r.is_truthy());
+                let rhs = rhs
+                    .eval(vbinding, state, graph_matcher)
+                    .and_then(|r| r.is_truthy());
                 match (lhs, rhs) {
                     (Some(a), Some(b)) => Some(a || b),
                     (Some(true), None) | (None, Some(true)) => Some(true),
@@ -199,8 +203,12 @@ impl ArcExpression {
                 .map(EvalResult::from)
             }
             And(lhs, rhs) => {
-                let lhs = lhs.eval(vbinding, state, graph_matcher)?.is_truthy();
-                let rhs = rhs.eval(vbinding, state, graph_matcher)?.is_truthy();
+                let lhs = lhs
+                    .eval(vbinding, state, graph_matcher)
+                    .and_then(|r| r.is_truthy());
+                let rhs = rhs
+                    .eval(vbinding, state, graph_matcher)
+                    .and_then(|r| r.is_truthy());
                 match (lhs, rhs) {
                     (Some(a), Some(b)) => Some(a && b),
                     (Some(false), None) | (None, Some(false)) => Some(false),
