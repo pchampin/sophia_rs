@@ -237,9 +237,13 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         let variables = populate_variables(patterns, &mut self.stash_mut(), context);
 
         if patterns.is_empty() {
-            let term_matcher: Vec<_> = graph_matcher.iter().filter_map(Clone::clone).collect();
+            let term_matcher: Vec<_> = graph_matcher
+                .default_graphs()
+                .iter()
+                .filter_map(Clone::clone)
+                .collect();
             let graph_exist = {
-                if term_matcher.len() < graph_matcher.len() {
+                if term_matcher.len() < graph_matcher.default_graphs().len() {
                     // graph_matcher contains None, i.e. the default graph,
                     // and the default_graph always exist
                     true
@@ -474,7 +478,9 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         if let SparqlMatcher::Bound(t) = smatcher {
             Box::new(std::iter::once(Ok(t.unwrap())))
         } else {
-            let active_graph = self.dataset().partial_union_graph(&graph_matcher[..]);
+            let active_graph = self
+                .dataset()
+                .partial_union_graph(graph_matcher.default_graphs());
             let nodes: Result<HashSet<_>, _> = active_graph
                 .subjects_matching(smatcher.clone())
                 .chain(active_graph.objects_matching(smatcher))
@@ -687,7 +693,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                         Err(err) => Bindings::err(err),
                         Ok(graph_names) if graph_names.is_empty() => Bindings::empty(),
                         Ok(graph_names) => {
-                            let dummy_matcher = GraphMatcher::empty();
+                            let dummy_matcher = GraphMatcher::default();
                             let variables = self.select(inner, &dummy_matcher, None).variables;
                             let iter = Box::new(graph_iter::GraphIter::new(
                                 self,
