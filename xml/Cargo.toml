@@ -15,8 +15,8 @@ keywords.workspace = true
 [dependencies]
 log.workspace = true
 oxiri.workspace = true
-oxrdf = { version = "0.3.3", features = ["rdf-12"] }
-oxrdfxml = { version = "0.2.3", features = ["rdf-12"] }
+oxrdf.workspace = true
+oxrdfxml = { version = "0.2", features = ["rdf-12"] }
 sophia_api.workspace = true
 sophia_iri.workspace = true
 

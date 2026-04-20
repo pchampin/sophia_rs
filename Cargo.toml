@@ -46,20 +46,21 @@ sophia_xml = { version = "0.9.0", path = "./xml" }
 criterion = "0.5"
 env_logger = "0.11"
 futures-util = "0.3"
-lazy_static = "1.5"
+lazy_static = "1"
 log = "0.4"
 mownstr = "0.3"
 oxiri = "0.2"
-regex = "1.11"
+oxrdf = { version = "0.3", features = ["rdf-12"] }
+regex = "1"
 resiter = "0.5"
-serde = { version = "1.0", features = ["derive"] }
-sha2 = "0.10"
-test-case = "3.3"
-thiserror = "2.0"
-tokio = { version="1.41", features = ["rt", "sync"] }
-toml = "0.8"
-url = "2.5"
-uuid = "1.11"
+serde = { version = "1", features = ["derive"] }
+sha2 = "0.11"
+test-case = "3"
+thiserror = "2"
+tokio = { version="1", features = ["rt", "sync"] }
+toml = "1"
+url = "2"
+uuid = "1"
 
 [profile.release]
 lto = true

@@ -3,6 +3,7 @@ use std::{
     sync::{Arc, LazyLock},
 };
 
+use base16ct::HexDisplay;
 use bigdecimal::{BigDecimal, FromPrimitive, One, RoundingMode, Signed, Zero};
 use chrono::{Datelike, Timelike};
 use num_bigint::BigInt;
@@ -18,7 +19,7 @@ use sophia_api::{
 use sophia_term::GenericLiteral;
 use spargebra::algebra::Function::{self, *};
 use uuid::{
-    Uuid,
+    self,
     fmt::{Hyphenated, Urn},
 };
 
@@ -580,7 +581,7 @@ fn make_regex(pattern: &str, flags: Option<&Arc<str>>) -> Option<Regex> {
 }
 
 pub fn bnode0() -> EvalResult {
-    let bnid = Uuid::now_v7().to_string();
+    let bnid = uuid::Uuid::now_v7().to_string();
     let bnid = BnodeId::<Arc<str>>::new_unchecked(bnid.into());
     bnid.into()
 }
@@ -857,7 +858,7 @@ pub fn tz(valid_xsd_date_time: &str) -> EvalResult {
 
 pub fn uuid() -> EvalResult {
     let mut buf = vec![b' '; Urn::LENGTH];
-    Uuid::new_v4().urn().encode_lower(&mut buf[..]);
+    uuid::Uuid::new_v4().urn().encode_lower(&mut buf[..]);
     let str = unsafe {
         // SAFETY: we now that buf contain only ASCII characters
         String::from_utf8_unchecked(buf)
@@ -867,7 +868,7 @@ pub fn uuid() -> EvalResult {
 
 pub fn str_uuid() -> EvalResult {
     let mut buf = vec![b' '; Hyphenated::LENGTH];
-    Uuid::new_v4().hyphenated().encode_lower(&mut buf[..]);
+    uuid::Uuid::new_v4().hyphenated().encode_lower(&mut buf[..]);
     let str = unsafe {
         // SAFETY: we now that buf contain only ASCII characters
         String::from_utf8_unchecked(buf)
@@ -882,19 +883,20 @@ pub fn md5_(arg: &str) -> EvalResult {
 pub fn sha1(arg: &str) -> EvalResult {
     let mut hasher = Sha1::new();
     hasher.update(arg.as_bytes());
-    Arc::<str>::from(format!("{:x}", hasher.finalize())).into()
+    let array = hasher.finalize();
+    Arc::<str>::from(format!("{:x}", HexDisplay(&array))).into()
 }
 
 pub fn sha256(arg: &str) -> EvalResult {
-    Arc::<str>::from(format!("{:x}", Sha256::digest(arg))).into()
+    Arc::<str>::from(format!("{:x}", HexDisplay(&Sha256::digest(arg)))).into()
 }
 
 pub fn sha384(arg: &str) -> EvalResult {
-    Arc::<str>::from(format!("{:x}", Sha384::digest(arg))).into()
+    Arc::<str>::from(format!("{:x}", HexDisplay(&Sha384::digest(arg)))).into()
 }
 
 pub fn sha512(arg: &str) -> EvalResult {
-    Arc::<str>::from(format!("{:x}", Sha512::digest(arg))).into()
+    Arc::<str>::from(format!("{:x}", HexDisplay(&Sha512::digest(arg)))).into()
 }
 
 pub fn str_lang(lex: &str, lang: &str) -> Option<EvalResult> {

@@ -285,6 +285,14 @@ pub enum Error {
         quick_xml::Error,
     ),
 
+    #[error("XML encoding error: {0}")]
+    /// Invalid XML syntax was returned by the SPARQL endpoint.
+    XmlEncoding(
+        #[source]
+        #[from]
+        quick_xml::encoding::EncodingError,
+    ),
+
     #[error("XML results structural error: {0}")]
     /// Invalid XML Sparql results were returned by the SPARQL endpoint.
     SparqlXml(String),

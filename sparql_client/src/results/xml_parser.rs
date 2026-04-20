@@ -6,6 +6,7 @@ use std::{borrow::Cow, io::BufRead};
 
 use quick_xml::{
     NsReader,
+    encoding::EncodingError,
     events::{
         BytesStart, BytesText,
         Event::{CData, Empty, End, Eof, Start, Text},
@@ -42,7 +43,7 @@ impl<R: BufRead> SparqlXmlParser<R> {
         let mut links: Vec<Box<str>> = vec![];
         if !empty_head {
             while let Some(elt) = self.next_empty()? {
-                let (ns, local_name) = self.events.resolve_element(elt.name());
+                let (ns, local_name) = self.events.resolver().resolve_element(elt.name());
                 if ns != ResolveResult::Bound(NS) {
                     return Err(SparqlXml(format!(
                         "Unrecognized element in <head>: {local_name:?}"
@@ -102,7 +103,7 @@ impl<R: BufRead> SparqlXmlParser<R> {
     }
 
     fn parse_term(&mut self, start: &BytesStart<'static>, name: &str) -> Result<Term, Error> {
-        let (ns, local_name) = self.events.resolve_element(start.name());
+        let (ns, local_name) = self.events.resolver().resolve_element(start.name());
         if ns != ResolveResult::Bound(NS) {
             return Err(SparqlXml(format!(
                 "Unrecognized term in <binding name='{}'>: {:?}",
@@ -277,17 +278,17 @@ impl<R: BufRead> SparqlXmlParser<R> {
     }
 
     fn check_element(&mut self, start: &BytesStart<'_>, local_name: &str) -> bool {
-        let (ns, local) = self.events.resolve_element(start.name());
+        let (ns, local) = self.events.resolver().resolve_element(start.name());
         local.as_ref() == local_name.as_bytes() && ns == ResolveResult::Bound(NS)
     }
 }
 
-fn txt(mut bytes_text: BytesText<'_>) -> Result<Option<Cow<'_, str>>, Error> {
+fn txt(mut bytes_text: BytesText<'_>) -> Result<Option<Cow<'_, str>>, EncodingError> {
     bytes_text.inplace_trim_start();
     if bytes_text.inplace_trim_end() {
         Ok(None)
     } else {
-        Ok(Some(bytes_text.unescape()?))
+        Ok(Some(bytes_text.xml11_content()?))
     }
 }
 
