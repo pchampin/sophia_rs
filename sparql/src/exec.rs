@@ -695,9 +695,11 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             let NamedNodePattern::Variable(var) = name else {
                 unreachable!()
             };
-            let res = self
-                .dataset()
-                .graph_names()
+            let graph_names: Box<dyn Iterator<Item = _>> = match graph_matcher.named_graphs() {
+                None => Box::new(self.dataset().graph_names()),
+                Some(matchers) => Box::new(self.dataset().graph_names_matching(matchers)),
+            };
+            let res = graph_names
                 .map(|res| res.map(|t| self.stash_mut().copy_term(t)))
                 .collect::<Result<BTreeSet<_>, _>>()
                 .map_err(SparqlWrapperError::Dataset);

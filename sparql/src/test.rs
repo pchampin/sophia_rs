@@ -53,9 +53,24 @@ use test_case::test_case;
     "Albert's name in all graphs"
 )]
 #[test_case(
+    "SELECT ?x FROM NAMED <#g> { GRAPH ?g { <#a> s:name ?x } }",
+    vec![];
+    "Albert's name in all graphs with FROM NAMED"
+)]
+#[test_case(
     "SELECT ?x { GRAPH ?g { ?y s:name ?x } }",
     vec!["\"Albert\"^^<http://www.w3.org/2001/XMLSchema#string>", "\"Alice\"^^<http://www.w3.org/2001/XMLSchema#string>"];
     "names in all graphs"
+)]
+#[test_case(
+    "SELECT ?x FROM NAMED <#g> FROM NAMED <#h> { GRAPH ?g { ?y s:name ?x } }",
+    vec!["\"Alice\"^^<http://www.w3.org/2001/XMLSchema#string>"];
+    "names in all graphs with FROM NAMED"
+)]
+#[test_case(
+    "SELECT ?x FROM NAMED <#h> { GRAPH ?g { ?y s:name ?x } }",
+    vec![];
+    "names in all graphs with FROM NAMED others"
 )]
 #[test_case(
     "SELECT ?x { GRAPH <#g> { ?y s:name ?x } }",
