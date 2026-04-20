@@ -50,17 +50,42 @@ use test_case::test_case;
 #[test_case(
     "SELECT ?x { GRAPH ?g { <#a> s:name ?x } }",
     vec!["\"Albert\"^^<http://www.w3.org/2001/XMLSchema#string>"];
-    "name in g"
+    "Albert's name in all graphs"
 )]
 #[test_case(
     "SELECT ?x { GRAPH ?g { ?y s:name ?x } }",
     vec!["\"Albert\"^^<http://www.w3.org/2001/XMLSchema#string>", "\"Alice\"^^<http://www.w3.org/2001/XMLSchema#string>"];
+    "names in all graphs"
+)]
+#[test_case(
+    "SELECT ?x { GRAPH <#g> { ?y s:name ?x } }",
+    vec!["\"Alice\"^^<http://www.w3.org/2001/XMLSchema#string>"];
     "names in g"
+)]
+#[test_case(
+    "SELECT ?x FROM NAMED <#g> { GRAPH <#g> { ?y s:name ?x } }",
+    vec!["\"Alice\"^^<http://www.w3.org/2001/XMLSchema#string>"];
+    "names in g with FROM NAMED g"
+)]
+#[test_case(
+    "SELECT ?x FROM NAMED <#h> { GRAPH <#g> { ?y s:name ?x } }",
+    vec![];
+    "names in g with FROM NAMED h"
+)]
+#[test_case(
+    "SELECT ?x { GRAPH ?g { ?x s:name ?y } }",
+    vec!["<https://example.org/test#a>", "<https://example.org/test#b>"];
+    "named in all graphs"
 )]
 #[test_case(
     "SELECT ?x { GRAPH ?g { ?x s:name ?y } }",
     vec!["<https://example.org/test#a>", "<https://example.org/test#b>"];
     "named in g"
+)]
+#[test_case(
+    "SELECT ?x FROM <#g> { ?x s:name ?y }",
+    vec!["<https://example.org/test#b>"];
+    "named in g with FROM clause"
 )]
 #[test_case(
     "SELECT ?x { <#a> s:name ?n. BIND (?n as ?n2) GRAPH ?g { ?x s:name ?n2 } }",
@@ -144,6 +169,8 @@ fn test_select_1_multiple_occurrences(query: &str, exp: Vec<&str>) -> TestResult
 
 #[test_case("SELECT * { GRAPH <#g> {} }", false; "graph exist")]
 #[test_case("SELECT * { GRAPH <#absent> {} }", true; "graph not exist")]
+#[test_case("SELECT * FROM NAMED <#g> { GRAPH <#g> {} }", false; "graph exist and named")]
+#[test_case("SELECT * FROM NAMED <#h> { GRAPH <#g> {} }", true; "graph exist but not named")]
 fn test_select_0_or_ask(query: &str, empty: bool) -> TestResult {
     let dataset = dataset_101()?;
     let dataset = SparqlWrapper(&dataset);

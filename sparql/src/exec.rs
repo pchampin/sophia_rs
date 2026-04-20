@@ -145,7 +145,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             } => self.left_join(left, right, expression, graph_matcher, context),
             Filter { expr, inner } => self.filter(expr, inner, graph_matcher, context),
             Union { left, right } => self.union(left, right, graph_matcher, context),
-            Graph { name, inner } => self.graph(name, inner, context),
+            Graph { name, inner } => self.graph(name, inner, graph_matcher, context),
             Extend {
                 inner,
                 variable,
@@ -665,46 +665,55 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         self: &Arc<Self>,
         name: &NamedNodePattern,
         inner: &GraphPattern,
+        graph_matcher: &GraphMatcher,
         context: Option<&Binding>,
     ) -> Bindings<'a, D> {
-        match name {
-            NamedNodePattern::NamedNode(nn) => {
-                let graph_matcher = GraphMatcher::from([Some(ArcTerm::Iri(
-                    IriRef::new_unchecked(self.stash_mut().copy_str(nn.as_str())),
-                ))]);
-                self.select(inner, &graph_matcher, context)
-            }
+        let bound = match name {
+            NamedNodePattern::NamedNode(nn) => Some(ArcTerm::Iri(IriRef::new_unchecked(
+                self.stash_mut().copy_str(nn.as_str()),
+            ))),
             NamedNodePattern::Variable(var) => {
-                if let Some(name) = context.and_then(|b| b.v.get(var.as_str())) {
-                    let graph_matcher = GraphMatcher::from([Some(name.inner().clone())]);
-                    self.select(inner, &graph_matcher, context)
-                } else {
-                    // TODO this could be implemented as a flatmap instead,
-                    // although that would need
-                    // - to deal specifically with the case where no graphs are mapped
-                    // - to extract the first binding just to get the variables
-                    let res = self
-                        .dataset()
-                        .graph_names()
-                        .map(|res| res.map(|t| self.stash_mut().copy_term(t)))
-                        .collect::<Result<BTreeSet<_>, _>>()
-                        .map_err(SparqlWrapperError::Dataset);
-                    match res {
-                        Err(err) => Bindings::err(err),
-                        Ok(graph_names) if graph_names.is_empty() => Bindings::empty(),
-                        Ok(graph_names) => {
-                            let dummy_matcher = GraphMatcher::default();
-                            let variables = self.select(inner, &dummy_matcher, None).variables;
-                            let iter = Box::new(graph_iter::GraphIter::new(
-                                self,
-                                context,
-                                var,
-                                graph_names,
-                                inner,
-                            ));
-                            Bindings { variables, iter }
-                        }
-                    }
+                context.and_then(|b| b.v.get(var.as_str()).map(|rt| rt.inner().clone()))
+            }
+        };
+        if let Some(graph_name) = bound {
+            if let Some(named_graphs) = graph_matcher.named_graphs()
+                && !named_graphs.matches(&graph_name)
+            {
+                let variables = self
+                    .select(inner, &GraphMatcher::default(), context)
+                    .variables;
+                Bindings::empty_with(variables)
+            } else {
+                self.select(inner, &GraphMatcher::from([Some(graph_name)]), context)
+            }
+        } else {
+            // TODO this could be implemented as a flatmap instead,
+            // although that would need
+            // - to deal specifically with the case where no graphs are mapped
+            // - to extract the first binding just to get the variables
+            let NamedNodePattern::Variable(var) = name else {
+                unreachable!()
+            };
+            let res = self
+                .dataset()
+                .graph_names()
+                .map(|res| res.map(|t| self.stash_mut().copy_term(t)))
+                .collect::<Result<BTreeSet<_>, _>>()
+                .map_err(SparqlWrapperError::Dataset);
+            match res {
+                Err(err) => Bindings::err(err),
+                Ok(graph_names) if graph_names.is_empty() => Bindings::empty(),
+                Ok(graph_names) => {
+                    let variables = self.select(inner, &GraphMatcher::default(), None).variables;
+                    let iter = Box::new(graph_iter::GraphIter::new(
+                        self,
+                        context,
+                        var,
+                        graph_names,
+                        inner,
+                    ));
+                    Bindings { variables, iter }
                 }
             }
         }
