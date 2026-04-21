@@ -23,6 +23,7 @@ pub struct GraphIter<'a, D: Dataset + ?Sized> {
     graph_names: btree_set::IntoIter<ArcTerm>,
     inner: GraphPattern,
     inner_iter: Option<BindingsIter<'a, D>>,
+    current_graph_name: ArcTerm,
 }
 
 impl<'a, D: Dataset + ?Sized> GraphIter<'a, D> {
@@ -39,6 +40,7 @@ impl<'a, D: Dataset + ?Sized> GraphIter<'a, D> {
         let graph_names = graph_names.into_iter();
         let inner = inner.clone();
         let inner_iter: Option<BindingsIter<'a, D>> = Some(Box::new(std::iter::empty()));
+        let current_graph_name = ArcTerm::Iri(sophia_iri::IriRef::new_unchecked(Arc::from("")));
         Self {
             state,
             context,
@@ -46,6 +48,7 @@ impl<'a, D: Dataset + ?Sized> GraphIter<'a, D> {
             graph_names,
             inner,
             inner_iter,
+            current_graph_name,
         }
     }
 }
@@ -56,8 +59,13 @@ impl<'a, D: Dataset + ?Sized> Iterator for GraphIter<'a, D> {
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(iter) = &mut self.inner_iter {
             if let Some(res) = iter.next() {
-                Some(res)
+                Some(res.map(|mut b| {
+                    b.v.entry(self.variable.clone().unwrap())
+                        .or_insert_with(|| self.current_graph_name.clone().into());
+                    b
+                }))
             } else if let Some(graph_name) = self.graph_names.next() {
+                self.current_graph_name = graph_name.clone();
                 let mut context = self.context.clone().unwrap_or_default();
                 context
                     .v

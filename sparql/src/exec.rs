@@ -688,26 +688,23 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 self.select(inner, &GraphMatcher::from([Some(graph_name)]), context)
             }
         } else {
-            // TODO this could be implemented as a flatmap instead,
-            // although that would need
-            // - to deal specifically with the case where no graphs are mapped
-            // - to extract the first binding just to get the variables
             let NamedNodePattern::Variable(var) = name else {
                 unreachable!()
             };
-            let graph_names: Box<dyn Iterator<Item = _>> = match graph_matcher.named_graphs() {
-                None => Box::new(self.dataset().graph_names()),
-                Some(matchers) => Box::new(self.dataset().graph_names_matching(matchers)),
-            };
-            let res = graph_names
-                .map(|res| res.map(|t| self.stash_mut().copy_term(t)))
-                .collect::<Result<BTreeSet<_>, _>>()
-                .map_err(SparqlWrapperError::Dataset);
+            let res: Result<BTreeSet<_>, _> = match graph_matcher.named_graphs() {
+                None => self
+                    .dataset()
+                    .graph_names()
+                    .map(|res| res.map(|t| self.stash_mut().copy_term(t)))
+                    .collect(),
+                Some(matchers) => Ok(matchers.iter().cloned().collect()),
+            }
+            .map_err(SparqlWrapperError::Dataset);
+            let variables = self.select(inner, &GraphMatcher::default(), None).variables;
             match res {
-                Err(err) => Bindings::err(err),
-                Ok(graph_names) if graph_names.is_empty() => Bindings::empty(),
+                Err(err) => Bindings::err_with(err, variables),
+                Ok(graph_names) if graph_names.is_empty() => Bindings::empty_with(variables),
                 Ok(graph_names) => {
-                    let variables = self.select(inner, &GraphMatcher::default(), None).variables;
                     let iter = Box::new(graph_iter::GraphIter::new(
                         self,
                         context,

@@ -1025,6 +1025,54 @@ fn test_graph_and_optional(query: &str, exp: Vec<[&str; 2]>) -> TestResult {
 }
 
 #[test]
+fn test_count_in_graph() -> TestResult {
+    let dataset: LightDataset = dataset_101()?;
+    let dataset = SparqlWrapper(&dataset);
+
+    let query = "SELECT (iri(?g) as ?h) ?c { GRAPH ?g { SELECT (COUNT(*) as ?c) { ?s ?p ?o } } } ORDER BY ?g";
+    let parsed_query = SparqlQuery::parse(query)?;
+    let bindings = dataset.query(&parsed_query)?.into_bindings();
+    assert_eq!(bindings.variables(), &["h", "c"]);
+    let got = bindings_to_vec_of_arrays(bindings, ["h", "c"]);
+    assert_eq!(
+        got,
+        vec![
+            ["", "\"1\"^^<http://www.w3.org/2001/XMLSchema#integer>"],
+            [
+                "<https://example.org/test#g>",
+                "\"2\"^^<http://www.w3.org/2001/XMLSchema#integer>"
+            ],
+        ]
+    );
+
+    let query = r#"
+        BASE <https://example.org/test>
+        SELECT ?g ?c
+        FROM NAMED <#g> FROM NAMED <#h>
+        { GRAPH ?g { SELECT (COUNT(*) as ?c) { ?s ?p ?o } } }
+        ORDER BY ?g
+    "#;
+    let parsed_query = SparqlQuery::parse(query)?;
+    let bindings = dataset.query(&parsed_query)?.into_bindings();
+    assert_eq!(bindings.variables(), &["g", "c"]);
+    let got = bindings_to_vec_of_arrays(bindings, ["g", "c"]);
+    assert_eq!(
+        got,
+        vec![
+            [
+                "<https://example.org/test#g>",
+                "\"2\"^^<http://www.w3.org/2001/XMLSchema#integer>"
+            ],
+            [
+                "<https://example.org/test#h>",
+                "\"0\"^^<http://www.w3.org/2001/XMLSchema#integer>"
+            ],
+        ]
+    );
+    Ok(())
+}
+
+#[test]
 fn test_expr_iri() -> TestResult {
     assert_eq!(
         eval_expr("<http://schema.org/name>")?,
