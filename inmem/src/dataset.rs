@@ -29,6 +29,16 @@ impl<TI: GraphNameIndex + Default> GenericLightDataset<TI> {
             quads: BTreeSet::new(),
         }
     }
+
+    /// Borrow this dataset's term index
+    pub fn terms(&self) -> &TI {
+        &self.terms
+    }
+
+    /// Borrow mutably this dataset's term index
+    pub fn terms_mut(&mut self) -> &mut TI {
+        &mut self.terms
+    }
 }
 
 impl<TI: GraphNameIndex> Dataset for GenericLightDataset<TI> {
@@ -224,6 +234,16 @@ impl<TI: GraphNameIndex + Default> GenericFastDataset<TI> {
             posg: BTreeSet::new(),
             ospg: BTreeSet::new(),
         }
+    }
+
+    /// Borrow this dataset's term index
+    pub fn terms(&self) -> &TI {
+        &self.terms
+    }
+
+    /// Borrow mutably this dataset's term index
+    pub fn terms_mut(&mut self) -> &mut TI {
+        &mut self.terms
     }
 }
 

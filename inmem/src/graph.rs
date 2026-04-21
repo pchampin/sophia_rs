@@ -28,6 +28,16 @@ impl<TI: TermIndex + Default> GenericLightGraph<TI> {
             triples: BTreeSet::new(),
         }
     }
+
+    /// Borrow this graph's term index
+    pub fn terms(&self) -> &TI {
+        &self.terms
+    }
+
+    /// Borrow mutably this graph's term index
+    pub fn terms_mut(&mut self) -> &mut TI {
+        &mut self.terms
+    }
 }
 
 impl<TI: TermIndex> Graph for GenericLightGraph<TI> {
@@ -167,6 +177,16 @@ impl<TI: TermIndex + Default> GenericFastGraph<TI> {
             pos: BTreeSet::new(),
             osp: BTreeSet::new(),
         }
+    }
+
+    /// Borrow this graph's term index
+    pub fn terms(&self) -> &TI {
+        &self.terms
+    }
+
+    /// Borrow mutably this graph's term index
+    pub fn terms_mut(&mut self) -> &mut TI {
+        &mut self.terms
     }
 }
 
