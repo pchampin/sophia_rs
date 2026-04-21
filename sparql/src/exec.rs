@@ -983,6 +983,11 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             groups.entry(key).or_default().push(b.v);
         }
 
+        // no result with no GROUP BY still generates one empty group
+        if groups.is_empty() && group_variables.is_empty() {
+            groups.insert(vec![], vec![]);
+        }
+
         let mut stash = self.stash_mut();
         let group_variables: Vec<_> = group_variables
             .iter()
