@@ -18,12 +18,11 @@ use crate::{
 
 pub struct GraphIter<'a, D: Dataset + ?Sized> {
     state: Arc<ExecState<'a, D>>,
-    context: Option<Binding>,
+    context: Binding,
     variable: VarName<Arc<str>>,
     graph_names: btree_set::IntoIter<ArcTerm>,
     inner: GraphPattern,
     inner_iter: Option<BindingsIter<'a, D>>,
-    current_graph_name: ArcTerm,
 }
 
 impl<'a, D: Dataset + ?Sized> GraphIter<'a, D> {
@@ -35,12 +34,11 @@ impl<'a, D: Dataset + ?Sized> GraphIter<'a, D> {
         inner: &GraphPattern,
     ) -> Self {
         let state = state.clone();
-        let context = context.cloned();
+        let context = context.cloned().unwrap_or_default();
         let variable = state.stash_mut().copy_variable(variable);
         let graph_names = graph_names.into_iter();
         let inner = inner.clone();
         let inner_iter: Option<BindingsIter<'a, D>> = Some(Box::new(std::iter::empty()));
-        let current_graph_name = ArcTerm::Iri(sophia_iri::IriRef::new_unchecked(Arc::from("")));
         Self {
             state,
             context,
@@ -48,7 +46,6 @@ impl<'a, D: Dataset + ?Sized> GraphIter<'a, D> {
             graph_names,
             inner,
             inner_iter,
-            current_graph_name,
         }
     }
 }
@@ -59,21 +56,23 @@ impl<'a, D: Dataset + ?Sized> Iterator for GraphIter<'a, D> {
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(iter) = &mut self.inner_iter {
             if let Some(res) = iter.next() {
-                Some(res.map(|mut b| {
-                    b.v.entry(self.variable.clone().unwrap())
-                        .or_insert_with(|| self.current_graph_name.clone().into());
-                    b
-                }))
+                if let Ok(b) = res {
+                    if let Some(b) = b.merge_if_compatible(Some(&self.context)) {
+                        Some(Ok(b))
+                    } else {
+                        self.next()
+                    }
+                } else {
+                    Some(res)
+                }
             } else if let Some(graph_name) = self.graph_names.next() {
-                self.current_graph_name = graph_name.clone();
-                let mut context = self.context.clone().unwrap_or_default();
-                context
+                self.context
                     .v
                     .insert(self.variable.clone().unwrap(), graph_name.clone().into());
                 let graph_matcher = GraphMatcher::from([Some(graph_name)]);
                 self.inner_iter = Some(
                     self.state
-                        .select(&self.inner, &graph_matcher, Some(&context))
+                        .select(&self.inner, &graph_matcher, Some(&self.context))
                         .iter,
                 );
                 self.next()
