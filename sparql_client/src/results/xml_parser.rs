@@ -56,35 +56,52 @@ impl<R: BufRead> SparqlXmlParser<R> {
                 }
             }
         }
-        if variables.is_empty() {
-            self.next_start_expecting("boolean")?;
-            let boolean = match self.next_text()?.as_ref() {
-                "true" => true,
-                "false" => false,
-                other => return Err(SparqlXml(format!("Unrecognized boolean value '{other}'"))),
-            };
-            Ok(ResultsDocument::Boolean {
-                head: BooleanHead { link: links },
-                boolean,
-            })
-        } else {
-            Ok(ResultsDocument::Bindings {
-                doc: BindingsDocument {
-                    head: BindingsHead {
-                        vars: variables,
-                        link: links,
+        if let Some((start, is_empty)) = self.next_start_or_empty()? {
+            if self.check_element(&start, "boolean") {
+                if !variables.is_empty() {
+                    Err(SparqlXml(
+                        "Got <boolean> while <head> contains variables.".into(),
+                    ))
+                } else if is_empty {
+                    Err(SparqlXml("Unrecognized boolean value ''".into()))
+                } else {
+                    let boolean = match self.next_text()?.as_ref() {
+                        "true" => true,
+                        "false" => false,
+                        other => {
+                            return Err(SparqlXml(format!("Unrecognized boolean value '{other}'")));
+                        }
+                    };
+                    Ok(ResultsDocument::Boolean {
+                        head: BooleanHead { link: links },
+                        boolean,
+                    })
+                }
+            } else if self.check_element(&start, "results") {
+                Ok(ResultsDocument::Bindings {
+                    doc: BindingsDocument {
+                        head: BindingsHead {
+                            vars: variables,
+                            link: links,
+                        },
+                        results: self.parse_bindings_results(is_empty)?,
                     },
-                    results: self.parse_bindings_results()?,
-                },
-            })
+                })
+            } else {
+                Err(SparqlXml(format!(
+                    "Expected <boolean> or <results>, got <{:?}>",
+                    start.name()
+                )))
+            }
+        } else {
+            Err(SparqlXml("Expected <boolean> or <results>".into()))
         }
     }
 
-    fn parse_bindings_results(&mut self) -> Result<Results, Error> {
-        let (_, results_is_empty) = self.next_start_or_empty_expecting("results")?;
+    fn parse_bindings_results(&mut self, is_empty: bool) -> Result<Results, Error> {
         let mut bindings: Vec<HashMap<Box<str>, Term>> = vec![];
 
-        if !results_is_empty {
+        if !is_empty {
             while self.next_start_expecting_maybe("result")?.is_some() {
                 let mut result = HashMap::new();
                 while let Some(binding) = self.next_start_expecting_maybe("binding")? {
@@ -384,6 +401,59 @@ mod test {
                         .collect::<HashMap<Box<str>, Term>>(),
                     ],
                 },
+            },
+        };
+        assert_eq!(got, exp);
+    }
+
+    #[test]
+    fn binding_docs_no_variable() {
+        let src = std::io::Cursor::new(
+            r#"<?xml version="1.0"?>
+            <sparql xmlns="http://www.w3.org/2005/sparql-results#">
+              <head>
+              </head>
+              <results>
+                <result></result>
+              </results>
+            </sparql>
+        "#,
+        );
+        let got = ResultsDocument::from_xml(src).unwrap();
+        let exp = ResultsDocument::Bindings {
+            doc: BindingsDocument {
+                head: BindingsHead {
+                    vars: vec![],
+                    link: vec![],
+                },
+                // results: Results {
+                results: Results {
+                    bindings: vec![vec![].into_iter().collect::<HashMap<Box<str>, Term>>()],
+                },
+            },
+        };
+        assert_eq!(got, exp);
+    }
+
+    #[test]
+    fn binding_docs_empty() {
+        let src = std::io::Cursor::new(
+            r#"<?xml version="1.0"?>
+            <sparql xmlns="http://www.w3.org/2005/sparql-results#">
+              <head/>
+              <results/>
+            </sparql>
+        "#,
+        );
+        let got = ResultsDocument::from_xml(src).unwrap();
+        let exp = ResultsDocument::Bindings {
+            doc: BindingsDocument {
+                head: BindingsHead {
+                    vars: vec![],
+                    link: vec![],
+                },
+                // results: Results {
+                results: Results { bindings: vec![] },
             },
         };
         assert_eq!(got, exp);
