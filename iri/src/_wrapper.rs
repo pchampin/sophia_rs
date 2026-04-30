@@ -45,6 +45,14 @@ wrap! { Iri borrowing str :
     pub fn to_iri_ref(self) -> IriRef<T> {
         IriRef::new_unchecked(self.0)
     }
+
+    #[cfg(feature = "uri")]
+    /// Turn this IRI into a [`Uri`](crate::uri::Uri)
+    /// assuming that it contains only ASCII characters.
+    pub fn to_uri_unchecked(self) -> crate::uri::Uri<T> {
+        debug_assert!(self.as_str().is_ascii());
+        crate::uri::Uri::new_unchecked(self.unwrap())
+    }
 }
 
 impl<T: Borrow<str>> IsIriRef for Iri<T> {}
@@ -92,6 +100,14 @@ wrap! { IriRef borrowing str :
         T: std::ops::Deref<Target = str>,
     {
         BaseIriRef::new(self.0).unwrap()
+    }
+
+    #[cfg(feature = "uri")]
+    /// Turn this IRI reference into a [`UriRef`](crate::uri::UriRef)
+    /// assuming that it contains only ASCII characters.
+    pub fn to_uri_ref_unchecked(self) -> crate::uri::UriRef<T> {
+        debug_assert!(self.as_str().is_ascii());
+        crate::uri::UriRef::new_unchecked(self.unwrap())
     }
 }
 

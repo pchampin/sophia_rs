@@ -31,6 +31,7 @@ default = ["serde"]
 test_data = []
 examples = []
 serde = ["dep:serde"]
+uri = []
 
 [[bench]]
 name = "bench1"

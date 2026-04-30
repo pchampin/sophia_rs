@@ -14,6 +14,9 @@
 //! - **examples** exposes the [`wrap_macro_examples`] module,
 //!   whose role is to exemplify the effect of the [`wrap`] macro.
 //!
+//! - **uri** exposes similar traits and types for dealing with URIs (RFC 3986),
+//!   which are basically the subset of IRIs using only ASCII characters.
+//!
 //! [Sophia]: https://docs.rs/sophia/latest/sophia/
 //! [RDF]: https://www.w3.org/TR/rdf12-primer/
 //! [Linked Data]: http://linkeddata.org/
@@ -32,6 +35,8 @@ mod _wrapper;
 pub use _wrapper::*;
 #[cfg(feature = "serde")]
 mod _serde;
+#[cfg(feature = "uri")]
+pub mod uri;
 
 pub mod relativize;
 pub mod resolve;

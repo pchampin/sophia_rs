@@ -2,7 +2,7 @@
 
 use thiserror::Error;
 
-/// Type alias for `Result` with default error `TermError`.
+/// Type alias for `Result` with default error `InvalidIri`.
 ///
 /// Can be used like `std::result::Result` as well.
 pub type Result<T, E = InvalidIri> = std::result::Result<T, E>;
