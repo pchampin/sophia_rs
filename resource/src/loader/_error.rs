@@ -12,7 +12,7 @@ pub enum LoaderError {
     NotFound(IriBuf),
     /// An IO error was encountered while loading the content
     #[error("IO error when reading {0:?}: {1}")]
-    IoError(IriBuf, io::Error),
+    IoError(IriBuf, #[source] io::Error),
     /// Can not guess the syntax of the resource
     /// (some loaders, such as [`LocalLoader`](crate::LocalLoader),
     /// do not always have access to content-type metadata)
@@ -20,7 +20,16 @@ pub enum LoaderError {
     CantGuessSyntax(IriBuf),
     /// An error was encountered while parsing the data into an RDF graph
     #[error("Can not parse {0:?}: {1}")]
-    ParseError(IriBuf, Box<dyn std::error::Error + Send + Sync + 'static>),
+    ParseError(
+        IriBuf,
+        #[source] Box<dyn std::error::Error + Send + Sync + 'static>,
+    ),
+    /// Another type of error occurred
+    #[error("Other error occurred getting {0:?}: {1}")]
+    Other(
+        IriBuf,
+        #[source] Box<dyn std::error::Error + Send + Sync + 'static>,
+    ),
 }
 
 impl LoaderError {
@@ -33,6 +42,7 @@ impl LoaderError {
             Self::IoError(iri, _) => iri,
             Self::CantGuessSyntax(iri) => iri,
             Self::ParseError(iri, _) => iri,
+            Self::Other(iri, _) => iri,
         };
         iri.clone()
     }
