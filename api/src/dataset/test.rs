@@ -899,7 +899,7 @@ macro_rules! test_dataset_impl {
                         rdf::type_.as_simple(), //StaticTerm::from_term(rdf::type_),
                     ]);
                     let t4 = StaticTerm::from_triple([
-                        "lit2"*EN,
+                        ("lit2"*EN).into_term(),
                         B1.as_simple(),
                         t3.clone(),
                     ]);

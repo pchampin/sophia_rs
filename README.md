@@ -15,6 +15,7 @@ It comprises the following crates:
     - terms, triples and quads,
     - graphs and datasets,
     - parsers and serializers
+  + [`sophia_bcp47`] provides functions and types for validating [BCP47](https://tools.ietf.org/search/bcp47) language tags.
   + [`sophia_iri`] provides functions, types and traits for validating and resolving IRIs.
   + [`sophia_term`] defines various implementations of the `Term` trait from `sophia_api`.
   + [`sophia_inmem`] defines in-memory implementations of the `Graph` and `Dataset` traits from `sophia_api`.
@@ -87,6 +88,7 @@ An outdated comparison of Sophia with other RDF libraries is still available
 
 
 [`sophia_api`]: https://crates.io/crates/sophia_api
+[`sophia_bcp47`]: https://crates.io/crates/sophia_bcp47
 [`sophia_c14n`]: https://crates.io/crates/sophia_c14n
 [`sophia_inmem`]: https://crates.io/crates/sophia_inmem
 [`sophia_iri`]: https://crates.io/crates/sophia_iri

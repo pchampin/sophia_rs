@@ -2,6 +2,7 @@
 
 members = [
     "api",
+    "bcp47",
     "c14n",
     "inmem",
     "iri",
@@ -30,6 +31,7 @@ keywords = ["rdf", "linked-data", "semantic-web", "w3c"] # no more than 5
 
 [workspace.dependencies]
 sophia_api = { version = "0.9.0", path = "./api" }
+sophia_bcp47 = { version = "0.9.0", path = "./bcp47" }
 sophia_c14n = { version = "0.9.0", path = "./c14n" }
 sophia_inmem = { version = "0.9.0", path = "./inmem" }
 sophia_iri = { version = "0.9.0", path = "./iri" }

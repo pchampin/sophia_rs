@@ -680,7 +680,7 @@ macro_rules! test_graph_impl {
                         rdf::type_.as_simple(),
                     ]);
                     let t4 = StaticTerm::from_triple([
-                        "lit2"*EN,
+                        ("lit2"*EN).into_term(),
                         B1.as_simple(),
                         t3.clone(),
                     ]);

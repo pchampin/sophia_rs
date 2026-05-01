@@ -26,6 +26,7 @@ serde = ["dep:serde"]
 
 
 [dependencies]
+sophia_bcp47.workspace = true
 sophia_iri.workspace = true
 lazy_static.workspace = true
 log.workspace = true

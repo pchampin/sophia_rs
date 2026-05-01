@@ -389,7 +389,7 @@ mod tests {
                 assert_eq!(bindings[1].as_ref().unwrap()[0], None);
                 assert_eq!(
                     bindings[1].as_ref().unwrap()[1],
-                    Some("lang" * LanguageTag::new_unchecked("en"))
+                    Some(("lang" * LanguageTag::new_unchecked("en")).into_term())
                 );
                 assert_eq!(bindings[1].as_ref().unwrap()[2], None);
                 assert_eq!(bindings[2].as_ref().unwrap()[0], None);

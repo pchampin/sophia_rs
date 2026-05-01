@@ -2,7 +2,7 @@
 
 use std::{fmt::Display, str::FromStr};
 
-use super::SimpleTerm;
+use super::{SimpleTerm, language_tag::I18nString};
 
 /// A datatype capturing the notion of [base direction](https://www.w3.org/TR/rdf12-concepts/#section-text-direction)
 /// defined by RDF 1.2.
@@ -36,6 +36,17 @@ impl FromStr for BaseDirection {
             "rtl" => Ok(Self::Rtl),
             _ => Err(()),
         }
+    }
+}
+
+impl<'a> std::ops::Mul<BaseDirection> for I18nString<&'a str> {
+    type Output = SimpleTerm<'a>;
+
+    fn mul(self, rhs: BaseDirection) -> Self::Output {
+        let I18nString { value, language } = self;
+        let lex = value.into();
+        let tag = language.map_unchecked(Into::into);
+        SimpleTerm::LiteralLanguage(lex, tag, Some(rhs))
     }
 }
 

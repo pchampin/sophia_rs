@@ -116,9 +116,9 @@ pub(crate) fn prepare_witnesses<D: Recognized, R: RuleSet>(graph: &mut Reasonabl
     // also insert witnesses for rdf:langString, rdf::dirLangString and xsd::string
     let en = LanguageTag::new_unchecked("en");
     for lit in [
-        "never gonna give you up" * en,
+        ("never gonna give you up" * en).into_term(),
         "" * en * BaseDirection::Ltr,
-        "" * xsd::string,
+        ("" * xsd::string).into_term(),
     ] {
         graph.terms.ensure_index(lit).unwrap();
     }
