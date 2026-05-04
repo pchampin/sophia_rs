@@ -768,7 +768,7 @@ mod test {
         let t = "chat" * LanguageTag::new_unchecked("fr");
         let mut stack = vec![];
         let mut buffers = StringStash::default();
-        let idx = IndexedTerm::copy_term(&t, &mut stack, &mut buffers);
+        let idx = IndexedTerm::copy_term(t, &mut stack, &mut buffers);
         let got = StashedTerm {
             terms: &stack,
             buffers: &buffers,
