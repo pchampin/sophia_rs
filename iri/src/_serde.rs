@@ -5,13 +5,13 @@ use serde::{
 };
 use std::borrow::Borrow;
 
-impl<'a, T: Borrow<str> + Deserialize<'a>> Deserialize<'a> for Iri<T> {
+impl<'a, T: Borrow<str> + From<&'a str>> Deserialize<'a> for Iri<T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'a>,
     {
-        let inner: T = T::deserialize(deserializer)?;
-        Self::new(inner)
+        let inner: &'a str = <&'a str>::deserialize(deserializer)?;
+        Self::new(inner.into())
             .map_err(|err| D::Error::invalid_value(Unexpected::Str(&err.0), &"valid IRI"))
     }
 }
@@ -57,14 +57,14 @@ mod test {
 
     #[derive(Serialize, Deserialize)]
     struct MyUncheckedTable {
-        iri: Option<String>,
-        iriref: Option<String>,
+        iri: Option<&'static str>,
+        iriref: Option<&'static str>,
     }
 
     #[test]
     fn valid_iri() {
         let data = MyUncheckedTable {
-            iri: Some("http://example.org/".into()),
+            iri: Some("http://example.org/"),
             iriref: None,
         };
         let toml_str = toml::to_string(&data).unwrap();
@@ -75,7 +75,7 @@ mod test {
     #[test]
     fn invalid_iri() {
         let data = MyUncheckedTable {
-            iri: Some("#foo".into()),
+            iri: Some("#foo"),
             iriref: None,
         };
         let toml_str = toml::to_string(&data).unwrap();
@@ -86,7 +86,7 @@ mod test {
     #[test]
     fn valid_iriref() {
         let data = MyUncheckedTable {
-            iriref: Some("#foo".into()),
+            iriref: Some("#foo"),
             iri: None,
         };
         let toml_str = toml::to_string(&data).unwrap();
@@ -97,7 +97,7 @@ mod test {
     #[test]
     fn invalid_iriref() {
         let data = MyUncheckedTable {
-            iriref: Some("a b".into()),
+            iriref: Some("a b"),
             iri: None,
         };
         let toml_str = toml::to_string(&data).unwrap();
