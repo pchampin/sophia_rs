@@ -388,11 +388,6 @@ fn test_reduce(query: &str, exp: Vec<&str>) -> TestResult {
     ];
     "one or more"
 )]
-// NB: the duplicate (d2, e2) below is specific to Sophia,
-// neither Jena nor Oxigraph do it, and their behavior is consistent with the spec
-// BUT the spec is not entirely self-consistent
-// ppeval is supposed to return a *multiset*,
-// so the notion of UNION, when implicit, is arguably ambiguous
 #[test_case(
     "SELECT ?s ?o { ?s :q+ ?o }",
     vec![
@@ -411,7 +406,6 @@ fn test_reduce(query: &str, exp: Vec<&str>) -> TestResult {
         ["<x:d2>", "<x:b2>"],
         ["<x:d2>", "<x:c2>"],
         ["<x:d2>", "<x:d2>"],
-        ["<x:d2>", "<x:e2>"],
         ["<x:d2>", "<x:e2>"],
     ];
     "one or more with loop"
@@ -465,7 +459,7 @@ fn test_reduce(query: &str, exp: Vec<&str>) -> TestResult {
 // Jena produces the duplicate, but the spec mentions a set, so it should not
 // Currently, we also return the duplicate because it is easier.
 #[test_case(
-    "SELECT ?s ?o { ?s !(:q|:t) ?o }",
+    "SELECT ?s ?o { ?s !(:q|:t|:d) ?o }",
     vec![
         ["<x:a1>", "<x:a2>"],
         ["<x:a1>", "<x:b1>"],
@@ -514,7 +508,7 @@ fn test_reduce(query: &str, exp: Vec<&str>) -> TestResult {
     "zero or more with both bound and failure"
 )]
 // The test below is really a corner case.
-// It is required by the spec by, for example, Oxigraph does not pass it (Jena does).
+// It is required by the spec but, for example, Oxigraph does not pass it (Jena does).
 // I might decide to not support it in the future.
 #[test_case(
     "SELECT ?s ?o { :z :q* ?o }",
@@ -558,7 +552,6 @@ fn test_reduce(query: &str, exp: Vec<&str>) -> TestResult {
     ];
     "zero or more with same variable"
 )]
-// About the test below, see "one or more with loop" about the duplicate (d2, e2)
 #[test_case(
     "SELECT ?s ?o { :d2 :q+ ?o }",
     vec![
@@ -566,11 +559,9 @@ fn test_reduce(query: &str, exp: Vec<&str>) -> TestResult {
         ["", "<x:c2>"],
         ["", "<x:d2>"],
         ["", "<x:e2>"],
-        ["", "<x:e2>"],
     ];
     "one or more with bound subject"
 )]
-// About the test below, see "one or more with loop" about the duplicate (d2, e2)
 #[test_case(
     "SELECT ?s ?o { ?s :q+ :e2 }",
     vec![
@@ -578,15 +569,12 @@ fn test_reduce(query: &str, exp: Vec<&str>) -> TestResult {
         ["<x:b2>", ""],
         ["<x:c2>", ""],
         ["<x:d2>", ""],
-        ["<x:d2>", ""],
     ];
     "one or more with bound object"
 )]
-// About the test below, see "one or more with loop" about the duplicate (d2, e2)
 #[test_case(
     "SELECT ?s ?o { :d2 :q+ :e2 }",
     vec![
-        ["", ""],
         ["", ""],
     ];
     "one or more with both bound and success"
@@ -710,6 +698,15 @@ fn test_reduce(query: &str, exp: Vec<&str>) -> TestResult {
         ["<x:a1>", "<x:b1>"],
     ];
     "triple patterns with common variable"
+)]
+#[test_case(
+    "SELECT ?s ?o { :a1 (:d/:d)? ?o }",
+    vec![
+        ["", "<x:a1>"],
+        ["", "<x:c1>"],
+        ["", "<x:d1>"],
+    ];
+    "diamond, with loop, pp28a from sparql11 test-suite"
 )]
 fn test_ppath(query: &str, exp: Vec<[&str; 2]>) -> TestResult {
     let dataset = dataset_ppath()?;
@@ -2510,6 +2507,12 @@ fn dataset_ppath() -> TestResult<LightDataset> {
 
             :d1 :t <<( :a1 :b1 :c1 )>>.
             :d2 :t <<( :a2 :b1 :c2 )>>.
+
+            :a1 :d :b1.
+            :b1 :d :d1.
+            :a1 :d :c1.
+            :c1 :d :d1.
+            :c1 :d :c1.
         "#,
     )
     .collect_quads()?;

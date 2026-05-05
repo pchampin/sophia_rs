@@ -381,47 +381,32 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                     .chain(self.path_rec(smatcher, path2, omatcher, graph_matcher)),
             ),
             ZeroOrMore(path) => {
-                // self (as state), graph_matcher (as g_matcher) and path will be moved in a closure;
+                // graph_matcher (as g_matcher) and path will be moved in a closure;
                 // they must be cloned to avoid leaking the lifetime of `self`
-                let state = self.clone();
                 let gmatcher = graph_matcher.clone();
                 let path = PropertyPathExpression::clone(path);
 
-                Box::new(
-                    self.path_zero(smatcher, graph_matcher)
-                        .flat_map_ok(move |node| {
-                            path_or_more::PathOrMore::new(
-                                state.clone(),
-                                node.clone(),
-                                node,
-                                path.clone(),
-                                omatcher.clone(),
-                                gmatcher.clone(),
-                            )
-                        })
-                        .map(Result::flatten),
-                )
+                Box::new(path_or_more::PathOrMore::new(
+                    self.clone(),
+                    self.path_zero(smatcher, graph_matcher),
+                    path,
+                    omatcher.clone(),
+                    gmatcher.clone(),
+                ))
             }
             OneOrMore(path) => {
-                // self (as state), graph_matcher (as g_matcher) and path will be moved in a closure;
+                // graph_matcher (as g_matcher) and path will be moved in a closure;
                 // they must be cloned to avoid leaking the lifetime of `self`
-                let state = self.clone();
                 let gmatcher = graph_matcher.clone();
                 let path = PropertyPathExpression::clone(path);
-                Box::new(
-                    self.path_rec(smatcher, &path, SparqlMatcher::Free, graph_matcher)
-                        .flat_map_ok(move |[s, o]| {
-                            path_or_more::PathOrMore::new(
-                                state.clone(),
-                                s,
-                                o,
-                                path.clone(),
-                                omatcher.clone(),
-                                gmatcher.clone(),
-                            )
-                        })
-                        .map(Result::flatten),
-                )
+
+                Box::new(path_or_more::PathOrMore::new(
+                    self.clone(),
+                    self.path_rec(smatcher, &path, SparqlMatcher::Free, graph_matcher),
+                    path.clone(),
+                    omatcher.clone(),
+                    gmatcher.clone(),
+                ))
             }
             ZeroOrOne(path) => {
                 // self (as state), graph_matcher (as g_matcher) and path will be moved in a closure;
@@ -432,18 +417,20 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
 
                 Box::new(
                     self.path_zero(smatcher, graph_matcher)
-                        .flat_map_ok(move |t| {
-                            let iter_zero = omatcher
-                                .matches(&t)
-                                .then(|| Ok([t.clone(), t.clone()]))
-                                .into_iter();
+                        .flat_map_ok(move |pair| {
+                            let t = pair[0].clone();
+                            let iter_zero = omatcher.matches(&t).then(|| Ok(pair)).into_iter();
                             let iter_one = state.path_rec(
                                 SparqlMatcher::Bound(t.into()),
                                 &path,
                                 omatcher.clone(),
                                 &gmatcher.clone(),
                             );
-                            iter_zero.chain(iter_one)
+                            let mut seen = HashSet::new();
+                            iter_zero.chain(iter_one).filter(move |res| match res {
+                                Ok(pair) => seen.insert(pair.clone()),
+                                Err(_) => true,
+                            })
                         })
                         .map(Result::flatten),
                 )
@@ -474,9 +461,10 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         self: &Arc<Self>,
         smatcher: SparqlMatcher,
         graph_matcher: &GraphMatcher,
-    ) -> Box<dyn Iterator<Item = DResult<D, ArcTerm>>> {
+    ) -> Box<dyn Iterator<Item = DResult<D, [ArcTerm; 2]>>> {
         if let SparqlMatcher::Bound(t) = smatcher {
-            Box::new(std::iter::once(Ok(t.unwrap())))
+            let t = t.unwrap();
+            Box::new(std::iter::once(Ok([t.clone(), t])))
         } else {
             let active_graph = self
                 .dataset()
@@ -488,7 +476,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 .collect();
             match nodes {
                 Err(err) => Box::new(std::iter::once(Err(err))),
-                Ok(nodes) => Box::new(nodes.into_iter().map(Ok)),
+                Ok(nodes) => Box::new(nodes.into_iter().map(|t| Ok([t.clone(), t]))),
             }
         }
     }
