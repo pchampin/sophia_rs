@@ -118,6 +118,18 @@ impl Binding {
                     }
                 };
             }
+            for (bn, bv) in &context.b {
+                match self.b.entry(bn.clone()) {
+                    Occupied(e) => {
+                        if e.get() != bv {
+                            return None;
+                        }
+                    }
+                    Vacant(e) => {
+                        e.insert(bv.clone());
+                    }
+                };
+            }
         }
         Some(self)
     }
