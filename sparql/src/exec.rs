@@ -166,7 +166,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 inner,
                 start,
                 length,
-            } => self.slice(inner, *start, *length, graph_matcher, context),
+            } => self.slice(inner, *start, *length, graph_matcher),
             Group {
                 inner,
                 variables,
@@ -919,9 +919,12 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         start: usize,
         length: Option<usize>,
         graph_matcher: &GraphMatcher,
-        context: Option<&Binding>,
     ) -> Bindings<'a, D> {
-        let mut bindings = self.select(inner, graph_matcher, context);
+        // NB: slice does not expect a context,
+        // because the inner pattern could use it for optimisation,
+        // which would interfere with the number of results,
+        // hence with the semantics of the slice.
+        let mut bindings = self.select(inner, graph_matcher, None);
         if start > 0 {
             // skip the first 'start' items, *unless* they are errors
             bindings.iter = Box::new(
