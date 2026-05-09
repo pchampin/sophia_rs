@@ -924,13 +924,12 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         let mut bindings = self.select(inner, graph_matcher, context);
         if start > 0 {
             // skip the first 'start' items, *unless* they are errors
-            bindings.iter = Box::new(bindings.iter.enumerate().filter_map(move |(i, res)| {
-                if i < start {
-                    res.is_err().then_some(res)
-                } else {
-                    Some(res)
-                }
-            }));
+            bindings.iter = Box::new(
+                bindings
+                    .iter
+                    .enumerate()
+                    .filter_map(move |(i, res)| (i >= start || res.is_err()).then_some(res)),
+            );
         }
         if let Some(n) = length {
             bindings.iter = Box::new(bindings.iter.take(n));
