@@ -14,16 +14,19 @@ pub enum BaseDirection {
     Rtl,
 }
 
+impl BaseDirection {
+    /// Textual representation of this [`BaseDirection`]
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Ltr => "ltr",
+            Self::Rtl => "rtl",
+        }
+    }
+}
+
 impl Display for BaseDirection {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::Ltr => "ltr",
-                Self::Rtl => "rtl",
-            }
-        )
+        write!(f, "{}", self.as_str(),)
     }
 }
 
@@ -59,6 +62,67 @@ impl<'a> std::ops::Mul<BaseDirection> for SimpleTerm<'a> {
         } else {
             log::warn!("Ignoring multiplication by base-dir for {self:?}");
             self
+        }
+    }
+}
+
+#[cfg(feature = "serde")]
+mod _serde {
+    use super::*;
+    use serde::{
+        Deserialize, Serialize,
+        de::{Error, Unexpected},
+    };
+
+    impl<'a> Deserialize<'a> for BaseDirection {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: serde::Deserializer<'a>,
+        {
+            let inner = <&str>::deserialize(deserializer)?;
+            BaseDirection::from_str(inner).map_err(|_| {
+                D::Error::invalid_value(Unexpected::Str(inner), &"valid BaseDirection")
+            })
+        }
+    }
+
+    impl Serialize for BaseDirection {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer,
+        {
+            self.as_str().serialize(serializer)
+        }
+    }
+
+    #[cfg(test)]
+    mod test {
+        use super::*;
+
+        #[derive(Serialize, Deserialize)]
+        struct MyTable {
+            dir: BaseDirection,
+        }
+
+        #[derive(Serialize, Deserialize)]
+        struct MyUncheckedTable {
+            dir: String,
+        }
+
+        #[test]
+        fn valid_prefix() {
+            let data = MyUncheckedTable { dir: "ltr".into() };
+            let toml_str = toml::to_string(&data).unwrap();
+            let data2 = toml::from_str::<MyTable>(&toml_str).unwrap();
+            assert_eq!(data.dir, data2.dir.as_str());
+        }
+
+        #[test]
+        fn invalid_prefix() {
+            let data = MyUncheckedTable { dir: "f o".into() };
+            let toml_str = toml::to_string(&data).unwrap();
+            let data2 = toml::from_str::<MyTable>(&toml_str);
+            assert!(data2.is_err());
         }
     }
 }
