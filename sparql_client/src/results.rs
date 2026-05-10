@@ -1,6 +1,7 @@
 use super::Error;
 use super::StaticTerm;
 use serde::{Deserialize, Serialize};
+use sophia_api::term::BaseDirection;
 use sophia_api::term::{BnodeId, LanguageTag, Term as _};
 use sophia_iri::IriRef;
 use std::collections::HashMap;
@@ -71,7 +72,9 @@ pub enum Literal {
     Lang {
         value: Box<str>,
         #[serde(rename = "xml:lang")]
-        lang: Box<str>,
+        lang: LanguageTag<Box<str>>,
+        #[serde(rename = "its:dir")]
+        dir: Option<BaseDirection>,
     },
     Simple {
         value: Box<str>,
@@ -90,9 +93,16 @@ impl TryFrom<Term> for StaticTerm {
                 value.into(),
                 IriRef::new(datatype.into())?,
             )),
-            Literal(Lang { value, lang }) => {
-                Ok((value.as_ref() * LanguageTag::new(lang.as_ref())?).into_term())
-            }
+            Literal(Lang {
+                value,
+                lang,
+                dir: None,
+            }) => Ok((value.as_ref() * lang.as_ref()).into_term()),
+            Literal(Lang {
+                value,
+                lang,
+                dir: Some(dir),
+            }) => Ok((value.as_ref() * lang.as_ref()).into_term::<StaticTerm>() * dir),
             Uri { value } => Ok(IriRef::new(value)?.into_term()),
         }
     }
@@ -180,7 +190,25 @@ mod test_json {
         let got: Term = serde_json::from_str(src).unwrap();
         let exp = Term::Literal(Literal::Lang {
             value: "lang".into(),
-            lang: "en".into(),
+            lang: LanguageTag::new_unchecked("en".into()),
+            dir: None,
+        });
+        assert_eq!(got, exp);
+    }
+
+    #[test]
+    fn literal_lang_dir() {
+        let src = r#"{
+            "type": "literal",
+            "value": "lang",
+            "xml:lang": "en",
+            "its:dir": "ltr"
+        }"#;
+        let got: Term = serde_json::from_str(src).unwrap();
+        let exp = Term::Literal(Literal::Lang {
+            value: "lang".into(),
+            lang: LanguageTag::new_unchecked("en".into()),
+            dir: Some(BaseDirection::Ltr),
         });
         assert_eq!(got, exp);
     }
@@ -305,6 +333,14 @@ mod test_json {
                             "value": "lang",
                             "xml:lang": "en"
                         }
+                    },
+                    {
+                        "b": {
+                            "type": "literal",
+                            "value": "langdir",
+                            "xml:lang": "en",
+                            "its:dir": "ltr"
+                        }
                     }
                 ]
             }
@@ -352,10 +388,21 @@ mod test_json {
                                 "a".into(),
                                 Term::Literal(Literal::Lang {
                                     value: "lang".into(),
-                                    lang: "en".into(),
+                                    lang: LanguageTag::new_unchecked("en".into()),
+                                    dir: None,
                                 }),
                             ),
                         ]
+                        .into_iter()
+                        .collect::<HashMap<Box<str>, Term>>(),
+                        vec![(
+                            "b".into(),
+                            Term::Literal(Literal::Lang {
+                                value: "langdir".into(),
+                                lang: LanguageTag::new_unchecked("en".into()),
+                                dir: Some(BaseDirection::Ltr),
+                            }),
+                        )]
                         .into_iter()
                         .collect::<HashMap<Box<str>, Term>>(),
                     ],

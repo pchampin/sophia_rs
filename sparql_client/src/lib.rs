@@ -253,6 +253,10 @@ pub enum Error {
         sophia_api::term::language_tag::InvalidLanguageTag,
     ),
 
+    #[error("invalid base direction: {0}")]
+    /// An invalid language tag was returned by the SPARQL endpoint.
+    BaseDirection(Box<str>),
+
     #[error("turtle parsing error: {0}")]
     /// Invalid Turtle syntax was returned by the SPARQL endpoint.
     Turtle(

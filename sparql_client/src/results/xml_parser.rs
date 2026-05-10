@@ -13,6 +13,7 @@ use quick_xml::{
     },
     name::{Namespace, QName, ResolveResult},
 };
+use sophia_api::term::LanguageTag;
 
 use super::{
     BindingsDocument, BindingsHead, BooleanHead, HashMap, Literal, Results, ResultsDocument, Term,
@@ -134,7 +135,12 @@ impl<R: BufRead> SparqlXmlParser<R> {
             b"bnode" => Ok(Term::Bnode { value }),
             b"literal" => {
                 if let Some(lang) = self.get_attr_maybe(start, "xml:lang")? {
-                    Ok(Term::Literal(Literal::Lang { value, lang }))
+                    let lang = LanguageTag::new(lang)?;
+                    let dir = self
+                        .get_ns_attr_maybe(start, "http://www.w3.org/2005/11/its", "dir")?
+                        .map(|txt| txt.parse().map_err(|_| Error::BaseDirection(txt)))
+                        .transpose()?;
+                    Ok(Term::Literal(Literal::Lang { value, lang, dir }))
                 } else if let Some(datatype) = self.get_attr_maybe(start, "datatype")? {
                     Ok(Term::Literal(Literal::Datatype { value, datatype }))
                 } else {
@@ -294,6 +300,27 @@ impl<R: BufRead> SparqlXmlParser<R> {
         Ok(None)
     }
 
+    fn get_ns_attr_maybe(
+        &mut self,
+        start: &BytesStart<'_>,
+        ns: &str,
+        local: &str,
+    ) -> Result<Option<Box<str>>, Error> {
+        let ns = Namespace(ns.as_bytes());
+        let local = local.as_bytes();
+        for res in start.attributes() {
+            let attr = res.map_err(quick_xml::Error::from)?;
+            let (ns2, local2) = self.events.resolver().resolve_attribute(attr.key);
+            if local2.as_ref() == local && ns2 == ResolveResult::Bound(ns) {
+                return Ok(Some(
+                    attr.decode_and_unescape_value(self.events.decoder())?
+                        .into(),
+                ));
+            }
+        }
+        Ok(None)
+    }
+
     fn check_element(&mut self, start: &BytesStart<'_>, local_name: &str) -> bool {
         let (ns, local) = self.events.resolver().resolve_element(start.name());
         local.as_ref() == local_name.as_bytes() && ns == ResolveResult::Bound(NS)
@@ -313,13 +340,18 @@ const NS: Namespace = Namespace(b"http://www.w3.org/2005/sparql-results#");
 
 #[cfg(test)]
 mod test {
+    use sophia_api::term::BaseDirection;
+
     use super::*;
 
     #[test]
     fn bindings_doc() {
         let src = std::io::Cursor::new(
             r#"<?xml version="1.0"?>
-            <sparql xmlns="http://www.w3.org/2005/sparql-results#">
+            <sparql xmlns="http://www.w3.org/2005/sparql-results#"
+               xmlns:its="http://www.w3.org/2005/11/its"
+               its:version="2.0"
+              >
               <head>
                 <variable name="a"/>
                 <variable name="b"/>
@@ -344,6 +376,17 @@ mod test {
                   <binding name="a">
                     <literal xml:lang="en">lang</literal>
                   </binding>
+                </result>
+                <result>
+                  <binding name="b">
+                    <literal xml:lang="en" its:dir="ltr">langdir</literal>
+                  </binding>
+                  <!--
+                  <binding name="c">
+                    <triple>
+                    </triple>
+                  </binding>
+                  -->
                 </result>
               </results>
             </sparql>
@@ -393,10 +436,21 @@ mod test {
                                 "a".into(),
                                 Term::Literal(Literal::Lang {
                                     value: "lang".into(),
-                                    lang: "en".into(),
+                                    lang: LanguageTag::new_unchecked("en".into()),
+                                    dir: None,
                                 }),
                             ),
                         ]
+                        .into_iter()
+                        .collect::<HashMap<Box<str>, Term>>(),
+                        vec![(
+                            "b".into(),
+                            Term::Literal(Literal::Lang {
+                                value: "langdir".into(),
+                                lang: LanguageTag::new_unchecked("en".into()),
+                                dir: Some(BaseDirection::Ltr),
+                            }),
+                        )]
                         .into_iter()
                         .collect::<HashMap<Box<str>, Term>>(),
                     ],
