@@ -5,24 +5,12 @@
 //! * [`FileUrlLoader`]: loads documents from file: URLs
 //! * [`HttpLoader`]: loads documents directly from the web (only if the `http_client` feature is enabled)
 //! * [`ChainLoader`]: loads document from the first loader, otherwise falls back to the second one.
-use std::sync::Arc;
-
-use json_syntax::Value;
-use locspan::Location;
-use sophia_iri::Iri;
-
-pub use json_ld::future::{BoxFuture, FutureExt};
 
 /// A dummy document loader, that does not load anything.
-pub type NoLoader =
-    json_ld::NoLoader<Iri<Arc<str>>, Location<Iri<Arc<str>>>, Value<Location<Iri<Arc<str>>>>>;
+pub use json_ld::NoLoader;
 
-/// A document loader that can load documents from the file system,
-/// by mapping directories to specific URLs.
-///
-/// See [`json_ld::FsLoader`]
-pub type FsLoader =
-    json_ld::FsLoader<Iri<Arc<str>>, Location<Iri<Arc<str>>>, Value<Location<Iri<Arc<str>>>>>;
+mod fs_loader;
+pub use fs_loader::*;
 
 mod static_loader;
 pub use static_loader::*;
@@ -36,8 +24,7 @@ pub use file_url_loader::*;
 /// A document loader that can load documents from the web.
 ///
 /// See [`json_ld::ReqwestLoader`]
-pub type HttpLoader =
-    json_ld::ReqwestLoader<Iri<Arc<str>>, Location<Iri<Arc<str>>>, Value<Location<Iri<Arc<str>>>>>;
+pub use json_ld::ReqwestLoader as HttpLoader;
 
 mod chain_loader;
 pub use chain_loader::*;

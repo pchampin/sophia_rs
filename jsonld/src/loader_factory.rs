@@ -1,29 +1,16 @@
 //! I define trait for loader factories.
 //!
 
-use std::{fmt::Display, marker::PhantomData, sync::Arc};
+use std::marker::PhantomData;
 
 use json_ld::Loader;
-use json_syntax::Value;
-use locspan::Location;
-use sophia_iri::Iri;
 
 /// A trait for factory of document loaders.
 pub trait LoaderFactory {
     /// Type of loaders this factory yields.
-    type Loader<'l>: Loader<
-            Iri<Arc<str>>,
-            Location<Iri<Arc<str>>>,
-            Output = Value<Location<Iri<Arc<str>>>>,
-            Error = Self::LoaderError,
-        > + Send
-        + Sync
-        + 'l
+    type Loader<'l>: Loader + Send + Sync + 'l
     where
         Self: 'l;
-
-    /// Type of loader error.
-    type LoaderError: Display + Send;
 
     /// Yield a new loader.
     fn yield_loader(&self) -> Self::Loader<'_>;
@@ -37,11 +24,7 @@ pub struct DefaultLoaderFactory<L> {
 
 impl<L> DefaultLoaderFactory<L>
 where
-    L: Loader<Iri<Arc<str>>, Location<Iri<Arc<str>>>, Output = Value<Location<Iri<Arc<str>>>>>
-        + Default
-        + Send
-        + Sync,
-    L::Error: Display + Send,
+    L: Loader + Default + Send + Sync,
 {
     /// Create a new [`DefaultLoaderFactory`].
     #[inline]
@@ -53,18 +36,12 @@ where
 
 impl<L> LoaderFactory for DefaultLoaderFactory<L>
 where
-    L: Loader<Iri<Arc<str>>, Location<Iri<Arc<str>>>, Output = Value<Location<Iri<Arc<str>>>>>
-        + Default
-        + Send
-        + Sync,
-    L::Error: Display + Send,
+    L: Loader + Default + Send + Sync,
 {
     type Loader<'l>
         = L
     where
         Self: 'l;
-
-    type LoaderError = L::Error;
 
     #[inline]
     fn yield_loader(&self) -> Self::Loader<'_> {
@@ -81,10 +58,7 @@ pub struct ClosureLoaderFactory<L, F> {
 
 impl<L, F> ClosureLoaderFactory<L, F>
 where
-    L: Loader<Iri<Arc<str>>, Location<Iri<Arc<str>>>, Output = Value<Location<Iri<Arc<str>>>>>
-        + Send
-        + Sync,
-    L::Error: Display + Send,
+    L: Loader + Send + Sync,
     F: Fn() -> L,
 {
     /// Create a new [`ClosureLoaderFactory`] with given closure.
@@ -99,10 +73,7 @@ where
 
 impl<L> ClosureLoaderFactory<L, fn() -> L>
 where
-    L: Loader<Iri<Arc<str>>, Location<Iri<Arc<str>>>, Output = Value<Location<Iri<Arc<str>>>>>
-        + Send
-        + Sync,
-    L::Error: Display + Send,
+    L: Loader + Send + Sync,
 {
     /// Create a new [`ClosureLoaderFactory`] that yields loaders by cloning a template loader.
     #[inline]
@@ -116,18 +87,13 @@ where
 
 impl<L, F> LoaderFactory for ClosureLoaderFactory<L, F>
 where
-    L: Loader<Iri<Arc<str>>, Location<Iri<Arc<str>>>, Output = Value<Location<Iri<Arc<str>>>>>
-        + Send
-        + Sync,
-    L::Error: Display + Send,
+    L: Loader + Send + Sync,
     F: Fn() -> L,
 {
     type Loader<'l>
         = L
     where
         Self: 'l;
-
-    type LoaderError = L::Error;
 
     #[inline]
     fn yield_loader(&self) -> Self::Loader<'_> {

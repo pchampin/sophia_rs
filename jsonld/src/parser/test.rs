@@ -46,7 +46,7 @@ fn check_fs_loader() {
 // NB: the goal is NOT to check the loader itself -- we actually don't use it.
 #[test]
 fn check_static_loader() {
-    let options = JsonLdOptions::new().with_default_document_loader::<StaticLoader<_, _>>();
+    let options = JsonLdOptions::new().with_default_document_loader::<StaticLoader>();
     let p = JsonLdParser::new_with_options(options);
     let got: TestDataset = p
         .parse_str(r#"{"@id": "tag:foo", "tag:bar": "BAZ"}"#)

@@ -36,9 +36,8 @@ fn iri_triple() -> TestResult {
                 ]
             }
         ]"#,
-        |_span| (),
     )?
-    .into_value();
+    .0;
     assert_eq!(got, exp, "{}", got.pretty_print());
     Ok(())
 }
@@ -72,9 +71,8 @@ fn mixed_triple() -> TestResult {
                 ]
             }
         ]"#,
-        |_span| (),
     )?
-    .into_value();
+    .0;
     assert_eq!(got, exp, "{}", got.pretty_print());
     Ok(())
 }
@@ -106,9 +104,8 @@ fn native_value() -> TestResult {
                 ]
             }
         ]"#,
-        |_span| (),
     )?
-    .into_value();
+    .0;
     assert_eq!(got, exp, "{}", got.pretty_print());
     Ok(())
 }

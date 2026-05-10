@@ -1,36 +1,36 @@
 //! A Sophia-friendly implementation of [`rdf_types::Vocabulary`]
 use std::sync::Arc;
 
-use rdf_types::{
-    BlankIdVocabulary, BlankIdVocabularyMut, IriVocabulary, IriVocabularyMut,
-    LanguageTagVocabulary, LanguageTagVocabularyMut, LiteralVocabulary, LiteralVocabularyMut,
+use rdf_types::vocabulary::{
+    BlankIdVocabulary, BlankIdVocabularyMut, IriVocabulary, IriVocabularyMut, LiteralVocabulary,
+    LiteralVocabularyMut,
 };
 use sophia_api::{
     MownStr,
     term::{BnodeId, Term, TermKind},
 };
 
+use sophia_iri::Iri as SophiaIri;
+
 /// Self-explanatory IRI index for JSON-LD processing.
-pub type ArcIri = sophia_iri::Iri<Arc<str>>;
-/// Self-explanatory language tag index for JSON-LD processing.
-pub type ArcTag = sophia_api::term::LanguageTag<Arc<str>>;
+pub type ArcIri = SophiaIri<Arc<str>>;
 
 /// A [`Vocabulary`](rdf_types::Vocabulary) using `Arc<str>`-based types as index.
 ///
-/// These types match the notion of index in [`rdf_types`] as they are relatively cheap to clone,
-/// but offer the advantage of being self-explanatory, and resolvable to actual terms without actually needing the vocabulary.
+/// These types allow efficient conversion to/from sophia_iri and rdf-types types.
 #[derive(Clone, Debug, Default)]
 pub struct ArcVoc {}
 
 impl IriVocabulary for ArcVoc {
     type Iri = ArcIri;
 
-    fn iri<'i>(&'i self, id: &'i Self::Iri) -> Option<iref::Iri<'i>> {
-        Some(iref::Iri::new(id.as_str()).unwrap())
+    fn iri<'i>(&'i self, id: &'i Self::Iri) -> Option<&'i iref::Iri> {
+        // SAFETY: ArcIri is always a valid IRI
+        Some(unsafe { iref::Iri::new_unchecked(id.as_str()) })
     }
 
-    fn get(&self, iri: iref::Iri) -> Option<Self::Iri> {
-        Some(ArcIri::new_unchecked(Arc::from(iri.as_str())))
+    fn get(&self, iri: &iref::Iri) -> Option<Self::Iri> {
+        Some(SophiaIri::new_unchecked(Arc::from(iri.as_str())))
     }
 }
 
@@ -49,43 +49,27 @@ impl BlankIdVocabulary for ArcVoc {
 }
 
 impl LiteralVocabulary for ArcVoc {
-    type Literal = rdf_types::Literal<Self::Type, Self::Value>;
+    type Literal = rdf_types::Literal<ArcIri>;
 
-    type Type = rdf_types::literal::Type<ArcIri, ArcTag>;
-
-    type Value = String;
-    // I would rather use Arc<str>, but ToRdf::cloned_quads require that Value=String
-
-    fn literal<'l>(
-        &'l self,
-        id: &'l Self::Literal,
-    ) -> Option<&'l rdf_types::Literal<Self::Type, Self::Value>> {
-        Some(id)
+    fn literal<'l>(&'l self, id: &'l Self::Literal) -> Option<rdf_types::LiteralRef<'l, ArcIri>> {
+        Some(id.as_ref())
     }
 
-    fn get_literal(
+    fn get_literal(&self, id: rdf_types::LiteralRef<'_, ArcIri>) -> Option<Self::Literal> {
+        Some(id.into_owned())
+    }
+
+    fn owned_literal(
         &self,
-        id: &rdf_types::Literal<Self::Type, Self::Value>,
-    ) -> Option<Self::Literal> {
-        Some(id.to_owned())
-    }
-}
-
-impl LanguageTagVocabulary for ArcVoc {
-    type LanguageTag = ArcTag;
-
-    fn language_tag<'l>(&'l self, id: &'l Self::LanguageTag) -> Option<langtag::LanguageTag<'l>> {
-        Some(langtag::LanguageTag::parse(id.as_str()).unwrap())
-    }
-
-    fn get_language_tag(&self, id: langtag::LanguageTag) -> Option<Self::LanguageTag> {
-        Some(ArcTag::new_unchecked(Arc::from(id.as_str())))
+        id: Self::Literal,
+    ) -> Result<rdf_types::Literal<Self::Iri>, Self::Literal> {
+        Ok(id)
     }
 }
 
 impl IriVocabularyMut for ArcVoc {
-    fn insert(&mut self, iri: iref::Iri) -> Self::Iri {
-        self.get(iri).unwrap()
+    fn insert(&mut self, iri: &iref::Iri) -> Self::Iri {
+        SophiaIri::new_unchecked(Arc::from(iri.as_str()))
     }
 }
 
@@ -96,17 +80,8 @@ impl BlankIdVocabularyMut for ArcVoc {
 }
 
 impl LiteralVocabularyMut for ArcVoc {
-    fn insert_literal(
-        &mut self,
-        value: &rdf_types::Literal<Self::Type, Self::Value>,
-    ) -> Self::Literal {
+    fn insert_literal(&mut self, value: rdf_types::LiteralRef<'_, ArcIri>) -> Self::Literal {
         self.get_literal(value).unwrap()
-    }
-}
-
-impl LanguageTagVocabularyMut for ArcVoc {
-    fn insert_language_tag(&mut self, value: langtag::LanguageTag) -> Self::LanguageTag {
-        self.get_language_tag(value).unwrap()
     }
 }
 

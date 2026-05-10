@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let json_str = std::fs::read_to_string(&json_ld_path)
         .unwrap_or_else(|e| panic!("Could not read file {json_ld_path}: {e}"));
 
-    let mut options = JsonLdOptions::new().with_expansion_policy(Policy::Standard);
+    let mut options = JsonLdOptions::new().with_expansion_policy(Policy::default());
     if let Some(context_path) = context_path {
         let context_str = std::fs::read_to_string(&context_path)
             .map_err(|e| format!("Could not read file {}: {}", &context_path, e))?;

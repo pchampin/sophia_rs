@@ -1,20 +1,16 @@
 //! Utility trait to ease the loading of JSON-LD Contexts
 
-use std::{borrow::Borrow, sync::Arc};
+use std::borrow::Borrow;
+use std::sync::Arc;
 
-use json_ld::{
-    ExtractContext, RemoteDocument, RemoteDocumentReference,
-    syntax::{Value, context::Value as ContextValue},
-};
+use json_ld::{ExtractContext, RemoteContextReference, RemoteDocument};
 use json_syntax::Parse;
-use locspan::{Location, Span};
 use sophia_iri::Iri;
 
 use crate::vocabulary::ArcIri;
 
 /// Type alias for the context references used by the JSON-LD options.
-pub type ContextRef =
-    RemoteDocumentReference<ArcIri, Location<ArcIri, Span>, ContextValue<Location<ArcIri, Span>>>;
+pub type ContextRef = RemoteContextReference<ArcIri>;
 
 /// Anything that can be turned into a [`ContextRef`]
 pub trait IntoContextRef {
@@ -30,7 +26,7 @@ impl IntoContextRef for ContextRef {
 
 impl<T: Borrow<str>> IntoContextRef for Iri<T> {
     fn into_context_ref(self) -> ContextRef {
-        RemoteDocumentReference::Iri(self.map_unchecked(|t| Arc::from(t.borrow())))
+        ContextRef::Iri(self.map_unchecked(|t| Arc::from(t.borrow())))
     }
 }
 
@@ -46,11 +42,11 @@ impl TryIntoContextRef for &str {
     type Error = Box<dyn std::error::Error>;
 
     fn try_into_context_ref(self) -> Result<ContextRef, Self::Error> {
-        let iri = ArcIri::new_unchecked("x-string://".into());
-        let doc = Value::parse_str(self, |span| locspan::Location::new(iri.clone(), span))?;
-        let context =
-            Value::extract_context(doc).map_err(|e| format!("Could not extract @context: {e}"))?;
+        let (doc, _) = json_ld::syntax::Value::parse_str(self)?;
+        let context = doc
+            .into_ld_context()
+            .map_err(|e| format!("Could not extract @context: {e}"))?;
         let rdoc = RemoteDocument::new(None, None, context);
-        Ok(RemoteDocumentReference::Loaded(rdoc))
+        Ok(ContextRef::Loaded(rdoc))
     }
 }

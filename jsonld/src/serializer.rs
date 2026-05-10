@@ -48,10 +48,7 @@ impl<W, L> JsonLdSerializer<W, L> {
     }
 
     /// Convert a quad stream into a Json object
-    fn convert_quads<QS>(
-        &mut self,
-        source: QS,
-    ) -> StreamResult<JsonValue<()>, QS::Error, JsonLdError>
+    fn convert_quads<QS>(&mut self, source: QS) -> StreamResult<JsonValue, QS::Error, JsonLdError>
     where
         QS: QuadSource,
     {
@@ -110,7 +107,7 @@ pub type Jsonifier<L = NoLoader> = JsonLdSerializer<JsonTarget, L>;
 /// [`new_jsonifier`]: struct.JsonLdSerializer.html#method.new_jsonifier
 /// [`new_jsonifier_with`]: struct.JsonLdSerializer.html#method.new_jsonifier_with
 #[derive(Clone, Debug)]
-pub struct JsonTarget(JsonValue<()>);
+pub struct JsonTarget(JsonValue);
 
 impl Jsonifier {
     /// Create a new serializer which targets a [`JsonValue`].
@@ -130,13 +127,13 @@ impl<L> Jsonifier<L> {
 
     /// Get a reference to the converted `JsonValue`
     #[inline]
-    pub const fn as_json(&self) -> &JsonValue<()> {
+    pub const fn as_json(&self) -> &JsonValue {
         &self.target.0
     }
 
     /// Extract the converted `JsonValue`
     #[inline]
-    pub fn to_json(&mut self) -> JsonValue<()> {
+    pub fn to_json(&mut self) -> JsonValue {
         let mut ret = JsonValue::Null;
         std::mem::swap(&mut self.target.0, &mut ret);
         ret

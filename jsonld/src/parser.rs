@@ -4,7 +4,6 @@ use std::{io::BufRead, sync::Arc};
 
 use json_ld::{JsonLdProcessor, RemoteDocument, ToRdfError};
 use json_syntax::{Parse, Value};
-use locspan::{Location, Span};
 use sophia_api::{prelude::QuadParser, quad::Spog};
 use sophia_iri::Iri;
 
@@ -29,7 +28,7 @@ mod test;
 ///
 /// ## Developers
 ///
-/// * the generic parameter `L` is the type of the [document loader](json_ld::Loader)
+/// * the generic parameter `LF` is the type of the [document loader](json_ld::Loader) [factory](crate::loader_factory)
 ///   (determined by the `options` parameters)
 ///
 /// ## WebAssembly
@@ -75,16 +74,12 @@ impl<LF> JsonLdParser<LF> {
     where
         LF: LoaderFactory,
     {
-        let gen_loc = Location::new(
-            Iri::new_unchecked(Arc::from("x-bnode-gen://")),
-            Span::default(),
-        );
-        let mut generator = rdf_types::generator::Blank::new().with_metadata(gen_loc);
-        let mut loader = self.options.document_loader();
+        let mut generator = rdf_types::generator::Blank::new();
+        let loader = self.options.document_loader();
         let mut vocab = ArcVoc {};
         let options = self.options.inner().clone();
         match data
-            .to_rdf_with_using(&mut vocab, &mut generator, &mut loader, options)
+            .to_rdf_with_using(&mut vocab, &mut generator, &loader, options)
             .await
         {
             Err(ToRdfError::Expand(err)) => JsonLdQuadSource::from_err(err),
@@ -108,12 +103,9 @@ impl<LF> JsonLdParser<LF> {
             .base()
             .unwrap_or(Iri::new_unchecked_const("x-string://"))
             .map_unchecked(Arc::from);
-        let json_res = Value::parse_str(txt, |span| Location::new(base.clone(), span));
-        let json = match json_res {
-            Ok(json) => json,
-            Err(err) => {
-                return JsonLdQuadSource::from_err(err);
-            }
+        let json = match Value::parse_str(txt) {
+            Ok((json, _)) => json,
+            Err(err) => return JsonLdQuadSource::from_err(err),
         };
         let doc = RemoteDocument::new(Some(base), None, json);
         self.parse_json(&doc).await
