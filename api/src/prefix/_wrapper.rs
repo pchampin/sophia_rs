@@ -24,13 +24,13 @@ mod _serde {
     };
     use std::borrow::Borrow;
 
-    impl<'a, T: Borrow<str> + Deserialize<'a>> Deserialize<'a> for Prefix<T> {
+    impl<'a, T: Borrow<str> + From<&'a str>> Deserialize<'a> for Prefix<T> {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where
             D: serde::Deserializer<'a>,
         {
-            let inner: T = T::deserialize(deserializer)?;
-            Prefix::new(inner)
+            let inner = <&'a str>::deserialize(deserializer)?;
+            Prefix::new(inner.into())
                 .map_err(|err| D::Error::invalid_value(Unexpected::Str(&err.0), &"valid Prefix"))
         }
     }
