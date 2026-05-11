@@ -9,13 +9,13 @@ use serde::{
 
 use crate::LanguageTag;
 
-impl<'a, T: Borrow<str> + From<&'a str>> Deserialize<'a> for LanguageTag<T> {
+impl<'de, T: Borrow<str> + Deserialize<'de>> Deserialize<'de> for LanguageTag<T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: serde::Deserializer<'a>,
+        D: serde::Deserializer<'de>,
     {
-        let inner: &'a str = <&'a str>::deserialize(deserializer)?;
-        Self::new(inner.into())
+        let inner = T::deserialize(deserializer)?;
+        Self::new(inner)
             .map_err(|err| D::Error::invalid_value(Unexpected::Str(&err.0), &"valid Language Tag"))
     }
 }
@@ -44,18 +44,34 @@ mod test {
     }
 
     #[test]
-    fn valid_tag() {
+    fn valid_tag_str() {
         let data = MyUncheckedTable { tag: "fr-FR" };
-        let toml_str = toml::to_string(&data).unwrap();
-        let data2 = toml::from_str::<MyTable>(&toml_str).unwrap();
+        let json_str = serde_json::to_string(&data).unwrap();
+        let data2 = serde_json::from_str::<MyTable>(&json_str).unwrap();
         assert_eq!(&data2.tag, &data2.tag);
     }
 
     #[test]
-    fn invalid_tag() {
+    fn valid_tag_reader() {
+        let data = MyUncheckedTable { tag: "fr-FR" };
+        let json_str = serde_json::to_string(&data).unwrap();
+        let data2 = serde_json::from_reader::<_, MyTable>(json_str.as_bytes()).unwrap();
+        assert_eq!(&data2.tag, &data2.tag);
+    }
+
+    #[test]
+    fn invalid_tag_str() {
         let data = MyUncheckedTable { tag: "hello world" };
-        let toml_str = toml::to_string(&data).unwrap();
-        let data2 = toml::from_str::<MyTable>(&toml_str);
+        let json_str = serde_json::to_string(&data).unwrap();
+        let data2 = serde_json::from_str::<MyTable>(&json_str);
+        assert!(data2.is_err());
+    }
+
+    #[test]
+    fn invalid_tag_reader() {
+        let data = MyUncheckedTable { tag: "hello world" };
+        let json_str = serde_json::to_string(&data).unwrap();
+        let data2 = serde_json::from_reader::<_, MyTable>(json_str.as_bytes());
         assert!(data2.is_err());
     }
 }

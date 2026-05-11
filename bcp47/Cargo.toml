@@ -22,8 +22,8 @@ thiserror.workspace = true
 serde = { workspace = true, optional = true }
 
 [dev-dependencies]
+serde_json.workspace = true
 test-case.workspace = true
-toml.workspace = true
 
 [features]
 default = ["serde"]
