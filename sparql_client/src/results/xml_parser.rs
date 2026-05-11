@@ -19,7 +19,10 @@ use sophia_iri::Iri;
 use super::{
     BindingsDocument, BindingsHead, BooleanHead, HashMap, Literal, Results, ResultsDocument, Term,
 };
-use crate::Error::{self, SparqlXml};
+use crate::{
+    Error::{self, SparqlXml},
+    results::Triple,
+};
 
 pub fn parse_results_document<R: BufRead>(data: R) -> Result<ResultsDocument, Error> {
     SparqlXmlParser::new(data).parse_results_document()
@@ -125,8 +128,7 @@ impl<R: BufRead> SparqlXmlParser<R> {
         let (ns, local_name) = self.events.resolver().resolve_element(start.name());
         if ns != ResolveResult::Bound(NS) {
             return Err(SparqlXml(format!(
-                "Unrecognized term in <binding name='{}'>: {:?}",
-                name,
+                "Unrecognized term under <binding name='{name}'>: {:?}",
                 start.name()
             )));
         }
@@ -151,6 +153,26 @@ impl<R: BufRead> SparqlXmlParser<R> {
                 } else {
                     Ok(Term::Literal(Literal::Simple { value }))
                 }
+            }
+            b"triple" => {
+                let mut get_next = |position| -> Result<Term, Error> {
+                    let elt1 = self.next_start_expecting(position)?;
+                    let Some(elt2) = self.next_start()? else {
+                        return Err(SparqlXml(format!(
+                            "No term in <binding name='{name}'>//<triple><{position}>"
+                        )));
+                    };
+                    let ret = self.parse_term(&elt2, name)?;
+                    self.expect_closing(elt2.name())?;
+                    self.expect_closing(elt1.name())?;
+                    Ok(ret)
+                };
+                let value = Box::new(Triple {
+                    subject: get_next("subject")?,
+                    predicate: get_next("predicate")?,
+                    object: get_next("object")?,
+                });
+                Ok(Term::Triple { value })
             }
             other => Err(SparqlXml(format!(
                 "Unrecognized term in <binding name='{name}'>: {other:?}"
@@ -347,6 +369,8 @@ const NS: Namespace = Namespace(b"http://www.w3.org/2005/sparql-results#");
 mod test {
     use sophia_api::term::BaseDirection;
 
+    use crate::results::Triple;
+
     use super::*;
 
     #[test]
@@ -386,12 +410,29 @@ mod test {
                   <binding name="b">
                     <literal xml:lang="en" its:dir="ltr">langdir</literal>
                   </binding>
-                  <!--
                   <binding name="c">
                     <triple>
+                      <subject>
+                        <bnode>ts</bnode>
+                      </subject>
+                      <predicate>
+                        <uri>x:tp</uri>
+                      </predicate>
+                      <object>
+                        <triple>
+                          <subject>
+                            <bnode>tos</bnode>
+                          </subject>
+                          <predicate>
+                            <uri>x:top</uri>
+                          </predicate>
+                          <object>
+                            <literal>too</literal>
+                          </object>
+                        </triple>
+                      </object>
                     </triple>
                   </binding>
-                  -->
                 </result>
               </results>
             </sparql>
@@ -448,14 +489,40 @@ mod test {
                         ]
                         .into_iter()
                         .collect::<HashMap<Box<str>, Term>>(),
-                        vec![(
-                            "b".into(),
-                            Term::Literal(Literal::Lang {
-                                value: "langdir".into(),
-                                lang: LanguageTag::new_unchecked("en".into()),
-                                dir: Some(BaseDirection::Ltr),
-                            }),
-                        )]
+                        vec![
+                            (
+                                "b".into(),
+                                Term::Literal(Literal::Lang {
+                                    value: "langdir".into(),
+                                    lang: LanguageTag::new_unchecked("en".into()),
+                                    dir: Some(BaseDirection::Ltr),
+                                }),
+                            ),
+                            (
+                                "c".into(),
+                                Term::Triple {
+                                    value: Box::new(Triple {
+                                        subject: Term::Bnode { value: "ts".into() },
+                                        predicate: Term::Uri {
+                                            value: Iri::new_unchecked("x:tp".into()),
+                                        },
+                                        object: Term::Triple {
+                                            value: Box::new(Triple {
+                                                subject: Term::Bnode {
+                                                    value: "tos".into(),
+                                                },
+                                                predicate: Term::Uri {
+                                                    value: Iri::new_unchecked("x:top".into()),
+                                                },
+                                                object: Term::Literal(Literal::Simple {
+                                                    value: "too".into(),
+                                                }),
+                                            }),
+                                        },
+                                    }),
+                                },
+                            ),
+                        ]
                         .into_iter()
                         .collect::<HashMap<Box<str>, Term>>(),
                     ],

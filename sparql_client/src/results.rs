@@ -60,6 +60,7 @@ pub enum Term {
     Bnode { value: Box<str> },
     Literal(Literal),
     Uri { value: Iri<Box<str>> },
+    Triple { value: Box<Triple> },
 }
 
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
@@ -81,11 +82,18 @@ pub enum Literal {
     },
 }
 
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
+pub struct Triple {
+    subject: Term,
+    predicate: Term,
+    object: Term,
+}
+
 impl TryFrom<Term> for StaticTerm {
     type Error = Error;
     fn try_from(other: Term) -> Result<StaticTerm, Error> {
         use self::Literal::{Datatype, Lang, Simple};
-        use Term::{Bnode, Literal, Uri};
+        use Term::{Bnode, Literal, Triple, Uri};
         match other {
             Bnode { value } => Ok(BnodeId::new(value)?.into_term()),
             Literal(Simple { value }) => Ok(value.as_ref().into_term()),
@@ -103,6 +111,12 @@ impl TryFrom<Term> for StaticTerm {
                 lang,
                 dir: Some(dir),
             }) => Ok((value.as_ref() * lang.as_ref()).into_term::<StaticTerm>() * dir),
+            Triple { value } => {
+                let s = StaticTerm::try_from(value.subject)?;
+                let p = StaticTerm::try_from(value.predicate)?;
+                let o = StaticTerm::try_from(value.object)?;
+                Ok(StaticTerm::Triple(Box::new([s, p, o])))
+            }
             Uri { value } => Ok(value.into_term()),
         }
     }
@@ -340,6 +354,36 @@ mod test_json {
                             "value": "langdir",
                             "xml:lang": "en",
                             "its:dir": "ltr"
+                        },
+                        "c": {
+                            "type": "triple",
+                            "value": {
+                                "subject": {
+                                    "type": "bnode",
+                                    "value": "ts"
+                                },
+                                "predicate": {
+                                    "type": "uri",
+                                    "value": "x:tp"
+                                },
+                                "object": {
+                                    "type": "triple",
+                                    "value": {
+                                        "subject": {
+                                            "type": "bnode",
+                                            "value": "tos"
+                                        },
+                                        "predicate": {
+                                            "type": "uri",
+                                            "value": "x:top"
+                                        },
+                                        "object": {
+                                            "type": "literal",
+                                            "value": "too"
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 ]
@@ -395,14 +439,40 @@ mod test_json {
                         ]
                         .into_iter()
                         .collect::<HashMap<Box<str>, Term>>(),
-                        vec![(
-                            "b".into(),
-                            Term::Literal(Literal::Lang {
-                                value: "langdir".into(),
-                                lang: LanguageTag::new_unchecked("en".into()),
-                                dir: Some(BaseDirection::Ltr),
-                            }),
-                        )]
+                        vec![
+                            (
+                                "b".into(),
+                                Term::Literal(Literal::Lang {
+                                    value: "langdir".into(),
+                                    lang: LanguageTag::new_unchecked("en".into()),
+                                    dir: Some(BaseDirection::Ltr),
+                                }),
+                            ),
+                            (
+                                "c".into(),
+                                Term::Triple {
+                                    value: Box::new(Triple {
+                                        subject: Term::Bnode { value: "ts".into() },
+                                        predicate: Term::Uri {
+                                            value: Iri::new_unchecked("x:tp".into()),
+                                        },
+                                        object: Term::Triple {
+                                            value: Box::new(Triple {
+                                                subject: Term::Bnode {
+                                                    value: "tos".into(),
+                                                },
+                                                predicate: Term::Uri {
+                                                    value: Iri::new_unchecked("x:top".into()),
+                                                },
+                                                object: Term::Literal(Literal::Simple {
+                                                    value: "too".into(),
+                                                }),
+                                            }),
+                                        },
+                                    }),
+                                },
+                            ),
+                        ]
                         .into_iter()
                         .collect::<HashMap<Box<str>, Term>>(),
                     ],
