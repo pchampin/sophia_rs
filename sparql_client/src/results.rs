@@ -3,7 +3,7 @@ use super::StaticTerm;
 use serde::{Deserialize, Serialize};
 use sophia_api::term::BaseDirection;
 use sophia_api::term::{BnodeId, LanguageTag, Term as _};
-use sophia_iri::IriRef;
+use sophia_iri::Iri;
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
@@ -59,7 +59,7 @@ pub struct Results {
 pub enum Term {
     Bnode { value: Box<str> },
     Literal(Literal),
-    Uri { value: Box<str> },
+    Uri { value: Iri<Box<str>> },
 }
 
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
@@ -67,7 +67,7 @@ pub enum Term {
 pub enum Literal {
     Datatype {
         value: Box<str>,
-        datatype: Box<str>,
+        datatype: Iri<Box<str>>,
     },
     Lang {
         value: Box<str>,
@@ -91,7 +91,7 @@ impl TryFrom<Term> for StaticTerm {
             Literal(Simple { value }) => Ok(value.as_ref().into_term()),
             Literal(Datatype { value, datatype }) => Ok(StaticTerm::LiteralDatatype(
                 value.into(),
-                IriRef::new(datatype.into())?,
+                datatype.to_iri_ref().map_unchecked(Into::into),
             )),
             Literal(Lang {
                 value,
@@ -103,7 +103,7 @@ impl TryFrom<Term> for StaticTerm {
                 lang,
                 dir: Some(dir),
             }) => Ok((value.as_ref() * lang.as_ref()).into_term::<StaticTerm>() * dir),
-            Uri { value } => Ok(IriRef::new(value)?.into_term()),
+            Uri { value } => Ok(value.into_term()),
         }
     }
 }
@@ -147,7 +147,7 @@ mod test_json {
         }"#;
         let got: Term = serde_json::from_str(src).unwrap();
         let exp = Term::Uri {
-            value: "tag:u".into(),
+            value: Iri::new_unchecked("tag:u".into()),
         };
         assert_eq!(got, exp);
     }
@@ -175,7 +175,7 @@ mod test_json {
         let got: Term = serde_json::from_str(src).unwrap();
         let exp = Term::Literal(Literal::Datatype {
             value: "datatype".into(),
-            datatype: "tag:d".into(),
+            datatype: Iri::new_unchecked("tag:d".into()),
         });
         assert_eq!(got, exp);
     }
@@ -263,7 +263,7 @@ mod test_json {
                     (
                         "a".into(),
                         Term::Uri {
-                            value: "tag:a0".into(),
+                            value: Iri::new_unchecked("tag:a0".into()),
                         },
                     ),
                     (
@@ -358,7 +358,7 @@ mod test_json {
                             (
                                 "a".into(),
                                 Term::Uri {
-                                    value: "tag:a0".into(),
+                                    value: Iri::new_unchecked("tag:a0".into()),
                                 },
                             ),
                             (
@@ -381,7 +381,7 @@ mod test_json {
                                 "c".into(),
                                 Term::Literal(Literal::Datatype {
                                     value: "datatype".into(),
-                                    datatype: "tag:d1".into(),
+                                    datatype: Iri::new_unchecked("tag:d1".into()),
                                 }),
                             ),
                             (

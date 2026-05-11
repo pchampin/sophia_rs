@@ -14,6 +14,7 @@ use quick_xml::{
     name::{Namespace, QName, ResolveResult},
 };
 use sophia_api::term::LanguageTag;
+use sophia_iri::Iri;
 
 use super::{
     BindingsDocument, BindingsHead, BooleanHead, HashMap, Literal, Results, ResultsDocument, Term,
@@ -131,7 +132,10 @@ impl<R: BufRead> SparqlXmlParser<R> {
         }
         let value: Box<str> = self.next_text()?.into();
         match local_name.into_inner() {
-            b"uri" => Ok(Term::Uri { value }),
+            b"uri" => {
+                let value = Iri::new(value)?;
+                Ok(Term::Uri { value })
+            }
             b"bnode" => Ok(Term::Bnode { value }),
             b"literal" => {
                 if let Some(lang) = self.get_attr_maybe(start, "xml:lang")? {
@@ -142,6 +146,7 @@ impl<R: BufRead> SparqlXmlParser<R> {
                         .transpose()?;
                     Ok(Term::Literal(Literal::Lang { value, lang, dir }))
                 } else if let Some(datatype) = self.get_attr_maybe(start, "datatype")? {
+                    let datatype = Iri::new(datatype)?;
                     Ok(Term::Literal(Literal::Datatype { value, datatype }))
                 } else {
                     Ok(Term::Literal(Literal::Simple { value }))
@@ -406,7 +411,7 @@ mod test {
                             (
                                 "a".into(),
                                 Term::Uri {
-                                    value: "tag:a0".into(),
+                                    value: Iri::new_unchecked("tag:a0".into()),
                                 },
                             ),
                             (
@@ -429,7 +434,7 @@ mod test {
                                 "c".into(),
                                 Term::Literal(Literal::Datatype {
                                     value: "datatype".into(),
-                                    datatype: "tag:d1".into(),
+                                    datatype: Iri::new_unchecked("tag:d1".into()),
                                 }),
                             ),
                             (
