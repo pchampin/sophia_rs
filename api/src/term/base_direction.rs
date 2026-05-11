@@ -22,6 +22,14 @@ impl BaseDirection {
             Self::Rtl => "rtl",
         }
     }
+
+    fn from_bytes(s: &[u8]) -> Result<Self, ()> {
+        match s {
+            b"ltr" => Ok(Self::Ltr),
+            b"rtl" => Ok(Self::Rtl),
+            _ => Err(()),
+        }
+    }
 }
 
 impl Display for BaseDirection {
@@ -34,11 +42,7 @@ impl FromStr for BaseDirection {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "ltr" => Ok(Self::Ltr),
-            "rtl" => Ok(Self::Rtl),
-            _ => Err(()),
-        }
+        Self::from_bytes(s.as_bytes())
     }
 }
 
@@ -71,18 +75,43 @@ mod _serde {
     use super::*;
     use serde::{
         Deserialize, Serialize,
-        de::{Error, Unexpected},
+        de::{Error, Unexpected, Visitor},
     };
+
+    struct BaseDirectionVisitor;
+
+    impl<'de> Visitor<'de> for BaseDirectionVisitor {
+        type Value = BaseDirection;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str(VISITOR_MSG)
+        }
+
+        fn visit_str<E>(self, v: &str) -> std::result::Result<Self::Value, E>
+        where
+            E: Error,
+        {
+            BaseDirection::from_str(v)
+                .map_err(|_| Error::invalid_value(Unexpected::Str(v), &VISITOR_MSG))
+        }
+
+        fn visit_bytes<E>(self, v: &[u8]) -> std::result::Result<Self::Value, E>
+        where
+            E: Error,
+        {
+            BaseDirection::from_bytes(v)
+                .map_err(|_| Error::invalid_value(Unexpected::Bytes(v), &VISITOR_MSG))
+        }
+    }
+
+    static VISITOR_MSG: &str = r#"either "ltr" or "rtl""#;
 
     impl<'a> Deserialize<'a> for BaseDirection {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where
             D: serde::Deserializer<'a>,
         {
-            let inner = <&str>::deserialize(deserializer)?;
-            BaseDirection::from_str(inner).map_err(|_| {
-                D::Error::invalid_value(Unexpected::Str(inner), &"valid BaseDirection")
-            })
+            deserializer.deserialize_str(BaseDirectionVisitor)
         }
     }
 
@@ -94,7 +123,6 @@ mod _serde {
             self.as_str().serialize(serializer)
         }
     }
-
     #[cfg(test)]
     mod test {
         use super::*;
@@ -110,18 +138,34 @@ mod _serde {
         }
 
         #[test]
-        fn valid_prefix() {
+        fn valid_base_dir_str() {
             let data = MyUncheckedTable { dir: "ltr".into() };
-            let toml_str = toml::to_string(&data).unwrap();
-            let data2 = toml::from_str::<MyTable>(&toml_str).unwrap();
+            let json_str = serde_json::to_string(&data).unwrap();
+            let data2 = serde_json::from_str::<MyTable>(&json_str).unwrap();
             assert_eq!(data.dir, data2.dir.as_str());
         }
 
         #[test]
-        fn invalid_prefix() {
+        fn valid_base_dir_reader() {
+            let data = MyUncheckedTable { dir: "ltr".into() };
+            let json_str = serde_json::to_string(&data).unwrap();
+            let data2 = serde_json::from_reader::<_, MyTable>(json_str.as_bytes()).unwrap();
+            assert_eq!(data.dir, data2.dir.as_str());
+        }
+
+        #[test]
+        fn invalid_base_dir_str() {
             let data = MyUncheckedTable { dir: "f o".into() };
-            let toml_str = toml::to_string(&data).unwrap();
-            let data2 = toml::from_str::<MyTable>(&toml_str);
+            let json_str = serde_json::to_string(&data).unwrap();
+            let data2 = serde_json::from_str::<MyTable>(&json_str);
+            assert!(data2.is_err());
+        }
+
+        #[test]
+        fn invalid_base_dir_reader() {
+            let data = MyUncheckedTable { dir: "f o".into() };
+            let json_str = serde_json::to_string(&data).unwrap();
+            let data2 = serde_json::from_reader::<_, MyTable>(json_str.as_bytes());
             assert!(data2.is_err());
         }
     }

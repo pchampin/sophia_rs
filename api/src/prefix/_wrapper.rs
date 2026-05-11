@@ -24,13 +24,13 @@ mod _serde {
     };
     use std::borrow::Borrow;
 
-    impl<'a, T: Borrow<str> + From<&'a str>> Deserialize<'a> for Prefix<T> {
+    impl<'de, T: Borrow<str> + Deserialize<'de>> Deserialize<'de> for Prefix<T> {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
         where
-            D: serde::Deserializer<'a>,
+            D: serde::Deserializer<'de>,
         {
-            let inner = <&'a str>::deserialize(deserializer)?;
-            Prefix::new(inner.into())
+            let inner = T::deserialize(deserializer)?;
+            Prefix::new(inner)
                 .map_err(|err| D::Error::invalid_value(Unexpected::Str(&err.0), &"valid Prefix"))
         }
     }
@@ -59,22 +59,42 @@ mod _serde {
         }
 
         #[test]
-        fn valid_prefix() {
+        fn valid_prefix_str() {
             let data = MyUncheckedTable {
                 prefix: "foo".into(),
             };
-            let toml_str = toml::to_string(&data).unwrap();
-            let data2 = toml::from_str::<MyTable>(&toml_str).unwrap();
+            let json_str = serde_json::to_string(&data).unwrap();
+            let data2 = serde_json::from_str::<MyTable>(&json_str).unwrap();
             assert_eq!(data.prefix, data2.prefix.unwrap());
         }
 
         #[test]
-        fn invalid_prefix() {
+        fn valid_prefix_reader() {
+            let data = MyUncheckedTable {
+                prefix: "foo".into(),
+            };
+            let json_str = serde_json::to_string(&data).unwrap();
+            let data2 = serde_json::from_reader::<_, MyTable>(json_str.as_bytes()).unwrap();
+            assert_eq!(data.prefix, data2.prefix.unwrap());
+        }
+
+        #[test]
+        fn invalid_prefix_str() {
             let data = MyUncheckedTable {
                 prefix: "f o".into(),
             };
-            let toml_str = toml::to_string(&data).unwrap();
-            let data2 = toml::from_str::<MyTable>(&toml_str);
+            let json_str = serde_json::to_string(&data).unwrap();
+            let data2 = serde_json::from_str::<MyTable>(&json_str);
+            assert!(data2.is_err());
+        }
+
+        #[test]
+        fn invalid_prefix_reader() {
+            let data = MyUncheckedTable {
+                prefix: "f o".into(),
+            };
+            let json_str = serde_json::to_string(&data).unwrap();
+            let data2 = serde_json::from_reader::<_, MyTable>(json_str.as_bytes());
             assert!(data2.is_err());
         }
     }
