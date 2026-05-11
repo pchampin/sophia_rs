@@ -5,13 +5,13 @@ use serde::{
 };
 use std::borrow::Borrow;
 
-impl<'a, T: Borrow<str> + From<&'a str>> Deserialize<'a> for Iri<T> {
+impl<'de, T: Borrow<str> + Deserialize<'de>> Deserialize<'de> for Iri<T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: serde::Deserializer<'a>,
+        D: serde::Deserializer<'de>,
     {
-        let inner: &'a str = <&'a str>::deserialize(deserializer)?;
-        Self::new(inner.into())
+        let inner = T::deserialize(deserializer)?;
+        Self::new(inner)
             .map_err(|err| D::Error::invalid_value(Unexpected::Str(&err.0), &"valid IRI"))
     }
 }
@@ -62,46 +62,90 @@ mod test {
     }
 
     #[test]
-    fn valid_iri() {
+    fn valid_iri_str() {
         let data = MyUncheckedTable {
             iri: Some("http://example.org/"),
             iriref: None,
         };
-        let toml_str = toml::to_string(&data).unwrap();
-        let data2 = toml::from_str::<MyTable>(&toml_str).unwrap();
+        let json_str = serde_json::to_string(&data).unwrap();
+        let data2 = serde_json::from_str::<MyTable>(&json_str).unwrap();
         assert_eq!(data.iri.unwrap(), data2.iri.unwrap().unwrap(),);
     }
 
     #[test]
-    fn invalid_iri() {
+    fn valid_iri_reader() {
+        let data = MyUncheckedTable {
+            iri: Some("http://example.org/"),
+            iriref: None,
+        };
+        let json_str = serde_json::to_string(&data).unwrap();
+        let data2 = serde_json::from_reader::<_, MyTable>(json_str.as_bytes()).unwrap();
+        assert_eq!(data.iri.unwrap(), data2.iri.unwrap().unwrap(),);
+    }
+
+    #[test]
+    fn invalid_iri_str() {
         let data = MyUncheckedTable {
             iri: Some("#foo"),
             iriref: None,
         };
-        let toml_str = toml::to_string(&data).unwrap();
-        let data2 = toml::from_str::<MyTable>(&toml_str);
+        let json_str = serde_json::to_string(&data).unwrap();
+        let data2 = serde_json::from_str::<MyTable>(&json_str);
         assert!(data2.is_err());
     }
 
     #[test]
-    fn valid_iriref() {
+    fn invalid_iri_reader() {
+        let data = MyUncheckedTable {
+            iri: Some("#foo"),
+            iriref: None,
+        };
+        let json_str = serde_json::to_string(&data).unwrap();
+        let data2 = serde_json::from_reader::<_, MyTable>(json_str.as_bytes());
+        assert!(data2.is_err());
+    }
+
+    #[test]
+    fn valid_iriref_str() {
         let data = MyUncheckedTable {
             iriref: Some("#foo"),
             iri: None,
         };
-        let toml_str = toml::to_string(&data).unwrap();
-        let data2 = toml::from_str::<MyTable>(&toml_str).unwrap();
+        let json_str = serde_json::to_string(&data).unwrap();
+        let data2 = serde_json::from_str::<MyTable>(&json_str).unwrap();
         assert_eq!(data.iriref.unwrap(), data2.iriref.unwrap().unwrap(),);
     }
 
     #[test]
-    fn invalid_iriref() {
+    fn valid_iriref_reader() {
+        let data = MyUncheckedTable {
+            iriref: Some("#foo"),
+            iri: None,
+        };
+        let json_str = serde_json::to_string(&data).unwrap();
+        let data2 = serde_json::from_reader::<_, MyTable>(json_str.as_bytes()).unwrap();
+        assert_eq!(data.iriref.unwrap(), data2.iriref.unwrap().unwrap(),);
+    }
+
+    #[test]
+    fn invalid_iriref_str() {
         let data = MyUncheckedTable {
             iriref: Some("a b"),
             iri: None,
         };
-        let toml_str = toml::to_string(&data).unwrap();
-        let data2 = toml::from_str::<MyTable>(&toml_str);
+        let json_str = serde_json::to_string(&data).unwrap();
+        let data2 = serde_json::from_str::<MyTable>(&json_str);
+        assert!(data2.is_err());
+    }
+
+    #[test]
+    fn invalid_iriref_reader() {
+        let data = MyUncheckedTable {
+            iriref: Some("a b"),
+            iri: None,
+        };
+        let json_str = serde_json::to_string(&data).unwrap();
+        let data2 = serde_json::from_reader::<_, MyTable>(json_str.as_bytes());
         assert!(data2.is_err());
     }
 }
