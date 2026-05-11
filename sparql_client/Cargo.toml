@@ -23,7 +23,7 @@ sophia_xml.workspace = true
 quick-xml = "0.39"
 reqwest = { version = "0.13", features = ["json"] }
 serde.workspace = true
-serde_json = "1"
+serde_json.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 
