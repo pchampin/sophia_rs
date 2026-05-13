@@ -113,6 +113,46 @@ fn get_file5_no_ext() -> TestResult {
 }
 
 #[test]
+fn get_file6() -> TestResult {
+    let ldr = make_loader();
+    assert_eq!(
+        ldr.get(F6)?,
+        (read("test/file6.nq")?, "application/n-quads".into()),
+    );
+    Ok(())
+}
+
+#[test]
+fn get_file6_no_ext() -> TestResult {
+    let ldr = make_loader();
+    assert_eq!(
+        ldr.get(F6X)?,
+        (read("test/file6.nq")?, "application/n-quads".into()),
+    );
+    Ok(())
+}
+
+#[test]
+fn get_file7() -> TestResult {
+    let ldr = make_loader();
+    assert_eq!(
+        ldr.get(F7)?,
+        (read("test/file7.trig")?, "application/trig".into()),
+    );
+    Ok(())
+}
+
+#[test]
+fn get_file7_no_ext() -> TestResult {
+    let ldr = make_loader();
+    assert_eq!(
+        ldr.get(F7X)?,
+        (read("test/file7.trig")?, "application/trig".into()),
+    );
+    Ok(())
+}
+
+#[test]
 fn file_not_found() -> TestResult {
     let ldr = make_loader();
     assert!(matches!(ldr.get(FAIL), Err(LoaderError::NotFound(..)),));
@@ -167,6 +207,72 @@ fn graph_from_rdfxml() -> TestResult {
     let ldr = make_loader();
     let g: MyGraph = ldr.get_graph(F5)?;
     assert_eq!(g.len(), F5_LEN);
+    Ok(())
+}
+
+#[test]
+fn graph_from_nq() -> TestResult {
+    let ldr = make_loader();
+    let g: MyGraph = ldr.get_graph(F6)?;
+    assert_eq!(g.len(), 1);
+    Ok(())
+}
+
+#[test]
+fn graph_from_trig() -> TestResult {
+    let ldr = make_loader();
+    let g: MyGraph = ldr.get_graph(F7)?;
+    assert_eq!(g.len(), 1);
+    Ok(())
+}
+
+#[test]
+fn dataset_from_ttl() -> TestResult {
+    let ldr = make_loader();
+    let g: MyDataset = ldr.get_dataset(F1)?;
+    assert_eq!(g.len(), F1_LEN);
+    Ok(())
+}
+
+#[test]
+fn dataset_from_nt() -> TestResult {
+    let ldr = make_loader();
+    let g: MyDataset = ldr.get_dataset(F3)?;
+    assert_eq!(g.len(), F3_LEN);
+    Ok(())
+}
+
+#[cfg(feature = "jsonld")]
+#[test]
+fn dataset_from_jsonld() -> TestResult {
+    let ldr = make_loader();
+    let g: MyDataset = ldr.get_dataset(F4)?;
+    assert_eq!(g.len(), F4_LEN);
+    Ok(())
+}
+
+#[cfg(feature = "xml")]
+#[test]
+fn dataset_from_rdfxml() -> TestResult {
+    let ldr = make_loader();
+    let g: MyDataset = ldr.get_dataset(F5)?;
+    assert_eq!(g.len(), F5_LEN);
+    Ok(())
+}
+
+#[test]
+fn dataset_from_nq() -> TestResult {
+    let ldr = make_loader();
+    let g: MyDataset = ldr.get_dataset(F6)?;
+    assert_eq!(g.len(), 2);
+    Ok(())
+}
+
+#[test]
+fn dataset_from_trig() -> TestResult {
+    let ldr = make_loader();
+    let g: MyDataset = ldr.get_dataset(F7)?;
+    assert_eq!(g.len(), 2);
     Ok(())
 }
 

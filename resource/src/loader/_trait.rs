@@ -2,14 +2,16 @@ use super::{LoaderError, util::iri_buf};
 use crate::{Resource, ResourceError, TypedResource};
 #[cfg(feature = "jsonld")]
 use futures_util::FutureExt;
+use sophia_api::dataset::CollectibleDataset;
 use sophia_api::graph::CollectibleGraph;
-use sophia_api::parser::TripleParser;
-use sophia_api::source::TripleSource;
+use sophia_api::parser::{QuadParser, TripleParser};
+use sophia_api::quad::Quad;
+use sophia_api::source::{QuadSource, TripleSource};
 use sophia_api::term::Term;
 use sophia_iri::{AsIriRef, Iri};
 #[cfg(feature = "jsonld")]
 use sophia_jsonld::loader_factory::ClosureLoaderFactory;
-use sophia_turtle::parser::{nt, turtle};
+use sophia_turtle::parser::{nq, nt, trig, turtle};
 use std::borrow::Borrow;
 use std::convert::Into;
 use std::io;
@@ -24,7 +26,7 @@ pub trait Loader: Sync + Sized {
     /// NB: the content-type must not contain any parameter.
     fn get<T: Borrow<str>>(&self, iri: Iri<T>) -> Result<(Vec<u8>, String), LoaderError>;
 
-    /// Get the RDF representation of the resource identified by `iri`.
+    /// Get the RDF graph representation of the resource identified by `iri`.
     ///
     /// # Precondition
     /// `iri` must contain no fragment identifier.
@@ -50,32 +52,11 @@ pub trait Loader: Sync + Sized {
                 .map_err(|err| LoaderError::ParseError(iri_buf(iri_str), Box::new(err))),
 
             #[cfg(feature = "jsonld")]
-            "application/ld+json" => {
-                use sophia_api::prelude::{Quad, QuadParser, QuadSource};
-                use sophia_jsonld::{JsonLdOptions, JsonLdParser, loader::ClosureLoader};
-                let options = JsonLdOptions::new()
-                    .with_base(iri.as_ref().map_unchecked(Into::into))
-                    .with_document_loader_factory(ClosureLoaderFactory::new(|| {
-                        ClosureLoader::new(|url| {
-                            async move {
-                                let (content, ctype) =
-                                    self.get(url.as_ref()).map_err(|e| e.to_string())?;
-                                if ctype == "application/ld+json" {
-                                    String::from_utf8(content).map_err(|e| e.to_string())
-                                } else {
-                                    Err(format!("{url} is not JSON-LD: {ctype}"))
-                                }
-                            }
-                            .boxed()
-                        })
-                    }));
-                JsonLdParser::new_with_options(options)
-                    .parse(bufread)
-                    .filter_quads(|q| q.g().is_none())
-                    .map_quads(Quad::into_triple)
-                    .collect_triples()
-                    .map_err(|err| LoaderError::ParseError(iri_buf(iri_str), Box::new(err)))
-            }
+            "application/ld+json" => parse_jsonld(self, bufread, iri.as_ref())
+                .filter_quads(|q| q.g().is_none())
+                .to_triples()
+                .collect_triples()
+                .map_err(|err| LoaderError::ParseError(iri_buf(iri_str), Box::new(err))),
 
             #[cfg(feature = "xml")]
             "application/rdf+xml" => sophia_xml::parser::RdfXmlParser {
@@ -83,6 +64,63 @@ pub trait Loader: Sync + Sized {
             }
             .parse(bufread)
             .collect_triples()
+            .map_err(|err| LoaderError::ParseError(iri_buf(iri_str), Box::new(err))),
+
+            "application/n-quads" => nq::NQuadsParser::new()
+                .parse(bufread)
+                .filter_quads(|q| q.g().is_none())
+                .to_triples()
+                .collect_triples()
+                .map_err(|err| LoaderError::ParseError(iri_buf(iri_str), Box::new(err))),
+
+            "application/trig" => trig::TriGParser::new()
+                .parse(bufread)
+                .filter_quads(|q| q.g().is_none())
+                .to_triples()
+                .collect_triples()
+                .map_err(|err| LoaderError::ParseError(iri_buf(iri_str), Box::new(err))),
+
+            _ => Err(LoaderError::CantGuessSyntax(iri_buf(iri_str))),
+        }
+    }
+
+    /// Get the RDF dataset representation of the resource identified by `iri`.
+    ///
+    /// # Precondition
+    /// `iri` must contain no fragment identifier.
+    fn get_dataset<D, T>(&self, iri: Iri<T>) -> Result<D, LoaderError>
+    where
+        T: Borrow<str>,
+        D: CollectibleDataset,
+    {
+        debug_assert!(iri.as_str().find('#').is_none());
+        let iri_str = iri.as_str();
+        let (data, ctype) = self.get(iri.as_ref())?;
+        let bufread = io::BufReader::new(&data[..]);
+        match &ctype[..] {
+            "text/turtle" | "application/trig" => trig::TriGParser::new()
+                .with_base(Some(iri.as_iri_ref().map_unchecked(Box::from).to_base()))
+                .parse(bufread)
+                .collect_quads()
+                .map_err(|err| LoaderError::ParseError(iri_buf(iri_str), Box::new(err))),
+
+            "application/n-triples" | "application/n-quads" => nq::NQuadsParser::new()
+                .parse(bufread)
+                .collect_quads()
+                .map_err(|err| LoaderError::ParseError(iri_buf(iri_str), Box::new(err))),
+
+            #[cfg(feature = "jsonld")]
+            "application/ld+json" => parse_jsonld(self, bufread, iri.as_ref())
+                .collect_quads()
+                .map_err(|err| LoaderError::ParseError(iri_buf(iri_str), Box::new(err))),
+
+            #[cfg(feature = "xml")]
+            "application/rdf+xml" => sophia_xml::parser::RdfXmlParser {
+                base: Some(iri.as_ref().map_unchecked(std::string::ToString::to_string)),
+            }
+            .parse(bufread)
+            .to_quads()
+            .collect_quads()
             .map_err(|err| LoaderError::ParseError(iri_buf(iri_str), Box::new(err))),
 
             _ => Err(LoaderError::CantGuessSyntax(iri_buf(iri_str))),
@@ -144,4 +182,28 @@ pub trait Loader: Sync + Sized {
             .map_err(ResourceError::LoaderError)?
             .try_into()
     }
+}
+
+fn parse_jsonld<L: Loader>(
+    loader: &L,
+    bufread: io::BufReader<&[u8]>,
+    iri: Iri<&str>,
+) -> impl QuadSource {
+    use sophia_jsonld::{JsonLdOptions, JsonLdParser, loader::ClosureLoader};
+    let options = JsonLdOptions::new()
+        .with_base(iri.as_ref().map_unchecked(Into::into))
+        .with_document_loader_factory(ClosureLoaderFactory::new(|| {
+            ClosureLoader::new(|url| {
+                async move {
+                    let (content, ctype) = loader.get(url.as_ref()).map_err(|e| e.to_string())?;
+                    if ctype == "application/ld+json" {
+                        String::from_utf8(content).map_err(|e| e.to_string())
+                    } else {
+                        Err(format!("{url} is not JSON-LD: {ctype}"))
+                    }
+                }
+                .boxed()
+            })
+        }));
+    JsonLdParser::new_with_options(options).parse(bufread)
 }

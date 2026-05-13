@@ -20,6 +20,7 @@ mod test {
     use sophia_api::{
         MownStr,
         prelude::{Graph, Term},
+        quad::Spog,
         term::SimpleTerm,
     };
     use sophia_iri::Iri;
@@ -38,6 +39,8 @@ mod test {
     pub const F4: Iri<&str> = Iri::new_unchecked_const("http://example.org/file4.jsonld");
     #[cfg(feature = "xml")]
     pub const F5: Iri<&str> = Iri::new_unchecked_const("http://example.org/file5.rdf");
+    pub const F6: Iri<&str> = Iri::new_unchecked_const("http://example.org/file6.nq");
+    pub const F7: Iri<&str> = Iri::new_unchecked_const("http://example.org/file7.trig");
     pub const SUBDIR: Iri<&str> = Iri::new_unchecked_const("http://example.org/subdir");
     // test with no extension (conneg emulation)
     pub const F1X: Iri<&str> = Iri::new_unchecked_const("http://example.org/file1");
@@ -47,6 +50,8 @@ mod test {
     pub const F4X: Iri<&str> = Iri::new_unchecked_const("http://example.org/file4");
     #[cfg(feature = "xml")]
     pub const F5X: Iri<&str> = Iri::new_unchecked_const("http://example.org/file5");
+    pub const F6X: Iri<&str> = Iri::new_unchecked_const("http://example.org/file6");
+    pub const F7X: Iri<&str> = Iri::new_unchecked_const("http://example.org/file7");
 
     pub const EX_ID: Iri<&str> = Iri::new_unchecked_const("http://example.org/ns#id");
     pub const EX_LIST: Iri<&str> = Iri::new_unchecked_const("http://example.org/ns#list");
@@ -72,6 +77,7 @@ mod test {
     pub const F5_LEN: usize = 20;
 
     pub type MyGraph = Vec<[SimpleTerm<'static>; 3]>;
+    pub type MyDataset = Vec<Spog<SimpleTerm<'static>>>;
     pub type TestResult = Result<(), Box<dyn std::error::Error>>;
 
     pub fn make_loader() -> LocalLoader {

@@ -70,6 +70,10 @@ impl LocalLoader {
             "application/ld+json".into()
         } else if cfg!(feature = "xml") && iri.ends_with(".rdf") {
             "application/rdf+xml".into()
+        } else if iri.ends_with(".nq") {
+            "application/n-quads".into()
+        } else if iri.ends_with(".trig") {
+            "application/trig".into()
         } else {
             "application/octet-stream".into()
         }
@@ -91,12 +95,14 @@ impl Loader for LocalLoader {
                         let no_ext = iri.as_bytes()[iri.rfind(['.', '/']).unwrap_or(0)] != b'.';
                         if no_ext {
                             for ext in [
-                                "ttl",
                                 "nt",
+                                "ttl",
                                 #[cfg(feature = "jsonld")]
                                 "jsonld",
                                 #[cfg(feature = "xml")]
                                 "rdf",
+                                "nq",
+                                "trig",
                             ] {
                                 let alt = Iri::new_unchecked(format!("{iri}.{ext}"));
                                 if let Ok(res) = self.get(alt) {
