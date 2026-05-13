@@ -106,10 +106,11 @@ impl SparqlValue {
 
     pub fn is_truthy(&self) -> Option<bool> {
         match self {
-            SparqlValue::Boolean(opt) => opt.or(Some(false)),
+            SparqlValue::Boolean(opt) => *opt,
             SparqlValue::DateTime(_) => None,
             SparqlValue::Number(opt) => opt.as_ref().map(SparqlNumber::is_truthy),
-            SparqlValue::String(val, _) => Some(!val.is_empty()),
+            SparqlValue::String(val, None) => Some(!val.is_empty()),
+            SparqlValue::String(_, Some(_)) => None,
         }
     }
 
