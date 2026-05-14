@@ -78,6 +78,11 @@ impl LocalLoader {
             "application/octet-stream".into()
         }
     }
+
+    /// The mapping used by this loader between IRIs and local paths
+    pub fn caches(&self) -> &[(IriBuf, PathBuf)] {
+        &self.caches
+    }
 }
 
 impl Loader for LocalLoader {
