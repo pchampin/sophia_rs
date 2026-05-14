@@ -1,6 +1,8 @@
 use std::marker::PhantomData;
 
-use super::{Resource, ResourceError, ResourceError::NoValueFor, ResourceResult, TypedResource};
+use super::{
+    Resource, ResourceError, ResourceErrorKind::NoValueFor, ResourceResult, TypedResource,
+};
 use crate::Loader;
 use sophia_api::{graph::CollectibleGraph, prelude::*, term::SimpleTerm};
 
@@ -132,10 +134,10 @@ where
             None => None,
             Some(Err(e)) => Some(Err(e.into())),
             Some(Ok(c)) => match c.get_term(&self.value) {
-                Err(NoValueFor { .. }) => None,
+                Err(e) if matches!(*e, NoValueFor { .. }) => None,
                 Err(e) => Some(Err(e.into())),
                 Ok(v) => match c.get_term(&self.next) {
-                    Err(NoValueFor { .. }) => Some(f(&c, v)),
+                    Err(e) if matches!(*e, NoValueFor { .. }) => Some(f(&c, v)),
                     Err(e) => Some(Err(e.into())),
                     Ok(n) => {
                         let res = f(&c, v);

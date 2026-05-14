@@ -12,10 +12,12 @@ pub mod loader;
 pub mod resource;
 
 pub use loader::{Loader, LoaderError, LocalLoader, NoLoader};
-pub use resource::{Resource, ResourceError, TypedResource};
+pub use resource::{Resource, ResourceError, ResourceErrorKind, TypedResource};
 
 #[cfg(test)]
 mod test {
+    use crate::resource::ResourceErrorKind;
+
     use super::*;
     use sophia_api::{
         MownStr,
@@ -97,10 +99,11 @@ mod test {
 
         fn try_from(value: Resource<MyGraph, LocalLoader>) -> Result<Self, Self::Error> {
             if value.get_any_term(EX_ID)?.is_none() {
-                Err(ResourceError::NoValueFor {
+                Err(ResourceErrorKind::NoValueFor {
                     id: value.id().into_term(),
                     predicate: EX_ID.into_term(),
-                })
+                }
+                .into())
             } else {
                 Ok(Self(value))
             }

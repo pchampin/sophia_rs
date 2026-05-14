@@ -1,4 +1,5 @@
 use crate::Loader;
+use crate::resource::ResourceErrorKind;
 use sophia_api::MownStr;
 use sophia_api::graph::CollectibleGraph;
 use sophia_api::ns::rdf;
@@ -10,9 +11,7 @@ use std::sync::Arc;
 
 use super::{
     LadderResourceIterator, LadderTermIterator, LadderTypedIterator, ResourceError,
-    ResourceError::{
-        GraphError, IriNotAbsolute, LoaderError, NoValueFor, UnexpectedMultipleValueFor,
-    },
+    ResourceErrorKind::{GraphError, IriNotAbsolute, NoValueFor, UnexpectedMultipleValueFor},
     ResourceResult, TypedResource,
 };
 
@@ -241,7 +240,8 @@ where
             Err(UnexpectedMultipleValueFor {
                 id: self.id.clone(),
                 predicate: predicate.borrow_term().into_term(),
-            })
+            }
+            .into())
         } else {
             first.ok_or_else(|| NoValueFor {
                 id: self.id.clone(),
@@ -325,7 +325,8 @@ where
             Err(UnexpectedMultipleValueFor {
                 id: self.id.clone(),
                 predicate: predicate.borrow_term().into_term(),
-            })
+            }
+            .into())
         } else {
             first.ok_or_else(|| NoValueFor {
                 id: self.id.clone(),
@@ -386,7 +387,8 @@ where
             Err(UnexpectedMultipleValueFor {
                 id: self.id.clone(),
                 predicate: predicate.borrow_term().into_term(),
-            })
+            }
+            .into())
         } else {
             first.ok_or_else(|| NoValueFor {
                 id: self.id.clone(),
@@ -424,11 +426,13 @@ where
         self.graph
             .triples_matching([&self.id], [predicate], Any)
             .map(|res| {
-                res.map(|t| t.to_o().into_term())
-                    .map_err(|error| GraphError {
+                res.map(|t| t.to_o().into_term()).map_err(|error| {
+                    GraphError {
                         id: self.id.clone(),
                         error,
-                    })
+                    }
+                    .into()
+                })
             })
             .collect::<Vec<_>>()
             .into_iter()
@@ -451,7 +455,7 @@ where
     /// [`Self::get_all_terms`].
     pub fn get_term_items<T: Term>(&self, predicate: T) -> LadderTermIterator<G, L> {
         let current = match self.get_term(predicate) {
-            Err(NoValueFor { .. }) => None,
+            Err(e) if matches!(*e, NoValueFor { .. }) => None,
             Err(err) => Some(Err(err)),
             Ok(id) => Some(Ok(Self {
                 id,
@@ -478,7 +482,8 @@ where
             Err(UnexpectedMultipleValueFor {
                 id: self.id.clone(),
                 predicate: predicate.borrow_term().into_term(),
-            })
+            }
+            .into())
         } else {
             first.ok_or_else(|| NoValueFor {
                 id: self.id.clone(),
@@ -515,11 +520,13 @@ where
         self.graph
             .triples_matching(Any, [predicate], [&self.id])
             .map(|res| {
-                res.map(|t| t.to_s().into_term())
-                    .map_err(|error| GraphError {
+                res.map(|t| t.to_s().into_term()).map_err(|error| {
+                    GraphError {
                         id: self.id.clone(),
                         error,
-                    })
+                    }
+                    .into()
+                })
             })
     }
 
@@ -540,26 +547,29 @@ where
         predicate: U,
     ) -> ResourceResult<MownStr<'a>, G> {
         let Some(dt) = value.datatype() else {
-            return Err(ResourceError::UnexpectedKind {
+            return Err(ResourceErrorKind::UnexpectedKind {
                 id: self.id.clone(),
                 predicate: predicate.into_term(),
                 found_kind: value.kind(),
-            });
+            }
+            .into());
         };
         if !Term::eq(dt.borrow_term(), datatype) {
-            return Err(ResourceError::UnexpectedDatatype {
+            return Err(ResourceErrorKind::UnexpectedDatatype {
                 id: self.id.clone(),
                 predicate: predicate.into_term(),
                 found_datatype: dt.into_term(),
-            });
+            }
+            .into());
         }
         let lex = value.lexical_form().unwrap();
         if !lexical_forms.is_empty() && lexical_forms.iter().all(|i| *i != &*lex) {
-            return Err(ResourceError::UnexpectedValue {
+            return Err(ResourceErrorKind::UnexpectedValue {
                 id: self.id.clone(),
                 predicate: predicate.into_term(),
                 found_value: value.borrow_term().into_term(),
-            });
+            }
+            .into());
         }
         Ok(lex)
     }
@@ -577,7 +587,7 @@ where
             if let Some(base) = &self.base {
                 let other_base = iri.as_str().split('#').next().unwrap();
                 if other_base != base.as_str() {
-                    return self.loader.get_resource(iri).map_err(LoaderError);
+                    return self.loader.get_resource(iri).map_err(ResourceError::from);
                 }
             }
         }

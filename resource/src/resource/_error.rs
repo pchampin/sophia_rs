@@ -2,10 +2,15 @@ use sophia_api::term::TermKind;
 use sophia_api::{prelude::*, term::SimpleTerm};
 use std::error::Error;
 use std::fmt;
+use std::ops::Deref;
 
 /// An error raised when creating a [`Resource`](crate::Resource)
 #[derive(Debug)]
-pub enum ResourceError<E: Error + Send + Sync + 'static> {
+pub struct ResourceError<E: Error + Send + Sync + 'static>(Box<ResourceErrorKind<E>>);
+
+/// An error raised when creating a [`Resource`](crate::Resource)
+#[derive(Debug)]
+pub enum ResourceErrorKind<E: Error + Send + Sync + 'static> {
     /// The IRI is not absolute (an can therefore not be dereferenced)
     IriNotAbsolute(IriRef<Box<str>>),
     /// The resource could not be loaded
@@ -76,21 +81,34 @@ where
 {
     /// The identifier of the resource raising the error.
     ///
-    /// NB: for errors raised during creation ([`ResourceError::IriNotAbsolute`], [`ResourceError::LoaderError`]),
+    /// NB: for errors raised during creation
+    /// ([`ResourceErrorKind::IriNotAbsolute`], [`ResourceErrorKind::LoaderError`]),
     /// the identifier of the to-be-created resource is returned
     /// (*not* the resource from which it was discovered).
     pub fn resource_id(&self) -> SimpleTerm<'_> {
-        match self {
-            Self::IriNotAbsolute(iriref) => iriref.as_simple(),
-            Self::LoaderError(err) => err.iri().into_term(),
-            Self::GraphError { id, .. } => id.as_simple(),
-            Self::NoValueFor { id, .. } => id.as_simple(),
-            Self::UnexpectedMultipleValueFor { id, .. } => id.as_simple(),
-            Self::MissingType { id, .. } => id.as_simple(),
-            Self::UnexpectedKind { id, .. } => id.as_simple(),
-            Self::UnexpectedDatatype { id, .. } => id.as_simple(),
-            Self::UnexpectedValue { id, .. } => id.as_simple(),
+        use ResourceErrorKind::*;
+        match &*self.0 {
+            IriNotAbsolute(iriref) => iriref.as_simple(),
+            LoaderError(err) => err.iri().into_term(),
+            GraphError { id, .. } => id.as_simple(),
+            NoValueFor { id, .. } => id.as_simple(),
+            UnexpectedMultipleValueFor { id, .. } => id.as_simple(),
+            MissingType { id, .. } => id.as_simple(),
+            UnexpectedKind { id, .. } => id.as_simple(),
+            UnexpectedDatatype { id, .. } => id.as_simple(),
+            UnexpectedValue { id, .. } => id.as_simple(),
         }
+    }
+}
+
+impl<E> Deref for ResourceError<E>
+where
+    E: Error + Send + Sync + 'static,
+{
+    type Target = ResourceErrorKind<E>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -108,7 +126,16 @@ where
     E: Error + Send + Sync + 'static,
 {
     fn from(value: crate::loader::LoaderError) -> Self {
-        Self::LoaderError(value)
+        ResourceErrorKind::LoaderError(value).into()
+    }
+}
+
+impl<E: Error> From<ResourceErrorKind<E>> for ResourceError<E>
+where
+    E: Error + Send + Sync + 'static,
+{
+    fn from(value: ResourceErrorKind<E>) -> Self {
+        Self(Box::new(value))
     }
 }
 

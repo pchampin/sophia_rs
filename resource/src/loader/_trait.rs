@@ -164,7 +164,7 @@ pub trait Loader: Sync + Sized {
         G: CollectibleGraph + 'static,
     {
         self.get_resource(iri)
-            .map_err(ResourceError::LoaderError)?
+            .map_err(ResourceError::from)?
             .try_into()
     }
 
@@ -179,7 +179,7 @@ pub trait Loader: Sync + Sized {
         Self: 'static,
     {
         self.get_resource_from(id, url)
-            .map_err(ResourceError::LoaderError)?
+            .map_err(ResourceError::from)?
             .try_into()
     }
 }

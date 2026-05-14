@@ -311,7 +311,7 @@ fn typed_fail() -> TestResult {
     let ldr = make_loader().arced();
     assert!(matches!(
         ldr.get_typed::<WithId, _, _>(F2R2),
-        Err(crate::ResourceError::NoValueFor { .. }),
+        Err(e) if matches!(*e, crate::ResourceErrorKind::NoValueFor { .. }),
     ));
     Ok(())
 }

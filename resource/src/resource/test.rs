@@ -4,7 +4,7 @@ use sophia_api::prelude::*;
 use sophia_api::term::SimpleTerm;
 use std::sync::Arc;
 
-use ResourceError::*;
+use ResourceErrorKind::*;
 
 #[test]
 fn id() -> TestResult {
@@ -24,7 +24,7 @@ fn get_term() -> TestResult {
 fn get_term_no_value() -> TestResult {
     let f1r1 = make_rsc(F1R1)?;
     let res = f1r1.get_term(EX_UNUSED);
-    assert!(matches!(res, Err(NoValueFor { .. })));
+    assert!(matches!(res, Err(e) if matches!(*e, NoValueFor { .. })));
     Ok(())
 }
 
@@ -32,7 +32,7 @@ fn get_term_no_value() -> TestResult {
 fn get_term_too_many_values() -> TestResult {
     let f1r1 = make_rsc(F1R1)?;
     let res = f1r1.get_term(EX_RELATED);
-    assert!(matches!(res, Err(UnexpectedMultipleValueFor { .. })));
+    assert!(matches!(res, Err(e) if matches!(*e, UnexpectedMultipleValueFor { .. })));
     Ok(())
 }
 
@@ -131,7 +131,7 @@ fn pred_term() -> TestResult {
 fn pred_term_no_value() -> TestResult {
     let f1r1 = make_rsc(F1R1)?;
     let res = f1r1.pred_term(EX_UNUSED);
-    assert!(matches!(res, Err(NoValueFor { .. })));
+    assert!(matches!(res, Err(e) if matches!(*e, NoValueFor { .. })));
     Ok(())
 }
 
@@ -139,7 +139,7 @@ fn pred_term_no_value() -> TestResult {
 fn pred_term_too_many_values() -> TestResult {
     let f1r2 = make_rsc(F1R2)?;
     let res = f1r2.pred_term(EX_RELATED);
-    assert!(matches!(res, Err(UnexpectedMultipleValueFor { .. })));
+    assert!(matches!(res, Err(e) if matches!(*e, UnexpectedMultipleValueFor { .. })));
     Ok(())
 }
 
@@ -218,7 +218,7 @@ fn get_resource_foreign() -> TestResult {
 fn get_resource_no_value() -> TestResult {
     let f1r1 = make_rsc(F1R1)?;
     let res = f1r1.get_resource(EX_UNUSED);
-    assert!(matches!(res, Err(NoValueFor { .. })));
+    assert!(matches!(res, Err(e) if matches!(*e, NoValueFor { .. })));
     Ok(())
 }
 
@@ -226,7 +226,7 @@ fn get_resource_no_value() -> TestResult {
 fn get_resource_too_many_values() -> TestResult {
     let f1r1 = make_rsc(F1R1)?;
     let res = f1r1.get_resource(EX_RELATED);
-    assert!(matches!(res, Err(UnexpectedMultipleValueFor { .. })));
+    assert!(matches!(res, Err(e) if matches!(*e, UnexpectedMultipleValueFor { .. })));
     Ok(())
 }
 
@@ -234,7 +234,7 @@ fn get_resource_too_many_values() -> TestResult {
 fn get_resource_unreachable() -> TestResult {
     let f1r1 = make_rsc(F1R1)?;
     let res = f1r1.get_resource(EX_UNREACHABLE);
-    assert!(matches!(res, Err(LoaderError(_))));
+    assert!(matches!(res, Err(e) if matches!(*e, LoaderError(_))));
     Ok(())
 }
 
@@ -331,7 +331,7 @@ fn pred_resource() -> TestResult {
 fn pred_resource_no_value() -> TestResult {
     let f1r1 = make_rsc(F1R1)?;
     let res = f1r1.pred_resource(EX_UNUSED);
-    assert!(matches!(res, Err(NoValueFor { .. })));
+    assert!(matches!(res, Err(e) if matches!(*e, NoValueFor { .. })));
     Ok(())
 }
 
@@ -339,7 +339,7 @@ fn pred_resource_no_value() -> TestResult {
 fn pred_resource_too_many_values() -> TestResult {
     let f1r2 = make_rsc(F1R2)?;
     let res = f1r2.pred_resource(EX_RELATED);
-    assert!(matches!(res, Err(UnexpectedMultipleValueFor { .. })));
+    assert!(matches!(res, Err(e) if matches!(*e, UnexpectedMultipleValueFor { .. })));
     Ok(())
 }
 
@@ -411,7 +411,7 @@ fn get_typed_foreign() -> TestResult {
 fn get_typed_no_value() -> TestResult {
     let f1r1 = make_rsc(F1R1)?;
     let res = f1r1.get_typed::<WithId, _>(EX_UNUSED);
-    assert!(matches!(res, Err(NoValueFor { .. })));
+    assert!(matches!(res, Err(e) if matches!(*e, NoValueFor { .. })));
     Ok(())
 }
 
@@ -419,7 +419,7 @@ fn get_typed_no_value() -> TestResult {
 fn get_typed_too_many_values() -> TestResult {
     let f1r1 = make_rsc(F1R1)?;
     let res = f1r1.get_typed::<WithId, _>(EX_RELATED);
-    assert!(matches!(res, Err(UnexpectedMultipleValueFor { .. })));
+    assert!(matches!(res, Err(e) if matches!(*e, UnexpectedMultipleValueFor { .. })));
     Ok(())
 }
 
@@ -427,7 +427,7 @@ fn get_typed_too_many_values() -> TestResult {
 fn get_typed_unreachable() -> TestResult {
     let f1r1 = make_rsc(F1R1)?;
     let res = f1r1.get_typed::<WithId, _>(EX_UNREACHABLE);
-    assert!(matches!(res, Err(LoaderError(_))));
+    assert!(matches!(res, Err(e) if matches!(*e, LoaderError(_))));
     Ok(())
 }
 
@@ -527,7 +527,7 @@ fn pred_typed() -> TestResult {
 fn pred_typed_no_value() -> TestResult {
     let f1r1 = make_rsc(F1R1)?;
     let res = f1r1.pred_typed::<WithId, _>(EX_UNUSED);
-    assert!(matches!(res, Err(NoValueFor { .. })));
+    assert!(matches!(res, Err(e) if matches!(*e, NoValueFor { .. })));
     Ok(())
 }
 
@@ -535,7 +535,7 @@ fn pred_typed_no_value() -> TestResult {
 fn pred_typed_too_many_values() -> TestResult {
     let f1r2 = make_rsc(F1R2)?;
     let res = f1r2.pred_typed::<WithId, _>(EX_RELATED);
-    assert!(matches!(res, Err(UnexpectedMultipleValueFor { .. })));
+    assert!(matches!(res, Err(e) if matches!(*e, UnexpectedMultipleValueFor { .. })));
     Ok(())
 }
 
