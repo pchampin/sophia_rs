@@ -399,7 +399,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
                     self.extra().state
                 );
                 self.pop_triple_components(1);
-                debug_assert!(self.inner().terms.is_empty());
+                debug_assert!(self.inner().terms.len() <= 1);
                 for _ in 0..2 {
                     self.extra_mut().state.pop();
                 }
