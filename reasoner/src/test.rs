@@ -166,6 +166,7 @@ fn simple_entail(g1: &str, g2: &str, exp: bool) {
 #[test_case(r#":s :p "foo"^^xsd:int."#; "int")]
 #[test_case(r#":s :p "299"^^xsd:byte."#; "byte")]
 #[test_case(r#":s :p "-1"^^xsd:positiveInteger."#; "positiveInteger")]
+#[test_case(r#":a1 :p1 <<( :a :b "c"^^xsd:integer )>>."#; "integer in triple term")]
 fn d_sparql_ill_typed(g1: &str) {
     static PREFIXES: &str = r"
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>

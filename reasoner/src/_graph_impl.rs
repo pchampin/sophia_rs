@@ -133,7 +133,11 @@ impl<D: Recognized, R: RuleSet> ReasonableGraph<D, R> {
                     .unwrap()
             }
             SimpleTerm::Triple(spo) => {
-                let spo = [0, 1, 2].map(|i| self.get_or_make_index(&spo[i]).unwrap());
+                let spo = [
+                    self.get_or_make_index(&spo[0])?,
+                    self.get_or_make_index(&spo[1])?,
+                    self.get_or_make_index(&spo[2])?,
+                ];
                 self.terms.ensure_triple_term_index(spo).unwrap()
             }
             _ => self.terms.ensure_index(term.borrow_term()).unwrap(),
