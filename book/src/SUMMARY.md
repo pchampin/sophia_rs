@@ -10,4 +10,6 @@
 - [Term Matchers](./ch05_term_matchers.md)
 - [RDF Datasets](./ch06_rdf_datasets.md)
 - [Parsing and Serializing](./ch07_parsing_and_serializing.md)
+- [Querying](./ch08_querying.md)
+- [Reasoning](./ch09_reasoning.md)
 - [Changes since version 0.7](./ch90_changes_since_07.md)

@@ -76,5 +76,9 @@ mod booktest {
     booktest!(ch05_term_matchers);
     booktest!(ch06_rdf_datasets);
     booktest!(ch07_parsing_and_serializing);
+    #[cfg(feature = "sparql")]
+    booktest!(ch08_querying);
+    #[cfg(feature = "reasoner")]
+    booktest!(ch09_reasoning);
     booktest!(ch90_changes_since_07);
 }
