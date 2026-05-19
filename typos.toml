@@ -7,6 +7,7 @@ extend-ignore-identifiers-re = [
   "typ",
   "iz",
   "ot",
+  "2a350caf",
 ]
 extend-ignore-re = [
   "raison d'être",

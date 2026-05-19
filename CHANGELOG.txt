@@ -1,12 +1,37 @@
-0.10.0 (pending)
+0.10.0
+    Headline:
+    - Sophia is now RDF 1.2 compliant (API, parsers and serializers)
+    - sophia_sparql now fully supports SPARQL 1.2 Query
     Breaking changes:
+    - trait Term has additional methods for direction language strings,
     - Term::cmp has changed semantics to align with SPARQL order
+    - traits Triple and Quad now have an additional associated type
+      BorrowTerm (see e61d2d14)
+    - in traits Graph and Dataset, he quoted_triples method is now named
+      triple_terms
+    - some implementations of Graph/Dataset for standard types
+      have changed their associated type Triple/Quad (see 2a350caf)
+    New features
+    - sophia_iri now provides Uri and UriRef wrappers (behind feature 'uri')
+    - Vec of Terms now implement TermMatcher
+    - References to a type implementing Triple (resp. Quad)
+      now also implement Triple (resp. Quad)
+    - new methods in Graph/Dataset: subject_matching, predicate_matching, etc.
+    - by default, parsers produce unique bnode labels;
+      they can be configured to preserve the labels from the source,
+      but that is not the default anymore
+    - sophia_c14n now provides an alternative c14n algorithm that extends
+      RDFC1.0 with support for RDF 1.2 and Sophia's generalized RDF
+    - new crate sophia_resoner implementing D-, RDF- and RDFS-entailment
+    - new crate sophia_bcp47 making LanguageTag reusable on their own
+    Misc improvements
+    - Now based on Rust Edition 2024
 
 0.9.0
     License
     - now dual-licensed as Apache 2.0 / CeCILL-B (#164)
-    - new matcher Not<M>
     New features
+    - new matcher Not<M>
     - sophia_sparql implements (partially) a generic SPARQL query engine (#19)
     - sophia_sparql_client implements a SPARQL protocol client (#97)
     - bool now implements Term and FromTerm (#159)
