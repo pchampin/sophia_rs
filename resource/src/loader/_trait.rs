@@ -184,6 +184,7 @@ pub trait Loader: Sync + Sized {
     }
 }
 
+#[cfg(feature = "jsonld")]
 fn parse_jsonld<L: Loader>(
     loader: &L,
     bufread: io::BufReader<&[u8]>,
