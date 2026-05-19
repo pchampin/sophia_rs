@@ -132,7 +132,7 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
     ) -> impl Iterator<
         Item = sophia_api::dataset::DResult<Self, sophia_api::dataset::DTerm<'_, Self>>,
     > + '_ {
-        self.graphs.iter().flat_map(|(_, g)| g.subjects())
+        self.graphs.values().flat_map(|g| g.subjects())
     }
 
     fn subjects_matching<'s, M: TermMatcher + 's>(
@@ -149,7 +149,7 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
     ) -> impl Iterator<
         Item = sophia_api::dataset::DResult<Self, sophia_api::dataset::DTerm<'_, Self>>,
     > + '_ {
-        self.graphs.iter().flat_map(|(_, g)| g.predicates())
+        self.graphs.values().flat_map(|g| g.predicates())
     }
 
     fn predicates_matching<'s, M: TermMatcher + 's>(
@@ -166,7 +166,7 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
     ) -> impl Iterator<
         Item = sophia_api::dataset::DResult<Self, sophia_api::dataset::DTerm<'_, Self>>,
     > + '_ {
-        self.graphs.iter().flat_map(|(_, g)| g.objects())
+        self.graphs.values().flat_map(|g| g.objects())
     }
 
     fn objects_matching<'s, M: TermMatcher + 's>(
@@ -201,8 +201,8 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
         Item = sophia_api::dataset::DResult<Self, sophia_api::dataset::DTerm<'_, Self>>,
     > + '_ {
         self.graphs
-            .iter()
-            .flat_map(|(_, g)| g.iris())
+            .values()
+            .flat_map(|g| g.iris())
             .chain(self.names.iris().map(Ok))
     }
 
@@ -212,8 +212,8 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
         Item = sophia_api::dataset::DResult<Self, sophia_api::dataset::DTerm<'_, Self>>,
     > + '_ {
         self.graphs
-            .iter()
-            .flat_map(|(_, g)| g.blank_nodes())
+            .values()
+            .flat_map(|g| g.blank_nodes())
             .chain(self.names.blank_nodes().map(Ok))
     }
 
@@ -223,8 +223,8 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
         Item = sophia_api::dataset::DResult<Self, sophia_api::dataset::DTerm<'_, Self>>,
     > + '_ {
         self.graphs
-            .iter()
-            .flat_map(|(_, g)| g.literals())
+            .values()
+            .flat_map(|g| g.literals())
             .chain(self.names.literals().map(Ok))
     }
 
@@ -240,8 +240,8 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
     {
         Box::new(
             self.graphs
-                .iter()
-                .flat_map(|(_, g)| g.triple_terms())
+                .values()
+                .flat_map(|g| g.triple_terms())
                 .chain(self.names.triple_terms().map(Ok)),
         )
     }
@@ -252,8 +252,8 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
         Item = sophia_api::dataset::DResult<Self, sophia_api::dataset::DTerm<'_, Self>>,
     > + '_ {
         self.graphs
-            .iter()
-            .flat_map(|(_, g)| g.variables())
+            .values()
+            .flat_map(|g| g.variables())
             .chain(self.names.variables().map(Ok))
     }
 

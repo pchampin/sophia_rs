@@ -39,11 +39,9 @@ where
 
     fn consider_candidates(&mut self, term: &ArcTerm) {
         match term {
-            ArcTerm::BlankNode(_) => {
-                if !self.seen.contains(term) {
-                    self.seen.insert(term.clone());
-                    self.candidates.push_back(term.clone());
-                }
+            ArcTerm::BlankNode(_) if !self.seen.contains(term) => {
+                self.seen.insert(term.clone());
+                self.candidates.push_back(term.clone());
             }
             ArcTerm::Triple(spo) => spo.iter().for_each(|t| self.consider_candidates(t)),
             _ => {}

@@ -1,5 +1,6 @@
 use super::*;
 use crate::ns::rdf;
+use crate::triple::Triple;
 
 lazy_static::lazy_static! {
     static ref RDF_LANG_STRING: Box<str> = rdf::langString.iri().unwrap().unwrap().into();
