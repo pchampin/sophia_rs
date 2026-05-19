@@ -5,7 +5,7 @@
 use std::{borrow::Cow, io::BufRead};
 
 use quick_xml::{
-    NsReader,
+    NsReader, XmlVersion,
     encoding::EncodingError,
     events::{
         BytesStart, BytesText,
@@ -319,8 +319,11 @@ impl<R: BufRead> SparqlXmlParser<R> {
             let attr = res.map_err(quick_xml::Error::from)?;
             if attr.key == key {
                 return Ok(Some(
-                    attr.decode_and_unescape_value(self.events.decoder())?
-                        .into(),
+                    attr.decoded_and_normalized_value(
+                        XmlVersion::Explicit1_1,
+                        self.events.decoder(),
+                    )?
+                    .into(),
                 ));
             }
         }
@@ -340,8 +343,11 @@ impl<R: BufRead> SparqlXmlParser<R> {
             let (ns2, local2) = self.events.resolver().resolve_attribute(attr.key);
             if local2.as_ref() == local && ns2 == ResolveResult::Bound(ns) {
                 return Ok(Some(
-                    attr.decode_and_unescape_value(self.events.decoder())?
-                        .into(),
+                    attr.decoded_and_normalized_value(
+                        XmlVersion::Explicit1_1,
+                        self.events.decoder(),
+                    )?
+                    .into(),
                 ));
             }
         }
