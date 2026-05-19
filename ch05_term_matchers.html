@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-f7696288.js";
+            window.path_to_searchindex_js = "searchindex-86d52b98.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-383d8c93.js"></script>
+        <script src="toc-21e3e20e.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -178,7 +178,24 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="term-matchers"><a class="header" href="#term-matchers">Term matchers</a></h1>
-<p>TODO</p>
+<p>A number of functions in <code>sophia</code> accept parameters to select certain terms;
+the most prominent example is <a href="https://docs.rs/sophia_api/0.9.0/sophia_api/graph/trait.Graph.html#method.triples_matching"><code>Graph::triples_matching</code></a>,
+which we encountered in the <a href="./ch04_rdf_graphs.html">previous chapter</a>.
+This capacity to select, or “match”, certain terms,
+is captured by the trait <a href="https://docs.rs/sophia_api/latest/sophia_api/term/matcher/trait.TermMatcher.html"><code>TermMatcher</code></a>.
+A number of types implement those traits.</p>
+<p>(more coming soon)</p>
+<!--
+TODO Section [`TermMatcher`]s illustrated
+a first example uses arrays on one term and Any, and details the two
+a second example uses arrays of several terms, then a slice (using a Vec whose size is not known in advance)
+a fourth example uses a termkind
+a fifth example uses a termkind
+-->
+<!--
+TODO Section Other uses of [`TermMatcher`]s
+Provide a few examples of other methods using term matchers.
+-->
 
                     </main>
 

@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Executive summary - Sophia</title>
+        <title>Querying - Sophia</title>
 
 
         <!-- Custom HTML head -->
@@ -177,108 +177,29 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <!-- this file is only meant to "import" the README.md into the book -->
-<h1 id="sophia"><a class="header" href="#sophia">Sophia</a></h1>
-<p>A Rust toolkit for RDF and Linked Data.</p>
-<p><a href="https://github.com/pchampin/sophia_rs/actions"><img src="https://github.com/pchampin/sophia_rs/actions/workflows/lint_and_test.yml/badge.svg" alt="Actions Status"></a>
-<a href="https://crates.io/crates/sophia"><img src="https://img.shields.io/crates/v/sophia.svg" alt="Latest Version"></a>
-<a href="https://docs.rs/sophia/"><img src="https://docs.rs/sophia/badge.svg" alt="Documentation"></a></p>
-<p>It comprises the following crates:</p>
-<ul>
-<li>Core crates:
-<ul>
-<li><a href="https://crates.io/crates/sophia_api"><code>sophia_api</code></a> defines a generic API for RDF 1.2 and linked data,
-as a set of core traits and types;
-more precisely, it provides traits for describing
-<ul>
-<li>terms, triples and quads,</li>
-<li>graphs and datasets,</li>
-<li>parsers and serializers</li>
-</ul>
-</li>
-<li><a href="https://crates.io/crates/sophia_bcp47"><code>sophia_bcp47</code></a> provides functions and types for validating <a href="https://tools.ietf.org/search/bcp47">BCP47</a> language tags.</li>
-<li><a href="https://crates.io/crates/sophia_iri"><code>sophia_iri</code></a> provides functions, types and traits for validating and resolving IRIs.</li>
-<li><a href="https://crates.io/crates/sophia_inmem"><code>sophia_term</code></a> defines various implementations of the <code>Term</code> trait from <code>sophia_api</code>.</li>
-<li><a href="https://crates.io/crates/sophia_inmem"><code>sophia_inmem</code></a> defines in-memory implementations of the <code>Graph</code> and <code>Dataset</code> traits from <code>sophia_api</code>.</li>
-</ul>
-</li>
-<li>Parsers and serializers
-<ul>
-<li><a href="https://crates.io/crates/sophia_turtle"><code>sophia_turtle</code></a> provides parsers and serializers for the Turtle-family of concrete syntaxes (for RDF 1.2).</li>
-<li><a href="https://crates.io/crates/sophia_jsonld"><code>sophia_jsonld</code></a> provides parsers and serializers for JSON-LD 1.1.</li>
-<li><a href="https://crates.io/crates/sophia_xml"><code>sophia_xml</code></a> provides parsers and serializers for RDF/XML 1.2.</li>
-</ul>
-</li>
-<li>Other
-<ul>
-<li><a href="https://crates.io/crates/sophia_c14n"><code>sophia_c14n</code></a> implements <a href="https://www.w3.org/TR/rdf-canon/">RDF canonicalization</a>.</li>
-<li><a href="https://crates.io/crates/sophia_isomorphism"><code>sophia_isomorphism</code></a> provides functions to determine if two graphs or datasets are <a href="https://www.w3.org/TR/rdf12-concepts/#dfn-graph-isomorphism">isomorphic</a>.</li>
-<li><a href="https://crates.io/crates/sophia_sparql"><code>sophia_sparql</code></a> provides a (currently partial) implementation of the <a href="https://www.w3.org/TR/sparql12-query">SPARQL 1.2 Query Language</a>.</li>
-<li><a href="https://crates.io/crates/sophia_sparql_client"><code>sophia_sparql_client</code></a> provides a client for the <a href="https://www.w3.org/TR/sparql11-protocol">SPARQL 1.1 Protocol</a>.</li>
-<li>[<code>sophia_reasoner</code>] provides reasoning over Simple, RDF and RDF-Schema entailment regimes</li>
-<li><a href="https://crates.io/crates/sophia_resource"><code>sophia_resource</code></a> provides a resource-centric API.</li>
-</ul>
-</li>
-<li>All-inclusive
-<ul>
-<li><a href="https://crates.io/crates/sophia"><code>sophia</code></a> re-exports symbols from all the crates above, with the following provisio:
-<ul>
-<li><code>sophia_jsonld</code> is only available with the <code>jsonld</code> feature</li>
-<li><code>sophia_sparql</code> is only available with the <code>sparql</code> feature</li>
-<li><code>sophia_sparql_client</code> is only available with the <code>http_client</code> feature</li>
-<li><code>sophia_xml</code> is only available with the <code>xml</code> feature</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<p>In addition to the <a href="https://docs.rs/sophia/">API documentation</a>,
-a high-level <a href="https://pchampin.github.io/sophia_rs/">user documentation</a> is available (although not quite complete yet).</p>
-<h2 id="licence"><a class="header" href="#licence">Licence</a></h2>
-<p>This project is licensed under either or</p>
-<ul>
-<li>Apache License, Version 2.0
-(<a href="LICENSE-APACHE">LICENSE-APACHE</a> or http://www.apache.org/licenses/LICENSE-2.0)</li>
-<li>CECILL-B License
-(<a href="LICENSE-CECILL-B">LICENSE-CECILL-B</a> or https://cecill.info/licences/Licence_CeCILL-B_V1-en.html,
-compatible with BSD)</li>
-</ul>
-<p>at your option.</p>
-<h2 id="citation"><a class="header" href="#citation">Citation</a></h2>
-<p>When using Sophia, please use the following citation:</p>
-<blockquote>
-<p>Champin, P.-A. (2020) ‘Sophia: A Linked Data and Semantic Web toolkit for Rust’, in Wilde, E. and Amundsen, M. (eds). The Web Conference 2020: Developers Track, Taipei, TW. Available at: https://www2020devtrack.github.io/site/schedule.</p>
+                        <h1 id="querying"><a class="header" href="#querying">Querying</a></h1>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>The features described in this chapter by the feature <code>sparql</code> in the <code>sophia</code> crate.</p>
 </blockquote>
-<p>Bibtex:</p>
-<pre><code class="language-bibtex">@misc{champin_sophia_2020,
-        title = {{Sophia: A Linked Data and Semantic Web toolkit for Rust},
-        author = {Champin, Pierre-Antoine},
-        howpublished = {{The Web Conference 2020: Developers Track}},
-        address = {Taipei, TW},
-        editor = {Wilde, Erik and Amundsen, Mike},
-        month = apr,
-        year = {2020},
-        language = {en},
-        url = {https://www2020devtrack.github.io/site/schedule}
-}
-</code></pre>
-<h2 id="third-party-crates"><a class="header" href="#third-party-crates">Third-party crates</a></h2>
-<p>The following third-party crates are using or extending Sophia</p>
-<ul>
-<li><a href="https://crates.io/crates/hdt"><code>hdt</code></a> provides an implementation of Sophia’s traits based on the <a href="https://www.rdfhdt.org/">HDT</a> format.</li>
-<li><a href="https://crates.io/crates/manas"><code>manas</code></a> is a modular framework for implementing <a href="https://solidproject.org/">Solid</a> compatible servers</li>
-<li><a href="https://crates.io/crates/nanopub"><code>nanopub</code></a> is a toolkit for managing <a href="https://nanopub.net/">nanopublications</a></li>
-</ul>
-<h2 id="history"><a class="header" href="#history">History</a></h2>
-<p>An outdated comparison of Sophia with other RDF libraries is still available
-<a href="https://github.com/pchampin/sophia_benchmark/blob/master/benchmark_results.ipynb">here</a>.</p>
+<p>(coming soon)</p>
+<!--
+TODO talk about the SparqlDataset trait, then the SparqlWrapper that make any Dataset "sparqlable".
+Provide some examples of using it, showing how to use the result of different kinds (select, ask, construct).
+
+TODO finish with a note explaining that the genericity of SparqlWrapper means that performances may or may not be there.
+Suggest that FastDataset is a good fit.
+-->
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="ch07_parsing_and_serializing.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
 
-                            <a rel="next prefetch" href="ch00_introduction.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="ch09_reasoning.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -288,8 +209,11 @@ compatible with BSD)</li>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="ch07_parsing_and_serializing.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
 
-                    <a rel="next prefetch" href="ch00_introduction.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="ch09_reasoning.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
