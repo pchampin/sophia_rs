@@ -70,24 +70,21 @@ impl<T: Deref<Target = str>> Relativizer<T> {
     /// Relativize the given IRI against the base of this [`Relativizer`] if possible.
     pub fn relativize<'a>(&self, iri: Iri<&'a str>) -> Option<IriRef<Cow<'a, str>>> {
         let lcp = longest_common_prefix(&self.base, iri.as_str());
-        if lcp >= self.query_end {
-            // iri is identicical to base or differs in the fragment only.
-            // regardless, we must include the fragment (if any) in the relative IRI.
-            Some(IriRef::new_unchecked(iri[self.query_end..].into()))
-        } else if lcp > self.path_end {
-            // both iri and base have a query and-or fragment (because lcp is *strictly* > to path_end)
-            // and they differ in the query or presence thereof
-            // (because if if they differed only in fragment, we would have matched above)
-            // → we include query and-or fragment in the relative IRI
-            Some(IriRef::new_unchecked(iri[self.path_end..].into()))
-        } else if lcp == self.path_end
-            && (iri.len() == self.path_end || iri[self.path_end..].starts_with(['?', '#']))
+
+        if lcp < self.pseudoroot {
+            // iri and base are too different to relativize
+            return None;
+        }
+        if lcp < self.path_end
+            || lcp == self.path_end
+                && (
+                    // iri has a longer path than base
+                    iri.len() > lcp && !iri[lcp..].starts_with(['?', '#']) ||
+                    // OR base has a query, iri has none
+                    self.base[lcp..].starts_with('?') && (iri.len() == lcp || iri[lcp..].starts_with('#'))
+                )
         {
-            // both iri and base have exactly the same path, but differ after
-            // → same as above
-            Some(IriRef::new_unchecked(iri[self.path_end..].into()))
-        } else if lcp >= self.pseudoroot {
-            // iri and base have similar paths
+            // iri and base have similar paths but differ otherwise
             for (nb, slash) in self.slashes.iter().copied().enumerate() {
                 if lcp > slash {
                     return if nb == 0 {
@@ -107,7 +104,7 @@ impl<T: Deref<Target = str>> Relativizer<T> {
                     };
                 }
             }
-            if self.slashes.is_empty() {
+            return if self.slashes.is_empty() {
                 if iri[self.pseudoroot - 1..].starts_with('/')
                     && (iri.len() == self.pseudoroot
                         || iri[self.pseudoroot..].starts_with(['?', '#']))
@@ -123,11 +120,14 @@ impl<T: Deref<Target = str>> Relativizer<T> {
                 let mut parts = vec![".."; nb + 1];
                 parts[nb] = &iri[self.pseudoroot..];
                 Some(IriRef::new_unchecked(parts.join("/").into()))
-            }
-        } else {
-            // iri and base are too different to relativize
-            None
+            };
         }
+        if lcp < self.query_end
+            || iri.len() > self.query_end && !iri[self.query_end..].starts_with('#')
+        {
+            return Some(IriRef::new_unchecked(iri[self.path_end..].into()));
+        }
+        Some(IriRef::new_unchecked(iri[self.query_end..].into()))
     }
 }
 
@@ -236,6 +236,11 @@ mod test {
             "../../#F3",
             "../../?Q3",
             "../../?Q3#F3",
+            // tricky examples, where the base's component is a prefix of the uris
+            "#f?ff",
+            "?qq",
+            "dd",
+            "    #EMPTY",
         ]
     )]
     fn relativize(parents: u8, base: &str, exp: &str) {
@@ -256,6 +261,55 @@ mod test {
             assert_eq!(got, Some(exp));
         } else {
             assert!(got.is_none());
+        }
+    }
+
+    #[test_case("x://a/b/c?d=e#f", "x://a/b/c?d=e#f", Some("#f"))]
+    #[test_case("x://a/b/c?d=e#f", "x://a/b/c?d=e#ff", Some("#ff"))]
+    #[test_case("x://a/b/c?d=e#f", "x://a/b/c?d=e", Some(""))]
+    #[test_case("x://a/b/c?d=e#f", "x://a/b/c?d=ee", Some("?d=ee"))]
+    #[test_case("x://a/b/c?d=e#f", "x://a/b/c", Some("c"))]
+    #[test_case("x://a/b/c?d=e#f", "x://a/b/cc", Some("cc"))]
+    #[test_case("x://a/b/c?d=e#f", "x://a/b/", Some("./"))]
+    #[test_case("x://a/b/c?d=e#f", "x://a/bb", Some("../bb"))]
+    #[test_case("x://a/b/c?d=e#f", "x:o", None)]
+    #[test_case("x://a/b/c?d=e", "x://a/b/c?d=e#f", Some("#f"))]
+    #[test_case("x://a/b/c?d=e", "x://a/b/c?d=e#ff", Some("#ff"))]
+    #[test_case("x://a/b/c?d=e", "x://a/b/c?d=e", Some(""))]
+    #[test_case("x://a/b/c?d=e", "x://a/b/c?d=ee", Some("?d=ee"))]
+    #[test_case("x://a/b/c?d=e", "x://a/b/c", Some("c"))]
+    #[test_case("x://a/b/c?d=e", "x://a/b/cc", Some("cc"))]
+    #[test_case("x://a/b/c?d=e", "x://a/b/", Some("./"))]
+    #[test_case("x://a/b/c?d=e", "x://a/bb", Some("../bb"))]
+    #[test_case("x://a/b/c?d=e", "x:o", None)]
+    #[test_case("x://a/b/c", "x://a/b/c?d=e#f", Some("?d=e#f"))]
+    #[test_case("x://a/b/c", "x://a/b/c?d=e#ff", Some("?d=e#ff"))]
+    #[test_case("x://a/b/c", "x://a/b/c?d=e", Some("?d=e"))]
+    #[test_case("x://a/b/c", "x://a/b/c?d=ee", Some("?d=ee"))]
+    #[test_case("x://a/b/c", "x://a/b/c", Some(""))]
+    #[test_case("x://a/b/c", "x://a/b/cc", Some("cc"))]
+    #[test_case("x://a/b/c", "x://a/b/", Some("./"))]
+    #[test_case("x://a/b/c", "x://a/bb", Some("../bb"))]
+    #[test_case("x://a/b/c", "x:o", None)]
+    #[test_case("x://a/b/", "x://a/b/c?d=e#f", Some("c?d=e#f"))]
+    #[test_case("x://a/b/", "x://a/b/c?d=e#ff", Some("c?d=e#ff"))]
+    #[test_case("x://a/b/", "x://a/b/c?d=e", Some("c?d=e"))]
+    #[test_case("x://a/b/", "x://a/b/c?d=ee", Some("c?d=ee"))]
+    #[test_case("x://a/b/", "x://a/b/c", Some("c"))]
+    #[test_case("x://a/b/", "x://a/b/cc", Some("cc"))]
+    #[test_case("x://a/b/", "x://a/b/", Some(""))]
+    #[test_case("x://a/b/", "x://a/bb", Some("../bb"))]
+    #[test_case("x://a/b/", "x:o", None)]
+    fn relativize2(base: &str, iri: &str, exp: Option<&str>) {
+        let base_iri = Iri::new_unchecked(dbg!(base));
+        let rel = Relativizer::new(base_iri.as_base(), 1);
+        let iri = Iri::new_unchecked(dbg!(iri));
+        let got = rel.relativize(iri.as_ref());
+        assert_eq!(exp, got.as_ref().map(IriRef::as_str));
+        if let Some(got) = got {
+            let check = base_iri.as_base().resolve(got);
+            dbg!("checking resolution");
+            assert_eq!(iri.as_str(), check.as_str());
         }
     }
 }
