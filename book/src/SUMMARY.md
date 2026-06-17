@@ -13,3 +13,4 @@
 - [Querying](./ch08_querying.md)
 - [Reasoning](./ch09_reasoning.md)
 - [Changes since version 0.7](./ch90_changes_since_07.md)
+- [Changes since version 0.9](./ch99_changes_since_09.md)
