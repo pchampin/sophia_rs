@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+title: 'Sophia: A Linked Data and Semantic Web toolkit for Rust'
+message: 'When using Sophia, please cite the conference paper.'
+type: software
+authors:
+  - given-names: Pierre-Antoine
+    family-names: Champin
+    affiliation: LIRIS – Université de Lyon
+    orcid: 'https://orcid.org/0000-0001-7046-4474'
+repository-code: 'https://github.com/pchampin/sophia_rs'
+url: 'https://pchampin.github.io/sophia_rs'
+repository: 'https://docs.rs/sophia/'
+repository-artifact: 'https://crates.io/crates/sophia'
+abstract: >-
+  Sophia is an open-source implementation in the Rust
+  programming language of Linked Data and Semantic Web
+  technologies.
+  It aims to provide Rust developers with basic tools and
+  extensible APIs to take full advantage of these technologies.
+  At the same times, it relies on Rust’s strengths to provide an
+  efficient and reliable toolkit for Linked Data and
+  Semantic Web practitioners.
+keywords:
+  - rdf
+  - linked data
+  - semantic web
+  - rust
+  - library
+license: Apache-2.0
+preferred-citation:
+  type: conference-paper
+  title: "Sophia: A Linked Data and Semantic Web toolkit for Rust"
+  authors:
+    - family-names: "Champin"
+      given-names: "Pierre-Antoine"
+      orcid: https://orcid.org/0000-0001-7046-4474
+  conference:
+    name: "The Web Conference 2020: Developers Track"
+    location: "Taipei, TW"
+  date-published: "2020-04-20"
+  url: https://www2020devtrack.github.io/site/sophia.pdf

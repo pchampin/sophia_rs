@@ -1,0 +1,28 @@
+{
+  "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+  "@type": "SoftwareSourceCode",
+  "author": [
+    {
+      "@id": "https://orcid.org/0000-0001-7046-4474",
+      "@type": "Person",
+      "affiliation": {
+        "@type": "Organization",
+        "legalName": "LIRIS – Université de Lyon"
+      },
+      "familyName": "Champin",
+      "givenName": "Pierre-Antoine"
+    }
+  ],
+  "codeRepository": "https://github.com/pchampin/sophia_rs",
+  "description": "Sophia is an open-source implementation in the Rust programming language of Linked Data and Semantic Web technologies. It aims to provide Rust developers with basic tools and extensible APIs to take full advantage of these technologies. At the same times, it relies on Rust’s strengths to provide an efficient and reliable toolkit for Linked Data and Semantic Web practitioners.",
+  "keywords": [
+    "rdf",
+    "linked data",
+    "semantic web",
+    "rust",
+    "library"
+  ],
+  "license": "https://spdx.org/licenses/Apache-2.0",
+  "name": "Sophia: A Linked Data and Semantic Web toolkit for Rust",
+  "url": "https://pchampin.github.io/sophia_rs"
+}
