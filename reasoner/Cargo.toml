@@ -5,6 +5,7 @@ documentation = "https://docs.rs/sophia_reasoner"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 repository.workspace = true
 readme.workspace = true
 license.workspace = true
