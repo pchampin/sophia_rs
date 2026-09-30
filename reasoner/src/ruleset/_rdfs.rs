@@ -185,6 +185,7 @@ pub(crate) fn prepare_rdfs_vocab<D: Recognized, R: RuleSet>(graph: &mut Reasonab
         RDFS_SUB_CLASS_OF,
         RDF_PROPERTY,
     ]);
+    graph.insert([RDFS_PROPOSITION, RDFS_SUB_CLASS_OF, RDFS_RESOURCE]);
 
     graph.insert([RDFS_IS_DEFINED_BY, RDFS_SUB_PROPERTY_OF, RDFS_SEE_ALSO]);
 
