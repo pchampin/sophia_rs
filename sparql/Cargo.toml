@@ -20,21 +20,21 @@ sophia_api.workspace = true
 sophia_inmem.workspace = true
 sophia_iri.workspace = true
 sophia_term.workspace = true
-base16ct = "1"
-bigdecimal = "0.4"
-chrono = { version = "0.4.20", features = ["alloc"] }
+base16ct = { workspace = true }
+bigdecimal = { workspace = true }
+chrono = { workspace = true, features = ["alloc"] }
 log.workspace = true
-num-bigint = "0.4"
+num-bigint = { workspace = true }
 oxiri.workspace = true
 oxrdf.workspace = true
-rand = "0.10"
+rand = { workspace = true }
 regex.workspace = true
 resiter.workspace = true
-spargebra = { version = "0.4", features = ["sparql-12"] }
+spargebra = { workspace = true, features = ["sparql-12"] }
 thiserror.workspace = true
 uuid = { workspace = true, features = ["v4", "v7"] }
-md5 = "0.8"
-sha1 = "0.11"
+md5 = { workspace = true }
+sha1 = { workspace = true }
 sha2.workspace = true
 
 [dev-dependencies]
