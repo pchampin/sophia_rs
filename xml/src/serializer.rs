@@ -290,10 +290,10 @@ pub(crate) mod test {
             let out = RdfXmlSerializer::new_stringifier()
                 .serialize_triples(g1.triples())?
                 .to_string();
-            println!("{}", &out);
+            println!("{}", out);
 
             let g2: Vec<[SimpleTerm; 3]> = crate::parser::parse_str(&out).collect_triples()?;
-            println!("{:#?}", &g2);
+            println!("{:#?}", g2);
 
             assert!(isomorphic_graphs(&g1, &g2)?);
         }

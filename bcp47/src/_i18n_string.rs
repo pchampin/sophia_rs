@@ -49,6 +49,6 @@ impl<T: Borrow<str>> I18nString<T> {
 
 impl<T: Borrow<str>> std::fmt::Display for I18nString<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} [{}]", self.value.borrow(), &self.language)
+        write!(f, "{} [{}]", self.value.borrow(), self.language)
     }
 }

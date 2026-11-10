@@ -31,7 +31,7 @@ impl<T: Term + ?Sized> TermJsonLdUtil for T {
     fn as_id(&self) -> Box<str> {
         match self.kind() {
             Iri => self.iri().unwrap().unwrap().into(),
-            BlankNode => format!("_:{}", &self.bnode_id().unwrap().as_str()).into(),
+            BlankNode => format!("_:{}", self.bnode_id().unwrap().as_str()).into(),
             _ => panic!("not a subject term"),
         }
     }

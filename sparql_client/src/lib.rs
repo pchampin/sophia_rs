@@ -163,7 +163,7 @@ impl SparqlClient {
             }
             _ => Err(Error::Unsupported(format!(
                 "unsupported content-type: {0}",
-                &ctype,
+                ctype,
             ))),
         }
     }

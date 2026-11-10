@@ -142,7 +142,7 @@ impl<I> NxSource for NTriplesSource<I> {
                 return Err(ErrorKind::Expected(".".into())).wrap_in_at(self, col);
             }
             self.emit_tuple(callback, col)?;
-            self.inner.terms.truncate(0);
+            self.inner.terms.clear();
             self.inner.buffers.empty();
         }
         Ok(col)
