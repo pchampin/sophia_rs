@@ -16,10 +16,10 @@ all-features = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rayon = { workspace = true }
+rayon = "1"
 regex.workspace = true
 resiter.workspace = true
-smallvec = { workspace = true, features = ["const_generics"] }
+smallvec = { version = "1.6.1", features = ["const_generics"] }
 sophia_api.workspace = true
 sophia_inmem.workspace = true
 sophia_iri.workspace = true
