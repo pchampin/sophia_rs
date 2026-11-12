@@ -25,7 +25,7 @@ pub struct AggregateIter<'a, D: ?Sized, I> {
 }
 
 impl<'a, D: ?Sized, I> AggregateIter<'a, D, I> {
-    pub fn new(
+    pub const fn new(
         state: Arc<ExecState<'a, D>>,
         graph_matcher: GraphMatcher,
         group_variables: Vec<Arc<str>>,
@@ -42,7 +42,7 @@ impl<'a, D: ?Sized, I> AggregateIter<'a, D, I> {
     }
 }
 
-impl<'a, D: Dataset + ?Sized, I> Iterator for AggregateIter<'a, D, I>
+impl<D: Dataset + ?Sized, I> Iterator for AggregateIter<'_, D, I>
 where
     I: Iterator<Item = (Vec<Option<ResultTerm>>, Vec<BindingMap>)>,
 {
@@ -183,7 +183,7 @@ impl Aggregator {
                 expr: ArcExpression::from_expr(expr, stash),
                 seen: distinct.then(Default::default),
                 first: true,
-                concat: Some("".into()),
+                concat: Some(String::new()),
             },
             FunctionCall {
                 name: Sample, expr, ..
@@ -206,7 +206,7 @@ impl Aggregator {
         D: Dataset + ?Sized,
     {
         match self {
-            Aggregator::CountSolutions { seen, count } => {
+            Self::CountSolutions { seen, count } => {
                 let do_count = match seen {
                     None => true,
                     Some(seen) => {
@@ -219,21 +219,21 @@ impl Aggregator {
                     }
                 };
                 if do_count {
-                    *count += 1
+                    *count += 1;
                 }
             }
-            Aggregator::Count { expr, seen, count } => {
+            Self::Count { expr, seen, count } => {
                 if let Some(res) = expr.eval(vbinding, state, graph_matcher) {
                     let do_count = match seen {
                         None => true,
                         Some(seen) => seen.insert(res.into_term()),
                     };
                     if do_count {
-                        *count += 1
+                        *count += 1;
                     }
                 }
             }
-            Aggregator::Sum { expr, seen, sum } => {
+            Self::Sum { expr, seen, sum } => {
                 if let Some(sumval) = &*sum {
                     if let Some(res) = expr.eval(vbinding, state, graph_matcher)
                         && let Some(n) = res.as_number("Sum")
@@ -250,7 +250,7 @@ impl Aggregator {
                     }
                 }
             }
-            Aggregator::Avg {
+            Self::Avg {
                 expr,
                 seen,
                 sum,
@@ -273,13 +273,11 @@ impl Aggregator {
                     }
                 }
             }
-            Aggregator::Min { expr, min, err } => {
+            Self::Min { expr, min, err } => {
                 if !*err {
                     if let Some(res) = expr.eval(vbinding, state, graph_matcher) {
                         if min
-                            .as_ref()
-                            .filter(|minval| minval.sparql_order_by(Some(&res)).is_le())
-                            .is_none()
+                            .as_ref().as_ref().is_none_or(|minval| !minval.sparql_order_by(Some(&res)).is_le())
                         {
                             // min is none (no previous value) or greater than res
                             *min = Some(res);
@@ -290,13 +288,11 @@ impl Aggregator {
                     }
                 }
             }
-            Aggregator::Max { expr, max, err } => {
+            Self::Max { expr, max, err } => {
                 if !*err {
                     if let Some(res) = expr.eval(vbinding, state, graph_matcher) {
                         if max
-                            .as_ref()
-                            .filter(|maxval| maxval.sparql_order_by(Some(&res)).is_ge())
-                            .is_none()
+                            .as_ref().as_ref().is_none_or(|maxval| !maxval.sparql_order_by(Some(&res)).is_ge())
                         {
                             // max is none (no previous value) or lower than res
                             *max = Some(res);
@@ -307,7 +303,7 @@ impl Aggregator {
                     }
                 }
             }
-            Aggregator::GroupConcat {
+            Self::GroupConcat {
                 separator,
                 expr,
                 seen,
@@ -334,12 +330,12 @@ impl Aggregator {
                     }
                 }
             }
-            Aggregator::Sample { expr, sample } => {
+            Self::Sample { expr, sample } => {
                 if sample.is_none() {
                     *sample = expr.eval(vbinding, state, graph_matcher);
                 }
             }
-            Aggregator::Unsupported => {}
+            Self::Unsupported => {}
         }
     }
 
@@ -349,7 +345,7 @@ impl Aggregator {
     /// The aggregator is then ready for computing a new value.
     fn finalize(&mut self) -> Option<ResultTerm> {
         match self {
-            Aggregator::CountSolutions { seen, count } => {
+            Self::CountSolutions { seen, count } => {
                 let ret = Some(SparqlNumber::from(*count).into());
                 if let Some(seen) = seen {
                     seen.clear();
@@ -357,7 +353,7 @@ impl Aggregator {
                 *count = 0;
                 ret
             }
-            Aggregator::Count { seen, count, .. } => {
+            Self::Count { seen, count, .. } => {
                 let ret = Some(SparqlNumber::from(*count).into());
                 if let Some(seen) = seen {
                     seen.clear();
@@ -365,7 +361,7 @@ impl Aggregator {
                 *count = 0;
                 ret
             }
-            Aggregator::Sum { seen, sum, .. } => {
+            Self::Sum { seen, sum, .. } => {
                 let ret = sum.take().map(ResultTerm::from);
                 if let Some(seen) = seen {
                     seen.clear();
@@ -373,7 +369,7 @@ impl Aggregator {
                 *sum = Some(0.into());
                 ret
             }
-            Aggregator::Avg {
+            Self::Avg {
                 seen, sum, count, ..
             } => {
                 let ret = sum
@@ -387,17 +383,17 @@ impl Aggregator {
                 *count = 0;
                 ret
             }
-            Aggregator::Min { min, err, .. } => {
+            Self::Min { min, err, .. } => {
                 let ret = min.take().map(ResultTerm::from);
                 *err = false;
                 ret
             }
-            Aggregator::Max { max, err, .. } => {
+            Self::Max { max, err, .. } => {
                 let ret = max.take().map(ResultTerm::from);
                 *err = false;
                 ret
             }
-            Aggregator::GroupConcat {
+            Self::GroupConcat {
                 seen,
                 concat,
                 first,
@@ -408,11 +404,11 @@ impl Aggregator {
                     seen.clear();
                 }
                 *first = true;
-                *concat = Some("".into());
+                *concat = Some(String::new());
                 ret
             }
-            Aggregator::Sample { sample, .. } => sample.take().map(ResultTerm::from),
-            Aggregator::Unsupported => None,
+            Self::Sample { sample, .. } => sample.take().map(ResultTerm::from),
+            Self::Unsupported => None,
         }
     }
 }

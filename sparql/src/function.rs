@@ -98,7 +98,7 @@ pub fn call_function<D: Dataset + ?Sized>(
                 };
                 res.inspect_err(|err| {
                     log::warn!("Iri#1 is an invalid IRI");
-                    log::debug!(" {err}")
+                    log::debug!(" {err}");
                 })
                 .ok()
                 .map(Into::into)
@@ -426,10 +426,7 @@ pub fn call_function<D: Dataset + ?Sized>(
         Custom(iri) => {
             if iri.as_str().starts_with(*xsd::PREFIX) {
                 let typ = &iri.as_str()[xsd::PREFIX.len()..];
-                if arguments.len() != 1 {
-                    log::warn!("Function xsd:{typ} expects 1 argument");
-                    None
-                } else {
+                if arguments.len() == 1 {
                     match typ {
                         "boolean" => xsd_boolean(&arguments[0]),
                         "double" => xsd_double(&arguments[0]),
@@ -443,6 +440,9 @@ pub fn call_function<D: Dataset + ?Sized>(
                             None
                         }
                     }
+                } else {
+                    log::warn!("Function xsd:{typ} expects 1 argument");
+                    None
                 }
             } else {
                 log::warn!("Custom function not supported: {iri}");
@@ -498,8 +498,7 @@ pub fn has_lang_dir(er: &EvalResult) -> EvalResult {
         EvalResult::Term(t) => t.base_direction().is_some(),
         EvalResult::Value(v) => v
             .compound_tag()
-            .map(|pair| pair.1.is_some())
-            .unwrap_or(false),
+            .is_some_and(|pair| pair.1.is_some()),
     }
     .into()
 }
@@ -507,7 +506,7 @@ pub fn has_lang_dir(er: &EvalResult) -> EvalResult {
 pub fn datatype(lit: GenericLiteral<Arc<str>>) -> EvalResult {
     use GenericLiteral::{LanguageString, Typed};
     match lit {
-        Typed(_, dt) => dt.clone().into(),
+        Typed(_, dt) => dt.into(),
         LanguageString(_, _, None) => RDF_LANG_STRING.clone().into(),
         LanguageString(_, _, Some(_)) => RDF_DIR_LANG_STRING.clone().into(),
     }
@@ -615,7 +614,7 @@ pub fn concat(args: &[StringLiteralRef<'_>]) -> EvalResult {
 pub fn lang_matches(tag: &Arc<str>, range: &Arc<str>) -> EvalResult {
     let Ok(tag) = LanguageTag::new(tag.clone()).inspect_err(|err| {
         log::warn!("langMatch#1 is an invalid language tag");
-        log::debug!(" {err}")
+        log::debug!(" {err}");
     }) else {
         return false.into();
     };
@@ -624,7 +623,7 @@ pub fn lang_matches(tag: &Arc<str>, range: &Arc<str>) -> EvalResult {
     }
     let Ok(range) = LanguageTag::new(range.clone()).inspect_err(|err| {
         log::warn!("invalid language tag range: {err}");
-        log::debug!(" {err}")
+        log::debug!(" {err}");
     }) else {
         return false.into();
     };
@@ -665,8 +664,8 @@ pub fn sub_str(
         }
     };
     // s and e are "codepoint indexes", convert them to byte index
-    let s = lex.char_indices().nth(s).map(|p| p.0).unwrap_or(lex.len());
-    let e = lex.char_indices().nth(e).map(|p| p.0).unwrap_or(lex.len());
+    let s = lex.char_indices().nth(s).map_or(lex.len(), |p| p.0);
+    let e = lex.char_indices().nth(e).map_or(lex.len(), |p| p.0);
     Some(EvalResult::from((
         Arc::from(&lex[s..e]),
         ctag.map(|(lang, dir)| (lang.clone(), dir)),
@@ -675,7 +674,7 @@ pub fn sub_str(
 
 pub fn str_len(string: &str) -> EvalResult {
     let l = string.chars().count();
-    if l <= isize::MAX as usize {
+    if isize::try_from(l).is_ok() {
         SparqlNumber::from(l as isize).into()
     } else {
         unreachable!()
@@ -815,7 +814,7 @@ pub fn minutes(dt: &XsdDateTime) -> EvalResult {
 }
 
 pub fn seconds(dt: &XsdDateTime) -> EvalResult {
-    let nano: u64 = dt.second() as u64 * 1_000_000_000 + dt.nanosecond() as u64;
+    let nano: u64 = u64::from(dt.second()) * 1_000_000_000 + u64::from(dt.nanosecond());
     let seconds = bigdecimal::BigDecimal::from((nano, 9));
     SparqlNumber::from(seconds).into()
 }
@@ -903,7 +902,7 @@ pub fn str_lang(lex: &str, lang: &str) -> Option<EvalResult> {
     let lang = LanguageTag::new(lang.into())
         .inspect_err(|err| {
             log::warn!("StrLang#2 is an invalid language tag");
-            log::debug!(" {err}")
+            log::debug!(" {err}");
         })
         .ok()?;
     Some((lex.into(), Some((lang, None))).into())
@@ -913,7 +912,7 @@ pub fn str_lang_dir(lex: &str, lang: &str, dir: &str) -> Option<EvalResult> {
     let lang = LanguageTag::new(lang.into())
         .inspect_err(|err| {
             log::warn!("StrLangDir#2 is an invalid language tag");
-            log::debug!(" {err}")
+            log::debug!(" {err}");
         })
         .ok()?;
     let dir = match dir {
@@ -956,9 +955,9 @@ pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResu
         log::warn!("not a valid predicate");
         log::debug!("  {p:?}");
         return None;
-    };
+    }
     let o = ResultTerm::from(o.as_term());
-    Some(ResultTerm::from([s.clone(), p.clone(), o.clone()]).into())
+    Some(ResultTerm::from([s.clone(), p.clone(), o]).into())
 }
 
 pub fn is_triple(er: &EvalResult) -> EvalResult {
@@ -1065,7 +1064,7 @@ pub fn xsd_integer(arg: &EvalResult) -> Option<EvalResult> {
     // See https://www.w3.org/TR/sparql12-query/#FunctionMapping
     // and https://www.w3.org/TR/xpath-functions-31/#casting-to-integer
     match arg.as_value()? {
-        SparqlValue::Boolean(opt) => opt.map(|b| SparqlNumber::from(if b { 1 } else { 0 }).into()),
+        SparqlValue::Boolean(opt) => opt.map(|b| SparqlNumber::from(i32::from(b)).into()),
         SparqlValue::DateTime(_) => None,
         SparqlValue::Number(Some(SparqlNumber::Decimal(n))) => Some(
             SparqlValue::Number(Some(
@@ -1196,7 +1195,7 @@ mod encode_for_uri_utils {
     }
 
     impl EncodeIter {
-        pub fn new(value: u8) -> Self {
+        pub const fn new(value: u8) -> Self {
             match value {
                 b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
                     Self { value, state: 0 }

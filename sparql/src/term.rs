@@ -107,7 +107,7 @@ impl ResultTerm {
     }
 
     /// The inner `ArcTerm`
-    pub fn inner(&self) -> &ArcTerm {
+    pub const fn inner(&self) -> &ArcTerm {
         &self.inner
     }
 
@@ -151,8 +151,8 @@ impl From<SparqlNumber> for ResultTerm {
     }
 }
 
-impl From<[ResultTerm; 3]> for ResultTerm {
-    fn from([s, p, o]: [ResultTerm; 3]) -> Self {
+impl From<[Self; 3]> for ResultTerm {
+    fn from([s, p, o]: [Self; 3]) -> Self {
         Self {
             inner: ArcTerm::Triple(Arc::new([s.inner, p.inner, o.inner])),
             value: OnceLock::new(),

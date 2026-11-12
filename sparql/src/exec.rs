@@ -83,19 +83,19 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         }))
     }
 
-    pub fn dataset(&self) -> &'a D {
+    pub const fn dataset(&self) -> &'a D {
         self.dataset
     }
 
-    pub fn default_matcher(&self) -> &GraphMatcher {
+    pub const fn default_matcher(&self) -> &GraphMatcher {
         &self.default_matcher
     }
 
-    pub fn base_iri(&self) -> &Option<BaseIri<String>> {
+    pub const fn base_iri(&self) -> &Option<BaseIri<String>> {
         &self.base_iri
     }
 
-    pub fn now(&self) -> chrono::DateTime<chrono::FixedOffset> {
+    pub const fn now(&self) -> chrono::DateTime<chrono::FixedOffset> {
         self.now
     }
 
@@ -391,7 +391,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                     self.path_zero(smatcher, graph_matcher),
                     path,
                     omatcher.clone(),
-                    gmatcher.clone(),
+                    gmatcher,
                 ))
             }
             OneOrMore(path) => {
@@ -405,7 +405,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                     self.path_rec(smatcher, &path, SparqlMatcher::Free, graph_matcher),
                     path.clone(),
                     omatcher.clone(),
-                    gmatcher.clone(),
+                    gmatcher,
                 ))
             }
             ZeroOrOne(path) => {
@@ -456,7 +456,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         }
     }
 
-    /// Iter subjects for property paths 'ZeroOrMOre' and 'ZeroOrOne'
+    /// Iter subjects for property paths '`ZeroOrMOre`' and '`ZeroOrOne`'
     fn path_zero(
         self: &Arc<Self>,
         smatcher: SparqlMatcher,
@@ -642,7 +642,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         let mut variables = lv.clone();
         for v in rv {
             if lv.iter().all(|i| *i != v) {
-                variables.push(v)
+                variables.push(v);
             }
         }
         let iter = Box::new(li.chain(ri));

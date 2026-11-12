@@ -49,7 +49,7 @@ impl<T: Borrow<str>> GenericLiteral<T> {
     }
 
     /// The [base direction](https://www.w3.org/TR/rdf12-concepts/#dfn-base-direction) of this literal, if any
-    pub fn get_base_direction(&self) -> Option<BaseDirection> {
+    pub const fn get_base_direction(&self) -> Option<BaseDirection> {
         match self {
             Self::Typed(..) => None,
             Self::LanguageString(_, _, dir) => *dir,

@@ -21,16 +21,14 @@ impl<T: Deref<Target = str>> Relativizer<T> {
     pub fn new(base: BaseIri<T>, parents: u8) -> Self {
         let s = base.as_str();
         let path_begin =
-            base.scheme().len() + 1 + base.authority().map(|a| a.len() + 2).unwrap_or(0);
+            base.scheme().len() + 1 + base.authority().map_or(0, |a| a.len() + 2);
         let path_end = path_begin + base.path().len();
         let query_end = s[path_end..]
             .find('#')
-            .map(|i| i + path_end)
-            .unwrap_or(s.len());
+            .map_or(s.len(), |i| i + path_end);
         let path_end = s[path_end..query_end]
             .find('?')
-            .map(|i| i + path_end)
-            .unwrap_or(query_end);
+            .map_or(query_end, |i| i + path_end);
         let mut slashes = Vec::with_capacity(parents as usize + 1);
         let mut pos = path_end;
         for _ in 0..=parents {
@@ -245,14 +243,10 @@ mod test {
     )]
     fn relativize(parents: u8, base: &str, exp: &str) {
         let base = BaseIri::new(base).unwrap();
-        let exp: IriRef<Cow<str>> = IriRef::new(exp.split(" ").next().unwrap().into()).unwrap(); // strip comment
+        let exp: IriRef<Cow<str>> = IriRef::new(exp.split(' ').next().unwrap().into()).unwrap(); // strip comment
         let exp_depth: u8 = if exp.starts_with("../../") {
             2
-        } else if exp.starts_with("../") {
-            1
-        } else {
-            0
-        };
+        } else { u8::from(exp.starts_with("../")) };
 
         let rel = Relativizer::new(base.as_ref(), parents);
         let abs = base.resolve(exp.as_ref());

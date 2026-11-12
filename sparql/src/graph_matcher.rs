@@ -1,4 +1,4 @@
-//! I provide a cheap-to-clone GraphNameMatcher
+//! I provide a cheap-to-clone `GraphNameMatcher`
 
 use std::sync::{Arc, Mutex};
 

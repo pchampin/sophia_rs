@@ -53,7 +53,7 @@ pub enum BgpIterator<'a, D: Dataset + ?Sized> {
         seed: Option<Binding>,
         is_bound: [bool; 3],
         quads: Box<dyn Iterator<Item = DResult<D, <D as Dataset>::Quad<'a>>> + 'a>,
-        bindings: Box<BgpIterator<'a, D>>,
+        bindings: Box<Self>,
     },
 }
 
@@ -135,7 +135,7 @@ impl<'a, D: Dataset + ?Sized> BgpIterator<'a, D> {
         seed: &mut Option<Binding>,
         [sb, pb, ob]: [bool; 3],
         pattern: &TriplePattern,
-        bindings: &mut Box<BgpIterator<'a, D>>,
+        bindings: &mut Box<Self>,
         state: &mut Arc<ExecState<'a, D>>,
     ) -> DResult<D, ()> {
         debug_assert!(seed.is_some());
@@ -168,7 +168,7 @@ impl<'a, D: Dataset + ?Sized> BgpIterator<'a, D> {
     }
 }
 
-impl<'a, D: Dataset + ?Sized> Iterator for BgpIterator<'a, D> {
+impl<D: Dataset + ?Sized> Iterator for BgpIterator<'_, D> {
     type Item = Result<Binding, SparqlWrapperError<D::Error>>;
 
     fn next(&mut self) -> Option<Self::Item> {

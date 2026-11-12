@@ -19,7 +19,7 @@ use chrono::{
 };
 use regex::Regex;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum XsdDateTime {
     Naive(NaiveDateTime),
     Timezoned(DateTime<FixedOffset>),
@@ -34,7 +34,7 @@ impl XsdDateTime {
         });
 
         let c = RE.captures(s)?;
-        let sign: i32 = c.get(1).map(|_| -1).unwrap_or(1);
+        let sign: i32 = c.get(1).map_or(1, |_| -1);
         let year: i32 = c.get(2).unwrap().as_str().parse().unwrap();
         let mdhms = c.get(3).unwrap().as_str();
         let month: u32 = mdhms[..2].parse().unwrap();
@@ -44,22 +44,21 @@ impl XsdDateTime {
         let second: u32 = mdhms[12..14].parse().unwrap();
         let nano: u32 = c
             .get(4)
-            .map(|fraction| {
+            .map_or(0, |fraction| {
                 let fraction = fraction.as_str();
                 if fraction.len() >= 9 {
                     fraction[..9].parse().unwrap()
                 } else {
                     fraction.parse::<u32>().unwrap() * 10_u32.pow(9 - fraction.len() as u32)
                 }
-            })
-            .unwrap_or(0);
+            });
 
         let ymd = NaiveDate::from_ymd_opt(sign * year, month, day)?;
-        let naive = if (hour, minute, second, nano) != (24, 0, 0, 0) {
-            ymd.and_hms_nano_opt(hour, minute, second, nano)?
-        } else {
+        let naive = if (hour, minute, second, nano) == (24, 0, 0, 0) {
             ymd.and_hms_nano_opt(0, 0, 0, 0)?
                 .checked_add_days(Days::new(1))?
+        } else {
+            ymd.and_hms_nano_opt(hour, minute, second, nano)?
         };
 
         match c.get(5) {
@@ -97,12 +96,12 @@ impl Display for XsdDateTime {
             f,
             "{}",
             match self {
-                XsdDateTime::Naive(d) => {
+                Self::Naive(d) => {
                     let mut out = d.and_utc().to_rfc3339();
                     out.truncate(out.len() - 6); // truncate timezone
                     out
                 }
-                XsdDateTime::Timezoned(d) => {
+                Self::Timezoned(d) => {
                     d.to_rfc3339_opts(SecondsFormat::AutoSi, true)
                 }
             }
@@ -113,12 +112,12 @@ impl Display for XsdDateTime {
 impl PartialOrd for XsdDateTime {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
-            (XsdDateTime::Naive(d1), XsdDateTime::Naive(d2)) => d1.partial_cmp(d2),
-            (XsdDateTime::Naive(d1), XsdDateTime::Timezoned(d2)) => {
+            (Self::Naive(d1), Self::Naive(d2)) => d1.partial_cmp(d2),
+            (Self::Naive(d1), Self::Timezoned(d2)) => {
                 heterogeneous_cmp(d2, d1).map(Ordering::reverse)
             }
-            (XsdDateTime::Timezoned(d1), XsdDateTime::Naive(d2)) => heterogeneous_cmp(d1, d2),
-            (XsdDateTime::Timezoned(d1), XsdDateTime::Timezoned(d2)) => d1.partial_cmp(d2),
+            (Self::Timezoned(d1), Self::Naive(d2)) => heterogeneous_cmp(d1, d2),
+            (Self::Timezoned(d1), Self::Timezoned(d2)) => d1.partial_cmp(d2),
         }
     }
 }
@@ -126,140 +125,140 @@ impl PartialOrd for XsdDateTime {
 impl Datelike for XsdDateTime {
     fn year(&self) -> i32 {
         match self {
-            XsdDateTime::Naive(naive_date_time) => naive_date_time.year(),
-            XsdDateTime::Timezoned(date_time) => date_time.year(),
+            Self::Naive(naive_date_time) => naive_date_time.year(),
+            Self::Timezoned(date_time) => date_time.year(),
         }
     }
 
     fn month(&self) -> u32 {
         match self {
-            XsdDateTime::Naive(naive_date_time) => naive_date_time.month(),
-            XsdDateTime::Timezoned(date_time) => date_time.month(),
+            Self::Naive(naive_date_time) => naive_date_time.month(),
+            Self::Timezoned(date_time) => date_time.month(),
         }
     }
 
     fn month0(&self) -> u32 {
         match self {
-            XsdDateTime::Naive(naive_date_time) => naive_date_time.month0(),
-            XsdDateTime::Timezoned(date_time) => date_time.month0(),
+            Self::Naive(naive_date_time) => naive_date_time.month0(),
+            Self::Timezoned(date_time) => date_time.month0(),
         }
     }
 
     fn day(&self) -> u32 {
         match self {
-            XsdDateTime::Naive(naive_date_time) => naive_date_time.day(),
-            XsdDateTime::Timezoned(date_time) => date_time.day(),
+            Self::Naive(naive_date_time) => naive_date_time.day(),
+            Self::Timezoned(date_time) => date_time.day(),
         }
     }
 
     fn day0(&self) -> u32 {
         match self {
-            XsdDateTime::Naive(naive_date_time) => naive_date_time.day0(),
-            XsdDateTime::Timezoned(date_time) => date_time.day0(),
+            Self::Naive(naive_date_time) => naive_date_time.day0(),
+            Self::Timezoned(date_time) => date_time.day0(),
         }
     }
 
     fn ordinal(&self) -> u32 {
         match self {
-            XsdDateTime::Naive(naive_date_time) => naive_date_time.ordinal(),
-            XsdDateTime::Timezoned(date_time) => date_time.ordinal(),
+            Self::Naive(naive_date_time) => naive_date_time.ordinal(),
+            Self::Timezoned(date_time) => date_time.ordinal(),
         }
     }
 
     fn ordinal0(&self) -> u32 {
         match self {
-            XsdDateTime::Naive(naive_date_time) => naive_date_time.ordinal0(),
-            XsdDateTime::Timezoned(date_time) => date_time.ordinal0(),
+            Self::Naive(naive_date_time) => naive_date_time.ordinal0(),
+            Self::Timezoned(date_time) => date_time.ordinal0(),
         }
     }
 
     fn weekday(&self) -> chrono::Weekday {
         match self {
-            XsdDateTime::Naive(naive_date_time) => naive_date_time.weekday(),
-            XsdDateTime::Timezoned(date_time) => date_time.weekday(),
+            Self::Naive(naive_date_time) => naive_date_time.weekday(),
+            Self::Timezoned(date_time) => date_time.weekday(),
         }
     }
 
     fn iso_week(&self) -> chrono::IsoWeek {
         match self {
-            XsdDateTime::Naive(naive_date_time) => naive_date_time.iso_week(),
-            XsdDateTime::Timezoned(date_time) => date_time.iso_week(),
+            Self::Naive(naive_date_time) => naive_date_time.iso_week(),
+            Self::Timezoned(date_time) => date_time.iso_week(),
         }
     }
 
     fn with_year(&self, year: i32) -> Option<Self> {
         match self {
-            XsdDateTime::Naive(naive_date_time) => {
-                Some(XsdDateTime::Naive(naive_date_time.with_year(year)?))
+            Self::Naive(naive_date_time) => {
+                Some(Self::Naive(naive_date_time.with_year(year)?))
             }
-            XsdDateTime::Timezoned(date_time) => {
-                Some(XsdDateTime::Timezoned(date_time.with_year(year)?))
+            Self::Timezoned(date_time) => {
+                Some(Self::Timezoned(date_time.with_year(year)?))
             }
         }
     }
 
     fn with_month(&self, month: u32) -> Option<Self> {
         match self {
-            XsdDateTime::Naive(naive_date_time) => {
-                Some(XsdDateTime::Naive(naive_date_time.with_month(month)?))
+            Self::Naive(naive_date_time) => {
+                Some(Self::Naive(naive_date_time.with_month(month)?))
             }
-            XsdDateTime::Timezoned(date_time) => {
-                Some(XsdDateTime::Timezoned(date_time.with_month(month)?))
+            Self::Timezoned(date_time) => {
+                Some(Self::Timezoned(date_time.with_month(month)?))
             }
         }
     }
 
     fn with_month0(&self, month0: u32) -> Option<Self> {
         match self {
-            XsdDateTime::Naive(naive_date_time) => {
-                Some(XsdDateTime::Naive(naive_date_time.with_month0(month0)?))
+            Self::Naive(naive_date_time) => {
+                Some(Self::Naive(naive_date_time.with_month0(month0)?))
             }
-            XsdDateTime::Timezoned(date_time) => {
-                Some(XsdDateTime::Timezoned(date_time.with_month0(month0)?))
+            Self::Timezoned(date_time) => {
+                Some(Self::Timezoned(date_time.with_month0(month0)?))
             }
         }
     }
 
     fn with_day(&self, day: u32) -> Option<Self> {
         match self {
-            XsdDateTime::Naive(naive_date_time) => {
-                Some(XsdDateTime::Naive(naive_date_time.with_day(day)?))
+            Self::Naive(naive_date_time) => {
+                Some(Self::Naive(naive_date_time.with_day(day)?))
             }
-            XsdDateTime::Timezoned(date_time) => {
-                Some(XsdDateTime::Timezoned(date_time.with_day(day)?))
+            Self::Timezoned(date_time) => {
+                Some(Self::Timezoned(date_time.with_day(day)?))
             }
         }
     }
 
     fn with_day0(&self, day0: u32) -> Option<Self> {
         match self {
-            XsdDateTime::Naive(naive_date_time) => {
-                Some(XsdDateTime::Naive(naive_date_time.with_day0(day0)?))
+            Self::Naive(naive_date_time) => {
+                Some(Self::Naive(naive_date_time.with_day0(day0)?))
             }
-            XsdDateTime::Timezoned(date_time) => {
-                Some(XsdDateTime::Timezoned(date_time.with_day0(day0)?))
+            Self::Timezoned(date_time) => {
+                Some(Self::Timezoned(date_time.with_day0(day0)?))
             }
         }
     }
 
     fn with_ordinal(&self, ordinal: u32) -> Option<Self> {
         match self {
-            XsdDateTime::Naive(naive_date_time) => {
-                Some(XsdDateTime::Naive(naive_date_time.with_ordinal(ordinal)?))
+            Self::Naive(naive_date_time) => {
+                Some(Self::Naive(naive_date_time.with_ordinal(ordinal)?))
             }
-            XsdDateTime::Timezoned(date_time) => {
-                Some(XsdDateTime::Timezoned(date_time.with_ordinal(ordinal)?))
+            Self::Timezoned(date_time) => {
+                Some(Self::Timezoned(date_time.with_ordinal(ordinal)?))
             }
         }
     }
 
     fn with_ordinal0(&self, ordinal0: u32) -> Option<Self> {
         match self {
-            XsdDateTime::Naive(naive_date_time) => {
-                Some(XsdDateTime::Naive(naive_date_time.with_ordinal0(ordinal0)?))
+            Self::Naive(naive_date_time) => {
+                Some(Self::Naive(naive_date_time.with_ordinal0(ordinal0)?))
             }
-            XsdDateTime::Timezoned(date_time) => {
-                Some(XsdDateTime::Timezoned(date_time.with_ordinal0(ordinal0)?))
+            Self::Timezoned(date_time) => {
+                Some(Self::Timezoned(date_time.with_ordinal0(ordinal0)?))
             }
         }
     }
@@ -268,72 +267,72 @@ impl Datelike for XsdDateTime {
 impl Timelike for XsdDateTime {
     fn hour(&self) -> u32 {
         match self {
-            XsdDateTime::Naive(naive_date_time) => naive_date_time.hour(),
-            XsdDateTime::Timezoned(date_time) => date_time.hour(),
+            Self::Naive(naive_date_time) => naive_date_time.hour(),
+            Self::Timezoned(date_time) => date_time.hour(),
         }
     }
 
     fn minute(&self) -> u32 {
         match self {
-            XsdDateTime::Naive(naive_date_time) => naive_date_time.minute(),
-            XsdDateTime::Timezoned(date_time) => date_time.minute(),
+            Self::Naive(naive_date_time) => naive_date_time.minute(),
+            Self::Timezoned(date_time) => date_time.minute(),
         }
     }
 
     fn second(&self) -> u32 {
         match self {
-            XsdDateTime::Naive(naive_date_time) => naive_date_time.second(),
-            XsdDateTime::Timezoned(date_time) => date_time.second(),
+            Self::Naive(naive_date_time) => naive_date_time.second(),
+            Self::Timezoned(date_time) => date_time.second(),
         }
     }
 
     fn nanosecond(&self) -> u32 {
         match self {
-            XsdDateTime::Naive(naive_date_time) => naive_date_time.nanosecond(),
-            XsdDateTime::Timezoned(date_time) => date_time.nanosecond(),
+            Self::Naive(naive_date_time) => naive_date_time.nanosecond(),
+            Self::Timezoned(date_time) => date_time.nanosecond(),
         }
     }
 
     fn with_hour(&self, hour: u32) -> Option<Self> {
         match self {
-            XsdDateTime::Naive(naive_date_time) => {
-                Some(XsdDateTime::Naive(naive_date_time.with_hour(hour)?))
+            Self::Naive(naive_date_time) => {
+                Some(Self::Naive(naive_date_time.with_hour(hour)?))
             }
-            XsdDateTime::Timezoned(date_time) => {
-                Some(XsdDateTime::Timezoned(date_time.with_hour(hour)?))
+            Self::Timezoned(date_time) => {
+                Some(Self::Timezoned(date_time.with_hour(hour)?))
             }
         }
     }
 
     fn with_minute(&self, min: u32) -> Option<Self> {
         match self {
-            XsdDateTime::Naive(naive_date_time) => {
-                Some(XsdDateTime::Naive(naive_date_time.with_minute(min)?))
+            Self::Naive(naive_date_time) => {
+                Some(Self::Naive(naive_date_time.with_minute(min)?))
             }
-            XsdDateTime::Timezoned(date_time) => {
-                Some(XsdDateTime::Timezoned(date_time.with_minute(min)?))
+            Self::Timezoned(date_time) => {
+                Some(Self::Timezoned(date_time.with_minute(min)?))
             }
         }
     }
 
     fn with_second(&self, sec: u32) -> Option<Self> {
         match self {
-            XsdDateTime::Naive(naive_date_time) => {
-                Some(XsdDateTime::Naive(naive_date_time.with_second(sec)?))
+            Self::Naive(naive_date_time) => {
+                Some(Self::Naive(naive_date_time.with_second(sec)?))
             }
-            XsdDateTime::Timezoned(date_time) => {
-                Some(XsdDateTime::Timezoned(date_time.with_second(sec)?))
+            Self::Timezoned(date_time) => {
+                Some(Self::Timezoned(date_time.with_second(sec)?))
             }
         }
     }
 
     fn with_nanosecond(&self, nano: u32) -> Option<Self> {
         match self {
-            XsdDateTime::Naive(naive_date_time) => {
-                Some(XsdDateTime::Naive(naive_date_time.with_nanosecond(nano)?))
+            Self::Naive(naive_date_time) => {
+                Some(Self::Naive(naive_date_time.with_nanosecond(nano)?))
             }
-            XsdDateTime::Timezoned(date_time) => {
-                Some(XsdDateTime::Timezoned(date_time.with_nanosecond(nano)?))
+            Self::Timezoned(date_time) => {
+                Some(Self::Timezoned(date_time.with_nanosecond(nano)?))
             }
         }
     }
@@ -423,7 +422,7 @@ mod test {
     #[test_case("2024-09-17:34:56+15:00"; "timezone too big")]
     #[test_case("2024-09-17:34:56+0100"; "timezone badly formatted")]
     fn invalid(d: &str) {
-        assert!(d.parse::<XsdDateTime>().is_err())
+        assert!(d.parse::<XsdDateTime>().is_err());
     }
 
     #[test_case("2024-09-17T12:34:56"; "no timezone")]

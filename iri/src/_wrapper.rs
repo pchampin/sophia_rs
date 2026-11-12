@@ -129,7 +129,7 @@ mod test {
     #[test]
     fn iri() {
         for (txt, (abs, ..)) in POSITIVE_IRIS {
-            assert!(Iri::new(*txt).is_ok() == *abs);
+            assert_eq!(Iri::new(*txt).is_ok(), *abs);
         }
         for txt in NEGATIVE_IRIS {
             assert!(Iri::new(*txt).is_err());
@@ -139,7 +139,7 @@ mod test {
     #[test]
     fn iri_box() {
         for (txt, (abs, ..)) in POSITIVE_IRIS {
-            assert!(Iri::new(Box::from(txt as &str)).is_ok() == *abs);
+            assert_eq!(Iri::new(Box::from(txt as &str)).is_ok(), *abs);
         }
         for txt in NEGATIVE_IRIS {
             assert!(Iri::new(Box::from(txt as &str)).is_err());

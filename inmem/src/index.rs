@@ -24,7 +24,7 @@ pub trait Index: Copy + std::fmt::Debug + Eq + std::hash::Hash + Ord + std::ops:
 
 impl Index for usize {
     const ZERO: Self = 0;
-    const MAX: Self = usize::MAX;
+    const MAX: Self = Self::MAX;
     fn from_usize(other: usize) -> Self {
         other
     }
@@ -35,7 +35,7 @@ impl Index for usize {
 
 impl Index for u32 {
     const ZERO: Self = 0;
-    const MAX: Self = u32::MAX;
+    const MAX: Self = Self::MAX;
     fn from_usize(other: usize) -> Self {
         other
             .try_into()
@@ -49,7 +49,7 @@ impl Index for u32 {
 
 impl Index for u16 {
     const ZERO: Self = 0;
-    const MAX: Self = u16::MAX;
+    const MAX: Self = Self::MAX;
     fn from_usize(other: usize) -> Self {
         other
             .try_into()
@@ -167,22 +167,25 @@ impl<'a, I: Index> IndexedTerm<'a, I> {
     }
 
     /// Return the [`BasicTermIndex`] this [`IndexedTerm`] comes from
-    pub fn term_index(&self) -> &BasicTermIndex<I> {
+    #[must_use]
+    pub const fn term_index(&self) -> &BasicTermIndex<I> {
         self.t
     }
 
     /// Return the index of that [`IndexedTerm`]
+    #[must_use]
     pub fn index(&self) -> I {
         let offset = unsafe {
             // SAFETY: we know that i belongs to t.i2
-            (self.i as *const InternalTerm<I>).offset_from(&self.t.i2t[0] as *const InternalTerm<I>)
+            std::ptr::from_ref::<InternalTerm<I>>(self.i).offset_from(&raw const self.t.i2t[0])
         };
         debug_assert!(offset >= 0);
         I::from_usize(offset as usize)
     }
 
     /// Return the index of that [`IndexedTerm`]'s datatype of it contains one.
-    pub fn datatype_index(&self) -> Option<I> {
+    #[must_use]
+    pub const fn datatype_index(&self) -> Option<I> {
         if let InternalTerm::LiteralTyped(_, idt) = &self.i {
             Some(*idt)
         } else {
@@ -191,7 +194,7 @@ impl<'a, I: Index> IndexedTerm<'a, I> {
     }
 }
 
-impl<'a, I: Index> Term for IndexedTerm<'a, I> {
+impl<I: Index> Term for IndexedTerm<'_, I> {
     type BorrowTerm<'x>
         = Self
     where
@@ -291,29 +294,29 @@ impl<'a, I: Index> Term for IndexedTerm<'a, I> {
     }
 }
 
-impl<'a, I: Index, T: Term> PartialEq<T> for IndexedTerm<'a, I> {
+impl<I: Index, T: Term> PartialEq<T> for IndexedTerm<'_, I> {
     fn eq(&self, other: &T) -> bool {
         Term::eq(self, other.borrow_term())
     }
 }
 
-impl<'a, I: Index> Eq for IndexedTerm<'a, I> {}
+impl<I: Index> Eq for IndexedTerm<'_, I> {}
 
-impl<'a, I: Index, T: Term> PartialOrd<T> for IndexedTerm<'a, I> {
+impl<I: Index, T: Term> PartialOrd<T> for IndexedTerm<'_, I> {
     fn partial_cmp(&self, other: &T) -> Option<std::cmp::Ordering> {
         Some(Term::cmp(self, other.borrow_term()))
     }
 }
 
-impl<'a, I: Index> Ord for IndexedTerm<'a, I> {
+impl<I: Index> Ord for IndexedTerm<'_, I> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         Term::cmp(self, *other)
     }
 }
 
-impl<'a, I: Index> std::hash::Hash for IndexedTerm<'a, I> {
+impl<I: Index> std::hash::Hash for IndexedTerm<'_, I> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        Term::hash(self, state)
+        Term::hash(self, state);
     }
 }
 
@@ -326,20 +329,23 @@ pub struct BasicTermIndex<I: Index> {
 
 impl<I: Index> BasicTermIndex<I> {
     /// Construct an empty index
+    #[must_use]
     pub fn new() -> Self {
-        BasicTermIndex {
+        Self {
             t2i: HashMap::new(),
             i2t: vec![],
         }
     }
 
     /// The number of terms in this index
-    pub fn len(&self) -> usize {
+    #[must_use]
+    pub const fn len(&self) -> usize {
         self.i2t.len()
     }
 
     /// Whether this index is empty
-    pub fn is_empty(&self) -> bool {
+    #[must_use]
+    pub const fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
@@ -367,13 +373,13 @@ impl<I: Index> BasicTermIndex<I> {
         }
     }
 
-    /// Iter over all term in this TermIndex
+    /// Iter over all term in this `TermIndex`
     pub fn iter(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
         let t = self;
         (0..self.i2t.len()).map(|i| IndexedTerm::new(t, i))
     }
 
-    /// Iter over all IRIs in this TermIndex
+    /// Iter over all IRIs in this `TermIndex`
     pub fn iris(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
         let t = self;
         self.i2t.iter().enumerate().filter_map(|(i, it)| {
@@ -381,7 +387,7 @@ impl<I: Index> BasicTermIndex<I> {
         })
     }
 
-    /// Iter over all blank nodes in this TermIndex
+    /// Iter over all blank nodes in this `TermIndex`
     pub fn blank_nodes(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
         let t = self;
         self.i2t.iter().enumerate().filter_map(|(i, it)| {
@@ -389,7 +395,7 @@ impl<I: Index> BasicTermIndex<I> {
         })
     }
 
-    /// Iter over all literals in this TermIndex
+    /// Iter over all literals in this `TermIndex`
     pub fn literals(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
         let t = self;
         self.i2t.iter().enumerate().filter_map(|(i, it)| {
@@ -401,7 +407,7 @@ impl<I: Index> BasicTermIndex<I> {
         })
     }
 
-    /// Iter over all triple terms in this TermIndex
+    /// Iter over all triple terms in this `TermIndex`
     pub fn triple_terms(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
         let t = self;
         self.i2t.iter().enumerate().filter_map(|(i, it)| {
@@ -409,7 +415,7 @@ impl<I: Index> BasicTermIndex<I> {
         })
     }
 
-    /// Iter over all variables in this TermIndex
+    /// Iter over all variables in this `TermIndex`
     pub fn variables(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
         let t = self;
         self.i2t.iter().enumerate().filter_map(|(i, it)| {
@@ -583,7 +589,7 @@ mod test {
 
     impl Index for i8 {
         const ZERO: Self = 0;
-        const MAX: Self = i8::MAX;
+        const MAX: Self = Self::MAX;
         fn from_usize(other: usize) -> Self {
             other
                 .try_into()

@@ -9,15 +9,15 @@ use crate::LanguageTag;
 /// NB: "i18n" is short for "internationalization"
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct I18nString<T: Borrow<str>> {
-    /// The text value of this I18nString
+    /// The text value of this `I18nString`
     pub value: T,
-    /// The language of this I18nString
+    /// The language of this `I18nString`
     pub language: LanguageTag<T>,
 }
 
 impl<T: Borrow<str>> I18nString<T> {
     /// Constructor
-    pub fn new(value: T, language: LanguageTag<T>) -> Self {
+    pub const fn new(value: T, language: LanguageTag<T>) -> Self {
         Self { value, language }
     }
 

@@ -113,7 +113,7 @@ pub struct SparqlQuery<D: ?Sized> {
 
 impl<D: Dataset + ?Sized> From<spargebra::Query> for SparqlQuery<D> {
     fn from(algebra: spargebra::Query) -> Self {
-        SparqlQuery {
+        Self {
             algebra,
             _phantom: PhantomData,
         }
@@ -125,12 +125,12 @@ impl<D: Dataset + ?Sized> sophia_api::sparql::Query for SparqlQuery<D> {
 
     fn parse(query_source: &str) -> Result<Self, Self::Error> {
         let p = SparqlParser::new();
-        Ok(SparqlQuery::from(p.parse_query(query_source)?))
+        Ok(Self::from(p.parse_query(query_source)?))
     }
 
     fn parse_with(query_source: &str, base: Iri<&str>) -> Result<Self, Self::Error> {
         let p = SparqlParser::new().with_base_iri(base.as_str()).unwrap();
-        Ok(SparqlQuery::from(p.parse_query(query_source)?))
+        Ok(Self::from(p.parse_query(query_source)?))
     }
 }
 
@@ -139,7 +139,7 @@ pub enum TripleIter<'a, D: Dataset + ?Sized> {
     Describe(DescribeIter<'a, D>),
 }
 
-impl<'a, D: Dataset + ?Sized> Iterator for TripleIter<'a, D> {
+impl<D: Dataset + ?Sized> Iterator for TripleIter<'_, D> {
     type Item = Result<[ResultTerm; 3], SparqlWrapperError<D::Error>>;
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -77,6 +77,6 @@ impl<T, U: From<T> + PartialEq> HashMapUtil<T> for HashMap<Box<str>, Vec<U>> {
             Vacant(e) => {
                 e.insert(vec![val.into()]);
             }
-        };
+        }
     }
 }

@@ -101,7 +101,7 @@ where
     }
 }
 
-impl<'a, D> Iterator for DescribeIter<'a, D>
+impl<D> Iterator for DescribeIter<'_, D>
 where
     D: Dataset + ?Sized,
 {

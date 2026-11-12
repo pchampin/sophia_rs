@@ -43,9 +43,9 @@ impl<'a, D: Dataset + ?Sized> LeftJoinIter<'a, D> {
             b1,
             b2s,
             state,
+            graph_matcher,
             right,
             expression,
-            graph_matcher,
             iter_state,
         }
     }
@@ -69,8 +69,7 @@ impl<'a, D: Dataset + ?Sized> LeftJoinIter<'a, D> {
                 if let Some(b) = Some(b2).filter(|b| {
                     self.expression
                         .as_ref()
-                        .map(|e| e.eval_truthy(&b.v, &self.state, &self.graph_matcher))
-                        .unwrap_or(true)
+                        .is_none_or(|e| e.eval_truthy(&b.v, &self.state, &self.graph_matcher))
                 }) {
                     self.iter_state = IterState::B2Matched;
                     Some(Ok(b))
@@ -114,7 +113,7 @@ impl<'a, D: Dataset + ?Sized> LeftJoinIter<'a, D> {
     }
 }
 
-impl<'a, D: Dataset + ?Sized> Iterator for LeftJoinIter<'a, D> {
+impl<D: Dataset + ?Sized> Iterator for LeftJoinIter<'_, D> {
     type Item = Result<Binding, SparqlWrapperError<<D as Dataset>::Error>>;
 
     fn next(&mut self) -> Option<Self::Item> {

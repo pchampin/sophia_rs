@@ -45,13 +45,14 @@ pub enum C14nError<E: std::error::Error + Send + Sync + 'static> {
 }
 
 impl C14nError<Infallible> {
-    /// Cast to another type of C14nError
+    /// Cast to another type of `C14nError`
+    #[must_use]
     pub fn cast<E: std::error::Error + Send + Sync + 'static>(self) -> C14nError<E> {
         match self {
-            C14nError::Dataset(_) => unreachable!(),
-            C14nError::Io(error) => C14nError::Io(error),
-            C14nError::ToxicGraph(msg) => C14nError::ToxicGraph(msg),
-            C14nError::Unsupported(msg) => C14nError::Unsupported(msg),
+            Self::Dataset(_) => unreachable!(),
+            Self::Io(error) => C14nError::Io(error),
+            Self::ToxicGraph(msg) => C14nError::ToxicGraph(msg),
+            Self::Unsupported(msg) => C14nError::Unsupported(msg),
         }
     }
 }

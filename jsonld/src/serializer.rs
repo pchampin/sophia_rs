@@ -136,7 +136,7 @@ impl<L> Jsonifier<L> {
 
     /// Extract the converted `JsonValue`
     #[inline]
-    pub fn to_json(&mut self) -> JsonValue<()> {
+    pub const fn to_json(&mut self) -> JsonValue<()> {
         let mut ret = JsonValue::Null;
         std::mem::swap(&mut self.target.0, &mut ret);
         ret

@@ -11,18 +11,18 @@ where
     type Item = Result<T, E>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut tmp = JoinIter::Finish;
+        let mut tmp = Self::Finish;
         std::mem::swap(self, &mut tmp);
         match tmp {
-            JoinIter::PassThrough(mut iter) => {
+            Self::PassThrough(mut iter) => {
                 let ret = iter.next();
                 if ret.is_some() {
-                    *self = JoinIter::PassThrough(iter);
+                    *self = Self::PassThrough(iter);
                 }
                 ret
             }
-            JoinIter::Err(err) => Some(Err(err)),
-            JoinIter::Finish => None,
+            Self::Err(err) => Some(Err(err)),
+            Self::Finish => None,
         }
     }
 }

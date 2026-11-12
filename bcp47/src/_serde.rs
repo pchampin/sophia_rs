@@ -1,4 +1,4 @@
-//! Serde implementation for LanguageTag
+//! Serde implementation for `LanguageTag`
 
 use std::borrow::Borrow;
 

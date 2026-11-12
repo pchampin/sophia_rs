@@ -12,31 +12,31 @@ pub enum SparqlNumber {
 
 impl From<isize> for SparqlNumber {
     fn from(value: isize) -> Self {
-        SparqlNumber::NativeInt(value)
+        Self::NativeInt(value)
     }
 }
 
 impl From<BigInt> for SparqlNumber {
     fn from(value: BigInt) -> Self {
-        SparqlNumber::BigInt(value)
+        Self::BigInt(value)
     }
 }
 
 impl From<BigDecimal> for SparqlNumber {
     fn from(value: BigDecimal) -> Self {
-        SparqlNumber::Decimal(value)
+        Self::Decimal(value)
     }
 }
 
 impl From<f32> for SparqlNumber {
     fn from(value: f32) -> Self {
-        SparqlNumber::Float(value)
+        Self::Float(value)
     }
 }
 
 impl From<f64> for SparqlNumber {
     fn from(value: f64) -> Self {
-        SparqlNumber::Double(value)
+        Self::Double(value)
     }
 }
 
@@ -66,6 +66,7 @@ impl_sparqlnumber_integer_from!(u16);
 impl_sparqlnumber_integer_from!(u8);
 
 impl SparqlNumber {
+    #[must_use]
     pub fn try_parse_integer(lex: &str) -> Option<Self> {
         if let Ok(val) = lex.parse::<isize>() {
             Some(val.into())
@@ -76,6 +77,7 @@ impl SparqlNumber {
         }
     }
 
+    #[must_use]
     pub fn try_parse<T: std::str::FromStr + Into<Self>>(lex: &str) -> Option<Self> {
         if let Ok(val) = lex.parse::<T>() {
             Some(val.into())
@@ -88,95 +90,104 @@ impl SparqlNumber {
         if predicate(&self) { Some(self) } else { None }
     }
 
+    #[must_use]
     pub fn is_zero(&self) -> bool {
         match self {
-            SparqlNumber::NativeInt(inner) => inner.is_zero(),
-            SparqlNumber::BigInt(inner) => inner.is_zero(),
-            SparqlNumber::Decimal(inner) => inner.is_zero(),
-            SparqlNumber::Float(inner) => inner.is_zero(),
-            SparqlNumber::Double(inner) => inner.is_zero(),
+            Self::NativeInt(inner) => inner.is_zero(),
+            Self::BigInt(inner) => inner.is_zero(),
+            Self::Decimal(inner) => inner.is_zero(),
+            Self::Float(inner) => inner.is_zero(),
+            Self::Double(inner) => inner.is_zero(),
         }
     }
 
+    #[must_use]
     pub fn is_positive(&self) -> bool {
         match self {
-            SparqlNumber::NativeInt(inner) => inner.is_positive(),
-            SparqlNumber::BigInt(inner) => inner.is_positive(),
-            SparqlNumber::Decimal(inner) => inner.is_positive(),
-            SparqlNumber::Float(inner) => inner.is_positive(),
-            SparqlNumber::Double(inner) => inner.is_positive(),
+            Self::NativeInt(inner) => inner.is_positive(),
+            Self::BigInt(inner) => inner.is_positive(),
+            Self::Decimal(inner) => inner.is_positive(),
+            Self::Float(inner) => inner.is_positive(),
+            Self::Double(inner) => inner.is_positive(),
         }
     }
 
+    #[must_use]
     pub fn is_negative(&self) -> bool {
         match self {
-            SparqlNumber::NativeInt(inner) => inner.is_negative(),
-            SparqlNumber::BigInt(inner) => inner.is_negative(),
-            SparqlNumber::Decimal(inner) => inner.is_negative(),
-            SparqlNumber::Float(inner) => inner.is_negative(),
-            SparqlNumber::Double(inner) => inner.is_negative(),
+            Self::NativeInt(inner) => inner.is_negative(),
+            Self::BigInt(inner) => inner.is_negative(),
+            Self::Decimal(inner) => inner.is_negative(),
+            Self::Float(inner) => inner.is_negative(),
+            Self::Double(inner) => inner.is_negative(),
         }
     }
 
+    #[must_use]
     pub fn is_truthy(&self) -> bool {
         match self {
-            SparqlNumber::NativeInt(i) => !i.is_zero(),
-            SparqlNumber::BigInt(i) => !i.is_zero(),
-            SparqlNumber::Decimal(d) => !d.is_zero(),
-            SparqlNumber::Double(d) => !d.is_zero() && !d.is_nan(),
-            SparqlNumber::Float(f) => !f.is_zero() && !f.is_nan(),
+            Self::NativeInt(i) => !i.is_zero(),
+            Self::BigInt(i) => !i.is_zero(),
+            Self::Decimal(d) => !d.is_zero(),
+            Self::Double(d) => !d.is_zero() && !d.is_nan(),
+            Self::Float(f) => !f.is_zero() && !f.is_nan(),
         }
     }
 
-    pub fn is_nan(&self) -> bool {
+    #[must_use]
+    pub const fn is_nan(&self) -> bool {
         match self {
-            SparqlNumber::Double(d) => d.is_nan(),
-            SparqlNumber::Float(f) => f.is_nan(),
+            Self::Double(d) => d.is_nan(),
+            Self::Float(f) => f.is_nan(),
             _ => false,
         }
     }
 
+    #[must_use]
     pub fn abs(&self) -> Self {
         match self {
-            SparqlNumber::NativeInt(inner) => inner.abs().into(),
-            SparqlNumber::BigInt(inner) => inner.clone().into(),
-            SparqlNumber::Decimal(inner) => inner.abs().into(),
-            SparqlNumber::Float(inner) => inner.abs().into(),
-            SparqlNumber::Double(inner) => inner.abs().into(),
+            Self::NativeInt(inner) => inner.abs().into(),
+            Self::BigInt(inner) => inner.clone().into(),
+            Self::Decimal(inner) => inner.abs().into(),
+            Self::Float(inner) => inner.abs().into(),
+            Self::Double(inner) => inner.abs().into(),
         }
     }
 
+    #[must_use]
     pub fn ceil(&self) -> Self {
         match self {
-            SparqlNumber::NativeInt(inner) => (*inner).into(),
-            SparqlNumber::BigInt(inner) => inner.clone().into(),
-            SparqlNumber::Decimal(inner) => {
+            Self::NativeInt(inner) => (*inner).into(),
+            Self::BigInt(inner) => inner.clone().into(),
+            Self::Decimal(inner) => {
                 (inner.with_scale_round(0, RoundingMode::Ceiling)).into()
             }
-            SparqlNumber::Float(inner) => inner.ceil().into(),
-            SparqlNumber::Double(inner) => inner.ceil().into(),
+            Self::Float(inner) => inner.ceil().into(),
+            Self::Double(inner) => inner.ceil().into(),
         }
     }
 
+    #[must_use]
     pub fn floor(&self) -> Self {
         match self {
-            SparqlNumber::NativeInt(inner) => (*inner).into(),
-            SparqlNumber::BigInt(inner) => inner.clone().into(),
-            SparqlNumber::Decimal(inner) => (inner.with_scale_round(0, RoundingMode::Floor)).into(),
-            SparqlNumber::Float(inner) => inner.floor().into(),
-            SparqlNumber::Double(inner) => inner.floor().into(),
+            Self::NativeInt(inner) => (*inner).into(),
+            Self::BigInt(inner) => inner.clone().into(),
+            Self::Decimal(inner) => (inner.with_scale_round(0, RoundingMode::Floor)).into(),
+            Self::Float(inner) => inner.floor().into(),
+            Self::Double(inner) => inner.floor().into(),
         }
     }
 
+    #[must_use]
     pub fn round(&self) -> Self {
         match self {
-            SparqlNumber::NativeInt(inner) => (*inner).into(),
-            SparqlNumber::BigInt(inner) => inner.clone().into(),
-            SparqlNumber::Decimal(inner) => {
+            Self::NativeInt(inner) => (*inner).into(),
+            Self::BigInt(inner) => inner.clone().into(),
+            Self::Decimal(inner) => {
                 (inner.with_scale_round(0, RoundingMode::HalfUp)).into()
             }
-            SparqlNumber::Float(inner) => inner.round().into(),
-            SparqlNumber::Double(inner) => inner.round().into(),
+            Self::Float(inner) => inner.round().into(),
+            Self::Double(inner) => inner.round().into(),
         }
     }
 
@@ -187,8 +198,8 @@ impl SparqlNumber {
     /// NB: Decimal must not be coerced to decimal, as this would cause a clone.
     pub(crate) fn coerce_to_decimal(&self) -> BigDecimal {
         match self {
-            SparqlNumber::NativeInt(inner) => BigDecimal::from_isize(*inner).unwrap(),
-            SparqlNumber::BigInt(inner) => inner.clone().into(),
+            Self::NativeInt(inner) => BigDecimal::from_isize(*inner).unwrap(),
+            Self::BigInt(inner) => inner.clone().into(),
             _ => panic!(),
         }
     }
@@ -197,13 +208,14 @@ impl SparqlNumber {
     ///
     /// Note that the conversion may lose precision, or even result in NaN for some big integers and decimals.
     #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
+    #[must_use]
     pub fn coerce_to_float(&self) -> f32 {
         match self {
-            SparqlNumber::NativeInt(inner) => *inner as f32,
-            SparqlNumber::BigInt(inner) => inner.to_f32().unwrap_or(f32::NAN),
-            SparqlNumber::Decimal(inner) => inner.to_f32().unwrap_or(f32::NAN),
-            SparqlNumber::Float(inner) => *inner,
-            SparqlNumber::Double(inner) => *inner as f32,
+            Self::NativeInt(inner) => *inner as f32,
+            Self::BigInt(inner) => inner.to_f32().unwrap_or(f32::NAN),
+            Self::Decimal(inner) => inner.to_f32().unwrap_or(f32::NAN),
+            Self::Float(inner) => *inner,
+            Self::Double(inner) => *inner as f32,
         }
     }
 
@@ -211,13 +223,14 @@ impl SparqlNumber {
     ///
     /// Note that the conversion may lose precision, or even result in NaN for some big integers and decimals.
     #[allow(clippy::cast_precision_loss)]
+    #[must_use]
     pub fn coerce_to_double(&self) -> f64 {
         match self {
-            SparqlNumber::NativeInt(inner) => *inner as f64,
-            SparqlNumber::BigInt(inner) => inner.to_f64().unwrap_or(f64::NAN),
-            SparqlNumber::Decimal(inner) => inner.to_f64().unwrap_or(f64::NAN),
-            SparqlNumber::Float(inner) => f64::from(*inner),
-            SparqlNumber::Double(inner) => *inner,
+            Self::NativeInt(inner) => *inner as f64,
+            Self::BigInt(inner) => inner.to_f64().unwrap_or(f64::NAN),
+            Self::Decimal(inner) => inner.to_f64().unwrap_or(f64::NAN),
+            Self::Float(inner) => f64::from(*inner),
+            Self::Double(inner) => *inner,
         }
     }
 

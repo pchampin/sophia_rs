@@ -195,7 +195,7 @@ fn lang_matches(tag: &str, range: &str, exp: bool) -> TestResult {
     let exp = Some(EvalResult::from(exp));
     assert!(eval_eq(
         Some(super::lang_matches(&tag, &range)),
-        exp.clone()
+        exp
     ));
     Ok(())
 }
