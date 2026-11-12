@@ -119,7 +119,7 @@ impl<'a> Term for Trusted<NamedOrBlankNodeRef<'a>> {
         Self: 'x;
 
     fn kind(&self) -> TermKind {
-        use oxrdf::NamedOrBlankNodeRef::{NamedNode, BlankNode};
+        use oxrdf::NamedOrBlankNodeRef::{BlankNode, NamedNode};
         match self.0 {
             NamedNode(_) => TermKind::Iri,
             BlankNode(_) => TermKind::BlankNode,
@@ -154,7 +154,7 @@ impl Term for Trusted<TermRef<'_>> {
         Self: 'x;
 
     fn kind(&self) -> TermKind {
-        use oxrdf::TermRef::{NamedNode, BlankNode, Literal, Triple};
+        use oxrdf::TermRef::{BlankNode, Literal, NamedNode, Triple};
         match self.0 {
             NamedNode(_) => TermKind::Iri,
             BlankNode(_) => TermKind::BlankNode,

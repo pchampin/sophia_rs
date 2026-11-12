@@ -277,7 +277,9 @@ impl Aggregator {
                 if !*err {
                     if let Some(res) = expr.eval(vbinding, state, graph_matcher) {
                         if min
-                            .as_ref().as_ref().is_none_or(|minval| !minval.sparql_order_by(Some(&res)).is_le())
+                            .as_ref()
+                            .as_ref()
+                            .is_none_or(|minval| !minval.sparql_order_by(Some(&res)).is_le())
                         {
                             // min is none (no previous value) or greater than res
                             *min = Some(res);
@@ -292,7 +294,9 @@ impl Aggregator {
                 if !*err {
                     if let Some(res) = expr.eval(vbinding, state, graph_matcher) {
                         if max
-                            .as_ref().as_ref().is_none_or(|maxval| !maxval.sparql_order_by(Some(&res)).is_ge())
+                            .as_ref()
+                            .as_ref()
+                            .is_none_or(|maxval| !maxval.sparql_order_by(Some(&res)).is_ge())
                         {
                             // max is none (no previous value) or lower than res
                             *max = Some(res);

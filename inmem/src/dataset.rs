@@ -8,10 +8,10 @@ use sophia_api::prelude::*;
 use sophia_api::quad::Gspo;
 use sophia_api::term::GraphName;
 
-use crate::index::{TermIndex, GraphNameIndex, Index, BasicTermIndex};
+use crate::index::{BasicTermIndex, GraphNameIndex, Index, TermIndex};
 
 mod _iter;
-use _iter::{CdMatchingIterator, BcdMatchingIterator, GspoMatchingIterator};
+use _iter::{BcdMatchingIterator, CdMatchingIterator, GspoMatchingIterator};
 
 /// A dataset with a single quad index (GSPO).
 /// Fast to load but slow on some queries, with a relatively low memory footprint.
@@ -295,10 +295,10 @@ impl<TI: GraphNameIndex> Dataset for GenericFastDataset<TI> {
             Some(None) => return Box::new(empty()),
             Some(Some(i)) => Some(i),
         };
-        let gi = match gm
-            .constant()
-            .map(|g| self.terms.get_graph_name_index(g.map(sophia_api::prelude::Term::borrow_term)))
-        {
+        let gi = match gm.constant().map(|g| {
+            self.terms
+                .get_graph_name_index(g.map(sophia_api::prelude::Term::borrow_term))
+        }) {
             None => None,
             Some(None) => return Box::new(empty()),
             Some(Some(i)) => Some(i),

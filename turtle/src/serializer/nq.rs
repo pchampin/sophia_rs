@@ -276,7 +276,7 @@ _:r	<http://schema.org/creator>	?x		.
         let out = NQuadsSerializer::new_stringifier_with_config(config)
             .serialize_quads(d1.quads())?
             .to_string();
-        println!("\n>>> DEBUG\n{}", out);
+        println!("\n>>> DEBUG\n{out}");
 
         let d2: Vec<Spog<SimpleTerm>> = crate::parser::nq::parse_str(&out).collect_quads()?;
 
@@ -340,7 +340,7 @@ _:r	<http://schema.org/creator>	?x		.
         let out = NQuadsSerializer::new_stringifier_with_config(config)
             .serialize_quads(d1.quads())?
             .to_string();
-        println!("\n>>> DEBUG\n{}", out);
+        println!("\n>>> DEBUG\n{out}");
 
         let d2: Vec<Spog<SimpleTerm>> = crate::parser::nq::parse_str(&out).collect_quads()?;
 

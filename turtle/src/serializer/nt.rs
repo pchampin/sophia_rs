@@ -334,7 +334,7 @@ _:r	<http://schema.org/creator>	?x	.
         let out = NTriplesSerializer::new_stringifier_with_config(config)
             .serialize_triples(g1.triples())?
             .to_string();
-        println!("\n>>> DEBUG\n{}", out);
+        println!("\n>>> DEBUG\n{out}");
 
         let g2: Vec<[SimpleTerm; 3]> = crate::parser::nt::parse_str(&out).collect_triples()?;
 
@@ -370,7 +370,7 @@ _:r	<http://schema.org/creator>	?x	.
         let out = NTriplesSerializer::new_stringifier_with_config(config)
             .serialize_triples(g1.triples())?
             .to_string();
-        println!("\n>>> DEBUG\n{}", out);
+        println!("\n>>> DEBUG\n{out}");
 
         let g2: Vec<[SimpleTerm; 3]> = crate::parser::nt::parse_str(&out).collect_triples()?;
 

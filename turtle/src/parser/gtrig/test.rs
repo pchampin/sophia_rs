@@ -968,7 +968,7 @@ fn roundtrip_not_pretty(key: &str) -> TestResult {
     let out = TriGSerializer::new_stringifier()
         .serialize_quads(d1.quads())?
         .to_string();
-    println!("\n>>> DEBUG\n{}", out);
+    println!("\n>>> DEBUG\n{out}");
 
     let d2: Vec<Spog<SimpleTerm>> = parse_str(&out).collect_quads()?;
 
@@ -1096,7 +1096,7 @@ fn roundtrip_pretty(key: &str) -> TestResult {
     let ugly = TriGSerializer::new_stringifier()
         .serialize_quads(d1.quads())?
         .to_string();
-    println!("\n>>> DEBUG ugly\n{}", ugly);
+    println!("\n>>> DEBUG ugly\n{ugly}");
 
     let mut prefix_map = TriGConfig::default_prefix_map();
     prefix_map.push((
@@ -1109,13 +1109,13 @@ fn roundtrip_pretty(key: &str) -> TestResult {
     let pretty = TriGSerializer::new_stringifier_with_config(config)
         .serialize_quads(d1.quads())?
         .to_string();
-    println!("\n>>> DEBUG pretty\n{}", pretty);
+    println!("\n>>> DEBUG pretty\n{pretty}");
 
     let d2: Vec<Spog<SimpleTerm>> = parse_str(&pretty).collect_quads()?;
     let ugly = TriGSerializer::new_stringifier()
         .serialize_quads(d2.quads())?
         .to_string();
-    println!("\n>>> DEBUG pretty→ugly\n{}", ugly);
+    println!("\n>>> DEBUG pretty→ugly\n{ugly}");
 
     assert!(isomorphic_datasets(&d1, &d2)?);
     Ok(())

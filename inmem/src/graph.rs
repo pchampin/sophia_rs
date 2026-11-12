@@ -6,7 +6,7 @@ use std::iter::{empty, once};
 use sophia_api::graph::{CollectibleGraph, GResult, SetGraph};
 use sophia_api::prelude::*;
 
-use crate::index::{TermIndex, Index, BasicTermIndex};
+use crate::index::{BasicTermIndex, Index, TermIndex};
 
 mod _iter;
 pub(crate) use _iter::TermData;

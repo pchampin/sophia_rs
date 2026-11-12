@@ -462,7 +462,7 @@ mod test {
         let out = NQuadsSerializer::new_stringifier_with_config(config)
             .serialize_quads(d1.quads())?
             .to_string();
-        println!("\n>>> DEBUG\n{}", out);
+        println!("\n>>> DEBUG\n{out}");
 
         let d2: Vec<Spog<SimpleTerm>> = crate::parser::gnq::parse_str(&out).collect_quads()?;
 

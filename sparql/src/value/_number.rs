@@ -159,9 +159,7 @@ impl SparqlNumber {
         match self {
             Self::NativeInt(inner) => (*inner).into(),
             Self::BigInt(inner) => inner.clone().into(),
-            Self::Decimal(inner) => {
-                (inner.with_scale_round(0, RoundingMode::Ceiling)).into()
-            }
+            Self::Decimal(inner) => (inner.with_scale_round(0, RoundingMode::Ceiling)).into(),
             Self::Float(inner) => inner.ceil().into(),
             Self::Double(inner) => inner.ceil().into(),
         }
@@ -183,9 +181,7 @@ impl SparqlNumber {
         match self {
             Self::NativeInt(inner) => (*inner).into(),
             Self::BigInt(inner) => inner.clone().into(),
-            Self::Decimal(inner) => {
-                (inner.with_scale_round(0, RoundingMode::HalfUp)).into()
-            }
+            Self::Decimal(inner) => (inner.with_scale_round(0, RoundingMode::HalfUp)).into(),
             Self::Float(inner) => inner.round().into(),
             Self::Double(inner) => inner.round().into(),
         }

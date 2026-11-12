@@ -496,9 +496,7 @@ pub fn has_lang(er: &EvalResult) -> EvalResult {
 pub fn has_lang_dir(er: &EvalResult) -> EvalResult {
     match er {
         EvalResult::Term(t) => t.base_direction().is_some(),
-        EvalResult::Value(v) => v
-            .compound_tag()
-            .is_some_and(|pair| pair.1.is_some()),
+        EvalResult::Value(v) => v.compound_tag().is_some_and(|pair| pair.1.is_some()),
     }
     .into()
 }

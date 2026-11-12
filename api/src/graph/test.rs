@@ -133,12 +133,10 @@ where
 
 /// Checks that `val` is in the interval represented by `hint`.
 pub fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
-    assert!(hint.0 <= val, "hint {:?} not consistent with {}", hint, val);
+    assert!(hint.0 <= val, "hint {hint:?} not consistent with {val}");
     assert!(
         val <= hint.1.unwrap_or(val),
-        "hint {:?} not consistent with {}",
-        hint,
-        val
+        "hint {hint:?} not consistent with {val}"
     )
 }
 

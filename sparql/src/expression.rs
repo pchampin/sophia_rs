@@ -129,9 +129,7 @@ impl ArcExpression {
             ),
             Expression::In(lhs, rhs) => In(
                 Box::new(Self::from_expr(lhs, stash)),
-                rhs.iter()
-                    .map(|e| Self::from_expr(e, stash))
-                    .collect(),
+                rhs.iter().map(|e| Self::from_expr(e, stash)).collect(),
             ),
             Expression::Add(lhs, rhs) => Add(
                 Box::new(Self::from_expr(lhs, stash)),
@@ -159,16 +157,12 @@ impl ArcExpression {
                 Box::new(Self::from_expr(t, stash)),
                 Box::new(Self::from_expr(e, stash)),
             ),
-            Expression::Coalesce(es) => Coalesce(
-                es.iter()
-                    .map(|e| Self::from_expr(e, stash))
-                    .collect(),
-            ),
+            Expression::Coalesce(es) => {
+                Coalesce(es.iter().map(|e| Self::from_expr(e, stash)).collect())
+            }
             Expression::FunctionCall(func, args) => FunctionCall(
                 func.clone(),
-                args.iter()
-                    .map(|e| Self::from_expr(e, stash))
-                    .collect(),
+                args.iter().map(|e| Self::from_expr(e, stash)).collect(),
             ),
         }
     }
@@ -402,7 +396,9 @@ impl EvalResult {
     }
 
     pub fn as_literal(&self, diag: &str) -> Option<GenericLiteral<Arc<str>>> {
-        if let ArcTerm::Literal(lit) = self.as_term() { Some(lit) } else {
+        if let ArcTerm::Literal(lit) = self.as_term() {
+            Some(lit)
+        } else {
             if !diag.is_empty() {
                 log::warn!("{diag} expects a literal");
             }
@@ -411,7 +407,9 @@ impl EvalResult {
     }
 
     pub fn as_triple(&self, diag: &str) -> Option<Arc<[ArcTerm; 3]>> {
-        if let ArcTerm::Triple(triple) = self.as_term() { Some(triple) } else {
+        if let ArcTerm::Triple(triple) = self.as_term() {
+            Some(triple)
+        } else {
             if !diag.is_empty() {
                 log::warn!("{diag} expects a triple term");
             }
@@ -420,7 +418,9 @@ impl EvalResult {
     }
 
     pub fn as_number(&self, diag: &str) -> Option<&SparqlNumber> {
-        if let SparqlValue::Number(opt) = self.as_value()? { opt.as_ref() } else {
+        if let SparqlValue::Number(opt) = self.as_value()? {
+            opt.as_ref()
+        } else {
             if !diag.is_empty() {
                 log::warn!("{diag} expects a number");
             }
@@ -471,7 +471,9 @@ impl EvalResult {
 
     /// Coerce to an xsd:dateTime literal
     pub fn as_xsd_date_time(&self, diag: &str) -> Option<&XsdDateTime> {
-        if let Some(SparqlValue::DateTime(dt)) = self.as_value() { dt.as_ref() } else {
+        if let Some(SparqlValue::DateTime(dt)) = self.as_value() {
+            dt.as_ref()
+        } else {
             if !diag.is_empty() {
                 log::warn!("{diag} expects an xsd:dateTime");
             }

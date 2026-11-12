@@ -34,7 +34,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             // results
             for b in bs {
                 for bv in b? {
-                    print!("{}\t", bv.map_or("_".into(), |t| t.to_string()));
+                    print!("{}\t", bv.map_or_else(|| "_".into(), |t| t.to_string()));
                 }
                 println!();
             }

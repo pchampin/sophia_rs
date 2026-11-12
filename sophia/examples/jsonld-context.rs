@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut options = JsonLdOptions::new().with_expansion_policy(Policy::Standard);
     if let Some(context_path) = context_path {
         let context_str = std::fs::read_to_string(&context_path)
-            .map_err(|e| format!("Could not read file {}: {}", context_path, e))?;
+            .map_err(|e| format!("Could not read file {context_path}: {e}"))?;
         options = options.try_with_expand_context(context_str.as_str())?;
     }
     let parser = JsonLdParser::new_with_options(options);

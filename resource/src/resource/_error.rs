@@ -87,7 +87,10 @@ where
     /// (*not* the resource from which it was discovered).
     #[must_use]
     pub fn resource_id(&self) -> SimpleTerm<'_> {
-        use ResourceErrorKind::{IriNotAbsolute, LoaderError, GraphError, NoValueFor, UnexpectedMultipleValueFor, MissingType, UnexpectedKind, UnexpectedDatatype, UnexpectedValue};
+        use ResourceErrorKind::{
+            GraphError, IriNotAbsolute, LoaderError, MissingType, NoValueFor, UnexpectedDatatype,
+            UnexpectedKind, UnexpectedMultipleValueFor, UnexpectedValue,
+        };
         match &*self.0 {
             IriNotAbsolute(iriref) => iriref.as_simple(),
             LoaderError(err) => err.iri().into_term(),
