@@ -80,6 +80,7 @@ impl LocalLoader {
     }
 
     /// The mapping used by this loader between IRIs and local paths
+    #[must_use]
     pub fn caches(&self) -> &[(IriBuf, PathBuf)] {
         &self.caches
     }

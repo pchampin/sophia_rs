@@ -145,7 +145,7 @@ pub fn relabel_with<'a, H: HashFunction, D: SetDataset>(
     for q in d_quads {
         let (spo, g) = q?.to_spog();
         let spo = spo.map(|t| escape_triple_terms::<H, D>(t, &mut aliases));
-        if g.as_ref().map(Term::is_triple).unwrap_or(false) {
+        if g.as_ref().is_some_and(Term::is_triple) {
             return Err(C14nError::Unsupported(
                 "Generalized RDFC-1.0 does not support triple terms as graph names.".into(),
             ));
@@ -161,7 +161,7 @@ pub fn relabel_with<'a, H: HashFunction, D: SetDataset>(
                 C14nTerm::Aaa(aaa.clone()),
             ],
             None,
-        ))
+        ));
     }
     for (id, is_bnode, tt) in aliases.into_values() {
         let gn = if is_bnode {
@@ -250,7 +250,7 @@ _:c14n0 _:c14n1 _:c14n3 _:c14n2 .
 "#;
         let got = c14n_nquads(&dataset).unwrap();
         println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
-        assert!(got == exp);
+        assert_eq!(got, exp);
     }
 
     #[test]
@@ -265,7 +265,7 @@ _:c14n1 <x:p> "o'@en"@en--ltr _:c14n2 .
 "#;
         let got = c14n_nquads(&dataset).unwrap();
         println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
-        assert!(got == exp);
+        assert_eq!(got, exp);
     }
 
     pub fn c14n_nquads<D: SetDataset>(d: &D) -> Result<String, C14nError<D::Error>> {
@@ -310,6 +310,6 @@ _:c14n8 <x:p2> _:c14n2 .
 "#;
         let got = c14n_nquads(&dataset).unwrap();
         println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
-        assert!(got == exp);
+        assert_eq!(got, exp);
     }
 }

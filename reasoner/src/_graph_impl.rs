@@ -107,7 +107,7 @@ impl<D: Recognized, R: RuleSet> ReasonableGraph<D, R> {
         Ok(sparql_other.query(&query).unwrap().into_boolean())
     }
 
-    /// Return a IndexedTerm, assuming the index is valid
+    /// Return a `IndexedTerm`, assuming the index is valid
     pub(crate) fn get_term(&self, index: usize) -> IndexedTerm<'_, usize> {
         debug_assert!(index < self.terms.len());
         self.terms.get_term(index)

@@ -21,6 +21,7 @@ impl<G: Graph, L> LadderTermIterator<G, L> {
     /// `start` is expected to be `Some(Ok(first_blank_node));
     /// if it is `Some(Err(_))`, the iterator will yield this error;
     /// if it is `None`, the iterator will be empty.
+    #[must_use]
     pub const fn new(
         start: Option<ResourceResult<Resource<G, L>, G>>,
         value: SimpleTerm<'static>,

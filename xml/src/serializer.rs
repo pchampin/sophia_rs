@@ -134,7 +134,7 @@ fn sophia_triple_to_ox<T: sophia_api::triple::Triple>(triple: &T) -> Option<OxTr
     Some(OxTriple::new(s, p, o))
 }
 
-/// Convert a Sophia term to an oxrdf NamedOrBlankNode (subject)
+/// Convert a Sophia term to an oxrdf `NamedOrBlankNode` (subject)
 fn sophia_term_to_ox_subject<T: Term>(term: T) -> Option<NamedOrBlankNode> {
     match term.kind() {
         TermKind::Iri => {
@@ -142,7 +142,7 @@ fn sophia_term_to_ox_subject<T: Term>(term: T) -> Option<NamedOrBlankNode> {
             match NamedNode::new(iri.as_str()) {
                 Ok(nn) => Some(NamedOrBlankNode::NamedNode(nn)),
                 Err(e) => {
-                    log::warn!("Skipping triple with invalid IRI in subject: {}", e);
+                    log::warn!("Skipping triple with invalid IRI in subject: {e}");
                     None
                 }
             }
@@ -163,13 +163,13 @@ fn sophia_term_to_ox_subject<T: Term>(term: T) -> Option<NamedOrBlankNode> {
     }
 }
 
-/// Convert a Sophia term to an oxrdf NamedNode (predicate)
+/// Convert a Sophia term to an oxrdf `NamedNode` (predicate)
 fn sophia_term_to_ox_named_node<T: Term>(term: T) -> Option<NamedNode> {
     if let Some(iri) = term.iri() {
         match NamedNode::new(iri.as_str()) {
             Ok(nn) => Some(nn),
             Err(e) => {
-                log::warn!("Skipping triple with invalid IRI in predicate: {}", e);
+                log::warn!("Skipping triple with invalid IRI in predicate: {e}");
                 None
             }
         }
@@ -187,7 +187,7 @@ fn sophia_term_to_ox_term<T: Term>(term: T) -> Option<OxTerm> {
             match NamedNode::new(iri.as_str()) {
                 Ok(nn) => Some(OxTerm::NamedNode(nn)),
                 Err(e) => {
-                    log::warn!("Skipping triple with invalid IRI in object: {}", e);
+                    log::warn!("Skipping triple with invalid IRI in object: {e}");
                     None
                 }
             }
@@ -225,7 +225,7 @@ fn sophia_term_to_ox_term<T: Term>(term: T) -> Option<OxTerm> {
                 {
                     Ok(lit) => Some(OxTerm::Literal(lit)),
                     Err(e) => {
-                        log::warn!("Skipping triple with invalid datatype IRI: {}", e);
+                        log::warn!("Skipping triple with invalid datatype IRI: {e}");
                         None
                     }
                 }
@@ -290,10 +290,10 @@ pub(crate) mod test {
             let out = RdfXmlSerializer::new_stringifier()
                 .serialize_triples(g1.triples())?
                 .to_string();
-            println!("{}", &out);
+            println!("{out}");
 
             let g2: Vec<[SimpleTerm; 3]> = crate::parser::parse_str(&out).collect_triples()?;
-            println!("{:#?}", &g2);
+            println!("{g2:#?}");
 
             assert!(isomorphic_graphs(&g1, &g2)?);
         }

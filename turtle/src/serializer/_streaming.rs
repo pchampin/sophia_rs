@@ -67,7 +67,7 @@ impl<'a, W: io::Write> StreamingSerializerState<'a, W> {
     }
 
     pub fn pop_all(&mut self) {
-        self.terms.truncate(0);
+        self.terms.clear();
         self.buffers.empty();
         self.last_seen = [None; 3]
     }

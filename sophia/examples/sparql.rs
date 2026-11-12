@@ -32,9 +32,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             // header (variable names)
             println!("{header}");
             // results
-            for b in bs.into_iter() {
+            for b in bs {
                 for bv in b? {
-                    print!("{}\t", bv.map(|t| t.to_string()).unwrap_or("_".into()));
+                    print!("{}\t", bv.map_or_else(|| "_".into(), |t| t.to_string()));
                 }
                 println!();
             }

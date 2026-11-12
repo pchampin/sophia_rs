@@ -6,11 +6,11 @@ use std::iter::{empty, once};
 use sophia_api::graph::{CollectibleGraph, GResult, SetGraph};
 use sophia_api::prelude::*;
 
-use crate::index::*;
+use crate::index::{BasicTermIndex, Index, TermIndex};
 
 mod _iter;
 pub(crate) use _iter::TermData;
-use _iter::*;
+use _iter::{BcMatchingIterator, SpoMatchingIterator};
 
 /// A graph with a single triple index (SPO).
 /// Fast to load but slow to query, with a relatively low memory footprint.
@@ -22,6 +22,7 @@ pub struct GenericLightGraph<TI: TermIndex> {
 
 impl<TI: TermIndex + Default> GenericLightGraph<TI> {
     /// Construct an empty graph
+    #[must_use]
     pub fn new() -> Self {
         Self {
             terms: TI::default(),
@@ -30,12 +31,12 @@ impl<TI: TermIndex + Default> GenericLightGraph<TI> {
     }
 
     /// Borrow this graph's term index
-    pub fn terms(&self) -> &TI {
+    pub const fn terms(&self) -> &TI {
         &self.terms
     }
 
     /// Borrow mutably this graph's term index
-    pub fn terms_mut(&mut self) -> &mut TI {
+    pub const fn terms_mut(&mut self) -> &mut TI {
         &mut self.terms
     }
 }
@@ -170,6 +171,7 @@ pub struct GenericFastGraph<TI: TermIndex> {
 
 impl<TI: TermIndex + Default> GenericFastGraph<TI> {
     /// Construct an empty graph
+    #[must_use]
     pub fn new() -> Self {
         Self {
             terms: TI::default(),
@@ -180,12 +182,12 @@ impl<TI: TermIndex + Default> GenericFastGraph<TI> {
     }
 
     /// Borrow this graph's term index
-    pub fn terms(&self) -> &TI {
+    pub const fn terms(&self) -> &TI {
         &self.terms
     }
 
     /// Borrow mutably this graph's term index
-    pub fn terms_mut(&mut self) -> &mut TI {
+    pub const fn terms_mut(&mut self) -> &mut TI {
         &mut self.terms
     }
 }

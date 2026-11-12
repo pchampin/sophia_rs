@@ -116,7 +116,7 @@ impl<T: Term> Eq for C14nTerm<T> {}
 
 impl<T: Term> std::hash::Hash for C14nTerm<T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        Term::hash(self, state)
+        Term::hash(self, state);
     }
 }
 

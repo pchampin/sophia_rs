@@ -336,8 +336,7 @@ impl Term for MyTerm {
         match self {
             Self::Iri(_) => TermKind::Iri,
             Self::Bnode(_) => TermKind::BlankNode,
-            Self::String(_) => TermKind::Literal,
-            Self::Number(_) => TermKind::Literal,
+            Self::String(_) | Self::Number(_) => TermKind::Literal,
             Self::Triple(_) => TermKind::Triple,
         }
     }

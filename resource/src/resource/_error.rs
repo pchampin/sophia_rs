@@ -85,8 +85,12 @@ where
     /// ([`ResourceErrorKind::IriNotAbsolute`], [`ResourceErrorKind::LoaderError`]),
     /// the identifier of the to-be-created resource is returned
     /// (*not* the resource from which it was discovered).
+    #[must_use]
     pub fn resource_id(&self) -> SimpleTerm<'_> {
-        use ResourceErrorKind::*;
+        use ResourceErrorKind::{
+            GraphError, IriNotAbsolute, LoaderError, MissingType, NoValueFor, UnexpectedDatatype,
+            UnexpectedKind, UnexpectedMultipleValueFor, UnexpectedValue,
+        };
         match &*self.0 {
             IriNotAbsolute(iriref) => iriref.as_simple(),
             LoaderError(err) => err.iri().into_term(),

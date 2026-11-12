@@ -2,10 +2,10 @@ pub fn for_each_permutation_of<T, F, E>(values: &mut [T], mut f: F) -> Result<()
 where
     F: FnMut(&[T]) -> Result<(), E>,
 {
-    if !values.is_empty() {
-        permutations(values, &mut f, values.len())
-    } else {
+    if values.is_empty() {
         Ok(())
+    } else {
+        permutations(values, &mut f, values.len())
     }
 }
 

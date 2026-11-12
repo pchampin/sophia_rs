@@ -162,8 +162,7 @@ impl SparqlClient {
                 Self::wrap_triple_source(rdfxml::parse_bufread(body))
             }
             _ => Err(Error::Unsupported(format!(
-                "unsupported content-type: {0}",
-                &ctype,
+                "unsupported content-type: {ctype}",
             ))),
         }
     }
@@ -487,9 +486,9 @@ mod tests {
     "#;
 
     fn test_construct(client: SparqlClient, ttl: &str) -> TestResult {
-        let src = format!("@prefix : <tag:>. {}", ttl);
+        let src = format!("@prefix : <tag:>. {ttl}");
         let exp: Vec<[StaticTerm; 3]> = turtle::parse_str(&src).collect_triples()?;
-        let q = format!("PREFIX : <tag:> CONSTRUCT {{ {} }} {{}}", ttl);
+        let q = format!("PREFIX : <tag:> CONSTRUCT {{ {ttl} }} {{}}");
 
         match client.query(q.as_str())? {
             Triples(triples) => {

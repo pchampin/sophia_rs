@@ -62,7 +62,7 @@ impl<'a, D: Dataset + ?Sized> ConstructIter<'a, D> {
     }
 }
 
-impl<'a, D: Dataset + ?Sized> Iterator for ConstructIter<'a, D> {
+impl<D: Dataset + ?Sized> Iterator for ConstructIter<'_, D> {
     type Item = Result<[ResultTerm; 3], SparqlWrapperError<D::Error>>;
 
     fn next(&mut self) -> Option<Self::Item> {

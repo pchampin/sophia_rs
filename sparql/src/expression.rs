@@ -129,9 +129,7 @@ impl ArcExpression {
             ),
             Expression::In(lhs, rhs) => In(
                 Box::new(Self::from_expr(lhs, stash)),
-                rhs.iter()
-                    .map(|e| ArcExpression::from_expr(e, stash))
-                    .collect(),
+                rhs.iter().map(|e| Self::from_expr(e, stash)).collect(),
             ),
             Expression::Add(lhs, rhs) => Add(
                 Box::new(Self::from_expr(lhs, stash)),
@@ -159,16 +157,12 @@ impl ArcExpression {
                 Box::new(Self::from_expr(t, stash)),
                 Box::new(Self::from_expr(e, stash)),
             ),
-            Expression::Coalesce(es) => Coalesce(
-                es.iter()
-                    .map(|e| ArcExpression::from_expr(e, stash))
-                    .collect(),
-            ),
+            Expression::Coalesce(es) => {
+                Coalesce(es.iter().map(|e| Self::from_expr(e, stash)).collect())
+            }
             Expression::FunctionCall(func, args) => FunctionCall(
                 func.clone(),
-                args.iter()
-                    .map(|e| ArcExpression::from_expr(e, stash))
-                    .collect(),
+                args.iter().map(|e| Self::from_expr(e, stash)).collect(),
             ),
         }
     }
@@ -373,15 +367,15 @@ pub enum EvalResult {
 impl EvalResult {
     pub fn as_term(&self) -> ArcTerm {
         match self {
-            EvalResult::Term(t) => t.inner().clone(),
-            EvalResult::Value(v) => value_ref_to_arcterm(v, |txt| Arc::from(txt)),
+            Self::Term(t) => t.inner().clone(),
+            Self::Value(v) => value_ref_to_arcterm(v, |txt| Arc::from(txt)),
         }
     }
 
     pub fn as_value(&self) -> Option<&SparqlValue> {
         match self {
-            EvalResult::Term(t) => t.value(),
-            EvalResult::Value(v) => Some(v),
+            Self::Term(t) => t.value(),
+            Self::Value(v) => Some(v),
         }
     }
 
@@ -393,47 +387,44 @@ impl EvalResult {
             None
         };
         match self {
-            EvalResult::Term(rt) => match rt.inner() {
+            Self::Term(rt) => match rt.inner() {
                 ArcTerm::Iri(iri) => Some(iri),
                 _ => fail(),
             },
-            EvalResult::Value(_) => fail(),
+            Self::Value(_) => fail(),
         }
     }
 
     pub fn as_literal(&self, diag: &str) -> Option<GenericLiteral<Arc<str>>> {
-        match self.as_term() {
-            ArcTerm::Literal(lit) => Some(lit.clone()),
-            _ => {
-                if !diag.is_empty() {
-                    log::warn!("{diag} expects a literal");
-                }
-                None
+        if let ArcTerm::Literal(lit) = self.as_term() {
+            Some(lit)
+        } else {
+            if !diag.is_empty() {
+                log::warn!("{diag} expects a literal");
             }
+            None
         }
     }
 
     pub fn as_triple(&self, diag: &str) -> Option<Arc<[ArcTerm; 3]>> {
-        match self.as_term() {
-            ArcTerm::Triple(triple) => Some(triple),
-            _ => {
-                if !diag.is_empty() {
-                    log::warn!("{diag} expects a triple term");
-                }
-                None
+        if let ArcTerm::Triple(triple) = self.as_term() {
+            Some(triple)
+        } else {
+            if !diag.is_empty() {
+                log::warn!("{diag} expects a triple term");
             }
+            None
         }
     }
 
     pub fn as_number(&self, diag: &str) -> Option<&SparqlNumber> {
-        match self.as_value()? {
-            SparqlValue::Number(opt) => opt.as_ref(),
-            _ => {
-                if !diag.is_empty() {
-                    log::warn!("{diag} expects a number");
-                }
-                None
+        if let SparqlValue::Number(opt) = self.as_value()? {
+            opt.as_ref()
+        } else {
+            if !diag.is_empty() {
+                log::warn!("{diag} expects a number");
             }
+            None
         }
     }
 
@@ -447,15 +438,15 @@ impl EvalResult {
         };
         use GenericLiteral::*;
         match self {
-            EvalResult::Term(t) => match t.inner() {
+            Self::Term(t) => match t.inner() {
                 ArcTerm::Literal(LanguageString(lex, lang, dir)) => Some((lex, Some((lang, *dir)))),
                 ArcTerm::Literal(Typed(lex, dt)) if xsd::string == dt => Some((lex, None)),
                 _ => fail(),
             },
-            EvalResult::Value(SparqlValue::String(lex, ctag)) => {
+            Self::Value(SparqlValue::String(lex, ctag)) => {
                 Some((lex, ctag.as_ref().map(|(lang, dir)| (lang, *dir))))
             }
-            EvalResult::Value(_) => fail(),
+            Self::Value(_) => fail(),
         }
     }
 
@@ -469,32 +460,31 @@ impl EvalResult {
         };
         use GenericLiteral::*;
         match self {
-            EvalResult::Term(t) => match t.inner() {
+            Self::Term(t) => match t.inner() {
                 ArcTerm::Literal(Typed(lex, dt)) if xsd::string == dt => Some(lex),
                 _ => fail(),
             },
-            EvalResult::Value(SparqlValue::String(lex, None)) => Some(lex),
-            EvalResult::Value(_) => fail(),
+            Self::Value(SparqlValue::String(lex, None)) => Some(lex),
+            Self::Value(_) => fail(),
         }
     }
 
     /// Coerce to an xsd:dateTime literal
     pub fn as_xsd_date_time(&self, diag: &str) -> Option<&XsdDateTime> {
-        match self.as_value() {
-            Some(SparqlValue::DateTime(dt)) => dt.as_ref(),
-            _ => {
-                if !diag.is_empty() {
-                    log::warn!("{diag} expects an xsd:dateTime");
-                }
-                None
+        if let Some(SparqlValue::DateTime(dt)) = self.as_value() {
+            dt.as_ref()
+        } else {
+            if !diag.is_empty() {
+                log::warn!("{diag} expects an xsd:dateTime");
             }
+            None
         }
     }
 
     pub fn into_term(self) -> ResultTerm {
         match self {
-            EvalResult::Term(t) => t,
-            EvalResult::Value(v) => value_to_term(v, |txt| Arc::from(txt)),
+            Self::Term(t) => t,
+            Self::Value(v) => value_to_term(v, |txt| Arc::from(txt)),
         }
     }
 
@@ -517,8 +507,8 @@ impl EvalResult {
         } else if let Some(stt) = st.triple()
             && let Some(ott) = ot.triple()
         {
-            let [s1, p1, o1] = stt.map(|t| EvalResult::Term(t.clone().into()));
-            let [s2, p2, o2] = ott.map(|t| EvalResult::Term(t.clone().into()));
+            let [s1, p1, o1] = stt.map(|t| Self::Term(t.clone().into()));
+            let [s2, p2, o2] = ott.map(|t| Self::Term(t.clone().into()));
             Some(s1.sparql_eq(&s2)? && p1.sparql_eq(&p2)? && o1.sparql_eq(&o2)?)
         } else if let Some(sv) = self.as_value()
             && let Some(ov) = other.as_value()
@@ -560,55 +550,55 @@ impl EvalResult {
 
 impl From<ResultTerm> for EvalResult {
     fn from(value: ResultTerm) -> Self {
-        EvalResult::Term(value)
+        Self::Term(value)
     }
 }
 
 impl From<GenericLiteral<Arc<str>>> for EvalResult {
     fn from(value: GenericLiteral<Arc<str>>) -> Self {
-        EvalResult::Term(ArcTerm::Literal(value).into())
+        Self::Term(ArcTerm::Literal(value).into())
     }
 }
 
 impl From<SparqlValue> for EvalResult {
     fn from(value: SparqlValue) -> Self {
-        EvalResult::Value(value)
+        Self::Value(value)
     }
 }
 
 impl From<IriRef<Arc<str>>> for EvalResult {
     fn from(value: IriRef<Arc<str>>) -> Self {
-        EvalResult::Term(ArcTerm::Iri(value).into())
+        Self::Term(ArcTerm::Iri(value).into())
     }
 }
 
 impl From<BnodeId<Arc<str>>> for EvalResult {
     fn from(value: BnodeId<Arc<str>>) -> Self {
-        EvalResult::Term(ArcTerm::BlankNode(value).into())
+        Self::Term(ArcTerm::BlankNode(value).into())
     }
 }
 
 impl From<SparqlNumber> for EvalResult {
     fn from(value: SparqlNumber) -> Self {
-        EvalResult::Value(value.into())
+        Self::Value(value.into())
     }
 }
 
 impl From<bool> for EvalResult {
     fn from(value: bool) -> Self {
-        EvalResult::Value(value.into())
+        Self::Value(value.into())
     }
 }
 
 impl From<Arc<str>> for EvalResult {
     fn from(value: Arc<str>) -> Self {
-        EvalResult::Value(SparqlValue::String(value, None))
+        Self::Value(SparqlValue::String(value, None))
     }
 }
 
 impl From<StringLiteral> for EvalResult {
     fn from((lex, ctag): StringLiteral) -> Self {
-        EvalResult::Value(SparqlValue::String(lex, ctag))
+        Self::Value(SparqlValue::String(lex, ctag))
     }
 }
 

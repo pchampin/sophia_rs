@@ -31,11 +31,13 @@ pub struct Bindings<'a, D: Dataset + ?Sized> {
 pub type BindingsIter<'a, D> =
     Box<dyn Iterator<Item = Result<Binding, SparqlWrapperError<<D as Dataset>::Error>>> + 'a>;
 
-impl<'a, D: Dataset + ?Sized> Bindings<'a, D> {
+impl<D: Dataset + ?Sized> Bindings<'_, D> {
+    #[must_use]
     pub fn empty() -> Self {
         Self::empty_with(vec![])
     }
 
+    #[must_use]
     pub fn empty_with(variables: Vec<VarName<Arc<str>>>) -> Self {
         let iter = Box::new(std::iter::empty());
         Self { variables, iter }
@@ -96,7 +98,7 @@ pub struct Binding {
 impl Binding {
     /// Return whether self and other are compatible with non-disjoint domain,
     /// or None if their domain are disjoint.
-    pub fn compatible(&self, other: &Binding) -> Option<bool> {
+    pub fn compatible(&self, other: &Self) -> Option<bool> {
         other
             .v
             .iter()
@@ -104,7 +106,7 @@ impl Binding {
             .reduce(|b1, b2| b1 && b2)
     }
 
-    pub fn merge_if_compatible(mut self, context: Option<&Binding>) -> Option<Binding> {
+    pub fn merge_if_compatible(mut self, context: Option<&Self>) -> Option<Self> {
         if let Some(context) = context {
             for (vn, vv) in &context.v {
                 match self.v.entry(vn.clone()) {
@@ -116,7 +118,7 @@ impl Binding {
                     Vacant(e) => {
                         e.insert(vv.clone());
                     }
-                };
+                }
             }
             for (bn, bv) in &context.b {
                 match self.b.entry(bn.clone()) {
@@ -128,13 +130,13 @@ impl Binding {
                     Vacant(e) => {
                         e.insert(bv.clone());
                     }
-                };
+                }
             }
         }
         Some(self)
     }
 
-    pub fn project(mut self, variables: &[VarName<Arc<str>>]) -> Binding {
+    pub fn project(mut self, variables: &[VarName<Arc<str>>]) -> Self {
         self.v
             .retain(|k, _| variables.iter().any(|i| i.as_str() == k.as_ref()));
         self.b.clear();

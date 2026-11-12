@@ -37,7 +37,7 @@ pub trait Recognized: Send + Sync {
     fn datatypes() -> impl Iterator<Item = IriRef<MownStr<'static>>> + Send;
 
     /// List witnesses for all supported non-empty datatypes,
-    /// as pairs (lexical_form, datatype)
+    /// as pairs (`lexical_form`, datatype)
     ///
     /// NB: one literal can be a witness for several supported datatypes,
     /// e.g. `xsd:decimal`, `xsd:integer`, `xsd:int` and others...
@@ -67,9 +67,7 @@ pub trait Recognized: Send + Sync {
     fn normalize_or_fallback<T: Borrow<str> + From<Box<str>>>(
         lex_dt: LexDt<T>,
     ) -> Result<LexDt<T>, IllTypedLiteral> {
-        Self::try_normalize(lex_dt)
-            .map(|res| res.map(|(lex, dt)| (lex.into(), dt)))
-            .unwrap_or_else(Ok)
+        Self::try_normalize(lex_dt).map_or_else(Ok, |res| res.map(|(lex, dt)| (lex.into(), dt)))
     }
 
     /// Normalize the given [`SimpleTerm`]

@@ -39,7 +39,7 @@
 use crate::wrap;
 
 wrap! { SimpleWrapper<T: PartialEq<isize>> :
-    /// SimpleWrapper wraps any type comparable to `isize`,
+    /// `SimpleWrapper` wraps any type comparable to `isize`,
     /// and guarantees that the wrapped value is not equal to 0.
     pub fn new(inner: T) -> Result<Self, String> {
         if inner != 0 {
@@ -51,7 +51,7 @@ wrap! { SimpleWrapper<T: PartialEq<isize>> :
 }
 
 wrap! { BorrowingWrapper borrowing str :
-    /// BorrowingWrapper wraps any `Borrow<str>` type,
+    /// `BorrowingWrapper` wraps any `Borrow<str>` type,
     /// and guarantees that the wrapped value contains `"hello"`.
     pub fn new(inner: T) -> Result<Self, String> {
         if inner.borrow().contains("hello") {

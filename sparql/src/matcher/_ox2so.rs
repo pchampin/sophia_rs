@@ -8,7 +8,7 @@ use super::*;
 pub struct Ox2So<T>(pub T);
 
 impl<T> Ox2So<T> {
-    pub fn new_ref(t: &T) -> &Self {
+    pub const fn new_ref(t: &T) -> &Self {
         // we cast &T to *const T to *const Ox2So<T>
         let p = std::ptr::from_ref(t).cast::<Self>();
         unsafe {
@@ -132,7 +132,7 @@ impl Term for Ox2So<TermPattern> {
     {
         match self.0 {
             TermPattern::Triple(t) => {
-                Some([Ox2So(t.subject), Ox2So(t.predicate.into()), Ox2So(t.object)])
+                Some([Self(t.subject), Self(t.predicate.into()), Self(t.object)])
             }
             _ => None,
         }

@@ -161,14 +161,14 @@ fn test_select_1_and_ask(query: &str, exp: Vec<&str>) -> TestResult {
 )]
 fn test_select_1_multiple_occurrences(query: &str, exp: Vec<&str>) -> TestResult {
     let dataset: LightDataset = sophia_turtle::parser::trig::parse_str(
-        r#"
+        r"
                 BASE <https://example.org/test>
                 PREFIX s: <http://schema.org/>
 
                 <#a> <#p> <#a>.
                 <#a> <#p> <#b>.
                 <#c> <#p> <#a>.
-            "#,
+            ",
     )
     .collect_quads()?;
     let dataset = SparqlWrapper(&dataset);
@@ -192,7 +192,7 @@ fn test_select_0_or_ask(query: &str, empty: bool) -> TestResult {
     let query = format!("BASE <https://example.org/test> PREFIX s: <http://schema.org/> {query}");
     let parsed_query = SparqlQuery::parse(&query)?;
     let bindings = dataset.query(&parsed_query)?.into_bindings();
-    assert!(bindings.variables().is_empty());
+    assert_eq!(bindings.variables(), [] as [&str; 0]);
     assert_eq!(bindings.into_iter().next().is_none(), empty);
 
     let parsed_query = SparqlQuery::parse(&query.replace("SELECT *", "ASK"))?;
@@ -998,7 +998,7 @@ fn test_group_by() -> TestResult {
 )]
 fn test_graph_and_optional(query: &str, exp: Vec<[&str; 2]>) -> TestResult {
     let dataset: LightDataset = sophia_turtle::parser::trig::parse_str(
-        r#"
+        r"
             PREFIX : <x:>
 
             :g {
@@ -1007,7 +1007,7 @@ fn test_graph_and_optional(query: &str, exp: Vec<[&str; 2]>) -> TestResult {
 
               :a1 :q :s1.
             }
-        "#,
+        ",
     )
     .collect_quads()?;
     let dataset = SparqlWrapper(&dataset);
@@ -1042,13 +1042,13 @@ fn test_count_in_graph() -> TestResult {
         ]
     );
 
-    let query = r#"
+    let query = r"
         BASE <https://example.org/test>
         SELECT ?g ?c
         FROM NAMED <#g> FROM NAMED <#h>
         { GRAPH ?g { SELECT (COUNT(*) as ?c) { ?s ?p ?o } } }
         ORDER BY ?g
-    "#;
+    ";
     let parsed_query = SparqlQuery::parse(query)?;
     let bindings = dataset.query(&parsed_query)?.into_bindings();
     assert_eq!(bindings.variables(), &["g", "c"]);
@@ -2185,7 +2185,7 @@ fn test_expr_eq_matrix(x1: &str, x2: &str, eq: Option<bool>) -> TestResult {
     .collect_quads()?;
     let dataset = SparqlWrapper(&dataset);
     let query = format!(
-        r#"
+        r"
         PREFIX : <x:>
 
         SELECT ((?v1 = ?v2) as ?eq) ((?v1 != ?v2) as ?neq) {{
@@ -2193,7 +2193,7 @@ fn test_expr_eq_matrix(x1: &str, x2: &str, eq: Option<bool>) -> TestResult {
             <x:{x2}> :p ?v2.
         }}
 
-    "#
+    "
     );
     let parsed_query = SparqlQuery::parse(&query)?;
     let bindings = dataset.query(&parsed_query)?.into_bindings();
@@ -2484,7 +2484,7 @@ fn dataset_101() -> TestResult<LightDataset> {
 
 fn dataset_ppath() -> TestResult<LightDataset> {
     let dataset: LightDataset = sophia_turtle::parser::trig::parse_str(
-        r#"
+        r"
             PREFIX : <x:>
 
             :a1 :p :b1.
@@ -2513,7 +2513,7 @@ fn dataset_ppath() -> TestResult<LightDataset> {
             :a1 :d :c1.
             :c1 :d :d1.
             :c1 :d :c1.
-        "#,
+        ",
     )
     .collect_quads()?;
     Ok(dataset)
@@ -2549,7 +2549,7 @@ fn bindings_to_vec_of_arrays(
         .into_iter()
         .map(|bs| {
             let values: [_; 2] = bs.unwrap().try_into().unwrap();
-            values.map(|opt| opt.map(|t| t.to_string()).unwrap_or_else(|| "".into()))
+            values.map(|opt| opt.map_or_else(String::new, |t| t.to_string()))
         })
         .collect()
 }

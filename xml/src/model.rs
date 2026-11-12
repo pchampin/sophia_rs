@@ -13,7 +13,7 @@ use sophia_api::MownStr;
 use sophia_api::term::{BaseDirection, BnodeId, IriRef, LanguageTag, Term, TermKind};
 use sophia_api::triple::Triple;
 
-impl<'a> Term for Trusted<NamedNodeRef<'a>> {
+impl Term for Trusted<NamedNodeRef<'_>> {
     type BorrowTerm<'x>
         = Self
     where
@@ -37,7 +37,7 @@ fn iri(n: NamedNodeRef) -> IriRef<MownStr> {
     IriRef::new_unchecked(n.as_str().into())
 }
 
-impl<'a> Term for Trusted<BlankNodeRef<'a>> {
+impl Term for Trusted<BlankNodeRef<'_>> {
     type BorrowTerm<'x>
         = Self
     where
@@ -61,7 +61,7 @@ fn bnode_id(b: BlankNodeRef) -> BnodeId<MownStr> {
     BnodeId::new_unchecked(b.as_str().into())
 }
 
-impl<'a> Term for Trusted<LiteralRef<'a>> {
+impl Term for Trusted<LiteralRef<'_>> {
     type BorrowTerm<'x>
         = Self
     where
@@ -119,7 +119,7 @@ impl<'a> Term for Trusted<NamedOrBlankNodeRef<'a>> {
         Self: 'x;
 
     fn kind(&self) -> TermKind {
-        use oxrdf::NamedOrBlankNodeRef::*;
+        use oxrdf::NamedOrBlankNodeRef::{BlankNode, NamedNode};
         match self.0 {
             NamedNode(_) => TermKind::Iri,
             BlankNode(_) => TermKind::BlankNode,
@@ -147,14 +147,14 @@ impl<'a> Term for Trusted<NamedOrBlankNodeRef<'a>> {
     }
 }
 
-impl<'a> Term for Trusted<TermRef<'a>> {
+impl Term for Trusted<TermRef<'_>> {
     type BorrowTerm<'x>
         = Self
     where
         Self: 'x;
 
     fn kind(&self) -> TermKind {
-        use oxrdf::TermRef::*;
+        use oxrdf::TermRef::{BlankNode, Literal, NamedNode, Triple};
         match self.0 {
             NamedNode(_) => TermKind::Iri,
             BlankNode(_) => TermKind::BlankNode,

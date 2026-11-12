@@ -54,7 +54,7 @@ where
     Ok(hash1 == hash2)
 }
 
-/// Ensure that we have a SetDataset (required by c14n algorithms)
+/// Ensure that we have a `SetDataset` (required by c14n algorithms)
 fn prepare_dataset<D: Dataset>(d: &D) -> Result<PreparedDataset<'_, D>, C14nError<D::Error>> {
     d.quads()
         .map(|res| {

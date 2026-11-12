@@ -18,7 +18,7 @@ use super::Recognized;
 pub struct NormalizeTriples<D: ?Sized, TS>(TS, PhantomData<D>);
 
 impl<D: ?Sized, TS> NormalizeTriples<D, TS> {
-    pub(crate) fn new(ts: TS) -> Self {
+    pub(crate) const fn new(ts: TS) -> Self {
         Self(ts, PhantomData)
     }
 }

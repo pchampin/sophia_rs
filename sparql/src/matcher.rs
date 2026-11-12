@@ -25,7 +25,7 @@ pub enum SparqlMatcher {
     Free, // free variable or bnode
     /// Non-ground triple
     /// NB: for ground triples, the `Bound` variant should be used instead
-    Triple(Box<[SparqlMatcher; 3]>),
+    Triple(Box<[Self; 3]>),
     /// Ground term
     Bound(ResultTerm),
 }
@@ -38,7 +38,7 @@ impl SparqlMatcher {
             SimpleTerm::Triple(_) => {
                 // the following is safe because we know we have a triple
                 let tr = unsafe { pattern.to_triple().unwrap_unchecked() };
-                match tr.map(move |t| SparqlMatcher::build(t, stash)) {
+                match tr.map(move |t| Self::build(t, stash)) {
                     [Bound(s), Bound(p), Bound(o)] => Bound([s, p, o].into()),
                     spo => Triple(Box::new(spo)),
                 }
@@ -65,7 +65,7 @@ impl SparqlMatcher {
             SimpleTerm::Triple(_) => {
                 // the following is safe because we know we have a triple
                 let tr = unsafe { pattern.to_triple().unwrap_unchecked() };
-                match tr.map(move |t| SparqlMatcher::build_with(t, bindings, stash)) {
+                match tr.map(move |t| Self::build_with(t, bindings, stash)) {
                     [Bound(s), Bound(p), Bound(o)] => Bound([s, p, o].into()),
                     spo => Triple(Box::new(spo)),
                 }
@@ -81,8 +81,8 @@ impl SparqlMatcher {
         }
     }
 
-    pub fn is_bound(&self) -> bool {
-        matches!(self, SparqlMatcher::Bound(_))
+    pub const fn is_bound(&self) -> bool {
+        matches!(self, Self::Bound(_))
     }
 
     pub fn build3(pattern: &TriplePattern, stash: &mut MutexGuard<'_, ArcStrStash>) -> [Self; 3] {
@@ -107,8 +107,8 @@ impl TermMatcher for SparqlMatcher {
 
     fn matches<T2: Term + ?Sized>(&self, term: &T2) -> bool {
         match self {
-            SparqlMatcher::Bound(t) => Term::eq(t.borrow_term(), term.borrow_term()),
-            SparqlMatcher::Triple(tr) => (
+            Self::Bound(t) => Term::eq(t.borrow_term(), term.borrow_term()),
+            Self::Triple(tr) => (
                 tr[0].matcher_ref(),
                 tr[1].matcher_ref(),
                 tr[2].matcher_ref(),
@@ -120,7 +120,7 @@ impl TermMatcher for SparqlMatcher {
 
     fn constant(&self) -> Option<&Self::Term> {
         match self {
-            SparqlMatcher::Bound(t) => Some(t),
+            Self::Bound(t) => Some(t),
             _ => None,
         }
     }

@@ -162,7 +162,7 @@ impl<I> NxSource for NQuadsSource<I> {
                 }
             }
             self.emit_tuple(callback, col)?;
-            self.inner.terms.truncate(0);
+            self.inner.terms.clear();
             self.inner.buffers.empty();
         }
         Ok(col)
