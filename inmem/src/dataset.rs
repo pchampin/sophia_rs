@@ -4,7 +4,7 @@ use std::convert::Infallible;
 use std::iter::{empty, once};
 
 use sophia_api::dataset::{CollectibleDataset, DResult, SetDataset};
-use sophia_api::prelude::*;
+use sophia_api::prelude::{Term, *};
 use sophia_api::quad::Gspo;
 use sophia_api::term::GraphName;
 
@@ -74,7 +74,7 @@ impl<TI: GraphNameIndex> Dataset for GenericLightDataset<TI> {
         G: sophia_api::term::matcher::GraphNameMatcher + 't,
     {
         if let Some(gc) = gm.constant() {
-            let gc = gc.map(sophia_api::prelude::Term::borrow_term);
+            let gc = gc.map(Term::borrow_term);
             let Some(gi) = self.terms.get_graph_name_index(gc) else {
                 return Box::new(empty());
             };
@@ -295,10 +295,10 @@ impl<TI: GraphNameIndex> Dataset for GenericFastDataset<TI> {
             Some(None) => return Box::new(empty()),
             Some(Some(i)) => Some(i),
         };
-        let gi = match gm.constant().map(|g| {
-            self.terms
-                .get_graph_name_index(g.map(sophia_api::prelude::Term::borrow_term))
-        }) {
+        let gi = match gm
+            .constant()
+            .map(|g| self.terms.get_graph_name_index(g.map(Term::borrow_term)))
+        {
             None => None,
             Some(None) => return Box::new(empty()),
             Some(Some(i)) => Some(i),
