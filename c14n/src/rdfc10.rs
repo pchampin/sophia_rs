@@ -400,6 +400,7 @@ impl<H: HashFunction, T: Term, const S: bool> C14nState<'_, H, T, S> {
         issuer: &BnodeIssuer,
         depth: usize,
     ) -> Result<(H::Output, BnodeIssuer), C14nError<E>> {
+        #[allow(clippy::cast_precision_loss)]
         if depth as f32 > self.depth_factor * self.b2q.len() as f32 {
             return Err(C14nError::ToxicGraph(format!(
                 "too many recursions (limit={} per bnode)",
@@ -631,7 +632,7 @@ _:c14n1 <http://example.com/#t> <http://example.com/#u> .
 ";
         let got = c14n_nquads(&dataset).unwrap();
         println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
-        assert!(got == exp);
+        assert_eq!(got, exp);
     }
 
     #[test]
@@ -653,7 +654,7 @@ _:c14n3 <http://example.com/#p> _:c14n0 .
 ";
         let got = c14n_nquads(&dataset).unwrap();
         println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
-        assert!(got == exp);
+        assert_eq!(got, exp);
     }
 
     #[test]
@@ -675,7 +676,7 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
 ";
         let got = c14n_nquads(&dataset).unwrap();
         println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
-        assert!(got == exp);
+        assert_eq!(got, exp);
     }
 
     #[test]
@@ -749,7 +750,7 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
 ";
         let got = c14n_nquads(&dataset).unwrap();
         println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
-        assert!(got == exp);
+        assert_eq!(got, exp);
     }
 
     #[test]
@@ -801,7 +802,7 @@ _:c14n4 <http://example.com/#p> _:c14n3 _:c14n0 .
 ";
         let got = c14n_nquads(&dataset).unwrap();
         println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
-        assert!(got == exp);
+        assert_eq!(got, exp);
     }
 
     #[test]
@@ -856,7 +857,7 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
 ";
         let got = c14n_nquads(&dataset).unwrap();
         println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
-        assert!(got == exp);
+        assert_eq!(got, exp);
     }
 
     #[test]
@@ -878,7 +879,7 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
 "#;
         let got = c14n_nquads(&dataset).unwrap();
         println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
-        assert!(got == exp);
+        assert_eq!(got, exp);
     }
 
     pub fn c14n_nquads<D: SetDataset>(d: &D) -> Result<String, C14nError<D::Error>> {
@@ -901,7 +902,7 @@ _:c14n4 <http://example.com/#p> _:c14n3 .
     pub(crate) fn ez_quad(txt: &str) -> Spog<SimpleTerm<'_>> {
         let mut tokens: Vec<_> = txt.split(' ').collect();
         assert!(tokens.len() == 4 || tokens.len() == 5);
-        assert!(tokens.pop().unwrap() == ".");
+        assert_eq!(tokens.pop().unwrap(), ".");
         let g = if tokens.len() == 4 {
             tokens.pop().map(ez_term)
         } else {
@@ -971,6 +972,6 @@ _:c14n1 <http://example.com/#s> <http://example.com/#u> .
         normalize_sha384(&dataset, &mut got).unwrap();
         let got = unsafe { String::from_utf8_unchecked(got) };
         println!(">>>> GOT\n{got}>>>> EXPECTED\n{exp}<<<<");
-        assert!(got == exp);
+        assert_eq!(got, exp);
     }
 }

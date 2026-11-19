@@ -57,6 +57,6 @@ mod test {
     #[test_case(Version::Rdf12Basic)]
     #[test_case(Version::Rdf12)]
     fn round_trip(v: Version) {
-        assert_eq!(v, v.to_string().parse().unwrap())
+        assert_eq!(v, v.to_string().parse().unwrap());
     }
 }

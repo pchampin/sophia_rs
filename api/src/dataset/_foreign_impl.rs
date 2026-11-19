@@ -1,7 +1,7 @@
 use super::*;
 use crate::quad::{Gspo, Spog};
 use crate::source::SourceError;
-use crate::term::FromTerm;
+use crate::term::{FromTerm, Term};
 use std::collections::{BTreeSet, HashSet};
 use std::convert::Infallible;
 use std::hash::{BuildHasher, Hash};
@@ -303,7 +303,7 @@ where
                 v.push((
                     [q.s().into_term(), q.p().into_term(), q.o().into_term()],
                     q.g().map(Term::into_term),
-                ))
+                ));
             })
             .map_err(SourceError)?;
         Ok(v)
@@ -352,7 +352,7 @@ where
         let s = s.borrow_term();
         let p = p.borrow_term();
         let o = o.borrow_term();
-        let g = g.as_ref().map(|gn| gn.borrow_term());
+        let g = g.as_ref().map(Term::borrow_term);
         let mut i = 0;
         while i < self.len() {
             if self[i].matched_by([s], [p], [o], [g]) {
@@ -381,7 +381,7 @@ where
                 v.push((
                     q.g().map(Term::into_term),
                     [q.s().into_term(), q.p().into_term(), q.o().into_term()],
-                ))
+                ));
             })
             .map_err(SourceError)?;
         Ok(v)
@@ -430,7 +430,7 @@ where
         let s = s.borrow_term();
         let p = p.borrow_term();
         let o = o.borrow_term();
-        let g = g.as_ref().map(|gn| gn.borrow_term());
+        let g = g.as_ref().map(Term::borrow_term);
         match self.iter().position(|q| q.matched_by([s], [p], [o], [g])) {
             None => Ok(false),
             Some(i) => {

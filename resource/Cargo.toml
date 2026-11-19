@@ -33,3 +33,6 @@ sophia_xml = { workspace = true, optional = true }
 thiserror.workspace = true
 
 [dev-dependencies]
+
+[lints]
+workspace = true

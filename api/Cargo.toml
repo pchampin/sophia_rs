@@ -40,3 +40,6 @@ serde = { workspace = true, optional = true }
 sophia_iri = { workspace = true, features = ["test_data"] }
 serde_json.workspace = true
 test-case.workspace = true
+
+[lints]
+workspace = true

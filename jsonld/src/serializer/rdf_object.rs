@@ -23,8 +23,7 @@ impl RdfObject {
     }
     pub fn as_str(&self) -> &str {
         match self {
-            Self::LangString(lit, _) => lit.as_ref(),
-            Self::TypedLiteral(lit, _) => lit.as_ref(),
+            Self::LangString(lit, _) | Self::TypedLiteral(lit, _) => lit.as_ref(),
             Self::Node(_, id) => id,
         }
     }

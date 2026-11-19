@@ -36,6 +36,7 @@ impl<D, R> Clone for ReasonableGraph<D, R> {
     }
 }
 
+#[allow(clippy::missing_fields_in_debug)]
 impl<D, R> std::fmt::Debug for ReasonableGraph<D, R> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ReasonableGraph")
@@ -107,7 +108,7 @@ impl<D: Recognized, R: RuleSet> ReasonableGraph<D, R> {
         Ok(sparql_other.query(&query).unwrap().into_boolean())
     }
 
-    /// Return a IndexedTerm, assuming the index is valid
+    /// Return a `IndexedTerm`, assuming the index is valid
     pub(crate) fn get_term(&self, index: usize) -> IndexedTerm<'_, usize> {
         debug_assert!(index < self.terms.len());
         self.terms.get_term(index)
@@ -178,6 +179,7 @@ impl<D: Recognized, R: RuleSet> Graph for ReasonableGraph<D, R> {
             .map(move |spo| Ok(spo.map(|i| self.get_term(i))))
     }
 
+    #[allow(clippy::too_many_lines)]
     fn triples_matching<'s, 't, S, P, O>(
         &'s self,
         sm: S,

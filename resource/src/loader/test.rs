@@ -1,3 +1,5 @@
+#![allow(clippy::unnecessary_wraps)]
+
 //! Tests the [`Loader`] trait, using its [`LocalLoader`] implementation.
 use super::*;
 use crate::{Resource, test::*};

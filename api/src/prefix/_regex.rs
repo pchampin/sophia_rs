@@ -15,7 +15,8 @@ lazy_static::lazy_static! {
     $").unwrap();
 }
 
-/// Check whether a `str` is a valid Turtle/SPARQL prefix (matches ON_PREFIX)
+/// Check whether a `str` is a valid Turtle/SPARQL prefix (matches `ON_PREFIX`)
+#[must_use]
 pub fn is_valid_prefix(txt: &str) -> bool {
     txt.is_empty() || PN_PREFIX.is_match(txt)
 }

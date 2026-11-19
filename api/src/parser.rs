@@ -66,7 +66,7 @@ impl<'a> IntoParsable for &'a str {
     }
 }
 
-/// Define convenience module-level functions for a parser implementation supporting BufRead.
+/// Define convenience module-level functions for a parser implementation supporting `BufRead`.
 #[macro_export]
 macro_rules! def_mod_functions_for_bufread_parser {
     ($parser_type: ident, $parser_trait: ident) => {

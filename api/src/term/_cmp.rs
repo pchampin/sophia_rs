@@ -29,7 +29,7 @@ impl<T: Term> Ord for CmpTerm<T> {
 
 impl<T: Term> std::hash::Hash for CmpTerm<T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        Term::hash(&self.0, state)
+        Term::hash(&self.0, state);
     }
 }
 

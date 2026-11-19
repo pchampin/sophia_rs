@@ -42,7 +42,7 @@ impl<'a, D: ?Sized, I> AggregateIter<'a, D, I> {
     }
 }
 
-impl<'a, D: Dataset + ?Sized, I> Iterator for AggregateIter<'a, D, I>
+impl<D: Dataset + ?Sized, I> Iterator for AggregateIter<'_, D, I>
 where
     I: Iterator<Item = (Vec<Option<ResultTerm>>, Vec<BindingMap>)>,
 {
@@ -183,7 +183,7 @@ impl Aggregator {
                 expr: ArcExpression::from_expr(expr, stash),
                 seen: distinct.then(Default::default),
                 first: true,
-                concat: Some("".into()),
+                concat: Some(String::new()),
             },
             FunctionCall {
                 name: Sample, expr, ..
@@ -197,6 +197,7 @@ impl Aggregator {
         }
     }
 
+    #[allow(clippy::too_many_lines)]
     fn push<D>(
         &mut self,
         vbinding: &BindingMap,
@@ -219,7 +220,7 @@ impl Aggregator {
                     }
                 };
                 if do_count {
-                    *count += 1
+                    *count += 1;
                 }
             }
             Aggregator::Count { expr, seen, count } => {
@@ -229,7 +230,7 @@ impl Aggregator {
                         Some(seen) => seen.insert(res.into_term()),
                     };
                     if do_count {
-                        *count += 1
+                        *count += 1;
                     }
                 }
             }
@@ -278,8 +279,7 @@ impl Aggregator {
                     if let Some(res) = expr.eval(vbinding, state, graph_matcher) {
                         if min
                             .as_ref()
-                            .filter(|minval| minval.sparql_order_by(Some(&res)).is_le())
-                            .is_none()
+                            .is_none_or(|minval| !minval.sparql_order_by(Some(&res)).is_le())
                         {
                             // min is none (no previous value) or greater than res
                             *min = Some(res);
@@ -295,8 +295,7 @@ impl Aggregator {
                     if let Some(res) = expr.eval(vbinding, state, graph_matcher) {
                         if max
                             .as_ref()
-                            .filter(|maxval| maxval.sparql_order_by(Some(&res)).is_ge())
-                            .is_none()
+                            .is_none_or(|maxval| !maxval.sparql_order_by(Some(&res)).is_ge())
                         {
                             // max is none (no previous value) or lower than res
                             *max = Some(res);
@@ -408,7 +407,7 @@ impl Aggregator {
                     seen.clear();
                 }
                 *first = true;
-                *concat = Some("".into());
+                *concat = Some(String::new());
                 ret
             }
             Aggregator::Sample { sample, .. } => sample.take().map(ResultTerm::from),

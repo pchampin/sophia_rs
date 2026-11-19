@@ -118,7 +118,7 @@ mod test {
                 w.push(t);
             })
             .unwrap();
-        assert_eq!(w, vec!["bar", "baz",],)
+        assert_eq!(w, vec!["bar", "baz",],);
     }
 
     #[test]
@@ -141,7 +141,7 @@ mod test {
                 [ez_term(":a"), ez_term(":b"), ez_term(":c")],
                 [ez_term(":g"), ez_term(":h"), ez_term(":i")],
             ]
-        )
+        );
     }
 
     #[test]
@@ -164,6 +164,6 @@ mod test {
                 ([ez_term(":a"), ez_term(":b"), ez_term(":c")], None),
                 ([ez_term(":g"), ez_term(":h"), ez_term(":i")], None),
             ]
-        )
+        );
     }
 }

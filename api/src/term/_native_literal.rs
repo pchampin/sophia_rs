@@ -31,7 +31,7 @@ impl Term for f64 {
         TermKind::Literal
     }
     fn lexical_form(&self) -> Option<MownStr<'_>> {
-        Some(MownStr::from(format!("{}", self)))
+        Some(MownStr::from(format!("{self}")))
     }
     fn datatype(&self) -> Option<IriRef<MownStr<'_>>> {
         Some(IriRef::new_unchecked(MownStr::from_ref(&XSD_DOUBLE)))
@@ -70,7 +70,7 @@ impl Term for i32 {
         TermKind::Literal
     }
     fn lexical_form(&self) -> Option<MownStr<'_>> {
-        Some(MownStr::from(format!("{}", self)))
+        Some(MownStr::from(format!("{self}")))
     }
     fn datatype(&self) -> Option<IriRef<MownStr<'_>>> {
         Some(IriRef::new_unchecked(MownStr::from_ref(&XSD_INTEGER)))
@@ -110,7 +110,7 @@ impl Term for isize {
         TermKind::Literal
     }
     fn lexical_form(&self) -> Option<MownStr<'_>> {
-        Some(MownStr::from(format!("{}", self)))
+        Some(MownStr::from(format!("{self}")))
     }
     fn datatype(&self) -> Option<IriRef<MownStr<'_>>> {
         Some(IriRef::new_unchecked(MownStr::from_ref(&XSD_INTEGER)))
@@ -150,7 +150,7 @@ impl Term for usize {
         TermKind::Literal
     }
     fn lexical_form(&self) -> Option<MownStr<'_>> {
-        Some(MownStr::from(format!("{}", self)))
+        Some(MownStr::from(format!("{self}")))
     }
     fn datatype(&self) -> Option<IriRef<MownStr<'_>>> {
         Some(IriRef::new_unchecked(MownStr::from_ref(&XSD_INTEGER)))

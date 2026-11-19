@@ -31,6 +31,7 @@ pub type NtConfig = NTriplesConfig;
 
 impl NTriplesConfig {
     /// Construct a default configuration
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -134,11 +135,13 @@ where
 impl NTriplesSerializer<Vec<u8>> {
     /// Create a new serializer which targets a `String`.
     #[inline]
+    #[must_use]
     pub fn new_stringifier() -> Self {
         Self::new(Vec::new())
     }
     /// Create a new serializer which targets a `String` with a custom config.
     #[inline]
+    #[must_use]
     pub const fn new_stringifier_with_config(config: NTriplesConfig) -> Self {
         Self::new_with_config(Vec::new(), config)
     }
@@ -199,12 +202,12 @@ where
                 }
             } else {
                 let dt = t.datatype().unwrap();
-                if xsd::string != dt {
+                if xsd::string == dt {
+                    w.write_all(b"\"")?;
+                } else {
                     w.write_all(b"\"^^<")?;
                     w.write_all(dt.as_bytes())?;
                     w.write_all(b">")?;
-                } else {
-                    w.write_all(b"\"")?;
                 }
             }
         }
@@ -301,7 +304,7 @@ _:r	<http://schema.org/creator>	?x	.
         .serialize_graph(&g)
         .unwrap()
         .to_string();
-        assert_eq!(&s2, &exp.replace("\t", " "));
+        assert_eq!(&s2, &exp.replace('\t', " "));
 
         Ok(())
     }
@@ -334,7 +337,7 @@ _:r	<http://schema.org/creator>	?x	.
         let out = NTriplesSerializer::new_stringifier_with_config(config)
             .serialize_triples(g1.triples())?
             .to_string();
-        println!("\n>>> DEBUG\n{}", &out);
+        println!("\n>>> DEBUG\n{out}");
 
         let g2: Vec<[SimpleTerm; 3]> = crate::parser::nt::parse_str(&out).collect_triples()?;
 
@@ -370,7 +373,7 @@ _:r	<http://schema.org/creator>	?x	.
         let out = NTriplesSerializer::new_stringifier_with_config(config)
             .serialize_triples(g1.triples())?
             .to_string();
-        println!("\n>>> DEBUG\n{}", &out);
+        println!("\n>>> DEBUG\n{out}");
 
         let g2: Vec<[SimpleTerm; 3]> = crate::parser::nt::parse_str(&out).collect_triples()?;
 

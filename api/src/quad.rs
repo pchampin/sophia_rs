@@ -266,7 +266,7 @@ impl<T: Term> Quad for ([T; 3], GraphName<T>) {
         self.0[2].borrow_term()
     }
     fn g(&self) -> GraphName<Self::BorrowTerm<'_>> {
-        self.1.as_ref().map(|gn| gn.borrow_term())
+        self.1.as_ref().map(Term::borrow_term)
     }
     fn to_s(self) -> Self::Term {
         let [s, _, _] = self.0;
@@ -306,7 +306,7 @@ impl<T: Term> Quad for (GraphName<T>, [T; 3]) {
         self.1[2].borrow_term()
     }
     fn g(&self) -> GraphName<Self::BorrowTerm<'_>> {
-        self.0.as_ref().map(|gn| gn.borrow_term())
+        self.0.as_ref().map(Term::borrow_term)
     }
     fn to_s(self) -> Self::Term {
         let [s, _, _] = self.1;

@@ -49,7 +49,7 @@ fn roundtrip_not_pretty(key: &str) -> Result<(), Box<dyn Error>> {
     let out = TurtleSerializer::new_stringifier()
         .serialize_triples(g1.triples())?
         .to_string();
-    println!("{}", &out);
+    println!("{out}");
 
     let g2: Vec<[SimpleTerm; 3]> = crate::parser::turtle::parse_str(&out).collect_triples()?;
 
@@ -96,7 +96,7 @@ fn roundtrip_pretty(key: &str) -> Result<(), Box<dyn Error>> {
     let ugly = TurtleSerializer::new_stringifier()
         .serialize_triples(g1.triples())?
         .to_string();
-    println!("\n>>> DEBUG ugly\n{}", &ugly);
+    println!("\n>>> DEBUG ugly\n{ugly}");
 
     let mut prefix_map = TurtleConfig::default_prefix_map();
     prefix_map.push((
@@ -109,13 +109,13 @@ fn roundtrip_pretty(key: &str) -> Result<(), Box<dyn Error>> {
     let pretty = TurtleSerializer::new_stringifier_with_config(config)
         .serialize_triples(g1.triples())?
         .to_string();
-    println!("\n>>> DEBUG pretty\n{}", &pretty);
+    println!("\n>>> DEBUG pretty\n{pretty}");
 
     let g2: Vec<[SimpleTerm; 3]> = crate::parser::turtle::parse_str(&pretty).collect_triples()?;
     let ugly = TurtleSerializer::new_stringifier()
         .serialize_triples(g2.triples())?
         .to_string();
-    println!("\n>>> DEBUG pretty→ugly\n{}", &ugly);
+    println!("\n>>> DEBUG pretty→ugly\n{ugly}");
 
     assert!(isomorphic_graphs(&g1, &g2)?);
     Ok(())

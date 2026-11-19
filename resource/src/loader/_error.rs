@@ -37,12 +37,12 @@ impl LoaderError {
     #[must_use]
     pub fn iri(&self) -> IriBuf {
         let iri = match self {
-            Self::UnsupportedIri(iri, _) => iri,
-            Self::NotFound(iri) => iri,
-            Self::IoError(iri, _) => iri,
-            Self::CantGuessSyntax(iri) => iri,
-            Self::ParseError(iri, _) => iri,
-            Self::Other(iri, _) => iri,
+            Self::UnsupportedIri(iri, _)
+            | Self::NotFound(iri)
+            | Self::IoError(iri, _)
+            | Self::CantGuessSyntax(iri)
+            | Self::ParseError(iri, _)
+            | Self::Other(iri, _) => iri,
         };
         iri.clone()
     }

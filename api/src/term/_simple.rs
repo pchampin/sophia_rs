@@ -220,7 +220,7 @@ impl Eq for SimpleTerm<'_> {}
 
 impl std::hash::Hash for SimpleTerm<'_> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        Term::hash(self, state)
+        Term::hash(self, state);
     }
 }
 

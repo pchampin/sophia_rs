@@ -2,7 +2,7 @@ use super::*;
 
 /// Generic trait for matching [`Term`]s.
 pub trait TermMatcher {
-    /// The type of term that this TermMatcher contains
+    /// The type of term that this `TermMatcher` contains
     type Term: Term + ?Sized;
 
     /// Check whether this matcher matches `t`.

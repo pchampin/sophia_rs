@@ -10,6 +10,7 @@ use crate::source::*;
 use lazy_static::lazy_static;
 
 #[allow(missing_docs)]
+#[allow(clippy::unnecessary_wraps)]
 mod ns {
     use super::*;
     lazy_static! {
@@ -24,6 +25,7 @@ mod ns {
 pub use ns::*;
 
 /// Generates an empty quad source.
+#[must_use]
 pub fn no_quad() -> impl QuadSource {
     let v = Vec::<Spog<StaticTerm>>::new();
     v.into_iter().into_source()
@@ -33,6 +35,7 @@ pub fn no_quad() -> impl QuadSource {
 pub const SOME_QUADS_COUNT: usize = 18;
 
 /// Generates a quad source containing a dummy ontology.
+#[must_use]
 pub fn some_quads() -> impl QuadSource {
     let v: Vec<Spog<NsTerm<'static>>> = vec![
         ([*C1, rdf::type_, rdfs::Class], *DG),
@@ -67,6 +70,7 @@ pub const NODE_TYPES_COUNT: usize = 5;
 
 /// Generates a quad source containing all types of nodes,
 /// in all possible positions allowed in RDF 1.1.
+#[must_use]
 pub fn strict_node_types_quads() -> impl QuadSource {
     let v: Vec<Spog<StaticTerm>> = vec![
         (
@@ -84,6 +88,7 @@ pub fn strict_node_types_quads() -> impl QuadSource {
 
 /// Generates a quad source containing all types of nodes,
 /// in all possible positions (generalized RDF).
+#[must_use]
 pub fn generalized_node_types_quads() -> impl QuadSource {
     let v: Vec<Spog<StaticTerm>> = vec![
         (

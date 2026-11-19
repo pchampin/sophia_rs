@@ -36,3 +36,6 @@ uri = []
 [[bench]]
 name = "bench1"
 harness = false
+
+[lints]
+workspace = true

@@ -1,7 +1,7 @@
 use sophia_api::prefix::Prefix;
 use sophia_iri::{Iri, resolve::BaseIriRef};
 
-/// Extra parser attributes for T-style formats (Turte, TriG)
+/// Extra parser attributes for T-style formats (Turte, `TriG`)
 #[allow(clippy::type_complexity)]
 #[derive(Clone, Debug)]
 pub(crate) struct Extra<S> {

@@ -36,6 +36,7 @@ pub struct NTriplesParser {
 
 impl NTriplesParser {
     /// Construct a [`NTriplesParser`] with default options.
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -95,7 +96,7 @@ impl<I> GenericSource for NTriplesSource<I> {
             &self.inner.terms,
             &self.inner.buffers,
         ))
-        .map(|_| offset)
+        .map(|()| offset)
         .map_err(SinkError)
     }
 }
@@ -142,7 +143,7 @@ impl<I> NxSource for NTriplesSource<I> {
                 return Err(ErrorKind::Expected(".".into())).wrap_in_at(self, col);
             }
             self.emit_tuple(callback, col)?;
-            self.inner.terms.truncate(0);
+            self.inner.terms.clear();
             self.inner.buffers.empty();
         }
         Ok(col)
@@ -215,7 +216,7 @@ mod test {
                 c += 1;
             })
             .unwrap();
-        debug_assert_eq!(c, *count)
+        debug_assert_eq!(c, *count);
     }
 
     #[test_case("<x:s> <x:p> <x:o>. <x:s2>", (0, 19); "eol")]
@@ -230,10 +231,7 @@ mod test {
     #[test_case("<x:s> <x:p> <x:o>", (0, 17); "period after object, got eol")]
     #[test_case("<x:s> <x:p> <x:o> <x:g>", (0, 18); "period after object, got spurious iri")]
     #[test_case("<x:s> <x:p> <x:o> #", (0, 18); "period after object, got comment")]
-    fn err_expected(
-        input: &str,
-        exp_pos: (usize, usize),
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    fn err_expected(input: &str, exp_pos: (usize, usize)) {
         for i in [input, &format!("{input}\n # this is a comment")] {
             let mut ts = NTriplesParser::new().parse_str(i);
             let Err(err) = ts.for_each_triple(|_| ()) else {
@@ -245,7 +243,6 @@ mod test {
             );
             assert_eq!(err.position(), exp_pos);
         }
-        Ok(())
     }
 
     #[test]

@@ -93,10 +93,10 @@ where
         }
 
         self.o.update(oi, self.terms);
-        if !self.o.b {
-            self.next()
-        } else {
+        if self.o.b {
             Some([self.s.t, self.p.t, self.o.t])
+        } else {
+            self.next()
         }
     }
 }
@@ -184,10 +184,10 @@ where
         }
 
         self.c.update(ci, self.terms);
-        if !self.c.b {
-            self.next()
-        } else {
+        if self.c.b {
             Some([self.a, self.b.t, self.c.t])
+        } else {
+            self.next()
         }
     }
 }

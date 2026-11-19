@@ -38,6 +38,7 @@ pub struct GNQuadsParser {
 
 impl GNQuadsParser {
     /// Construct a [`GNQuadsParser`] with default options.
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -106,7 +107,7 @@ impl<I> GenericSource for GNQSource<I> {
                 None,
             ))
         }
-        .map(|_| offset)
+        .map(|()| offset)
         .map_err(SinkError)
     }
 }
@@ -168,19 +169,19 @@ impl<I> NxSource for GNQSource<I> {
                 }
             }
             self.emit_tuple(callback, col)?;
-            self.inner.terms.truncate(0);
+            self.inner.terms.clear();
             self.inner.buffers.empty();
         }
         Ok(col)
     }
 
-    /// Override NxSource::enter_triple_term to support generalized triples
+    /// Override `NxSource::enter_triple_term` to support generalized triples
     fn enter_triple_term<E>(&mut self, txt: &str) -> StreamResult<usize, Error, E>
     where
         E: std::error::Error + Send + Sync + 'static,
     {
         if cfg!(test) {
-            self.debug_dump("enter_triple_term", txt)
+            self.debug_dump("enter_triple_term", txt);
         }
 
         let mut col = 3;
@@ -199,7 +200,7 @@ impl<I> NxSource for GNQSource<I> {
         }
     }
 
-    /// Override NxSource::iriref to support relative IRIs.
+    /// Override `NxSource::iriref` to support relative IRIs.
     fn iriref<E2>(&mut self, txt: &str) -> StreamResult<usize, Error, E2>
     where
         E2: std::error::Error + Send + Sync + 'static,
@@ -245,7 +246,7 @@ impl<I> GNQSource<I> {
         E: std::error::Error + Send + Sync + 'static,
     {
         if cfg!(test) {
-            self.debug_dump("enter_term", txt)
+            self.debug_dump("enter_term", txt);
         }
 
         match txt.as_bytes()[0] {
@@ -395,7 +396,7 @@ mod test {
                 c += 1;
             })
             .unwrap();
-        debug_assert_eq!(c, *count)
+        debug_assert_eq!(c, *count);
     }
 
     #[test_case("empty")]
@@ -462,7 +463,7 @@ mod test {
         let out = NQuadsSerializer::new_stringifier_with_config(config)
             .serialize_quads(d1.quads())?
             .to_string();
-        println!("\n>>> DEBUG\n{}", &out);
+        println!("\n>>> DEBUG\n{out}");
 
         let d2: Vec<Spog<SimpleTerm>> = crate::parser::gnq::parse_str(&out).collect_quads()?;
 
@@ -482,10 +483,7 @@ mod test {
     #[test_case("<x:s> <x:p> <x:o>", (0, 17); "period after object, got eol")]
     #[test_case("<x:s> <x:p> <x:o> <x:g> <x:x>", (0, 24); "period after object, got spurious iri")]
     #[test_case("<x:s> <x:p> <x:o> #", (0, 18); "period after object, got comment")]
-    fn err_expected(
-        input: &str,
-        exp_pos: (usize, usize),
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    fn err_expected(input: &str, exp_pos: (usize, usize)) {
         for i in [input, &format!("{input}\n # this is a comment")] {
             let mut qs = GNQuadsParser::new().parse_str(i);
             let Err(err) = qs.for_each_quad(|_| ()) else {
@@ -497,7 +495,6 @@ mod test {
             );
             assert_eq!(err.position(), exp_pos);
         }
-        Ok(())
     }
 
     #[test]

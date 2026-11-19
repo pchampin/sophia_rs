@@ -23,7 +23,7 @@ impl StringStash {
             debug_assert_eq!(self.len, self.vec.len() + 1);
             self.vec.push(String::with_capacity(256));
         } else {
-            self.vec[self.len - 1].truncate(0);
+            self.vec[self.len - 1].clear();
         }
         &mut self.vec[self.len - 1]
     }

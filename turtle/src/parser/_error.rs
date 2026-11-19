@@ -25,6 +25,7 @@ impl Error {
     }
 
     /// Return the [kind][`ErrorKind`]
+    #[must_use]
     pub fn kind(&self) -> &ErrorKind {
         &self.kind
     }
@@ -32,6 +33,7 @@ impl Error {
     /// Return the position in the input.
     ///
     /// NB: lines and columns are numbered from 0.
+    #[must_use]
     pub fn position(&self) -> (usize, usize) {
         (self.line, self.col)
     }
@@ -40,8 +42,9 @@ impl Error {
     ///
     /// This method numbers line and column starting from 1 instead of 0,
     /// as expected by text editors.
+    #[must_use]
     pub fn in_context(&self, context: &str) -> String {
-        format!("{context}:{}:{} {}", self.line + 1, self.col + 1, self.kind,)
+        format!("{context}:{}:{} {}", self.line + 1, self.col + 1, self.kind)
     }
 }
 

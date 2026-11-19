@@ -15,7 +15,7 @@ use uuid::{Uuid, fmt::Simple};
 
 use crate::{SparqlQuery, SparqlWrapper};
 
-impl<'a, D: Dataset + ?Sized> SparqlWrapper<'a, D> {
+impl<D: Dataset + ?Sized> SparqlWrapper<'_, D> {
     /// Make an ASK SPARQL query from a Sophia graph
     pub fn prepare_ask_from_triples<TS: TripleSource>(ts: TS) -> Result<SparqlQuery<D>, TS::Error> {
         let algebra = Query::Ask {
@@ -70,10 +70,12 @@ impl<'a, D: Dataset + ?Sized> SparqlWrapper<'a, D> {
         let mut filter = vec![];
         let mut bind = vec![];
         ts.for_each_triple(|tr| {
-            patterns.push(Self::prepare_triple_pattern(tr, &mut filter, &mut bind))
+            patterns.push(Self::prepare_triple_pattern(tr, &mut filter, &mut bind));
         })?;
         let bgp = GraphPattern::Bgp { patterns };
-        Ok(if !filter.is_empty() {
+        Ok(if filter.is_empty() {
+            bgp
+        } else {
             let inner = Box::new(bgp);
             let mut filter = filter.into_iter();
             let first = filter.next().unwrap();
@@ -81,8 +83,6 @@ impl<'a, D: Dataset + ?Sized> SparqlWrapper<'a, D> {
                 Expression::And(Box::new(old), Box::new(next))
             });
             GraphPattern::Filter { expr, inner }
-        } else {
-            bgp
         })
     }
 
@@ -159,7 +159,7 @@ impl<'a, D: Dataset + ?Sized> SparqlWrapper<'a, D> {
                 return oxrdf::Variable::new_unchecked(var_name.to_string()).into();
             }
             _ => (),
-        };
+        }
         let var = mint_var();
         if let Some(spo) = t.triple() {
             Self::prepare_escaped_triple_term_pattern(&var, spo, filter, bind);
@@ -312,7 +312,7 @@ mod test {
         for (key, val) in bindings.pop().unwrap().v {
             println!("=== {key:?} -> {val:?}");
             // skip variables generated for the query (long UUIDs or starting with '_')
-            if !key.starts_with("_") {
+            if !key.starts_with('_') {
                 assert!(val.is_variable());
                 assert_eq!(val.variable().unwrap().as_str(), key.as_ref());
             }

@@ -144,7 +144,7 @@ pub trait QuadSource: Sized + for<'x> Source<Item<'x>: Quad> {
         D::from_quad_source(self)
     }
 
-    /// Insert all quads from this source into the given [MutableDataset].
+    /// Insert all quads from this source into the given [`MutableDataset`].
     ///
     /// Stop on the first error (in the source or in the dataset).
     #[inline]
@@ -160,7 +160,7 @@ pub trait QuadSource: Sized + for<'x> Source<Item<'x>: Quad> {
     }
 }
 
-/// Ensures that QuadSource acts as an type alias for any Source satisfying the conditions.
+/// Ensures that `QuadSource` acts as an type alias for any Source satisfying the conditions.
 impl<T: Sized + for<'x> Source<Item<'x>: Quad>> QuadSource for T {}
 
 #[cfg(test)]
@@ -230,7 +230,7 @@ mod check_quad_source {
                     ],
                     None,
                 );
-                f(q).map_err(SinkError).map(|_| true)
+                f(q).map_err(SinkError).map(|()| true)
             }
         }
     }

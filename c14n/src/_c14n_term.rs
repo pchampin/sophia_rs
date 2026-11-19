@@ -51,40 +51,35 @@ impl<T: Term> Term for C14nTerm<T> {
 
     fn lexical_form(&self) -> Option<sophia_api::MownStr<'_>> {
         match self {
-            Blank(_) => None,
-            Aaa(_) => None,
+            Blank(_) | Aaa(_) => None,
             Other(t) => t.lexical_form(),
         }
     }
 
     fn datatype(&self) -> Option<sophia_api::term::IriRef<sophia_api::MownStr<'_>>> {
         match self {
-            Blank(_) => None,
-            Aaa(_) => None,
+            Blank(_) | Aaa(_) => None,
             Other(t) => t.datatype(),
         }
     }
 
     fn language_tag(&self) -> Option<sophia_api::term::LanguageTag<sophia_api::MownStr<'_>>> {
         match self {
-            Blank(_) => None,
-            Aaa(_) => None,
+            Blank(_) | Aaa(_) => None,
             Other(t) => t.language_tag(),
         }
     }
 
     fn base_direction(&self) -> Option<sophia_api::term::BaseDirection> {
         match self {
-            Blank(_) => None,
-            Aaa(_) => None,
+            Blank(_) | Aaa(_) => None,
             Other(t) => t.base_direction(),
         }
     }
 
     fn variable(&self) -> Option<sophia_api::term::VarName<sophia_api::MownStr<'_>>> {
         match self {
-            Blank(_) => None,
-            Aaa(_) => None,
+            Blank(_) | Aaa(_) => None,
             Other(t) => t.variable(),
         }
     }
@@ -116,7 +111,7 @@ impl<T: Term> Eq for C14nTerm<T> {}
 
 impl<T: Term> std::hash::Hash for C14nTerm<T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        Term::hash(self, state)
+        Term::hash(self, state);
     }
 }
 

@@ -2549,7 +2549,7 @@ fn bindings_to_vec_of_arrays(
         .into_iter()
         .map(|bs| {
             let values: [_; 2] = bs.unwrap().try_into().unwrap();
-            values.map(|opt| opt.map(|t| t.to_string()).unwrap_or_else(|| "".into()))
+            values.map(|opt| opt.map(|t| t.to_string()).unwrap_or_else(String::new))
         })
         .collect()
 }

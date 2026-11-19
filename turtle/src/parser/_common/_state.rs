@@ -1,4 +1,4 @@
-/// A trait capturing the commonalities between Turtle and TriG grammars
+/// A trait capturing the commonalities between Turtle and `TriG` grammars
 pub trait State: std::fmt::Debug {
     /// Construct a new state for production `annotationBlocks`
     fn new_annotation_block() -> Self;

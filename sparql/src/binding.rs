@@ -31,11 +31,13 @@ pub struct Bindings<'a, D: Dataset + ?Sized> {
 pub type BindingsIter<'a, D> =
     Box<dyn Iterator<Item = Result<Binding, SparqlWrapperError<<D as Dataset>::Error>>> + 'a>;
 
-impl<'a, D: Dataset + ?Sized> Bindings<'a, D> {
+impl<D: Dataset + ?Sized> Bindings<'_, D> {
+    #[must_use]
     pub fn empty() -> Self {
         Self::empty_with(vec![])
     }
 
+    #[must_use]
     pub fn empty_with(variables: Vec<VarName<Arc<str>>>) -> Self {
         let iter = Box::new(std::iter::empty());
         Self { variables, iter }
@@ -116,7 +118,7 @@ impl Binding {
                     Vacant(e) => {
                         e.insert(vv.clone());
                     }
-                };
+                }
             }
             for (bn, bv) in &context.b {
                 match self.b.entry(bn.clone()) {
@@ -128,7 +130,7 @@ impl Binding {
                     Vacant(e) => {
                         e.insert(bv.clone());
                     }
-                };
+                }
             }
         }
         Some(self)

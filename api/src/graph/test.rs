@@ -35,6 +35,7 @@ mod ns {
 pub use ns::*;
 
 /// Generates an empty triple source.
+#[must_use]
 pub fn no_triple() -> impl TripleSource {
     let v = Vec::<[StaticTerm; 3]>::new();
     v.into_iter().into_source()
@@ -44,6 +45,7 @@ pub fn no_triple() -> impl TripleSource {
 pub const SOME_TRIPLES_COUNT: usize = 18;
 
 /// Generates a triple source containing a dummy ontology.
+#[must_use]
 pub fn some_triples() -> impl TripleSource {
     let v = vec![
         [*C1, rdf::type_, rdfs::Class],
@@ -88,6 +90,7 @@ pub const NODE_TYPES_COUNT: usize = 5;
 
 /// Generates a triple source containing all types of nodes,
 /// in all possible positions allowed in RDF 1.1.
+#[must_use]
 pub fn strict_node_types_triples() -> impl TripleSource {
     let v = vec![
         [t(rdf::type_), t(rdf::type_), t(rdf::Property)],
@@ -102,6 +105,7 @@ pub fn strict_node_types_triples() -> impl TripleSource {
 
 /// Generates a triple source containing all types of nodes,
 /// in all possible positions (generalized RDF).
+#[must_use]
 pub fn generalized_node_types_triples() -> impl TripleSource {
     let v = vec![
         [t(rdf::type_), t(rdf::type_), t(rdf::Property)],
@@ -133,13 +137,11 @@ where
 
 /// Checks that `val` is in the interval represented by `hint`.
 pub fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
-    assert!(hint.0 <= val, "hint {:?} not consistent with {}", hint, val);
+    assert!(hint.0 <= val, "hint {hint:?} not consistent with {val}");
     assert!(
         val <= hint.1.unwrap_or(val),
-        "hint {:?} not consistent with {}",
-        hint,
-        val
-    )
+        "hint {hint:?} not consistent with {val}"
+    );
 }
 
 /// Checks that `term` is presnet in `collection`
@@ -150,7 +152,7 @@ where
     T: Term + 'a,
     U: Term,
 {
-    assert!(collection.into_iter().any(|t| term.eq(t.borrow_term())))
+    assert!(collection.into_iter().any(|t| term.eq(t.borrow_term())));
 }
 
 /// Generate a test suite for an implementation of

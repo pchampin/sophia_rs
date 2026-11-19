@@ -48,6 +48,9 @@ sophia_xml = { workspace = true, optional = true }
 [dev-dependencies]
 url.workspace = true
 
+[lints]
+workspace = true
+
 [[example]]
 name = "jsonld-context"
 required-features = ["jsonld"]

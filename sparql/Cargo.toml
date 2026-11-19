@@ -41,3 +41,6 @@ sha2.workspace = true
 sophia_turtle.workspace = true
 sophia_isomorphism.workspace = true
 test-case.workspace = true
+
+[lints]
+workspace = true

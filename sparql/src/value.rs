@@ -33,6 +33,7 @@ pub enum SparqlValue {
 }
 
 impl SparqlValue {
+    #[must_use]
     pub fn try_from_term(term: &ArcTerm) -> Option<Self> {
         if let ArcTerm::Literal(genlit) = term {
             Self::try_from_literal(genlit)
@@ -86,6 +87,7 @@ impl SparqlValue {
         }
     }
 
+    #[must_use]
     pub fn try_from_literal(genlit: &GenericLiteral<Arc<str>>) -> Option<Self> {
         match genlit {
             GenericLiteral::LanguageString(lex, tag, dir) => {
@@ -95,6 +97,7 @@ impl SparqlValue {
         }
     }
 
+    #[must_use]
     pub fn is_ill_formed(&self) -> bool {
         match self {
             SparqlValue::Boolean(opt) => opt.is_none(),
@@ -107,13 +110,13 @@ impl SparqlValue {
     pub fn is_truthy(&self) -> Option<bool> {
         match self {
             SparqlValue::Boolean(opt) => *opt,
-            SparqlValue::DateTime(_) => None,
             SparqlValue::Number(opt) => opt.as_ref().map(SparqlNumber::is_truthy),
             SparqlValue::String(val, None) => Some(!val.is_empty()),
-            SparqlValue::String(_, Some(_)) => None,
+            SparqlValue::DateTime(_) | SparqlValue::String(_, Some(_)) => None,
         }
     }
 
+    #[must_use]
     pub fn sparql_eq(&self, other: &Self) -> Option<bool> {
         use SparqlValue::*;
         match (self, other) {
@@ -151,6 +154,7 @@ impl SparqlValue {
         }
     }
 
+    #[must_use]
     pub fn lexical_form(&self) -> MownStr<'_> {
         use SparqlNumber::*;
         use SparqlValue::*;
@@ -186,6 +190,7 @@ impl SparqlValue {
         }
     }
 
+    #[must_use]
     pub fn compound_tag(&self) -> Option<&CompoundTag> {
         use SparqlValue::*;
         if let String(_, r) = self {

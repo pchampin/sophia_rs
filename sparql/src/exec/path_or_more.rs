@@ -1,4 +1,6 @@
-//! Iterator used by property paths expression (ZeroOrMore and OneOrMore)
+//! Iterator used by property paths expression (`ZeroOrMore` and `OneOrMore`)
+
+#![allow(clippy::zero_sized_map_values)] // because HashSet::entry is still nightly
 
 use std::{
     collections::{HashMap, hash_map::Entry},
@@ -87,7 +89,7 @@ impl<'a, D: Dataset + ?Sized> PathOrMore<'a, D> {
     }
 }
 
-impl<'a, D: Dataset + ?Sized> Iterator for PathOrMore<'a, D> {
+impl<D: Dataset + ?Sized> Iterator for PathOrMore<'_, D> {
     type Item = DResult<D, [ArcTerm; 2]>;
 
     fn next(&mut self) -> Option<Self::Item> {

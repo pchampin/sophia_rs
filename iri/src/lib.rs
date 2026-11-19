@@ -11,10 +11,10 @@
 //!   which contains arrays of good and bad IRIs,
 //!   useful for testing purposes, possibly in other crates.
 //!
-//! - **examples** exposes the [`wrap_macro_examples`] module,
+//! - **`examples`** exposes the [`wrap_macro_examples`] module,
 //!   whose role is to exemplify the effect of the [`wrap`] macro.
 //!
-//! - **uri** exposes similar traits and types for dealing with URIs (RFC 3986),
+//! - **`uri`** exposes similar traits and types for dealing with URIs (RFC 3986),
 //!   which are basically the subset of IRIs using only ASCII characters.
 //!
 //! [Sophia]: https://docs.rs/sophia/latest/sophia/

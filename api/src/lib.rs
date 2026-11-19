@@ -40,7 +40,7 @@
 //!
 //! # Feature gates
 //!
-//! - **test_macros**: with this feature enabled,
+//! - **`test_macros`**: with this feature enabled,
 //!   this crate exposes macros that can help implementors of the API to test their implementation.
 //!
 //! [SPARQL]: https://www.w3.org/TR/sparql12-query/
@@ -61,6 +61,6 @@ pub mod term;
 pub mod triple;
 pub mod version;
 
-/// Re-export MownStr to avoid dependency version mismatch.
+/// Re-export `MownStr` to avoid dependency version mismatch.
 ///
 pub use mownstr::MownStr;

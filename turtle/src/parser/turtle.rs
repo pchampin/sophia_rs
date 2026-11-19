@@ -21,7 +21,7 @@ use crate::{
 };
 
 mod _state;
-use _state::*;
+use _state::TurtleState;
 
 sophia_api::def_mod_functions_for_bufread_parser!(TurtleParser, TripleParser);
 
@@ -44,6 +44,7 @@ pub struct TurtleParser {
 
 impl TurtleParser {
     /// Construct a [`TurtleParser`] with default options.
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -115,7 +116,7 @@ impl<I> GenericSource for TurtleSource<I> {
             &self.inner.buffers,
         ))
         .map_err(SinkError)
-        .map(|_| offset)
+        .map(|()| offset)
     }
 }
 
@@ -143,7 +144,7 @@ impl<I> TxSource<TurtleState> for TurtleSource<I> {
         E2: std::error::Error,
     {
         let [o, p, s] = StashedTerm::new_triple(&self.inner.terms, &self.inner.buffers);
-        callback([s, p, o]).map_err(SinkError).map(|_| offset)
+        callback([s, p, o]).map_err(SinkError).map(|()| offset)
     }
 
     fn parse_token<C, E>(&mut self, txt: &str, callback: &mut C) -> StreamResult<usize, Error, E>
@@ -248,7 +249,7 @@ impl<I> TurtleSource<I> {
         }
     }
 
-    /// Enter production https://www.w3.org/TR/rdf12-turtle/#grammar-production-statement
+    /// Enter production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-statement>
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -319,7 +320,7 @@ impl<I> TurtleSource<I> {
         }
     }
 
-    /// Compute the next context after production https://www.w3.org/TR/rdf12-turtle/#grammar-production-verb
+    /// Compute the next context after production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-verb>
     /// based on context.
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
@@ -345,7 +346,7 @@ impl<I> TurtleSource<I> {
         }
     }
 
-    /// Compute the next context after production https://www.w3.org/TR/rdf12-turtle/#grammar-production-object,
+    /// Compute the next context after production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-object>,
     /// after emitting the last triple in stack.
     ///
     /// See also [`TurtleSource::enter_object`]

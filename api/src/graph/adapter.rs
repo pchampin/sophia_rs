@@ -179,11 +179,11 @@ impl<D: Dataset, G: Term> DatasetGraph<D, G> {
     }
 
     fn g(&self) -> GraphName<G::BorrowTerm<'_>> {
-        self.g.as_ref().map(|gn| gn.borrow_term())
+        self.g.as_ref().map(Term::borrow_term)
     }
 
     fn gd(&mut self) -> (Option<G::BorrowTerm<'_>>, &mut D) {
-        (self.g.as_ref().map(|gn| gn.borrow_term()), &mut self.d)
+        (self.g.as_ref().map(Term::borrow_term), &mut self.d)
     }
 }
 
@@ -268,8 +268,8 @@ mod test {
         type Term = MyTerm;
 
         fn matches<T2: Term + ?Sized>(&self, graph_name: GraphName<&T2>) -> bool {
-            graph_name_eq(graph_name.map(|gn| gn.borrow_term()), Some(G1))
-                || graph_name_eq(graph_name.map(|gn| gn.borrow_term()), Some(G2))
+            graph_name_eq(graph_name.map(Term::borrow_term), Some(G1))
+                || graph_name_eq(graph_name.map(Term::borrow_term), Some(G2))
         }
     }
 

@@ -127,7 +127,7 @@ mod test {
                 [ez_term(":c"), ez_term(":b"), ez_term(":a")],
                 [ez_term(":i"), ez_term(":h"), ez_term(":g")],
             ]
-        )
+        );
     }
 
     #[test]
@@ -151,7 +151,7 @@ mod test {
                 ([ez_term(":c"), ez_term(":b"), ez_term(":a")], None),
                 ([ez_term(":i"), ez_term(":h"), ez_term(":g")], None),
             ]
-        )
+        );
     }
 
     #[test]
@@ -168,7 +168,7 @@ mod test {
             })
             .into_iter()
             .collect();
-        assert_eq!(h.unwrap(), vec!["tag:a".to_string(), "tag:g".to_string(),])
+        assert_eq!(h.unwrap(), vec!["tag:a".to_string(), "tag:g".to_string(),]);
     }
 
     // check that the result of QuadSource::filter_map_quads implements the expected traits
@@ -196,7 +196,7 @@ mod test {
                 [ez_term(":c"), ez_term(":b"), ez_term(":a")],
                 [ez_term(":i"), ez_term(":h"), ez_term(":g")],
             ]
-        )
+        );
     }
 
     #[test]
@@ -221,7 +221,7 @@ mod test {
                 ([ez_term(":c"), ez_term(":b"), ez_term(":a")], None),
                 ([ez_term(":i"), ez_term(":h"), ez_term(":g")], None),
             ]
-        )
+        );
     }
 
     #[test]
@@ -238,6 +238,6 @@ mod test {
             })
             .into_iter()
             .collect();
-        assert_eq!(h.unwrap(), vec!["tag:a".to_string(), "tag:g".to_string(),])
+        assert_eq!(h.unwrap(), vec!["tag:a".to_string(), "tag:g".to_string(),]);
     }
 }

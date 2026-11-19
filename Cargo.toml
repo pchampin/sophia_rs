@@ -68,5 +68,35 @@ uuid = "1"
 lto = true
 
 [workspace.lints.clippy]
-enum_glob_use = "allow"
 
+# pedantic lints that we never consider
+# (kept here for documentation, this does not seem to disable them with `-W pedantic`...)
+enum_glob_use = "allow" # convenient to use "locally" the variants before a match
+map_unwrap_or = "allow" # because argument order is confusing
+needless_pass_by_value = "allow" # it creates falses positive with generic types
+option_option = "allow" # because we have good reasons to use it in Sophia
+single_match_else = "allow" # because it is visually more compact than if ... else
+
+# pedantic lints that we always consider
+cast_lossless = "warn"
+doc_markdown = "warn"
+elidable_lifetime_names = "warn"
+if_not_else = "warn"
+ignored_unit_patterns = "warn"
+inconsistent_struct_constructor = "warn"
+manual_assert_eq = "warn"
+manual_is_variant_and = "warn"
+manual_string_new = "warn"
+match_same_arms = "warn"
+must_use_candidate = "warn"
+redundant_closure_for_method_calls = "warn"
+redundant_else = "warn"
+return_self_not_must_use = "warn"
+ref_option = "warn"
+semicolon_if_nothing_returned = "warn"
+single_char_pattern = "warn"
+uninlined_format_args = "warn"
+unnecessary_semicolon = "warn"
+unnecessary_trailing_comma = "warn"
+unnecessary_wraps = "warn"
+unreadable_literal = "warn"

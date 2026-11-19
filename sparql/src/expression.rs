@@ -69,6 +69,7 @@ pub(crate) enum ArcExpression {
 }
 
 impl ArcExpression {
+    #[allow(clippy::too_many_lines)]
     pub(crate) fn from_expr(expr: &Expression, stash: &mut ArcStrStash) -> Self {
         use ArcExpression::*;
         match expr {
@@ -439,13 +440,14 @@ impl EvalResult {
 
     /// Coerce to [string literal](https://www.w3.org/TR/sparql12-query/#func-string)
     pub fn as_string_lit(&self, diag: &str) -> Option<StringLiteralRef<'_>> {
+        use GenericLiteral::*;
+
         let fail = || {
             if !diag.is_empty() {
                 log::warn!("{diag} expects a string literal");
             }
             None
         };
-        use GenericLiteral::*;
         match self {
             EvalResult::Term(t) => match t.inner() {
                 ArcTerm::Literal(LanguageString(lex, lang, dir)) => Some((lex, Some((lang, *dir)))),
@@ -461,13 +463,14 @@ impl EvalResult {
 
     /// Coerce to an xsd:string literal
     pub fn as_xsd_string(&self, diag: &str) -> Option<&Arc<str>> {
+        use GenericLiteral::*;
+
         let fail = || {
             if !diag.is_empty() {
                 log::warn!("{diag} expects an xsd:string");
             }
             None
         };
-        use GenericLiteral::*;
         match self {
             EvalResult::Term(t) => match t.inner() {
                 ArcTerm::Literal(Typed(lex, dt)) if xsd::string == dt => Some(lex),

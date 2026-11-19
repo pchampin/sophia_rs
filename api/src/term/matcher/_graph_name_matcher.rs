@@ -2,7 +2,7 @@ use super::*;
 
 /// Generic trait for matching [`GraphName`]s.
 pub trait GraphNameMatcher {
-    /// The type of term that this GraphNameMatcher contains
+    /// The type of term that this `GraphNameMatcher` contains
     type Term: Term + ?Sized;
 
     /// Check whether this matcher matches `t`.
@@ -32,8 +32,8 @@ where
     fn matches<T2: Term + ?Sized>(&self, graph_name: GraphName<&T2>) -> bool {
         match self {
             Some(mine) => graph_name_eq(
-                mine.as_ref().map(|gn| gn.borrow_term()),
-                graph_name.map(|gn| gn.borrow_term()),
+                mine.as_ref().map(Term::borrow_term),
+                graph_name.map(Term::borrow_term),
             ),
             None => false,
         }
@@ -52,8 +52,8 @@ where
     fn matches<T2: Term + ?Sized>(&self, graph_name: GraphName<&T2>) -> bool {
         self.iter().any(|mine| {
             graph_name_eq(
-                mine.as_ref().map(|gn| gn.borrow_term()),
-                graph_name.map(|gn| gn.borrow_term()),
+                mine.as_ref().map(Term::borrow_term),
+                graph_name.map(Term::borrow_term),
             )
         })
     }
@@ -71,8 +71,8 @@ where
     fn matches<T2: Term + ?Sized>(&self, graph_name: GraphName<&T2>) -> bool {
         self.iter().any(|mine| {
             graph_name_eq(
-                mine.as_ref().map(|gn| gn.borrow_term()),
-                graph_name.map(|gn| gn.borrow_term()),
+                mine.as_ref().map(Term::borrow_term),
+                graph_name.map(Term::borrow_term),
             )
         })
     }
@@ -94,8 +94,8 @@ where
     fn matches<T2: Term + ?Sized>(&self, graph_name: GraphName<&T2>) -> bool {
         self.iter().any(|mine| {
             graph_name_eq(
-                mine.as_ref().map(|gn| gn.borrow_term()),
-                graph_name.map(|gn| gn.borrow_term()),
+                mine.as_ref().map(Term::borrow_term),
+                graph_name.map(Term::borrow_term),
             )
         })
     }

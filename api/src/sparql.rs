@@ -199,6 +199,6 @@ pub trait SparqlBindings<D>:
 where
     D: SparqlDataset + ?Sized,
 {
-    /// Return the list of SELECTed variable names
+    /// Return the list of `SELECTed` variable names
     fn variables(&self) -> Vec<&str>;
 }

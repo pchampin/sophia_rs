@@ -12,11 +12,11 @@ use std::error::Error;
 use crate::graph::adapter::{DatasetGraph, PartialUnionGraph, UnionGraph};
 use crate::graph::{Graph, MutableGraph};
 use crate::quad::{Quad, iter_spog};
-use crate::source::{IntoSource, QuadSource, StreamResult};
+use crate::source::{IntoSource, QuadSource, StreamError, StreamResult};
 use crate::term::matcher::{Any, GraphNameMatcher, TermMatcher};
 use crate::term::{GraphName, SimpleTerm, Term};
 
-use resiter::{filter::*, filter_map::*, flat_map::*, map::*};
+use resiter::{filter::Filter, filter_map::FilterMap, flat_map::FlatMap, map::Map};
 
 mod _foreign_impl;
 pub mod adapter;
@@ -362,7 +362,7 @@ pub trait Dataset {
     }
 
     /// Borrows a graph that is the union of all this dataset's graphs (default and named)
-    fn union_graph<'s>(&'s self) -> impl Graph<Error = Self::Error> + 's {
+    fn union_graph(&self) -> impl Graph<Error = Self::Error> + '_ {
         UnionGraph::new(self)
     }
 
@@ -485,7 +485,7 @@ pub trait MutableDataset: Dataset {
     /// NB: if you want to remove a quad `q` while keeping its ownership,
     /// you can still pass [`q.spog()`](Quad::spog).
     ///
-    /// See also [MutableDataset::remove]
+    /// See also [`MutableDataset::remove`]
     fn remove_quad<T>(&mut self, quad: T) -> MdResult<Self, bool>
     where
         T: Quad,
@@ -592,7 +592,7 @@ pub trait MutableDataset: Dataset {
             })
             .collect();
         self.remove_all(to_remove?.into_iter().into_source())
-            .map_err(|err| err.unwrap_sink_error())
+            .map_err(StreamError::unwrap_sink_error)
     }
 
     /// Keep only the quads matching the given matchers.
@@ -630,7 +630,7 @@ pub trait MutableDataset: Dataset {
             })
             .collect();
         self.remove_all(to_remove?.into_iter().into_source())
-            .map_err(|err| err.unwrap_sink_error())?;
+            .map_err(StreamError::unwrap_sink_error)?;
         Ok(())
     }
 

@@ -42,7 +42,7 @@ impl<'a, D: Dataset + ?Sized> SparqlDataset for SparqlWrapper<'a, D> {
                 pattern,
                 base_iri,
             } => {
-                let exec = ExecState::new(self.0, dataset, base_iri)?;
+                let exec = ExecState::new(self.0, dataset.as_ref(), base_iri.as_ref());
                 Ok(SparqlResult::Bindings(exec.select(
                     pattern,
                     exec.default_matcher(),
@@ -55,7 +55,7 @@ impl<'a, D: Dataset + ?Sized> SparqlDataset for SparqlWrapper<'a, D> {
                 pattern,
                 base_iri,
             } => {
-                let exec = ExecState::new(self.0, dataset, base_iri)?;
+                let exec = ExecState::new(self.0, dataset.as_ref(), base_iri.as_ref());
                 Ok(SparqlResult::Triples(TripleIter::Construct(
                     exec.construct(template, pattern, exec.default_matcher()),
                 )))
@@ -65,7 +65,7 @@ impl<'a, D: Dataset + ?Sized> SparqlDataset for SparqlWrapper<'a, D> {
                 pattern,
                 base_iri,
             } => {
-                let exec = ExecState::new(self.0, dataset, base_iri)?;
+                let exec = ExecState::new(self.0, dataset.as_ref(), base_iri.as_ref());
                 Ok(SparqlResult::Triples(TripleIter::Describe(
                     exec.describe(pattern, exec.default_matcher()),
                 )))
@@ -75,7 +75,7 @@ impl<'a, D: Dataset + ?Sized> SparqlDataset for SparqlWrapper<'a, D> {
                 pattern,
                 base_iri,
             } => {
-                let exec = ExecState::new(self.0, dataset, base_iri)?;
+                let exec = ExecState::new(self.0, dataset.as_ref(), base_iri.as_ref());
                 exec.ask(pattern, exec.default_matcher())
                     .map(SparqlResult::Boolean)
             }
@@ -139,7 +139,7 @@ pub enum TripleIter<'a, D: Dataset + ?Sized> {
     Describe(DescribeIter<'a, D>),
 }
 
-impl<'a, D: Dataset + ?Sized> Iterator for TripleIter<'a, D> {
+impl<D: Dataset + ?Sized> Iterator for TripleIter<'_, D> {
     type Item = Result<[ResultTerm; 3], SparqlWrapperError<D::Error>>;
 
     fn next(&mut self) -> Option<Self::Item> {

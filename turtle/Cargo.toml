@@ -22,3 +22,6 @@ uuid = { workspace = true, features = ["v7"] }
 [dev-dependencies]
 sophia_isomorphism.workspace = true
 test-case.workspace = true
+
+[lints]
+workspace = true

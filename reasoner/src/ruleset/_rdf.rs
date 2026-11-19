@@ -173,7 +173,7 @@ pub(crate) fn rdf_types<D: Recognized, R: RuleSet, const RDFS: bool>(
             };
 
             if RDFS {
-                v.push([t.index(), RDF_TYPE, super::_rdfs::RDFS_RESOURCE])
+                v.push([t.index(), RDF_TYPE, super::_rdfs::RDFS_RESOURCE]);
             }
             v
         })

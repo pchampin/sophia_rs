@@ -16,3 +16,6 @@ keywords.workspace = true
 sophia_api.workspace = true
 sophia_c14n.workspace = true
 sophia_iri.workspace = true
+
+[lints]
+workspace = true

@@ -22,7 +22,7 @@ use crate::{
 };
 
 mod _state;
-use _state::*;
+use _state::TriGState;
 
 sophia_api::def_mod_functions_for_bufread_parser!(TriGParser, QuadParser);
 
@@ -45,6 +45,7 @@ pub struct TriGParser {
 
 impl TriGParser {
     /// Construct a [`TriGParser`] with default options.
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -124,7 +125,7 @@ impl<I> GenericSource for TriGSource<I> {
             _ => None,
         };
         let spo = StashedTerm::new_triple(&self.inner.terms, &self.inner.buffers);
-        callback((spo, g)).map_err(SinkError).map(|_| offset)
+        callback((spo, g)).map_err(SinkError).map(|()| offset)
     }
 }
 
@@ -165,7 +166,7 @@ impl<I> TxSource<TriGState> for TriGSource<I> {
             _ => None,
         };
         let [o, p, s] = StashedTerm::new_triple(&self.inner.terms, &self.inner.buffers);
-        callback(([s, p, o], g)).map_err(SinkError).map(|_| offset)
+        callback(([s, p, o], g)).map_err(SinkError).map(|()| offset)
     }
 
     fn parse_token<C, E>(&mut self, txt: &str, callback: &mut C) -> StreamResult<usize, Error, E>
@@ -294,7 +295,7 @@ impl<I> TxSource<TriGState> for TriGSource<I> {
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with '.'.
     ///
-    /// In TriG, in a graph context, the final period before the closing bracket '}' can be omitted.
+    /// In `TriG`, in a graph context, the final period before the closing bracket '}' can be omitted.
     fn end_triples<E2>(&mut self, txt: &str) -> StreamResult<usize, Error, E2>
     where
         E2: std::error::Error + Send + Sync + 'static,
@@ -371,7 +372,7 @@ impl<I> TriGSource<I> {
         }
     }
 
-    /// Enter production https://www.w3.org/TR/rdf12-trig/#grammar-production-trigDoc
+    /// Enter production <https://www.w3.org/TR/rdf12-trig/#grammar-production-trigDoc>
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -461,8 +462,8 @@ impl<I> TriGSource<I> {
             self.extra.state.last(),
             Some(TriGState::DefaultGraph)
         ));
-        debug_assert!(self.extra.state.len() == 1);
-        if txt.starts_with("}") {
+        debug_assert_eq!(self.extra.state.len(), 1);
+        if txt.starts_with('}') {
             self.extra.state.pop();
             Ok(1)
         } else {
@@ -529,8 +530,17 @@ impl<I> TriGSource<I> {
             self.extra.state.last(),
             Some(&TriGState::NamedGraph(has_name))
         );
-        if !has_name {
-            debug_assert!(self.extra.state.len() == 1);
+        if has_name {
+            debug_assert!(has_name);
+            if txt.starts_with('}') {
+                self.extra.state.pop();
+                self.pop_triple_components(1);
+                Ok(1)
+            } else {
+                self.subject(txt)
+            }
+        } else {
+            debug_assert_eq!(self.extra.state.len(), 1);
             self.extra.state[0] = TriGState::NamedGraph(true);
             self.extra.state.push(TriGState::LabelNotSubject);
             match txt.as_bytes()[0] {
@@ -542,20 +552,11 @@ impl<I> TriGSource<I> {
                 b'_' => self.blank_node_label(txt),
                 _ => self.prefixed_name(txt),
             }
-        } else {
-            debug_assert!(has_name);
-            if txt.starts_with("}") {
-                self.extra.state.pop();
-                self.pop_triple_components(1);
-                Ok(1)
-            } else {
-                self.subject(txt)
-            }
         }
     }
 
-    /// Expect production https://www.w3.org/TR/rdf12-trig/#grammar-production-block
-    /// possibly after reading a leading '[' (if square_bracket is true).
+    /// Expect production <https://www.w3.org/TR/rdf12-trig/#grammar-production-block>
+    /// possibly after reading a leading '[' (if `square_bracket` is true).
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -589,7 +590,7 @@ impl<I> TriGSource<I> {
         }
     }
 
-    /// Expect production https://www.w3.org/TR/rdf12-trig/#grammar-production-labelOrSubject
+    /// Expect production <https://www.w3.org/TR/rdf12-trig/#grammar-production-labelOrSubject>
     /// just after the keyword "GRAPH".
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
@@ -608,7 +609,7 @@ impl<I> TriGSource<I> {
         }
     }
 
-    /// Compute the next context after production https://www.w3.org/TR/rdf12-trig/#grammar-production-verb
+    /// Compute the next context after production <https://www.w3.org/TR/rdf12-trig/#grammar-production-verb>
     /// based on context.
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
@@ -634,7 +635,7 @@ impl<I> TriGSource<I> {
         }
     }
 
-    /// Compute the next context after production https://www.w3.org/TR/rdf12-trig/#grammar-production-object,
+    /// Compute the next context after production <https://www.w3.org/TR/rdf12-trig/#grammar-production-object>,
     /// after emitting the last triple in stack.
     ///
     /// See also [`TriGSource::enter_object`]

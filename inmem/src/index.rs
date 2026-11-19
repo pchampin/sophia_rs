@@ -167,21 +167,24 @@ impl<'a, I: Index> IndexedTerm<'a, I> {
     }
 
     /// Return the [`BasicTermIndex`] this [`IndexedTerm`] comes from
+    #[must_use]
     pub fn term_index(&self) -> &BasicTermIndex<I> {
         self.t
     }
 
     /// Return the index of that [`IndexedTerm`]
+    #[must_use]
     pub fn index(&self) -> I {
         let offset = unsafe {
             // SAFETY: we know that i belongs to t.i2
-            (self.i as *const InternalTerm<I>).offset_from(&self.t.i2t[0] as *const InternalTerm<I>)
+            std::ptr::from_ref(self.i).offset_from(&raw const self.t.i2t[0])
         };
         debug_assert!(offset >= 0);
-        I::from_usize(offset as usize)
+        I::from_usize(offset.cast_unsigned())
     }
 
     /// Return the index of that [`IndexedTerm`]'s datatype of it contains one.
+    #[must_use]
     pub fn datatype_index(&self) -> Option<I> {
         if let InternalTerm::LiteralTyped(_, idt) = &self.i {
             Some(*idt)
@@ -191,7 +194,7 @@ impl<'a, I: Index> IndexedTerm<'a, I> {
     }
 }
 
-impl<'a, I: Index> Term for IndexedTerm<'a, I> {
+impl<I: Index> Term for IndexedTerm<'_, I> {
     type BorrowTerm<'x>
         = Self
     where
@@ -291,29 +294,29 @@ impl<'a, I: Index> Term for IndexedTerm<'a, I> {
     }
 }
 
-impl<'a, I: Index, T: Term> PartialEq<T> for IndexedTerm<'a, I> {
+impl<I: Index, T: Term> PartialEq<T> for IndexedTerm<'_, I> {
     fn eq(&self, other: &T) -> bool {
         Term::eq(self, other.borrow_term())
     }
 }
 
-impl<'a, I: Index> Eq for IndexedTerm<'a, I> {}
+impl<I: Index> Eq for IndexedTerm<'_, I> {}
 
-impl<'a, I: Index, T: Term> PartialOrd<T> for IndexedTerm<'a, I> {
+impl<I: Index, T: Term> PartialOrd<T> for IndexedTerm<'_, I> {
     fn partial_cmp(&self, other: &T) -> Option<std::cmp::Ordering> {
         Some(Term::cmp(self, other.borrow_term()))
     }
 }
 
-impl<'a, I: Index> Ord for IndexedTerm<'a, I> {
+impl<I: Index> Ord for IndexedTerm<'_, I> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         Term::cmp(self, *other)
     }
 }
 
-impl<'a, I: Index> std::hash::Hash for IndexedTerm<'a, I> {
+impl<I: Index> std::hash::Hash for IndexedTerm<'_, I> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        Term::hash(self, state)
+        Term::hash(self, state);
     }
 }
 
@@ -326,6 +329,7 @@ pub struct BasicTermIndex<I: Index> {
 
 impl<I: Index> BasicTermIndex<I> {
     /// Construct an empty index
+    #[must_use]
     pub fn new() -> Self {
         BasicTermIndex {
             t2i: HashMap::new(),
@@ -334,11 +338,13 @@ impl<I: Index> BasicTermIndex<I> {
     }
 
     /// The number of terms in this index
+    #[must_use]
     pub fn len(&self) -> usize {
         self.i2t.len()
     }
 
     /// Whether this index is empty
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -367,13 +373,13 @@ impl<I: Index> BasicTermIndex<I> {
         }
     }
 
-    /// Iter over all term in this TermIndex
+    /// Iter over all term in this `TermIndex`
     pub fn iter(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
         let t = self;
         (0..self.i2t.len()).map(|i| IndexedTerm::new(t, i))
     }
 
-    /// Iter over all IRIs in this TermIndex
+    /// Iter over all IRIs in this `TermIndex`
     pub fn iris(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
         let t = self;
         self.i2t.iter().enumerate().filter_map(|(i, it)| {
@@ -381,7 +387,7 @@ impl<I: Index> BasicTermIndex<I> {
         })
     }
 
-    /// Iter over all blank nodes in this TermIndex
+    /// Iter over all blank nodes in this `TermIndex`
     pub fn blank_nodes(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
         let t = self;
         self.i2t.iter().enumerate().filter_map(|(i, it)| {
@@ -389,7 +395,7 @@ impl<I: Index> BasicTermIndex<I> {
         })
     }
 
-    /// Iter over all literals in this TermIndex
+    /// Iter over all literals in this `TermIndex`
     pub fn literals(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
         let t = self;
         self.i2t.iter().enumerate().filter_map(|(i, it)| {
@@ -401,7 +407,7 @@ impl<I: Index> BasicTermIndex<I> {
         })
     }
 
-    /// Iter over all triple terms in this TermIndex
+    /// Iter over all triple terms in this `TermIndex`
     pub fn triple_terms(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
         let t = self;
         self.i2t.iter().enumerate().filter_map(|(i, it)| {
@@ -409,7 +415,7 @@ impl<I: Index> BasicTermIndex<I> {
         })
     }
 
-    /// Iter over all variables in this TermIndex
+    /// Iter over all variables in this `TermIndex`
     pub fn variables(&self) -> impl Iterator<Item = IndexedTerm<'_, I>> {
         let t = self;
         self.i2t.iter().enumerate().filter_map(|(i, it)| {
@@ -569,15 +575,15 @@ mod test {
         let mut sti = BasicTermIndex::<u32>::new();
         // NB: index 0 will contain the datatype xsd:integer
         for i in 1..MAX {
-            assert_eq!(sti.ensure_index(i).unwrap(), i as u32);
+            assert_eq!(sti.ensure_index(i).unwrap(), i.cast_unsigned());
         }
         assert_eq!(sti.len(), MAX as usize);
         for i in 1..MAX {
-            assert_eq!(sti.ensure_index(i).unwrap(), i as u32);
+            assert_eq!(sti.ensure_index(i).unwrap(), i.cast_unsigned());
         }
         assert_eq!(sti.len(), MAX as usize);
         for i in 1..MAX {
-            assert!(Term::eq(&sti.get_term(i as u32), i));
+            assert!(Term::eq(&sti.get_term(i.cast_unsigned()), i));
         }
     }
 
@@ -591,7 +597,7 @@ mod test {
                 .expect("usize too big to be converted to i8")
         }
         fn into_usize(self) -> usize {
-            self as usize
+            self.cast_unsigned() as usize
         }
     }
 

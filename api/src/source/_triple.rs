@@ -144,7 +144,7 @@ pub trait TripleSource: Sized + for<'x> Source<Item<'x>: Triple> {
         G::from_triple_source(self)
     }
 
-    /// Insert all triples from this source into the given [MutableGraph].
+    /// Insert all triples from this source into the given [`MutableGraph`].
     ///
     /// Stop on the first error (in the source or in the graph).
     #[inline]
@@ -226,7 +226,7 @@ mod check_triple_source {
                     IriRef::new_unchecked(&self.buffers[1][..]).into_term(),
                     IriRef::new_unchecked(&self.buffers[2][..]).into_term(),
                 ];
-                f(t).map_err(SinkError).map(|_| true)
+                f(t).map_err(SinkError).map(|()| true)
             }
         }
     }

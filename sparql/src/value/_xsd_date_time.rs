@@ -49,17 +49,19 @@ impl XsdDateTime {
                 if fraction.len() >= 9 {
                     fraction[..9].parse().unwrap()
                 } else {
-                    fraction.parse::<u32>().unwrap() * 10_u32.pow(9 - fraction.len() as u32)
+                    #[allow(clippy::cast_possible_truncation)] // moot, since fracion.len() < 9
+                    let fraction_len = fraction.len() as u32;
+                    fraction.parse::<u32>().unwrap() * 10_u32.pow(9 - fraction_len)
                 }
             })
             .unwrap_or(0);
 
         let ymd = NaiveDate::from_ymd_opt(sign * year, month, day)?;
-        let naive = if (hour, minute, second, nano) != (24, 0, 0, 0) {
-            ymd.and_hms_nano_opt(hour, minute, second, nano)?
-        } else {
+        let naive = if (hour, minute, second, nano) == (24, 0, 0, 0) {
             ymd.and_hms_nano_opt(0, 0, 0, 0)?
                 .checked_add_days(Days::new(1))?
+        } else {
+            ymd.and_hms_nano_opt(hour, minute, second, nano)?
         };
 
         match c.get(5) {
@@ -366,8 +368,8 @@ mod test {
     use test_case::test_case;
 
     #[test_case("2024-09-17T12:34:56" => (2024, 9, 17, 12, 34, 56, 0); "no fraction")]
-    #[test_case("2024-09-17T12:34:56.78" => (2024, 9, 17, 12, 34, 56, 780000000); "fraction")]
-    #[test_case("2024-09-17T12:34:56.0123456789" => (2024, 9, 17, 12, 34, 56, 12345678); "big fraction")]
+    #[test_case("2024-09-17T12:34:56.78" => (2024, 9, 17, 12, 34, 56, 780_000_000); "fraction")]
+    #[test_case("2024-09-17T12:34:56.0123456789" => (2024, 9, 17, 12, 34, 56, 12_345_678); "big fraction")]
     #[test_case("2024-09-17T24:00:00" => (2024, 9, 18, 0, 0, 0, 0); "24:00:00")]
     #[test_case("2024-12-31T24:00:00" => (2025, 1, 1, 0, 0, 0, 0); "24:00:00 new year")]
     #[test_case("-0002-09-17T12:34:56" => (-2, 9, 17, 12, 34, 56, 0); "negative year")]
@@ -379,15 +381,15 @@ mod test {
     }
 
     #[test_case("2024-09-17T12:34:56Z" => ((2024, 9, 17, 12, 34, 56, 0), 0); "z no fraction")]
-    #[test_case("2024-09-17T12:34:56.78Z" => ((2024, 9, 17, 12, 34, 56, 780000000), 0); "z fraction")]
-    #[test_case("2024-09-17T12:34:56.0123456789Z" => ((2024, 9, 17, 12, 34, 56, 12345678), 0); "z big fraction")]
+    #[test_case("2024-09-17T12:34:56.78Z" => ((2024, 9, 17, 12, 34, 56, 780_000_000), 0); "z fraction")]
+    #[test_case("2024-09-17T12:34:56.0123456789Z" => ((2024, 9, 17, 12, 34, 56, 12_345_678), 0); "z big fraction")]
     #[test_case("2024-09-17T24:00:00Z" => ((2024, 9, 18, 0, 0, 0, 0), 0); "z 24:00:00")]
     #[test_case("2024-12-31T24:00:00Z" => ((2025, 1, 1, 0, 0, 0, 0), 0); "z 24:00:00 new year")]
     #[test_case("-0002-09-17T12:34:56Z" => ((-2, 9, 17, 12, 34, 56, 0), 0); "z negative year")]
     #[test_case("12345-09-17T12:34:56Z" => ((12345, 9, 17, 12, 34, 56, 0), 0); "z big year")]
     #[test_case("2024-09-17T12:34:56+00:00" => ((2024, 9, 17, 12, 34, 56, 0), 0); "plus 0 no fraction")]
-    #[test_case("2024-09-17T12:34:56.78+00:00" => ((2024, 9, 17, 12, 34, 56, 780000000), 0); "plus 0 fraction")]
-    #[test_case("2024-09-17T12:34:56.0123456789+00:00" => ((2024, 9, 17, 12, 34, 56, 12345678), 0); "plus 0 big fraction")]
+    #[test_case("2024-09-17T12:34:56.78+00:00" => ((2024, 9, 17, 12, 34, 56, 780_000_000), 0); "plus 0 fraction")]
+    #[test_case("2024-09-17T12:34:56.0123456789+00:00" => ((2024, 9, 17, 12, 34, 56, 12_345_678), 0); "plus 0 big fraction")]
     #[test_case("2024-09-17T24:00:00+00:00" => ((2024, 9, 18, 0, 0, 0, 0), 0); "plus 0 24:00:00")]
     #[test_case("2024-12-31T24:00:00+00:00" => ((2025, 1, 1, 0, 0, 0, 0), 0); "plus 0 24:00:00 new year")]
     #[test_case("-0002-09-17T12:34:56+00:00" => ((-2, 9, 17, 12, 34, 56, 0), 0); "plus 0 negative year")]
@@ -423,7 +425,7 @@ mod test {
     #[test_case("2024-09-17:34:56+15:00"; "timezone too big")]
     #[test_case("2024-09-17:34:56+0100"; "timezone badly formatted")]
     fn invalid(d: &str) {
-        assert!(d.parse::<XsdDateTime>().is_err())
+        assert!(d.parse::<XsdDateTime>().is_err());
     }
 
     #[test_case("2024-09-17T12:34:56"; "no timezone")]

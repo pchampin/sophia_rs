@@ -228,11 +228,11 @@ mod test {
             assert!(rbir.is_ok(), "<{rel}> → {rbir:?}");
 
             let rbi = BaseIri::new(*rel);
-            if rel != abs {
-                assert!(rbi.is_err(), "<{rel}> → {rbi:?}");
-            } else {
+            if rel == abs {
                 assert!(rbi.is_ok(), "<{rel}> → {rbi:?}");
                 assert_eq!(rbir.unwrap().as_iri_ref(), rbi.unwrap().as_iri_ref());
+            } else {
+                assert!(rbi.is_err(), "<{rel}> → {rbi:?}");
             }
         }
     }

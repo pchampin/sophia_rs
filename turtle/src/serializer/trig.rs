@@ -32,7 +32,7 @@ use crate::serializer::_streaming::StreamingSerializerState;
 
 use super::_pretty::*;
 
-/// TriG serializer configuration.
+/// `TriG` serializer configuration.
 pub type TriGConfig = super::turtle::TurtleConfig;
 
 /// Type alias of `NTriplesConfig` for backward compatibility
@@ -42,7 +42,7 @@ pub type TrigConfig = TriGConfig;
 #[deprecated(since = "0.10.0", note = "please use TriGSerializer instead")]
 pub type TrigSerializer<W> = TriGSerializer<W>;
 
-/// TriG serializer.
+/// `TriG` serializer.
 pub struct TriGSerializer<W> {
     pub(super) config: TriGConfig,
     pub(super) write: W,
@@ -52,13 +52,13 @@ impl<W> TriGSerializer<W>
 where
     W: io::Write,
 {
-    /// Build a new TriG serializer writing to `write`, with the default config.
+    /// Build a new `TriG` serializer writing to `write`, with the default config.
     #[inline]
     pub fn new(write: W) -> Self {
         Self::new_with_config(write, TriGConfig::default())
     }
 
-    /// Build a new TriG serializer writing to `write`, with the given config.
+    /// Build a new `TriG` serializer writing to `write`, with the given config.
     #[inline]
     pub const fn new_with_config(write: W, config: TriGConfig) -> Self {
         Self { config, write }
@@ -124,7 +124,7 @@ where
                             state.write_node(gnq)?;
                             state.write_all(b" {\n")?;
                             state.pop_all();
-                            current_graph = q.g().map(|t| t.into_term())
+                            current_graph = q.g().map(Term::into_term);
                         }
                     }
                 }
@@ -144,11 +144,13 @@ where
 impl TriGSerializer<Vec<u8>> {
     /// Create a new serializer which targets a `String`.
     #[inline]
+    #[must_use]
     pub fn new_stringifier() -> Self {
         Self::new(Vec::new())
     }
     /// Create a new serializer which targets a `String` with a custom config.
     #[inline]
+    #[must_use]
     pub const fn new_stringifier_with_config(config: TriGConfig) -> Self {
         Self::new_with_config(Vec::new(), config)
     }

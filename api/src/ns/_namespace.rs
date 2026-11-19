@@ -55,6 +55,7 @@ impl Namespace<&'static str> {
     ///  # Precondition
     ///  `iri` must be a valid IRI reference (possibly relative),
     ///  otherwise undefined behaviour may occur.
+    #[must_use]
     pub const fn new_unchecked_const(iri: &'static str) -> Self {
         Namespace(IriRef::new_unchecked_const(iri))
     }

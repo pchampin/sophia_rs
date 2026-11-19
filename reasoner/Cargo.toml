@@ -31,3 +31,6 @@ sophia_api = { workspace = true, features = ["test_macro"] }
 sophia_isomorphism.workspace = true
 sophia_turtle.workspace = true
 test-case.workspace = true
+
+[lints]
+workspace = true

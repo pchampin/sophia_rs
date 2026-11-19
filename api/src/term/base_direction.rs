@@ -16,6 +16,7 @@ pub enum BaseDirection {
 
 impl BaseDirection {
     /// Textual representation of this [`BaseDirection`]
+    #[must_use]
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Ltr => "ltr",
@@ -34,7 +35,7 @@ impl BaseDirection {
 
 impl Display for BaseDirection {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.as_str(),)
+        write!(f, "{}", self.as_str())
     }
 }
 
@@ -80,7 +81,7 @@ mod _serde {
 
     struct BaseDirectionVisitor;
 
-    impl<'de> Visitor<'de> for BaseDirectionVisitor {
+    impl Visitor<'_> for BaseDirectionVisitor {
         type Value = BaseDirection;
 
         fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -92,7 +93,7 @@ mod _serde {
             E: Error,
         {
             BaseDirection::from_str(v)
-                .map_err(|_| Error::invalid_value(Unexpected::Str(v), &VISITOR_MSG))
+                .map_err(|()| Error::invalid_value(Unexpected::Str(v), &VISITOR_MSG))
         }
 
         fn visit_bytes<E>(self, v: &[u8]) -> std::result::Result<Self::Value, E>
@@ -100,7 +101,7 @@ mod _serde {
             E: Error,
         {
             BaseDirection::from_bytes(v)
-                .map_err(|_| Error::invalid_value(Unexpected::Bytes(v), &VISITOR_MSG))
+                .map_err(|()| Error::invalid_value(Unexpected::Bytes(v), &VISITOR_MSG))
         }
     }
 

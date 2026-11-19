@@ -22,3 +22,6 @@ sophia_iri.workspace = true
 
 [dev-dependencies]
 sophia_isomorphism.workspace = true
+
+[lints]
+workspace = true

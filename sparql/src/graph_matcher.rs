@@ -1,4 +1,4 @@
-//! I provide a cheap-to-clone GraphNameMatcher
+//! I provide a cheap-to-clone `GraphNameMatcher`
 
 use std::sync::{Arc, Mutex};
 
@@ -10,7 +10,7 @@ use spargebra::algebra::QueryDataset;
 pub struct GraphMatcher(Option<Arc<GraphMatcherInner>>);
 
 impl GraphMatcher {
-    pub fn from_with(value: &Option<QueryDataset>, mstash: &Mutex<ArcStrStash>) -> Self {
+    pub fn from_with(value: Option<&QueryDataset>, mstash: &Mutex<ArcStrStash>) -> Self {
         match value {
             None => Self(None),
             Some(query_dataset) => {

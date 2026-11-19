@@ -8,14 +8,14 @@
 use std::error::Error;
 
 use crate::dataset::adapter::GraphAsDataset;
-use crate::source::{IntoSource, StreamResult, TripleSource};
+use crate::source::{IntoSource, StreamError, StreamResult, TripleSource};
 use crate::term::{
     SimpleTerm, Term,
     matcher::{Any, TermMatcher},
 };
 use crate::triple::Triple;
 
-use resiter::{filter::*, flat_map::*, map::*};
+use resiter::{filter::Filter, flat_map::FlatMap, map::Map};
 
 mod _foreign_impl;
 pub mod adapter;
@@ -424,7 +424,7 @@ pub trait MutableGraph: Graph {
     /// NB: if you want to remove a triple `t` while keeping its ownership,
     /// you can still pass [`t.spo()`](Triple::spo).
     ///
-    /// See also [MutableGraph::remove]
+    /// See also [`MutableGraph::remove`]
     fn remove_triple<T>(&mut self, triple: T) -> MgResult<Self, bool>
     where
         T: Triple,
@@ -526,7 +526,7 @@ pub trait MutableGraph: Graph {
             .map_ok(|t| t.spo().map(Term::into_term))
             .collect();
         self.remove_all(to_remove?.into_iter().into_source())
-            .map_err(|err| err.unwrap_sink_error())
+            .map_err(StreamError::unwrap_sink_error)
     }
 
     /// Keep only the triples matching the given matchers.
@@ -547,7 +547,7 @@ pub trait MutableGraph: Graph {
             .map_ok(|t| t.spo().map(Term::into_term))
             .collect();
         self.remove_all(to_remove?.into_iter().into_source())
-            .map_err(|err| err.unwrap_sink_error())?;
+            .map_err(StreamError::unwrap_sink_error)?;
         Ok(())
     }
 }

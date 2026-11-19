@@ -22,7 +22,7 @@ impl Default for Inner {
 impl Inner {
     fn make_bn_suffix(preserve: bool) -> String {
         if preserve {
-            "".into()
+            String::new()
         } else {
             let mut bnode_suffix = vec![b'_'; uuid::fmt::Simple::LENGTH + 1];
             uuid::Uuid::now_v7()

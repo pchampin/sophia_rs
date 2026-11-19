@@ -8,10 +8,10 @@ use sophia_api::prelude::*;
 use sophia_api::quad::Gspo;
 use sophia_api::term::GraphName;
 
-use crate::index::*;
+use crate::index::{BasicTermIndex, GraphNameIndex, Index, TermIndex};
 
 mod _iter;
-use _iter::*;
+use _iter::{BcdMatchingIterator, CdMatchingIterator, GspoMatchingIterator};
 
 /// A dataset with a single quad index (GSPO).
 /// Fast to load but slow on some queries, with a relatively low memory footprint.
@@ -23,6 +23,7 @@ pub struct GenericLightDataset<TI: TermIndex> {
 
 impl<TI: GraphNameIndex + Default> GenericLightDataset<TI> {
     /// Construct an empty dataset
+    #[must_use]
     pub fn new() -> Self {
         Self {
             terms: TI::default(),
@@ -73,7 +74,7 @@ impl<TI: GraphNameIndex> Dataset for GenericLightDataset<TI> {
         G: sophia_api::term::matcher::GraphNameMatcher + 't,
     {
         if let Some(gc) = gm.constant() {
-            let gc = gc.map(|t| t.borrow_term());
+            let gc = gc.map(Term::borrow_term);
             let Some(gi) = self.terms.get_graph_name_index(gc) else {
                 return Box::new(empty());
             };
@@ -224,6 +225,7 @@ pub struct GenericFastDataset<TI: GraphNameIndex> {
 
 impl<TI: GraphNameIndex + Default> GenericFastDataset<TI> {
     /// Construct an empty dataset
+    #[must_use]
     pub fn new() -> Self {
         Self {
             terms: TI::default(),
@@ -263,7 +265,7 @@ impl<TI: GraphNameIndex> Dataset for GenericFastDataset<TI> {
         })
     }
 
-    #[allow(refining_impl_trait)]
+    #[allow(refining_impl_trait, clippy::too_many_lines)]
     fn quads_matching<'s, 't, S, P, O, G>(
         &'s self,
         sm: S,
@@ -295,7 +297,7 @@ impl<TI: GraphNameIndex> Dataset for GenericFastDataset<TI> {
         };
         let gi = match gm
             .constant()
-            .map(|g| self.terms.get_graph_name_index(g.map(|t| t.borrow_term())))
+            .map(|g| self.terms.get_graph_name_index(g.map(Term::borrow_term)))
         {
             None => None,
             Some(None) => return Box::new(empty()),

@@ -86,7 +86,7 @@ impl IndexedTerm {
             Iri(_) | BlankNode(_) | XsdLiteral(..) | Variable(..) => buffers.pop(),
             TypedLiteral(..) | LangString(..) => {
                 for _ in 0..2 {
-                    buffers.pop()
+                    buffers.pop();
                 }
             }
             TripleTerm => {
@@ -320,7 +320,7 @@ impl<'a> StashedTerm<'a> {
     }
 }
 
-impl<'a> Term for StashedTerm<'a> {
+impl Term for StashedTerm<'_> {
     type BorrowTerm<'x>
         = Self
     where
@@ -328,16 +328,16 @@ impl<'a> Term for StashedTerm<'a> {
 
     fn kind(&self) -> sophia_api::prelude::TermKind {
         match self.indexed_term() {
-            IndexedTerm::Iri(..) => TermKind::Iri,
-            IndexedTerm::RdfBuiltin(_) => TermKind::Iri,
+            IndexedTerm::Iri(..)
+            | IndexedTerm::RdfBuiltin(_)
+            | IndexedTerm::Reifier
+            | IndexedTerm::Rest => TermKind::Iri,
             IndexedTerm::BlankNode(..) => TermKind::BlankNode,
-            IndexedTerm::TypedLiteral(..) => TermKind::Literal,
-            IndexedTerm::LangString(..) => TermKind::Literal,
-            IndexedTerm::XsdLiteral(..) => TermKind::Literal,
-            IndexedTerm::BoolLiteral(_) => TermKind::Literal,
+            IndexedTerm::TypedLiteral(..)
+            | IndexedTerm::LangString(..)
+            | IndexedTerm::XsdLiteral(..)
+            | IndexedTerm::BoolLiteral(_) => TermKind::Literal,
             IndexedTerm::TripleTerm => TermKind::Triple,
-            IndexedTerm::Reifier => TermKind::Iri,
-            IndexedTerm::Rest => TermKind::Iri,
             IndexedTerm::Variable(..) => TermKind::Variable,
         }
     }

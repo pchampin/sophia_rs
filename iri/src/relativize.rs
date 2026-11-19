@@ -245,7 +245,7 @@ mod test {
     )]
     fn relativize(parents: u8, base: &str, exp: &str) {
         let base = BaseIri::new(base).unwrap();
-        let exp: IriRef<Cow<str>> = IriRef::new(exp.split(" ").next().unwrap().into()).unwrap(); // strip comment
+        let exp: IriRef<Cow<str>> = IriRef::new(exp.split(' ').next().unwrap().into()).unwrap(); // strip comment
         let exp_depth: u8 = if exp.starts_with("../../") {
             2
         } else if exp.starts_with("../") {

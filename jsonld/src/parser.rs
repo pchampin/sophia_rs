@@ -130,7 +130,7 @@ where
         let mut bytes = vec![];
         if let Err(err) = data.read_to_end(&mut bytes) {
             return JsonLdQuadSource::from_err(err);
-        };
+        }
         let txt = match String::from_utf8(bytes) {
             Ok(txt) => txt,
             Err(err) => return JsonLdQuadSource::from_err(err),

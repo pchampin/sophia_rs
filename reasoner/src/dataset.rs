@@ -104,7 +104,7 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
                     Box::new(g.triples_matching(sm, pm, om).map_ok(move |spo| (spo, gn)))
                         as Box<dyn Iterator<Item = _>>
                 }
-                Err(_) => Box::new(empty()),
+                Err(()) => Box::new(empty()),
             }
         } else {
             let dataset = self;
@@ -132,7 +132,7 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
     ) -> impl Iterator<
         Item = sophia_api::dataset::DResult<Self, sophia_api::dataset::DTerm<'_, Self>>,
     > + '_ {
-        self.graphs.values().flat_map(|g| g.subjects())
+        self.graphs.values().flat_map(Graph::subjects)
     }
 
     fn subjects_matching<'s, M: TermMatcher + 's>(
@@ -149,7 +149,7 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
     ) -> impl Iterator<
         Item = sophia_api::dataset::DResult<Self, sophia_api::dataset::DTerm<'_, Self>>,
     > + '_ {
-        self.graphs.values().flat_map(|g| g.predicates())
+        self.graphs.values().flat_map(Graph::predicates)
     }
 
     fn predicates_matching<'s, M: TermMatcher + 's>(
@@ -166,7 +166,7 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
     ) -> impl Iterator<
         Item = sophia_api::dataset::DResult<Self, sophia_api::dataset::DTerm<'_, Self>>,
     > + '_ {
-        self.graphs.values().flat_map(|g| g.objects())
+        self.graphs.values().flat_map(Graph::objects)
     }
 
     fn objects_matching<'s, M: TermMatcher + 's>(
@@ -202,7 +202,7 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
     > + '_ {
         self.graphs
             .values()
-            .flat_map(|g| g.iris())
+            .flat_map(Graph::iris)
             .chain(self.names.iris().map(Ok))
     }
 
@@ -213,7 +213,7 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
     > + '_ {
         self.graphs
             .values()
-            .flat_map(|g| g.blank_nodes())
+            .flat_map(Graph::blank_nodes)
             .chain(self.names.blank_nodes().map(Ok))
     }
 
@@ -224,7 +224,7 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
     > + '_ {
         self.graphs
             .values()
-            .flat_map(|g| g.literals())
+            .flat_map(Graph::literals)
             .chain(self.names.literals().map(Ok))
     }
 
@@ -241,7 +241,7 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
         Box::new(
             self.graphs
                 .values()
-                .flat_map(|g| g.triple_terms())
+                .flat_map(Graph::triple_terms)
                 .chain(self.names.triple_terms().map(Ok)),
         )
     }
@@ -253,7 +253,7 @@ impl<D: Recognized, R: RuleSet> Dataset for ReasonableDataset<D, R> {
     > + '_ {
         self.graphs
             .values()
-            .flat_map(|g| g.variables())
+            .flat_map(Graph::variables)
             .chain(self.names.variables().map(Ok))
     }
 

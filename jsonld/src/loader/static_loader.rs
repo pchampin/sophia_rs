@@ -1,3 +1,5 @@
+#![allow(clippy::needless_raw_string_hashes)]
+
 use std::{collections::HashMap, fmt::Debug};
 
 use json_ld::future::{BoxFuture, FutureExt};
@@ -39,6 +41,7 @@ impl<I: IsIri, S> StaticLoader<I, S> {
     }
 
     /// Extend this [`StaticLoader`] with another document
+    #[must_use]
     pub fn with(mut self, url: I, document: MetaVal<I, S>) -> Self {
         self.cache.insert(url.borrow().into(), document);
         self

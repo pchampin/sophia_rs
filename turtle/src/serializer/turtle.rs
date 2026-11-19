@@ -51,6 +51,7 @@ impl TurtleConfig {
     /// and to use the collection syntax whenever possible.
     /// This requires storing the whole graph in memory.
     #[inline]
+    #[must_use]
     pub const fn pretty(&self) -> bool {
         self.pretty
     }
@@ -60,6 +61,7 @@ impl TurtleConfig {
     ///
     /// NB: currently, only used if [`pretty`][`TurtleConfig::pretty`] is `true`.
     #[inline]
+    #[must_use]
     pub fn prefix_map(&self) -> &[PrefixMapPair] {
         &self.prefix_map
     }
@@ -69,11 +71,13 @@ impl TurtleConfig {
     ///
     /// NB: currently, only used if [`pretty`][`TurtleConfig::pretty`] is `true`.
     #[inline]
+    #[must_use]
     pub fn indentation(&self) -> &str {
         &self.indentation
     }
 
     /// Build a new default [`TurtleConfig`].
+    #[must_use]
     pub fn new() -> Self {
         let pretty = false;
         let prefix_map = Self::default_prefix_map();
@@ -120,6 +124,7 @@ impl TurtleConfig {
 
     /// Return the prefix map that is used when none is provided
     #[inline]
+    #[must_use]
     pub fn default_prefix_map() -> Vec<PrefixMapPair> {
         vec![
             (
@@ -214,11 +219,13 @@ where
 impl TurtleSerializer<Vec<u8>> {
     /// Create a new serializer which targets a `String`.
     #[inline]
+    #[must_use]
     pub fn new_stringifier() -> Self {
         Self::new(Vec::new())
     }
     /// Create a new serializer which targets a `String` with a custom config.
     #[inline]
+    #[must_use]
     pub const fn new_stringifier_with_config(config: TurtleConfig) -> Self {
         Self::new_with_config(Vec::new(), config)
     }

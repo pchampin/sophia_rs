@@ -50,7 +50,7 @@ impl<R: BufRead> Source for OxRdfXmlTripleSource<R> {
     {
         match self.parser.next() {
             Some(Ok(triple)) => f(Trusted(&triple))
-                .map(|_| true)
+                .map(|()| true)
                 .map_err(StreamError::SinkError),
             Some(Err(err)) => Err(StreamError::SourceError(err)),
             None => Ok(false),

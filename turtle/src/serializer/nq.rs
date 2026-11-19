@@ -107,11 +107,13 @@ where
 impl NQuadsSerializer<Vec<u8>> {
     /// Create a new serializer which targets a `String`.
     #[inline]
+    #[must_use]
     pub fn new_stringifier() -> Self {
         Self::new(Vec::new())
     }
     /// Create a new serializer which targets a `String` with a custom config.
     #[inline]
+    #[must_use]
     pub const fn new_stringifier_with_config(config: NQuadsConfig) -> Self {
         Self::new_with_config(Vec::new(), config)
     }
@@ -215,7 +217,7 @@ _:r	<http://schema.org/creator>	?x		.
                 .serialize_dataset(&d)
                 .unwrap()
                 .to_string();
-        assert_eq!(&s2, &exp.replace("\t\t.", " .").replace("\t", " "));
+        assert_eq!(&s2, &exp.replace("\t\t.", " .").replace('\t', " "));
 
         Ok(())
     }
@@ -276,7 +278,7 @@ _:r	<http://schema.org/creator>	?x		.
         let out = NQuadsSerializer::new_stringifier_with_config(config)
             .serialize_quads(d1.quads())?
             .to_string();
-        println!("\n>>> DEBUG\n{}", &out);
+        println!("\n>>> DEBUG\n{out}");
 
         let d2: Vec<Spog<SimpleTerm>> = crate::parser::nq::parse_str(&out).collect_quads()?;
 
@@ -340,7 +342,7 @@ _:r	<http://schema.org/creator>	?x		.
         let out = NQuadsSerializer::new_stringifier_with_config(config)
             .serialize_quads(d1.quads())?
             .to_string();
-        println!("\n>>> DEBUG\n{}", &out);
+        println!("\n>>> DEBUG\n{out}");
 
         let d2: Vec<Spog<SimpleTerm>> = crate::parser::nq::parse_str(&out).collect_quads()?;
 

@@ -32,7 +32,7 @@ pub enum GTriGState {
     AtDirective,
     /// in `base` or `sparqlBase`, around `IRIREF`
     BaseIri,
-    /// in prefixID or sparqlPrefix, around PNAME_NS
+    /// in prefixID or sparqlPrefix, around `PNAME_NS`
     PrefixDeclaration,
     /// in prefixID or sparqlPrefix, around IRIREF
     PrefixIri,
@@ -74,7 +74,7 @@ pub enum GTriGState {
     TtObject,
     /// in `annotationBlock`, after the opening bracker '{|'
     AnnotationBlock,
-    /// in STRING_LITERAL_LONG_SINGLE_QUOTE or STRING_LITERAL_LONG_QUOTE
+    /// in `STRING_LITERAL_LONG_SINGLE_QUOTE` or `STRING_LITERAL_LONG_QUOTE`
     StringLiteralLong(u8),
     /// in `ANON`;
     Anon,

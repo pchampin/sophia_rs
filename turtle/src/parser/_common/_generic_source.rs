@@ -1,3 +1,5 @@
+#![allow(clippy::needless_raw_string_hashes)]
+
 use sophia_api::{source::StreamResult, term::BaseDirection};
 
 use crate::_term::IndexedTerm;
@@ -28,14 +30,14 @@ pub(crate) trait GenericSource {
 
     // terminal productions
 
-    /// Partially handle the whole production https://www.w3.org/TR/rdf12-turtle/#grammar-production-IRIREF
-    /// (or the equivalent in N-Triples, N-Quads, TriG)
+    /// Partially handle the whole production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-IRIREF>
+    /// (or the equivalent in N-Triples, N-Quads, `TriG`)
     /// assuming the leading '<'.
     ///
     /// This parses the text until the closing '>', and allocates it in the buffer stash.
     /// Note however that this method DOES NOT push anything in the term stack,
     /// because how it is done exactly depends on the parser
-    /// (Turtle and TriG may resolve it against the base IRI,
+    /// (Turtle and `TriG` may resolve it against the base IRI,
     /// while N-Triples and N-Quads always expect an absolute IRI).
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
@@ -69,15 +71,15 @@ pub(crate) trait GenericSource {
                 }
             }
         }
-        debug_assert!(txtb[i] == b'>');
+        debug_assert_eq!(txtb[i], b'>');
         Ok(i + 1)
     }
 
-    /// Partially handle the whole production https://www.w3.org/TR/rdf12-turtle/#grammar-production-BLANK_NODE_LABEL
-    /// (or the equivalent in N-Triples, N-Quads, TriG)
+    /// Partially handle the whole production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-BLANK_NODE_LABEL>
+    /// (or the equivalent in N-Triples, N-Quads, `TriG`)
     /// assuming the leading '_'.
     ///
-    /// Syntaxes that mint bnode labels (Turtle, TriG)
+    /// Syntaxes that mint bnode labels (Turtle, `TriG`)
     /// must additionally avoid conflict with their own generated labels.
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
@@ -133,9 +135,9 @@ pub(crate) trait GenericSource {
         }
     }
 
-    /// Expect production https://www.w3.org/TR/rdf12-turtle/#grammar-production-STRING_LITERAL_QUOTE
-    /// or production https://www.w3.org/TR/rdf12-turtle/#grammar-production-STRING_SINGLE_LITERAL_QUOTE
-    /// (or the equivalent in N-Triples, N-Quads or TriG)
+    /// Expect production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-STRING_LITERAL_QUOTE>
+    /// or production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-STRING_SINGLE_LITERAL_QUOTE>
+    /// (or the equivalent in N-Triples, N-Quads or `TriG`)
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col.
@@ -182,7 +184,7 @@ pub(crate) trait GenericSource {
         }
     }
 
-    /// Partially handle the whole production https://www.w3.org/TR/rdf12-turtle/#grammar-production-LANG_DIR
+    /// Partially handle the whole production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-LANG_DIR>
     /// assuming the leading '@'.
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],

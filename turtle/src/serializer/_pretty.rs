@@ -144,7 +144,7 @@ impl<'a, W: Write> Prettifier<'a, W> {
     }
 
     /// Pre-condition:
-    /// self.subject_types[self.graph_range] is not empty;
+    /// `self.subject_types[self.graph_range]` is not empty;
     /// all its elements have the same graph name,
     /// and all subjects of that graph are contained in it.
     fn write_graph(&mut self) -> io::Result<()> {
@@ -172,7 +172,7 @@ impl<'a, W: Write> Prettifier<'a, W> {
         Ok(())
     }
 
-    /// Precondition: root is a SingleReifier
+    /// Precondition: root is a `SingleReifier`
     fn write_reified(&mut self, root: &'a SimpleTerm<'a>) -> io::Result<()> {
         let g = self.current_graph_name();
         let [s1, p1, o1] = self
@@ -198,6 +198,7 @@ impl<'a, W: Write> Prettifier<'a, W> {
         Ok(())
     }
 
+    #[allow(clippy::redundant_closure_for_method_calls)]
     fn write_properties(
         &mut self,
         subject: &'a SimpleTerm<'a>,
@@ -236,7 +237,10 @@ impl<'a, W: Write> Prettifier<'a, W> {
             if skip_reifies && rdf::reifies == p {
                 continue;
             }
-            if Some(p) != predicate {
+            if Some(p) == predicate {
+                self.write_bytes(b",")?;
+                self.write_newline()?;
+            } else {
                 if predicate.is_some() {
                     self.write_bytes(b";")?;
                     self.unindent(); // back to predicate-level
@@ -246,9 +250,6 @@ impl<'a, W: Write> Prettifier<'a, W> {
                 self.write_term(p)?;
                 self.write_bytes(b" ")?;
                 self.indent(); // to object-level
-            } else {
-                self.write_bytes(b",")?;
-                self.write_newline()?;
             }
             self.write_object(subject, predicate.unwrap(), t.o())?;
         }
@@ -478,10 +479,9 @@ fn build_labelled<'a>(d: &'a PrettifiableDataset) -> BTreeSet<&'a SimpleTerm<'a>
                     break;
                 } else if p.bad || p.visited {
                     break;
-                } else {
-                    p.visited = true;
-                    current = p.predecessor;
                 }
+                p.visited = true;
+                current = p.predecessor;
             } else {
                 break;
             }
@@ -592,8 +592,7 @@ fn build_lists<'a>(
 ) -> BTreeMap<&'a SimpleTerm<'a>, Vec<&'a SimpleTerm<'a>>> {
     let mut preds = BTreeMap::new();
     let mut seeds = vec![];
-    use TermKind::BlankNode;
-    for q in d.quads_matching(BlankNode, [rdf::rest], Any, Any) {
+    for q in d.quads_matching(TermKind::BlankNode, [rdf::rest], Any, Any) {
         let ([s, _, o], g) = q.unwrap().spog();
         if subject_types.get(&(g, s)) != Some(&SubjectType::SubTree) {
             continue;
@@ -714,7 +713,12 @@ where
 
 #[cfg(test)]
 pub mod test {
+
     use super::*;
+    use sophia_api::{
+        graph::Graph,
+        serializer::{Stringifier, TripleSerializer},
+    };
 
     #[test]
     fn dedup() {
@@ -728,7 +732,6 @@ pub mod test {
         let iri = IriRef::new_unchecked("");
         let graph = vec![[iri, iri, iri]];
         let config = TurtleConfig::new().with_pretty(true);
-        use sophia_api::prelude::*;
         let pretty =
             crate::serializer::turtle::TurtleSerializer::new_stringifier_with_config(config)
                 .serialize_triples(graph.triples())?

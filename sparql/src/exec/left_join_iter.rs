@@ -28,14 +28,12 @@ impl<'a, D: Dataset + ?Sized> LeftJoinIter<'a, D> {
         b2s: BindingsIter<'a, D>,
         state: &Arc<ExecState<'a, D>>,
         right: &GraphPattern,
-        expression: &Option<Expression>,
+        expression: Option<&Expression>,
         graph_matcher: GraphMatcher,
     ) -> Self {
         let state = Arc::clone(state);
         let right = right.clone();
-        let expression = expression
-            .as_ref()
-            .map(|e| ArcExpression::from_expr(e, &mut state.stash_mut()));
+        let expression = expression.map(|e| ArcExpression::from_expr(e, &mut state.stash_mut()));
         let iter_state = IterState::B2DidntMatch;
 
         Self {
@@ -43,9 +41,9 @@ impl<'a, D: Dataset + ?Sized> LeftJoinIter<'a, D> {
             b1,
             b2s,
             state,
+            graph_matcher,
             right,
             expression,
-            graph_matcher,
             iter_state,
         }
     }
@@ -114,7 +112,7 @@ impl<'a, D: Dataset + ?Sized> LeftJoinIter<'a, D> {
     }
 }
 
-impl<'a, D: Dataset + ?Sized> Iterator for LeftJoinIter<'a, D> {
+impl<D: Dataset + ?Sized> Iterator for LeftJoinIter<'_, D> {
     type Item = Result<Binding, SparqlWrapperError<<D as Dataset>::Error>>;
 
     fn next(&mut self) -> Option<Self::Item> {

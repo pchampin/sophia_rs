@@ -1,3 +1,5 @@
+#![allow(clippy::unnecessary_wraps)]
+
 use std::convert::Infallible;
 
 use crate::{
@@ -679,7 +681,7 @@ fn count_triples(input: &str, exp: usize) -> TestResult {
             println!(">> emitted {got}");
             Ok(())
         })?;
-        assert_eq!(got, exp)
+        assert_eq!(got, exp);
     }
     Ok(())
 }
@@ -801,7 +803,7 @@ fn samples(name: &str) {
             c += 1;
         })
         .unwrap();
-    debug_assert_eq!(c, *count)
+    debug_assert_eq!(c, *count);
 }
 
 #[test]

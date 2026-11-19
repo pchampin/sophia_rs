@@ -69,6 +69,7 @@ impl LanguageTag<&'static str> {
     /// Construct a `LanguageTag<&'static>`
     /// without checking that the inner value is valid.
     /// If it is not, it may result in undefined behaviour.
+    #[must_use]
     pub const fn new_unchecked_const(inner: &'static str) -> Self {
         Self(inner)
     }
@@ -313,9 +314,9 @@ mod test {
             for language in languages() {
                 for script in once("").chain(scripts()) {
                     for region in once("").chain(regions()) {
-                        for variant in once("".to_string()).chain(variants(1)) {
-                            for extension in once("".to_string()).chain(extensions(1)) {
-                                for private_use in once("".to_string()).chain(private_uses(1)) {
+                        for variant in once(String::new()).chain(variants(1)) {
+                            for extension in once(String::new()).chain(extensions(1)) {
+                                for private_use in once(String::new()).chain(private_uses(1)) {
                                     let tag = format!(
                                         "{language}{script}{region}{variant}{extension}{private_use}"
                                     );
@@ -367,7 +368,7 @@ mod test {
 
     fn variant_parts(n: u8) -> Box<dyn Iterator<Item = String>> {
         match n {
-            0 => Box::new(once("".to_string())),
+            0 => Box::new(once(String::new())),
             n => Box::new(variant_parts(n - 1).flat_map(|prefix| {
                 ["varia", "variaa", "variant", "variants", "0var"]
                     .map(move |suffix| format!("{prefix}-{suffix}"))
@@ -382,7 +383,7 @@ mod test {
 
     fn extension_parts(n: u8, max: u8) -> Box<dyn Iterator<Item = String>> {
         match n {
-            0 => Box::new(once("".to_string())),
+            0 => Box::new(once(String::new())),
             n => Box::new(extension_parts(n - 1, max).flat_map(move |prefix| {
                 (1..=max)
                     .flat_map(extension_part_parts)

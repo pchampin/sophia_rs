@@ -64,7 +64,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         match self.extra().state.last() {
             Some(s) if s.in_string_literal_long() => {}
             _ => self.inner_mut().col += self.ws(line),
-        };
+        }
         while self.inner().col < line.len() {
             if cfg!(test) {
                 println!(
@@ -94,8 +94,8 @@ pub(crate) trait TxSource<S: State>: GenericSource {
 
     // productions for non-terminal
 
-    /// Enter production https://www.w3.org/TR/rdf12-turtle/#grammar-production-prefixID
-    /// or https://www.w3.org/TR/rdf12-turtle/#grammar-production-base
+    /// Enter production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-prefixID>
+    /// or <https://www.w3.org/TR/rdf12-turtle/#grammar-production-base>
     /// assuming the leading '@'.
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
@@ -162,7 +162,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         Ok(1)
     }
 
-    /// Expect production https://www.w3.org/TR/rdf12-turtle/#grammar-production-PNAME_NS
+    /// Expect production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-PNAME_NS>
     /// in the context of a 'prefix' directive.
     fn in_prefix_declaration<E>(&mut self, txt: &str) -> StreamResult<usize, Error, E>
     where
@@ -186,8 +186,8 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         Ok(end + 1)
     }
 
-    /// Expect production https://www.w3.org/TR/rdf12-turtle/#grammar-production-IRIREF
-    /// (or the equivalent in TriG)
+    /// Expect production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-IRIREF>
+    /// (or the equivalent in `TriG`)
     /// in the context of a 'prefix' directive.
     fn in_prefix_iri<E>(&mut self, txt: &str) -> StreamResult<usize, Error, E>
     where
@@ -231,8 +231,8 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         Ok(ret)
     }
 
-    /// Expect production https://www.w3.org/TR/rdf12-turtle/#grammar-production-IRIREF
-    /// (or the equivalent in TriG)
+    /// Expect production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-IRIREF>
+    /// (or the equivalent in `TriG`)
     /// in the context of a 'base' directive.
     fn in_base_iri<E>(&mut self, txt: &str) -> StreamResult<usize, Error, E>
     where
@@ -263,7 +263,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         Ok(ret)
     }
 
-    /// Expect production https://www.w3.org/TR/rdf12-turtle/#grammar-production-VersionSpecifier
+    /// Expect production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-VersionSpecifier>
     /// in the context of a 'prefix' directive.
     fn in_version_specifier<E2>(&mut self, txt: &str) -> StreamResult<usize, Error, E2>
     where
@@ -291,9 +291,9 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         Ok(ret)
     }
 
-    /// Expect production https://www.w3.org/TR/rdf12-turtle/#grammar-production-predicateObjectList
-    /// in the context of  https://www.w3.org/TR/rdf12-turtle/#grammar-production-triples
-    /// where predicateObjectList may be optional (if require_pol is false).
+    /// Expect production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-predicateObjectList>
+    /// in the context of  <https://www.w3.org/TR/rdf12-turtle/#grammar-production-triples>
+    /// where predicateObjectList may be optional (if `require_pol` is false).
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -334,7 +334,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         })
     }
 
-    /// Enter production https://www.w3.org/TR/rdf12-turtle/#grammar-production-predicateObjectList
+    /// Enter production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-predicateObjectList>
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -357,7 +357,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         self.enter_verb(txt)
     }
 
-    /// In production https://www.w3.org/TR/rdf12-turtle/#grammar-production-predicateObjectList ,
+    /// In production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-predicateObjectList> ,
     /// just after a semincolon ';'.
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
@@ -369,7 +369,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         self.in_predicate_object_list_common(txt)
     }
 
-    /// Common (Turtle + TriG) implementation of [TxSource::in_predicate_object_list].
+    /// Common (Turtle + `TriG`) implementation of [`TxSource::in_predicate_object_list`].
     fn in_predicate_object_list_common<E>(&mut self, txt: &str) -> StreamResult<usize, Error, E>
     where
         E: std::error::Error + Send + Sync + 'static,
@@ -416,7 +416,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
                     for _ in 0..2 {
                         self.extra_mut().state.pop();
                     }
-                    if let Some(true) = self.extra().state.last().map(|s| s.in_collection()) {
+                    if let Some(true) = self.extra().state.last().map(State::in_collection) {
                         self.grow_collection()?;
                     }
                     Ok(1)
@@ -452,7 +452,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         }
     }
 
-    /// Enter production https://www.w3.org/TR/rdf12-turtle/#grammar-production-objectList
+    /// Enter production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-objectList>
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -480,9 +480,9 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         self.enter_object(txt, callback)
     }
 
-    /// Expect anything valid after production https://www.w3.org/TR/rdf12-turtle/#grammar-production-object
-    /// in the context of production https://www.w3.org/TR/rdf12-turtle/#grammar-production-objectList ;
-    /// might be production https://www.w3.org/TR/rdf12-turtle/#grammar-production-annotation,
+    /// Expect anything valid after production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-object>
+    /// in the context of production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-objectList> ;
+    /// might be production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-annotation>,
     /// punctuation or closing brackets.
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
@@ -495,7 +495,8 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         self.in_object_list_common(txt, callback)
     }
 
-    /// Common (Turtle + TriG) implementation of [TxSource::in_object_list].
+    /// Common (Turtle + `TriG`) implementation of [`TxSource::in_object_list`].
+    #[allow(clippy::too_many_lines)]
     fn in_object_list_common<E, C>(
         &mut self,
         txt: &str,
@@ -521,7 +522,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
                 } else {
                     self.inner_mut().terms.push(IndexedTerm::TripleTerm);
                     self.inner_mut().terms.push(IndexedTerm::Reifier);
-                };
+                }
                 Ok(1)
             }
             b'{' => {
@@ -589,7 +590,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
                     for _ in 0..3 {
                         self.extra_mut().state.pop();
                     }
-                    if let Some(true) = self.extra().state.last().map(|s| s.in_collection()) {
+                    if let Some(true) = self.extra().state.last().map(State::in_collection) {
                         self.grow_collection()?;
                     }
                     Ok(1)
@@ -634,7 +635,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         }
     }
 
-    /// Enter production https://www.w3.org/TR/rdf12-turtle/#grammar-production-verb
+    /// Enter production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-verb>
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -664,7 +665,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         }
     }
 
-    /// Enter production https://www.w3.org/TR/rdf12-turtle/#grammar-production-objectList
+    /// Enter production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-objectList>
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -746,8 +747,8 @@ pub(crate) trait TxSource<S: State>: GenericSource {
     }
 
     /// Decide what to do after an opening square bracket, based on next character:
-    /// could be production https://www.w3.org/TR/rdf12-turtle/#grammar-production-blankNodePropertyList
-    /// or https://www.w3.org/TR/rdf12-turtle/#grammar-production-ANON .
+    /// could be production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-blankNodePropertyList>
+    /// or <https://www.w3.org/TR/rdf12-turtle/#grammar-production-ANON> .
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -776,7 +777,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
                 .and_then(|s| s.as_triples_require_pol_mut())
             {
                 *require_pol = true;
-            } else if let Some(true) = self.extra().state.last().map(|s| s.in_collection()) {
+            } else if let Some(true) = self.extra().state.last().map(State::in_collection) {
                 self.grow_collection()?;
             }
             Ok(1)
@@ -786,7 +787,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
     }
 
     /// Expect the closing bracket ']'
-    /// in the context of production https://www.w3.org/TR/rdf12-turtle/#grammar-production-ANON
+    /// in the context of production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-ANON>
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -810,9 +811,9 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         }
     }
 
-    /// Expect production https://www.w3.org/TR/rdf12-turtle/#grammar-production-object
+    /// Expect production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-object>
     /// or the closing bracket ')'
-    /// in the context of production https://www.w3.org/TR/rdf12-turtle/#grammar-production-collection .
+    /// in the context of production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-collection> .
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -888,8 +889,8 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         }
     }
 
-    /// Enter production https://www.w3.org/TR/rdf12-turtle/#grammar-production-RDFLiteral
-    /// in the context of production https://www.w3.org/TR/rdf12-turtle/#grammar-production-object
+    /// Enter production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-RDFLiteral>
+    /// in the context of production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-object>
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with either '"' or '\''.
@@ -920,7 +921,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
     }
 
     /// Expect whatever can follow the marker `~`
-    /// in the context of production https://www.w3.org/TR/rdf12-turtle/#grammar-production-reifier .
+    /// in the context of production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-reifier> .
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -955,7 +956,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
 
     /// Expect whatever can follow production `String` (if `datatype` is false)
     /// or the marker `^^` (if `datatype` is true)
-    /// in the context of production https://www.w3.org/TR/rdf12-turtle/#grammar-production-RDFLiteral .
+    /// in the context of production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-RDFLiteral> .
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -971,7 +972,21 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         );
 
         let txtb = txt.as_bytes();
-        if !datatype {
+        if datatype {
+            let ret = match txtb[0] {
+                b'<' => self.iriref(txt),
+                _ => self.prefixed_name(txt),
+            }?;
+            let Some(IndexedTerm::Iri(idx)) = self.inner_mut().terms.pop() else {
+                unreachable!(); // both self.iriref and self.prefixed_name push a IndexedTerm::Iri
+            };
+            self.check_invalid_literal(idx)?;
+            self.inner_mut()
+                .terms
+                .push(IndexedTerm::TypedLiteral(idx - 1, idx));
+            self.extra_mut().state.pop();
+            Ok(ret)
+        } else {
             match txtb[0] {
                 b'@' => self.lang_dir(txt),
                 b'^' => {
@@ -992,25 +1007,11 @@ pub(crate) trait TxSource<S: State>: GenericSource {
                     Ok(0)
                 }
             }
-        } else {
-            let ret = match txtb[0] {
-                b'<' => self.iriref(txt),
-                _ => self.prefixed_name(txt),
-            }?;
-            let Some(IndexedTerm::Iri(idx)) = self.inner_mut().terms.pop() else {
-                unreachable!(); // both self.iriref and self.prefixed_name push a IndexedTerm::Iri
-            };
-            self.check_invalid_literal(idx)?;
-            self.inner_mut()
-                .terms
-                .push(IndexedTerm::TypedLiteral(idx - 1, idx));
-            self.extra_mut().state.pop();
-            Ok(ret)
         }
     }
 
-    /// Expect production https://www.w3.org/TR/rdf12-turtle/#grammar-production-reifiedTriple
-    /// and enter production https://www.w3.org/TR/rdf12-turtle/#grammar-production-rtSubject
+    /// Expect production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-reifiedTriple>
+    /// and enter production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-rtSubject>
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -1044,8 +1045,8 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         }
     }
 
-    /// Exit production https://www.w3.org/TR/rdf12-turtle/#grammar-production-rtSubject
-    /// and enter production https://www.w3.org/TR/rdf12-turtle/#grammar-production-verb
+    /// Exit production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-rtSubject>
+    /// and enter production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-verb>
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -1060,7 +1061,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         self.enter_verb(txt)
     }
 
-    /// Enter production https://www.w3.org/TR/rdf12-turtle/#grammar-production-rtObject
+    /// Enter production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-rtObject>
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -1107,8 +1108,8 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         }
     }
 
-    /// Exit production https://www.w3.org/TR/rdf12-turtle/#grammar-production-rtObject
-    /// in the context of production https://www.w3.org/TR/rdf12-turtle/#grammar-production-reifiedTriple
+    /// Exit production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-rtObject>
+    /// in the context of production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-reifiedTriple>
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -1143,7 +1144,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         }
     }
 
-    /// Exit production https://www.w3.org/TR/rdf12-turtle/#grammar-production-reifiedTriple
+    /// Exit production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-reifiedTriple>
     /// and consume closing bracket.
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
@@ -1202,8 +1203,8 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         }
     }
 
-    /// Expect production https://www.w3.org/TR/rdf12-turtle/#grammar-production-tripleTerm
-    /// and enter production https://www.w3.org/TR/rdf12-turtle/#grammar-production-ttSubject
+    /// Expect production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-tripleTerm>
+    /// and enter production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-ttSubject>
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -1230,8 +1231,8 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         }
     }
 
-    /// Exit production https://www.w3.org/TR/rdf12-turtle/#grammar-production-ttSubject
-    /// and enter production https://www.w3.org/TR/rdf12-turtle/#grammar-production-verb
+    /// Exit production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-ttSubject>
+    /// and enter production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-verb>
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -1250,7 +1251,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         self.enter_verb(txt)
     }
 
-    /// Enter production https://www.w3.org/TR/rdf12-turtle/#grammar-production-ttObject
+    /// Enter production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-ttObject>
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -1300,8 +1301,8 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         }
     }
 
-    /// Expect production https://www.w3.org/TR/rdf12-turtle/#grammar-production-ttObject
-    /// in the context of production https://www.w3.org/TR/rdf12-turtle/#grammar-production-tripleTerm
+    /// Expect production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-ttObject>
+    /// in the context of production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-tripleTerm>
     /// and exit both, consuming the closing bracket.
     fn exit_tt_object<E>(&mut self, txt: &str) -> StreamResult<usize, Error, E>
     where
@@ -1324,7 +1325,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         }
     }
 
-    /// Enter production https://www.w3.org/TR/rdf12-turtle/#grammar-production-annotationBlock
+    /// Enter production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-annotationBlock>
     /// assuming the leading '{|'.
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
@@ -1338,6 +1339,8 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         E: std::error::Error + Send + Sync + 'static,
         C: FnMut(Self::Output<'_>) -> Result<(), E>,
     {
+        const RET: usize = 2; // len of the open bracket '{|'
+
         debug_assert!(!txt.is_empty() && self.ws(txt) == 0);
         debug_assert!(
             self.extra().state.last().unwrap().in_object_list(),
@@ -1346,22 +1349,21 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         );
         debug_assert!(txt.starts_with("{|"));
 
-        const RET: usize = 2; // len of the open bracket '{|'
         self.extra_mut().state.push(S::new_annotation_block());
-        if !self.has_reifier() {
+        if self.has_reifier() {
+            Ok(RET)
+        } else {
             self.inner_mut().terms.push(IndexedTerm::TripleTerm);
             self.inner_mut().terms.push(IndexedTerm::Reifier);
             self.mint_bnode_label();
             self.emit_reification_tuple(callback, RET)
-        } else {
-            Ok(RET)
         }
     }
 
     // productions for terminals (or for alternative between terminals, like `prefixed_name` or `numeric_literal`)
 
-    /// Handle the whole production https://www.w3.org/TR/rdf12-turtle/#grammar-production-IRIREF
-    /// (or the equivalent in TriG)
+    /// Handle the whole production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-IRIREF>
+    /// (or the equivalent in `TriG`)
     /// assuming the leading '<'.
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
@@ -1397,8 +1399,8 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         Ok(ret)
     }
 
-    /// Handle the whole production https://www.w3.org/TR/rdf12-turtle/#grammar-production-PrefixedName
-    /// (or the equivalent in TriG)
+    /// Handle the whole production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-PrefixedName>
+    /// (or the equivalent in `TriG`)
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -1426,9 +1428,9 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         let colon = prefix.len();
         if colon >= txt.len() || txt.as_bytes()[colon] != b':' {
             if prefix.is_empty() {
-                Err(ErrorKind::Expected("prefixed name".into())).wrap_in(self)?
+                Err(ErrorKind::Expected("prefixed name".into())).wrap_in(self)?;
             } else {
-                Err(ErrorKind::Expected("trailing ':'".into())).wrap_in_at(self, prefix.len())?
+                Err(ErrorKind::Expected("trailing ':'".into())).wrap_in_at(self, prefix.len())?;
             }
         }
         let prefix = prefix.as_str();
@@ -1493,8 +1495,8 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         Ok(colon + 1 + offset)
     }
 
-    /// Handle the whole production https://www.w3.org/TR/rdf12-turtle/#grammar-production-BLANK_NODE_LABEL
-    /// (or the equivalent TriG)
+    /// Handle the whole production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-BLANK_NODE_LABEL>
+    /// (or the equivalent `TriG`)
     /// assuming the leading '_'.
     ///
     /// Also ensures that labels that would clash with auto-generated labels are correctly disambiguated.
@@ -1508,13 +1510,13 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         let ret = self.blank_node_label_raw(txt)?;
         if GENID_RE.find(&txt[2..ret]).is_some() {
             self.dedup_bnode_label();
-        };
+        }
         Ok(ret)
     }
 
-    /// Expect the continuation of production https://www.w3.org/TR/rdf12-turtle/#grammar-production-STRING_LITERAL_LONG_SINGLE_QUOTE
-    /// or https://www.w3.org/TR/rdf12-turtle/#grammar-production-STRING_LITERAL_LONG_QUOTE .
-    /// (or the equivalent in N-Triples, N-Quads or TriG)
+    /// Expect the continuation of production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-STRING_LITERAL_LONG_SINGLE_QUOTE>
+    /// or <https://www.w3.org/TR/rdf12-turtle/#grammar-production-STRING_LITERAL_LONG_QUOTE> .
+    /// (or the equivalent in N-Triples, N-Quads or `TriG`)
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col.
@@ -1546,13 +1548,12 @@ pub(crate) trait TxSource<S: State>: GenericSource {
                             buf.push_str(&txt[i..j]);
                             self.extra_mut().state.pop();
                             return Ok(j + 3);
-                        } else {
-                            // NB: in case we encounter [quote, something_else, quote]
-                            // it is still possible that the final quote is the start of a sequence of 3,
-                            // so we do not consume the 3rd character.
-                            buf.push_str(&txt[i..j + 2]);
-                            i = j + 2;
                         }
+                        // NB: in case we encounter [quote, something_else, quote]
+                        // it is still possible that the final quote is the start of a sequence of 3,
+                        // so we do not consume the 3rd character.
+                        buf.push_str(&txt[i..j + 2]);
+                        i = j + 2;
                     } else {
                         // less than 3 characters remaining, so we can consume them
                         buf.push_str(&txt[i..]);
@@ -1568,7 +1569,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         }
     }
 
-    /// Handle the whole production https://www.w3.org/TR/rdf12-turtle/#grammar-production-LANG_DIR
+    /// Handle the whole production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-LANG_DIR>
     /// assuming the leading '@'.
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
@@ -1587,8 +1588,8 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         Ok(ret)
     }
 
-    /// Handle the whole production https://www.w3.org/TR/rdf12-turtle/#grammar-production-BooleanLiteral
-    /// (or the equivalent in TriG)
+    /// Handle the whole production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-BooleanLiteral>
+    /// (or the equivalent in `TriG`)
     /// assuming either "true" or "false".
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
@@ -1614,8 +1615,8 @@ pub(crate) trait TxSource<S: State>: GenericSource {
         Ok(txt.len() - 1) // minus 1 because the text includes the first separator after the bool value
     }
 
-    /// Handle the whole production https://www.w3.org/TR/rdf12-turtle/#grammar-production-NumericLiteral
-    /// (or the equivalent in TriG)
+    /// Handle the whole production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-NumericLiteral>
+    /// (or the equivalent in `TriG`)
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.
@@ -1675,7 +1676,7 @@ pub(crate) trait TxSource<S: State>: GenericSource {
     }
 
     /// Expect the closing bracket ']'
-    /// in the context of production https://www.w3.org/TR/rdf12-turtle/#grammar-production-ANON
+    /// in the context of production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-ANON>
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
     /// starting at self.col, and starting with a non-white-space character.

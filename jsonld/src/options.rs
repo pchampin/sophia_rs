@@ -174,6 +174,7 @@ impl<LF> JsonLdOptions<LF> {
     /// Change the [`base`](Self::base) IRI
     ///
     /// See also [`with_no_base`](Self::with_no_base)
+    #[must_use]
     pub fn with_base(mut self, base: ArcIri) -> Self {
         self.inner.base = Some(base);
         self
@@ -182,18 +183,21 @@ impl<LF> JsonLdOptions<LF> {
     /// Change the [`base`](Self::base) IRI
     ///
     /// See also [`with_base`](Self::with_base)
+    #[must_use]
     pub fn with_no_base(mut self) -> Self {
         self.inner.base = None;
         self
     }
 
     /// Change the [`compact_arrays`](Self::compact_arrays) flag
+    #[must_use]
     pub const fn with_compact_arrays(mut self, compact_arrays: bool) -> Self {
         self.inner.compact_arrays = compact_arrays;
         self
     }
 
     /// Change the [`compact_to_relative`](Self::compact_to_relative) flag
+    #[must_use]
     pub const fn with_compact_to_relative(mut self, compact_to_relative: bool) -> Self {
         self.inner.compact_to_relative = compact_to_relative;
         self
@@ -205,6 +209,7 @@ impl<LF> JsonLdOptions<LF> {
     /// [`JsonLdOptions::with_default_document_loader`],
     /// [`JsonLdOptions::with_document_loader_closure`],
     /// [`JsonLdOptions::with_document_loader`],
+    #[must_use]
     pub fn with_document_loader_factory<LF2: LoaderFactory>(
         self,
         document_loader_factory: LF2,
@@ -226,6 +231,7 @@ impl<LF> JsonLdOptions<LF> {
     /// [`JsonLdOptions::with_document_loader_factory`],
     /// [`JsonLdOptions::with_default_document_loader`],
     /// [`JsonLdOptions::with_document_loader`],
+    #[must_use]
     pub fn with_document_loader_closure<L, F>(
         self,
         f: F,
@@ -302,6 +308,7 @@ impl<LF> JsonLdOptions<LF> {
     ///
     /// See also [`with_no_expand_context`](Self::with_no_expand_context),
     /// [`try_with_expand_context`](Self::try_with_expand_context)
+    #[must_use]
     pub fn with_expand_context<C: IntoContextRef>(mut self, expand_context: C) -> Self {
         self.inner.expand_context = Some(expand_context.into_context_ref());
         self
@@ -311,6 +318,7 @@ impl<LF> JsonLdOptions<LF> {
     ///
     /// See also [`with_expand_context`](Self::with_expand_context)
     /// [`try_with_expand_context`](Self::try_with_expand_context)
+    #[must_use]
     pub fn with_no_expand_context(mut self) -> Self {
         self.inner.expand_context = None;
         self
@@ -329,18 +337,21 @@ impl<LF> JsonLdOptions<LF> {
     }
 
     /// Change the [`ordered`](Self::ordered) flag
+    #[must_use]
     pub const fn with_ordered(mut self, ordered: bool) -> Self {
         self.inner.ordered = ordered;
         self
     }
 
     /// Change the [`processing_mode`](Self::processing_mode)
+    #[must_use]
     pub const fn with_processing_mode(mut self, version: ProcessingMode) -> Self {
         self.inner.processing_mode = version;
         self
     }
 
     /// Change the [`produce_generalized_rdf`](Self::produce_generalized_rdf) flag
+    #[must_use]
     pub const fn with_produce_generalized_rdf(mut self, produce_generalized_rdf: bool) -> Self {
         self.inner.produce_generalized_rdf = produce_generalized_rdf;
         self
@@ -349,6 +360,7 @@ impl<LF> JsonLdOptions<LF> {
     /// Change the [`rdf_direction`](Self::rdf_direction)
     ///
     /// See also [`with_no_rdf_direction`](Self::with_no_rdf_direction).
+    #[must_use]
     pub const fn with_rdf_direction(mut self, rdf_direction: RdfDirection) -> Self {
         self.inner.rdf_direction = Some(rdf_direction);
         self
@@ -357,30 +369,35 @@ impl<LF> JsonLdOptions<LF> {
     /// Change the [`rdf_direction`](Self::rdf_direction)
     ///
     /// See also [`with_rdf_direction`](Self::with_rdf_direction).
+    #[must_use]
     pub const fn with_no_rdf_direction(mut self) -> Self {
         self.inner.rdf_direction = None;
         self
     }
 
     /// Change the [`use_native_types`](Self::use_native_types) flag
+    #[must_use]
     pub const fn with_use_native_types(mut self, flag: bool) -> Self {
         self.use_native_types = flag;
         self
     }
 
     /// Change the [`use_native_types`](Self::use_native_types) flag
+    #[must_use]
     pub const fn with_use_rdf_type(mut self, flag: bool) -> Self {
         self.use_rdf_type = flag;
         self
     }
 
     /// Change the [expansion policy](Self::expansion_policy)
+    #[must_use]
     pub const fn with_expansion_policy(mut self, policy: Policy) -> Self {
         self.inner.expansion_policy = policy;
         self
     }
 
     /// Changes the [`spaces`](Self::spaces) option
+    #[must_use]
     pub const fn with_spaces(mut self, spaces: u16) -> Self {
         self.spaces = spaces;
         self
@@ -390,6 +407,7 @@ impl<LF> JsonLdOptions<LF> {
     ///
     /// See also [`with_no_compact_context`](Self::with_no_compact_context),
     /// [`try_with_compact_context`](Self::try_with_compact_context)
+    #[must_use]
     pub fn with_compact_context<C: IntoContextRef>(mut self, compact_context: C) -> Self {
         self.compact_context = Some(compact_context.into_context_ref());
         self
@@ -399,6 +417,7 @@ impl<LF> JsonLdOptions<LF> {
     ///
     /// See also [`with_compact_context`](Self::with_compact_context)
     /// [`try_with_compact_context`](Self::try_with_compact_context)
+    #[must_use]
     pub fn with_no_compact_context(mut self) -> Self {
         self.compact_context = None;
         self

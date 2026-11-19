@@ -144,7 +144,7 @@ impl<R: BufRead> SparqlXmlParser<R> {
                     let lang = LanguageTag::new(lang)?;
                     let dir = self
                         .get_ns_attr_maybe(start, "http://www.w3.org/2005/11/its", "dir")?
-                        .map(|txt| txt.parse().map_err(|_| Error::BaseDirection(txt)))
+                        .map(|txt| txt.parse().map_err(|()| Error::BaseDirection(txt)))
                         .transpose()?;
                     Ok(Term::Literal(Literal::Lang { value, lang, dir }))
                 } else if let Some(datatype) = self.get_attr_maybe(start, "datatype")? {

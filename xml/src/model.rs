@@ -13,7 +13,7 @@ use sophia_api::MownStr;
 use sophia_api::term::{BaseDirection, BnodeId, IriRef, LanguageTag, Term, TermKind};
 use sophia_api::triple::Triple;
 
-impl<'a> Term for Trusted<NamedNodeRef<'a>> {
+impl Term for Trusted<NamedNodeRef<'_>> {
     type BorrowTerm<'x>
         = Self
     where
@@ -37,7 +37,7 @@ fn iri(n: NamedNodeRef) -> IriRef<MownStr> {
     IriRef::new_unchecked(n.as_str().into())
 }
 
-impl<'a> Term for Trusted<BlankNodeRef<'a>> {
+impl Term for Trusted<BlankNodeRef<'_>> {
     type BorrowTerm<'x>
         = Self
     where
@@ -61,7 +61,7 @@ fn bnode_id(b: BlankNodeRef) -> BnodeId<MownStr> {
     BnodeId::new_unchecked(b.as_str().into())
 }
 
-impl<'a> Term for Trusted<LiteralRef<'a>> {
+impl Term for Trusted<LiteralRef<'_>> {
     type BorrowTerm<'x>
         = Self
     where
@@ -147,7 +147,7 @@ impl<'a> Term for Trusted<NamedOrBlankNodeRef<'a>> {
     }
 }
 
-impl<'a> Term for Trusted<TermRef<'a>> {
+impl Term for Trusted<TermRef<'_>> {
     type BorrowTerm<'x>
         = Self
     where
@@ -387,7 +387,6 @@ mod test {
         let o = OxTerm::Literal(Literal::new_simple_literal("o"));
         let triple = OxTriple::new(s, p, o);
 
-        use sophia_api::triple::Triple;
         let wrapped = Trusted(&triple);
         assert!(wrapped.s().is_iri());
         assert!(wrapped.p().is_iri());

@@ -67,20 +67,20 @@ pub struct ExecState<'a, D: ?Sized> {
 impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
     pub fn new(
         dataset: &'a D,
-        query_dataset: &Option<QueryDataset>,
-        base_iri: &Option<oxiri::Iri<String>>,
-    ) -> Result<Arc<Self>, SparqlWrapperError<D::Error>> {
+        query_dataset: Option<&QueryDataset>,
+        base_iri: Option<&oxiri::Iri<String>>,
+    ) -> Arc<Self> {
         let stash = Mutex::new(ArcStrStash::new());
         let default_matcher = GraphMatcher::from_with(query_dataset, &stash);
-        let base_iri = base_iri.clone().map(Into::into);
+        let base_iri = base_iri.cloned().map(Into::into);
         let now = chrono::Local::now().fixed_offset();
-        Ok(Arc::new(ExecState {
+        Arc::new(ExecState {
             dataset,
             default_matcher,
             base_iri,
             now,
             stash,
-        }))
+        })
     }
 
     pub fn dataset(&self) -> &'a D {
@@ -91,8 +91,8 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         &self.default_matcher
     }
 
-    pub fn base_iri(&self) -> &Option<BaseIri<String>> {
-        &self.base_iri
+    pub fn base_iri(&self) -> Option<&BaseIri<String>> {
+        self.base_iri.as_ref()
     }
 
     pub fn now(&self) -> chrono::DateTime<chrono::FixedOffset> {
@@ -142,7 +142,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
                 left,
                 right,
                 expression,
-            } => self.left_join(left, right, expression, graph_matcher, context),
+            } => self.left_join(left, right, expression.as_ref(), graph_matcher, context),
             Filter { expr, inner } => self.filter(expr, inner, graph_matcher, context),
             Union { left, right } => self.union(left, right, graph_matcher, context),
             Graph { name, inner } => self.graph(name, inner, graph_matcher, context),
@@ -326,6 +326,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         Bindings { variables, iter }
     }
 
+    #[allow(clippy::too_many_lines)]
     fn path_rec(
         self: &Arc<Self>,
         smatcher: SparqlMatcher,
@@ -456,7 +457,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         }
     }
 
-    /// Iter subjects for property paths 'ZeroOrMOre' and 'ZeroOrOne'
+    /// Iter subjects for property paths '`ZeroOrMOre`' and '`ZeroOrOne`'
     fn path_zero(
         self: &Arc<Self>,
         smatcher: SparqlMatcher,
@@ -521,7 +522,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         self: &Arc<Self>,
         left: &GraphPattern,
         right: &GraphPattern,
-        expression: &Option<Expression>,
+        expression: Option<&Expression>,
         graph_matcher: &GraphMatcher,
         context: Option<&Binding>,
     ) -> Bindings<'a, D> {
@@ -642,7 +643,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
         let mut variables = lv.clone();
         for v in rv {
             if lv.iter().all(|i| *i != v) {
-                variables.push(v)
+                variables.push(v);
             }
         }
         let iter = Box::new(li.chain(ri));
@@ -842,6 +843,7 @@ impl<'a, D: Dataset + ?Sized> ExecState<'a, D> {
             })
             .collect();
 
+        #[allow(clippy::items_after_statements)]
         fn cmp_bindings_with<D: Dataset + ?Sized>(
             b1: &Binding,
             b2: &Binding,

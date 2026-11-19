@@ -22,12 +22,14 @@ impl fmt::Display for NsTerm<'_> {
 }
 
 impl<'a> NsTerm<'a> {
-    /// Make an NsTerm without checking that it produces a valid IRI.
+    /// Make an `NsTerm` without checking that it produces a valid IRI.
+    #[must_use]
     pub const fn new_unchecked(ns: IriRef<&'a str>, suffix: &'a str) -> Self {
         NsTerm { ns, suffix }
     }
 
     /// Return an [`IriRef`] representing this term.
+    #[must_use]
     pub fn iriref(&self) -> IriRef<MownStr<'_>> {
         IriRef::new_unchecked(if self.suffix.is_empty() {
             self.ns.as_str().into()
@@ -105,11 +107,11 @@ mod test {
         let t2b = IriRef::new_unchecked("http://example.org/foo/bar");
         let t3b = IriRef::new_unchecked("http://example.org/bar");
 
-        assert!(t1a == t1b);
-        assert!(t2a == t2b);
-        assert!(t3a == t3b);
-        assert!(t1a != t2b);
-        assert!(t2a != t3b);
-        assert!(t3a != t1b);
+        assert_eq!(t1a, t1b);
+        assert_eq!(t2a, t2b);
+        assert_eq!(t3a, t3b);
+        assert_ne!(t1a, t2b);
+        assert_ne!(t2a, t3b);
+        assert_ne!(t3a, t1b);
     }
 }

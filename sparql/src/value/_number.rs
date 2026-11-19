@@ -66,6 +66,7 @@ impl_sparqlnumber_integer_from!(u16);
 impl_sparqlnumber_integer_from!(u8);
 
 impl SparqlNumber {
+    #[must_use]
     pub fn try_parse_integer(lex: &str) -> Option<Self> {
         if let Ok(val) = lex.parse::<isize>() {
             Some(val.into())
@@ -76,6 +77,7 @@ impl SparqlNumber {
         }
     }
 
+    #[must_use]
     pub fn try_parse<T: std::str::FromStr + Into<Self>>(lex: &str) -> Option<Self> {
         if let Ok(val) = lex.parse::<T>() {
             Some(val.into())
@@ -88,6 +90,7 @@ impl SparqlNumber {
         if predicate(&self) { Some(self) } else { None }
     }
 
+    #[must_use]
     pub fn is_zero(&self) -> bool {
         match self {
             SparqlNumber::NativeInt(inner) => inner.is_zero(),
@@ -98,6 +101,7 @@ impl SparqlNumber {
         }
     }
 
+    #[must_use]
     pub fn is_positive(&self) -> bool {
         match self {
             SparqlNumber::NativeInt(inner) => inner.is_positive(),
@@ -108,6 +112,7 @@ impl SparqlNumber {
         }
     }
 
+    #[must_use]
     pub fn is_negative(&self) -> bool {
         match self {
             SparqlNumber::NativeInt(inner) => inner.is_negative(),
@@ -118,6 +123,7 @@ impl SparqlNumber {
         }
     }
 
+    #[must_use]
     pub fn is_truthy(&self) -> bool {
         match self {
             SparqlNumber::NativeInt(i) => !i.is_zero(),
@@ -128,6 +134,7 @@ impl SparqlNumber {
         }
     }
 
+    #[must_use]
     pub fn is_nan(&self) -> bool {
         match self {
             SparqlNumber::Double(d) => d.is_nan(),
@@ -136,6 +143,7 @@ impl SparqlNumber {
         }
     }
 
+    #[must_use]
     pub fn abs(&self) -> Self {
         match self {
             SparqlNumber::NativeInt(inner) => inner.abs().into(),
@@ -146,6 +154,7 @@ impl SparqlNumber {
         }
     }
 
+    #[must_use]
     pub fn ceil(&self) -> Self {
         match self {
             SparqlNumber::NativeInt(inner) => (*inner).into(),
@@ -158,6 +167,7 @@ impl SparqlNumber {
         }
     }
 
+    #[must_use]
     pub fn floor(&self) -> Self {
         match self {
             SparqlNumber::NativeInt(inner) => (*inner).into(),
@@ -168,6 +178,7 @@ impl SparqlNumber {
         }
     }
 
+    #[must_use]
     pub fn round(&self) -> Self {
         match self {
             SparqlNumber::NativeInt(inner) => (*inner).into(),
@@ -197,6 +208,7 @@ impl SparqlNumber {
     ///
     /// Note that the conversion may lose precision, or even result in NaN for some big integers and decimals.
     #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
+    #[must_use]
     pub fn coerce_to_float(&self) -> f32 {
         match self {
             SparqlNumber::NativeInt(inner) => *inner as f32,
@@ -211,6 +223,7 @@ impl SparqlNumber {
     ///
     /// Note that the conversion may lose precision, or even result in NaN for some big integers and decimals.
     #[allow(clippy::cast_precision_loss)]
+    #[must_use]
     pub fn coerce_to_double(&self) -> f64 {
         match self {
             SparqlNumber::NativeInt(inner) => *inner as f64,

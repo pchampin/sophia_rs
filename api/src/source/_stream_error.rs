@@ -72,20 +72,20 @@ where
             SinkError(e) => SinkError(f(e)),
         }
     }
-    /// Unwrap as the inner SourceError.
+    /// Unwrap as the inner `SourceError`.
     ///
     /// # Panic
-    /// Panic if self is actually a SinkError.
+    /// Panic if self is actually a `SinkError`.
     pub fn unwrap_source_error(self) -> SourceErr {
         match self {
             SourceError(err) => err,
             SinkError(_) => panic!("this is a SinkError"),
         }
     }
-    /// Unwrap as the inner SinkError.
+    /// Unwrap as the inner `SinkError`.
     ///
     /// # Panic
-    /// Panic if self is actually a SourceError.
+    /// Panic if self is actually a `SourceError`.
     pub fn unwrap_sink_error(self) -> SinkErr {
         match self {
             SourceError(_) => panic!("this is a SourceError"),

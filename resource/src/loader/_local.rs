@@ -61,25 +61,8 @@ impl LocalLoader {
         }
     }
 
-    fn ctype(&self, iri: &str) -> String {
-        if iri.ends_with(".ttl") {
-            "text/turtle".into()
-        } else if iri.ends_with(".nt") {
-            "application/n-triples".into()
-        } else if cfg!(feature = "jsonld") && iri.ends_with(".jsonld") {
-            "application/ld+json".into()
-        } else if cfg!(feature = "xml") && iri.ends_with(".rdf") {
-            "application/rdf+xml".into()
-        } else if iri.ends_with(".nq") {
-            "application/n-quads".into()
-        } else if iri.ends_with(".trig") {
-            "application/trig".into()
-        } else {
-            "application/octet-stream".into()
-        }
-    }
-
     /// The mapping used by this loader between IRIs and local paths
+    #[must_use]
     pub fn caches(&self) -> &[(IriBuf, PathBuf)] {
         &self.caches
     }
@@ -94,7 +77,7 @@ impl Loader for LocalLoader {
                 let subpath = Path::new(&iri[ns.len()..]);
                 let resource_path: PathBuf = path.join(subpath);
                 return match read(resource_path) {
-                    Ok(data) => Ok((data, self.ctype(iri))),
+                    Ok(data) => Ok((data, ctype(iri))),
                     Err(e) if e.kind() == IoErrorKind::NotFound => {
                         // emulate conneg if there is no extension
                         let no_ext = iri.as_bytes()[iri.rfind(['.', '/']).unwrap_or(0)] != b'.';
@@ -142,4 +125,24 @@ pub enum LocalLoaderError {
     /// The local paths mapped by [`LocalLoader`] must always identify an existing directory
     #[error("Path must be a directory: {0}")]
     PathMustBeDirectory(PathBuf),
+}
+
+//
+
+fn ctype(iri: &str) -> String {
+    if iri.ends_with(".ttl") {
+        "text/turtle".into()
+    } else if iri.ends_with(".nt") {
+        "application/n-triples".into()
+    } else if cfg!(feature = "jsonld") && iri.ends_with(".jsonld") {
+        "application/ld+json".into()
+    } else if cfg!(feature = "xml") && iri.ends_with(".rdf") {
+        "application/rdf+xml".into()
+    } else if iri.ends_with(".nq") {
+        "application/n-quads".into()
+    } else if iri.ends_with(".trig") {
+        "application/trig".into()
+    } else {
+        "application/octet-stream".into()
+    }
 }

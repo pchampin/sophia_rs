@@ -15,8 +15,8 @@ use crate::d_entailment::{IllTypedLiteral, LexDt, Recognized};
 /// # Normalized form
 ///
 /// For all literals of type `xsd:decimal` (or any of its subtype),
-/// the normalized form (returned by [[Sparql::try_normalize]]
-/// and [[Sparql::normalize_or_fallback]]) will be
+/// the normalized form (returned by [[`Sparql::try_normalize`]]
+/// and [[`Sparql::normalize_or_fallback`]]) will be
 /// * `xsd:integer` if the value is an integer,
 /// * `xsd:decimal` otherwise.
 #[derive(Clone, Copy, Default)]
@@ -146,32 +146,32 @@ fn datatypes_integer(lex: &str, decimal: bool) -> SmallVec<[IriRef<MownStr<'stat
         v.push(xsd::decimal);
     }
     if let Some(val) = val {
-        if ((i64::MIN as i128)..=(i64::MAX as i128)).contains(&val) {
+        if (i128::from(i64::MIN)..=i128::from(i64::MAX)).contains(&val) {
             v.push(xsd::long);
-            if ((i32::MIN as i128)..=(i32::MAX as i128)).contains(&val) {
+            if (i128::from(i32::MIN)..=i128::from(i32::MAX)).contains(&val) {
                 v.push(xsd::int);
-                if ((i16::MIN as i128)..=(i16::MAX as i128)).contains(&val) {
+                if (i128::from(i16::MIN)..=i128::from(i16::MAX)).contains(&val) {
                     v.push(xsd::short);
-                    if ((i8::MIN as i128)..=(i8::MAX as i128)).contains(&val) {
+                    if (i128::from(i8::MIN)..=i128::from(i8::MAX)).contains(&val) {
                         v.push(xsd::byte);
                     }
                 }
             }
         }
-        if (0_i128..=(u64::MAX as i128)).contains(&val) {
+        if (0_i128..=i128::from(u64::MAX)).contains(&val) {
             v.push(xsd::unsignedLong);
-            if (0_i128..=(u32::MAX as i128)).contains(&val) {
+            if (0_i128..=i128::from(u32::MAX)).contains(&val) {
                 v.push(xsd::unsignedInt);
-                if (0_i128..=(u16::MAX as i128)).contains(&val) {
+                if (0_i128..=i128::from(u16::MAX)).contains(&val) {
                     v.push(xsd::unsignedShort);
-                    if (0_i128..=(u8::MAX as i128)).contains(&val) {
+                    if (0_i128..=i128::from(u8::MAX)).contains(&val) {
                         v.push(xsd::unsignedByte);
                     }
                 }
             }
         }
     }
-    if lex.starts_with("-") {
+    if lex.starts_with('-') {
         v.push(xsd::negativeInteger);
         v.push(xsd::nonPositiveInteger);
     } else if lex == "0" {

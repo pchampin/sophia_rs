@@ -334,14 +334,12 @@ pub trait Term: std::fmt::Debug {
 
     /// Iter over all the constituents of this term, consuming it.
     ///
-    /// See [Term::constituents].
+    /// See [`Term::constituents`].
     fn to_constituents<'a>(self) -> Box<dyn Iterator<Item = Self> + 'a>
     where
         Self: Clone + 'a,
     {
-        if !self.is_triple() {
-            Box::new(std::iter::once(self))
-        } else {
+        if self.is_triple() {
             Box::new(
                 std::iter::once(self.clone()).chain(
                     self.to_triple()
@@ -350,6 +348,8 @@ pub trait Term: std::fmt::Debug {
                         .flat_map(Term::to_constituents),
                 ),
             )
+        } else {
+            Box::new(std::iter::once(self))
         }
     }
 
@@ -368,20 +368,20 @@ pub trait Term: std::fmt::Debug {
 
     /// Iter over all the [atomic](Term::is_atom) constituents of this term, consuming it.
     ///
-    /// See [Term::atoms].
+    /// See [`Term::atoms`].
     fn to_atoms<'a>(self) -> Box<dyn Iterator<Item = Self> + 'a>
     where
         Self: Sized + 'a,
     {
-        if !self.is_triple() {
-            Box::new(std::iter::once(self))
-        } else {
+        if self.is_triple() {
             Box::new(
                 self.to_triple()
                     .unwrap()
                     .into_iter()
                     .flat_map(Term::to_atoms),
             )
+        } else {
+            Box::new(std::iter::once(self))
         }
     }
 
@@ -598,7 +598,7 @@ where
         (*self).eq(other)
     }
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        (*self).hash(state)
+        (*self).hash(state);
     }
 }
 
@@ -682,22 +682,22 @@ where
         assert!(t.triple().is_none());
         assert!(t.clone().to_triple().is_none());
     }
-    if k != TermKind::Triple {
-        assert!(t.is_atom());
-        assert!(t.constituents().count() == 1);
-        assert!(t.constituents().next().unwrap().eq(t.borrow_term()));
-        assert!(t.clone().to_constituents().count() == 1);
-        assert!(t.clone().to_constituents().next().unwrap().eq(t.clone()));
-        assert!(t.atoms().count() == 1);
-        assert!(t.atoms().next().unwrap().eq(t.borrow_term()));
-        assert!(t.clone().to_atoms().count() == 1);
-        assert!(t.clone().to_atoms().next().unwrap().eq(t.clone()));
-    } else {
+    if k == TermKind::Triple {
         assert!(!t.is_atom());
         assert!(t.constituents().count() >= 4);
         assert!(t.clone().to_constituents().count() >= 4);
         assert!(t.atoms().count() >= 3);
         assert!(t.clone().to_atoms().count() >= 3);
+    } else {
+        assert!(t.is_atom());
+        assert_eq!(t.constituents().count(), 1);
+        assert!(t.constituents().next().unwrap().eq(t.borrow_term()));
+        assert_eq!(t.clone().to_constituents().count(), 1);
+        assert!(t.clone().to_constituents().next().unwrap().eq(t.clone()));
+        assert_eq!(t.atoms().count(), 1);
+        assert!(t.atoms().next().unwrap().eq(t.borrow_term()));
+        assert_eq!(t.clone().to_atoms().count(), 1);
+        assert!(t.clone().to_atoms().next().unwrap().eq(t.clone()));
     }
     t.eq(t.borrow_term());
 }

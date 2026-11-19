@@ -84,7 +84,9 @@ where
             0 => result.compact_print().to_string(),
             x => {
                 let mut options = Options::pretty();
-                options.indent = Indent::Spaces(x as u8);
+                #[allow(clippy::cast_possible_truncation)] // moot, as we are clamping x to u8::MAX
+                let indent = Indent::Spaces(x.min(u16::from(u8::MAX)) as u8);
+                options.indent = indent;
                 result.print_with(options).to_string()
             }
         };

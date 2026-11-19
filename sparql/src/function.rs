@@ -98,7 +98,7 @@ pub fn call_function<D: Dataset + ?Sized>(
                 };
                 res.inspect_err(|err| {
                     log::warn!("Iri#1 is an invalid IRI");
-                    log::debug!(" {err}")
+                    log::debug!(" {err}");
                 })
                 .ok()
                 .map(Into::into)
@@ -426,10 +426,7 @@ pub fn call_function<D: Dataset + ?Sized>(
         Custom(iri) => {
             if iri.as_str().starts_with(*xsd::PREFIX) {
                 let typ = &iri.as_str()[xsd::PREFIX.len()..];
-                if arguments.len() != 1 {
-                    log::warn!("Function xsd:{typ} expects 1 argument");
-                    None
-                } else {
+                if arguments.len() == 1 {
                     match typ {
                         "boolean" => xsd_boolean(&arguments[0]),
                         "double" => xsd_double(&arguments[0]),
@@ -443,6 +440,9 @@ pub fn call_function<D: Dataset + ?Sized>(
                             None
                         }
                     }
+                } else {
+                    log::warn!("Function xsd:{typ} expects 1 argument");
+                    None
                 }
             } else {
                 log::warn!("Custom function not supported: {iri}");
@@ -615,7 +615,7 @@ pub fn concat(args: &[StringLiteralRef<'_>]) -> EvalResult {
 pub fn lang_matches(tag: &Arc<str>, range: &Arc<str>) -> EvalResult {
     let Ok(tag) = LanguageTag::new(tag.clone()).inspect_err(|err| {
         log::warn!("langMatch#1 is an invalid language tag");
-        log::debug!(" {err}")
+        log::debug!(" {err}");
     }) else {
         return false.into();
     };
@@ -624,7 +624,7 @@ pub fn lang_matches(tag: &Arc<str>, range: &Arc<str>) -> EvalResult {
     }
     let Ok(range) = LanguageTag::new(range.clone()).inspect_err(|err| {
         log::warn!("invalid language tag range: {err}");
-        log::debug!(" {err}")
+        log::debug!(" {err}");
     }) else {
         return false.into();
     };
@@ -646,6 +646,7 @@ pub fn sub_str(
     }
     let (lex, ctag) = source;
     let lex_len = lex.chars().count();
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let (s, e) = match length {
         Some(l) if l.is_nan() => {
             log::warn!("subStr#3 is NaN");
@@ -657,8 +658,8 @@ pub fn sub_str(
         ),
         Some(l) => {
             let s_signed = starting_loc.round() as isize - 1;
-            let s = (s_signed.max(0) as usize).min(lex_len);
-            let e = ((s_signed + l.round() as isize).max(0) as usize)
+            let s = (s_signed.max(0).cast_unsigned()).min(lex_len);
+            let e = ((s_signed + l.round() as isize).max(0).cast_unsigned())
                 .max(s)
                 .min(lex_len);
             (s, e)
@@ -675,7 +676,9 @@ pub fn sub_str(
 
 pub fn str_len(string: &str) -> EvalResult {
     let l = string.chars().count();
+    #[allow(clippy::checked_conversions)]
     if l <= isize::MAX as usize {
+        #[allow(clippy::cast_possible_wrap)]
         SparqlNumber::from(l as isize).into()
     } else {
         unreachable!()
@@ -729,7 +732,7 @@ pub fn l_case(source: StringLiteralRef<'_>) -> EvalResult {
 }
 
 pub fn encode_for_uri(source: &str) -> EvalResult {
-    use encode_for_uri_utils::*;
+    use encode_for_uri_utils::EncodeIter;
     let ascii = source
         .as_bytes()
         .iter()
@@ -794,28 +797,34 @@ pub fn strafter(
     )))
 }
 
+#[allow(clippy::cast_possible_wrap)]
 pub fn year(dt: &XsdDateTime) -> EvalResult {
     SparqlNumber::from(dt.year() as isize).into()
 }
 
+#[allow(clippy::cast_possible_wrap)]
 pub fn month(dt: &XsdDateTime) -> EvalResult {
     SparqlNumber::from(dt.month() as isize).into()
 }
 
+#[allow(clippy::cast_possible_wrap)]
 pub fn day(dt: &XsdDateTime) -> EvalResult {
     SparqlNumber::from(dt.day() as isize).into()
 }
 
+#[allow(clippy::cast_possible_wrap)]
 pub fn hours(dt: &XsdDateTime) -> EvalResult {
     SparqlNumber::from(dt.hour() as isize).into()
 }
 
+#[allow(clippy::cast_possible_wrap)]
 pub fn minutes(dt: &XsdDateTime) -> EvalResult {
     SparqlNumber::from(dt.minute() as isize).into()
 }
 
+#[allow(clippy::cast_possible_wrap)]
 pub fn seconds(dt: &XsdDateTime) -> EvalResult {
-    let nano: u64 = dt.second() as u64 * 1_000_000_000 + dt.nanosecond() as u64;
+    let nano: u64 = u64::from(dt.second()) * 1_000_000_000 + u64::from(dt.nanosecond());
     let seconds = bigdecimal::BigDecimal::from((nano, 9));
     SparqlNumber::from(seconds).into()
 }
@@ -903,7 +912,7 @@ pub fn str_lang(lex: &str, lang: &str) -> Option<EvalResult> {
     let lang = LanguageTag::new(lang.into())
         .inspect_err(|err| {
             log::warn!("StrLang#2 is an invalid language tag");
-            log::debug!(" {err}")
+            log::debug!(" {err}");
         })
         .ok()?;
     Some((lex.into(), Some((lang, None))).into())
@@ -913,7 +922,7 @@ pub fn str_lang_dir(lex: &str, lang: &str, dir: &str) -> Option<EvalResult> {
     let lang = LanguageTag::new(lang.into())
         .inspect_err(|err| {
             log::warn!("StrLangDir#2 is an invalid language tag");
-            log::debug!(" {err}")
+            log::debug!(" {err}");
         })
         .ok()?;
     let dir = match dir {
@@ -956,7 +965,7 @@ pub fn triple(s: &EvalResult, p: &EvalResult, o: &EvalResult) -> Option<EvalResu
         log::warn!("not a valid predicate");
         log::debug!("  {p:?}");
         return None;
-    };
+    }
     let o = ResultTerm::from(o.as_term());
     Some(ResultTerm::from([s.clone(), p.clone(), o.clone()]).into())
 }
@@ -974,7 +983,6 @@ pub fn xsd_boolean(arg: &EvalResult) -> Option<EvalResult> {
     // and https://www.w3.org/TR/xpath-functions-31/#casting-boolean
     match arg.as_value()? {
         SparqlValue::Boolean(opt) => opt.map(|_| arg.clone()),
-        SparqlValue::DateTime(_) => None,
         SparqlValue::Number(opt) => opt
             .as_ref()
             .map(|n| SparqlValue::from(n.is_truthy()).into()),
@@ -983,7 +991,7 @@ pub fn xsd_boolean(arg: &EvalResult) -> Option<EvalResult> {
             "0" | "false" => Some(SparqlValue::from(false).into()),
             _ => None,
         },
-        SparqlValue::String(_, Some(_)) => None,
+        SparqlValue::DateTime(_) | SparqlValue::String(_, Some(_)) => None,
     }
 }
 
@@ -994,7 +1002,6 @@ pub fn xsd_double(arg: &EvalResult) -> Option<EvalResult> {
         SparqlValue::Boolean(opt) => {
             opt.map(|b| SparqlNumber::from(if b { 1.0 } else { 0.0 }).into())
         }
-        SparqlValue::DateTime(_) => None,
         SparqlValue::Number(Some(SparqlNumber::Double(_))) => Some(arg.clone()),
         SparqlValue::Number(opt) => opt
             .as_ref()
@@ -1004,7 +1011,7 @@ pub fn xsd_double(arg: &EvalResult) -> Option<EvalResult> {
             .parse::<f64>()
             .ok()
             .map(|d| SparqlNumber::from(d).into()),
-        SparqlValue::String(_, Some(_)) => None,
+        SparqlValue::DateTime(_) | SparqlValue::String(_, Some(_)) => None,
     }
 }
 
@@ -1015,7 +1022,6 @@ pub fn xsd_float(arg: &EvalResult) -> Option<EvalResult> {
         SparqlValue::Boolean(opt) => {
             opt.map(|b| SparqlNumber::from(if b { 1.0_f32 } else { 0.0_f32 }).into())
         }
-        SparqlValue::DateTime(_) => None,
         SparqlValue::Number(Some(SparqlNumber::Float(_))) => Some(arg.clone()),
         SparqlValue::Number(opt) => opt
             .as_ref()
@@ -1025,7 +1031,7 @@ pub fn xsd_float(arg: &EvalResult) -> Option<EvalResult> {
             .parse::<f32>()
             .ok()
             .map(|f| SparqlNumber::from(f).into()),
-        SparqlValue::String(_, Some(_)) => None,
+        SparqlValue::DateTime(_) | SparqlValue::String(_, Some(_)) => None,
     }
 }
 
@@ -1041,7 +1047,6 @@ pub fn xsd_decimal(arg: &EvalResult) -> Option<EvalResult> {
             })
             .into()
         }),
-        SparqlValue::DateTime(_) => None,
         SparqlValue::Number(Some(SparqlNumber::Decimal(_))) => Some(arg.clone()),
         SparqlValue::Number(Some(SparqlNumber::Float(n))) => {
             Some(SparqlValue::Number(Some(BigDecimal::from_f32(*n)?.into())).into())
@@ -1057,13 +1062,14 @@ pub fn xsd_decimal(arg: &EvalResult) -> Option<EvalResult> {
             .parse::<BigDecimal>()
             .ok()
             .map(|d| SparqlNumber::from(d).into()),
-        SparqlValue::String(_, Some(_)) => None,
+        SparqlValue::DateTime(_) | SparqlValue::String(_, Some(_)) => None,
     }
 }
 
 pub fn xsd_integer(arg: &EvalResult) -> Option<EvalResult> {
     // See https://www.w3.org/TR/sparql12-query/#FunctionMapping
     // and https://www.w3.org/TR/xpath-functions-31/#casting-to-integer
+    #[expect(clippy::match_same_arms)]
     match arg.as_value()? {
         SparqlValue::Boolean(opt) => opt.map(|b| SparqlNumber::from(if b { 1 } else { 0 }).into()),
         SparqlValue::DateTime(_) => None,
@@ -1119,7 +1125,7 @@ pub fn xsd_string(arg: &EvalResult) -> Option<EvalResult> {
                     format!("{}", big_decimal.normalized()).into()
                 }
                 SparqlNumber::Float(f) => {
-                    if (0.000001..=1e6).contains(&f.abs()) {
+                    if (0.000_001..=1e6).contains(&f.abs()) {
                         let conv = BigDecimal::from_f32(*f)?
                             .with_scale_round(6, RoundingMode::HalfEven)
                             .normalized();
@@ -1135,7 +1141,7 @@ pub fn xsd_string(arg: &EvalResult) -> Option<EvalResult> {
                     }
                 }
                 SparqlNumber::Double(f) => {
-                    if (0.000001..=1e6).contains(&f.abs()) {
+                    if (0.000_001..=1e6).contains(&f.abs()) {
                         let conv = BigDecimal::from_f64(*f)?
                             .with_scale_round(6, RoundingMode::HalfEven)
                             .normalized();

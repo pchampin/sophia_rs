@@ -234,7 +234,7 @@ pub(crate) fn rdfs_membership_properties<D: Recognized, R: RuleSet>(
         })
 }
 
-/// https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs1
+/// <https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs1>
 pub(crate) fn rdfs1<D: Recognized, R: RuleSet>(
     graph: &ReasonableGraph<D, R>,
 ) -> impl ParallelIterator<Item = [usize; 3]> {
@@ -245,7 +245,7 @@ pub(crate) fn rdfs1<D: Recognized, R: RuleSet>(
         .map(|idt| [idt, RDF_TYPE, RDFS_DATATYPE])
 }
 
-/// https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs2
+/// <https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs2>
 pub(crate) fn rdfs2<D: Recognized, R: RuleSet>(
     graph: &ReasonableGraph<D, R>,
 ) -> impl ParallelIterator<Item = [usize; 3]> {
@@ -256,7 +256,7 @@ pub(crate) fn rdfs2<D: Recognized, R: RuleSet>(
         .flat_map_iter(|[_, c, p]| graph.pos.range1(*p).map(|[_, _, s]| [*s, RDF_TYPE, *c]))
 }
 
-/// https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs3
+/// <https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs3>
 pub(crate) fn rdfs3<D: Recognized, R: RuleSet>(
     graph: &ReasonableGraph<D, R>,
 ) -> impl ParallelIterator<Item = [usize; 3]> {
@@ -267,7 +267,7 @@ pub(crate) fn rdfs3<D: Recognized, R: RuleSet>(
         .flat_map_iter(|[_, c, p]| graph.pos.range1(*p).map(|[_, o, _]| [*o, RDF_TYPE, *c]))
 }
 
-/// https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs5
+/// <https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs5>
 pub(crate) fn rdfs5<D: Recognized, R: RuleSet>(
     graph: &ReasonableGraph<D, R>,
 ) -> impl ParallelIterator<Item = [usize; 3]> {
@@ -286,7 +286,7 @@ pub(crate) fn rdfs5<D: Recognized, R: RuleSet>(
         })
 }
 
-/// https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs6
+/// <https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs6>
 pub(crate) fn rdfs6<D: Recognized, R: RuleSet>(
     graph: &ReasonableGraph<D, R>,
 ) -> impl ParallelIterator<Item = [usize; 3]> {
@@ -297,7 +297,7 @@ pub(crate) fn rdfs6<D: Recognized, R: RuleSet>(
         .map(|[_, _, s]| [*s, RDFS_SUB_PROPERTY_OF, *s])
 }
 
-/// https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs7
+/// <https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs7>
 pub(crate) fn rdfs7<D: Recognized, R: RuleSet>(
     graph: &ReasonableGraph<D, R>,
 ) -> impl ParallelIterator<Item = [usize; 3]> {
@@ -309,8 +309,8 @@ pub(crate) fn rdfs7<D: Recognized, R: RuleSet>(
         .flat_map_iter(|[_, p2, p1]| graph.pos.range1(*p1).map(move |[_, o, s]| [*s, *p2, *o]))
 }
 
-/// https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs8
-/// https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs10
+/// <https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs8>
+/// <https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs10>
 pub(crate) fn rdfs8_rdfs10<D: Recognized, R: RuleSet>(
     graph: &ReasonableGraph<D, R>,
 ) -> impl ParallelIterator<Item = [usize; 3]> {
@@ -326,7 +326,7 @@ pub(crate) fn rdfs8_rdfs10<D: Recognized, R: RuleSet>(
         })
 }
 
-/// https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs9
+/// <https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs9>
 pub(crate) fn rdfs9<D: Recognized, R: RuleSet>(
     graph: &ReasonableGraph<D, R>,
 ) -> impl ParallelIterator<Item = [usize; 3]> {
@@ -343,7 +343,7 @@ pub(crate) fn rdfs9<D: Recognized, R: RuleSet>(
         })
 }
 
-/// https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs11
+/// <https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs11>
 pub(crate) fn rdfs11<D: Recognized, R: RuleSet>(
     graph: &ReasonableGraph<D, R>,
 ) -> impl ParallelIterator<Item = [usize; 3]> {
@@ -362,7 +362,7 @@ pub(crate) fn rdfs11<D: Recognized, R: RuleSet>(
         })
 }
 
-/// https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs12
+/// <https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs12>
 pub(crate) fn rdfs12<D: Recognized, R: RuleSet>(
     graph: &ReasonableGraph<D, R>,
 ) -> impl ParallelIterator<Item = [usize; 3]> {
@@ -373,7 +373,7 @@ pub(crate) fn rdfs12<D: Recognized, R: RuleSet>(
         .map(|[_, _, s]| [*s, RDFS_SUB_PROPERTY_OF, RDFS_MEMBER])
 }
 
-/// https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs13
+/// <https://www.w3.org/TR/rdf12-semantics/#dfn-rdfs13>
 pub(crate) fn rdfs13<D: Recognized, R: RuleSet>(
     graph: &ReasonableGraph<D, R>,
 ) -> impl ParallelIterator<Item = [usize; 3]> {

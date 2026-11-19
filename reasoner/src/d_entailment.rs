@@ -37,7 +37,7 @@ pub trait Recognized: Send + Sync {
     fn datatypes() -> impl Iterator<Item = IriRef<MownStr<'static>>> + Send;
 
     /// List witnesses for all supported non-empty datatypes,
-    /// as pairs (lexical_form, datatype)
+    /// as pairs (`lexical_form`, datatype)
     ///
     /// NB: one literal can be a witness for several supported datatypes,
     /// e.g. `xsd:decimal`, `xsd:integer`, `xsd:int` and others...

@@ -168,7 +168,7 @@ impl<'a, D: Dataset + ?Sized> BgpIterator<'a, D> {
     }
 }
 
-impl<'a, D: Dataset + ?Sized> Iterator for BgpIterator<'a, D> {
+impl<D: Dataset + ?Sized> Iterator for BgpIterator<'_, D> {
     type Item = Result<Binding, SparqlWrapperError<D::Error>>;
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -11,9 +11,9 @@
 //! Note however that this API does not cover the creation of serializers,
 //! and therefore does not cover how their target is specified.
 
-use crate::dataset::*;
-use crate::graph::*;
-use crate::source::*;
+use crate::dataset::Dataset;
+use crate::graph::Graph;
+use crate::source::{QuadSource, StreamResult, TripleSource};
 
 /// A triple serializer writes triples according to a given format.
 pub trait TripleSerializer {

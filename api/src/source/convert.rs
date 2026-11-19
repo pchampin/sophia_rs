@@ -83,7 +83,7 @@ mod test {
                 ([ez_term(":d"), ez_term(":e"), ez_term(":f")], None),
                 ([ez_term(":g"), ez_term(":h"), ez_term(":i")], None),
             ]
-        )
+        );
     }
 
     #[test]
@@ -107,6 +107,6 @@ mod test {
                 [ez_term(":d"), ez_term(":e"), ez_term(":f")],
                 [ez_term(":g"), ez_term(":h"), ez_term(":i")],
             ]
-        )
+        );
     }
 }

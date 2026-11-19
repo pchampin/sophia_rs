@@ -44,7 +44,7 @@ pub(crate) trait NxSource: GenericSource {
         E: std::error::Error + Send + Sync + 'static,
     {
         if cfg!(test) {
-            self.debug_dump("enter_subject_or_version", txt)
+            self.debug_dump("enter_subject_or_version", txt);
         }
 
         match txt.as_bytes()[0] {
@@ -60,7 +60,7 @@ pub(crate) trait NxSource: GenericSource {
         E: std::error::Error + Send + Sync + 'static,
     {
         if cfg!(test) {
-            self.debug_dump("enter_predicate", txt)
+            self.debug_dump("enter_predicate", txt);
         }
 
         if txt.starts_with('<') {
@@ -75,7 +75,7 @@ pub(crate) trait NxSource: GenericSource {
         E: std::error::Error + Send + Sync + 'static,
     {
         if cfg!(test) {
-            self.debug_dump("enter_object", txt)
+            self.debug_dump("enter_object", txt);
         }
 
         match txt.as_bytes()[0] {
@@ -131,7 +131,7 @@ pub(crate) trait NxSource: GenericSource {
         E: std::error::Error + Send + Sync + 'static,
     {
         if cfg!(test) {
-            self.debug_dump("enter_triple_term", txt)
+            self.debug_dump("enter_triple_term", txt);
         }
 
         let mut col = 3;
@@ -155,7 +155,7 @@ pub(crate) trait NxSource: GenericSource {
         E: std::error::Error + Send + Sync + 'static,
     {
         if cfg!(test) {
-            self.debug_dump("enter_subject", txt)
+            self.debug_dump("enter_subject", txt);
         }
 
         match txt.as_bytes()[0] {
@@ -177,7 +177,7 @@ pub(crate) trait NxSource: GenericSource {
 
     // terminal production
 
-    /// Handle the whole production https://www.w3.org/TR/rdf12-n-triples/#grammar-production-IRIREF
+    /// Handle the whole production <https://www.w3.org/TR/rdf12-n-triples/#grammar-production-IRIREF>
     /// (or the equivalent in N-Quads)
     /// assuming the leading '<'.
     ///
@@ -198,7 +198,7 @@ pub(crate) trait NxSource: GenericSource {
         Ok(ret)
     }
 
-    /// Handle the whole production https://www.w3.org/TR/rdf12-n-triples/#grammar-production-BLANK_NODE_LABEL
+    /// Handle the whole production <https://www.w3.org/TR/rdf12-n-triples/#grammar-production-BLANK_NODE_LABEL>
     /// (or the equivalent in N-Quads)
     /// assuming the leading '_'.
     ///
@@ -211,7 +211,7 @@ pub(crate) trait NxSource: GenericSource {
         self.blank_node_label_raw(txt)
     }
 
-    /// Handle the whole production https://www.w3.org/TR/rdf12-turtle/#grammar-production-LANG_DIR
+    /// Handle the whole production <https://www.w3.org/TR/rdf12-turtle/#grammar-production-LANG_DIR>
     /// assuming the leading '@'.
     ///
     /// `txt` is the remaining of a line of text as read by [`BufRead::read_line`],
