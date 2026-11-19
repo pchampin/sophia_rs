@@ -1,11 +1,12 @@
 use super::*;
 use crate::ns::rdf;
 use crate::triple::Triple;
+use std::sync::LazyLock;
 
-lazy_static::lazy_static! {
-    static ref RDF_LANG_STRING: Box<str> = rdf::langString.iri().unwrap().unwrap().into();
-    static ref RDF_DIR_LANG_STRING: Box<str> = rdf::dirLangString.iri().unwrap().unwrap().into();
-}
+static RDF_LANG_STRING: LazyLock<Box<str>> =
+    LazyLock::new(|| rdf::langString.iri().unwrap().unwrap().into());
+static RDF_DIR_LANG_STRING: LazyLock<Box<str>> =
+    LazyLock::new(|| rdf::dirLangString.iri().unwrap().unwrap().into());
 
 /// A straightforward implementation of [`Term`] as an enum.
 #[derive(Clone, Debug)]

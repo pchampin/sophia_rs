@@ -1,6 +1,6 @@
 //! Contains helper functions and macros for testing Graph implementations
-use lazy_static::lazy_static;
 use std::fmt::Debug;
+use std::sync::LazyLock;
 
 use super::*;
 use crate::ns::*;
@@ -14,16 +14,14 @@ pub type StaticTerm = SimpleTerm<'static>;
 mod ns {
     use super::*;
     pub const NS: Namespace<&str> = Namespace::new_unchecked_const("http://example.org/");
-    lazy_static! {
-        pub static ref C1: NsTerm<'static> = NS.get("C1").unwrap();
-        pub static ref C2: NsTerm<'static> = NS.get("C2").unwrap();
-        pub static ref P1: NsTerm<'static> = NS.get("p1").unwrap();
-        pub static ref P2: NsTerm<'static> = NS.get("p2").unwrap();
-        pub static ref I1A: NsTerm<'static> = NS.get("I1A").unwrap();
-        pub static ref I1B: NsTerm<'static> = NS.get("I1B").unwrap();
-        pub static ref I2A: NsTerm<'static> = NS.get("I2A").unwrap();
-        pub static ref I2B: NsTerm<'static> = NS.get("I2B").unwrap();
-    }
+    pub static C1: LazyLock<NsTerm<'static>> = LazyLock::new(|| NS.get("C1").unwrap());
+    pub static C2: LazyLock<NsTerm<'static>> = LazyLock::new(|| NS.get("C2").unwrap());
+    pub static P1: LazyLock<NsTerm<'static>> = LazyLock::new(|| NS.get("p1").unwrap());
+    pub static P2: LazyLock<NsTerm<'static>> = LazyLock::new(|| NS.get("p2").unwrap());
+    pub static I1A: LazyLock<NsTerm<'static>> = LazyLock::new(|| NS.get("I1A").unwrap());
+    pub static I1B: LazyLock<NsTerm<'static>> = LazyLock::new(|| NS.get("I1B").unwrap());
+    pub static I2A: LazyLock<NsTerm<'static>> = LazyLock::new(|| NS.get("I2A").unwrap());
+    pub static I2B: LazyLock<NsTerm<'static>> = LazyLock::new(|| NS.get("I2B").unwrap());
     pub const B1: BnodeId<&str> = BnodeId::new_unchecked_const("1");
     pub const B2: BnodeId<&str> = BnodeId::new_unchecked_const("2");
     pub const B3: BnodeId<&str> = BnodeId::new_unchecked_const("3");

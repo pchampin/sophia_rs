@@ -3,32 +3,32 @@
 //! satisfies the `VARNAME` rule in [SPARQL](https://www.w3.org/TR/sparql12-query/#rVARNAME).
 
 use super::*;
-use lazy_static::lazy_static;
 use regex::Regex;
 use sophia_iri::wrap;
 use std::borrow::Borrow;
 use std::fmt::Debug;
+use std::sync::LazyLock;
 use thiserror::Error;
 
-lazy_static! {
-    /// Production of SPARQL's VARNAME according to the
-    /// [SPARQL spec](https://www.w3.org/TR/sparql12-query/#rVARNAME).
-    ///
-    /// # Captures
-    ///
-    /// This regular expression matches the whole input (`^...$`),
-    /// therefore, it can not be used to capture `VARNAME`s in an arbitrary string.
-    ///
-    /// # Rule
-    ///
-    /// `VARNAME ::= ( PN_CHARS_U | [0-9] ) ( PN_CHARS_U | [0-9] | #x00B7 | [#x0300-#x036F] | [#x203F-#x2040] )*`
-    static ref VARNAME: Regex = Regex::new(r"(?x)
-      ^
-      [_A-Za-z0-9\u{C0}-\u{D6}\u{D8}-\u{F6}\u{F8}-\u{2FF}\u{370}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\U{10000}-\U{EFFFF}]
-      [_A-Za-z0-9\u{B7}\u{C0}-\u{D6}\u{D8}-\u{F6}\u{F8}-\u{2FF}\u{300}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{203F}-\u{2040}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\U{10000}-\U{EFFFF}]*
-      $
-    ").unwrap();
-}
+/// Production of SPARQL's VARNAME according to the
+/// [SPARQL spec](https://www.w3.org/TR/sparql12-query/#rVARNAME).
+///
+/// # Captures
+///
+/// This regular expression matches the whole input (`^...$`),
+/// therefore, it can not be used to capture `VARNAME`s in an arbitrary string.
+///
+/// # Rule
+///
+/// `VARNAME ::= ( PN_CHARS_U | [0-9] ) ( PN_CHARS_U | [0-9] | #x00B7 | [#x0300-#x036F] | [#x203F-#x2040] )*`
+static VARNAME: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?x)
+  ^
+  [_A-Za-z0-9\u{C0}-\u{D6}\u{D8}-\u{F6}\u{F8}-\u{2FF}\u{370}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\U{10000}-\U{EFFFF}]
+  [_A-Za-z0-9\u{B7}\u{C0}-\u{D6}\u{D8}-\u{F6}\u{F8}-\u{2FF}\u{300}-\u{37D}\u{37F}-\u{1FFF}\u{200C}-\u{200D}\u{203F}-\u{2040}\u{2070}-\u{218F}\u{2C00}-\u{2FEF}\u{3001}-\u{D7FF}\u{F900}-\u{FDCF}\u{FDF0}-\u{FFFD}\U{10000}-\U{EFFFF}]*
+  $
+").unwrap()
+});
 
 wrap! { VarName borrowing str :
     /// This wrapper guarantees that the underlying `str`

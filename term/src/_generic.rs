@@ -1,14 +1,15 @@
 use std::borrow::Borrow;
 use std::fmt::Debug;
+use std::sync::LazyLock;
 
 use sophia_api::MownStr;
 use sophia_api::ns::rdf;
 use sophia_api::term::{BaseDirection, IriRef, LanguageTag, Term, TermKind, TryFromTerm};
 
-lazy_static::lazy_static! {
-    static ref RDF_LANG_STRING: IriRef<Box<str>> = rdf::langString.iri().unwrap().map_unchecked(Box::from);
-    static ref RDF_DIR_LANG_STRING: IriRef<Box<str>> = rdf::langString.iri().unwrap().map_unchecked(Box::from);
-}
+static RDF_LANG_STRING: LazyLock<IriRef<Box<str>>> =
+    LazyLock::new(|| rdf::langString.iri().unwrap().map_unchecked(Box::from));
+static RDF_DIR_LANG_STRING: LazyLock<IriRef<Box<str>>> =
+    LazyLock::new(|| rdf::langString.iri().unwrap().map_unchecked(Box::from));
 
 /// This type is used in the `Literal` variant of [`ArcTerm`](crate::ArcTerm) and [`RcTerm`](crate::RcTerm).
 ///

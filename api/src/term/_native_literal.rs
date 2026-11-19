@@ -1,12 +1,15 @@
 use super::*;
 use crate::ns::xsd;
+use std::sync::LazyLock;
 
-lazy_static::lazy_static! {
-    static ref XSD_DOUBLE: Box<str> = xsd::double.iri().unwrap().unwrap().into();
-    static ref XSD_INTEGER: Box<str> = xsd::integer.iri().unwrap().unwrap().into();
-    static ref XSD_STRING: Box<str> = xsd::string.iri().unwrap().unwrap().into();
-    static ref XSD_BOOLEAN: Box<str> = xsd::boolean.iri().unwrap().unwrap().into();
-}
+static XSD_DOUBLE: LazyLock<Box<str>> =
+    LazyLock::new(|| xsd::double.iri().unwrap().unwrap().into());
+static XSD_INTEGER: LazyLock<Box<str>> =
+    LazyLock::new(|| xsd::integer.iri().unwrap().unwrap().into());
+static XSD_STRING: LazyLock<Box<str>> =
+    LazyLock::new(|| xsd::string.iri().unwrap().unwrap().into());
+static XSD_BOOLEAN: LazyLock<Box<str>> =
+    LazyLock::new(|| xsd::boolean.iri().unwrap().unwrap().into());
 
 /// [`f64`] implements [`Term`]
 /// so that Rust literals can be used as RDF literals in code.

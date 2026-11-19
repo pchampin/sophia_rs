@@ -38,10 +38,6 @@ pub use bnode_id::BnodeId;
 pub use language_tag::LanguageTag;
 pub use var_name::VarName;
 
-lazy_static::lazy_static! {
-    static ref RDF_LANG_STRING: Box<str> = crate::ns::rdf::langString.iri().unwrap().unwrap().into();
-}
-
 /// The different kinds of terms that a [`Term`] can represent.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialOrd, PartialEq)]
 pub enum TermKind {

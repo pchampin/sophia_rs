@@ -7,20 +7,17 @@ use crate::graph::test::*;
 use crate::ns::*;
 use crate::quad::*;
 use crate::source::*;
-use lazy_static::lazy_static;
+use std::sync::LazyLock;
 
-#[allow(missing_docs)]
-#[allow(clippy::unnecessary_wraps)]
+#[allow(missing_docs, clippy::unnecessary_wraps)]
 mod ns {
     use super::*;
-    lazy_static! {
-        pub static ref G1: NsTerm<'static>  = NS.get("G1").unwrap();
-        pub static ref G2: NsTerm<'static> = NS.get("G2").unwrap();
-        //
-        pub static ref DG: Option<NsTerm<'static>> = None;
-        pub static ref GN1: Option<NsTerm<'static>> = Some(*G1);
-        pub static ref GN2: Option<NsTerm<'static>> = Some(*G2);
-    }
+    pub static G1: LazyLock<NsTerm<'static>> = LazyLock::new(|| NS.get("G1").unwrap());
+    pub static G2: LazyLock<NsTerm<'static>> = LazyLock::new(|| NS.get("G2").unwrap());
+    //
+    pub static DG: LazyLock<Option<NsTerm<'static>>> = LazyLock::new(|| None);
+    pub static GN1: LazyLock<Option<NsTerm<'static>>> = LazyLock::new(|| Some(*G1));
+    pub static GN2: LazyLock<Option<NsTerm<'static>>> = LazyLock::new(|| Some(*G2));
 }
 pub use ns::*;
 

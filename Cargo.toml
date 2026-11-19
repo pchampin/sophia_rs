@@ -48,7 +48,6 @@ sophia_xml = { version = "0.10.0", path = "./xml" }
 criterion = "0.5"
 env_logger = "0.11"
 futures-util = "0.3"
-lazy_static = "1"
 log = "0.4"
 mownstr = "0.3"
 oxiri = "0.2"
