@@ -4,6 +4,9 @@ use std::borrow::Borrow;
 sophia_iri::wrap! { Prefix borrowing str :
     /// This wrapper guarantees that the underlying `str`
     /// satisfies the `PN_PREFIX?` rule in Turtle/SPARQL.
+    ///
+    /// # Errors
+    /// Returns [`InvalidPrefix`] if `prefix` does not satisfy the `PN_PREFIX?` rule.
     pub fn new(prefix: T) -> Result<Self, InvalidPrefix> {
         if is_valid_prefix(prefix.borrow()) {
             Ok(Prefix(prefix))

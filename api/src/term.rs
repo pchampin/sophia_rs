@@ -516,6 +516,10 @@ pub trait Term: std::fmt::Debug {
     ///
     /// NB: if you want to make a *copy* of this term without consuming it,
     /// you can use `this_term.`[`borrow_term`](Term::borrow_term)`().try_into_term::<T>()`.
+    ///
+    /// # Errors
+    /// Returns [`T::Error`](TryFromTerm::Error) if this term can not be converted to `T`
+    /// (see [`TryFromTerm::try_from_term`]).
     #[inline]
     fn try_into_term<T: TryFromTerm>(self) -> Result<T, T::Error>
     where
@@ -615,6 +619,10 @@ pub trait TryFromTerm: Sized {
     /// The error type produced when failing to copy a given term
     type Error: std::error::Error + Send + Sync + 'static;
     /// Try to copy `term` into an instance of this type.
+    ///
+    /// # Errors
+    /// Implementors should return an error if `term` can not be represented by this type
+    /// (e.g. a term of an unsupported [kind](Term::kind)).
     fn try_from_term<T: Term>(term: T) -> Result<Self, Self::Error>;
 }
 
@@ -622,6 +630,10 @@ pub trait TryFromTerm: Sized {
 ///
 /// NB: it may be necessary to explicitly specify the parameter `T`,
 /// even when the type of `t` is known. E.g.: ``assert_consistent_term_impl::<MyTerm>(&t)``.
+///
+/// # Panics
+/// This will panic if `t`'s implementation of [`Term`] is inconsistent,
+/// e.g. if [`Term::kind`] disagrees with `is_*` methods or with the accessors (`iri`, `bnode_id`, ...).
 pub fn assert_consistent_term_impl<T>(t: &T)
 where
     T: Term + Clone,

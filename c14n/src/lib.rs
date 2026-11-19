@@ -40,6 +40,7 @@ pub enum C14nError<E: std::error::Error + Send + Sync + 'static> {
     #[error("Toxic graph detected: {0}")]
     ToxicGraph(String),
     /// The c14n algorithm does not support this dataset
+    /// (e.g. RDFC-1.0 does not support generalized RDF nor RDF 1.2 triple terms)
     #[error("Unsupported feature: {0}")]
     Unsupported(String),
 }

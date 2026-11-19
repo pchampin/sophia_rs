@@ -154,6 +154,9 @@ impl Stringifier for NTriplesSerializer<Vec<u8>> {
 }
 
 /// Write the given term into the given write in the N-Triples format.
+///
+/// # Errors
+/// Returns any [`io::Error`] raised by `w`.
 pub fn write_triple<W, T, const C: bool>(w: &mut W, t: T, separator: u8) -> io::Result<()>
 where
     W: io::Write,
@@ -171,6 +174,13 @@ where
 ///
 /// Generic parameter C determines whether the canonical form of N-Triples/N-Quads should be enforced,
 /// which only impacts the case of language tags in this function.
+///
+/// # Errors
+/// Returns any [`io::Error`] raised by `w`.
+///
+/// # Panics
+/// This will panic if `t` is an inconsistent [`Term`] implementation,
+/// i.e. if the accessor corresponding to `t.kind()` returns `None`.
 pub fn write_term<W, T, const C: bool>(w: &mut W, t: T) -> io::Result<()>
 where
     W: io::Write,

@@ -116,6 +116,15 @@ impl SparqlClient {
     }
 
     /// Async counterpart of [`SparqlDataset::query`].
+    ///
+    /// # Errors
+    /// Returns [`Error::Http`] if the request fails or the JSON results can not be decoded,
+    /// [`Error::Xml`], [`Error::XmlEncoding`] or [`Error::SparqlXml`] if the XML results are invalid,
+    /// or [`Error::Unsupported`] if the endpoint returns an unsupported content-type.
+    /// Errors in returned triples or bindings are only raised when iterating over them.
+    ///
+    /// # Panics
+    /// This will panic if the `Content-Type` header of the response contains non-visible-ASCII characters.
     pub async fn async_query<Q>(&self, query: Q) -> Result<SparqlResult<Self>, Error>
     where
         Q: IntoQuery<Query>,
@@ -273,7 +282,7 @@ pub enum Error {
     ),
 
     #[error("JSON results parsing error: {0}")]
-    /// Invalid XML syntax was returned by the SPARQL endpoint.
+    /// Invalid JSON syntax was returned by the SPARQL endpoint.
     Json(
         #[source]
         #[from]

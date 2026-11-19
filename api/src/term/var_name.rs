@@ -33,6 +33,9 @@ static VARNAME: LazyLock<Regex> = LazyLock::new(|| {
 wrap! { VarName borrowing str :
     /// This wrapper guarantees that the underlying `str`
     /// satisfies the `VARNAME` rule in [SPARQL](https://www.w3.org/TR/sparql12-query/#rVARNAME).
+    ///
+    /// # Errors
+    /// Returns [`InvalidVarName`] if `name` does not satisfy the `VARNAME` rule.
     pub fn new(name: T) -> Result<Self, InvalidVarName> {
         if VARNAME.is_match(name.borrow()) {
             Ok(VarName(name))

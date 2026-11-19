@@ -187,6 +187,9 @@ pub trait Dataset {
     }
 
     /// Return `true` if this dataset contains the given quad.
+    ///
+    /// # Errors
+    /// Returns an error (`Self::Error`) if the underlying iteration over quads fails.
     fn contains<TS, TP, TO, TG>(&self, s: TS, p: TP, o: TO, g: GraphName<TG>) -> DResult<Self, bool>
     where
         TS: Term,
@@ -381,6 +384,10 @@ pub trait CollectibleDataset: Dataset + Sized {
     type CollectError: Error + Send + Sync + 'static;
 
     /// Construct a dataset from the given source
+    ///
+    /// # Errors
+    /// Returns a [`SourceError`](StreamError::SourceError) if `quads` fails,
+    /// or a [`SinkError`](StreamError::SinkError) (`Self::CollectError`) if the dataset can not be built.
     fn from_quad_source<TS: QuadSource>(
         quads: TS,
     ) -> StreamResult<Self, TS::Error, Self::CollectError>;
@@ -395,6 +402,10 @@ pub type MdResult<D, T> = std::result::Result<T, <D as MutableDataset>::Mutation
 /// see also [`SetDataset`].
 pub trait MutableDataset: Dataset {
     /// The error type that this dataset may raise during mutations.
+    ///
+    /// This may happen if the underlying backend encounters a problem,
+    /// or if it does not support some mutations (e.g. not all implementations
+    /// support literals in the subject position, or triple terms...).
     type MutationError: Error + Send + Sync + 'static;
 
     /// Insert the given quad in this dataset.
@@ -429,6 +440,10 @@ pub trait MutableDataset: Dataset {
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// # Errors
+    /// Returns an error if this mutation can not be performed.
+    /// See [`MutationError`](Self::MutationError) for cases where this can happen.
     fn insert<TS, TP, TO, TG>(
         &mut self,
         s: TS,
@@ -448,6 +463,10 @@ pub trait MutableDataset: Dataset {
     /// you can still pass [`q.spog()`](Quad::spog).
     ///
     /// See also [`MutableDataset::insert`]
+    ///
+    /// # Errors
+    /// Returns an error if this mutation can not be performed.
+    /// See [`MutationError`](Self::MutationError) for cases where this can happen.
     fn insert_quad<T>(&mut self, quad: T) -> MdResult<Self, bool>
     where
         T: Quad,
@@ -467,6 +486,10 @@ pub trait MutableDataset: Dataset {
     /// In other words,
     /// a return value of `false` means that the dataset was not changed,
     /// because the quad was already absent from this [`SetDataset`].
+    ///
+    /// # Errors
+    /// Returns an error if this mutation can not be performed.
+    /// See [`MutationError`](Self::MutationError) for cases where this can happen.
     fn remove<TS, TP, TO, TG>(
         &mut self,
         s: TS,
@@ -486,6 +509,10 @@ pub trait MutableDataset: Dataset {
     /// you can still pass [`q.spog()`](Quad::spog).
     ///
     /// See also [`MutableDataset::remove`]
+    ///
+    /// # Errors
+    /// Returns an error if this mutation can not be performed.
+    /// See [`MutationError`](Self::MutationError) for cases where this can happen.
     fn remove_quad<T>(&mut self, quad: T) -> MdResult<Self, bool>
     where
         T: Quad,
@@ -514,6 +541,11 @@ pub trait MutableDataset: Dataset {
     /// the number of quads that were *actually* inserted
     /// (i.e. that were not already present in this [`SetDataset`])
     /// is returned.
+    ///
+    /// # Errors
+    /// Returns a [`SourceError`](StreamError::SourceError) if `src` fails (error type `TS::Error`),
+    /// or a [`SinkError`](StreamError::SinkError) if one of the resulting mutations can not be performed.
+    /// See [`MutationError`](Self::MutationError) for cases where this can happen.
     #[inline]
     fn insert_all<TS: QuadSource>(
         &mut self,
@@ -540,6 +572,11 @@ pub trait MutableDataset: Dataset {
     /// the number of quads that were *actually* removed
     /// (i.e. that were not already absent from this [`SetDataset`])
     /// is returned.
+    ///
+    /// # Errors
+    /// Returns a [`SourceError`](StreamError::SourceError) if `src` fails (error type `TS::Error`),
+    /// or a [`SinkError`](StreamError::SinkError) if one of the resulting mutations can not be performed.
+    /// See [`MutationError`](Self::MutationError) for cases where this can happen.
     #[inline]
     fn remove_all<TS: QuadSource>(
         &mut self,
@@ -570,6 +607,11 @@ pub trait MutableDataset: Dataset {
     /// # Note to implementors
     /// The default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
+    ///
+    /// # Errors
+    /// Returns an error if iterating over the matching quads fails
+    /// (converted from [`Dataset::Error`]), or if one of the removals can not be performed.
+    /// See [`MutationError`](Self::MutationError) for cases where this can happen.
     fn remove_matching<S, P, O, G>(
         &mut self,
         ms: S,
@@ -600,6 +642,11 @@ pub trait MutableDataset: Dataset {
     /// # Note to implementors
     /// The default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
+    ///
+    /// # Errors
+    /// Returns an error if iterating over the quads fails
+    /// (converted from [`Dataset::Error`]), or if one of the removals can not be performed.
+    /// See [`MutationError`](Self::MutationError) for cases where this can happen.
     fn retain_matching<S, P, O, G>(
         &mut self,
         ms: S,

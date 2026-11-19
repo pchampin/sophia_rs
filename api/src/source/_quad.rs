@@ -17,6 +17,10 @@ pub trait QuadSource: Sized + for<'x> Source<Item<'x>: Quad> {
     /// Return `Ok(false)` if there are no more quads in this source.
     ///
     /// Return an error if either the source or `f` errs.
+    ///
+    /// # Errors
+    /// Returns a [`SourceError`] if the source fails while producing a quad,
+    /// or a [`SinkError`] if `f` returns an error.
     #[inline]
     fn try_for_some_quad<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
     where
@@ -29,6 +33,10 @@ pub trait QuadSource: Sized + for<'x> Source<Item<'x>: Quad> {
     /// Call f for all quads from this source.
     ///
     /// Return an error if either the source or `f` errs.
+    ///
+    /// # Errors
+    /// Stops at the first error, returning a [`SourceError`] if the source fails,
+    /// or a [`SinkError`] if `f` returns an error.
     #[inline]
     fn try_for_each_quad<F, E>(&mut self, mut f: F) -> StreamResult<(), Self::Error, E>
     where
@@ -43,6 +51,9 @@ pub trait QuadSource: Sized + for<'x> Source<Item<'x>: Quad> {
     /// Return false if there are no more quads in this source.
     ///
     /// Return an error if either the source errs.
+    ///
+    /// # Errors
+    /// Returns the source's error if it fails while producing a quad.
     #[inline]
     fn for_some_quad<F>(&mut self, mut f: F) -> Result<bool, Self::Error>
     where
@@ -54,6 +65,9 @@ pub trait QuadSource: Sized + for<'x> Source<Item<'x>: Quad> {
     /// Call f for all quads from this source.
     ///
     /// Return an error if either the source errs.
+    ///
+    /// # Errors
+    /// Stops at the first error, and returns it, if the source fails while producing a quad.
     #[inline]
     fn for_each_quad<F>(&mut self, mut f: F) -> Result<(), Self::Error>
     where
@@ -132,6 +146,11 @@ pub trait QuadSource: Sized + for<'x> Source<Item<'x>: Quad> {
     }
 
     /// Collect these quads into a new dataset.
+    ///
+    /// # Errors
+    /// Returns a [`SourceError`] if the source fails,
+    /// or a [`SinkError`] if the dataset fails to insert a quad
+    /// (see [`CollectibleDataset::CollectError`]).
     #[inline]
     fn collect_quads<D>(
         self,
@@ -147,6 +166,11 @@ pub trait QuadSource: Sized + for<'x> Source<Item<'x>: Quad> {
     /// Insert all quads from this source into the given [`MutableDataset`].
     ///
     /// Stop on the first error (in the source or in the dataset).
+    ///
+    /// # Errors
+    /// Returns a [`SourceError`] if the source fails,
+    /// or a [`SinkError`] if `dataset` fails to insert a quad
+    /// (see [`MutableDataset::MutationError`]).
     #[inline]
     fn add_to_dataset<D: MutableDataset>(
         self,

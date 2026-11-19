@@ -20,6 +20,9 @@ pub struct LanguageTag<T: Borrow<str>>(T);
 impl<T: Borrow<str>> LanguageTag<T> {
     /// Build a new [`LanguageTag`] from `tag`,
     /// returning an error if it is not a valid BCP47 language tag.
+    ///
+    /// # Errors
+    /// Returns [`InvalidLanguageTag`] if `tag` is not a valid BCP47 language tag.
     pub fn new(tag: T) -> Result<Self, InvalidLanguageTag> {
         if LANG_TAG.is_match(tag.borrow()) {
             Ok(LanguageTag(tag))
@@ -32,7 +35,7 @@ impl<T: Borrow<str>> LanguageTag<T> {
     /// It does not check that the value returned by the function is valid.
     /// If it is not, it may result in undefined behaviour.
     pub fn new_unchecked(tag: T) -> Self {
-        assert!(LANG_TAG.is_match(tag.borrow()));
+        debug_assert!(LANG_TAG.is_match(tag.borrow()));
         LanguageTag(tag)
     }
 

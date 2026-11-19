@@ -15,12 +15,14 @@ use std::collections::BTreeSet;
 
 /// Computes whether two datasets are isomorphic.
 ///
-/// # Error
-/// If an error occurs while traversing `d1`,
-/// a [`SourceError`](sophia_api::source::StreamError::SourceError`) is returned.
+/// # Errors
+/// If an error occurs while traversing or canonicalizing `d1`,
+/// a [`SourceError`](sophia_api::source::StreamError::SourceError) is returned.
 ///
-/// /// If an error occurs while traversing `d2`,
-/// a [`SinkError`](sophia_api::source::StreamError::SinkError`) is returned.
+/// If an error occurs while traversing or canonicalizing `d2`,
+/// a [`SinkError`](sophia_api::source::StreamError::SinkError) is returned.
+///
+/// Canonicalization errors include [`C14nError::ToxicGraph`] for overly complex datasets.
 pub fn isomorphic_datasets<D1, D2>(
     d1: &D1,
     d2: &D2,

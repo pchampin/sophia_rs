@@ -21,6 +21,11 @@ pub trait TripleSerializer {
     type Error: std::error::Error + Send + Sync + 'static;
 
     /// Serialize all triples from the given [`TripleSource`].
+    ///
+    /// # Errors
+    /// Returns a [`SourceError`](crate::source::StreamError::SourceError) if `source` fails,
+    /// or a [`SinkError`](crate::source::StreamError::SinkError) if serialization fails
+    /// (e.g. an I/O error when writing to the target).
     fn serialize_triples<TS>(
         &mut self,
         source: TS,
@@ -34,6 +39,11 @@ pub trait TripleSerializer {
     /// While this method has a default implementation based on
     /// [`serialize_triples`](Self::serialize_triples),
     /// some implementations may override it in order to better use the structure of the Graph.
+    ///
+    /// # Errors
+    /// Returns a [`SourceError`](crate::source::StreamError::SourceError) if iterating over `graph` fails,
+    /// or a [`SinkError`](crate::source::StreamError::SinkError) if serialization fails
+    /// (e.g. an I/O error when writing to the target).
     #[inline]
     fn serialize_graph<G>(&mut self, graph: &G) -> StreamResult<&mut Self, G::Error, Self::Error>
     where
@@ -50,6 +60,11 @@ pub trait QuadSerializer {
     type Error: std::error::Error + Send + Sync + 'static;
 
     /// Serialize all quads from the given [`QuadSource`].
+    ///
+    /// # Errors
+    /// Returns a [`SourceError`](crate::source::StreamError::SourceError) if `source` fails,
+    /// or a [`SinkError`](crate::source::StreamError::SinkError) if serialization fails
+    /// (e.g. an I/O error when writing to the target).
     fn serialize_quads<QS>(
         &mut self,
         source: QS,
@@ -63,6 +78,11 @@ pub trait QuadSerializer {
     /// While this method has a default implementation based on
     /// [`serialize_quads`](Self::serialize_quads),
     /// some implementations may override it in order to better use the structure of the Dataset.
+    ///
+    /// # Errors
+    /// Returns a [`SourceError`](crate::source::StreamError::SourceError) if iterating over `dataset` fails,
+    /// or a [`SinkError`](crate::source::StreamError::SinkError) if serialization fails
+    /// (e.g. an I/O error when writing to the target).
     #[inline]
     fn serialize_dataset<D>(
         &mut self,

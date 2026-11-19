@@ -9,6 +9,10 @@ wrap! { Uri borrowing str :
     /// This wrapper guarantees that the underlying `str`
     /// satisfies the `URI` rule in  RFC-3986
     /// (i.e. an absolute URI with an optional fragment).
+    ///
+    /// # Errors
+    /// [`Uri::new`] returns [`InvalidUri`] if `uri` is not a valid URI
+    /// (in particular, if it contains non-ASCII characters).
     pub fn new(uri: T) -> Result<Self, InvalidUri> {
         let urib = uri.borrow();
         if urib.is_ascii() && is_absolute_iri_ref(urib) {
@@ -56,6 +60,10 @@ wrap! { UriRef borrowing str :
     /// This wrapper guarantees that the underlying `str`
     /// satisfies the `irelative-ref` rule in  RFC-3986
     /// (i.e. an absolute or relative URI reference).
+    ///
+    /// # Errors
+    /// [`UriRef::new`] returns [`InvalidUri`] if `uri` is not a valid (absolute or relative)
+    /// URI reference (in particular, if it contains non-ASCII characters).
     pub fn new(uri: T) -> Result<Self, InvalidUri> {
         let urib = uri.borrow();
         if urib.is_ascii() && is_valid_iri_ref(urib) {

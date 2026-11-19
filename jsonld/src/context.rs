@@ -39,6 +39,10 @@ pub trait TryIntoContextRef {
     /// Raised when the conversion to [`ContextRef`] fails
     type Error;
     /// Try to turn it into a [`ContextRef`]
+    ///
+    /// # Errors
+    /// Returns [`Self::Error`](TryIntoContextRef::Error) if `self` can not be converted,
+    /// e.g. (for `&str`) if it is not valid JSON or does not contain a valid `@context`.
     fn try_into_context_ref(self) -> Result<ContextRef, Self::Error>;
 }
 

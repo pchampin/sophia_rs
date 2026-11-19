@@ -10,6 +10,9 @@ impl<T: Borrow<str>> Namespace<T> {
     /// Build a custom namespace based on the given IRI.
     ///
     /// `iri` must be a valid IRI, otherwise this constructor returns an error.
+    ///
+    /// # Errors
+    /// Returns [`InvalidIri`] if `iri` is not a valid IRI reference.
     pub fn new(iri: T) -> Result<Self, InvalidIri> {
         IriRef::new(iri).map(Namespace)
     }
@@ -24,6 +27,9 @@ impl<T: Borrow<str>> Namespace<T> {
     /// Build an IRI by appending `suffix` to this namespace.
     ///
     /// Return an error if the concatenation produces an invalid IRI.
+    ///
+    /// # Errors
+    /// Returns [`InvalidIri`] if this namespace's IRI followed by `suffix` is not a valid IRI reference.
     pub fn get<'s>(&'s self, suffix: &'s str) -> Result<NsTerm<'s>, InvalidIri> {
         let ns_term = NsTerm {
             ns: self.0.as_ref(),

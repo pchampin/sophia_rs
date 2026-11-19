@@ -4,12 +4,14 @@ use sophia_c14n::C14nError;
 
 /// Computes whether two graphs are isomorphic.
 ///
-/// # Error
-/// If an error occurs while traversing `g1`,
-/// a [`SourceError`](sophia_api::source::StreamError::SourceError`) is returned.
+/// # Errors
+/// If an error occurs while traversing or canonicalizing `g1`,
+/// a [`SourceError`](sophia_api::source::StreamError::SourceError) is returned.
 ///
-/// /// If an error occurs while traversing `g2`,
-/// a [`SinkError`](sophia_api::source::StreamError::SinkError`) is returned.
+/// If an error occurs while traversing or canonicalizing `g2`,
+/// a [`SinkError`](sophia_api::source::StreamError::SinkError) is returned.
+///
+/// Canonicalization errors include [`C14nError::ToxicGraph`] for overly complex graphs.
 pub fn isomorphic_graphs<G1, G2>(
     g1: &G1,
     g2: &G2,

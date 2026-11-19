@@ -174,6 +174,9 @@ pub trait Graph {
     }
 
     /// Return `true` if this graph contains the given triple.
+    ///
+    /// # Errors
+    /// Returns an error (`Self::Error`) if the underlying iteration over triples fails.
     fn contains<TS, TP, TO>(&self, s: TS, p: TP, o: TO) -> GResult<Self, bool>
     where
         TS: Term,
@@ -336,6 +339,10 @@ pub trait CollectibleGraph: Graph + Sized {
     type CollectError: Error + Send + Sync + 'static;
 
     /// Construct a graph from the given source
+    ///
+    /// # Errors
+    /// Returns a [`SourceError`](StreamError::SourceError) if `triples` fails,
+    /// or a [`SinkError`](StreamError::SinkError) (`Self::CollectError`) if the graph can not be built.
     fn from_triple_source<TS: TripleSource>(
         triples: TS,
     ) -> StreamResult<Self, TS::Error, Self::CollectError>;
@@ -350,6 +357,10 @@ pub type MgResult<G, T> = std::result::Result<T, <G as MutableGraph>::MutationEr
 /// see also [`SetGraph`].
 pub trait MutableGraph: Graph {
     /// The error type that this graph may raise during mutations.
+    ///
+    /// This may happen if the underlying backend encounters a problem,
+    /// or if it does not support some mutations (e.g. not all implementations
+    /// support literals in the subject position, or triple terms...).
     type MutationError: Error + Send + Sync + 'static;
 
     /// Insert in this graph a triple made of the the given terms.
@@ -382,6 +393,10 @@ pub trait MutableGraph: Graph {
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// # Errors
+    /// Returns an error if this mutation can not be performed.
+    /// See [`MutationError`](Self::MutationError) for cases where this can happen.
     fn insert<TS, TP, TO>(&mut self, s: TS, p: TP, p: TO) -> MgResult<Self, bool>
     where
         TS: Term,
@@ -394,6 +409,10 @@ pub trait MutableGraph: Graph {
     /// you can still pass [`t.spo()`](Triple::spo).
     ///
     /// See also [`MutableGraph::insert`]
+    ///
+    /// # Errors
+    /// Returns an error if this mutation can not be performed.
+    /// See [`MutationError`](Self::MutationError) for cases where this can happen.
     fn insert_triple<T>(&mut self, triple: T) -> MgResult<Self, bool>
     where
         T: Triple,
@@ -413,6 +432,10 @@ pub trait MutableGraph: Graph {
     /// In other words,
     /// a return value of `false` means that the graph was not changed,
     /// because the triple was already absent from this [`SetGraph`].
+    ///
+    /// # Errors
+    /// Returns an error if this mutation can not be performed.
+    /// See [`MutationError`](Self::MutationError) for cases where this can happen.
     fn remove<TS, TP, TO>(&mut self, s: TS, p: TP, o: TO) -> MgResult<Self, bool>
     where
         TS: Term,
@@ -425,6 +448,10 @@ pub trait MutableGraph: Graph {
     /// you can still pass [`t.spo()`](Triple::spo).
     ///
     /// See also [`MutableGraph::remove`]
+    ///
+    /// # Errors
+    /// Returns an error if this mutation can not be performed.
+    /// See [`MutationError`](Self::MutationError) for cases where this can happen.
     fn remove_triple<T>(&mut self, triple: T) -> MgResult<Self, bool>
     where
         T: Triple,
@@ -453,6 +480,11 @@ pub trait MutableGraph: Graph {
     /// the number of triples that were *actually* inserted
     /// (i.e. that were not already present in this [`SetGraph`])
     /// is returned.
+    ///
+    /// # Errors
+    /// Returns a [`SourceError`](StreamError::SourceError) if `src` fails (error type `TS::Error`),
+    /// or a [`SinkError`](StreamError::SinkError) if one of the resulting mutations can not be performed.
+    /// See [`MutationError`](Self::MutationError) for cases where this can happen.
     #[inline]
     fn insert_all<TS: TripleSource>(
         &mut self,
@@ -479,6 +511,11 @@ pub trait MutableGraph: Graph {
     /// the number of triples that were *actually* removed
     /// (i.e. that were not already absent from this [`SetGraph`])
     /// is returned.
+    ///
+    /// # Errors
+    /// Returns a [`SourceError`](StreamError::SourceError) if `src` fails (error type `TS::Error`),
+    /// or a [`SinkError`](StreamError::SinkError) if one of the resulting mutations can not be performed.
+    /// See [`MutationError`](Self::MutationError) for cases where this can happen.
     #[inline]
     fn remove_all<TS: TripleSource>(
         &mut self,
@@ -509,6 +546,11 @@ pub trait MutableGraph: Graph {
     /// # Note to implementors
     /// The default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
+    ///
+    /// # Errors
+    /// Returns an error if iterating over the matching triples fails
+    /// (converted from [`Graph::Error`]), or if one of the removals can not be performed.
+    /// See [`MutationError`](Self::MutationError) for cases where this can happen.
     fn remove_matching<S, P, O>(
         &mut self,
         ms: S,
@@ -534,6 +576,11 @@ pub trait MutableGraph: Graph {
     /// # Note to implementors
     /// The default implementation is rather naive,
     /// and could be improved in specific implementations of the trait.
+    ///
+    /// # Errors
+    /// Returns an error if iterating over the triples fails
+    /// (converted from [`Graph::Error`]), or if one of the removals can not be performed.
+    /// See [`MutationError`](Self::MutationError) for cases where this can happen.
     fn retain_matching<S, P, O>(&mut self, ms: S, mp: P, mo: O) -> Result<(), Self::MutationError>
     where
         S: TermMatcher,

@@ -80,6 +80,11 @@ pub trait Source {
     /// Return `Ok(false)` if there are no more items in this source.
     ///
     /// Return an error if either the source or `f` errs.
+    ///
+    /// # Errors
+    /// Implementors must return a [`SourceError`]
+    /// if the source itself fails while producing an item,
+    /// and a [`SinkError`] wrapping any error returned by `f`.
     fn try_for_some_item<E, F>(&mut self, f: F) -> StreamResult<bool, Self::Error, E>
     where
         E: Error + Send + Sync + 'static,
@@ -88,6 +93,11 @@ pub trait Source {
     /// Call f for all items from this source.
     ///
     /// Return an error if either the source or `f` errs.
+    ///
+    /// # Errors
+    /// Stops at the first error,
+    /// returning a [`SourceError`] if the source fails while producing an item,
+    /// or a [`SinkError`] if `f` returns an error.
     #[inline]
     fn try_for_each_item<F, E>(&mut self, mut f: F) -> StreamResult<(), Self::Error, E>
     where
@@ -103,6 +113,9 @@ pub trait Source {
     /// Return false if there are no more items in this source.
     ///
     /// Return an error if either the source errs.
+    ///
+    /// # Errors
+    /// Returns the source's error if it fails while producing an item.
     #[inline]
     fn for_some_item<F>(&mut self, mut f: F) -> Result<bool, Self::Error>
     where
@@ -118,6 +131,9 @@ pub trait Source {
     /// Call f for all items from this source.
     ///
     /// Return an error if either the source errs.
+    ///
+    /// # Errors
+    /// Stops at the first error, and returns it, if the source fails while producing an item.
     #[inline]
     fn for_each_item<F>(&mut self, f: F) -> Result<(), Self::Error>
     where

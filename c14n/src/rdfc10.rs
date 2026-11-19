@@ -25,6 +25,9 @@ use crate::hash::{HashFunction, Sha256, Sha384};
 /// + quads are sorted in codepoint order.
 ///
 /// See also [`normalize_with`].
+///
+/// # Errors
+/// See [`C14nError`] for the different error conditions.
 pub fn normalize<D: SetDataset, W: io::Write>(d: &D, w: W) -> Result<(), C14nError<D::Error>> {
     normalize_with::<Sha256, D, W>(d, w, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
@@ -37,6 +40,9 @@ pub fn normalize<D: SetDataset, W: io::Write>(d: &D, w: W) -> Result<(), C14nErr
 /// + quads are sorted in codepoint order.
 ///
 /// See also [`normalize_with`].
+///
+/// # Errors
+/// See [`C14nError`] for the different error conditions.
 pub fn normalize_sha384<D: SetDataset, W: io::Write>(
     d: &D,
     w: W,
@@ -52,6 +58,9 @@ pub fn normalize_sha384<D: SetDataset, W: io::Write>(
 /// + quads are sorted in codepoint order;
 ///
 /// See also [`normalize`].
+///
+/// # Errors
+/// See [`C14nError`] for the different error conditions.
 pub fn normalize_with<H: HashFunction, D: SetDataset, W: io::Write>(
     d: &D,
     w: W,
@@ -115,6 +124,10 @@ where
 /// Implements <https://www.w3.org/TR/rdf-canon/#canon-algorithm>
 ///
 /// See also [`normalize`].
+///
+/// # Errors
+/// See [`C14nError`] for the different error conditions
+/// (this function never returns [`C14nError::Io`]).
 pub fn relabel<D: SetDataset>(d: &D) -> Result<(C14nQuads<'_, D>, C14nIdMap), C14nError<D::Error>> {
     relabel_with::<Sha256, D>(d, DEFAULT_DEPTH_FACTOR, DEFAULT_PERMUTATION_LIMIT)
 }
@@ -130,6 +143,10 @@ pub fn relabel<D: SetDataset>(d: &D) -> Result<(C14nQuads<'_, D>, C14nIdMap), C1
 /// Implements <https://www.w3.org/TR/rdf-canon/#canon-algorithm>
 ///
 /// See also [`normalize`].
+///
+/// # Errors
+/// See [`C14nError`] for the different error conditions
+/// (this function never returns [`C14nError::Io`]).
 pub fn relabel_sha384<D: SetDataset>(
     d: &D,
 ) -> Result<(C14nQuads<'_, D>, C14nIdMap), C14nError<D::Error>> {
@@ -161,6 +178,10 @@ pub fn relabel_sha384<D: SetDataset>(
 /// that algorithm is extended to supports RDF 1.2 and Sophia's generalized RDF.
 ///
 /// See also [`relabel`], [`normalize_with`].
+///
+/// # Errors
+/// See [`C14nError`] for the different error conditions
+/// (this function never returns [`C14nError::Io`]).
 pub fn relabel_with<'a, H: HashFunction, D: SetDataset>(
     d: &'a D,
     depth_factor: f32,

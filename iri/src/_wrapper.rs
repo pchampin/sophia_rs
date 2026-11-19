@@ -9,6 +9,9 @@ wrap! { Iri borrowing str :
     /// This wrapper guarantees that the underlying `str`
     /// satisfies the `IRI` rule in  RFC-3987
     /// (i.e. an absolute IRI with an optional fragment).
+    ///
+    /// # Errors
+    /// [`Iri::new`] returns [`InvalidIri`] if `iri` is not a valid IRI.
     pub fn new(iri: T) -> Result<Self, InvalidIri> {
         if is_absolute_iri_ref(iri.borrow()) {
             Ok(Iri(iri))
@@ -28,12 +31,20 @@ wrap! { Iri borrowing str :
 
     /// Borrow this IRI as a [`BaseIri`]
     /// providing more efficient and flexible resolution methods than [`Iri::resolve`].
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "self has already been validated, so BaseIri::new can not fail"
+    )]
     pub fn as_base(&self) -> BaseIri<&str> {
         BaseIri::new(self.0.borrow()).unwrap()
     }
 
     /// Turn this IRI into a [`BaseIri`]
     /// providing more efficient and flexible resolution methods than [`Iri::resolve`].
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "self has already been validated, so BaseIri::new can not fail"
+    )]
     pub fn to_base(self) -> BaseIri<T>
     where
         T: std::ops::Deref<Target = str>,
@@ -70,6 +81,9 @@ wrap! { IriRef borrowing str :
     /// This wrapper guarantees that the underlying `str`
     /// satisfies the `irelative-ref` rule in  RFC-3987
     /// (i.e. an absolute or relative IRI reference).
+    ///
+    /// # Errors
+    /// [`IriRef::new`] returns [`InvalidIri`] if `iri` is not a valid (absolute or relative) IRI reference.
     pub fn new(iri: T) -> Result<Self, InvalidIri> {
         if is_valid_iri_ref(iri.borrow()) {
             Ok(IriRef(iri))
@@ -89,12 +103,20 @@ wrap! { IriRef borrowing str :
 
     /// Borrow this IRI as a [`BaseIriRef`]
     /// providing more efficient and flexible resolution methods than [`IriRef::resolve`].
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "self has already been validated, so BaseIriRef::new can not fail"
+    )]
     pub fn as_base(&self) -> BaseIriRef<&str> {
         BaseIriRef::new(self.0.borrow()).unwrap()
     }
 
     /// Turn this IRI into a [`BaseIriRef`]
     /// providing more efficient and flexible resolution methods than [`IriRef::resolve`].
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "self has already been validated, so BaseIriRef::new can not fail"
+    )]
     pub fn to_base(self) -> BaseIriRef<T>
     where
         T: std::ops::Deref<Target = str>,

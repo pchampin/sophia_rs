@@ -328,6 +328,10 @@ impl<LF> JsonLdOptions<LF> {
     ///
     /// See also [`with_expand_context`](Self::with_expand_context),
     /// [`with_no_expand_context`](Self::with_no_expand_context)
+    ///
+    /// # Errors
+    /// Returns an error if `expand_context` can not be converted into a [`ContextRef`]
+    /// (see [`TryIntoContextRef::try_into_context_ref`]).
     pub fn try_with_expand_context<C: TryIntoContextRef>(
         mut self,
         expand_context: C,
@@ -427,6 +431,10 @@ impl<LF> JsonLdOptions<LF> {
     ///
     /// See also [`with_compact_context`](Self::with_compact_context),
     /// [`with_no_compact_context`](Self::with_no_compact_context)
+    ///
+    /// # Errors
+    /// Returns an error if `compact_context` can not be converted into a [`ContextRef`]
+    /// (see [`TryIntoContextRef::try_into_context_ref`]).
     pub fn try_with_compact_context<C: TryIntoContextRef>(
         mut self,
         compact_context: C,

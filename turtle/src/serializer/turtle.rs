@@ -114,10 +114,13 @@ impl TurtleConfig {
     ///
     /// # Precondition
     /// `indentation` must only contain ASCII whitespaces, otherwise this method will panic.
+    ///
+    /// # Panics
+    /// This will panic if preconditions (see above) are not fulfilled.
     #[must_use]
     pub fn with_indentation<T: ToString>(mut self, indentation: T) -> Self {
         let indentation = indentation.to_string();
-        assert!(indentation.chars().all(char::is_whitespace));
+        assert!(indentation.chars().all(|c| c.is_ascii_whitespace()));
         self.indentation = indentation;
         self
     }

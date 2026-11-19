@@ -13,5 +13,9 @@ pub trait RuleSet: Sized + Send + Sync {
     /// Prepare the internal structure of `graph` before triples are inserted.
     fn prepare<D: Recognized>(graph: &mut ReasonableGraph<D, Self>);
     /// Saturare `graph` with all inferred triples.
+    ///
+    /// # Errors
+    /// Implementors must return an [`Inconsistency`] if `graph` is found to be inconsistent
+    /// under this entailment regime (e.g. an ill-typed literal is derived).
     fn saturate<D: Recognized>(graph: &mut ReasonableGraph<D, Self>) -> Result<(), Inconsistency>;
 }

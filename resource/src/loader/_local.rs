@@ -22,6 +22,14 @@ pub struct LocalLoader {
 
 impl LocalLoader {
     /// Constructor
+    ///
+    /// # Precondition
+    ///
+    /// * the IRIs in `caches` must end with a slash (`/`)
+    /// * the paths in `caches` must be absolute and identify an existing directory
+    ///
+    /// # Errors
+    /// Returns [`LocalLoaderError`] if the preconditions above are not fulfilled.
     pub fn new(caches: Vec<(IriBuf, PathBuf)>) -> Result<Self, LocalLoaderError> {
         let checked_caches = caches
             .into_iter()
@@ -34,10 +42,13 @@ impl LocalLoader {
 
     /// Add a local cache to this loader.
     ///
-    /// # Pre-conditions
+    /// # Precondition
     ///
     /// * the IRI must end with a slash (`/`)
-    /// * the path must identify an existing directory
+    /// * the path must be absolute and identify an existing directory
+    ///
+    /// # Errors
+    /// Returns [`LocalLoaderError`] if the preconditions above are not fulfilled.
     pub fn add(&mut self, iri: IriBuf, path: PathBuf) -> Result<(), LocalLoaderError> {
         self.caches.push(Self::check(iri, path)?);
         Ok(())

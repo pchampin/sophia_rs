@@ -139,11 +139,19 @@ impl BindingsDocument {
 
 impl ResultsDocument {
     /// Parse application/sparql-results+xml data into a [`ResultsDocument`]
+    ///
+    /// # Errors
+    /// Returns [`Error::Xml`](crate::Error::Xml) or [`Error::XmlEncoding`](crate::Error::XmlEncoding)
+    /// if `data` is not valid XML, or another [`Error`](crate::Error) variant (mostly
+    /// [`Error::SparqlXml`](crate::Error::SparqlXml)) if it is not a valid SPARQL results document.
     pub fn from_xml<T: std::io::BufRead>(data: T) -> Result<ResultsDocument, crate::Error> {
         xml_parser::parse_results_document(data)
     }
 
     /// Parse application/sparql-results+json data into a [`ResultsDocument`]
+    ///
+    /// # Errors
+    /// Returns [`Error::Json`](crate::Error::Json) if `data` is not a valid SPARQL JSON results document.
     pub fn from_json<T: std::io::BufRead>(data: T) -> Result<ResultsDocument, crate::Error> {
         serde_json::from_reader(data).map_err(crate::Error::from)
     }

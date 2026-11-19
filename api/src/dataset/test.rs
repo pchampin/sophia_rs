@@ -32,6 +32,9 @@ pub fn no_quad() -> impl QuadSource {
 pub const SOME_QUADS_COUNT: usize = 18;
 
 /// Generates a quad source containing a dummy ontology.
+///
+/// # Panics
+/// This will panic if the hard-coded quads are not [`SOME_QUADS_COUNT`] (which would be a bug in this crate).
 #[must_use]
 pub fn some_quads() -> impl QuadSource {
     let v: Vec<Spog<NsTerm<'static>>> = vec![
@@ -67,6 +70,9 @@ pub const NODE_TYPES_COUNT: usize = 5;
 
 /// Generates a quad source containing all types of nodes,
 /// in all possible positions allowed in RDF 1.1.
+///
+/// # Panics
+/// This will panic if the hard-coded quads are not [`NODE_TYPES_COUNT`] (which would be a bug in this crate).
 #[must_use]
 pub fn strict_node_types_quads() -> impl QuadSource {
     let v: Vec<Spog<StaticTerm>> = vec![
@@ -85,6 +91,9 @@ pub fn strict_node_types_quads() -> impl QuadSource {
 
 /// Generates a quad source containing all types of nodes,
 /// in all possible positions (generalized RDF).
+///
+/// # Panics
+/// This will panic if the hard-coded quads are not [`NODE_TYPES_COUNT`] (which would be a bug in this crate).
 #[must_use]
 pub fn generalized_node_types_quads() -> impl QuadSource {
     let v: Vec<Spog<StaticTerm>> = vec![
@@ -109,6 +118,9 @@ pub fn generalized_node_types_quads() -> impl QuadSource {
 }
 
 /// Prints d on stdout (for debugging purposes only)
+///
+/// # Panics
+/// This will panic if iterating over the quads of `d` yields an error.
 pub fn dump_dataset<D: Dataset>(d: &D)
 where
     for<'x> DTerm<'x, D>: Debug,

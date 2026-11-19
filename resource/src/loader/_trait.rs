@@ -24,12 +24,20 @@ pub trait Loader: Sync + Sized {
     /// Get the representation of the resource identified by `iri`, with its content-type.
     ///
     /// NB: the content-type must not contain any parameter.
+    ///
+    /// # Errors
+    /// Implementors must return a [`LoaderError`] if the resource can not be retrieved,
+    /// e.g. [`LoaderError::UnsupportedIri`], [`LoaderError::NotFound`] or [`LoaderError::IoError`].
     fn get<T: Borrow<str>>(&self, iri: Iri<T>) -> Result<(Vec<u8>, String), LoaderError>;
 
     /// Get the RDF graph representation of the resource identified by `iri`.
     ///
     /// # Precondition
     /// `iri` must contain no fragment identifier.
+    ///
+    /// # Errors
+    /// Returns any error from [`Loader::get`], [`LoaderError::CantGuessSyntax`] if the content-type
+    /// is not a supported RDF syntax, or [`LoaderError::ParseError`] if the data can not be parsed.
     fn get_graph<G, T>(&self, iri: Iri<T>) -> Result<G, LoaderError>
     where
         T: Borrow<str>,
@@ -88,6 +96,10 @@ pub trait Loader: Sync + Sized {
     ///
     /// # Precondition
     /// `iri` must contain no fragment identifier.
+    ///
+    /// # Errors
+    /// Returns any error from [`Loader::get`], [`LoaderError::CantGuessSyntax`] if the content-type
+    /// is not a supported RDF syntax, or [`LoaderError::ParseError`] if the data can not be parsed.
     fn get_dataset<D, T>(&self, iri: Iri<T>) -> Result<D, LoaderError>
     where
         T: Borrow<str>,
@@ -128,6 +140,9 @@ pub trait Loader: Sync + Sized {
     }
 
     /// Get the resource identified by `iri`
+    ///
+    /// # Errors
+    /// Returns any error from [`Loader::get_graph`] when loading the document containing `iri`.
     fn get_resource<T, G>(self: &Arc<Self>, iri: Iri<T>) -> Result<Resource<G, Self>, LoaderError>
     where
         T: Borrow<str>,
@@ -139,6 +154,9 @@ pub trait Loader: Sync + Sized {
     }
 
     /// Get the resource identified by `iri` as described at `url`
+    ///
+    /// # Errors
+    /// Returns any error from [`Loader::get_graph`] when loading the document at `url`.
     fn get_resource_from<T, U, G>(
         self: &Arc<Self>,
         id: T,
@@ -157,6 +175,11 @@ pub trait Loader: Sync + Sized {
     }
 
     /// Get the resource identified by `iri`, typed as T
+    ///
+    /// # Errors
+    /// Returns [`ResourceErrorKind::LoaderError`](crate::ResourceErrorKind::LoaderError)
+    /// (converted into `R::Error`) if [`Loader::get_resource`] fails,
+    /// or the error raised by the conversion to `R`.
     fn get_typed<R, T, G>(self: &Arc<Self>, iri: Iri<T>) -> Result<R, R::Error>
     where
         R: TypedResource<G, Self>,
@@ -169,6 +192,11 @@ pub trait Loader: Sync + Sized {
     }
 
     /// Get the resource identified by `iri` as described at `url`, typed as T
+    ///
+    /// # Errors
+    /// Returns [`ResourceErrorKind::LoaderError`](crate::ResourceErrorKind::LoaderError)
+    /// (converted into `R::Error`) if [`Loader::get_resource_from`] fails,
+    /// or the error raised by the conversion to `R`.
     fn get_typed_from<R, T, U, G>(self: &Arc<Self>, id: T, url: Iri<U>) -> Result<R, R::Error>
     where
         R: TryFrom<Resource<G, Self>>,

@@ -29,6 +29,10 @@ pub trait Recognized: Send + Sync {
     ///
     /// Note that normalization may alter both the lexical value (turned into canonical form)
     /// and the datatype (in case several recognized datatypes have overlapping value spaces).
+    ///
+    /// # Errors
+    /// Implementors must return `Err(lex_dt)` (unchanged) if the datatype is not recognized;
+    /// see above for the inner [`IllTypedLiteral`] error.
     fn try_normalize<T: Borrow<str>>(
         lex_dt: LexDt<T>,
     ) -> Result<Result<LexDt<Box<str>>, IllTypedLiteral>, LexDt<T>>;
@@ -64,6 +68,9 @@ pub trait Recognized: Send + Sync {
     ) -> Option<SmallVec<[IriRef<MownStr<'static>>; 16]>>;
 
     /// Normalize the lexical form if the datatype is recognized, otherwise return it as is.
+    ///
+    /// # Errors
+    /// Returns [`IllTypedLiteral`] if the datatype is recognized but the lexical form is invalid for it.
     fn normalize_or_fallback<T: Borrow<str> + From<Box<str>>>(
         lex_dt: LexDt<T>,
     ) -> Result<LexDt<T>, IllTypedLiteral> {
@@ -73,6 +80,10 @@ pub trait Recognized: Send + Sync {
     }
 
     /// Normalize the given [`SimpleTerm`]
+    ///
+    /// # Errors
+    /// Returns [`IllTypedLiteral`] if `t` is (or, for a triple term, contains)
+    /// a literal whose datatype is recognized but whose lexical form is invalid.
     fn normalize_simple_term(t: SimpleTerm<'_>) -> Result<SimpleTerm<'_>, IllTypedLiteral> {
         Ok(match t {
             SimpleTerm::LiteralDatatype(lex, dt) => {

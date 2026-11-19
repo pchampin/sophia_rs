@@ -82,6 +82,10 @@ pub trait TermIndex {
     ///
     /// Returns an error if `t` can not be added in this term-index
     /// (some term-index may support only a subset of RDF terms).
+    ///
+    /// # Errors
+    /// Returns [`Self::Error`](TermIndex::Error) if `t` can not be added,
+    /// e.g. because this term-index is full or does not support this kind of term.
     fn ensure_index<T: Term>(&mut self, t: T) -> Result<Self::Index, Self::Error>;
     /// Get the term corresponding to index `i`.
     ///
@@ -353,6 +357,10 @@ impl<I: Index> BasicTermIndex<I> {
     ///
     /// This is more efficient than [`TermIndex::ensure_index`]
     /// when the indexes of the constituents are already known.
+    ///
+    /// # Errors
+    /// Returns [`TermIndexFullError`] if this triple term is not indexed yet
+    /// and this index has no room left for a new term.
     pub fn ensure_triple_term_index(&mut self, spo: [I; 3]) -> Result<I, TermIndexFullError> {
         debug_assert!(spo.iter().copied().all(|i| i.into_usize() < self.len()));
         self.ensure_index_internal(InternalTerm::Triple(spo))

@@ -74,6 +74,13 @@ where
     /// See also [`Self::get_resource`], [`Self::get_term`],
     /// [`Self::get_any_typed`], [`Self::get_all_typed`],
     /// [`Self::pred_typed`],
+    ///
+    /// # Errors
+    /// Returns [`ResourceErrorKind::GraphError`] if the underlying graph errs,
+    /// [`ResourceErrorKind::NoValueFor`] or [`ResourceErrorKind::UnexpectedMultipleValueFor`]
+    /// if there is not exactly one value, [`ResourceErrorKind::IriNotAbsolute`] or
+    /// [`ResourceErrorKind::LoaderError`] if it can not be loaded (all converted into `R::Error`),
+    /// or the error raised by the conversion to `R`.
     pub fn get_typed<R, T>(&self, predicate: T) -> Result<R, R::Error>
     where
         R: TypedResource<G, L>,
@@ -98,6 +105,12 @@ where
     /// See also [`Self::get_any_resource`], [`Self::get_any_term`],
     /// [`Self::get_typed`], [`Self::get_all_typed`],
     /// [`Self::pred_any_typed`],
+    ///
+    /// # Errors
+    /// Returns [`ResourceErrorKind::GraphError`] if the underlying graph errs,
+    /// [`ResourceErrorKind::IriNotAbsolute`] or [`ResourceErrorKind::LoaderError`]
+    /// if the value can not be loaded (all converted into `R::Error`),
+    /// or the error raised by the conversion to `R`.
     pub fn get_any_typed<R, T>(&self, predicate: T) -> Result<Option<R>, R::Error>
     where
         R: TypedResource<G, L>,
@@ -162,6 +175,13 @@ where
     /// See also [`Self::pred_resource`], [`Self::pred_term`],
     /// [`Self::pred_any_typed`], [`Self::pred_all_typed`],
     /// [`Self::get_typed`],
+    ///
+    /// # Errors
+    /// Returns [`ResourceErrorKind::GraphError`] if the underlying graph errs,
+    /// [`ResourceErrorKind::NoValueFor`] or [`ResourceErrorKind::UnexpectedMultipleValueFor`]
+    /// if there is not exactly one predecessor, [`ResourceErrorKind::IriNotAbsolute`] or
+    /// [`ResourceErrorKind::LoaderError`] if it can not be loaded (all converted into `R::Error`),
+    /// or the error raised by the conversion to `R`.
     pub fn pred_typed<R, T>(&self, predicate: T) -> Result<R, R::Error>
     where
         R: TypedResource<G, L>,
@@ -186,6 +206,12 @@ where
     /// See also [`Self::pred_any_resource`], [`Self::pred_any_term`],
     /// [`Self::pred_typed`], [`Self::pred_all_typed`],
     /// [`Self::get_any_typed`],
+    ///
+    /// # Errors
+    /// Returns [`ResourceErrorKind::GraphError`] if the underlying graph errs,
+    /// [`ResourceErrorKind::IriNotAbsolute`] or [`ResourceErrorKind::LoaderError`]
+    /// if the predecessor can not be loaded (all converted into `R::Error`),
+    /// or the error raised by the conversion to `R`.
     pub fn pred_any_typed<R, T>(&self, predicate: T) -> Result<Option<R>, R::Error>
     where
         R: TypedResource<G, L>,
@@ -229,6 +255,12 @@ where
     /// See also [`Self::get_typed`], [`Self::get_term`],
     /// [`Self::get_any_resource`], [`Self::get_all_resources`],
     /// [`Self::pred_resource`],
+    ///
+    /// # Errors
+    /// Returns [`ResourceErrorKind::GraphError`] if the underlying graph errs,
+    /// [`ResourceErrorKind::NoValueFor`] or [`ResourceErrorKind::UnexpectedMultipleValueFor`]
+    /// if there is not exactly one value, or [`ResourceErrorKind::IriNotAbsolute`] or
+    /// [`ResourceErrorKind::LoaderError`] if it can not be loaded.
     pub fn get_resource<T>(&self, predicate: T) -> ResourceResult<Self, G>
     where
         T: Term,
@@ -258,6 +290,11 @@ where
     /// See also [`Self::get_any_typed`], [`Self::get_any_term`],
     /// [`Self::get_resource`], [`Self::get_all_resources`],
     /// [`Self::pred_any_resource`],
+    ///
+    /// # Errors
+    /// Returns [`ResourceErrorKind::GraphError`] if the underlying graph errs,
+    /// or [`ResourceErrorKind::IriNotAbsolute`] or [`ResourceErrorKind::LoaderError`]
+    /// if the found value can not be loaded.
     pub fn get_any_resource<T>(&self, predicate: T) -> ResourceResult<Option<Self>, G>
     where
         T: Term,
@@ -314,6 +351,12 @@ where
     /// See also [`Self::pred_typed`], [`Self::pred_term`],
     /// [`Self::pred_any_resource`], [`Self::pred_all_resources`],
     /// [`Self::get_resource`],
+    ///
+    /// # Errors
+    /// Returns [`ResourceErrorKind::GraphError`] if the underlying graph errs,
+    /// [`ResourceErrorKind::NoValueFor`] or [`ResourceErrorKind::UnexpectedMultipleValueFor`]
+    /// if there is not exactly one predecessor, or [`ResourceErrorKind::IriNotAbsolute`] or
+    /// [`ResourceErrorKind::LoaderError`] if it can not be loaded.
     pub fn pred_resource<T>(&self, predicate: T) -> ResourceResult<Self, G>
     where
         T: Term,
@@ -343,6 +386,11 @@ where
     /// See also [`Self::pred_any_typed`], [`Self::pred_any_term`],
     /// [`Self::pred_resource`], [`Self::pred_all_resources`],
     /// [`Self::get_any_resource`],
+    ///
+    /// # Errors
+    /// Returns [`ResourceErrorKind::GraphError`] if the underlying graph errs,
+    /// or [`ResourceErrorKind::IriNotAbsolute`] or [`ResourceErrorKind::LoaderError`]
+    /// if the found predecessor can not be loaded.
     pub fn pred_any_resource<T>(&self, predicate: T) -> ResourceResult<Option<Self>, G>
     where
         T: Term,
@@ -380,6 +428,11 @@ where
     /// See also [`Self::get_typed`], [`Self::get_resource`],
     /// [`Self::get_any_term`], [`Self::get_all_terms`],
     /// [`Self::pred_term`],
+    ///
+    /// # Errors
+    /// Returns [`ResourceErrorKind::GraphError`] if the underlying graph errs,
+    /// or [`ResourceErrorKind::NoValueFor`] or [`ResourceErrorKind::UnexpectedMultipleValueFor`]
+    /// if there is not exactly one value.
     pub fn get_term<T: Term>(&self, predicate: T) -> ResourceResult<SimpleTerm<'static>, G> {
         let mut objects = self.get_all_terms(predicate.borrow_term());
         let first = objects.next();
@@ -404,6 +457,9 @@ where
     /// See also [`Self::get_any_typed`], [`Self::get_any_resource`],
     /// [`Self::get_term`], [`Self::get_all_terms`],
     /// [`Self::pred_any_term`],
+    ///
+    /// # Errors
+    /// Returns [`ResourceErrorKind::GraphError`] if the underlying graph errs.
     pub fn get_any_term<T: Term>(
         &self,
         predicate: T,
@@ -475,6 +531,11 @@ where
     /// See also [`Self::pred_typed`], [`Self::pred_resource`],
     /// [`Self::pred_any_term`], [`Self::pred_all_terms`],
     /// [`Self::get_term`],
+    ///
+    /// # Errors
+    /// Returns [`ResourceErrorKind::GraphError`] if the underlying graph errs,
+    /// or [`ResourceErrorKind::NoValueFor`] or [`ResourceErrorKind::UnexpectedMultipleValueFor`]
+    /// if there is not exactly one predecessor.
     pub fn pred_term<T: Term>(&self, predicate: T) -> ResourceResult<SimpleTerm<'static>, G> {
         let mut objects = self.pred_all_terms(predicate.borrow_term());
         let first = objects.next();
@@ -499,6 +560,9 @@ where
     /// See also [`Self::pred_any_typed`], [`Self::pred_any_resource`],
     /// [`Self::pred_term`], [`Self::pred_all_terms`],
     /// [`Self::get_any_term`],
+    ///
+    /// # Errors
+    /// Returns [`ResourceErrorKind::GraphError`] if the underlying graph errs.
     pub fn pred_any_term<T: Term>(
         &self,
         predicate: T,
@@ -539,6 +603,15 @@ where
     ///   (empty slice if any value is acceptable)
     /// * `predicate` is the predicate used to get value,
     ///   (required to generate errors)
+    ///
+    /// # Errors
+    /// Returns [`ResourceErrorKind::UnexpectedKind`] if `value` is not a literal,
+    /// [`ResourceErrorKind::UnexpectedDatatype`] if its datatype is not `datatype`,
+    /// or [`ResourceErrorKind::UnexpectedValue`] if its lexical form is not in `lexical_forms`.
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "a SimpleTerm with a datatype always has a lexical form"
+    )]
     pub fn check_literal<'a, T: Term, U: Term>(
         &self,
         value: &'a SimpleTerm<'static>,

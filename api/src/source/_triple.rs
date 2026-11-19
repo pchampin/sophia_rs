@@ -17,6 +17,10 @@ pub trait TripleSource: Sized + for<'x> Source<Item<'x>: Triple> {
     /// Return `Ok(false)` if there are no more triples in this source.
     ///
     /// Return an error if either the source or `f` errs.
+    ///
+    /// # Errors
+    /// Returns a [`SourceError`] if the source fails while producing a triple,
+    /// or a [`SinkError`] if `f` returns an error.
     #[inline]
     fn try_for_some_triple<E, F>(&mut self, mut f: F) -> StreamResult<bool, Self::Error, E>
     where
@@ -29,6 +33,10 @@ pub trait TripleSource: Sized + for<'x> Source<Item<'x>: Triple> {
     /// Call f for all triples from this source.
     ///
     /// Return an error if either the source or `f` errs.
+    ///
+    /// # Errors
+    /// Stops at the first error, returning a [`SourceError`] if the source fails,
+    /// or a [`SinkError`] if `f` returns an error.
     #[inline]
     fn try_for_each_triple<F, E>(&mut self, mut f: F) -> StreamResult<(), Self::Error, E>
     where
@@ -43,6 +51,9 @@ pub trait TripleSource: Sized + for<'x> Source<Item<'x>: Triple> {
     /// Return false if there are no more triples in this source.
     ///
     /// Return an error if either the source errs.
+    ///
+    /// # Errors
+    /// Returns the source's error if it fails while producing a triple.
     #[inline]
     fn for_some_triple<F>(&mut self, mut f: F) -> Result<bool, Self::Error>
     where
@@ -54,6 +65,9 @@ pub trait TripleSource: Sized + for<'x> Source<Item<'x>: Triple> {
     /// Call f for all triples from this source.
     ///
     /// Return an error if either the source errs.
+    ///
+    /// # Errors
+    /// Stops at the first error, and returns it, if the source fails while producing a triple.
     #[inline]
     fn for_each_triple<F>(&mut self, mut f: F) -> Result<(), Self::Error>
     where
@@ -133,6 +147,11 @@ pub trait TripleSource: Sized + for<'x> Source<Item<'x>: Triple> {
     }
 
     /// Collect these triples into a new graph.
+    ///
+    /// # Errors
+    /// Returns a [`SourceError`] if the source fails,
+    /// or a [`SinkError`] if the graph fails to insert a triple
+    /// (see [`CollectibleGraph::CollectError`]).
     #[inline]
     fn collect_triples<G>(
         self,
@@ -147,6 +166,11 @@ pub trait TripleSource: Sized + for<'x> Source<Item<'x>: Triple> {
     /// Insert all triples from this source into the given [`MutableGraph`].
     ///
     /// Stop on the first error (in the source or in the graph).
+    ///
+    /// # Errors
+    /// Returns a [`SourceError`] if the source fails,
+    /// or a [`SinkError`] if `graph` fails to insert a triple
+    /// (see [`MutableGraph::MutationError`]).
     #[inline]
     fn add_to_graph<G: MutableGraph>(
         self,

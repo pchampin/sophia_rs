@@ -25,8 +25,10 @@ impl<T: Deref<Target = str>> IsIriRef for BaseIri<T> {}
 impl<T: Deref<Target = str>> IsIri for BaseIri<T> {}
 
 impl<T: Deref<Target = str>> BaseIri<T> {
-    /// Creates a new `BaseIri` if `iri` is a valid IRI,
-    /// otherwise returns an [`IriParseError`].
+    /// Creates a new `BaseIri`.
+    ///
+    /// # Errors
+    /// Returns an [`IriParseError`] if `iri` is not a valid absolute IRI.
     pub fn new(iri: T) -> Result<Self, IriParseError> {
         Oxiri::parse(iri).map(BaseIri)
     }
@@ -87,8 +89,10 @@ pub struct BaseIriRef<T>(OxiriRef<T>);
 impl<T: Deref<Target = str>> IsIriRef for BaseIriRef<T> {}
 
 impl<T: Deref<Target = str>> BaseIriRef<T> {
-    /// Creates a new `BaseIriRef` if `iri` is a valid IRI,
-    /// otherwise returns an [`IriParseError`].
+    /// Creates a new `BaseIriRef`.
+    ///
+    /// # Errors
+    /// Returns an [`IriParseError`] if `iri` is not a valid (absolute or relative) IRI reference.
     pub fn new(iri: T) -> Result<Self, IriParseError> {
         OxiriRef::parse(iri).map(BaseIriRef)
     }
@@ -110,7 +114,10 @@ impl<T: Deref<Target = str>> BaseIriRef<T> {
     /// Convert this to a [`BaseIri`].
     ///
     /// # Precondition
-    /// This [`BaseIriRef`] must be [absolute](OxiriRef::is_absolute)
+    /// This [`BaseIriRef`] must be [absolute](OxiriRef::is_absolute).
+    ///
+    /// # Panics
+    /// This will panic if preconditions (see above) are not fulfilled.
     pub fn to_base_iri(self) -> BaseIri<T> {
         assert!(self.is_absolute());
         BaseIri(Oxiri::try_from(self.0).unwrap())

@@ -44,6 +44,9 @@ wrap! { BnodeId borrowing str :
     /// This wrapper guarantees that the underlying `str`
     /// satisfies the `BLANK_NODE_LABEL` rule in [Turtle](https://www.w3.org/TR/turtle/#grammar-production-BLANK_NODE_LABEL)
     /// (without the leading `_:`).
+    ///
+    /// # Errors
+    /// Returns [`InvalidBnodeId`] if `id` does not satisfy the `BLANK_NODE_LABEL` rule.
     pub fn new(id: T) -> Result<Self, InvalidBnodeId> {
         if BNODE_ID.is_match(id.borrow()) {
             Ok(BnodeId(id))

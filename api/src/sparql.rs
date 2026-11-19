@@ -56,6 +56,10 @@ pub trait SparqlDataset {
     /// or a `Self::Query` that was earlier prepared by the [`prepare_query`] method.
     ///
     /// [`prepare_query`]: #method.prepared
+    ///
+    /// # Errors
+    /// Implementors should return an error if `query` can not be parsed
+    /// (see [`IntoQuery::into_query`]), or if its execution fails.
     fn query<Q>(&self, query: Q) -> Result<SparqlResult<Self>, Self::SparqlError>
     where
         Q: IntoQuery<Self::Query>;
@@ -74,6 +78,9 @@ pub trait SparqlDataset {
     /// you can still use `String`, which implements the [`Query`] trait.
     ///
     /// See also [`SparqlDataset::prepare_query_with`]
+    ///
+    /// # Errors
+    /// Returns an error if `query_string` can not be parsed (see [`Query::parse`]).
     fn prepare_query(&self, query_string: &str) -> Result<Self::Query, Self::SparqlError> {
         Self::Query::parse(query_string)
     }
@@ -82,6 +89,9 @@ pub trait SparqlDataset {
     /// using the given IRI to resolve relative IRIs.
     ///
     /// See also [`SparqlDataset::prepare_query`].
+    ///
+    /// # Errors
+    /// Returns an error if `query_string` can not be parsed (see [`Query::parse_with`]).
     fn prepare_query_with(
         &self,
         query_string: &str,
@@ -100,8 +110,14 @@ pub trait Query: Sized {
     /// The error type that might be raised when parsing a query.
     type Error: Error + Send + Sync + 'static;
     /// Parse the given text into a [`Query`].
+    ///
+    /// # Errors
+    /// Implementors should return an error if `query_source` is not a valid query.
     fn parse(query_source: &str) -> Result<Self, Self::Error>;
     /// Parse the given text into a [`Query`], using the given base IRI
+    ///
+    /// # Errors
+    /// Implementors should return an error if `query_source` is not a valid query.
     fn parse_with(query_source: &str, base: Iri<&str>) -> Result<Self, Self::Error>;
 }
 
@@ -121,6 +137,10 @@ pub trait IntoQuery<Q: Query> {
     /// The output type of [`into_query`](IntoQuery::into_query).
     type Out: Borrow<Q>;
     /// Convert `self` to a [`Query`].
+    ///
+    /// # Errors
+    /// Returns an error if `self` needs to be parsed into a `Q` and parsing fails
+    /// (see [`Query::parse`]).
     fn into_query(self) -> Result<Self::Out, Q::Error>;
 }
 

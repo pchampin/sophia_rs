@@ -172,6 +172,11 @@ impl<'a> SimpleTerm<'a> {
     ///
     /// NB: depending on the implementation of `term`,
     /// some data might still be allocated.
+    ///
+    /// # Panics
+    /// This will panic if `term`'s implementation of [`Term`] is inconsistent,
+    /// i.e. if the accessor corresponding to its [`kind`](Term::kind) returns `None`
+    /// (see [`assert_consistent_term_impl`](crate::term::assert_consistent_term_impl)).
     pub fn from_term_ref<T>(term: &'a T) -> Self
     where
         T: Term + ?Sized,

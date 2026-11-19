@@ -89,6 +89,9 @@ impl<D: Recognized, R: RuleSet> ReasonableGraph<D, R> {
 
     /// Return true if `self` entails the `other` graph,
     /// under the entailment regimes captured by `D` and `R`.
+    ///
+    /// # Errors
+    /// See [`NormalizeError`] for the different error causes.
     pub fn entails<G: Graph>(&self, other: G) -> Result<bool, NormalizeError<G::Error>> {
         #[cfg(debug_assertions)]
         debug_assert!(self.finalized);
@@ -97,6 +100,13 @@ impl<D: Recognized, R: RuleSet> ReasonableGraph<D, R> {
 
     /// Return true if `self` entails all given `triples`,
     /// under the entailment regimes captured by `D` and `R`.
+    ///
+    /// # Errors
+    /// See [`NormalizeError`] for the different error causes.
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "the underlying dataset is infallible, so evaluating the generated ASK query can not fail"
+    )]
     pub fn entails_triples<TS: TripleSource>(
         &self,
         triples: TS,

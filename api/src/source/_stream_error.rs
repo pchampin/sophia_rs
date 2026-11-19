@@ -74,8 +74,8 @@ where
     }
     /// Unwrap as the inner `SourceError`.
     ///
-    /// # Panic
-    /// Panic if self is actually a `SinkError`.
+    /// # Panics
+    /// This will panic if `self` is actually a [`SinkError`].
     pub fn unwrap_source_error(self) -> SourceErr {
         match self {
             SourceError(err) => err,
@@ -84,8 +84,8 @@ where
     }
     /// Unwrap as the inner `SinkError`.
     ///
-    /// # Panic
-    /// Panic if self is actually a `SourceError`.
+    /// # Panics
+    /// This will panic if `self` is actually a [`SourceError`].
     pub fn unwrap_sink_error(self) -> SinkErr {
         match self {
             SourceError(_) => panic!("this is a SourceError"),
@@ -111,11 +111,13 @@ where
     E2: Error,
 {
     /// Map the error if it is a [`SourceError`]
+    #[expect(clippy::missing_errors_doc)]
     fn map_source_err<E, F>(self, f: F) -> StreamResult<T, E, E2>
     where
         E: Error,
         F: FnOnce(E1) -> E;
     /// Map the error if it is a [`SinkError`]
+    #[expect(clippy::missing_errors_doc)]
     fn map_sink_err<E, F>(self, f: F) -> StreamResult<T, E1, E>
     where
         E: Error,

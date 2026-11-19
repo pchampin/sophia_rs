@@ -18,6 +18,10 @@ impl<T: Deref<Target = str>> Relativizer<T> {
     /// Build a [`Relativizer`] from a [`BaseIri`].
     ///
     /// Relative IRI references produced by this [`Relativizer`] will contain at most `parents` ../
+    #[expect(
+        clippy::missing_panics_doc,
+        reason = "the only unwrap is on a vector whose non-emptiness has just been checked"
+    )]
     pub fn new(base: BaseIri<T>, parents: u8) -> Self {
         let s = base.as_str();
         let path_begin =

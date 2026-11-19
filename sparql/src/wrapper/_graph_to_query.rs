@@ -17,6 +17,9 @@ use crate::{SparqlQuery, SparqlWrapper};
 
 impl<D: Dataset + ?Sized> SparqlWrapper<'_, D> {
     /// Make an ASK SPARQL query from a Sophia graph
+    ///
+    /// # Errors
+    /// Returns the error raised by `ts`, if any.
     pub fn prepare_ask_from_triples<TS: TripleSource>(ts: TS) -> Result<SparqlQuery<D>, TS::Error> {
         let algebra = Query::Ask {
             dataset: None,
@@ -30,6 +33,9 @@ impl<D: Dataset + ?Sized> SparqlWrapper<'_, D> {
     }
 
     /// Make a CONSTRUCT SPARQL query from a Sophia graph
+    ///
+    /// # Errors
+    /// Returns the error raised by `ts`, if any.
     pub fn prepare_construct_from_triples<TS: TripleSource>(
         ts: TS,
     ) -> Result<SparqlQuery<D>, TS::Error> {
@@ -48,6 +54,9 @@ impl<D: Dataset + ?Sized> SparqlWrapper<'_, D> {
     }
 
     /// Make a SELECT SPARQL query from a Sophia graph
+    ///
+    /// # Errors
+    /// Returns the error raised by `ts`, if any.
     pub fn prepare_select_from_triples<TS: TripleSource>(
         ts: TS,
     ) -> Result<SparqlQuery<D>, TS::Error> {

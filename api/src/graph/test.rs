@@ -43,6 +43,9 @@ pub fn no_triple() -> impl TripleSource {
 pub const SOME_TRIPLES_COUNT: usize = 18;
 
 /// Generates a triple source containing a dummy ontology.
+///
+/// # Panics
+/// This will panic if the hard-coded triples are not [`SOME_TRIPLES_COUNT`] (which would be a bug in this crate).
 #[must_use]
 pub fn some_triples() -> impl TripleSource {
     let v = vec![
@@ -88,6 +91,9 @@ pub const NODE_TYPES_COUNT: usize = 5;
 
 /// Generates a triple source containing all types of nodes,
 /// in all possible positions allowed in RDF 1.1.
+///
+/// # Panics
+/// This will panic if the hard-coded triples are not [`NODE_TYPES_COUNT`] (which would be a bug in this crate).
 #[must_use]
 pub fn strict_node_types_triples() -> impl TripleSource {
     let v = vec![
@@ -103,6 +109,9 @@ pub fn strict_node_types_triples() -> impl TripleSource {
 
 /// Generates a triple source containing all types of nodes,
 /// in all possible positions (generalized RDF).
+///
+/// # Panics
+/// This will panic if the hard-coded triples are not [`NODE_TYPES_COUNT`] (which would be a bug in this crate).
 #[must_use]
 pub fn generalized_node_types_triples() -> impl TripleSource {
     let v = vec![
@@ -121,6 +130,9 @@ pub fn generalized_node_types_triples() -> impl TripleSource {
 }
 
 /// Prints g on stdout
+///
+/// # Panics
+/// This will panic if iterating over the triples of `g` yields an error.
 pub fn dump_graph<G: Graph>(g: &G)
 where
     for<'x> GTerm<'x, G>: Debug,
@@ -134,6 +146,9 @@ where
 }
 
 /// Checks that `val` is in the interval represented by `hint`.
+///
+/// # Panics
+/// This will panic if `val` is not within the bounds of `hint`.
 pub fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
     assert!(hint.0 <= val, "hint {hint:?} not consistent with {val}");
     assert!(
@@ -144,6 +159,9 @@ pub fn assert_consistent_hint(val: usize, hint: (usize, Option<usize>)) {
 
 /// Checks that `term` is presnet in `collection`
 /// (according to [`Term::eq`]).
+///
+/// # Panics
+/// This will panic if `term` is not present in `collection`.
 pub fn assert_contains<'a, I, T, U>(collection: I, term: &U)
 where
     I: IntoIterator<Item = &'a T>,

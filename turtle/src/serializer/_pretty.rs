@@ -143,7 +143,7 @@ impl<'a, W: Write> Prettifier<'a, W> {
         Ok(())
     }
 
-    /// Pre-condition:
+    /// Precondition:
     /// `self.subject_types[self.graph_range]` is not empty;
     /// all its elements have the same graph name,
     /// and all subjects of that graph are contained in it.
