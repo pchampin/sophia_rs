@@ -49,7 +49,7 @@ impl XsdDateTime {
                 if fraction.len() >= 9 {
                     fraction[..9].parse().unwrap()
                 } else {
-                    #[allow(clippy::cast_possible_truncation)] // moot, since fracion.len() < 9
+                    #[allow(clippy::cast_possible_truncation)] // moot, since fraction.len() < 9
                     let fraction_len = fraction.len() as u32;
                     fraction.parse::<u32>().unwrap() * 10_u32.pow(9 - fraction_len)
                 }
